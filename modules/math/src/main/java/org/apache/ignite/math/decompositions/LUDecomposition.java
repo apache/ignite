@@ -22,6 +22,7 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.CardinalityException;
 import org.apache.ignite.math.exceptions.SingularMatrixException;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 
@@ -365,7 +366,7 @@ public class LUDecomposition {
      * @return Like vector.
      */
     private Vector likeVector(Matrix matrix){
-        if (matrix instanceof RandomMatrix)
+        if (matrix instanceof RandomMatrix || matrix instanceof PivotedMatrixView)
             return new DenseLocalOnHeapVector(matrix.rowSize());
         else
             return matrix.likeVector(matrix.rowSize());

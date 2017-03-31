@@ -18,12 +18,14 @@
 package org.apache.ignite.math.impls.storage.matrix;
 
 import java.io.*;
+import java.util.Arrays;
 import org.apache.ignite.math.MatrixStorage;
 
 /**
  * Pivoted (index mapped) view over another matrix storage implementation.
  */
 public class PivotedMatrixStorage implements MatrixStorage {
+    /** Matrix storage. */
     private MatrixStorage sto;
 
     private int[] rowPivot, colPivot;
@@ -138,22 +140,27 @@ public class PivotedMatrixStorage implements MatrixStorage {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int x, int y) {
         return sto.get(rowPivot[x], colPivot[y]);
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
         sto.set(rowPivot[x], colPivot[y], v);
     }
 
+    /** {@inheritDoc} */
     @Override public int columnSize() {
         return sto.columnSize();
     }
 
+    /** {@inheritDoc} */
     @Override public int rowSize() {
         return sto.rowSize();
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
         out.writeObject(rowPivot);
@@ -162,6 +169,7 @@ public class PivotedMatrixStorage implements MatrixStorage {
         out.writeObject(colUnpivot);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (MatrixStorage)in.readObject();
         rowPivot = (int[])in.readObject();
@@ -170,10 +178,12 @@ public class PivotedMatrixStorage implements MatrixStorage {
         colUnpivot = (int[])in.readObject();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return sto.isSequentialAccess();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
     }
@@ -188,8 +198,37 @@ public class PivotedMatrixStorage implements MatrixStorage {
         return sto.isDistributed();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return sto.isArrayBased();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + sto.hashCode();
+        res = res * 37 + Arrays.hashCode(rowPivot);
+        res = res * 37 + Arrays.hashCode(rowUnpivot);
+        res = res * 37 + Arrays.hashCode(colPivot);
+        res = res * 37 + Arrays.hashCode(colUnpivot);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        PivotedMatrixStorage that = (PivotedMatrixStorage)obj;
+
+        return Arrays.equals(rowPivot, that.rowPivot) && Arrays.equals(rowUnpivot, that.rowUnpivot)
+            && Arrays.equals(colPivot, that.colPivot) && Arrays.equals(colUnpivot, that.colUnpivot)
+            && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }
 
     /**

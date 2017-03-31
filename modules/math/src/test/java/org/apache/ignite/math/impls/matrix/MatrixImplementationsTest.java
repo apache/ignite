@@ -55,16 +55,18 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void likeTest(){
         consumeSampleMatrix((m, desc) -> {
-            Matrix like = m.like(m.rowSize(), m.columnSize());
+            if (typesMap().containsKey(m.getClass())) {
+                Matrix like = m.like(m.rowSize(), m.columnSize());
 
-            assertEquals("Wrong \"like\" matrix for "+ desc + "; Unexpected class: " + like.getClass().toString(),
+                assertEquals("Wrong \"like\" matrix for " + desc + "; Unexpected class: " + like.getClass().toString(),
                     like.getClass(),
                     m.getClass());
-            assertEquals("Wrong \"like\" matrix for "+ desc + "; Unexpected rows.", like.rowSize(), m.rowSize());
-            assertEquals("Wrong \"like\" matrix for "+ desc + "; Unexpected columns.", like.columnSize(), m.columnSize());
-            assertEquals("Wrong \"like\" matrix for "+ desc + "; Unexpected storage class: " + like.getStorage().getClass().toString(),
+                assertEquals("Wrong \"like\" matrix for " + desc + "; Unexpected rows.", like.rowSize(), m.rowSize());
+                assertEquals("Wrong \"like\" matrix for " + desc + "; Unexpected columns.", like.columnSize(), m.columnSize());
+                assertEquals("Wrong \"like\" matrix for " + desc + "; Unexpected storage class: " + like.getStorage().getClass().toString(),
                     like.getStorage().getClass(),
                     m.getStorage().getClass());
+            }
         });
     }
 
@@ -464,6 +466,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         return arr;
     }
 
+    /** */
     private double recDet(int[] idxX, int[] idxY, Matrix origin, IntIntToDoubleFunction getter){
         int rows = idxX == null ? origin.rowSize() : idxX.length;
         int cols = idxX == null ? origin.columnSize() : idxX.length;
@@ -501,6 +504,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         return det;
     }
 
+    /** */
     private int[] skipIdx(int[] idxs, int idx){
         int[] res = new int[idxs.length -1];
         int j = 0;
@@ -519,10 +523,10 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 m.set(i, j, Math.random());
     }
 
-    /** Ignore test for given vector type. */
+    /** Ignore test for given matrix type. */
     private boolean ignore(Class<? extends Matrix> clazz){
         boolean isIgnored = false;
-        List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(RandomMatrix.class);
+        List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(RandomMatrix.class, PivotedMatrixView.class);
 
         for (Class<? extends Matrix> ignoredClass : ignoredClasses) {
             if (ignoredClass.isAssignableFrom(clazz)){

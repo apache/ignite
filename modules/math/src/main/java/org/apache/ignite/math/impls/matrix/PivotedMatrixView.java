@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.matrix.PivotedMatrixStorage;
 import org.apache.ignite.math.Matrix;
@@ -29,6 +30,7 @@ import java.io.*;
  * Pivoted (index mapped) view over another matrix implementation.
  */
 public class PivotedMatrixView extends AbstractMatrix {
+    /** Pivoted matrix. */
     private Matrix mtx;
 
     /**
@@ -84,6 +86,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix swapRows(int i, int j) {
         if (i < 0 || i >= storage().rowPivot().length)
             throw new IndexException(i);
@@ -95,6 +98,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix swapColumns(int i, int j) {
         if (i < 0 || i >= storage().columnPivot().length)
             throw new IndexException(i);
@@ -106,6 +110,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public Vector viewRow(int row) {
         return new PivotedVectorView(
             mtx.viewRow(storage().rowPivot()[row]),
@@ -114,6 +119,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         );
     }
 
+    /** {@inheritDoc} */
     @Override public Vector viewColumn(int col) {
         return new PivotedVectorView(
             mtx.viewColumn(storage().columnPivot()[col]),
@@ -182,12 +188,14 @@ public class PivotedMatrixView extends AbstractMatrix {
         return storage().columnUnpivot()[i];
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
         out.writeObject(mtx);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
@@ -202,15 +210,43 @@ public class PivotedMatrixView extends AbstractMatrix {
         return (PivotedMatrixStorage)getStorage();
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix copy() {
         return new PivotedMatrixView(mtx, storage().rowPivot(), storage().columnPivot());
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + mtx.hashCode();
+        res = res * 37 + getStorage().hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        PivotedMatrixView that = (PivotedMatrixView) o;
+
+        MatrixStorage sto = storage();
+
+        return mtx.equals(that.mtx) && sto.equals(that.storage());
     }
 }

@@ -33,7 +33,8 @@ public class MatrixImplementationFixtures {
         (Supplier<Iterable<Matrix>>)DenseLocalOnHeapMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)DenseLocalOffHeapMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)RandomMatrixFixture::new,
-        (Supplier<Iterable<Matrix>>)SparseLocalOnHeapMatrixFixture::new
+        (Supplier<Iterable<Matrix>>)SparseLocalOnHeapMatrixFixture::new,
+        (Supplier<Iterable<Matrix>>)PivotedMatrixViewFixture::new
     );
 
     /** */
@@ -84,6 +85,30 @@ public class MatrixImplementationFixtures {
         }
     }
 
+    /** */
+    private static class PivotedMatrixViewFixture extends MatrixSizeIterator{
+        /** */
+        PivotedMatrixViewFixture() {
+            super(DenseLocalOnHeapMatrix::new, "PivotedMatrixView over DenseLocalOnHeapMatrix");
+        }
+
+        /** */
+        @Override public Iterator<Matrix> iterator() {
+            return new Iterator<Matrix>() {
+                @Override public boolean hasNext() {
+                    return hasNextCol(getSizeIdx()) && hasNextRow(getSizeIdx());
+                }
+
+                @Override public Matrix next() {
+                    Matrix matrix = getConstructor().apply(getRow(getSizeIdx()), getCol(getSizeIdx()));
+
+                    nextIdx();
+
+                    return new PivotedMatrixView(matrix);
+                }
+            };
+        }
+    }
 
     /** */
     private static class MatrixSizeIterator implements Iterable<Matrix>{
@@ -101,18 +126,38 @@ public class MatrixImplementationFixtures {
         }
 
         /** */
+        public BiFunction<Integer, Integer, ? extends Matrix> getConstructor() {
+            return constructor;
+        }
+
+        /** */
+        int getSizeIdx() {
+            return sizeIdx;
+        }
+
+        /** */
         @Override public String toString() {
             return desc + "{rows=" + rows[sizeIdx] + ", cols=" + cols[sizeIdx] + "}";
         }
 
         /** */
-        private boolean hasNextRow(int idx){
+        boolean hasNextRow(int idx){
             return rows[idx] != null;
         }
 
         /** */
-        private boolean hasNextCol(int idx){
+        boolean hasNextCol(int idx){
             return cols[idx] != null;
+        }
+
+        /** */
+        int getRow(int idx){
+            return rows[idx];
+        }
+
+        /** */
+        int getCol(int idx){
+            return cols[idx];
         }
 
         /** */
@@ -133,7 +178,7 @@ public class MatrixImplementationFixtures {
         }
 
         /** */
-        private void nextIdx() {
+        void nextIdx() {
             sizeIdx++;
         }
     }
