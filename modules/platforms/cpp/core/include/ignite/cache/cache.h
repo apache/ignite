@@ -947,6 +947,27 @@ namespace ignite
             }
 
             /**
+             * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
+             * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            template<typename Iter>
+            void ClearAll(Iter begin, Iter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, Iter> op(keys);
+
+                impl.Get()->ClearAll(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
              * Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
              * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
              *
@@ -1022,6 +1043,30 @@ namespace ignite
                 impl::InSetOperation<K> op(keys);
 
                 impl.Get()->LocalClearAll(op, err);
+            }
+
+            /**
+             * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
+             * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+             *
+             * @note This operation is local as it merely clears entries from local cache, it does not
+             * remove entries from remote caches.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            template<typename Iter>
+            void LocalClearAll(Iter begin, Iter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, Iter> op(begin, end);
+
+                impl.Get()->LocalClearAll(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
             }
 
             /**

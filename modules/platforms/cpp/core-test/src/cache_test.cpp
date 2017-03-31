@@ -439,6 +439,44 @@ BOOST_AUTO_TEST_CASE(TestLocalClearAll)
     BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_PRIMARY));
 }
 
+BOOST_AUTO_TEST_CASE(TestLocalClearAllIterList)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    cache.Put(0, 3);
+    cache.Put(1, 3);
+
+    int keys[] = { 0, 1 };
+
+    std::list<int> keySet(keys, keys + 2);
+
+    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_PRIMARY));
+    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_PRIMARY));
+
+    cache.LocalClearAll(keySet.begin(), keySet.end());
+
+    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_PRIMARY));
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_PRIMARY));
+}
+
+BOOST_AUTO_TEST_CASE(TestLocalClearAllIterArray)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    cache.Put(0, 3);
+    cache.Put(1, 3);
+
+    int keys[] = { 0, 1 };
+
+    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_PRIMARY));
+    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_PRIMARY));
+
+    cache.LocalClearAll(keys, keys + 2);
+
+    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_PRIMARY));
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_PRIMARY));
+}
+
 BOOST_AUTO_TEST_CASE(TestSizes)
 {
     cache::Cache<int, int> cache = Cache();
