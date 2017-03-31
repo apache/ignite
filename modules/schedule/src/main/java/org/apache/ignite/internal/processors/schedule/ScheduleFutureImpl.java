@@ -774,6 +774,9 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
      *
      */
     private static class AsyncListener<R> implements IgniteInClosure<IgniteFuture<R>> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
         /** Listener. */
         private IgniteInClosure<? super IgniteFuture<R>> lsnr;
 

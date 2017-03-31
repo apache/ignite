@@ -488,6 +488,9 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      *
      */
     private static class AsyncListener<R> implements IgniteInClosure<IgniteInternalFuture<R>> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
         /** Listener. */
         private IgniteInClosure<? super IgniteInternalFuture<R>> lsnr;
 
