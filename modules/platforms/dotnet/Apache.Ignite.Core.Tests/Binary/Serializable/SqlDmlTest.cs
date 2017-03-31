@@ -154,10 +154,10 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 2, uint.MaxValue, 3, 88)).GetAll();
             Assert.AreEqual(1, dmlRes.Count);
 
-            var ex = Assert.Throws<OverflowException>(() => cache.Get(2));
-            Assert.AreEqual("Value was either too large or too small for a UInt32.", ex.Message);
+            Assert.AreEqual(88, cache[3].Uint);  // Works when value is in int range.
 
-            Assert.AreEqual(88, cache[3].Uint);
+            var ex = Assert.Throws<OverflowException>(() => cache.Get(2));  // Fails when out of int range.
+            Assert.AreEqual("Value was either too large or too small for a UInt32.", ex.Message);
         }
 
         /// <summary>
