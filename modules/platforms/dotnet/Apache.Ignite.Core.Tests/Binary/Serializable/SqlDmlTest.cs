@@ -137,14 +137,24 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             cache[1] = new DotNetSpecificSerializable(uint.MaxValue);
             Assert.AreEqual(uint.MaxValue, cache[1].Uint);
 
+            // Test SQL.
             var sqlRes = cache.QueryFields(new SqlFieldsQuery(
                 "select uint from DotNetSpecificSerializable where uint <> 0")).GetAll();
 
             Assert.AreEqual(1, sqlRes.Count);
             Assert.AreEqual(uint.MaxValue, (uint) (int) sqlRes[0][0]);
 
+            // Test LINQ.
             var linqRes = cache.AsCacheQueryable().Select(x => x.Value.Uint).Single();
             Assert.AreEqual(uint.MaxValue, linqRes);
+
+            // Test DML.
+            var dmlRes = cache.QueryFields(new SqlFieldsQuery(
+                "insert into DotNetSpecificSerializable(_key, uint) values (?, ?)", 2, uint.MaxValue)).GetAll();
+            Assert.AreEqual(1, dmlRes.Count);
+
+            var dmlResObj = cache[2];
+            Assert.AreEqual(uint.MaxValue, dmlResObj.Uint);
         }
 
         /// <summary>
