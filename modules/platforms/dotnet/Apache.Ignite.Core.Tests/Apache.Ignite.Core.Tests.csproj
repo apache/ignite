@@ -150,6 +150,10 @@
     <Compile Include="Cache\Store\CacheTestStore.cs" />
     <Compile Include="Compute\CancellationTest.cs" />
     <Compile Include="Compute\ComputeApiTestFullFooter.cs" />
+    <Compile Include="Compute\Forked\ForkedBinarizableClosureTaskTest.cs" />
+    <Compile Include="Compute\Forked\ForkedResourceTaskTest.cs" />
+    <Compile Include="Compute\Forked\ForkedSerializableClosureTaskTest.cs" />
+    <Compile Include="Compute\Forked\ForkedTaskAdapterTest.cs" />
     <Compile Include="Compute\AbstractTaskTest.cs" />
     <Compile Include="Compute\ClosureTaskTest.cs" />
     <Compile Include="Compute\ComputeApiTest.cs" />
