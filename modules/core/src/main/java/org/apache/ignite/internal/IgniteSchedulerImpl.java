@@ -63,7 +63,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return new IgniteFutureImpl<>(ctx.closure().runLocalSafe(r, false));
+            return new IgniteFutureImpl<>(ctx.closure().runLocalSafe(r, false), ctx);
         }
         finally {
             unguard();
@@ -92,7 +92,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return new IgniteFutureImpl<>(ctx.closure().callLocalSafe(c, false));
+            return new IgniteFutureImpl<>(ctx.closure().callLocalSafe(c, false), ctx);
         }
         finally {
             unguard();

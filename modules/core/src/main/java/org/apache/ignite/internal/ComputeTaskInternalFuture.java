@@ -74,7 +74,7 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
         this.ses = ses;
         this.ctx = ctx;
 
-        userFut = new ComputeFuture<>(this);
+        userFut = new ComputeFuture<>(this, ctx);
 
         log = ctx.log(ComputeTaskInternalFuture.class);
     }
@@ -205,7 +205,7 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
             }
 
             @Override public IgniteFuture<?> mapFuture() {
-                return new IgniteFinishedFutureImpl<Object>();
+                return new IgniteFinishedFutureImpl<Object>(ctx);
             }
         };
 
@@ -265,8 +265,8 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
         /**
          * @param fut Future.
          */
-        private ComputeFuture(ComputeTaskInternalFuture<R> fut) {
-            super(fut);
+        private ComputeFuture(ComputeTaskInternalFuture<R> fut, GridKernalContext ctx) {
+            super(fut, ctx);
         }
 
         /** {@inheritDoc} */

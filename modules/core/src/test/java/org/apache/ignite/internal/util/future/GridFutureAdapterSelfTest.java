@@ -19,8 +19,11 @@ package org.apache.ignite.internal.util.future;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Tests grid future adapter use cases.
@@ -224,6 +228,63 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testListenNotifyAsync() throws Exception {
+        GridFutureAdapter<String> fut = new GridFutureAdapter<>();
+
+        final AtomicReference<Thread> runThread = new AtomicReference<>();
+
+        Executor exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override public Thread newThread(@NotNull Runnable r) {
+                Thread t = new Thread(r);
+
+                runThread.set(t);
+
+                return t;
+            }
+        });
+
+        int lsnrCnt = 10;
+
+        final CountDownLatch latch = new CountDownLatch(lsnrCnt);
+
+        final AtomicBoolean failed = new AtomicBoolean();
+
+        for (int i = 0; i < lsnrCnt; i++) {
+            fut.listenAsync(new CI1<IgniteInternalFuture<String>>() {
+                @Override public void apply(IgniteInternalFuture<String> t) {
+                    if (Thread.currentThread() != runThread.get())
+                        failed.set(true);
+
+                    latch.countDown();
+                }
+            }, exec);
+        }
+
+        fut.onDone();
+
+        assert latch.await(1, TimeUnit.SECONDS);
+
+        assert !failed.get();
+
+        final CountDownLatch doneLatch = new CountDownLatch(1);
+
+        fut.listenAsync(new CI1<IgniteInternalFuture<String>>() {
+            @Override public void apply(IgniteInternalFuture<String> t) {
+                if (Thread.currentThread() != runThread.get())
+                    failed.set(true);
+
+                doneLatch.countDown();
+            }
+        }, exec);
+
+        assert doneLatch.await(1, TimeUnit.SECONDS);
+
+        assert !failed.get();
+    }
+
+    /**
      * Test futures chaining.
      *
      * @throws Exception In case of any exception.
@@ -238,7 +299,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             GridFinishedFuture<Integer> fut = new GridFinishedFuture<>(1);
 
-            IgniteInternalFuture<Object> chain = fut.chain(new CX1<IgniteInternalFuture<Integer>, Object>() {
+            IgniteInternalFuture<Object> chain = fut.chainAsync(new CX1<IgniteInternalFuture<Integer>, Object>() {
                 @Override public Object applyx(IgniteInternalFuture<Integer> fut) throws IgniteCheckedException {
                     return fut.get() + 1;
                 }
@@ -264,7 +325,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         };
 
         GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
-        IgniteInternalFuture<Object> chain = exec != null ? fut.chain(passThrough, exec) : fut.chain(passThrough);
+        IgniteInternalFuture<Object> chain = exec != null ? fut.chainAsync(passThrough, exec) : fut.chain(passThrough);
 
         assertFalse(fut.isDone());
         assertFalse(chain.isDone());
@@ -285,7 +346,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         // Test exception re-thrown.
 
         fut = new GridFutureAdapter<>();
-        chain = exec != null ? fut.chain(passThrough, exec) : fut.chain(passThrough);
+        chain = exec != null ? fut.chainAsync(passThrough, exec) : fut.chain(passThrough);
 
         fut.onDone(new ClusterGroupEmptyCheckedException("test exception"));
 
@@ -301,7 +362,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         // Test error re-thrown.
 
         fut = new GridFutureAdapter<>();
-        chain = exec != null ? fut.chain(passThrough, exec) : fut.chain(passThrough);
+        chain = exec != null ? fut.chainAsync(passThrough, exec) : fut.chain(passThrough);
 
         try {
             fut.onDone(new StackOverflowError("test error"));

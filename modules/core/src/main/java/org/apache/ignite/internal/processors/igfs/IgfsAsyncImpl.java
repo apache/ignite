@@ -50,7 +50,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
      * @param igfs Igfs.
      */
     public IgfsAsyncImpl(IgfsImpl igfs) {
-        super(true);
+        super(true, igfs.context().kernalContext());
 
         this.igfs = igfs;
     }

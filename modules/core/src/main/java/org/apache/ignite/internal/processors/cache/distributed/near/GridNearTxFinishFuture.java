@@ -503,7 +503,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     ClusterTopologyCheckedException cause =
                         new ClusterTopologyCheckedException("Backup node left grid: " + backupId);
 
-                    cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                    cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
 
                     onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
                         "(backup has left grid): " + tx.xidVersion(), cause));
@@ -566,7 +566,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                             ClusterTopologyCheckedException cause =
                                 new ClusterTopologyCheckedException("Primary node left grid: " + nodeId);
 
-                            cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                            cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
 
                             mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
                                 "(transaction has been rolled back on backup node): " + tx.xidVersion(), cause));
@@ -1056,7 +1056,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         ((IgniteCheckedException)err).getCause(ClusterTopologyCheckedException.class);
 
                     if (cause != null)
-                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
                 }
 
                 onDone(err);

@@ -86,7 +86,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param async Async support flag.
      */
     public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async) {
-        super(async);
+        super(async, ctx);
 
         this.ctx = ctx;
         this.prj = prj;

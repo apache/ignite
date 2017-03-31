@@ -1314,6 +1314,20 @@ public class IgnitionEx {
     }
 
     /**
+     * Gets kernal context for specified grid name, or {@code null}
+     * if none found.
+     *
+     * @param name Grid name.
+     * @return Kernal context for specified grid name, or {@code null}
+     * if none found.
+     */
+    @Nullable public static GridKernalContext context(@Nullable String name) {
+        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+
+        return grid != null && grid.gridx() != null ? grid.gridx().context() : null;
+    }
+
+    /**
      * Adds a lsnr for grid life cycle events.
      * <p>
      * Note that unlike other listeners in Ignite this listener will be

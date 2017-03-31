@@ -394,6 +394,17 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
 
         /** {@inheritDoc} */
+        @Override public void listenAsync(final IgniteInClosure lsnr, Executor exec) {
+            fut.listenAsync(new IgniteInClosure<IgniteInternalFuture>() {
+                private static final long serialVersionUID = 0L;
+
+                @Override public void apply(IgniteInternalFuture fut) {
+                    lsnr.apply(ComputeConvertingFuture.this);
+                }
+            }, exec);
+        }
+
+        /** {@inheritDoc} */
         @Override public void listen(final IgniteInClosure lsnr) {
             fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                 private static final long serialVersionUID = 0L;
@@ -410,7 +421,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture chain(IgniteClosure doneCb, Executor exec) {
+        @Override public IgniteInternalFuture chainAsync(IgniteClosure doneCb, Executor exec) {
             throw new UnsupportedOperationException("Chain operation is not supported.");
         }
 

@@ -181,7 +181,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
                     "before response is received: " + nodeId);
 
-                e.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(req.topologyVersion()));
+                e.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(req.topologyVersion()), cctx.kernalContext());
 
                 res.addFailedKeys(req.keys(), e);
             }
@@ -437,7 +437,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
                     "Failed to update keys, topology changed while execute atomic update inside transaction.");
 
-                cause.retryReadyFuture(cctx.affinity().affinityReadyFuture(remapTopVer));
+                cause.retryReadyFuture(cctx.affinity().affinityReadyFuture(remapTopVer), cctx.kernalContext());
 
                 e.add(remapKeys, cause);
 

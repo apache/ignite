@@ -61,7 +61,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
      * @param async Async support flag.
      */
     public IgniteServicesImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
-        super(async);
+        super(async, ctx);
 
         this.ctx = ctx;
         this.prj = prj;

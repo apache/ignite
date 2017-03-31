@@ -329,7 +329,7 @@ public class IgfsDataManager extends IgfsManager {
         if (secReader != null) {
             Executor exec = igfsCtx.kernalContext().pools().poolForPolicy(GridIoPolicy.IGFS_POOL);
 
-            fut = fut.chain(new CX1<IgniteInternalFuture<byte[]>, byte[]>() {
+            fut = fut.chainAsync(new CX1<IgniteInternalFuture<byte[]>, byte[]>() {
                 @Override public byte[] applyx(IgniteInternalFuture<byte[]> fut) throws IgniteCheckedException {
                     byte[] res = fut.get();
 

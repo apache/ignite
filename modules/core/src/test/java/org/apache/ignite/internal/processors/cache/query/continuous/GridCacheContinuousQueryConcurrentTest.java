@@ -40,6 +40,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -319,9 +320,10 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         // From now on, all futures will be completed immediately (since the key has been
         // inserted).
         if (v != null)
-            return new IgniteFinishedFutureImpl<>("immediately");
+            return new IgniteFinishedFutureImpl<>("immediately", ((IgniteCacheProxy)cache).context().kernalContext());
 
-        final IgniteFuture<String> promise = new IgniteFutureImpl<>(new GridFutureAdapter<String>());
+        final IgniteFuture<String> promise = new IgniteFutureImpl<>(new GridFutureAdapter<String>(),
+            ((IgniteCacheProxy)cache).context().kernalContext());
 
         final CacheEntryListenerConfiguration<Integer, String> cfg =
             createCacheListener(key, promise, id);

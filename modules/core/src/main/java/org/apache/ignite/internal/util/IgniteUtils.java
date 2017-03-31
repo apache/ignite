@@ -805,7 +805,7 @@ public abstract class IgniteUtils {
                 ClusterTopologyCheckedException checked = (ClusterTopologyCheckedException)e;
 
                 if (checked.retryReadyFuture() != null)
-                    topEx.retryReadyFuture(new IgniteFutureImpl<>(checked.retryReadyFuture()));
+                    topEx.retryReadyFuture(new IgniteFutureImpl<>(checked.retryReadyFuture(), checked.context()));
 
                 return topEx;
             }
