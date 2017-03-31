@@ -15,30 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+ #include <ignite/binary/binary_raw_reader.h>
+ #include <ignite/binary/binary_raw_writer.h>
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.jetbrains.annotations.Nullable;
+#include <ignite/impl/binary/binary_field_meta.h>
 
-/**
- * Async target.
- */
-public interface PlatformAsyncTarget {
-    /**
-     * Gets future for the current operation.
-     *
-     * @return current future.
-     * @throws IgniteCheckedException If failed.
-     */
-    IgniteInternalFuture currentFuture() throws IgniteCheckedException;
+namespace ignite
+{
+    namespace impl
+    {
+        namespace binary
+        {
+            void BinaryFieldMeta::Write(ignite::binary::BinaryRawWriter& writer) const
+            {
+                writer.WriteInt32(typeId);
+                writer.WriteInt32(fieldId);
+            }
 
-    /**
-     * Gets a custom future writer.
-     *
-     * @param opId Operation id.
-     * @return A custom writer for given op id.
-     */
-    @Nullable PlatformFutureUtils.Writer futureWriter(int opId);
+            void BinaryFieldMeta::Read(ignite::binary::BinaryRawReader& reader)
+            {
+                typeId = reader.ReadInt32();
+                fieldId = reader.ReadInt32();
+            }
+        }
+    }
 }

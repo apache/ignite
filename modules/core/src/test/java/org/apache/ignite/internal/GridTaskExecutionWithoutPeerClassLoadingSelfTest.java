@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/binary/binary_type_updater.h"
+package org.apache.ignite.internal;
 
-namespace ignite
-{    
-    namespace impl
-    {
-        namespace binary
-        {
-            BinaryTypeUpdater::~BinaryTypeUpdater()
-            {
-                // No-op.
-            }
-        }
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
+
+/**
+ * Task execution test.
+ */
+@GridCommonTest(group = "Kernal Self")
+public class GridTaskExecutionWithoutPeerClassLoadingSelfTest extends GridTaskExecutionSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean peerClassLoadingEnabled() {
+        return false;
     }
 }

@@ -50,7 +50,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final byte DIRECT_TYPE = (byte)210;
+    private static final short DIRECT_TYPE = 210;
 
     static {
         GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {

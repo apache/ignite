@@ -124,10 +124,31 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\cache-test-32.xml">
+      <Filter>Configs</Filter>
+    </None>
     <None Include="..\..\config\cache-test.xml">
       <Filter>Configs</Filter>
     </None>
+    <None Include="..\..\config\cache-test-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-32.xml">
+      <Filter>Configs</Filter>
+    </None>
     <None Include="..\..\config\cache-query.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-continuous-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-continuous.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-continuous-default.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\invalid.xml">

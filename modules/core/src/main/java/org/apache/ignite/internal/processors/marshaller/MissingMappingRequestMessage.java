@@ -119,7 +119,7 @@ public class MissingMappingRequestMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 78;
     }
 

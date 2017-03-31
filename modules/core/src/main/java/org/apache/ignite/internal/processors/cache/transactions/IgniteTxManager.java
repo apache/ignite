@@ -1564,6 +1564,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     boolean read = serOrder != null && txEntry1.op() == READ;
 
+                    entry1.unswap();
+
                     if (!entry1.tmLock(tx, timeout, serOrder, serReadVer, read)) {
                         // Unlock locks locked so far.
                         for (IgniteTxEntry txEntry2 : entries) {

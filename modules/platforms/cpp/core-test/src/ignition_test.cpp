@@ -34,7 +34,11 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
 {
     IgniteConfiguration cfg;
 
+#ifdef IGNITE_TESTS_32
+    ignite_test::InitConfig(cfg, "cache-test-32.xml");
+#else
     ignite_test::InitConfig(cfg, "cache-test.xml");
+#endif
 
     IgniteError err;
 

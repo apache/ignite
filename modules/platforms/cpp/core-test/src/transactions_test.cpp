@@ -40,7 +40,11 @@ struct TransactionsTestSuiteFixture {
      */
     TransactionsTestSuiteFixture()
     {
+#ifdef IGNITE_TESTS_32
+        grid = ignite_test::StartNode("cache-test-32.xml", "txTest");
+#else
         grid = ignite_test::StartNode("cache-test.xml", "txTest");
+#endif
     }
 
     /*

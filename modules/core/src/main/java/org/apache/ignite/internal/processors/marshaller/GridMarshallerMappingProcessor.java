@@ -137,10 +137,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     /**
      * Adds a listener to be notified when mapping changes.
      *
-     * @param mappingUpdatedListener listener for mapping updated events.
+     * @param lsnr listener for mapping updated events.
      */
-    public void addMappingUpdatedListener(MappingUpdatedListener mappingUpdatedListener) {
-        mappingUpdatedLsnrs.add(mappingUpdatedListener);
+    public void addMappingUpdatedListener(MappingUpdatedListener lsnr) {
+        mappingUpdatedLsnrs.add(lsnr);
     }
 
     /**

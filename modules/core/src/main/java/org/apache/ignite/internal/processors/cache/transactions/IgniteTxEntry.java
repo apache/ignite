@@ -1209,7 +1209,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 100;
     }
 

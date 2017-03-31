@@ -107,10 +107,9 @@ public class H2TreeIndex extends GridH2IndexBase {
                 RootPage page = getMetaPage(name, i);
 
                 segments[i] = new H2Tree(
-                    name,
-                    cctx.offheap().reuseListForIndex(name),
+                    name,cctx.offheap().reuseListForIndex(name),
                     cctx.cacheId(),
-                    dbMgr.pageMemory(),
+                    cctx.memoryPolicy().pageMemory(),
                     cctx.shared().wal(),
                     cctx.offheap().globalRemoveId(),
                     tbl.rowFactory(),

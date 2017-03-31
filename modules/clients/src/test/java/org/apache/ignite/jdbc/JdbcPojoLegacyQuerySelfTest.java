@@ -15,20 +15,30 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Binary
-{
-    using System.Collections.Generic;
-    using Apache.Ignite.Core.Binary;
+package org.apache.ignite.jdbc;
 
-    /// <summary>
-    /// Tests with array equality comparer (identity resolver).
-    /// </summary>
-    public class BinaryBuilderSelfTestArrayIdentity : BinaryBuilderSelfTest
-    {
-        /** <inheritdoc /> */
-        protected override IEqualityComparer<IBinaryObject> GetIdentityResolver()
-        {
-            return new BinaryArrayEqualityComparer();
-        }
+import java.sql.ResultSet;
+
+/**
+ * Test for Jdbc driver query without class on client
+ */
+public class JdbcPojoLegacyQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
+    /** URL. */
+    private static final String URL = "jdbc:ignite://127.0.0.1/";
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJdbcQuery() throws Exception {
+        stmt.execute("select * from JdbcTestObject");
+
+        ResultSet rs = stmt.getResultSet();
+
+        assertResultSet(rs);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String getURL() {
+        return URL;
     }
 }

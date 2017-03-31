@@ -8659,16 +8659,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param obj Object.
-     * @return {@code True} if given object is a {@link BinaryObjectEx} and
-     * has {@link BinaryUtils#FLAG_EMPTY_HASH_CODE} set
-     */
-    public static boolean isHashCodeEmpty(Object obj) {
-        return obj != null && obj instanceof BinaryObjectEx &&
-            ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
-    }
-
-    /**
      * Checks if error is MAC invalid argument error which ususally requires special handling.
      *
      * @param e Exception.
