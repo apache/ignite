@@ -21,8 +21,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System.Collections;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
@@ -89,18 +87,6 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Tests the scan query.
-        /// </summary>
-        [Test]
-        public void TestScanQuery()
-        {
-            var cache = GetCache();
-            
-            // Scan query does not work in the mixed cluster.
-            Assert.Throws<IgniteException>(() => cache.Query(new ScanQuery<int, int>(new ScanFilter())).GetAll());
-        }
-
-        /// <summary>
         /// Tests the cache invoke.
         /// </summary>
         [Test]
@@ -150,19 +136,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             public int Invoke()
             {
                 return int.MaxValue;
-            }
-        }
-
-        /// <summary>
-        /// Test filter.
-        /// </summary>
-        [Serializable]
-        private class ScanFilter : ICacheEntryFilter<int, int>
-        {
-            /** <inheritdoc /> */
-            public bool Invoke(ICacheEntry<int, int> entry)
-            {
-                return entry.Key < 100;
             }
         }
 
