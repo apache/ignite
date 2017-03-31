@@ -541,7 +541,7 @@ namespace ignite
                         val0[t1] = t2;
                     }
 
-                    val = val0;
+                    std::swap(val, val0);
                 }
             }
 
@@ -627,7 +627,7 @@ namespace ignite
             {
                 int32_t cnt = reader.ReadInt32();
 
-                for (int i = 0; i < cnt; i++) 
+                for (int32_t i = 0; i < cnt; i++)
                 {
                     K key = reader.ReadTopObject<K>();
                     V val = reader.ReadTopObject<V>();
@@ -647,6 +647,50 @@ namespace ignite
             Iter iter;
             
             IGNITE_NO_COPY_ASSIGNMENT(OutQueryGetAllOperationIter)
+        };
+
+        /**
+         * Output iter operation.
+         */
+        template<typename K, typename V, typename Iter>
+        class OutMapIterOperation :public OutputOperation
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            OutMapIterOperation(Iter iter) : iter(iter)
+            {
+                // No-op.
+            }
+
+            virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
+            {
+                bool exists = reader.GetStream()->ReadBool();
+
+                if (exists)
+                {
+                    int32_t cnt = reader.GetStream()->ReadInt32();
+
+                    for (int32_t i = 0; i < cnt; i++) {
+                        K key = reader.ReadTopObject<K>();
+                        V val = reader.ReadTopObject<V>();
+
+                        *iter = std::pair<K, V>(key, val);
+                        ++iter;
+                    }
+                }
+            }
+
+            virtual void SetNull()
+            {
+                // No-op.
+            }
+        private:
+            /** Out iter. */
+            Iter iter;
+
+            IGNITE_NO_COPY_ASSIGNMENT(OutMapIterOperation)
         };
     }
 }

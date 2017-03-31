@@ -360,6 +360,32 @@ namespace ignite
             }
 
             /**
+             * Retrieves values mapped to the specified keys from cache.
+             * If some value is not present in cache, then it will be looked up from swap storage. If
+             * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
+             * will be loaded from persistent store.
+             * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             * @param dst Output iterator.
+             */
+            template<typename InIter, typename OutIter>
+            void GetAll(InIter begin, InIter end, OutIter dst)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, InIter> inOp(begin, end);
+                impl::OutMapIterOperation<K, V, OutIter> outOp(dst);
+
+                impl.Get()->GetAll(inOp, outOp, err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
              * Associates the specified value with the specified key in the cache.
              * If the cache previously contained a mapping for the key,
              * the old value is replaced by the specified value.

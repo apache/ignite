@@ -237,33 +237,39 @@ BOOST_AUTO_TEST_CASE(TestGetAll)
         BOOST_REQUIRE(i + 1 == map[i + 1]);
 }
 
-//BOOST_AUTO_TEST_CASE(TestGetAllIter)
-//{
-//    cache::Cache<int, int> cache = Cache();
-//
-//    int keys[] = { 1, 2, 3, 4, 5 };
-//
-//    std::set<int> keySet(keys, keys + 5);
-//
-//    for (int i = 0; i < static_cast<int>(keySet.size()); i++)
-//        cache.Put(i + 1, i + 1);
-//
-//    std::map<int, int> map = cache.GetAll(keySet);
-//
-//    for (int i = 0; i < static_cast<int>(keySet.size()); i++)
-//        BOOST_REQUIRE(i + 1 == map[i + 1]);
-//
-//    //std::map<int, int> test;
-//
-//    //std::insert_iterator<std::map<int,int> > inserter(test, test.begin());
-//
-//    //*inserter = std::make_pair(1, 1);
-//    //++inserter;
-//    //*inserter = std::make_pair(2, 2);
-//
-//    //std::cout << test[1] << std::endl;
-//    //std::cout << test[2] << std::endl;
-//}
+BOOST_AUTO_TEST_CASE(TestGetAllIterMap)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    int keys[] = { 1, 2, 3, 4, 5 };
+
+    for (int i = 0; i < 5; ++i)
+        cache.Put(keys[i], i + 1);
+
+    std::map<int, int> map;
+
+    cache.GetAll(keys, keys + 5, std::inserter(map, map.begin()));
+
+    for (int i = 0; i < 5; ++i)
+        BOOST_REQUIRE(i + 1 == map[keys[i]]);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetAllIterArray)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    int keys[] = { 1, 2, 3, 4, 5 };
+
+    cache::CacheEntry<int, int> res[5];
+
+    for (int i = 0; i < 5; ++i)
+        cache.Put(keys[i], i + 1);
+
+    cache.GetAll(keys, keys + 5, res);
+
+    for (int i = 0; i < 5; ++i)
+        BOOST_REQUIRE(res[i].GetKey() == res[i].GetValue());
+}
 
 BOOST_AUTO_TEST_CASE(TestGetAndPut)
 {
