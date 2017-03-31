@@ -62,9 +62,12 @@ public class PlatformDotNetConfiguration implements PlatformConfiguration {
 
     /**
      * @param binaryCfg Configuration.
+     * @return {@code this} for chaining.
      */
-    public void setBinaryConfiguration(PlatformDotNetBinaryConfiguration binaryCfg) {
+    public PlatformDotNetConfiguration setBinaryConfiguration(PlatformDotNetBinaryConfiguration binaryCfg) {
         this.binaryCfg = binaryCfg;
+
+        return this;
     }
 
     /**
@@ -77,9 +80,12 @@ public class PlatformDotNetConfiguration implements PlatformConfiguration {
     /**
      *
      * @param assemblies Assemblies.
+     * @return {@code this} for chaining.
      */
-    public void setAssemblies(List<String> assemblies) {
+    public PlatformDotNetConfiguration setAssemblies(List<String> assemblies) {
         this.assemblies = assemblies;
+
+        return this;
     }
 
     /**
