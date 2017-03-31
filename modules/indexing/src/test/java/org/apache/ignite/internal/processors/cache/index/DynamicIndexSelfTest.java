@@ -33,8 +33,6 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
         super.beforeTestsStarted();
 
         startGrids(2);
-
-        Thread.sleep(2000);
     }
 
     /** {@inheritDoc} */
