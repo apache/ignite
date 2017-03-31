@@ -208,8 +208,6 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(CACHE_NAME);
 
-        ccfg.setIndexedTypes(Integer.class, String.class);
-
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         final IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
@@ -344,7 +342,6 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         /** {@inheritDoc} */
         @Override public void store(@Nullable String spaceName, Object key, Object val,
             long expirationTime) throws IgniteSpiException {
-            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " called");
             throw new IgniteSpiException("Test exception");
         }
     }
