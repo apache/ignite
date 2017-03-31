@@ -17,18 +17,34 @@
 
 package org.apache.ignite.internal.processors.compute;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
+import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Manual test to reproduce IGNITE-4053
@@ -85,12 +101,12 @@ public class IgniteComputeCustomExecutorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         startGridsMultiThreaded(GRID_CNT, true);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
@@ -98,14 +114,221 @@ public class IgniteComputeCustomExecutorTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testAllComputeApiByCustomExecutor() throws Exception {
-        Ignite ignite = grid(0);
-
-        IgniteCompute comp = ignite.compute().withExecutor(EXEC_NAME0);
+        IgniteCompute comp = grid(0).compute().withExecutor(EXEC_NAME0);
 
         comp.affinityRun(CACHE_NAME, 0, new IgniteRunnable() {
             @Override public void run() {
                 assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
             }
         });
+
+        comp.affinityCall(CACHE_NAME, 0, new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                return null;
+            }
+        });
+
+        comp.broadcast(new IgniteRunnable() {
+            @Override public void run() {
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+            }
+        });
+
+        comp.broadcast(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                return null;
+            }
+        });
+
+        comp.broadcast(new IgniteClosure<Object, Object>() {
+            @Override public Object apply(Object o) {
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                return null;
+            }
+        }, 0);
+
+        comp.apply(new IgniteClosure<Object, Object>() {
+            @Override public Object apply(Object o) {
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                return null;
+            }
+        }, 0);
+
+        comp.apply(new IgniteClosure<Integer, Object>() {
+            @Override public Object apply(Integer o) {
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                return null;
+            }
+        }, Collections.singletonList(0));
+
+        comp.apply(new IgniteClosure<Integer, Object>() {
+                       @Override public Object apply(Integer o) {
+                           assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                           return null;
+                       }
+                   }, Collections.singletonList(0),
+            new IgniteReducer<Object, Object>() {
+                @Override public boolean collect(@Nullable Object o) {
+                    return true;
+                }
+
+                @Override public Object reduce() {
+                    return null;
+                }
+            });
+
+        List<IgniteCallable<Object>> calls = new ArrayList<>();
+
+        for (int i = 0; i < GRID_CNT * 2; ++i) {
+            calls.add(new IgniteCallable<Object>() {
+                @Override public Object call() throws Exception {
+                    assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                    return null;
+                }
+            });
+        }
+
+        comp.call(calls.get(0));
+
+        comp.call(calls);
+
+        comp.call(calls,
+            new IgniteReducer<Object, Object>() {
+                @Override public boolean collect(@Nullable Object o) {
+                    return true;
+                }
+
+                @Override public Object reduce() {
+                    return null;
+                }
+            });
+
+        List<IgniteRunnable> runs = new ArrayList<>();
+
+        for (int i = 0; i < GRID_CNT * 2; ++i) {
+            runs.add(new IgniteRunnable() {
+                @Override public void run() {
+                    assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                }
+            });
+        }
+
+        comp.run(runs.get(0));
+
+        comp.run(runs);
+
+        comp.execute(TestTask.class, null);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidExecutorName() throws Exception {
+        IgniteCompute comp = grid(0).compute().withExecutor("invalid_name");
+
+        try {
+            comp.run(new IgniteRunnable() {
+                @Override public void run() {
+                }
+            });
+
+            fail("Run must be failed");
+        }
+        catch(Exception e) {
+            assertTrue(e.getMessage().contains("Target node doesn't contain executor"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStarvation() throws Exception {
+        IgniteCompute comp = grid(0).compute().withExecutor(EXEC_NAME0);
+
+        IgniteFuture<Void> f = comp.runAsync(new IgniteRunnable() {
+            @IgniteInstanceResource
+            private Ignite ig;
+
+            @Override public void run() {
+                ig.compute().withExecutor(EXEC_NAME0).run(new IgniteRunnable() {
+                    @Override public void run() {
+                        //No-op.
+                    }
+                });
+            }
+        });
+
+        try {
+            f.get(5000);
+
+            fail("Deadlock must be occurred");
+        }
+        catch (IgniteFutureTimeoutException e) {
+            //No-op.
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSolvedStarvation() throws Exception {
+        IgniteCompute comp = grid(0).compute().withExecutor(EXEC_NAME0);
+
+        List<IgniteFuture<Void>> futs = new ArrayList<>();
+        for (int i = 0; i < 100; ++i) {
+            futs.add(comp.broadcastAsync(new IgniteRunnable() {
+                @IgniteInstanceResource
+                private Ignite ig;
+
+                @Override public void run() {
+                    assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+
+                    IgniteCompute c = ig.compute().withExecutor(EXEC_NAME1);
+
+                    c.broadcast(new IgniteRunnable() {
+                        @Override public void run() {
+                            assertTrue(Thread.currentThread().getName().contains(EXEC_NAME1));
+                            //No-op.
+                        }
+                    });
+                }
+            }));
+        }
+
+        for (IgniteFuture<Void> f : futs)
+            f.get(5000);
+    }
+
+    /**
+     * Test task
+     */
+    static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
+        /** {@inheritDoc} */
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteException {
+            List<ComputeJob> jobs = new ArrayList<>(gridSize * 2);
+
+            for (int i = 0; i < gridSize * 2; ++i) {
+                jobs.add(new ComputeJobAdapter() {
+
+                    @LoggerResource
+                    IgniteLogger log;
+                    @Override public Object execute() throws IgniteException {
+                        assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                        return null;
+                    }
+                });
+            }
+
+            return jobs;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
+            return null;
+        }
+    }
+
+
 }

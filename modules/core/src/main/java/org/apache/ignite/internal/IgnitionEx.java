@@ -1836,7 +1836,7 @@ public class IgnitionEx {
 
             qryExecSvc.allowCoreThreadTimeOut(true);
 
-            if (!F.isEmpty(myCfg.getExecutorConfiguration())) {
+            if (!F.isEmpty(cfg.getExecutorConfiguration())) {
                 customNamedExecSvcs = new HashMap<>();
 
                 for(ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {

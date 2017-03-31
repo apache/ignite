@@ -462,7 +462,7 @@ public class GridJobExecuteRequest implements Message {
     /**
      * @return Custom executor name.
      */
-    public String getExecName() {
+    public String getExecutorName() {
         return execName;
     }
 

@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -99,6 +100,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CUSTOM_EXECUTORS_NAMES_SET;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
@@ -1372,18 +1374,25 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         affCacheIds,
                         affPartId,
                         mapTopVer,
-                        ses.getExecName());
+                        ses.getExecutorName());
 
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
                     else {
 
                         // Send job execution request.
-                        if (F.isEmpty(ses.getExecName()))
+                        if (ses.getExecutorName() == null)
                             ctx.io().sendToGridTopic(node, TOPIC_JOB, req, internal ? MANAGEMENT_POOL : PUBLIC_POOL);
-                        else
-                            ctx.io().sendToGridTopic(node, TOPIC_JOB, req, ses.getExecName());
+                        else {
+                            Set<String> execs = node.attribute(ATTR_CUSTOM_EXECUTORS_NAMES_SET);
 
+                            if (execs == null || !execs.contains(ses.getExecutorName())) {
+                                throw new IgniteCheckedException("Target node doesn't contain executor [node=" + node +
+                                    ", execName=" + ses.getExecutorName() + ']');
+                            }
+
+                            ctx.io().sendToGridTopic(node, TOPIC_JOB, req, ses.getExecutorName());
+                        }
 
                         if (log.isDebugEnabled())
                             log.debug("Sent job request [req=" + req + ", node=" + node + ']');

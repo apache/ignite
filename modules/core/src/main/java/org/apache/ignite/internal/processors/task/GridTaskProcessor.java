@@ -408,7 +408,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, String execName) {
-        return execute(task, arg, false);
+        return execute(task, arg, false, execName);
     }
 
     /**

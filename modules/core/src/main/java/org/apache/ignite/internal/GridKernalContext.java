@@ -586,7 +586,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Map of custom thread pool executors.
      */
-    @Nullable public Map<String, ? extends ExecutorService> getCustomNamedExecSvcs();
+    @Nullable public Map<String, ? extends ExecutorService> getCustomNamedExecutorServices();
 
     /**
      * Gets exception registry.

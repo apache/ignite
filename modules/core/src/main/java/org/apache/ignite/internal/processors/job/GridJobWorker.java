@@ -734,7 +734,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return Custom executor name.
      */
-    public String getExecName() {
+    public String getExecutorName() {
         return execName;
     }
 
@@ -922,13 +922,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             }
                             else if (ctx.localNodeId().equals(sndNode.id()))
                                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
-                            else {
+                            else
                                 // Send response to common topic as unordered message.
-                                if (execName == null)
-                                    ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, internal ? MANAGEMENT_POOL : SYSTEM_POOL);
-                                else
-                                    ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, execName);
-                            }
+                                ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, internal ? MANAGEMENT_POOL : SYSTEM_POOL);
                         }
                         catch (IgniteCheckedException e) {
                             // Log and invoke the master-leave callback.

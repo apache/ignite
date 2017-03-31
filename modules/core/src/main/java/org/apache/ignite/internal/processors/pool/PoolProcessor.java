@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.pool;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -25,12 +28,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
-
-import java.util.Arrays;
-import java.util.concurrent.Executor;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CUSTOM_EXECUTORS_NAMES_SET;
 
 /**
  * Processor which abstracts out thread pool management.
@@ -81,7 +82,9 @@ public class PoolProcessor extends GridProcessorAdapter {
             }
         }
 
-        customNamedPools = ctx.getCustomNamedExecSvcs();
+        customNamedPools = ctx.getCustomNamedExecutorServices();
+
+        ctx.addNodeAttribute(ATTR_CUSTOM_EXECUTORS_NAMES_SET, new HashSet(customNamedPools.keySet()));
     }
 
     /** {@inheritDoc} */

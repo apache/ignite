@@ -954,8 +954,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
-        log.info("+++ Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
-
         PartitionsReservation partsReservation = null;
 
         if (req.getCacheIds() != null) {
@@ -1061,7 +1059,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.isSessionFullSupport(),
                             req.isInternal(),
                             req.getSubjectId(),
-                            req.getExecName());
+                            req.getExecutorName());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
                         taskSes.setClassLoader(dep.classLoader());
@@ -1102,7 +1100,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         holdLsnr,
                         partsReservation,
                         req.getTopVer(),
-                        req.getExecName());
+                        req.getExecutorName());
 
                     jobCtx.job(job);
 
@@ -1278,13 +1276,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private boolean executeAsync(GridJobWorker jobWorker) {
         try {
-            if (jobWorker.getExecName() != null)
+            if (jobWorker.getExecutorName() != null)
                 try {
-                    ctx.pools().customPoolByName(jobWorker.getExecName()).execute(jobWorker);
+                    ctx.pools().customPoolByName(jobWorker.getExecutorName()).execute(jobWorker);
                 }
                 catch (IgniteCheckedException e) {
                     throw new RejectedExecutionException("Cannot execute job by the custom executor: "
-                        + jobWorker.getExecName(), e);
+                        + jobWorker.getExecutorName(), e);
                 }
             else
                 ctx.getExecutorService().execute(jobWorker);

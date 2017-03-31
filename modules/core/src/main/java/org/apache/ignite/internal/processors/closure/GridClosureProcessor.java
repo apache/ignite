@@ -228,7 +228,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T2(mode, job), null, sys);
+            return ctx.task().execute(new T2(mode, job), null, sys, execName);
         }
         finally {
             busyLock.readUnlock();
@@ -682,30 +682,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             busyLock.readUnlock();
         }
     }
-
-//    /**
-//     * @param job Job closure.
-//     * @param arg Optional job argument.
-//     * @param nodes Grid nodes.
-//     * @return Grid future for execution result.
-//     */
-//    public <T, R> IgniteInternalFuture<Collection<R>> broadcastNoFailover(IgniteClosure<T, R> job, @Nullable T arg,
-//        @Nullable Collection<ClusterNode> nodes) {
-//        busyLock.readLock();
-//
-//        try {
-//            if (F.isEmpty(nodes))
-//                return new GridFinishedFuture<>(U.emptyTopologyException());
-//
-//            ctx.task().setThreadContext(TC_SUBGRID, nodes);
-//            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
-//
-//            return ctx.task().execute(new T11<>(job), arg, false, null);
-//        }
-//        finally {
-//            busyLock.readUnlock();
-//        }
-//    }
 
     /**
      * @param job Job closure.
