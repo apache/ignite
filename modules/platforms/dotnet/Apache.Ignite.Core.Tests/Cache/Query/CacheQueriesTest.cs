@@ -244,6 +244,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             SqlQuery qry = new SqlQuery(typeof (QueryPerson), "age < 60");
 
+            Assert.AreEqual(QueryBase.DefaultPageSize, qry.PageSize);
+
             // 2. Page size is bigger than result set.
             qry.PageSize = 4;
             CheckEnumeratorQuery(qry);
