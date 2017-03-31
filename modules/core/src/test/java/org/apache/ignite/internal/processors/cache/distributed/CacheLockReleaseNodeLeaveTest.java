@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -33,6 +37,7 @@ import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -42,6 +47,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final String REPLICATED_TEST_CACHE = "REPLICATED_TEST_CACHE";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -53,7 +61,12 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
 
-        cfg.setCacheConfiguration(ccfg);
+        CacheConfiguration ccfg1 = new CacheConfiguration(REPLICATED_TEST_CACHE)
+            .setCacheMode(REPLICATED)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setReadFromBackup(false);
+
+        cfg.setCacheConfiguration(ccfg, ccfg1);
 
         return cfg;
     }
@@ -109,6 +122,56 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
         ignite0.close();
 
         fut2.get(5, SECONDS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockTopologyChange() throws Exception {
+        final int nodeCnt = 5;
+        int threadCnt = 8;
+        final int keys = 100;
+
+        try {
+            final AtomicBoolean stop = new AtomicBoolean(false);
+
+            Queue<IgniteInternalFuture<Long>> q = new ArrayDeque<>(nodeCnt);
+
+            for (int i = 0; i < nodeCnt; i++) {
+                final Ignite ignite = startGrid(i);
+
+                IgniteInternalFuture<Long> f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                    @Override public void run() {
+                        while (!Thread.currentThread().isInterrupted() && !stop.get()) {
+                            IgniteCache<Integer, Integer> cache = ignite.cache(REPLICATED_TEST_CACHE);
+
+                            for (int i = 0; i < keys; i++) {
+                                Lock lock = cache.lock(i);
+                                lock.lock();
+
+                                cache.put(i, i);
+
+                                lock.unlock();
+                            }
+                        }
+                    }
+                }, threadCnt, "test-lock-thread");
+
+                q.add(f);
+
+                U.sleep(1_000);
+            }
+
+            stop.set(true);
+
+            IgniteInternalFuture<Long> f;
+
+            while ((f = q.poll()) != null)
+                f.get(2_000);
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

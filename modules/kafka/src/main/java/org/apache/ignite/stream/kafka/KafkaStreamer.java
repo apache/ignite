@@ -169,7 +169,7 @@ public class KafkaStreamer<T, K, V> extends StreamAdapter<T, K, V> {
 
         // Now create an object to consume the messages.
         for (final KafkaStream<K, V> stream : streams) {
-            executor.submit(new Runnable() {
+            executor.execute(new Runnable() {
                 @Override public void run() {
                     while (!stopped) {
                         try {

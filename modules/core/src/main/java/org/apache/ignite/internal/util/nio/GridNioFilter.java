@@ -105,10 +105,15 @@ public interface GridNioFilter {
      *
      * @param ses Session instance.
      * @param msg Message to send.
-     * @return Write future.
+     * @param fut {@code True} if write future should be created.
+     * @return Write future or {@code null}.
      * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> proceedSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException;
+    public GridNioFuture<?> proceedSessionWrite(
+        GridNioSession ses,
+        Object msg,
+        boolean fut
+    ) throws IgniteCheckedException;
 
     /**
      * Forwards session close request to the next logical filter in filter chain.
@@ -149,10 +154,11 @@ public interface GridNioFilter {
      *
      * @param ses Session on which message should be written.
      * @param msg Message being written.
-     * @return Write future.
+     * @param fut {@code True} if write future should be created.
+     * @return Write future or {@code null}.
      * @throws GridNioException If GridNioException occurred while handling event.
      */
-    public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException;
+    public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) throws IgniteCheckedException;
 
     /**
      * Invoked when a new messages received.

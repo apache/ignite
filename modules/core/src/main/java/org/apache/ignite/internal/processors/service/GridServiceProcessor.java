@@ -65,10 +65,12 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.continuous.AbstractContinuousMessage;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -313,6 +315,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         busyLock.block();
 
+        U.shutdownNow(GridServiceProcessor.class, depExe, log);
+
         if (!ctx.clientNode())
             ctx.event().removeLocalEventListener(topLsnr);
 
@@ -349,8 +353,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     ctx.name());
             }
         }
-
-        U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
         Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
@@ -694,9 +696,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /**
      * @param name Service name.
+     * @param timeout If greater than 0 limits task execution time. Cannot be negative.
      * @return Service topology.
      */
-    public Map<UUID, Integer> serviceTopology(String name) throws IgniteCheckedException {
+    public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
         ClusterNode node = cache.affinity().mapKeyToNode(name);
 
         if (node.version().compareTo(ServiceTopologyCallable.SINCE_VER) >= 0) {
@@ -708,7 +711,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 GridClosureCallMode.BROADCAST,
                 call,
                 Collections.singletonList(node),
-                false
+                false,
+                timeout
             ).get();
         }
         else
@@ -828,12 +832,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @param svcItf Service class.
      * @param sticky Whether multi-node request should be done.
+     * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */
     @SuppressWarnings("unchecked")
-    public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky)
+    public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky, long timeout)
         throws IgniteException {
         if (hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
@@ -851,7 +856,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             }
         }
 
-        return new GridServiceProxy<T>(prj, name, svcItf, sticky, ctx).proxy();
+        return new GridServiceProxy<T>(prj, name, svcItf, sticky, timeout, ctx).proxy();
     }
 
     /**
@@ -1131,7 +1136,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             // Start service in its own thread.
             final ExecutorService exe = svcCtx.executor();
 
-            exe.submit(new Runnable() {
+            exe.execute(new Runnable() {
                 @Override public void run() {
                     try {
                         svc.execute(svcCtx);
@@ -1265,7 +1270,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         try {
             if (!cache.context().affinityNode()) {
                 ClusterNode oldestSrvNode =
-                    CU.oldestAliveCacheServerNode(cache.context().shared(), AffinityTopologyVersion.NONE);
+                    ctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
 
                 if (oldestSrvNode == null)
                     return new GridEmptyIterator<>();
@@ -1394,7 +1399,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 return;
 
             try {
-                depExe.submit(new BusyRunnable() {
+                depExe.execute(new DepRunnable() {
                     @Override public void run0() {
                         onSystemCacheUpdated(deps);
                     }
@@ -1465,19 +1470,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         else {
             String name = e.getKey().name();
 
-            svcName.set(name);
-
-            Collection<ServiceContextImpl> ctxs;
-
-            synchronized (locSvcs) {
-                ctxs = locSvcs.remove(name);
-            }
-
-            if (ctxs != null) {
-                synchronized (ctxs) {
-                    cancel(ctxs, ctxs.size());
-                }
-            }
+            undeploy(name);
 
             // Finish deployment futures if undeployment happened.
             GridFutureAdapter<?> fut = depFuts.remove(name);
@@ -1505,60 +1498,60 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
     }
 
-        /**
-         * Deployment callback.
-         *
-         * @param dep Service deployment.
-         * @param topVer Topology version.
-         */
-        private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
-            // Retry forever.
-            try {
-                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+    /**
+     * Deployment callback.
+     *
+     * @param dep Service deployment.
+     * @param topVer Topology version.
+     */
+    private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
+        // Retry forever.
+        try {
+            AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
-                // If topology version changed, reassignment will happen from topology event.
-                if (newTopVer.equals(topVer))
-                    reassign(dep, topVer);
+            // If topology version changed, reassignment will happen from topology event.
+            if (newTopVer.equals(topVer))
+                reassign(dep, topVer);
+        }
+        catch (IgniteCheckedException e) {
+            if (!(e instanceof ClusterTopologyCheckedException))
+                log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
+
+            AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+
+            if (!newTopVer.equals(topVer)) {
+                assert newTopVer.compareTo(topVer) > 0;
+
+                // Reassignment will happen from topology event.
+                return;
             }
-            catch (IgniteCheckedException e) {
-                if (!(e instanceof ClusterTopologyCheckedException))
-                    log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
-                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+            ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
+                private IgniteUuid id = IgniteUuid.randomUuid();
 
-                if (!newTopVer.equals(topVer)) {
-                    assert newTopVer.compareTo(topVer) > 0;
+                private long start = System.currentTimeMillis();
 
-                    // Reassignment will happen from topology event.
-                    return;
+                @Override public IgniteUuid timeoutId() {
+                    return id;
                 }
 
-                ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
-                    private IgniteUuid id = IgniteUuid.randomUuid();
+                @Override public long endTime() {
+                    return start + RETRY_TIMEOUT;
+                }
 
-                    private long start = System.currentTimeMillis();
+                @Override public void onTimeout() {
+                    if (!busyLock.enterBusy())
+                        return;
 
-                    @Override public IgniteUuid timeoutId() {
-                        return id;
+                    try {
+                        // Try again.
+                        onDeployment(dep, topVer);
                     }
-
-                    @Override public long endTime() {
-                        return start + RETRY_TIMEOUT;
+                    finally {
+                        busyLock.leaveBusy();
                     }
-
-                    @Override public void onTimeout() {
-                        if (!busyLock.enterBusy())
-                            return;
-
-                        try {
-                            // Try again.
-                            onDeployment(dep, topVer);
-                        }
-                        finally {
-                            busyLock.leaveBusy();
-                        }
-                    }
-                });
+                }
+            });
         }
     }
 
@@ -1583,13 +1576,19 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         if (!((CacheAffinityChangeMessage)msg).exchangeNeeded())
                             return;
                     }
+                    else if (msg instanceof DynamicCacheChangeBatch) {
+                        if (!((DynamicCacheChangeBatch)msg).exchangeNeeded())
+                            return;
+                    }
+                    else
+                        return;
                 }
                 else
                     topVer = new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion(), 0);
 
-                depExe.submit(new BusyRunnable() {
+                depExe.execute(new DepRunnable() {
                     @Override public void run0() {
-                        ClusterNode oldest = CU.oldestAliveCacheServerNode(cache.context().shared(), topVer);
+                        ClusterNode oldest = ctx.discovery().oldestAliveCacheServerNode(topVer);
 
                         if (oldest != null && oldest.isLocal()) {
                             final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
@@ -1768,21 +1767,26 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             }
         }
         // Handle undeployment.
-        else {
-            String name = e.getKey().name();
+        else
+            undeploy(e.getKey().name());
+    }
 
-            svcName.set(name);
 
-            Collection<ServiceContextImpl> ctxs;
+    /**
+     * @param name Name.
+     */
+    private void undeploy(String name) {
+        svcName.set(name);
 
-            synchronized (locSvcs) {
-                ctxs = locSvcs.remove(name);
-            }
+        Collection<ServiceContextImpl> ctxs;
 
-            if (ctxs != null) {
-                synchronized (ctxs) {
-                    cancel(ctxs, ctxs.size());
-                }
+        synchronized (locSvcs) {
+            ctxs = locSvcs.remove(name);
+        }
+
+        if (ctxs != null) {
+            synchronized (ctxs) {
+                cancel(ctxs, ctxs.size());
             }
         }
     }
@@ -1790,11 +1794,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private abstract class BusyRunnable implements Runnable {
+    private abstract class DepRunnable implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
             if (!busyLock.enterBusy())
                 return;
+
+            // Won't block ServiceProcessor stopping process.
+            busyLock.leaveBusy();
 
             svcName.set(null);
 
@@ -1808,8 +1815,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     throw t;
             }
             finally {
-                busyLock.leaveBusy();
-
                 svcName.set(null);
             }
         }

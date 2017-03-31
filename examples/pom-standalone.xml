@@ -166,6 +166,12 @@
                     <artifactId>ignite-schedule</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-geospatial</artifactId>
+                    <version>to_be_replaced_by_ignite_version</version>
+                </dependency>
             </dependencies>
         </profile>
     </profiles>

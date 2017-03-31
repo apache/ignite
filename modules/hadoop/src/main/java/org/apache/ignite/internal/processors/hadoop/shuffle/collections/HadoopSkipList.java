@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
+import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -280,6 +281,9 @@ public class HadoopSkipList extends HadoopMultimapBase {
         private final Comparator<Object> cmp;
 
         /** */
+        private final PartiallyOffheapRawComparatorEx<Object> partialRawCmp;
+
+        /** */
         private final Random rnd = new GridRandom();
 
         /** */
@@ -298,6 +302,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
             keyReader = new Reader(keySer);
 
             cmp = ctx.sortComparator();
+            partialRawCmp = ctx.partialRawSortComparator();
         }
 
         /** {@inheritDoc} */
@@ -475,7 +480,14 @@ public class HadoopSkipList extends HadoopMultimapBase {
         private int cmp(Object key, long meta) {
             assert meta != 0;
 
-            return cmp.compare(key, keyReader.readKey(meta));
+            if (partialRawCmp != null) {
+                long keyPtr = key(meta);
+                int keySize = keySize(keyPtr);
+
+                return partialRawCmp.compare(key, keyPtr + 4, keySize);
+            }
+            else
+                return cmp.compare(key, keyReader.readKey(meta));
         }
 
         /**

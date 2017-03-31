@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Cache.Query
 {
+    using System;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
 
@@ -66,7 +68,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="args">Arguments.</param>
-        internal static void WriteQueryArgs(BinaryWriter writer, object[] args)
+        internal static void WriteQueryArgs(IBinaryRawWriter writer, object[] args)
         {
             if (args == null)
                 writer.WriteInt(0);
@@ -75,7 +77,16 @@ namespace Apache.Ignite.Core.Cache.Query
                 writer.WriteInt(args.Length);
 
                 foreach (var arg in args)
-                    writer.WriteObject(arg);
+                {
+                    // Write DateTime as TimeStamp always, otherwise it does not make sense
+                    // Wrapped DateTime comparison does not work in SQL
+                    var dt = arg as DateTime?;  // Works with DateTime also
+
+                    if (dt != null)
+                        writer.WriteTimestamp(dt);
+                    else
+                        writer.WriteObject(arg);
+                }
             }
         }
     }
