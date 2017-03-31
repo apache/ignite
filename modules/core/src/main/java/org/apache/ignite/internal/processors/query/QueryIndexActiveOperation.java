@@ -21,10 +21,15 @@ import org.apache.ignite.internal.processors.query.index.operation.IndexAbstract
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.io.Serializable;
+
 /**
  * Active index operation.
  */
-public class QueryIndexActiveOperation {
+public class QueryIndexActiveOperation implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Operation. */
     @GridToStringInclude
     private final IndexAbstractOperation op;
