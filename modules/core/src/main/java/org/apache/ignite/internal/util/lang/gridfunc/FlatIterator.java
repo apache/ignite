@@ -63,10 +63,12 @@ public class FlatIterator<T> extends GridIteratorAdapter<T> {
             return more = true;
 
         while (iter.hasNext()) {
-            if (iter instanceof Iterable)
-                next = (Iterator)((Iterable)iter).iterator().next();
-            else if (iter instanceof Iterator)
-                next = (Iterator)((Iterator)iter).next();
+            Object obj = iter.next();
+
+            if (obj instanceof Iterable)
+                next = ((Iterable)obj).iterator();
+            else if (obj instanceof Iterator)
+                next = (Iterator)obj;
             else
                 assert false : "Iterable or Iterator are expected";
 
