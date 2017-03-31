@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedMember.Local
+// ReSharper disable UnusedParameter.Local
 namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
@@ -26,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Linq;
     using NUnit.Framework;
 
     /// <summary>
@@ -133,6 +136,15 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             cache[1] = new DotNetSpecificSerializable(uint.MaxValue);
             Assert.AreEqual(uint.MaxValue, cache[1].Uint);
+
+            var sqlRes = cache.QueryFields(new SqlFieldsQuery(
+                "select uint from DotNetSpecificSerializable where uint <> 0")).GetAll();
+
+            Assert.AreEqual(1, sqlRes.Count);
+            Assert.AreEqual(uint.MaxValue, (uint) (int) sqlRes[0][0]);
+
+            var linqRes = cache.AsCacheQueryable().Select(x => x.Value.Uint).Single();
+            Assert.AreEqual(uint.MaxValue, linqRes);
         }
 
         /// <summary>
@@ -193,8 +205,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 // No-op.
             }
 
-            // ReSharper disable once UnusedMember.Local
-            // ReSharper disable once UnusedParameter.Local
             public SimpleSerializable(SerializationInfo info, StreamingContext context)
             {
                 Byte = info.GetByte("Byte");
@@ -232,6 +242,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             /// <summary>
             /// Uint is not supported in Java.
             /// </summary>
+            [QuerySqlField]
             public uint Uint { get; set; }
 
             public DotNetSpecificSerializable(uint u)
