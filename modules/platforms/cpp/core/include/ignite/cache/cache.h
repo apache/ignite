@@ -960,7 +960,7 @@ namespace ignite
             {
                 IgniteError err;
 
-                impl::InIterOperation<K, V, Iter> op(keys);
+                impl::InIterOperation<K, V, Iter> op(begin, end);
 
                 impl.Get()->ClearAll(op, err);
 
