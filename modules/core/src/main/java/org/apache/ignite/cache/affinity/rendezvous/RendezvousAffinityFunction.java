@@ -107,6 +107,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Exclude neighbors warning. */
     private transient boolean exclNeighborsWarn;
 
+    /** Enables advanced partitioning algorithm with better distribution for partitions of power of 2. */
+    private boolean powerOfTwoHashing;
+
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
@@ -188,7 +191,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         A.ensure(parts > 0, "parts > 0");
 
         this.exclNeighbors = exclNeighbors;
-        this.parts = parts;
+
+        // ensure that hashType is calculated
+        setPartitions(parts);
+
         this.backupFilter = backupFilter;
 
         try {
@@ -225,6 +231,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
 
         this.parts = parts;
+
+        powerOfTwoHashing = isPartitionsPowerOfTwo();
 
         return this;
     }
@@ -507,7 +515,23 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
                 "Make sure that an affinity key that is used is initialized properly.");
 
-        return U.safeAbs(key.hashCode() % parts);
+        if (powerOfTwoHashing) {
+            int h;
+
+            int i = U.safeAbs((h = key.hashCode()) ^ (h >>> 16));
+
+            return i & (parts - 1);
+        } else
+            return U.safeAbs(key.hashCode() % parts);
+    }
+
+    /**
+     * Determines if the partitions number is power of 2.
+     *
+     * @return true of the partitions number is power of 2.
+     */
+    private boolean isPartitionsPowerOfTwo() {
+        return (parts & (parts - 1)) == 0;
     }
 
     /** {@inheritDoc} */
