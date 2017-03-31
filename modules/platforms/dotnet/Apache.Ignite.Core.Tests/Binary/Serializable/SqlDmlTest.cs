@@ -110,7 +110,15 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(1, insertRes[0][0]);
 
             var dmlRes = cache[3];
+            Assert.AreEqual(45, dmlRes.Byte);
+            Assert.AreEqual(true, dmlRes.Bool);
+            Assert.AreEqual(43, dmlRes.Short);
             Assert.AreEqual(33, dmlRes.Int);
+            Assert.AreEqual(99, dmlRes.Long);
+            Assert.AreEqual(4.5f, dmlRes.Float);
+            Assert.AreEqual(6.7, dmlRes.Double);
+            Assert.AreEqual(9.04m, dmlRes.Decimal);
+            Assert.AreEqual(guid, dmlRes.Guid);
             Assert.AreEqual("bar33", dmlRes.String);
         }
 
