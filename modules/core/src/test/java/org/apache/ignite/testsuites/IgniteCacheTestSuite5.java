@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheKeepBinaryTransactionTest;
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapSpaceSpiConsistencySelfTest;
@@ -50,6 +51,7 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(IgniteCacheWriteBehindNoUpdateSelfTest.class);
         suite.addTestSuite(IgniteCachePutStackOverflowSelfTest.class);
         suite.addTestSuite(GridCacheSwapSpaceSpiConsistencySelfTest.class);
+        suite.addTestSuite(CacheKeepBinaryTransactionTest.class);
 
         suite.addTestSuite(CacheLateAffinityAssignmentTest.class);
         suite.addTestSuite(CacheLateAffinityAssignmentFairAffinityTest.class);
