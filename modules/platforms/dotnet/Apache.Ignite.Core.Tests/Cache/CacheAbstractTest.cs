@@ -232,9 +232,19 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Non-serializable processor.
     /// </summary>
-    public class NonSerializableCacheEntryProcessor : AddArgCacheEntryProcessor
+    public class NonSerializableCacheEntryProcessor : AddArgCacheEntryProcessor, IBinarizable
     {
-        // No-op.
+        /** <inheritdoc /> */
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new Exception("ExpectedException");
+        }
+
+        /** <inheritdoc /> */
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new Exception("ExpectedException");
+        }
     }
 
     /// <summary>
@@ -269,9 +279,19 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Non-serializable exception.
     /// </summary>
-    public class NonSerializableException : Exception
+    public class NonSerializableException : Exception, IBinarizable
     {
-        // No-op
+        /** <inheritdoc /> */
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new Exception("ExpectedException");
+        }
+
+        /** <inheritdoc /> */
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new Exception("ExpectedException");
+        }
     }
 
     /// <summary>
@@ -2356,15 +2376,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             TestInvoke<AddArgCacheEntryProcessor>(async);
             TestInvoke<BinarizableAddArgCacheEntryProcessor>(async);
 
-            try
-            {
-                TestInvoke<NonSerializableCacheEntryProcessor>(async);
-                Assert.Fail();
-            }
-            catch (BinaryObjectException)
-            {
-                // Expected
-            }
+            Assert.Throws<Exception>(() => TestInvoke<NonSerializableCacheEntryProcessor>(async));
         }
 
         private void TestInvoke<T>(bool async) where T: AddArgCacheEntryProcessor, new()
@@ -2396,7 +2408,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertThrowsCacheEntryProcessorException(
                 () => cache.Invoke(key, new T {ThrowErrBinarizable = true}, arg));
             AssertThrowsCacheEntryProcessorException(
-                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "BinaryObjectException");
+                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "ExpectedException");
         }
 
         private static void AssertThrowsCacheEntryProcessorException(Action action, string containsText = null)
@@ -2417,7 +2429,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     Assert.AreEqual(AddArgCacheEntryProcessor.ExceptionText, ex.InnerException.Message);
                 }
                 else
-                    Assert.IsTrue(ex.ToString().Contains(containsText));
+                    Assert.IsTrue(ex.ToString().Contains(containsText), 
+                        "Expected: " + containsText + ", actual: " + ex);
             }
         }
 
@@ -2439,16 +2452,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 TestInvokeAll<AddArgCacheEntryProcessor>(async, i);
                 TestInvokeAll<BinarizableAddArgCacheEntryProcessor>(async, i);
-
-                try
-                {
-                    TestInvokeAll<NonSerializableCacheEntryProcessor>(async, i);
-                    Assert.Fail();
-                }
-                catch (BinaryObjectException)
-                {
-                    // Expected
-                }
+                Assert.Throws<Exception>(() => TestInvokeAll<NonSerializableCacheEntryProcessor>(async, i));
             }
         }
 
@@ -2493,7 +2497,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             TestInvokeAllException(cache, entries, new T { ThrowErrBinarizable = true, ThrowOnKey = errKey }, 
                 arg, errKey);
             TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey },
-                arg, errKey, "BinaryObjectException");
+                arg, errKey, "ExpectedException");
 
         }
 
