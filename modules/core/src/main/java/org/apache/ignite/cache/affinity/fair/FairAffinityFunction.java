@@ -197,11 +197,14 @@ public class FairAffinityFunction implements AffinityFunction {
      * Sets total number of partitions.
      *
      * @param parts Total number of partitions.
+     * @return {@code this} for chaining.
      */
-    public void setPartitions(int parts) {
+    public FairAffinityFunction setPartitions(int parts) {
         A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
 
         this.parts = parts;
+
+        return this;
     }
 
 
@@ -227,10 +230,13 @@ public class FairAffinityFunction implements AffinityFunction {
      *
      * @param backupFilter Optional backup filter.
      * @deprecated Use {@code affinityBackupFilter} instead.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+    public FairAffinityFunction setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
+
+        return this;
     }
 
     /**
@@ -254,9 +260,13 @@ public class FairAffinityFunction implements AffinityFunction {
      * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param affinityBackupFilter Optional backup filter.
+     * @return {@code this} for chaining.
      */
-    public void setAffinityBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
+    public FairAffinityFunction setAffinityBackupFilter(
+        @Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
         this.affinityBackupFilter = affinityBackupFilter;
+
+        return this;
     }
 
     /**
@@ -276,9 +286,12 @@ public class FairAffinityFunction implements AffinityFunction {
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
+     * @return {@code this} for chaining.
      */
-    public void setExcludeNeighbors(boolean exclNeighbors) {
+    public FairAffinityFunction setExcludeNeighbors(boolean exclNeighbors) {
         this.exclNeighbors = exclNeighbors;
+
+        return this;
     }
 
     /** {@inheritDoc} */

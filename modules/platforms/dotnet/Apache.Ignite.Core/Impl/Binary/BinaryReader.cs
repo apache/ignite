@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using Apache.Ignite.Core.Binary;
@@ -77,6 +78,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public Marshaller Marshaller
         {
             get { return _marsh; }
+        }
+
+        /// <summary>
+        /// Gets the mode.
+        /// </summary>
+        public BinaryMode Mode
+        {
+            get { return _mode; }
         }
 
         /** <inheritdoc /> */
@@ -572,6 +581,14 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
         }
+                
+        /// <summary>
+        /// Gets the flag indicating that there is custom type information in raw region.
+        /// </summary>
+        public bool GetCustomTypeDataFlag()
+        {
+            return _frame.Hdr.IsCustomDotNetType;
+        }
 
         /// <summary>
         /// Reads the binary object.
@@ -676,7 +693,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else
                 {
                     // Find descriptor.
-                    var desc = _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId);
+                    var desc = hdr.TypeId == BinaryUtils.TypeUnregistered
+                        ? _marsh.GetDescriptor(Type.GetType(ReadString(), true))
+                        : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId, true);
 
                     // Instantiate object. 
                     if (desc.Type == null)
@@ -707,7 +726,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _frame.Raw = false;
 
                     // Read object.
-                    var obj = desc.Serializer.ReadBinary<T>(this, desc.Type, pos);
+                    var obj = desc.Serializer.ReadBinary<T>(this, desc, pos);
 
                     _frame.Struct.UpdateReaderStructure();
 
@@ -758,8 +777,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Get schema from Java
                 var ignite = Marshaller.Ignite;
 
-                var schema = ignite == null 
-                    ? null 
+                Debug.Assert(typeId != BinaryUtils.TypeUnregistered);
+
+                var schema = ignite == null
+                    ? null
                     : ignite.BinaryProcessor.GetSchema(_frame.Hdr.TypeId, _frame.Hdr.SchemaId);
 
                 if (schema == null)
@@ -850,6 +871,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Seeks to raw data.
+        /// </summary>
+        internal void SeekToRaw()
+        {
+            Stream.Seek(_frame.Pos + _frame.Hdr.GetRawOffset(Stream, _frame.Pos), SeekOrigin.Begin);
+        }
+
+        /// <summary>
         /// Mark current output as raw. 
         /// </summary>
         private void MarkRaw()
@@ -858,7 +887,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 _frame.Raw = true;
 
-                Stream.Seek(_frame.Pos + _frame.Hdr.GetRawOffset(Stream, _frame.Pos), SeekOrigin.Begin);
+                SeekToRaw();
             }
         }
 

@@ -71,6 +71,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
@@ -221,7 +222,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 @IgniteSpiMultipleInstancesSupport(true)
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
-public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, TcpDiscoverySpiMBean {
+public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
@@ -413,18 +414,30 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** */
     protected IgniteSpiContext spiCtx;
 
-    /** {@inheritDoc} */
-    @Override public String getSpiState() {
+    /**
+     * Gets current SPI state.
+     *
+     * @return Current SPI state.
+     */
+    public String getSpiState() {
         return impl.getSpiState();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getMessageWorkerQueueSize() {
+    /**
+     * Gets message worker queue current size.
+     *
+     * @return Message worker queue current size.
+     */
+    public int getMessageWorkerQueueSize() {
         return impl.getMessageWorkerQueueSize();
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public UUID getCoordinator() {
+    /**
+     * Gets current coordinator.
+     *
+     * @return Gets current coordinator.
+     */
+    public UUID getCoordinator() {
         return impl.getCoordinator();
     }
 
@@ -463,8 +476,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         impl.failNode(nodeId, warning);
     }
 
-    /** {@inheritDoc} */
-    @Override public void dumpDebugInfo() {
+    /**
+     * Dumps debug info using configured logger.
+     */
+    public void dumpDebugInfo() {
         impl.dumpDebugInfo(log);
     }
 
@@ -590,8 +605,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return addrRslvr;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getReconnectCount() {
+    /**
+     * Gets number of connection attempts.
+     *
+     * @return Number of connection attempts.
+     */
+    public int getReconnectCount() {
         return reconCnt;
     }
 
@@ -618,8 +637,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getMaxAckTimeout() {
+    /**
+     * Gets maximum message acknowledgement timeout.
+     *
+     * @return Maximum message acknowledgement timeout.
+     */
+    public long getMaxAckTimeout() {
         return maxAckTimeout;
     }
 
@@ -649,8 +672,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getLocalPort() {
+    /**
+     * Gets local TCP port SPI listens to.
+     *
+     * @return Local port range.
+     */
+    public int getLocalPort() {
         TcpDiscoveryNode locNode0 = locNode;
 
         return locNode0 != null ? locNode0.discoveryPort() : 0;
@@ -673,8 +700,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getLocalPortRange() {
+    /**
+     * Gets local TCP port range.
+     *
+     * @return Local port range.
+     */
+    public int getLocalPortRange() {
         return locPortRange;
     }
 
@@ -699,8 +730,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getMaxMissedHeartbeats() {
+    /**
+     * Gets max heartbeats count node can miss without initiating status check.
+     *
+     * @return Max missed heartbeats.
+     */
+    public int getMaxMissedHeartbeats() {
         return maxMissedHbs;
     }
 
@@ -721,8 +756,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getMaxMissedClientHeartbeats() {
+    /**
+     * Gets max heartbeats count node can miss without failing client node.
+     *
+     * @return Max missed client heartbeats.
+     */
+    public int getMaxMissedClientHeartbeats() {
         return maxMissedClientHbs;
     }
 
@@ -741,8 +780,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getStatisticsPrintFrequency() {
+    /**
+     * Gets statistics print frequency.
+     *
+     * @return Statistics print frequency in milliseconds.
+     */
+    public long getStatisticsPrintFrequency() {
         return statsPrintFreq;
     }
 
@@ -765,8 +808,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getIpFinderCleanFrequency() {
+    /**
+     * Gets IP finder clean frequency.
+     *
+     * @return IP finder clean frequency.
+     */
+    public long getIpFinderCleanFrequency() {
         return ipFinderCleanFreq;
     }
 
@@ -872,8 +919,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getJoinTimeout() {
+    /**
+     * Gets join timeout.
+     *
+     * @return Join timeout.
+     */
+    public long getJoinTimeout() {
         return joinTimeout;
     }
 
@@ -971,6 +1022,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         locNodeAttrs = attrs;
         locNodeVer = ver;
+    }
+
+    /**
+     * Gets ID of the local node.
+     *
+     * @return ID of the local node.
+     */
+    public UUID getLocalNodeId() {
+        return ignite.cluster().localNode().id();
     }
 
     /** {@inheritDoc} */
@@ -1110,93 +1170,164 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return F.<Object>asList(ipFinder);
     }
 
-    /** {@inheritDoc} */
-    @Override public long getSocketTimeout() {
+    /**
+     * Gets socket timeout.
+     *
+     * @return Socket timeout.
+     */
+    public long getSocketTimeout() {
         return sockTimeout;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getAckTimeout() {
+    /**
+     * Gets message acknowledgement timeout.
+     *
+     * @return Message acknowledgement timeout.
+     */
+    public long getAckTimeout() {
         return ackTimeout;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getNetworkTimeout() {
+    /**
+     * Gets network timeout.
+     *
+     * @return Network timeout.
+     */
+    public long getNetworkTimeout() {
         return netTimeout;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getThreadPriority() {
+    /**
+     * Gets thread priority. All threads within SPI will be started with it.
+     *
+     * @return Thread priority.
+     */
+    public int getThreadPriority() {
         return threadPri;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getHeartbeatFrequency() {
+    /**
+     * Gets delay between heartbeat messages sent by coordinator.
+     *
+     * @return Time period in milliseconds.
+     */
+    public long getHeartbeatFrequency() {
         return hbFreq;
     }
 
-    /** {@inheritDoc} */
-    @Override public String getIpFinderFormatted() {
+    /**
+     * Gets {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} (string representation).
+     *
+     * @return IPFinder (string representation).
+     */public String getIpFinderFormatted() {
         return ipFinder.toString();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getNodesJoined() {
+    /**
+     * Gets joined nodes count.
+     *
+     * @return Nodes joined count.
+     */
+    public long getNodesJoined() {
         return stats.joinedNodesCount();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getNodesLeft() {
+    /**
+     * Gets left nodes count.
+     *
+     * @return Left nodes count.
+     */
+    public long getNodesLeft() {
         return stats.leftNodesCount();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getNodesFailed() {
+    /**
+     * Gets failed nodes count.
+     *
+     * @return Failed nodes count.
+     */
+    public long getNodesFailed() {
         return stats.failedNodesCount();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getPendingMessagesRegistered() {
+    /**
+     * Gets pending messages registered count.
+     *
+     * @return Pending messages registered count.
+     */
+    public long getPendingMessagesRegistered() {
         return stats.pendingMessagesRegistered();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getPendingMessagesDiscarded() {
+    /**
+     * Gets pending messages discarded count.
+     *
+     * @return Pending messages registered count.
+     */
+    public long getPendingMessagesDiscarded() {
         return stats.pendingMessagesDiscarded();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getAvgMessageProcessingTime() {
+    /**
+     * Gets avg message processing time.
+     *
+     * @return Avg message processing time.
+     */
+    public long getAvgMessageProcessingTime() {
         return stats.avgMessageProcessingTime();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getMaxMessageProcessingTime() {
+    /**
+     * Gets max message processing time.
+     *
+     * @return Max message processing time.
+     */
+    public long getMaxMessageProcessingTime() {
         return stats.maxMessageProcessingTime();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalReceivedMessages() {
+    /**
+     * Gets total received messages count.
+     *
+     * @return Total received messages count.
+     */
+    public int getTotalReceivedMessages() {
         return stats.totalReceivedMessages();
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, Integer> getReceivedMessages() {
+    /**
+     * Gets received messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    public Map<String, Integer> getReceivedMessages() {
         return stats.receivedMessages();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalProcessedMessages() {
+    /**
+     * Gets total processed messages count.
+     *
+     * @return Total processed messages count.
+     */
+    public int getTotalProcessedMessages() {
         return stats.totalProcessedMessages();
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, Integer> getProcessedMessages() {
+    /**
+     * Gets processed messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    public Map<String, Integer> getProcessedMessages() {
         return stats.processedMessages();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getCoordinatorSinceTimestamp() {
+    /**
+     * Gets time local node has been coordinator since.
+     *
+     * @return Time local node is coordinator since.
+     */
+    public long getCoordinatorSinceTimestamp() {
         return stats.coordinatorSinceTimestamp();
     }
 
@@ -1773,7 +1904,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         initializeImpl();
 
-        registerMBean(igniteInstanceName, this, TcpDiscoverySpiMBean.class);
+        registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
 
         impl.spiStart(igniteInstanceName);
     }
@@ -1784,6 +1915,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     private void initializeImpl() {
         if (impl != null)
             return;
+
         initFailureDetectionTimeout();
 
         if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
@@ -2051,6 +2183,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /** {@inheritDoc} */
+    @Override public TcpDiscoverySpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoverySpi.class, this);
     }
@@ -2119,6 +2258,177 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SocketTimeoutObject.class, this);
+        }
+    }
+
+    /**
+     * MBean implementation for TcpDiscoverySpiMBean.
+     */
+    private class TcpDiscoverySpiMBeanImpl extends IgniteSpiMBeanAdapter implements TcpDiscoverySpiMBean {
+        /** {@inheritDoc} */
+        TcpDiscoverySpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSpiState() {
+            return impl.getSpiState();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMessageWorkerQueueSize() {
+            return impl.getMessageWorkerQueueSize();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public UUID getCoordinator() {
+            return impl.getCoordinator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void dumpDebugInfo() {
+            impl.dumpDebugInfo(log);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSocketTimeout() {
+            return TcpDiscoverySpi.this.getSocketTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaxAckTimeout() {
+            return TcpDiscoverySpi.this.getMaxAckTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getAckTimeout() {
+            return TcpDiscoverySpi.this.getAckTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNetworkTimeout() {
+            return TcpDiscoverySpi.this.getNetworkTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getJoinTimeout() {
+            return TcpDiscoverySpi.this.getJoinTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getLocalPort() {
+            return TcpDiscoverySpi.this.getLocalPort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getLocalPortRange() {
+            return TcpDiscoverySpi.this.getLocalPortRange();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getIpFinderCleanFrequency() {
+            return TcpDiscoverySpi.this.getIpFinderCleanFrequency();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getThreadPriority() {
+            return TcpDiscoverySpi.this.getThreadPriority();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getHeartbeatFrequency() {
+            return TcpDiscoverySpi.this.getHeartbeatFrequency();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxMissedHeartbeats() {
+            return TcpDiscoverySpi.this.getMaxMissedHeartbeats();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxMissedClientHeartbeats() {
+            return TcpDiscoverySpi.this.getMaxMissedClientHeartbeats();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getStatisticsPrintFrequency() {
+            return TcpDiscoverySpi.this.getStatisticsPrintFrequency();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getIpFinderFormatted() {
+            return TcpDiscoverySpi.this.getIpFinderFormatted();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getReconnectCount() {
+            return TcpDiscoverySpi.this.getReconnectCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isClientMode() {
+            return TcpDiscoverySpi.this.isClientMode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNodesJoined() {
+            return TcpDiscoverySpi.this.getNodesJoined();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNodesLeft() {
+            return TcpDiscoverySpi.this.getNodesLeft();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNodesFailed() {
+            return TcpDiscoverySpi.this.getNodesFailed();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getPendingMessagesRegistered() {
+            return TcpDiscoverySpi.this.getPendingMessagesRegistered();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getPendingMessagesDiscarded() {
+            return stats.pendingMessagesDiscarded();
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getAvgMessageProcessingTime() {
+            return TcpDiscoverySpi.this.getAvgMessageProcessingTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaxMessageProcessingTime() {
+            return TcpDiscoverySpi.this.getMaxMessageProcessingTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalReceivedMessages() {
+            return TcpDiscoverySpi.this.getTotalReceivedMessages();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Integer> getReceivedMessages() {
+            return TcpDiscoverySpi.this.getReceivedMessages();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalProcessedMessages() {
+            return TcpDiscoverySpi.this.getTotalProcessedMessages();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Integer> getProcessedMessages() {
+            return TcpDiscoverySpi.this.getProcessedMessages();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCoordinatorSinceTimestamp() {
+            return TcpDiscoverySpi.this.getCoordinatorSinceTimestamp();
         }
     }
 }

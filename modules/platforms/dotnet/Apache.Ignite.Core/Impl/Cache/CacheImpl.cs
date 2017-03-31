@@ -150,7 +150,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public CacheConfiguration GetConfiguration()
         {
-            return DoInOp((int) CacheOp.GetConfig, stream => new CacheConfiguration(Marshaller.StartUnmarshal(stream)));
+            return DoInOp((int) CacheOp.GetConfig, stream => new CacheConfiguration(
+                BinaryUtils.Marshaller.StartUnmarshal(stream)));
         }
 
         /** <inheritDoc /> */

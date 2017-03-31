@@ -35,6 +35,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
@@ -66,7 +67,7 @@ import org.jsr166.ConcurrentLinkedHashMap;
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 @IgnoreIfPeerClassLoadingDisabled
-public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi, LocalDeploymentSpiMBean {
+public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @LoggerResource
@@ -76,7 +77,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
     private ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs =
         new ConcurrentLinkedHashMap<>(16, 0.75f, 64);
 
-    /** Deployment SPI listener.    */
+    /** Deployment SPI listener. */
     private volatile DeploymentListener lsnr;
 
     /** {@inheritDoc} */
@@ -84,7 +85,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
         // Start SPI start stopwatch.
         startStopwatch();
 
-        registerMBean(igniteInstanceName, this, LocalDeploymentSpiMBean.class);
+        registerMBean(igniteInstanceName, new LocalDeploymentSpiMBeanImpl(this), LocalDeploymentSpiMBean.class);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -395,7 +396,24 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
     }
 
     /** {@inheritDoc} */
+    @Override public LocalDeploymentSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(LocalDeploymentSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for LocalDeploymentSpi.
+     */
+    private class LocalDeploymentSpiMBeanImpl extends IgniteSpiMBeanAdapter implements LocalDeploymentSpiMBean {
+        /** {@inheritDoc} */
+        LocalDeploymentSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
     }
 }

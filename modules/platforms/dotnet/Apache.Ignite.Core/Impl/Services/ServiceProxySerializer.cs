@@ -118,6 +118,8 @@ namespace Apache.Ignite.Core.Impl.Services
             var writer = marsh.StartMarshal(stream);
 
             BinaryUtils.WriteInvocationResult(writer, invocationError == null, invocationError ?? methodResult);
+
+            marsh.FinishMarshal(writer);
         }
 
         /// <summary>
@@ -182,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
             var handler = BinarySystemHandlers.GetWriteHandler(type);
 
-            if (handler != null && !handler.IsSerializable)
+            if (handler != null)
                 return null;
 
             if (type.IsArray)
