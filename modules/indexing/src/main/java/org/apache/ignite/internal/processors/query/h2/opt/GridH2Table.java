@@ -147,7 +147,7 @@ public class GridH2Table extends TableBase {
 
         snapshotEnabled = desc == null || desc.snapshotableIndex();
 
-        lock = snapshotEnabled ? new ReentrantReadWriteLock() : null;
+        lock = new ReentrantReadWriteLock();
     }
 
     /**
@@ -221,7 +221,7 @@ public class GridH2Table extends TableBase {
 
         GridUnsafeMemory mem = desc.memory();
 
-        Lock l = lock(false, Long.MAX_VALUE);
+        lock(false);
 
         if (mem != null)
             desc.guard().begin();
@@ -240,7 +240,7 @@ public class GridH2Table extends TableBase {
             return true;
         }
         finally {
-            unlock(l);
+            unlock(false);
 
             if (mem != null)
                 desc.guard().end();
@@ -255,7 +255,6 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "SynchronizationOnLocalVariableOrMethodParameter", "unchecked"})
     @Override public boolean lock(@Nullable final Session ses, boolean exclusive, boolean force) {
         if (ses != null) {
             if (!sessions.add(ses))
@@ -263,6 +262,9 @@ public class GridH2Table extends TableBase {
 
             ses.addLock(this);
         }
+
+        // Prevent concurrent index changes.
+        lock(false);
 
         if (snapshotInLock())
             snapshotIndexes(null);
@@ -293,8 +295,6 @@ public class GridH2Table extends TableBase {
 
         Object[] snapshots;
 
-        Lock l;
-
         // Try to reuse existing snapshots outside of the lock.
         for (long waitTime = 200;; waitTime *= 2) { // Increase wait time to avoid starvation.
             snapshots = actualSnapshot.get();
@@ -306,9 +306,7 @@ public class GridH2Table extends TableBase {
                     return; // Reused successfully.
             }
 
-            l = lock(true, waitTime);
-
-            if (l != null)
+            if (tryLock(true, waitTime))
                 break;
         }
 
@@ -328,7 +326,7 @@ public class GridH2Table extends TableBase {
             }
         }
         finally {
-            unlock(l);
+            unlock(true);
         }
     }
 
@@ -340,39 +338,65 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * @param l Lock.
+     * Acquire table lock.
+     *
+     * @param exclusive Exclusive flag.
      */
-    private static void unlock(Lock l) {
-        if (l != null)
-            l.unlock();
+    private void lock(boolean exclusive) {
+        Lock l = exclusive ? lock.writeLock() : lock.readLock();
+
+        try {
+            l.lockInterruptibly();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
+        }
+
+        if (destroyed) {
+            unlock(exclusive);
+
+            throw new IllegalStateException("Table " + identifier() + " already destroyed.");
+        }
     }
 
     /**
      * @param exclusive Exclusive lock.
      * @param waitMillis Milliseconds to wait for the lock.
-     * @return The acquired lock or {@code null} if the lock time out occurred.
+     * @return Whether lock was acquired.
      */
-    public Lock lock(boolean exclusive, long waitMillis) {
-        if (!snapshotEnabled)
-            return null;
-
+    private boolean tryLock(boolean exclusive, long waitMillis) {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
             if (!l.tryLock(waitMillis, TimeUnit.MILLISECONDS))
-                return null;
+                return false;
         }
         catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
             throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
         }
 
         if (destroyed) {
-            unlock(l);
+            unlock(exclusive);
 
             throw new IllegalStateException("Table " + identifier() + " already destroyed.");
         }
 
-        return l;
+        return true;
+    }
+
+    /**
+     * Release table lock.
+     *
+     * @param exclusive Exclusive flag.
+     */
+    private void unlock(boolean exclusive) {
+        Lock l = exclusive ? lock.writeLock() : lock.readLock();
+
+        l.unlock();
     }
 
     /**
@@ -426,7 +450,7 @@ public class GridH2Table extends TableBase {
      * Destroy the table.
      */
     public void destroy() {
-        Lock l = lock(true, Long.MAX_VALUE);
+        lock(true);
 
         try {
             assert sessions.isEmpty() : sessions;
@@ -437,7 +461,7 @@ public class GridH2Table extends TableBase {
                 index(i).destroy();
         }
         finally {
-            unlock(l);
+            unlock(true);
         }
     }
 
@@ -448,6 +472,8 @@ public class GridH2Table extends TableBase {
 
         if (snapshotInLock())
             releaseSnapshots();
+
+        unlock(false);
     }
 
     /**
@@ -531,7 +557,7 @@ public class GridH2Table extends TableBase {
         // getting updated from different threads with different rows with the same key is impossible.
         GridUnsafeMemory mem = desc == null ? null : desc.memory();
 
-        Lock l = lock(false, Long.MAX_VALUE);
+        lock(false);
 
         if (mem != null)
             desc.guard().begin();
@@ -603,7 +629,7 @@ public class GridH2Table extends TableBase {
             return true;
         }
         finally {
-            unlock(l);
+            unlock(false);
 
             if (mem != null)
                 desc.guard().end();
@@ -668,11 +694,12 @@ public class GridH2Table extends TableBase {
      * Find index by given name among those that are well-defined as well as those that are being created.
      *
      * @param idxName Index name.
+     * @param incTemp Whether indexes that are being built should be considered.
      * @return Index with given name, or {@code null} if no such index found.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public Index findIndex(String idxName) {
-        Lock l = lock(false, Long.MAX_VALUE);
+    public Index findIndex(String idxName, boolean incTemp) {
+        lock(false);
 
         try {
             for (int i = 0; i < idxs.size(); i++) {
@@ -682,10 +709,10 @@ public class GridH2Table extends TableBase {
                     return idx;
             }
 
-            return tmpIdxs.get(idxName);
+            return incTemp ? tmpIdxs.get(idxName) : null;
         }
         finally {
-            unlock(l);
+            unlock(false);
         }
     }
 
@@ -698,18 +725,19 @@ public class GridH2Table extends TableBase {
     public void addTempIndex(Index idx) {
         assert idx instanceof GridH2IndexBase;
 
-        Lock l = lock(true, Long.MAX_VALUE);
+        lock(true);
 
         try {
-            Index exIdx = findIndex(idx.getName());
+            Index exIdx = findIndex(idx.getName(), true);
 
+            // TODO: Return true/false instead to properly maintain if-exists semantics.
             if (exIdx != null)
                 throw new IgniteException("Index already exists: " + idx.getName());
 
             tmpIdxs.put(idx.getName(), (GridH2IndexBase)idx);
         }
         finally {
-            unlock(l);
+            unlock(true);
         }
     }
 
@@ -719,13 +747,13 @@ public class GridH2Table extends TableBase {
      * @param idxName Index name.
      */
     public void removeTempIndex(String idxName) {
-        Lock l = lock(true, Long.MAX_VALUE);
+        lock(true);
 
         try {
             tmpIdxs.remove(idxName);
         }
         finally {
-            unlock(l);
+            unlock(true);
         }
     }
 
@@ -735,7 +763,7 @@ public class GridH2Table extends TableBase {
      * @param idxName Index name.
      */
     public void promoteTempIndex(String idxName) {
-        Lock l = lock(true, Long.MAX_VALUE);
+        lock(true);
 
         try {
             Index idx = tmpIdxs.remove(idxName);
@@ -752,7 +780,42 @@ public class GridH2Table extends TableBase {
             idxs = newIdxs;
         }
         finally {
-            unlock(l);
+            unlock(true);
+        }
+    }
+
+    /**
+     * Remove index with given name from this table, or throw an exception if such index failed to be found.
+     *
+     * @param idxName Index name.
+     */
+    public void removeIndex(String idxName) {
+        lock(true);
+
+        try {
+            ArrayList<Index> idxs = new ArrayList<>(this.idxs);
+
+            // Let's start with 2 as 0 and 1 are scan index and PK
+            for (int i = 2; i < idxs.size(); i++) {
+                GridH2IndexBase idx = (GridH2IndexBase)idxs.get(i);
+
+                if (!idxName.equals(idx.getName()))
+                    continue;
+
+                idxs.remove(i);
+
+                this.idxs = idxs;
+
+                idx.destroy();
+
+                return;
+            }
+
+            // TODO: Return true/false instead to properly maintain if-exists semantics.
+            throw new IgniteException("Index not found [idxName=" + idxName + ']');
+        }
+        finally {
+            unlock(true);
         }
     }
 

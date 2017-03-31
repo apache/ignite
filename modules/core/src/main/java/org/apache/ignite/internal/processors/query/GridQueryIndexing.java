@@ -148,6 +148,16 @@ public interface GridQueryIndexing {
         IndexCacheVisitor cacheVisitor) throws IgniteCheckedException;
 
     /**
+     * Remove index from the space.
+     *
+     * @param spaceName Space name.
+     * @param idxName Index name.
+     * @param ifExists Ignore operation if index does not exist (instead of throwing an error).
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public void dropIndex(@Nullable String spaceName, String idxName, boolean ifExists);
+
+    /**
      * Registers cache.
      *
      * @param spaceName Space name.

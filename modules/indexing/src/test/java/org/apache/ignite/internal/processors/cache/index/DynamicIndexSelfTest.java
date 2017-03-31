@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 /**
  * Tests for dynamic index creation.
  */
+@SuppressWarnings("unchecked")
 public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -98,7 +99,6 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public void testCreateCaseSensitive() throws Exception {
         QueryIndex idx = index(IDX_NAME, field("Id"), field(FIELD_NAME), field("id", true));
 
@@ -114,7 +114,6 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public void testCreateWithAlias() throws Exception {
         QueryIndex idx = index(IDX_NAME, field(FIELD_NAME), field("id", true));
 
@@ -135,6 +134,17 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
+
+        queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
 
         queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, true).get();
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);

@@ -831,10 +831,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridH2Table tbl = desc.tbl;
 
+        Index exIdx = findIndexInSchema(schemaName, idx.getName(), true);
+
+        if (exIdx != null) {
+            if (!ifNotExists)
+                throw new IgniteSQLException("Index already exists or is being built [idxName=" + idx.getName() + ']',
+                    IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
+            else
+                return;
+        }
+
         final GridH2IndexBase idx0 = createIndex(tbl, idx, schema.escapeAll());
 
         tbl.addTempIndex(idx0);
-
         final GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
 
         IndexCacheVisitorClosure clo = new IndexCacheVisitorClosure() {
@@ -856,6 +865,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             throw e;
         }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    @Override public void dropIndex(@Nullable final String spaceName, String idxName, boolean ifExists) {
+        String schemaName = schema(spaceName);
+
+        GridH2IndexBase idx = findIndexInSchema(schemaName, idxName, false);
+
+        if (idx == null) {
+            if (!ifExists)
+                throw new IgniteSQLException("Index not found [idxName=" + idxName + ']',
+                    IgniteQueryErrorCode.INDEX_NOT_FOUND);
+            else
+                return;
+        }
+
+        GridH2Table tbl = idx.getTable();
+
+        tbl.removeIndex(idxName);
     }
 
     /**
@@ -1793,6 +1822,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME))
                 throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
+    }
+
+    /**
+     * Search for index with matching name in all schema's tables.
+     *
+     * @param schemaName Schema name.
+     * @param idxName Index name.
+     * @param incTemp Whether indexes that are being built should be considered.
+     * @return Index with given name or {@code null} if none found.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private GridH2IndexBase findIndexInSchema(String schemaName, String idxName, boolean incTemp) {
+        for (TableDescriptor desc : tables(schemaName)) {
+            assert desc.tbl != null;
+
+            Index idx = desc.tbl.findIndex(idxName, incTemp);
+
+            if (idx != null) {
+                assert idx instanceof GridH2IndexBase;
+
+                return (GridH2IndexBase)idx;
+            }
+        }
+
+        return null;
     }
 
     /**

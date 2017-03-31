@@ -90,7 +90,7 @@ public class DdlStatementsProcessor {
             GridSqlStatement gridStmt = new GridSqlQueryParser(false).parse(GridSqlQueryParser.prepared(stmt));
 
             if (gridStmt instanceof GridSqlCreateIndex) {
-                GridSqlCreateIndex createIdx = (GridSqlCreateIndex) gridStmt;
+                GridSqlCreateIndex createIdx = (GridSqlCreateIndex)gridStmt;
 
                 String spaceName = idx.space(createIdx.schemaName());
 
@@ -128,8 +128,11 @@ public class DdlStatementsProcessor {
                 fut = ctx.query().dynamicIndexCreate(spaceName, typeDesc.tableName(), newIdx, createIdx.ifNotExists());
             }
             else if (gridStmt instanceof GridSqlDropIndex) {
-                // TODO: Implement.
-                throw new UnsupportedOperationException("DROP INDEX");
+                GridSqlDropIndex dropIdx = (GridSqlDropIndex)gridStmt;
+
+                String spaceName = idx.space(dropIdx.schemaName());
+
+                fut = ctx.query().dynamicIndexDrop(spaceName, dropIdx.name(), dropIdx.ifExists());
             }
             else
                 throw new IgniteSQLException("Unexpected DDL operation [type=" + gridStmt.getClass() + ']',

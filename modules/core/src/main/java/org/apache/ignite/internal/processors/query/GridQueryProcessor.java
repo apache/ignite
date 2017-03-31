@@ -284,6 +284,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Indexing.
+     * @throws IgniteException If module is not enabled.
+     */
+    public GridQueryIndexing getIndexing() throws IgniteException {
+        checkxEnabled();
+
+        return idx;
+    }
+
+    /**
      * @param cctx Cache context.
      * @param initIdxStates Index states.
      * @throws IgniteCheckedException If failed.
@@ -662,11 +672,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         GridCacheAdapter cache = ctx.cache().internalCache(op.space());
 
+        if (cache == null)
+            throw new IgniteException("Cache doesn't exist: " + op.space());
+
         if (op instanceof IndexCreateOperation) {
             IndexCreateOperation op0 = (IndexCreateOperation)op;
-
-            if (cache == null)
-                throw new IgniteException("Cache doesn't exist: " + op.space());
 
             IndexCacheVisitor visitor =
                 new IndexCacheVisitorImpl(this, cache.context(), space, op0.tableName(), cancelTok);
@@ -674,7 +684,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.createIndex(space, op0.tableName(), op0.index(), op0.ifNotExists(), visitor);
         }
         else if (op instanceof IndexDropOperation) {
-            // TODO: Implement.
+            IndexDropOperation op0 = (IndexDropOperation)op;
+
+            idx.dropIndex(space, op0.indexName(), op0.ifExists());
         }
         else
             throw new IgniteException("Unsupported operation: " + op);
