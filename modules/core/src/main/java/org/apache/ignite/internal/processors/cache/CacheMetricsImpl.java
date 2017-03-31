@@ -322,14 +322,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getDhtEvictQueueCurrentSize() {
-        GridCacheContext<?, ?> ctx = cctx.isNear() ? dhtCtx : cctx;
-
-        if (ctx == null)
-            return -1;
-
-        CacheEvictionManager evictMgr = ctx.evicts();
-
-        return evictMgr != null ? evictMgr.evictQueueSize() : -1;
+        return -1;
     }
 
     /** {@inheritDoc} */

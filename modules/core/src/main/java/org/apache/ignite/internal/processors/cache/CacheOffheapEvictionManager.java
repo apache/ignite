@@ -61,11 +61,6 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void unwind() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean evict(@Nullable GridCacheEntryEx entry,
         @Nullable GridCacheVersion obsoleteVer,
         boolean explicit,
@@ -74,17 +69,7 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public int evictQueueSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public void batchEvict(Collection<?> keys, @Nullable GridCacheVersion obsoleteVer) {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean evictSyncOrNearSync() {
-        return false;
     }
 }
