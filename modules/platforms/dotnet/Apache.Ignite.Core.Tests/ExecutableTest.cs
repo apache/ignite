@@ -49,34 +49,14 @@ namespace Apache.Ignite.Core.Tests
         private IIgnite _grid;
 
         /// <summary>
-        /// Test fixture set-up routine.
-        /// </summary>
-        [TestFixtureSetUp]
-        public void TestFixtureSetUp()
-        {
-            TestUtils.KillProcesses();
-
-            _grid = Ignition.Start(Configuration(SpringCfgPath));
-        }
-
-        /// <summary>
-        /// Test fixture tear-down routine.
-        /// </summary>
-        [TestFixtureTearDown]
-        public void TestFixtureTearDown()
-        {
-            Ignition.StopAll(true);
-
-            TestUtils.KillProcesses();
-        }
-
-        /// <summary>
         /// Set-up routine.
         /// </summary>
         [SetUp]
         public void SetUp()
         {
             TestUtils.KillProcesses();
+
+            _grid = Ignition.Start(Configuration(SpringCfgPath));
 
             Assert.IsTrue(_grid.WaitTopology(1));
 
@@ -89,6 +69,10 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
+            Ignition.StopAll(true);
+
+            TestUtils.KillProcesses();
+
             IgniteProcess.RestoreConfigurationBackup();
         }
 

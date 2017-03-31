@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System;
@@ -287,6 +288,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void TestFilterSerializable()
         {
             CheckFilter(false, false);
+        }
+
+        /// <summary>
+        /// Tests the defaults.
+        /// </summary>
+        [Test]
+        public void TestDefaults()
+        {
+            var qry = new ContinuousQuery<int, int>(null);
+
+            Assert.AreEqual(ContinuousQuery.DefaultAutoUnsubscribe, qry.AutoUnsubscribe);
+            Assert.AreEqual(ContinuousQuery.DefaultBufferSize, qry.BufferSize);
+            Assert.AreEqual(ContinuousQuery.DefaultTimeInterval, qry.TimeInterval);
+            Assert.IsFalse(qry.Local);
         }
 
         /// <summary>
@@ -1094,9 +1109,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Filter which cannot be serialized.
         /// </summary>
-        public class LocalFilter : AbstractFilter<BinarizableEntry>
+        public class LocalFilter : AbstractFilter<BinarizableEntry>, IBinarizable
         {
-            // No-op.
+            /** <inheritDoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                throw new BinaryObjectException("Expected");
+            }
+
+            /** <inheritDoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                throw new BinaryObjectException("Expected");
+            }
         }
 
         /// <summary>

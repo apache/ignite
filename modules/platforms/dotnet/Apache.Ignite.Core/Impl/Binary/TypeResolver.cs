@@ -50,6 +50,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(!string.IsNullOrEmpty(typeName));
 
+            // Fully-qualified name can be resolved with system mechanism.
+            var type = Type.GetType(typeName, false);
+
+            if (type != null)
+                return type;
+
+            // Partial names should be resolved by scanning assemblies.
             return ResolveType(assemblyName, typeName, AppDomain.CurrentDomain.GetAssemblies())
                 ?? ResolveTypeInReferencedAssemblies(assemblyName, typeName);
         }
