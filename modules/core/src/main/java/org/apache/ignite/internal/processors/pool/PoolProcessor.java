@@ -17,16 +17,20 @@
 
 package org.apache.ignite.internal.processors.pool;
 
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 
 import java.util.Arrays;
 import java.util.concurrent.Executor;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Processor which abstracts out thread pool management.
@@ -34,6 +38,9 @@ import java.util.concurrent.Executor;
 public class PoolProcessor extends GridProcessorAdapter {
     /** Map of {@link IoPool}-s injected by Ignite plugins. */
     private final IoPool[] extPools = new IoPool[128];
+
+    /** Custom named pools. */
+    private final Map<String, ? extends ExecutorService> customNamedPools;
 
     /**
      * Constructor.
@@ -73,12 +80,16 @@ public class PoolProcessor extends GridProcessorAdapter {
                 }
             }
         }
+
+        customNamedPools = ctx.getCustomNamedExecSvcs();
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         // Avoid external thread pools GC retention.
         Arrays.fill(extPools, null);
+
+        customNamedPools.clear();
     }
 
     /**
@@ -137,6 +148,9 @@ public class PoolProcessor extends GridProcessorAdapter {
                 if (plc < 0)
                     throw new IgniteCheckedException("Policy cannot be negative: " + plc);
 
+                if (plc == GridIoPolicy.CUSTOM_NAMED_POOL)
+                    throw new IgniteCheckedException("Custom policy must be handled by its name");
+
                 if (GridIoPolicy.isReservedGridIoPolicy(plc))
                     throw new IgniteCheckedException("Policy is reserved for internal usage (range 0-31): " + plc);
 
@@ -155,5 +169,24 @@ public class PoolProcessor extends GridProcessorAdapter {
                 return res;
             }
         }
+    }
+
+    /**
+     * Get executor service for custom policy by executor name.
+     *
+     * @param name Executor name.
+     * @return Executor service.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Executor customPoolByName(@NotNull String name) throws IgniteCheckedException {
+        Executor exec = null;
+
+        if (customNamedPools != null)
+            exec = customNamedPools.get(name);
+
+        if (exec == null)
+            throw new IgniteCheckedException("No pool is registered for name: " + name);
+
+        return exec;
     }
 }

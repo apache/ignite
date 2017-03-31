@@ -146,6 +146,9 @@ public class GridJobExecuteRequest implements Message {
     /** */
     private AffinityTopologyVersion topVer;
 
+    /** */
+    private String execName;
+
     /**
      * No-op constructor to support {@link Externalizable} interface.
      */
@@ -211,7 +214,8 @@ public class GridJobExecuteRequest implements Message {
             UUID subjId,
             @Nullable int[] cacheIds,
             int part,
-            @Nullable AffinityTopologyVersion topVer) {
+            @Nullable AffinityTopologyVersion topVer,
+            @Nullable String execName) {
         this.top = top;
         assert sesId != null;
         assert jobId != null;
@@ -251,6 +255,7 @@ public class GridJobExecuteRequest implements Message {
         this.idsOfCaches = cacheIds;
         this.part = part;
         this.topVer = topVer;
+        this.execName= execName;
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
     }

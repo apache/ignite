@@ -471,6 +471,9 @@ public class IgniteConfiguration {
     /** */
     private BinaryConfiguration binaryCfg;
 
+    /** Custom executors configurations. */
+    private ExecutorConfiguration[] execCfgs;
+
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
@@ -2684,6 +2687,24 @@ public class IgniteConfiguration {
         this.lateAffAssignment = lateAffAssignment;
 
         return this;
+    }
+
+    /**
+     * Gets the custom executors (named thread pools) for user compute tasks.
+     *
+     * @return Executor configurations.
+     */
+    public ExecutorConfiguration[] getExecutorConfiguration() {
+        return execCfgs;
+    }
+
+    /**
+     * Sets custom executors (named thread pools) for user compute tasks.
+     *
+     * @param execCfgs Executor configurations.
+     */
+    public void setExecutorConfiguration(ExecutorConfiguration... execCfgs) {
+        this.execCfgs = execCfgs;
     }
 
     /** {@inheritDoc} */

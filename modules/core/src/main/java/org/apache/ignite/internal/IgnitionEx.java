@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -1525,6 +1526,9 @@ public class IgnitionEx {
         /** Query executor service. */
         private ThreadPoolExecutor qryExecSvc;
 
+        /** Executor service. */
+        private Map<String, ThreadPoolExecutor> customNamedExecSvcs;
+
         /** Grid state. */
         private volatile IgniteState state = STOPPED;
 
@@ -1832,6 +1836,22 @@ public class IgnitionEx {
 
             qryExecSvc.allowCoreThreadTimeOut(true);
 
+            if (!F.isEmpty(myCfg.getExecutorConfiguration())) {
+                customNamedExecSvcs = new HashMap<>();
+
+                for(ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
+                    ThreadPoolExecutor exec = new IgniteThreadPoolExecutor(
+                        execCfg.getName(),
+                        cfg.getIgniteInstanceName(),
+                        execCfg.getSize(),
+                        execCfg.getSize(),
+                        DFLT_THREAD_KEEP_ALIVE_TIME,
+                        new LinkedBlockingQueue<Runnable>());
+
+                    customNamedExecSvcs.put(execCfg.getName(), exec);
+                }
+            }
+
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
@@ -1858,6 +1878,7 @@ public class IgnitionEx {
                     idxExecSvc,
                     callbackExecSvc,
                     qryExecSvc,
+                    customNamedExecSvcs,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();

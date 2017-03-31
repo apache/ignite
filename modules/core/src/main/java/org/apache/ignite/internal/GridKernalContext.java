@@ -580,6 +580,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      */
     public ExecutorService getQueryExecutorService();
 
+
+    /**
+     * Executor services that is in charge of processing user compute task.
+     *
+     * @return Map of custom thread pool executors.
+     */
+    @Nullable public Map<String, ? extends ExecutorService> getCustomNamedExecSvcs();
+
     /**
      * Gets exception registry.
      *

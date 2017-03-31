@@ -694,6 +694,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param idxExecSvc Indexing executor service.
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
+     * @param customNamedExecSvcs Custom named executors.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
@@ -713,6 +714,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
+        Map<String, ? extends ExecutorService> customNamedExecSvcs,
         GridAbsClosure errHnd
     )
         throws IgniteCheckedException
@@ -823,6 +825,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 idxExecSvc,
                 callbackExecSvc,
                 qryExecSvc,
+                customNamedExecSvcs,
                 plugins
             );
 
@@ -1586,11 +1589,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param execSvc
-     * @param sysExecSvc
-     * @param p2pExecSvc
-     * @param mgmtExecSvc
-     * @param restExecSvc
+     * @param execSvc Public executor.
+     * @param sysExecSvc System executor.
+     * @param p2pExecSvc P2P class load executor.
+     * @param mgmtExecSvc Management executor.
+     * @param restExecSvc REST executor.
+     * @param qryExecSvc Query executor.
      * @throws IgniteCheckedException If failed.
      */
     private void registerExecutorMBeans(ExecutorService execSvc,

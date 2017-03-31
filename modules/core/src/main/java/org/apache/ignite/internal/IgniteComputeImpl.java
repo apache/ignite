@@ -73,6 +73,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** */
     private UUID subjId;
 
+    private String execName;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -101,6 +103,22 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         this.ctx = ctx;
         this.prj = prj;
         this.subjId = subjId;
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param prj Projection.
+     * @param subjId Subject ID.
+     * @param async Async support flag.
+     * @param execName Custom executor name.
+     */
+    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async, String execName) {
+        super(async);
+
+        this.ctx = ctx;
+        this.prj = prj;
+        this.subjId = subjId;
+        this.execName = execName;
     }
 
     /** {@inheritDoc} */
@@ -152,7 +170,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            return ctx.closure().affinityRun(Collections.singletonList(cacheName), partId, job, prj.nodes());
+            return ctx.closure().affinityRun(Collections.singletonList(cacheName), partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -205,7 +223,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            return ctx.closure().affinityRun(cacheNames, partId, job, prj.nodes());
+            return ctx.closure().affinityRun(cacheNames, partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -248,7 +266,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().affinityRun(cacheNames, partId, job, prj.nodes());
+            return ctx.closure().affinityRun(cacheNames, partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -298,7 +316,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            return ctx.closure().affinityCall(Collections.singletonList(cacheName), partId, job, prj.nodes());
+            return ctx.closure().affinityCall(Collections.singletonList(cacheName), partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -351,7 +369,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            return ctx.closure().affinityCall(cacheNames, partId, job, prj.nodes());
+            return ctx.closure().affinityCall(cacheNames, partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -394,7 +412,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().affinityCall(cacheNames, partId, job, prj.nodes());
+            return ctx.closure().affinityCall(cacheNames, partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -437,7 +455,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(taskName, arg);
+            return ctx.task().execute(taskName, arg, execName);
         }
         finally {
             unguard();
@@ -477,7 +495,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(taskCls, arg);
+            return ctx.task().execute(taskCls, arg, execName);
         }
         finally {
             unguard();
@@ -516,7 +534,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(task, arg);
+            return ctx.task().execute(task, arg, execName);
         }
         finally {
             unguard();
@@ -550,7 +568,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().runAsync(BROADCAST, job, prj.nodes());
+            return ctx.closure().runAsync(BROADCAST, job, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -584,7 +602,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(BROADCAST, Collections.singletonList(job), prj.nodes());
+            return ctx.closure().callAsync(BROADCAST, Collections.singletonList(job), prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -620,7 +638,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().broadcast(job, arg, prj.nodes());
+            return ctx.closure().broadcast(job, arg, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -654,7 +672,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().runAsync(BALANCE, job, prj.nodes());
+            return ctx.closure().runAsync(BALANCE, job, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -689,7 +707,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().runAsync(BALANCE, jobs, prj.nodes());
+            return ctx.closure().runAsync(BALANCE, jobs, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -725,7 +743,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(job, arg, prj.nodes());
+            return ctx.closure().callAsync(job, arg, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -759,7 +777,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(BALANCE, job, prj.nodes());
+            return ctx.closure().callAsync(BALANCE, job, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -794,7 +812,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(BALANCE, (Collection<? extends Callable<R>>)jobs, prj.nodes());
+            return ctx.closure().callAsync(BALANCE, (Collection<? extends Callable<R>>)jobs, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -832,7 +850,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(job, args, prj.nodes());
+            return ctx.closure().callAsync(job, args, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -870,7 +888,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().forkjoinAsync(BALANCE, jobs, rdc, prj.nodes());
+            return ctx.closure().forkjoinAsync(BALANCE, jobs, rdc, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -911,7 +929,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(job, args, rdc, prj.nodes());
+            return ctx.closure().callAsync(job, args, rdc, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -1067,5 +1085,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R> ComputeTaskFuture<R> future() {
         return (ComputeTaskFuture<R>)super.future();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCompute withExecutor(String name) {
+        return new IgniteComputeImpl(ctx, prj, subjId, false, execName);
     }
 }

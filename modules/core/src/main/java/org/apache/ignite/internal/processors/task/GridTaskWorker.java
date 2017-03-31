@@ -1371,13 +1371,19 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         subjId,
                         affCacheIds,
                         affPartId,
-                        mapTopVer);
+                        mapTopVer,
+                        ses.getExecName());
 
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
                     else {
+
                         // Send job execution request.
-                        ctx.io().sendToGridTopic(node, TOPIC_JOB, req, internal ? MANAGEMENT_POOL : PUBLIC_POOL);
+                        if (F.isEmpty(ses.getExecName()))
+                            ctx.io().sendToGridTopic(node, TOPIC_JOB, req, internal ? MANAGEMENT_POOL : PUBLIC_POOL);
+                        else
+                            ctx.io().sendToGridTopic(node, TOPIC_JOB, req, ses.getExecName());
+
 
                         if (log.isDebugEnabled())
                             log.debug("Sent job request [req=" + req + ", node=" + node + ']');

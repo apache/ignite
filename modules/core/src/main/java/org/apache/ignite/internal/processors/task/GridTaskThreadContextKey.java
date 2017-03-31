@@ -34,5 +34,8 @@ public enum GridTaskThreadContextKey {
     TC_TIMEOUT,
 
     /** Security subject ID. */
-    TC_SUBJ_ID
+    TC_SUBJ_ID,
+
+    /** Name of the custom executor service. */
+    TC_EXEC_NAME
 }
