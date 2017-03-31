@@ -110,6 +110,10 @@ public class BinaryUtils {
     /** Flag: compact footer, no field IDs. */
     public static final short FLAG_COMPACT_FOOTER = 0x0020;
 
+    /** Flag: raw data contains .NET type information. Always 0 in Java. Keep it here for information only. */
+    @SuppressWarnings("unused")
+    public static final short FLAG_CUSTOM_DOTNET_TYPE = 0x0040;
+
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
 
@@ -960,25 +964,25 @@ public class BinaryUtils {
             }
 
             // Check and merge fields.
-            Map<String, Integer> mergedFields;
+            Map<String, BinaryFieldMetadata> mergedFields;
 
             if (FIELDS_SORTED_ORDER)
                 mergedFields = new TreeMap<>(oldMeta.fieldsMap());
             else
                 mergedFields = new LinkedHashMap<>(oldMeta.fieldsMap());
 
-            Map<String, Integer> newFields = newMeta.fieldsMap();
+            Map<String, BinaryFieldMetadata> newFields = newMeta.fieldsMap();
 
             boolean changed = false;
 
-            for (Map.Entry<String, Integer> newField : newFields.entrySet()) {
-                Integer oldFieldType = mergedFields.put(newField.getKey(), newField.getValue());
+            for (Map.Entry<String, BinaryFieldMetadata> newField : newFields.entrySet()) {
+                BinaryFieldMetadata oldFieldMeta = mergedFields.put(newField.getKey(), newField.getValue());
 
-                if (oldFieldType == null)
+                if (oldFieldMeta == null)
                     changed = true;
                 else {
-                    String oldFieldTypeName = fieldTypeName(oldFieldType);
-                    String newFieldTypeName = fieldTypeName(newField.getValue());
+                    String oldFieldTypeName = fieldTypeName(oldFieldMeta.typeId());
+                    String newFieldTypeName = fieldTypeName(newField.getValue().typeId());
 
                     if (!F.eq(oldFieldTypeName, newFieldTypeName)) {
                         throw new BinaryObjectException(
@@ -1562,7 +1566,7 @@ public class BinaryUtils {
         Class cls;
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
+            cls = ctx.descriptorForTypeId(true, typeId, ldr, true).describedClass();
         else {
             String clsName = doReadClassName(in);
 

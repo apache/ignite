@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,34 +15,28 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
+ #include <ignite/binary/binary_raw_reader.h>
+ #include <ignite/binary/binary_raw_writer.h>
+
+#include <ignite/impl/binary/binary_field_meta.h>
+
+namespace ignite
 {
-    using System;
-    using Apache.Ignite.Core.Impl.Common;
-
-    /// <summary>
-    /// DateTime serializer.
-    /// </summary>
-    internal class DateTimeSerializer : IBinarySerializerInternal
+    namespace impl
     {
-        /** <inheritdoc /> */
-        public void WriteBinary<T>(T obj, BinaryWriter writer)
+        namespace binary
         {
-            TypeCaster<DateTimeHolder>.Cast(obj).WriteBinary(writer);
-        }
+            void BinaryFieldMeta::Write(ignite::binary::BinaryRawWriter& writer) const
+            {
+                writer.WriteInt32(typeId);
+                writer.WriteInt32(fieldId);
+            }
 
-        /** <inheritdoc /> */
-        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
-        {
-            var holder = new DateTimeHolder(reader);
-
-            return TypeCaster<T>.Cast(holder.Item);
-        }
-
-        /** <inheritdoc /> */
-        public bool SupportsHandles
-        {
-            get { return false; }
+            void BinaryFieldMeta::Read(ignite::binary::BinaryRawReader& reader)
+            {
+                typeId = reader.ReadInt32();
+                fieldId = reader.ReadInt32();
+            }
         }
     }
 }

@@ -69,9 +69,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
+    <Compile Include="Binary\BinaryBuilderSelfTestDynamicRegistration.cs" />
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
+    <Compile Include="Binary\JavaBinaryInteropTest.cs" />
     <Compile Include="Binary\JavaTypeMappingTest.cs" />
+    <Compile Include="Binary\Serializable\CallbacksTest.cs" />
+    <Compile Include="Binary\Serializable\DelegatesTest.cs" />
+    <Compile Include="Binary\Serializable\BasicSerializableObjectsTest.cs" />
+    <Compile Include="Binary\Serializable\ObjectReferenceTests.cs" />
+    <Compile Include="Binary\Serializable\PrimitivesTest.cs" />
+    <Compile Include="Binary\Serializable\SqlDmlTest.cs" />
     <Compile Include="Binary\TypeResolverTest.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyTest.cs" />
     <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
@@ -103,6 +111,7 @@
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />
+    <Compile Include="Binary\BinaryDynamicRegistrationTest.cs" />
     <Compile Include="Binary\BinarySelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryStringTest.cs" />
     <Compile Include="Cache\Affinity\AffinityFieldTest.cs" />
@@ -190,7 +199,7 @@
     <Compile Include="ProcessExtensions.cs" />
     <Compile Include="ProjectFilesTest.cs" />
     <Compile Include="ReconnectTest.cs" />
-    <Compile Include="SerializationTest.cs" />
+    <Compile Include="Binary\Serializable\AdvancedSerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="Services\ServicesTestFullFooter.cs" />
     <Compile Include="TestUtils.cs" />

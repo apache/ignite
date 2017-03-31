@@ -62,7 +62,6 @@ import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosure;
 import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosureFactory;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -1014,7 +1013,7 @@ public class PlatformConfigurationUtils {
 
         if (comm instanceof TcpCommunicationSpi) {
             w.writeBoolean(true);
-            TcpCommunicationSpiMBean tcp = (TcpCommunicationSpiMBean) comm;
+            TcpCommunicationSpi tcp = (TcpCommunicationSpi) comm;
 
             w.writeInt(tcp.getAckSendThreshold());
             w.writeLong(tcp.getConnectTimeout());
@@ -1102,10 +1101,10 @@ public class PlatformConfigurationUtils {
 
         SwapSpaceSpi swap = cfg.getSwapSpaceSpi();
 
-        if (swap instanceof FileSwapSpaceSpiMBean) {
+        if (swap instanceof FileSwapSpaceSpi) {
             w.writeByte(SWAP_TYP_FILE);
 
-            FileSwapSpaceSpiMBean fileSwap = (FileSwapSpaceSpiMBean)swap;
+            FileSwapSpaceSpi fileSwap = (FileSwapSpaceSpi)swap;
 
             w.writeString(fileSwap.getBaseDirectory());
             w.writeFloat(fileSwap.getMaximumSparsity());
