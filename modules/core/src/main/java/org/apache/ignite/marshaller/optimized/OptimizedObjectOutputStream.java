@@ -205,13 +205,15 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 }
             }
             else {
+                Class<?> clazz = obj instanceof Object[] ? Object[].class : obj.getClass();
+
                 OptimizedClassDescriptor desc = classDescriptor(
                     clsMap,
-                    obj instanceof Object[] ? Object[].class : obj.getClass(),
+                    clazz,
                     ctx,
                     mapper);
 
-                if (desc.excluded()) {
+                if (desc.isStub() || desc.excluded()) {
                     writeByte(NULL);
 
                     return;

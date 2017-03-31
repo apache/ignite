@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
@@ -188,13 +189,8 @@ class OptimizedMarshallerUtils {
      * @return Descriptor.
      * @throws IOException In case of error.
      */
-    static OptimizedClassDescriptor classDescriptor(
-        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
-        Class cls,
-        MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
-        throws IOException
-    {
+    private static OptimizedClassDescriptor classDescriptor0( ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        Class cls, MarshallerContext ctx, OptimizedMarshallerIdMapper mapper) throws IOException {
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null) {
@@ -203,7 +199,7 @@ class OptimizedMarshallerUtils {
             boolean registered;
 
             try {
-                registered = ctx.registerClass(typeId, cls);
+                registered = OptimizedStub.class == cls || ctx.registerClass(typeId, cls);
             }
             catch (IgniteCheckedException e) {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
@@ -220,6 +216,39 @@ class OptimizedMarshallerUtils {
         }
 
         return desc;
+    }
+
+    /**
+     * Gets descriptor for provided class.
+     *
+     * @param clsMap Class descriptors by class map.
+     * @param cls Class.
+     * @param ctx Context.
+     * @param mapper ID mapper.
+     * @return Descriptor.
+     * @throws IOException In case of error.
+     */
+    static OptimizedClassDescriptor classDescriptor(
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        Class cls,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper)
+        throws IOException {
+        try {
+            return classDescriptor0(clsMap, cls, ctx, mapper);
+        }
+        catch (Throwable ignored) {
+            String msg = "Optimized marshaller failed to serialize class: " + cls.getName();
+
+            LT.warn(null, msg);
+
+            OptimizedClassDescriptor desc = classDescriptor0(clsMap, OptimizedStub.class, ctx, mapper);
+
+            if (desc == null)
+                throw new IOException(msg);
+
+            return desc;
+        }
     }
 
     /**
