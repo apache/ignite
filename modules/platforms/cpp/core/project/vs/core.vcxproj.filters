@@ -192,6 +192,9 @@
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_argument.h">
       <Filter>Code\impl\cache\query</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\helpers.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
