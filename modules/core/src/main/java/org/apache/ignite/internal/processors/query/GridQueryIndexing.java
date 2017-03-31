@@ -24,6 +24,7 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.index.IndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -131,6 +133,19 @@ public interface GridQueryIndexing {
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(@Nullable String spaceName, String qry,
         String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
+
+    /**
+     * Create new index locally.
+     *
+     * @param spaceName Space name.
+     * @param tblName Table name.
+     * @param idx Index params.
+     * @param ifNotExists Ignore operation if index exists (instead of throwing an error).
+     * @param cacheVisitor Cache visitor
+     * @throws IgniteCheckedException if failed.
+     */
+    public void createIndex(@Nullable String spaceName, String tblName, QueryIndex idx, boolean ifNotExists,
+        IndexCacheVisitor cacheVisitor) throws IgniteCheckedException;
 
     /**
      * Registers cache.

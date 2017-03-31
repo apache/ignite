@@ -60,6 +60,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -81,12 +82,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -95,10 +96,12 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -113,6 +116,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.processors.query.index.IndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.index.IndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -156,6 +161,7 @@ import org.h2.result.SortOrder;
 import org.h2.server.web.WebServer;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
 import org.h2.value.DataType;
@@ -455,7 +461,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
         long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
-        Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement) nativeStmt);
+        Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
 
         if (!(prep instanceof Insert))
             throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
@@ -811,6 +817,80 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public void createIndex(@Nullable final String spaceName, final String tblName, final QueryIndex idx,
+        boolean ifNotExists, IndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
+        String schemaName = schema(spaceName);
+
+        Schema schema = schemas.get(schemaName);
+
+        TableDescriptor desc = (schema != null ? schema.tbls.get(tblName) : null);
+
+        if (desc == null)
+            throw new IgniteSQLException("Table not found [schemaName=" + schemaName + ", " +
+                "tblName=" + tblName + ']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+        GridH2Table tbl = desc.tbl;
+
+        final GridH2IndexBase idx0 = createIndex(tbl, idx, schema.escapeAll());
+
+        tbl.addTempIndex(idx0);
+
+        final GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
+
+        IndexCacheVisitorClosure clo = new IndexCacheVisitorClosure() {
+            @Override public void apply(KeyCacheObject key, CacheObject val, long expTime)
+                throws IgniteCheckedException {
+                GridH2Row row = rowDesc.createRow(key, val, expTime);
+
+                idx0.put(row);
+            }
+        };
+
+        try {
+            cacheVisitor.visit(clo);
+
+            tbl.promoteTempIndex(idx.getName());
+        }
+        catch (Throwable e) {
+            tbl.removeTempIndex(idx.getName());
+
+            throw e;
+        }
+    }
+
+    /**
+     * Instantiate new index object.
+     *
+     * @param tbl Table to create index on.
+     * @param idx Index params.
+     * @param escapeAll Escape flag.
+     * @return new index object.
+     */
+    private static GridH2IndexBase createIndex(GridH2Table tbl, QueryIndex idx, boolean escapeAll) {
+        IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
+        IndexColumn affCol = tbl.getAffinityKeyColumn();
+
+        List<IndexColumn> cols = new ArrayList<>(idx.getFieldNames().size() + 2);
+
+        for (Map.Entry<String, Boolean> field : idx.getFields().entrySet()) {
+            // We have to return to column names instead of property names.
+            String colName = escapeAll ? field.getKey() : escapeName(field.getKey(), false).toUpperCase();
+
+            Column col = tbl.getColumn(colName);
+
+            cols.add(tbl.indexColumn(col.getColumnId(), field.getValue() ? SortOrder.ASCENDING : SortOrder.DESCENDING));
+        }
+
+        cols = IgniteH2Indexing.treeIndexColumns(cols, keyCol, affCol);
+
+        if (idx.getIndexType() == QueryIndexType.SORTED)
+            return new GridH2TreeIndex(idx.getName(), tbl, false, cols);
+        else
+            return (GridH2IndexBase)createH2SpatialIndex(tbl, idx.getName(),
+                cols.toArray(new IndexColumn[0]));
+
+    }
+
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(
         @Nullable String spaceName, String qry, String typeName,
@@ -1816,6 +1896,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * Find table by name in given schema.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @return Table or {@code null} if none found.
+     */
+    public GridH2Table dataTable(String schemaName, String tblName) {
+        for (GridH2Table tbl : dataTables.values()) {
+            if (tbl.getSchema().getName().equals(schemaName) && tbl.getName().equals(tblName))
+                return tbl;
+        }
+
+        return null;
+    }
+
+    /**
      * Gets corresponding DB type from java class.
      *
      * @param cls Java class.
@@ -2513,6 +2609,36 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void cancelAllQueries() {
         for (Connection conn : conns)
             U.close(conn, log);
+    }
+
+    /**
+     * @param tbl Table.
+     * @param idxName Index name.
+     * @param cols Columns.
+     */
+    private static SpatialIndex createH2SpatialIndex(
+        Table tbl,
+        String idxName,
+        IndexColumn[] cols
+    ) {
+        String clsName = "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
+
+        try {
+            Class<?> cls = Class.forName(clsName);
+
+            Constructor<?> ctor = cls.getConstructor(
+                Table.class,
+                String.class,
+                IndexColumn[].class);
+
+            if (!ctor.isAccessible())
+                ctor.setAccessible(true);
+
+            return (SpatialIndex)ctor.newInstance(tbl, idxName, cols);
+        }
+        catch (Exception e) {
+            throw new IgniteException("Failed to instantiate: " + clsName, e);
+        }
     }
 
     /**

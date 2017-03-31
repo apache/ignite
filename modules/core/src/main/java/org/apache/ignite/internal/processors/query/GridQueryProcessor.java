@@ -37,12 +37,16 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.query.index.IndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.index.IndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
 import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
@@ -277,16 +281,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public boolean moduleEnabled() {
         return idx != null;
-    }
-
-    /**
-     * @return Indexing.
-     * @throws IgniteException If module is not enabled.
-     */
-    public GridQueryIndexing getIndexing() throws IgniteException {
-        checkxEnabled();
-
-        return idx;
     }
 
     /**
@@ -659,10 +653,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Process index operation.
      *
      * @param op Operation.
-     * @param cancelToken Cancel token.
+     * @param cancelTok Cancel token.
+     * @throws IgniteCheckedException If failed.
      */
-    public void processIndexOperationLocal(IndexAbstractOperation op, IndexOperationCancellationToken cancelToken) {
-        // TODO.
+    public void processIndexOperationLocal(IndexAbstractOperation op, IndexOperationCancellationToken cancelTok)
+        throws IgniteCheckedException {
+        String space = op.space();
+
+        GridCacheAdapter cache = ctx.cache().internalCache(op.space());
+
+        if (op instanceof IndexCreateOperation) {
+            IndexCreateOperation op0 = (IndexCreateOperation)op;
+
+            if (cache == null)
+                throw new IgniteException("Cache doesn't exist: " + op.space());
+
+            IndexCacheVisitor visitor =
+                new IndexCacheVisitorImpl(this, cache.context(), space, op0.tableName(), cancelTok);
+
+            idx.createIndex(space, op0.tableName(), op0.index(), op0.ifNotExists(), visitor);
+        }
+        else if (op instanceof IndexDropOperation) {
+            // TODO: Implement.
+        }
+        else
+            throw new IgniteException("Unsupported operation: " + op);
     }
 
     /**
@@ -790,6 +805,46 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Check whether provided key and value belongs to expected space and table.
+     *
+     * @param cctx Target cache context.
+     * @param expSpace Expected space.
+     * @param expTblName Expected table name.
+     * @param key Key.
+     * @param val Value.
+     * @return {@code True} if this key-value pair belongs to expected space/table, {@code false} otherwise or
+     *     if space or table doesn't exist.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public boolean belongsToTable(GridCacheContext cctx, String expSpace, String expTblName, KeyCacheObject key,
+        CacheObject val) throws IgniteCheckedException {
+        QueryTypeDescriptorImpl desc = type(expSpace, val);
+
+        if (desc == null)
+            return false;
+
+        if (!F.eq(expTblName, desc.tableName()))
+            return false;
+
+        if (!cctx.cacheObjects().isBinaryObject(val)) {
+            Class<?> valCls = val.value(cctx.cacheObjectContext(), false).getClass();
+
+            if (!desc.valueClass().isAssignableFrom(valCls))
+                return false;
+        }
+
+        if (!cctx.cacheObjects().isBinaryObject(key)) {
+            Class<?> keyCls = key.value(cctx.cacheObjectContext(), false).getClass();
+
+            if (!desc.keyClass().isAssignableFrom(keyCls))
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @param space Space name.
      * @return Cache object context.
      */
@@ -865,6 +920,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Gets type descriptor for space by given object's type.
+     *
+     * @param space Space name.
+     * @param val Object to determine type for.
+     * @return Type descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    private QueryTypeDescriptorImpl type(@Nullable String space, CacheObject val) throws IgniteCheckedException {
+        CacheObjectContext coctx = cacheObjectContext(space);
+
+        QueryTypeIdKey id;
+
+        boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
+
+        if (binaryVal)
+            id = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(val));
+        else
+            id = new QueryTypeIdKey(space, val.value(coctx, false).getClass());
+
+        return types.get(id);
     }
 
     /**

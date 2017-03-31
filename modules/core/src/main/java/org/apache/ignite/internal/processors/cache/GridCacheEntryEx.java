@@ -33,8 +33,8 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.query.index.IndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -930,6 +930,16 @@ public interface GridCacheEntryEx {
      */
     @Nullable public CacheObject valueBytes(@Nullable GridCacheVersion ver)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * Update index from within entry lock, passing key, value, and expiration time to provided closure.
+     *
+     * @param proc Closure to apply to key, value, and expiration time.
+     * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public void updateIndex(IndexCacheVisitorClosure proc) throws IgniteCheckedException,
+        GridCacheEntryRemovedException;
 
     /**
      * @return Expire time, without accounting for transactions or removals.

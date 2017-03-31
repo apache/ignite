@@ -17,15 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
+import java.sql.PreparedStatement;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
@@ -34,10 +43,6 @@ import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.DropIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
-
-import java.sql.PreparedStatement;
-import java.util.Collections;
-import java.util.List;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
@@ -48,6 +53,9 @@ import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UP
 public class DdlStatementsProcessor {
     /** Kernal context. */
     GridKernalContext ctx;
+
+    /** Indexing. */
+    IgniteH2Indexing idx;
 
     /** Logger. */
     private IgniteLogger log;
@@ -60,6 +68,7 @@ public class DdlStatementsProcessor {
      */
     public void start(final GridKernalContext ctx, IgniteH2Indexing idx) {
         this.ctx = ctx;
+        this.idx = idx;
 
         log = ctx.log(DdlStatementsProcessor.class);
     }
@@ -83,9 +92,40 @@ public class DdlStatementsProcessor {
             if (gridStmt instanceof GridSqlCreateIndex) {
                 GridSqlCreateIndex createIdx = (GridSqlCreateIndex) gridStmt;
 
-                // TODO: How to handle schema name properly?
-                fut = ctx.query().dynamicIndexCreate(
-                    cacheName, createIdx.tableName(), createIdx.index(), createIdx.ifNotExists());
+                String spaceName = idx.space(createIdx.schemaName());
+
+                QueryIndex newIdx = new QueryIndex();
+
+                newIdx.setName(createIdx.index().getName());
+
+                newIdx.setIndexType(createIdx.index().getIndexType());
+
+                LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>();
+
+                GridH2Table tbl = idx.dataTable(createIdx.schemaName(), createIdx.tableName());
+
+                if (tbl == null)
+                    throw new IgniteSQLException("Table not found [schemaName=" + createIdx.schemaName() + ", " +
+                        "tblName=" + createIdx.tableName() + ']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+                assert tbl.rowDescriptor() != null;
+
+                // Let's replace H2's table and property names by those operated by GridQueryProcessor.
+                GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
+
+                for (Map.Entry<String, Boolean> e : createIdx.index().getFields().entrySet()) {
+                    GridQueryProperty prop = typeDesc.property(e.getKey());
+
+                    if (prop == null)
+                        throw new IgniteSQLException("Property not found [typeName=" + typeDesc.name() + ", propName=" +
+                            e.getKey() + ']');
+
+                    flds.put(prop.name(), e.getValue());
+                }
+
+                newIdx.setFields(flds);
+
+                fut = ctx.query().dynamicIndexCreate(spaceName, typeDesc.tableName(), newIdx, createIdx.ifNotExists());
             }
             else if (gridStmt instanceof GridSqlDropIndex) {
                 // TODO: Implement.

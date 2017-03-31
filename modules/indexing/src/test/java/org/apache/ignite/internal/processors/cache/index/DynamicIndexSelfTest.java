@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-
-import java.util.concurrent.Callable;
 
 /**
  * Tests for dynamic index creation.
@@ -42,13 +41,23 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
         super.beforeTest();
 
         grid(0).getOrCreateCache(cacheConfiguration());
+        grid(0).getOrCreateCache(caseSensitiveCacheConfiguration());
+        grid(0).getOrCreateCache(aliasCacheConfiguration());
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+
+        assertNoIndex(CACHE_NAME_SENSITIVE, TBL_NAME, IDX_NAME);
+
+        assertNoIndex(CACHE_NAME_ALIAS, TBL_NAME_2, IDX_NAME);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         grid(0).destroyCache(CACHE_NAME);
+
+        grid(0).destroyCache(CACHE_NAME_SENSITIVE);
+
+        grid(0).destroyCache(CACHE_NAME_ALIAS);
 
         super.afterTest();
     }
@@ -85,6 +94,38 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test simple index create with schema case sensitivity considered.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testCreateCaseSensitive() throws Exception {
+        QueryIndex idx = index(IDX_NAME, field("Id"), field(FIELD_NAME), field("id", true));
+
+        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME_SENSITIVE, TBL_NAME, idx, false).get();
+        assertIndex(CACHE_NAME_SENSITIVE, TBL_NAME, IDX_NAME, field("Id"), field(FIELD_NAME), field("id", true));
+
+        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME_SENSITIVE, TBL_NAME, idx, true).get();
+        assertIndex(CACHE_NAME_SENSITIVE, TBL_NAME, IDX_NAME, field("Id"), field(FIELD_NAME), field("id", true));
+    }
+
+    /**
+     * Test simple index create with field alias in effect.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testCreateWithAlias() throws Exception {
+        QueryIndex idx = index(IDX_NAME, field(FIELD_NAME), field("id", true));
+
+        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME_ALIAS, TBL_NAME_2, idx, false).get();
+        assertIndex(CACHE_NAME_ALIAS, TBL_NAME_2, IDX_NAME, field(FIELD_NAME), field("id", true));
+
+        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME_ALIAS, TBL_NAME_2, idx, true).get();
+        assertIndex(CACHE_NAME_ALIAS, TBL_NAME_2, IDX_NAME, field(FIELD_NAME), field("id", true));
+    }
+
+    /**
      * Test simple index drop.
      *
      * @throws Exception If failed.
@@ -106,5 +147,24 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
         return new CacheConfiguration<KeyClass, ValueClass>()
             .setName(CACHE_NAME)
             .setIndexedTypes(KeyClass.class, ValueClass.class);
+    }
+
+    /**
+     * @return Default cache configuration.
+     */
+    private CacheConfiguration caseSensitiveCacheConfiguration() {
+        return new CacheConfiguration<KeyClass2, ValueClass>()
+            .setName(CACHE_NAME_SENSITIVE)
+            .setSqlEscapeAll(true)
+            .setIndexedTypes(KeyClass2.class, ValueClass.class);
+    }
+
+    /**
+     * @return Default cache configuration.
+     */
+    private CacheConfiguration aliasCacheConfiguration() {
+        return new CacheConfiguration<KeyClass, ValueClass2>()
+            .setName(CACHE_NAME_ALIAS)
+            .setIndexedTypes(KeyClass.class, ValueClass2.class);
     }
 }

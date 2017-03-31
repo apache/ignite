@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConfl
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.query.index.IndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -4257,6 +4258,23 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         catch (GridCacheFilterFailedException ignored) {
             throw new IgniteException("Should never happen.");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateIndex(IndexCacheVisitorClosure proc) throws IgniteCheckedException,
+        GridCacheEntryRemovedException {
+        synchronized (this) {
+            if (isInternal())
+                return;
+
+            checkObsolete();
+
+            unswap(false);
+
+            assert val != null;
+
+            proc.apply(key, val, expireTimeUnlocked());
         }
     }
 

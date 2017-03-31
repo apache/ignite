@@ -61,6 +61,12 @@ public final class IgniteQueryErrorCode {
     /** DROP TABLE failed. */
     public final static int TABLE_DROP_FAILED = 3004;
 
+    /** Index already exists. */
+    public final static int INDEX_ALREADY_EXISTS = 3005;
+
+    /** Index does not exist. */
+    public final static int INDEX_NOT_FOUND = 3006;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */

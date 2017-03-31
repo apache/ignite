@@ -1,0 +1,212 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.query.index;
+
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
+
+/**
+ * Traversor operating all primary and backup partitions of given cache.
+ */
+public class IndexCacheVisitorImpl implements IndexCacheVisitor {
+    /** Query procssor. */
+    private final GridQueryProcessor qryProc;
+
+    /** Cache context. */
+    private final GridCacheContext cctx;
+
+    /** Space name. */
+    private final String spaceName;
+
+    /** Table name. */
+    private final String tblName;
+
+    /** Cancellation token. */
+    private final IndexOperationCancellationToken cancel;
+
+    /**
+     * Constructor.
+     *
+     * @param cctx Cache context.
+     * @param spaceName Space name.
+     * @param tblName Table name.
+     * @param cancel Cancellation token.
+     */
+    public IndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String spaceName, String tblName,
+        IndexOperationCancellationToken cancel) {
+        this.qryProc = qryProc;
+        this.cctx = cctx;
+        this.spaceName = spaceName;
+        this.tblName = tblName;
+        this.cancel = cancel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void visit(IndexCacheVisitorClosure clo) throws IgniteCheckedException {
+        assert clo != null;
+
+        FilteringVisitorClosure filterClo = new FilteringVisitorClosure(clo);
+
+        Collection<Integer> partNums = localPartitions();
+
+        for (int partNum : partNums)
+            processPartition(partNum, filterClo);
+    }
+
+    /**
+     * Process partition.
+     *
+     * @param partNum Partition number.
+     * @param clo Index closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void processPartition(int partNum, FilteringVisitorClosure clo) throws IgniteCheckedException {
+        checkCancelled();
+
+        GridDhtLocalPartition part = partition(partNum);
+
+        boolean reserved = false;
+
+        if (part != null && part.state() != EVICTED) {
+            if (part.state() == MOVING) {
+                cctx.cache().preloader().syncFuture().get();
+
+                part = partition(partNum);
+            }
+
+            reserved = (part != null && (part.state() == OWNING || part.state() == RENTING) && part.reserve());
+        }
+
+        if (!reserved)
+            return;
+
+        try {
+            for (final GridCacheEntryEx entry : part.allEntries())
+                processEntry(part, entry, clo);
+        }
+        finally {
+            part.release();
+        }
+    }
+
+    /**
+     * Process single entry.
+     *
+     * @param part Partition.
+     * @param entry Entry.
+     * @param clo Closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void processEntry(GridDhtLocalPartition part, GridCacheEntryEx entry, FilteringVisitorClosure clo)
+        throws IgniteCheckedException {
+        while (true) {
+            try {
+                checkCancelled();
+
+                if (entry != null)
+                    entry.updateIndex(clo);
+
+                break;
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                entry = part.getEntry(entry.key());
+            }
+        }
+    }
+
+    /**
+     * @return Local cache partitions.
+     */
+    private Collection<Integer> localPartitions() {
+        GridCacheAffinityManager aff = cctx.affinity();
+
+        AffinityTopologyVersion topVer = aff.affinityTopologyVersion();
+
+        Set<Integer> res = new HashSet<>();
+
+        res.addAll(aff.primaryPartitions(cctx.localNodeId(), topVer));
+        res.addAll(aff.backupPartitions(cctx.localNodeId(), topVer));
+
+        return res;
+    }
+
+    /**
+     * @param partNum Partition number.
+     * @return Partition.
+     */
+    private GridDhtLocalPartition partition(int partNum) {
+        return cctx.topology().localPartition(partNum, AffinityTopologyVersion.NONE, false);
+    }
+
+    /**
+     * Check if visit process is not cancelled.
+     *
+     * @throws IgniteCheckedException If cancelled.
+     */
+    private void checkCancelled() throws IgniteCheckedException {
+        if (cancel.isCancelled())
+            throw new IgniteCheckedException("Index creation was cancelled.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IndexCacheVisitorImpl.class, this);
+    }
+
+    /**
+     * Filtering visitor closure.
+     */
+    private class FilteringVisitorClosure implements IndexCacheVisitorClosure {
+
+        /** Target closure. */
+        private final IndexCacheVisitorClosure target;
+
+        /**
+         * Constructor.
+         *
+         * @param target Target.
+         */
+        public FilteringVisitorClosure(IndexCacheVisitorClosure target) {
+            this.target = target;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(KeyCacheObject key, CacheObject val, long expiration) throws IgniteCheckedException {
+            if (qryProc.belongsToTable(cctx, spaceName, tblName, key, val))
+                target.apply(key, val, expiration);
+        }
+    }
+}

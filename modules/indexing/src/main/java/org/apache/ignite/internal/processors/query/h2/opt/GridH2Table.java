@@ -22,6 +22,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -29,6 +31,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -65,7 +68,10 @@ public class GridH2Table extends TableBase {
     private final GridH2RowDescriptor desc;
 
     /** */
-    private final ArrayList<Index> idxs;
+    private volatile ArrayList<Index> idxs;
+
+    /** */
+    private final Map<String, GridH2IndexBase> tmpIdxs = new HashMap<>();
 
     /** */
     private final ReadWriteLock lock;
@@ -553,18 +559,11 @@ public class GridH2Table extends TableBase {
                 while (++i < len) {
                     GridH2IndexBase idx = index(i);
 
-                    assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
-
-                    GridH2Row old2 = idx.put(row);
-
-                    if (old2 != null) { // Row was replaced in index.
-                        if (!eq(pk, old2, old))
-                            throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
-                                "not supported.");
-                    }
-                    else if (old != null) // Row was not replaced, need to remove manually.
-                        idx.remove(old);
+                    addToIndex(idx, pk, row, old);
                 }
+
+                for (GridH2IndexBase idx : tmpIdxs.values())
+                    addToIndex(idx, pk, row, old);
             }
             else {
                 //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
@@ -587,6 +586,12 @@ public class GridH2Table extends TableBase {
 
                         assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
                     }
+
+                    for (GridH2IndexBase idx : tmpIdxs.values()) {
+                        Row res = idx.remove(old);
+
+                        assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + " -> " + idx.getName();
+                    }
                 }
                 else
                     return false;
@@ -603,6 +608,28 @@ public class GridH2Table extends TableBase {
             if (mem != null)
                 desc.guard().end();
         }
+    }
+
+    /**
+     * Add row to index.
+     *
+     * @param idx Index to add row to.
+     * @param pk Primary key index.
+     * @param row Row to add to index.
+     * @param old Previous row state, if any.
+     */
+    private void addToIndex(GridH2IndexBase idx, Index pk, GridH2Row row, GridH2Row old) {
+        assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
+
+        GridH2Row old2 = idx.put(row);
+
+        if (old2 != null) { // Row was replaced in index.
+            if (!eq(pk, old2, old))
+                throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
+                    "not supported.");
+        }
+        else if (old != null) // Row was not replaced, need to remove manually.
+            idx.remove(old);
     }
 
     /**
@@ -635,6 +662,98 @@ public class GridH2Table extends TableBase {
     @Override public Index addIndex(Session ses, String s, int i, IndexColumn[] idxCols, IndexType idxType,
         boolean b, String s1) {
         throw DbException.getUnsupportedException("addIndex");
+    }
+
+    /**
+     * Find index by given name among those that are well-defined as well as those that are being created.
+     *
+     * @param idxName Index name.
+     * @return Index with given name, or {@code null} if no such index found.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public Index findIndex(String idxName) {
+        Lock l = lock(false, Long.MAX_VALUE);
+
+        try {
+            for (int i = 0; i < idxs.size(); i++) {
+                Index idx = idxs.get(i);
+
+                if (idx.getName().equals(idxName))
+                    return idx;
+            }
+
+            return tmpIdxs.get(idxName);
+        }
+        finally {
+            unlock(l);
+        }
+    }
+
+    /**
+     * Add index that is in an intermediate state and is still being built, thus is not used in queries until it is
+     * promoted.
+     *
+     * @param idx Index to add.
+     */
+    public void addTempIndex(Index idx) {
+        assert idx instanceof GridH2IndexBase;
+
+        Lock l = lock(true, Long.MAX_VALUE);
+
+        try {
+            Index exIdx = findIndex(idx.getName());
+
+            if (exIdx != null)
+                throw new IgniteException("Index already exists: " + idx.getName());
+
+            tmpIdxs.put(idx.getName(), (GridH2IndexBase)idx);
+        }
+        finally {
+            unlock(l);
+        }
+    }
+
+    /**
+     * Remove temporary index without promoting it.
+     *
+     * @param idxName Index name.
+     */
+    public void removeTempIndex(String idxName) {
+        Lock l = lock(true, Long.MAX_VALUE);
+
+        try {
+            tmpIdxs.remove(idxName);
+        }
+        finally {
+            unlock(l);
+        }
+    }
+
+    /**
+     * Promote temporary index to make it usable in queries.
+     *
+     * @param idxName Index name.
+     */
+    public void promoteTempIndex(String idxName) {
+        Lock l = lock(true, Long.MAX_VALUE);
+
+        try {
+            Index idx = tmpIdxs.remove(idxName);
+
+            if (idx == null)
+                throw new IgniteException("Index not found: " + idxName);
+
+            ArrayList<Index> newIdxs = new ArrayList<>(idxs.size() + 1);
+
+            newIdxs.addAll(idxs);
+
+            newIdxs.add(idx);
+
+            idxs = newIdxs;
+        }
+        finally {
+            unlock(l);
+        }
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryIndex;
@@ -32,13 +38,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Tests for dynamic schema changes.
  */
@@ -47,8 +46,17 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /** Cache. */
     protected static final String CACHE_NAME = "cache";
 
+    /** Cache with case sensitive field names. */
+    protected static final String CACHE_NAME_SENSITIVE = "cacheSensitive";
+
+    /** Cache with field alias. */
+    protected static final String CACHE_NAME_ALIAS = "cacheAlias";
+
     /** Table name. */
     protected static final String TBL_NAME = tableName(ValueClass.class);
+
+    /** Table name 2. */
+    protected static final String TBL_NAME_2 = tableName(ValueClass2.class);
 
     /** Index name 1. */
     protected static final String IDX_NAME = "idx_1";
@@ -324,6 +332,89 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
          */
         public String field1() {
             return field1;
+        }
+    }
+
+    /**
+     * Key class with two ids.
+     */
+    public static class KeyClass2 {
+        /** ID. */
+        @QuerySqlField
+        private long id;
+
+        /** Another ID. */
+        @QuerySqlField
+        private long Id;
+
+        /**
+         * Constructor.
+         *
+         * @param id ID.
+         * @param Id Another ID.
+         */
+        public KeyClass2(long id, long Id) {
+            this.id = id;
+
+            this.Id = id;
+        }
+
+        /**
+         * @return ID.
+         */
+        public long id() {
+            return id;
+        }
+
+        /**
+         * @return Another ID.
+         */
+        public long Id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            KeyClass2 keyClass2 = (KeyClass2) o;
+
+            if (id != keyClass2.id) return false;
+            return Id == keyClass2.Id;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = (int) (id ^ (id >>> 32));
+            result = 31 * result + (int) (Id ^ (Id >>> 32));
+            return result;
+        }
+    }
+
+    /**
+     * Key class.
+     */
+    public static class ValueClass2 {
+        /** Field 1. */
+        @QuerySqlField(name = "field1")
+        private String field;
+
+        /**
+         * Constructor.
+         *
+         * @param field Field 1.
+         */
+        public ValueClass2(String field) {
+            this.field = field;
+        }
+
+        /**
+         * @return Field 1
+         */
+        public String field() {
+            return field;
         }
     }
 }
