@@ -64,9 +64,12 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
      * Sets .NET type name.
      *
      * @param typName .NET type name.
+     * @return {@code this} for chaining.
      */
-    public void setTypeName(String typName) {
+    public PlatformDotNetAffinityFunction setTypeName(String typName) {
         this.typName = typName;
+
+        return this;
     }
 
     /**
@@ -82,9 +85,12 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
      * Set properties.
      *
      * @param props Properties.
+     * @return {@code this} for chaining.
      */
-    public void setProperties(Map<String, ?> props) {
+    public PlatformDotNetAffinityFunction setProperties(Map<String, ?> props) {
         this.props = props;
+
+        return this;
     }
 
     /** {@inheritDoc} */
