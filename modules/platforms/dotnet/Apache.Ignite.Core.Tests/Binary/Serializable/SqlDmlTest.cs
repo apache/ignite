@@ -123,6 +123,19 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         }
 
         /// <summary>
+        /// Tests the .NET specific serializable.
+        /// </summary>
+        [Test]
+        public void TestDotNetSpecificSerializable()
+        {
+            var cache = _ignite.CreateCache<int, DotNetSpecificSerializable>(new CacheConfiguration("dotnet-ser",
+                new QueryEntity(typeof(int), typeof(DotNetSpecificSerializable))));
+
+            cache[1] = new DotNetSpecificSerializable(uint.MaxValue);
+            Assert.AreEqual(uint.MaxValue, cache[1].Uint);
+        }
+
+        /// <summary>
         /// Tests the log warning.
         /// </summary>
         [Test]
@@ -140,6 +153,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.IsTrue(_outSb.ToString().Contains(expected));
         }
 
+        /// <summary>
+        /// Serializable with Java-compatible fields.
+        /// </summary>
         private class SimpleSerializable : ISerializable
         {
             [QuerySqlField]
@@ -205,6 +221,32 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 info.AddValue("Decimal", Decimal);
                 info.AddValue("Guid", Guid);
                 info.AddValue("String", String);
+            }
+        }
+
+        /// <summary>
+        /// Serializable with incompatible fields.
+        /// </summary>
+        private class DotNetSpecificSerializable : ISerializable
+        {
+            /// <summary>
+            /// Uint is not supported in Java.
+            /// </summary>
+            public uint Uint { get; set; }
+
+            public DotNetSpecificSerializable(uint u)
+            {
+                Uint = u;
+            }
+
+            public DotNetSpecificSerializable(SerializationInfo info, StreamingContext context)
+            {
+                Uint = info.GetUInt32("uint");
+            }
+
+            public void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue("uint", Uint);
             }
         }
     }
