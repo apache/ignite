@@ -122,6 +122,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private volatile TreeMetaData treeMeta;
 
     /** */
+    private final GridCursor<T> emptyCursor = new GridCursor<T>() {
+        @Override
+        public boolean next() throws IgniteCheckedException {
+            return false;
+        }
+
+        @Override
+        public T get() throws IgniteCheckedException {
+            return null;
+        }
+    };
+
+    /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
         /** */
         private boolean keys = true;
@@ -935,6 +948,49 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
         catch (AssertionError e) {
             throw new AssertionError("Assertion error on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCursor<T> findLast() throws IgniteCheckedException {
+        checkDestroyed();
+
+        try (Page meta = page(metaPageId)) {
+            int rootLvl = getRootLevel();
+
+            assert rootLvl >= 0;
+
+            long rootPageId = getFirstPageId(meta, rootLvl);
+
+            long pageId = rootPageId;
+
+            for (;;) {
+                try (Page page = page(pageId)) {
+                    long pageAddr = readLock(page);
+
+                    try {
+                        BPlusIO<L> io = io(pageAddr);
+
+                        int cnt = io.getCount(pageAddr);
+                        assert cnt >= 0;
+
+                        if (io.isLeaf()) {
+                            if (cnt == 0)
+                                return emptyCursor;
+
+                            L maxRow = io.getLookupRow(this, pageAddr, cnt - 1);
+                            ForwardCursor cursor = new ForwardCursor(maxRow, null);
+                            cursor.init(pageAddr, io, cnt - 1);
+                            return cursor;
+                        }
+
+                        pageId = inner(io).getRight(pageAddr, cnt - 1);
+
+                    } finally {
+                        readUnlock(page, pageAddr);
+                    }
+                }
+            }
         }
     }
 

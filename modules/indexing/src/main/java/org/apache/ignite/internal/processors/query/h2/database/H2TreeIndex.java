@@ -300,12 +300,24 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
-        throw new UnsupportedOperationException();
+        try {
+            int seg = threadLocalSegment();
+
+            H2Tree tree = treeForRead(seg);
+
+            GridCursor<GridH2Row> cursor = b ? tree.find(null, null) : tree.findLast();
+
+            //H2 wants cursor to be prepared for get()
+            return new H2Cursor(cursor.next() ? cursor : EMPTY_CURSOR);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
     }
 
     /** {@inheritDoc} */

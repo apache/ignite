@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.Driver;
+import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -507,6 +508,53 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         assertTrue(rs.next());
 
         assertEquals(ids.length - deleted.get(), rs.getInt(1));
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIndexFindFirstOrLast() throws Exception {
+        Index index = tbl.getIndexes().get(1);
+        assertTrue(index instanceof GridH2TreeIndex);
+        assertTrue(index.canGetFirstOrLast());
+
+        //find first on empty data
+        Cursor cursor = index.findFirstOrLast(null, true);
+        assertNull(cursor.get());
+        assertFalse(cursor.next());
+
+        //find last on empty data
+        cursor = index.findFirstOrLast(null, false);
+        assertNull(cursor.get());
+        assertFalse(cursor.next());
+
+        //fill with data
+        int rows = 100;
+        long t = System.currentTimeMillis();
+        Random rnd = new Random();
+        UUID min = null;
+        UUID max = null;
+
+        for (int i = 0 ; i < rows; i++) {
+            UUID id = UUID.randomUUID();
+            if (min == null || id.compareTo(min) < 0)
+                min = id;
+            if (max == null || id.compareTo(max) > 0)
+                max = id;
+            GridH2Row row = row(id, t++, id.toString(), rnd.nextInt(100));
+            ((GridH2TreeIndex)index).put(row);
+        }
+
+        //find first
+        cursor = index.findFirstOrLast(null, true);
+        assertEquals(min, cursor.get().getValue(0).getObject());
+        assertTrue(cursor.next());
+
+        //find last
+        cursor = index.findFirstOrLast(null, false);
+        assertEquals(max, cursor.get().getValue(0).getObject());
+        assertFalse(cursor.next());
     }
 
     /**

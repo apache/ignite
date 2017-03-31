@@ -64,6 +64,13 @@ public interface IgniteTree<L, T> {
     public GridCursor<T> find(L lower, L upper) throws IgniteCheckedException;
 
     /**
+     * Returns a cursor positioned to the last key.
+     * @return Cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCursor<T> findLast() throws IgniteCheckedException;
+
+    /**
      * Removes the mapping for a key from this tree if it is present.
      *
      * @param key Key whose mapping is to be removed from the tree.
