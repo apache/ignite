@@ -21,6 +21,9 @@ package org.apache.ignite.math.functions;
  * Compatibility with Apache Mahout.
  */
 public final class Functions {
+    /** Function that returns <tt>Math.abs(a)</tt>. */
+    public static final IgniteDoubleFunction<Double> ABS = Math::abs;
+
     /** Function that returns its argument. */
     public static final IgniteDoubleFunction<Double> IDENTITY = (a) -> a;
 

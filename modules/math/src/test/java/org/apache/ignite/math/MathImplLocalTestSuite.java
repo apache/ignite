@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math;
 
+import org.apache.ignite.math.decompositions.EigenDecompositionTest;
 import org.apache.ignite.math.impls.matrix.*;
 import org.apache.ignite.math.impls.storage.matrix.MatrixArrayStorageTest;
 import org.apache.ignite.math.impls.vector.SingleElementVectorViewConstructorTest;
@@ -93,7 +94,8 @@ import org.junit.runners.Suite;
     MatrixAttributeTest.class,
     TransposedMatrixViewTest.class,
     // Decomposes
-    LUDecompositionTest.class
+    LUDecompositionTest.class,
+    EigenDecompositionTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.

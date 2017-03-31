@@ -34,7 +34,7 @@ import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
  * @see <a href="http://mathworld.wolfram.com/LUDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/LU_decomposition">Wikipedia</a>
  */
-public class LUDecomposition {
+public class LUDecomposition extends DecompositionSupport {
     /** Default bound to determine effective singularity in LU decomposition. */
     private static final double DEFAULT_TOO_SMALL = 1e-11;
     /** Pivot permutation associated with LU decomposition. */
@@ -346,46 +346,4 @@ public class LUDecomposition {
         return b.like(b.rowSize(), b.columnSize()).assign(bp);
     }
 
-    /**
-     * Create the like matrix with read-only matrices support.
-     *
-     * @param matrix Matrix for like.
-     * @return Like matrix.
-     */
-    private Matrix like(Matrix matrix){
-        if (matrix instanceof RandomMatrix)
-            return new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
-        else
-            return matrix.like(matrix.rowSize(), matrix.columnSize());
-    }
-
-    /**
-     * Create the like vector with read-only matrices support.
-     *
-     * @param matrix Matrix for like.
-     * @return Like vector.
-     */
-    private Vector likeVector(Matrix matrix){
-        if (matrix instanceof RandomMatrix || matrix instanceof PivotedMatrixView)
-            return new DenseLocalOnHeapVector(matrix.rowSize());
-        else
-            return matrix.likeVector(matrix.rowSize());
-    }
-
-    /**
-     * Create the copy of matrix with read-only matrices support.
-     *
-     * @param matrix Matrix for copy.
-     * @return Copy.
-     */
-    private Matrix copy(Matrix matrix){
-        if (matrix instanceof RandomMatrix){
-            DenseLocalOnHeapMatrix cp = new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
-
-            cp.assign(matrix);
-
-            return cp;
-        } else
-            return matrix.copy();
-    }
 }
