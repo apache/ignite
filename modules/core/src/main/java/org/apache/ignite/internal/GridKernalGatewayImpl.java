@@ -162,7 +162,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
         GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
-        reconnectFut = new IgniteFutureImpl<>(fut);
+        reconnectFut = new IgniteFutureImpl<>(fut, IgnitionEx.context(gridName));
 
         if (!state.compareAndSet(GridKernalState.STARTED, GridKernalState.DISCONNECTED)) {
             ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone(new IgniteCheckedException("Node stopped."));

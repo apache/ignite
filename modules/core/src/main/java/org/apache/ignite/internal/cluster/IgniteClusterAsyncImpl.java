@@ -62,7 +62,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
      * @param cluster Cluster.
      */
     public IgniteClusterAsyncImpl(IgniteClusterImpl cluster) {
-        super(true);
+        super(true, cluster.ctx);
 
         this.cluster = cluster;
     }

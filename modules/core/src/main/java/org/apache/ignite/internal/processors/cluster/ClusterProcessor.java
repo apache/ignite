@@ -97,7 +97,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     public IgniteFuture<?> clientReconnectFuture() {
         IgniteFuture<?> fut = cluster.clientReconnectFuture();
 
-        return fut != null ? fut : new IgniteFinishedFutureImpl<>();
+        return fut != null ? fut : new IgniteFinishedFutureImpl<>(ctx);
     }
 
     /** {@inheritDoc} */

@@ -3415,7 +3415,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (curFut != null && curFut.internalFuture() == reconnectFut)
             userFut = curFut;
         else {
-            userFut = new IgniteFutureImpl<>(reconnectFut);
+            userFut = new IgniteFutureImpl<>(reconnectFut, ctx);
 
             ctx.cluster().get().clientReconnectFuture(userFut);
         }

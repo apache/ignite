@@ -64,7 +64,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     private boolean async;
 
     /** Async call result. */
-    private IgniteFuture asyncRes;
+    private IgniteFuture<?> asyncRes;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -221,7 +221,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <R> IgniteFuture<R> future() {
-        return asyncRes;
+        return (IgniteFuture<R>)asyncRes;
     }
 
     /** {@inheritDoc} */
@@ -303,10 +303,10 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         enter();
 
         try {
-            IgniteInternalFuture rollbackFut = cctx.rollbackTxAsync(tx);
+            IgniteInternalFuture<?> rollbackFut = cctx.rollbackTxAsync(tx);
 
             if (async)
-                asyncRes = new IgniteFutureImpl(rollbackFut);
+                asyncRes = new IgniteFutureImpl<>(rollbackFut, cctx.kernalContext());
             else
                 rollbackFut.get();
         }
@@ -323,7 +323,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         enter();
 
         try {
-            return (IgniteFuture<Void>)(new IgniteFutureImpl(cctx.rollbackTxAsync(tx)));
+            return (IgniteFuture<Void>)(new IgniteFutureImpl(cctx.rollbackTxAsync(tx), cctx.kernalContext()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -337,7 +337,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      * @param res Result to convert to finished future.
      */
     private void save(Object res) {
-        asyncRes = new IgniteFinishedFutureImpl<>(res);
+        asyncRes = new IgniteFinishedFutureImpl<>(res, cctx.kernalContext());
     }
 
     /**
@@ -360,7 +360,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
             }
         });
 
-        return new IgniteFutureImpl(fut0);
+        return new IgniteFutureImpl<>(fut0, cctx.kernalContext());
     }
 
     /** {@inheritDoc} */

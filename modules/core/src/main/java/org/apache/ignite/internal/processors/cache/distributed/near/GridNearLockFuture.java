@@ -1412,7 +1412,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         ClusterTopologyCheckedException topEx = new ClusterTopologyCheckedException("Failed to acquire lock for keys " +
             "(primary node left grid, retry transaction if possible) [keys=" + keys + ", node=" + nodeId + ']', nested);
 
-        topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer));
+        topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer), cctx.kernalContext());
 
         return topEx;
     }

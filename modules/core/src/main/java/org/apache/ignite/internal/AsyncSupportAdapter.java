@@ -29,6 +29,9 @@ public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements Ignite
     /** Future for previous asynchronous operation. */
     protected ThreadLocal<IgniteFuture<?>> curFut;
 
+    /** Context. */
+    protected GridKernalContext ctx;
+
     /**
      * Default constructor.
      */
@@ -38,10 +41,13 @@ public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements Ignite
 
     /**
      * @param async Async enabled flag.
+     * @param ctx Kernal context.
      */
-    public AsyncSupportAdapter(boolean async) {
+    public AsyncSupportAdapter(boolean async, GridKernalContext ctx) {
         if (async)
             curFut = new ThreadLocal<>();
+
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -117,6 +123,6 @@ public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements Ignite
      * @return Public API future.
      */
     protected <R> IgniteFuture<R> createFuture(IgniteInternalFuture<R> fut) {
-        return new IgniteFutureImpl<>(fut);
+        return new IgniteFutureImpl<>(fut, ctx);
     }
 }

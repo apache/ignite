@@ -121,7 +121,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
                         nodeId);
 
-                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
 
                     f.onNodeLeft(e, true);
 
@@ -561,7 +561,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         }
                     }
                     catch (ClusterTopologyCheckedException e) {
-                        e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                        e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
 
                         fut.onNodeLeft(e, false);
                     }

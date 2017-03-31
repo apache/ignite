@@ -66,7 +66,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
      * @param async Async support flag.
      */
     public IgniteMessagingImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
-        super(async);
+        super(async, ctx);
 
         this.ctx = ctx;
         this.prj = prj;

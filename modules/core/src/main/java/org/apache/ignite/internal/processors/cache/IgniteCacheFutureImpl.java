@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -36,14 +38,25 @@ public class IgniteCacheFutureImpl<V> extends IgniteFutureImpl<V> {
      * Constructor.
      *
      * @param fut Internal future.
+     * @param ctx Kernal context.
      */
-    public IgniteCacheFutureImpl(IgniteInternalFuture<V> fut) {
-        super(fut);
+    public IgniteCacheFutureImpl(IgniteInternalFuture<V> fut, GridKernalContext ctx) {
+        super(fut, ctx);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param fut Internal future.
+     * @param exec Default executor for async operations.
+     */
+    protected IgniteCacheFutureImpl(IgniteInternalFuture<V> fut, Executor exec) {
+        super(fut, exec);
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
-        return new IgniteCacheFutureImpl<>(chainInternal(doneCb));
+        return new IgniteCacheFutureImpl<>(chainInternal(doneCb), dfltExec);
     }
 
     /** {@inheritDoc} */

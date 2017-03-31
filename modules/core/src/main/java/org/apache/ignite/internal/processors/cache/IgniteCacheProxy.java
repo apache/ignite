@@ -160,7 +160,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         boolean async,
         boolean lock
     ) {
-        super(async);
+        super(async, ctx.kernalContext());
 
         assert ctx != null;
         assert delegate != null;
@@ -2673,7 +2673,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override protected <R> IgniteFuture<R> createFuture(IgniteInternalFuture<R> fut) {
-        return new IgniteCacheFutureImpl<>(fut);
+        return new IgniteCacheFutureImpl<>(fut, ctx.kernalContext());
     }
 
     /**
@@ -2812,7 +2812,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> rebalance() {
-        return new IgniteFutureImpl<>(ctx.preloader().forceRebalance());
+        return new IgniteFutureImpl<>(ctx.preloader().forceRebalance(), ctx.kernalContext());
     }
 
     /**

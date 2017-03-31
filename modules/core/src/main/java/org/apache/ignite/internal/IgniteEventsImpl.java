@@ -66,7 +66,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
      * @param async Async support flag.
      */
     public IgniteEventsImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
-        super(async);
+        super(async, ctx);
 
         this.ctx = ctx;
         this.prj = prj;
