@@ -58,6 +58,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJob;
@@ -3802,8 +3803,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
 
-        return ctx.kernalContext().task().execute(
-            new SizeTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes), null);
+        try {
+            return ctx.kernalContext().task().execute(
+                new SizeTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes), null);
+        } catch (ClusterGroupEmptyException e) {
+            return new GridFinishedFuture<>(0);
+        }
     }
 
     /** {@inheritDoc} */
