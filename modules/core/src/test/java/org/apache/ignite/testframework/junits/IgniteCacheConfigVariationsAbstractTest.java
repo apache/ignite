@@ -389,13 +389,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     }
 
     /**
-     * @return {@code True} if offheap memory is enabled.
-     */
-    protected boolean offheapEnabled() {
-        return cacheConfiguration().getOffHeapMaxMemory() >= 0;
-    }
-
-    /**
      * @return {@code True} if swap is enabled.
      */
     protected boolean swapEnabled() {

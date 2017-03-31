@@ -56,7 +56,6 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
         CacheConfiguration<?,?> cacheCfg = new CacheConfiguration<>();
 
         cacheCfg.setCacheMode(LOCAL);
-        cacheCfg.setSqlOnheapRowCacheSize(256);
         cacheCfg.setIndexedTypes(
             Integer.class, Person.class
         );

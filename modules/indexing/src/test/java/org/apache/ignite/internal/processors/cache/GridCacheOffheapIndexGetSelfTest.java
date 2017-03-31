@@ -47,9 +47,6 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
  */
 public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final long OFFHEAP_MEM = 10L * 1024L;
-
-    /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
@@ -78,7 +75,6 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setOffHeapMaxMemory(OFFHEAP_MEM);
         cacheCfg.setEvictSynchronized(true);
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

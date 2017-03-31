@@ -192,7 +192,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);
         cacheCfg.setBackups(backups);
-        cacheCfg.setOffHeapMaxMemory(0);
 
         return cacheCfg;
     }

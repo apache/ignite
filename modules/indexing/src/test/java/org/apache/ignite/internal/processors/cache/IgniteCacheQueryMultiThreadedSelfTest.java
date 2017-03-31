@@ -121,11 +121,6 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
         cacheCfg.setEvictionPolicy(plc);
 
-        cacheCfg.setSqlOnheapRowCacheSize(128);
-
-        if (offheapEnabled())
-            cacheCfg.setOffHeapMaxMemory(evictsEnabled() ? 1000 : 0); // Small offheap for evictions.
-
         return cacheCfg;
     }
 
@@ -160,11 +155,6 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
             idxUnswapCnt.incrementAndGet();
         }
-    }
-
-    /** @return {@code true} If offheap enabled. */
-    protected boolean offheapEnabled() {
-        return false;
     }
 
     /** @return {@code true} If evictions enabled. */

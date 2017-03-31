@@ -133,7 +133,6 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
 
         cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
-        cfg.setOffHeapMaxMemory(1024 * 1024 * 1024);
         return cfg;
     }
 }

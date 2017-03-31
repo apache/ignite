@@ -125,12 +125,6 @@ public class IgniteNode implements BenchmarkServer {
                     c.setConnectorConfiguration(ccc);
                 }
 
-                if (args.isOffHeap()) {
-                    cc.setOffHeapMaxMemory(0);
-
-                    cc.setEvictionPolicy(new LruEvictionPolicy(50000));
-                }
-
                 cc.setReadThrough(args.isStoreEnabled());
 
                 cc.setWriteThrough(args.isStoreEnabled());

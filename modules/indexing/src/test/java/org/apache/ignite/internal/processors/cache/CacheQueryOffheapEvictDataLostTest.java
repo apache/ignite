@@ -52,7 +52,6 @@ public class CacheQueryOffheapEvictDataLostTest extends GridCommonAbstractTest {
 
         ccfg.setName("cache-1");
         ccfg.setEvictionPolicy(new LruEvictionPolicy(10));
-        ccfg.setOffHeapMaxMemory(1024);
         ccfg.setIndexedTypes(Integer.class, TestData.class);
 
         cfg.setCacheConfiguration(ccfg);

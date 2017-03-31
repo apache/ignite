@@ -90,7 +90,6 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         CacheConfiguration<Integer, Object> ccfg = defaultCacheConfiguration();
         ccfg.setName(CACHE_NAME);
         ccfg.setStatisticsEnabled(true);
-        ccfg.setOffHeapMaxMemory(MAX_VALS_AMOUNT * VAL_SIZE);
 
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxMemorySize(MAX_VALS_AMOUNT * VAL_SIZE);

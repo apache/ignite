@@ -241,7 +241,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffHeapMaxSize() {
-        return cctx.config().getOffHeapMaxMemory();
+        return 0;
     }
 
     /** {@inheritDoc} */

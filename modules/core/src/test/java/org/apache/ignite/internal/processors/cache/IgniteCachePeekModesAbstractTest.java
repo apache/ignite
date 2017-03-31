@@ -89,8 +89,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
-        ccfg.setOffHeapMaxMemory(512);
-
         ccfg.setBackups(1);
 
         if (hasNearCache())

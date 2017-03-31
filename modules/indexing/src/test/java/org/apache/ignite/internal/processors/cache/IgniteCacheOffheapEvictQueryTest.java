@@ -68,13 +68,9 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
         cacheCfg.setEvictionPolicy(null);
         cacheCfg.setNearConfiguration(null);
 
-        cacheCfg.setSqlOnheapRowCacheSize(128);
-
         cacheCfg.setIndexedTypes(
             Integer.class, Integer.class
         );
-
-        cacheCfg.setOffHeapMaxMemory(2000); // Small offheap for evictions from offheap to swap.
 
         cfg.setCacheConfiguration(cacheCfg);
 

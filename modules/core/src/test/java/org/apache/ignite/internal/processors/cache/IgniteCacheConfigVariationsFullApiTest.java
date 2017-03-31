@@ -3758,7 +3758,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      */
     private void checkKeyAfterLocalEvict(IgniteCache<String, Integer> cache, String k) {
         assertNull(cache.localPeek(k, ONHEAP));
-        assertEquals(offheapEnabled(), cache.localPeek(k, OFFHEAP) != null);
+        assertNotNull(cache.localPeek(k, OFFHEAP));
     }
 
     /**

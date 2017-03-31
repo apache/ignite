@@ -62,10 +62,8 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setOffHeapMaxMemory(0);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setSqlOnheapRowCacheSize(10);
         cacheCfg.setIndexedTypes(Integer.class, TestValue.class);
         cacheCfg.setNearConfiguration(null);
 

@@ -86,16 +86,14 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
     }
 
     /**
-     * @param onHeapRowCacheSize on heap row cache size.
      * @param indexedTypes indexed types for cache.
      * @return Cache configuration.
      */
-    protected CacheConfiguration<Object, Object> cacheConfiguration(int onHeapRowCacheSize, Class<?>[] indexedTypes) {
+    protected CacheConfiguration<Object, Object> cacheConfiguration(Class<?>[] indexedTypes) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setSqlOnheapRowCacheSize(onHeapRowCacheSize);
         ccfg.setIndexedTypes(indexedTypes);
 
         return ccfg;

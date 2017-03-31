@@ -138,7 +138,6 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setBackups(2);
-        cfg.setOffHeapMaxMemory(0);
 
         IgniteCache<String, Integer> cache = client.getOrCreateCache(cfg);
 
