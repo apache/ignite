@@ -18,10 +18,8 @@
 package org.apache.ignite.spi;
 
 import java.io.Serializable;
-import java.text.DateFormat;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,7 +41,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -65,7 +62,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 /**
  * This class provides convenient adapter for SPI implementations.
  */
-public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagementMBean {
+public abstract class IgniteSpiAdapter implements IgniteSpi {
     /** */
     private ObjectName spiMBean;
 
@@ -142,31 +139,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         return startedFlag.get();
     }
 
-    /** {@inheritDoc} */
-    @Override public final String getStartTimestampFormatted() {
-        return DateFormat.getDateTimeInstance().format(new Date(startTstamp));
-    }
-
-    /** {@inheritDoc} */
-    @Override public final String getUpTimeFormatted() {
-        return X.timeSpan2HMSM(getUpTime());
-    }
-
-    /** {@inheritDoc} */
-    @Override public final long getStartTimestamp() {
-        return startTstamp;
-    }
-
-    /** {@inheritDoc} */
-    @Override public final long getUpTime() {
-        return startTstamp == 0 ? 0 : U.currentTimeMillis() - startTstamp;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID getLocalNodeId() {
-        return ignite.cluster().localNode().id();
-    }
-
     /**
      * @return Local node.
      */
@@ -180,11 +152,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /** {@inheritDoc} */
-    @Override public final String getIgniteHome() {
-        return ignite.configuration().getIgniteHome();
-    }
-
-    /** {@inheritDoc} */
     @Override public String getName() {
         return name;
     }
@@ -193,10 +160,13 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      * Sets SPI name.
      *
      * @param name SPI name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setName(String name) {
+    public IgniteSpiAdapter setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -351,7 +321,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      * @return Uniformly formatted message for SPI start.
      */
     protected final String startInfo() {
-        return "SPI started ok [startMs=" + getUpTime() + ", spiMBean=" + spiMBean + ']';
+        return "SPI started ok [startMs=" + startTstamp + ", spiMBean=" + spiMBean + ']';
+    }
+
+    /**
+     * Gets SPI startup time.
+     * @return Time in millis.
+     */
+    final long getStartTstamp() {
+        return startTstamp;
     }
 
     /**
