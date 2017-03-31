@@ -82,7 +82,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             {
                 Byte = 25,
                 Bool = true,
-                Char = 'c',
                 Short = 66,
                 Int = 2,
                 Long = 98,
@@ -98,14 +97,14 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             Assert.AreEqual(2, res.Key);
             Assert.AreEqual(2, res.Value.Int);
-            Assert.AreEqual("bar2", res.Value.Double);
+            Assert.AreEqual("bar2", res.Value.String);
 
             // Test DML.
             var guid = Guid.NewGuid();
             var insertRes = cache.QueryFields(new SqlFieldsQuery(
-                "insert into SimpleSerializable(_key, Byte, Bool, Char, Short, Int, Long, Float, Double, " +
-                "Decimal, Guid, String) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
-                3, 45, true, 'z', 43, 33, 99, 4.5f, 6.7, 9.04m, guid, "bar33")).GetAll();
+                "insert into SimpleSerializable(_key, Byte, Bool, Short, Int, Long, Float, Double, " +
+                "Decimal, Guid, String) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+                3, 45, true, 43, 33, 99, 4.5f, 6.7, 9.04m, guid, "bar33")).GetAll();
 
             Assert.AreEqual(1, insertRes.Count);
             Assert.AreEqual(1, insertRes[0][0]);
@@ -137,9 +136,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         {
             [QuerySqlField]
             public byte Byte { get; set; }
-
-            [QuerySqlField]
-            public char Char { get; set; }
 
             [QuerySqlField]
             public bool Bool { get; set; }
@@ -178,7 +174,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             public SimpleSerializable(SerializationInfo info, StreamingContext context)
             {
                 Byte = info.GetByte("Byte");
-                Char = info.GetChar("Char");
                 Bool = info.GetBoolean("Bool");
                 Short = info.GetInt16("Short");
                 Int = info.GetInt32("Int");
@@ -193,7 +188,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             public void GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 info.AddValue("Byte", Byte);
-                info.AddValue("Char", Char);
                 info.AddValue("Bool", Bool);
                 info.AddValue("Short", Short);
                 info.AddValue("Int", Int);
