@@ -1816,7 +1816,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Public API future.
      */
     private <R> IgniteFuture<R> createFuture(IgniteInternalFuture<R> fut) {
-        return new IgniteFutureImpl<>(fut);
+        return new IgniteFutureImpl<>(fut, igfsCtx.kernalContext());
     }
 
     /**

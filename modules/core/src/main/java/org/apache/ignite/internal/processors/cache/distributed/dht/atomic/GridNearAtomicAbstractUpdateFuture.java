@@ -374,7 +374,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
             "before response is received: " + req.nodeId());
 
-        e.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(req.topologyVersion()));
+        e.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(req.topologyVersion()), cctx.kernalContext());
 
         res.addFailedKeys(req.keys(), e);
 

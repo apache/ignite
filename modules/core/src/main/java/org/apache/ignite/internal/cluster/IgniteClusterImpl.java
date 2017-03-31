@@ -233,7 +233,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** {@inheritDoc} */
     @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file, boolean restart,
         int timeout, int maxConn) throws IgniteException {
-        return new IgniteFutureImpl<>(startNodesAsync0(file, restart, timeout, maxConn));
+        return new IgniteFutureImpl<>(startNodesAsync0(file, restart, timeout, maxConn), ctx);
     }
 
     /** {@inheritDoc} */
@@ -256,7 +256,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts,
         boolean restart, int timeout, int maxConn) throws IgniteException {
-        return new IgniteFutureImpl<>(startNodesAsync0(hosts, dflts, restart, timeout, maxConn));
+        return new IgniteFutureImpl<>(startNodesAsync0(hosts, dflts, restart, timeout, maxConn), ctx);
     }
 
     /** {@inheritDoc} */

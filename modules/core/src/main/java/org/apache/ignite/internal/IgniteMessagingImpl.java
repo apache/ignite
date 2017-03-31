@@ -239,7 +239,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
                 1,
                 0,
                 false,
-                prj.predicate()));
+                prj.predicate()), ctx);
         }
         finally {
             unguard();
@@ -264,13 +264,14 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException {
         A.notNull(opId, "opId");
 
         guard();
 
         try {
-            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.continuous().stopRoutine(opId));
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.continuous().stopRoutine(opId), ctx);
         }
         finally {
             unguard();

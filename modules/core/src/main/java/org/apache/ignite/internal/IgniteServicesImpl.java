@@ -101,7 +101,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deployNodeSingleton(prj, name, svc));
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deployNodeSingleton(prj, name, svc), ctx);
         }
         finally {
             unguard();
@@ -134,7 +134,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deployClusterSingleton(prj, name, svc));
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deployClusterSingleton(prj, name, svc), ctx);
         }
         finally {
             unguard();
@@ -169,7 +169,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
 
         try {
             return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deployMultiple(prj, name, svc,
-                totalCnt, maxPerNodeCnt));
+                totalCnt, maxPerNodeCnt), ctx);
         }
         finally {
             unguard();
@@ -207,7 +207,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
 
         try {
             return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deployKeyAffinitySingleton(name, svc,
-                cacheName, affKey));
+                cacheName, affKey), ctx);
         }
         finally {
             unguard();
@@ -238,7 +238,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deploy(cfg));
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deploy(cfg), ctx);
         }
         finally {
             unguard();
@@ -269,7 +269,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().cancel(name));
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().cancel(name), ctx);
         }
         finally {
             unguard();
@@ -296,7 +296,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().cancelAll());
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().cancelAll(), ctx);
         }
         finally {
             unguard();

@@ -162,7 +162,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
                 return new PlatformAsyncResult() {
                     @Override public IgniteFuture future() {
                         //noinspection unchecked
-                        return new IgniteFutureImpl(fa);
+                        return new IgniteFutureImpl(fa, platformCtx.kernalContext());
                     }
 
                     @Override public void write(BinaryRawWriterEx writer, Object result) {
@@ -192,7 +192,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
                 return new PlatformAsyncResult() {
                     @Override public IgniteFuture future() {
                         //noinspection unchecked
-                        return new IgniteFutureImpl(fa);
+                        return new IgniteFutureImpl(fa, platformCtx.kernalContext());
                     }
 
                     @Override public void write(BinaryRawWriterEx writer, Object result) {
@@ -220,9 +220,8 @@ class PlatformTestPluginTarget implements PlatformTarget {
     private PlatformTestPluginConfiguration configuration(IgniteConfiguration igniteCfg) {
         if (igniteCfg.getPluginConfigurations() != null) {
             for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
-                if (pluginCfg instanceof PlatformTestPluginConfiguration) {
+                if (pluginCfg instanceof PlatformTestPluginConfiguration)
                     return (PlatformTestPluginConfiguration) pluginCfg;
-                }
             }
         }
 

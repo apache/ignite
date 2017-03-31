@@ -103,7 +103,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
 
         try {
             return new IgniteFutureImpl<>(ctx.event().remoteEventsAsync(compoundPredicate(p, types),
-                prj.nodes(), timeout));
+                prj.nodes(), timeout), ctx);
         }
         finally {
             unguard();
@@ -171,7 +171,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
                 bufSize,
                 interval,
                 autoUnsubscribe,
-                prj.predicate()));
+                prj.predicate()), ctx);
         }
         finally {
             unguard();
@@ -203,7 +203,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
         guard();
 
         try {
-            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.continuous().stopRoutine(opId));
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.continuous().stopRoutine(opId), ctx);
         }
         finally {
             unguard();
@@ -232,7 +232,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
         guard();
 
         try {
-            return new IgniteFutureImpl<>(ctx.event().waitForEvent(filter, types));
+            return new IgniteFutureImpl<>(ctx.event().waitForEvent(filter, types), ctx);
         }
         finally {
             unguard();
