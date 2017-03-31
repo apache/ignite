@@ -1195,6 +1195,28 @@ namespace ignite
             }
 
             /**
+             * Removes given key mappings from cache.
+             * If write-through is enabled, the value will be removed from store.
+             * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            template<typename Iter>
+            void RemoveAll(Iter begin, Iter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, Iter> op(begin, end);
+
+                impl.Get()->RemoveAll(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
              * Removes all mappings from cache.
              * If write-through is enabled, the value will be removed from store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.

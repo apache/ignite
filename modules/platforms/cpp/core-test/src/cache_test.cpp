@@ -145,6 +145,50 @@ BOOST_AUTO_TEST_CASE(TestRemoveAllKeys)
     BOOST_REQUIRE(1 == size);
 }
 
+BOOST_AUTO_TEST_CASE(TestRemoveAllKeysIterVector)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    int size = cache.Size(cache::IGNITE_PEEK_MODE_ALL);
+
+    BOOST_REQUIRE(0 == size);
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+    cache.Put(3, 3);
+
+    int keys[] = { 1, 2, 4, 5 };
+
+    std::vector<int> keySet(keys, keys + 4);
+
+    cache.RemoveAll(keySet.begin(), keySet.end());
+
+    size = cache.Size(cache::IGNITE_PEEK_MODE_PRIMARY);
+
+    BOOST_REQUIRE(1 == size);
+}
+
+BOOST_AUTO_TEST_CASE(TestRemoveAllKeysIterArray)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    int size = cache.Size(cache::IGNITE_PEEK_MODE_ALL);
+
+    BOOST_REQUIRE(0 == size);
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+    cache.Put(3, 3);
+
+    int keys[] = { 1, 2, 4, 5 };
+
+    cache.RemoveAll(keys, keys + 4);
+
+    size = cache.Size(cache::IGNITE_PEEK_MODE_PRIMARY);
+
+    BOOST_REQUIRE(1 == size);
+}
+
 BOOST_AUTO_TEST_CASE(TestPut)
 {
     cache::Cache<int, int> cache = Cache();
