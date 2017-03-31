@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core
     using System;
     using System.Collections.Generic;
     using System.Configuration;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -212,6 +213,10 @@ namespace Apache.Ignite.Core
         public static unsafe IIgnite Start(IgniteConfiguration cfg)
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
+
+            var fr = new StackTrace().GetFrames().Skip(1).First();
+            Console.WriteLine("STARTING-IGNITE: Spring='{0}', Name='{1}', Stack=[{2}.{3}]", cfg.SpringConfigUrl,
+                cfg.IgniteInstanceName, fr.GetMethod().DeclaringType, fr.GetMethod().Name);
 
             lock (SyncRoot)
             {
