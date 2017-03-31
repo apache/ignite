@@ -290,6 +290,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
+        /// Tests the defaults.
+        /// </summary>
+        [Test]
+        public void TestDefaults()
+        {
+            var qry = new ContinuousQuery<int, int>(null);
+
+            Assert.AreEqual(ContinuousQuery.DefaultAutoUnsubscribe, qry.AutoUnsubscribe);
+            Assert.AreEqual(ContinuousQuery.DefaultBufferSize, qry.BufferSize);
+            Assert.AreEqual(ContinuousQuery.DefaultTimeInterval, qry.TimeInterval);
+            Assert.IsFalse(qry.Local);
+        }
+
+        /// <summary>
         /// Check filter.
         /// </summary>
         /// <param name="binarizable">Binarizable.</param>

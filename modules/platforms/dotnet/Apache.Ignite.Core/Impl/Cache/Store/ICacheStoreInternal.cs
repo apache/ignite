@@ -15,20 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Binary
+namespace Apache.Ignite.Core.Impl.Cache.Store
 {
-    using System.Collections.Generic;
-    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
-    /// Tests with array equality comparer (identity resolver).
+    /// Provides a non-generic way to work with <see cref="CacheStoreInternal{TK, TV}"/>.
     /// </summary>
-    public class BinaryBuilderSelfTestArrayIdentity : BinaryBuilderSelfTest
+    internal interface ICacheStoreInternal
     {
-        /** <inheritdoc /> */
-        protected override IEqualityComparer<IBinaryObject> GetIdentityResolver()
-        {
-            return new BinaryArrayEqualityComparer();
-        }
+        /// <summary>
+        /// Invokes a store operation.
+        /// </summary>
+        /// <param name="stream">Input stream.</param>
+        /// <param name="grid">Grid.</param>
+        /// <returns>Invocation result.</returns>
+        /// <exception cref="IgniteException">Invalid operation type:  + opType</exception>
+        int Invoke(IBinaryStream stream, Ignite grid);
+
+        /// <summary>
+        /// Initializes this instance with a grid.
+        /// </summary>
+        /// <param name="grid">Grid.</param>
+        void Init(Ignite grid);
     }
 }

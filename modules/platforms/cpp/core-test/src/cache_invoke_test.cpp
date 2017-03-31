@@ -28,6 +28,8 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
+#include "ignite/test_utils.h"
+
 #include "ignite/ignite_binding_context.h"
 #include "ignite/cache/cache_entry_processor.h"
 
@@ -397,7 +399,7 @@ struct CacheInvokeTestSuiteFixture
      * Constructor.
      */
     CacheInvokeTestSuiteFixture() :
-        node(ignite_test::StartNode("cache-query.xml"))
+        node(ignite_test::StartNode("cache-query.xml", "InvokeTest"))
     {
         // No-op.
     }
@@ -407,7 +409,7 @@ struct CacheInvokeTestSuiteFixture
      */
     ~CacheInvokeTestSuiteFixture()
     {
-        Ignition::Stop(node.GetName(), true);
+        Ignition::StopAll(true);
     }
 };
 

@@ -170,6 +170,17 @@ namespace ignite
             }
 
             /**
+             * Get environment.
+             * Internal method. Should not be used by user.
+             *
+             * @return Environment pointer.
+             */
+            IgniteEnvironment* GetEnvironment()
+            {
+                return env.Get();
+            }
+
+            /**
              * Get transactions.
              *
              * @return TransactionsImpl instance.

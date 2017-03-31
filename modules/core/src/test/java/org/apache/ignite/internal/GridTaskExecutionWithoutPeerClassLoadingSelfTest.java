@@ -15,34 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
- * Data transfer object for cache store configuration properties.
+ * Task execution test.
  */
-public class VisorCacheStoreConfigurationV2 extends VisorCacheStoreConfiguration {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Keep binary in store flag. */
-    private boolean storeKeepBinary;
-
+@GridCommonTest(group = "Kernal Self")
+public class GridTaskExecutionWithoutPeerClassLoadingSelfTest extends GridTaskExecutionSelfTest {
     /** {@inheritDoc} */
-    @Override public VisorCacheStoreConfiguration from(IgniteEx ignite, CacheConfiguration ccfg) {
-        super.from(ignite, ccfg);
-
-        storeKeepBinary = ccfg.isStoreKeepBinary();
-
-        return this;
-    }
-
-    /**
-     * @return Keep binary in store flag.
-     */
-    public boolean storeKeepBinary() {
-        return storeKeepBinary;
+    @Override protected boolean peerClassLoadingEnabled() {
+        return false;
     }
 }

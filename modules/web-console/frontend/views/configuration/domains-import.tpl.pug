@@ -24,6 +24,9 @@ mixin td-ellipses-lbl(w, lbl)
         label #{lbl}
 
 .modal.modal-domain-import.center(role='dialog')
+    - var tipOpts = {};
+    - tipOpts.container = '.modal-content'
+    - tipOpts.placement = 'top'
     .modal-dialog.domains-import-dialog
         .modal-content(ignite-loading='importDomainFromDb' ignite-loading-text='{{importDomain.loadingOptions.text}}')
             #errors-container.modal-header.header
@@ -75,7 +78,10 @@ mixin td-ellipses-lbl(w, lbl)
                         .settings-row.settings-row_small-label
                             +password('Password:', 'selectedPreset.password', '"jdbcPassword"', false, '', 'Password for connecting to database<br>Note, password would not be saved in preferences for security reasons')(ignite-on-enter='importDomainNext()')
                         .settings-row
+                            - tipOpts.placement = 'auto'
                             +checkbox('Tables only', 'selectedPreset.tablesOnly', '"tablesOnly"', 'If selected, then only tables metadata will be parsed<br>Otherwise table and view metadata will be parsed')
+                            - tipOpts.placement = 'top'
+
                 .import-domain-model-wizard-page(ng-show='importDomain.action == "schemas"')
                     table.table.metadata(st-table='importDomain.displayedSchemas' st-safe-src='importDomain.schemas')
                         thead

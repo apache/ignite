@@ -226,7 +226,7 @@ public class HadoopDirectShuffleMessage implements Message, HadoopMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -42;
     }
 

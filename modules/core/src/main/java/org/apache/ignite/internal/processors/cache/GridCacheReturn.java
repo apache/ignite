@@ -351,7 +351,7 @@ public class GridCacheReturn implements Externalizable, Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 88;
     }
 

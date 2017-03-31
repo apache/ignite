@@ -527,10 +527,9 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     }
 
     /**
-     * @param futId
-     * @return
+     * @param futId Future ID.
      */
-    private boolean checkDhtNodes(Long futId) {
+    private void checkDhtNodes(Long futId) {
         GridCacheReturn opRes0 = null;
         CachePartialUpdateCheckedException err0 = null;
         AffinityTopologyVersion remapTopVer0 = null;
@@ -539,7 +538,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         synchronized (mux) {
             if (this.futId == null || !this.futId.equals(futId))
-                return false;
+                return;
 
             assert reqState != null;
 
@@ -550,19 +549,16 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 err0 = err;
                 remapTopVer0 = onAllReceived();
             }
-            else if (res == DhtLeftResult.ALL_RCVD_CHECK_PRIMARY){
+            else if (res == DhtLeftResult.ALL_RCVD_CHECK_PRIMARY)
                 checkReq = new GridNearAtomicCheckUpdateRequest(reqState.req);
-            }
             else
-                return true;
+                return;
         }
 
         if (checkReq != null)
             sendCheckUpdateRequest(checkReq);
         else
             finishUpdateFuture(opRes0, err0, remapTopVer0);
-
-        return false;
     }
 
     /**

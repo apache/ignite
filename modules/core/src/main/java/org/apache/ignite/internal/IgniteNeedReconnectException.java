@@ -15,35 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.query;
+package org.apache.ignite.internal;
+
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Arguments for {@link VisorQueryTask}.
+ * Indicates that node should try reconnect to cluster.
  */
-public class VisorQueryArgV2 extends VisorQueryArg {
+public class IgniteNeedReconnectException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Distributed joins enabled flag. */
-    private final boolean distributedJoins;
-
     /**
-     * @param cacheName Cache name for query.
-     * @param qryTxt Query text.
-     * @param distributedJoins If {@code true} then distributed joins enabled.
-     * @param loc Flag whether to execute query locally.
-     * @param pageSize Result batch size.
+     * @param locNode Local node.
+     * @param cause Cause.
      */
-    public VisorQueryArgV2(String cacheName, String qryTxt, boolean distributedJoins, boolean loc, int pageSize) {
-        super(cacheName, qryTxt, loc, pageSize);
+    public IgniteNeedReconnectException(ClusterNode locNode, @Nullable Throwable cause) {
+        super("Local node need try to reconnect [locNodeId=" + locNode.id() + ']', cause);
 
-        this.distributedJoins = distributedJoins;
-    }
-
-    /**
-     * @return Distributed joins enabled flag.
-     */
-    public boolean distributedJoins() {
-        return distributedJoins;
+        assert locNode.isClient();
     }
 }
