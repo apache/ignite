@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for <see cref="CacheStoreAdapter"/>.
+    /// Tests for <see cref="CacheStoreAdapter{K, V}"/>.
     /// </summary>
     public class CacheStoreAdapterTest
     {
@@ -62,26 +62,26 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Test store.
         /// </summary>
-        private class Store : CacheStoreAdapter
+        private class Store : CacheStoreAdapter<int, string>
         {
             /** */
-            public readonly Dictionary<object, object> Map = new Dictionary<object, object>();
+            public readonly Dictionary<int, string> Map = new Dictionary<int, string>();
 
             /** <inheritdoc /> */
-            public override object Load(object key)
+            public override string Load(int key)
             {
-                object res;
+                string res;
                 return Map.TryGetValue(key, out res) ? res : null;
             }
 
             /** <inheritdoc /> */
-            public override void Write(object key, object val)
+            public override void Write(int key, string val)
             {
                 Map[key] = val;
             }
 
             /** <inheritdoc /> */
-            public override void Delete(object key)
+            public override void Delete(int key)
             {
                 Map.Remove(key);
             }

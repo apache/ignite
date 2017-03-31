@@ -49,6 +49,7 @@ import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -896,11 +897,9 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryObjectBuilderImpl mutableObj = wrap(obj);
 
-        assertEquals(obj.hashCode(), mutableObj.build().hashCode());
+        BinaryObject bo = mutableObj.build();
 
-        mutableObj.hashCode(25);
-
-        assertEquals(25, mutableObj.build().hashCode());
+        assertEquals(BinaryArrayIdentityResolver.instance().hashCode(bo), bo.hashCode());
     }
 
     /**
@@ -1377,7 +1376,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
             jcache(0, "partitioned").withKeepBinary();
 
         BinaryObjectBuilder keyBuilder = ignite(0).binary().builder("keyType")
-            .setField("F1", "V1").hashCode("V1".hashCode());
+            .setField("F1", "V1");
 
         BinaryObjectBuilder valBuilder = ignite(0).binary().builder("valueType")
             .setField("F2", "V2")

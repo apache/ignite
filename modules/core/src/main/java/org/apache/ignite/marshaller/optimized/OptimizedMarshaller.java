@@ -124,18 +124,24 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
      * Sets whether marshaller should require {@link Serializable} interface or not.
      *
      * @param requireSer Whether to require {@link Serializable}.
+     * @return {@code this} for chaining.
      */
-    public void setRequireSerializable(boolean requireSer) {
+    public OptimizedMarshaller setRequireSerializable(boolean requireSer) {
         this.requireSer = requireSer;
+
+        return this;
     }
 
     /**
      * Sets ID mapper.
      *
      * @param mapper ID mapper.
+     * @return {@code this} for chaining.
      */
-    public void setIdMapper(OptimizedMarshallerIdMapper mapper) {
+    public OptimizedMarshaller setIdMapper(OptimizedMarshallerIdMapper mapper) {
         this.mapper = mapper;
+
+        return this;
     }
 
     /**
@@ -152,9 +158,12 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
      * different threads which will lead to more frequent context switching.
      *
      * @param poolSize Streams pool size. If {@code 0}, pool is not used.
+     * @return {@code this} for chaining.
      */
-    public void setPoolSize(int poolSize) {
+    public OptimizedMarshaller setPoolSize(int poolSize) {
         OptimizedObjectStreamRegistry.poolSize(poolSize);
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.binary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -188,12 +189,12 @@ public class BinaryContext {
         sysClss.add(IgfsClientUpdateCallable.class.getName());
 
         // Closure processor classes.
-        sysClss.add(GridClosureProcessor.C1V2.class.getName());
-        sysClss.add(GridClosureProcessor.C1MLAV2.class.getName());
-        sysClss.add(GridClosureProcessor.C2V2.class.getName());
-        sysClss.add(GridClosureProcessor.C2MLAV2.class.getName());
-        sysClss.add(GridClosureProcessor.C4V2.class.getName());
-        sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
+        sysClss.add(GridClosureProcessor.C1.class.getName());
+        sysClss.add(GridClosureProcessor.C1MLA.class.getName());
+        sysClss.add(GridClosureProcessor.C2.class.getName());
+        sysClss.add(GridClosureProcessor.C2MLA.class.getName());
+        sysClss.add(GridClosureProcessor.C4.class.getName());
+        sysClss.add(GridClosureProcessor.C4MLA.class.getName());
 
         sysClss.add(IgniteUuid.class.getName());
 
@@ -1139,7 +1140,7 @@ public class BinaryContext {
 
         cls2Mappers.put(clsName, mapper);
 
-        Map<String, Integer> fieldsMeta = null;
+        Map<String, BinaryFieldMetadata> fieldsMeta = null;
 
         if (cls != null) {
             if (serializer == null) {
@@ -1223,6 +1224,16 @@ public class BinaryContext {
 
     /**
      * @param typeId Type ID.
+     * @param schemaId Schema ID.
+     * @return Meta data.
+     * @throws BinaryObjectException In case of error.
+     */
+    public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
+        return metaHnd != null ? metaHnd.metadata(typeId, schemaId): null;
+    }
+
+    /**
+     * @param typeId Type ID.
      * @return Affinity key field name.
      */
     public String affinityKeyFieldName(int typeId) {
@@ -1234,7 +1245,9 @@ public class BinaryContext {
      * @return Type identity.
      */
     public BinaryIdentityResolver identity(int typeId) {
-        return identities.get(typeId);
+        BinaryIdentityResolver rslvr = identities.get(typeId);
+
+        return rslvr != null ? rslvr : BinaryArrayIdentityResolver.instance();
     }
 
     /**

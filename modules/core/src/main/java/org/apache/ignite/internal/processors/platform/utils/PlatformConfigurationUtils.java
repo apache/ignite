@@ -62,7 +62,6 @@ import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosure;
 import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosureFactory;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -469,6 +468,7 @@ public class PlatformConfigurationUtils {
 
         res.setKeyType(in.readString());
         res.setValueType(in.readString());
+        res.setTableName(in.readString());
 
         // Fields
         int cnt = in.readInt();
@@ -899,6 +899,7 @@ public class PlatformConfigurationUtils {
 
         writer.writeString(queryEntity.getKeyType());
         writer.writeString(queryEntity.getValueType());
+        writer.writeString(queryEntity.getTableName());
 
         // Fields
         LinkedHashMap<String, String> fields = queryEntity.getFields();
@@ -1012,7 +1013,7 @@ public class PlatformConfigurationUtils {
 
         if (comm instanceof TcpCommunicationSpi) {
             w.writeBoolean(true);
-            TcpCommunicationSpiMBean tcp = (TcpCommunicationSpiMBean) comm;
+            TcpCommunicationSpi tcp = (TcpCommunicationSpi) comm;
 
             w.writeInt(tcp.getAckSendThreshold());
             w.writeLong(tcp.getConnectTimeout());

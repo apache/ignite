@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.platform.entityframework;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -187,11 +186,10 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
         final ClusterGroup dataNodes = grid.cluster().forDataNodes(dataCacheName);
 
-        IgniteCompute asyncCompute = grid.compute(dataNodes).withAsync();
+        IgniteFuture f = grid.compute(dataNodes).broadcastAsync(
+            new RemoveOldEntriesRunnable(dataCacheName, currentVersions));
 
-        asyncCompute.broadcast(new RemoveOldEntriesRunnable(dataCacheName, currentVersions));
-
-        asyncCompute.future().listen(new CleanupCompletionListener(metaCache, dataCacheName));
+        f.listen(new CleanupCompletionListener(metaCache, dataCacheName));
     }
 
     /**

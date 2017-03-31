@@ -173,9 +173,9 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
      */
     public static class TestMessage  extends GridCacheMessage implements GridCacheDeployable {
         /** */
-        public static final byte DIRECT_TYPE = (byte)302;
+        public static final short DIRECT_TYPE = 302;
 
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 

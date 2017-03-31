@@ -15,18 +15,14 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/binary/binary_type_updater.h"
+package org.apache.ignite.mxbean;
 
-namespace ignite
-{    
-    namespace impl
-    {
-        namespace binary
-        {
-            BinaryTypeUpdater::~BinaryTypeUpdater()
-            {
-                // No-op.
-            }
-        }
-    }
+/**
+ * MBean-aware interface.
+ */
+public interface IgniteMBeanAware {
+    /**
+     * @return MBean for this object.
+     */
+    Object getMBean();
 }

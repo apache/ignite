@@ -15,30 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+package org.apache.ignite.jdbc;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.jetbrains.annotations.Nullable;
+import java.sql.ResultSet;
 
 /**
- * Async target.
+ * Test for Jdbc driver query without class on client
  */
-public interface PlatformAsyncTarget {
-    /**
-     * Gets future for the current operation.
-     *
-     * @return current future.
-     * @throws IgniteCheckedException If failed.
-     */
-    IgniteInternalFuture currentFuture() throws IgniteCheckedException;
+public class JdbcPojoLegacyQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
+    /** URL. */
+    private static final String URL = "jdbc:ignite://127.0.0.1/";
 
     /**
-     * Gets a custom future writer.
-     *
-     * @param opId Operation id.
-     * @return A custom writer for given op id.
+     * @throws Exception If failed.
      */
-    @Nullable PlatformFutureUtils.Writer futureWriter(int opId);
+    public void testJdbcQuery() throws Exception {
+        stmt.execute("select * from JdbcTestObject");
+
+        ResultSet rs = stmt.getResultSet();
+
+        assertResultSet(rs);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String getURL() {
+        return URL;
+    }
 }
