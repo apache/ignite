@@ -15,20 +15,28 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Binary
-{
-    using System.Collections.Generic;
-    using Apache.Ignite.Core.Binary;
+ #include <ignite/binary/binary_raw_reader.h>
+ #include <ignite/binary/binary_raw_writer.h>
 
-    /// <summary>
-    /// Tests with array equality comparer (identity resolver).
-    /// </summary>
-    public class BinaryBuilderSelfTestArrayIdentity : BinaryBuilderSelfTest
+#include <ignite/impl/binary/binary_field_meta.h>
+
+namespace ignite
+{
+    namespace impl
     {
-        /** <inheritdoc /> */
-        protected override IEqualityComparer<IBinaryObject> GetIdentityResolver()
+        namespace binary
         {
-            return new BinaryArrayEqualityComparer();
+            void BinaryFieldMeta::Write(ignite::binary::BinaryRawWriter& writer) const
+            {
+                writer.WriteInt32(typeId);
+                writer.WriteInt32(fieldId);
+            }
+
+            void BinaryFieldMeta::Read(ignite::binary::BinaryRawReader& reader)
+            {
+                typeId = reader.ReadInt32();
+                fieldId = reader.ReadInt32();
+            }
         }
     }
 }

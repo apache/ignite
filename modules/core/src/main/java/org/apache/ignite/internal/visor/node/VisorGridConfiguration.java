@@ -112,7 +112,7 @@ public class VisorGridConfiguration implements Serializable, LessNamingBean {
         sysProps = IgniteSystemProperties.snapshot();
         atomic = VisorAtomicConfiguration.from(c.getAtomicConfiguration());
         txCfg = VisorTransactionConfiguration.from(c.getTransactionConfiguration());
-        memCfg = VisorMemoryConfiguration.from(c.getMemoryConfiguration());
+        memCfg = new VisorMemoryConfiguration(c.getMemoryConfiguration());
 
         return this;
     }

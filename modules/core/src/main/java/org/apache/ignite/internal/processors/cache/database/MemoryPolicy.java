@@ -14,17 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.database;
 
-package org.apache.ignite.yardstick.cache;
-
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.internal.pagemem.PageMemory;
 
 /**
- * Test PUTs with binary hashed key.
+ * Memory policy provides access to objects configured with {@link MemoryPolicyConfiguration} configuration.
  */
-public class IgniteLegacyBinaryIdentityPutBenchmark extends IgniteBinaryIdentityPutBenchmark {
-    /** {@inheritDoc} */
-    @Override BinaryObject createKey(int key) {
-        return createLegacyIdentityBinaryKey(key);
+public class MemoryPolicy {
+    /** */
+    private final PageMemory pageMem;
+
+    /** */
+    private final MemoryPolicyConfiguration cfg;
+
+    /**
+     * @param pageMem Page mem.
+     */
+    public MemoryPolicy(PageMemory pageMem, MemoryPolicyConfiguration cfg) {
+        this.pageMem = pageMem;
+        this.cfg = cfg;
+    }
+
+    /**
+     *
+     */
+    public PageMemory pageMemory() {
+        return pageMem;
+    }
+
+    /**
+     * @return Config.
+     */
+    public MemoryPolicyConfiguration config() {
+        return cfg;
     }
 }

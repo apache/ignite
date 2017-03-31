@@ -142,9 +142,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
         });
 
         try {
-            IgniteCache<TestKey, TestValue> cache0 = ignite(0).cache(null);
-
-            final IgniteCache<TestKey, TestValue> cache = test == Test.PUT_ALL_ASYNC ? cache0.withAsync() : cache0;
+            final IgniteCache<TestKey, TestValue> cache = ignite(0).cache(null);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -184,9 +182,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
                                     for (int k = 0; k < 100; k++)
                                         map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
 
-                                    cache.putAll(map);
-
-                                    IgniteFuture<?> fut = cache.future();
+                                    IgniteFuture<?> fut = cache.putAllAsync(map);
 
                                     assertNotNull(fut);
 

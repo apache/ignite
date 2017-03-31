@@ -26,12 +26,13 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.LessNamingBean;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -84,14 +85,14 @@ public class VisorCache implements Serializable, LessNamingBean {
     /** Number of partitions. */
     private int partitions;
 
+    /** Flag indicating that cache has near cache. */
+    private boolean near;
+
     /** Cache metrics. */
     private VisorCacheMetrics metrics;
 
     /** Cache partitions states. */
-    private GridDhtPartitionMap2 partitionsMap;
-
-    /** Flag indicating that cache has near cache. */
-    private boolean near;
+    private GridDhtPartitionMap partitionsMap;
 
     /**
      * @param ignite Grid.
@@ -307,7 +308,7 @@ public class VisorCache implements Serializable, LessNamingBean {
     /**
      * @return Cache partitions states.
      */
-    @Nullable public GridDhtPartitionMap2 partitionMap() {
+    @Nullable public GridDhtPartitionMap partitionMap() {
         return partitionsMap;
     }
 

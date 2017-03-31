@@ -150,6 +150,9 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         grid(0).cache(null).clear();
 
         assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
+
+        conn.close();
+        assertTrue(conn.isClosed());
     }
 
     /**

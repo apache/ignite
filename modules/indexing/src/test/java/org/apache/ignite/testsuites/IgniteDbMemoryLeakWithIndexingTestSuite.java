@@ -15,18 +15,26 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/binary/binary_type_updater.h"
+package org.apache.ignite.testsuites;
 
-namespace ignite
-{    
-    namespace impl
-    {
-        namespace binary
-        {
-            BinaryTypeUpdater::~BinaryTypeUpdater()
-            {
-                // No-op.
-            }
-        }
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakIndexedTest;
+import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakSqlQueryTest;
+
+/**
+ * Page memory leaks tests using indexing.
+ */
+public class IgniteDbMemoryLeakWithIndexingTestSuite extends TestSuite {
+    /**
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Ignite Db Memory Leaks With Indexing Test Suite");
+
+        suite.addTestSuite(IgniteDbMemoryLeakSqlQueryTest.class);
+        suite.addTestSuite(IgniteDbMemoryLeakIndexedTest.class);
+
+        return suite;
     }
 }

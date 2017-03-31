@@ -15,30 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+package org.apache.ignite.internal.processors.database;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.IgniteEx;
 
 /**
- * Async target.
+ *
  */
-public interface PlatformAsyncTarget {
-    /**
-     * Gets future for the current operation.
-     *
-     * @return current future.
-     * @throws IgniteCheckedException If failed.
-     */
-    IgniteInternalFuture currentFuture() throws IgniteCheckedException;
-
-    /**
-     * Gets a custom future writer.
-     *
-     * @param opId Operation id.
-     * @return A custom writer for given op id.
-     */
-    @Nullable PlatformFutureUtils.Writer futureWriter(int opId);
+public class IgniteDbMemoryLeakNonTransactionalTest extends IgniteDbMemoryLeakTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteCache<Object, Object> cache(IgniteEx ig) {
+        return ig.cache("atomic");
+    }
 }

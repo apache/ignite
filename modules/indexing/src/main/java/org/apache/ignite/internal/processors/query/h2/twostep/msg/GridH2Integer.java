@@ -103,7 +103,7 @@ public class GridH2Integer extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -8;
     }
 

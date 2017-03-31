@@ -55,7 +55,10 @@ public interface GridComponent {
         DISCOVERY_PROC,
 
         /** */
-        MARSHALLER_PROC
+        MARSHALLER_PROC,
+
+        /** */
+        BINARY_PROC
     }
 
     /**

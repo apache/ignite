@@ -232,7 +232,7 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 14;
     }
 

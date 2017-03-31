@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Test store implementation.
         /// </summary>
         // ReSharper disable once UnusedMember.Global
-        public class Store : CacheStoreAdapter
+        public class Store : CacheStoreAdapter<object, object>
         {
             /** Store session. */
             [StoreSessionResource]

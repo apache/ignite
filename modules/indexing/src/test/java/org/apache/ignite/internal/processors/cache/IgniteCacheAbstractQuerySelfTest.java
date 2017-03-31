@@ -205,7 +205,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         qryEntity.setIndexes(Arrays.asList(strIdx));
 
-        entityList.add(qryEntity);cc.setQueryEntities(entityList);
+        entityList.add(qryEntity);
+
+        cc.setQueryEntities(entityList);
 
         if (cacheMode() != CacheMode.LOCAL)
             cc.setAffinity(new RendezvousAffinityFunction());
@@ -259,6 +261,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+
         for(String cacheName : ignite().cacheNames())
             ignite().cache(cacheName).removeAll();
     }
@@ -366,7 +369,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testTableAliasInSqlQuery() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         int key = 898;
 
@@ -657,7 +660,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testMixedCustomTableName() throws Exception {
-        final IgniteCache<Integer, Object> cache = ignite().cache(null);
+        final IgniteCache<Integer, Object> cache = jcache(Integer.class, Object.class);
 
         cache.put(10, new Type1(1, "Type1 record #1"));
         cache.put(20, new Type1(2, "Type1 record #2"));
@@ -703,7 +706,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testDistributedJoinCustomTableName() throws Exception {
-        IgniteCache<Integer, Object> cache = ignite().cache(null);
+        IgniteCache<Integer, Object> cache = jcache(Integer.class, Object.class);
 
         cache.put(10, new Type1(1, "Type1 record #1"));
         cache.put(20, new Type1(2, "Type1 record #2"));
@@ -768,7 +771,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testObjectWithString() throws Exception {
-        IgniteCache<Integer, ObjectValue2> cache = ignite().cache(null);
+        IgniteCache<Integer, ObjectValue2> cache = jcache(Integer.class, ObjectValue2.class);
 
         cache.put(1, new ObjectValue2("value 1"));
         cache.put(2, new ObjectValue2("value 2"));

@@ -362,14 +362,10 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
             new T2<Callable, C1<Object, Boolean>>(
                 new Callable() {
                     @Override public Object call() throws Exception {
-                        IgniteCache<Object, Object> async = dfltCache.withAsync();
-
                         boolean failed = false;
 
                         try {
-                            async.put(10002, 10002);
-
-                            async.future().get();
+                            dfltCache.putAsync(10002, 10002).get();
                         }
                         catch (CacheException e) {
                             failed = true;
@@ -379,9 +375,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
                         assertTrue(failed);
 
-                        async.put(10002, 10002);
-
-                        return async.future().get();
+                        return dfltCache.putAsync(10002, 10002).get();
                     }
                 },
                 new C1<Object, Boolean>() {

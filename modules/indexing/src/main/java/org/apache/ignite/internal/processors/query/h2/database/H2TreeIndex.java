@@ -107,10 +107,9 @@ public class H2TreeIndex extends GridH2IndexBase {
                 RootPage page = getMetaPage(name, i);
 
                 segments[i] = new H2Tree(
-                    name,
-                    cctx.offheap().reuseListForIndex(name),
+                    name,cctx.offheap().reuseListForIndex(name),
                     cctx.cacheId(),
-                    dbMgr.pageMemory(),
+                    cctx.memoryPolicy().pageMemory(),
                     cctx.shared().wal(),
                     cctx.offheap().globalRemoveId(),
                     tbl.rowFactory(),
@@ -155,7 +154,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override protected int segmentsCount() {
-        return 1;
+        return segments.length;
     }
 
     /** {@inheritDoc} */
@@ -184,7 +183,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public GridH2Row findOne(GridH2Row row) {
         try {
-            int seg = threadLocalSegment();
+            int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
 
@@ -200,7 +199,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
-            int seg = threadLocalSegment();
+            int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
 
@@ -219,7 +218,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
-            int seg = threadLocalSegment();
+            int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
 
@@ -238,7 +237,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
-            int seg = threadLocalSegment();
+            int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
 
@@ -257,7 +256,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
-            int seg = threadLocalSegment();
+            int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
 
@@ -348,11 +347,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         @Nullable SearchRow last,
         IndexingQueryFilter filter) {
         try {
-            int seg = threadLocalSegment();
-
-            H2Tree tree = treeForRead(seg);
-
-            GridCursor<GridH2Row> range = tree.find(first, last);
+            GridCursor<GridH2Row> range = t.find(first, last);
 
             if (range == null)
                 return EMPTY_CURSOR;
