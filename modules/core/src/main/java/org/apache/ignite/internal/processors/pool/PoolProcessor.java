@@ -84,7 +84,8 @@ public class PoolProcessor extends GridProcessorAdapter {
 
         customNamedPools = ctx.getCustomNamedExecutorServices();
 
-        ctx.addNodeAttribute(ATTR_CUSTOM_EXECUTORS_NAMES_SET, new HashSet(customNamedPools.keySet()));
+        if (customNamedPools != null)
+            ctx.addNodeAttribute(ATTR_CUSTOM_EXECUTORS_NAMES_SET, new HashSet(customNamedPools.keySet()));
     }
 
     /** {@inheritDoc} */
