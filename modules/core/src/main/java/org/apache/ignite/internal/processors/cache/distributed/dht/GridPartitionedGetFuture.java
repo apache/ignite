@@ -53,14 +53,11 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture.SINGLE_GET_MSG_SINCE;
 
 /**
  * Colocated get future.
@@ -71,9 +68,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
-
-    /** Dummy version sent to older nodes for backward compatibility, */
-    private static final GridCacheVersion DUMMY_VER = new GridCacheVersion(0, 0, 0, 0);
 
     /** Logger. */
     private static IgniteLogger log;
@@ -348,7 +342,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     cctx.cacheId(),
                     futId,
                     fut.futureId(),
-                    n.version().compareTo(SINGLE_GET_MSG_SINCE) >= 0 ? null : DUMMY_VER,
+                    null,
                     mappedKeys,
                     readThrough,
                     topVer,

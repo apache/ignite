@@ -36,7 +36,7 @@ public class TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest extends TcpDis
 
     /** {@inheritDoc} */
     @Override protected void setAwsCredentials(TcpDiscoveryS3IpFinder finder) {
-        finder.setAwsCredentials(new AWSStaticCredentialsProvider(
+        finder.setAwsCredentialsProvider(new AWSStaticCredentialsProvider(
             new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(), IgniteS3TestSuite.getSecretKey())));
     }
 

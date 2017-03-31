@@ -33,7 +33,6 @@ import org.apache.ignite.internal.visor.cache.VisorCache;
 import org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
-import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isIgfsCache;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
@@ -118,18 +117,6 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     }
 
     /**
-     * @param ver Version to check.
-     * @return {@code true} if found at least one compatible node with specified version.
-     */
-    protected boolean compatibleWith(IgniteProductVersion ver) {
-        for (ClusterNode node : ignite.cluster().nodes())
-            if (node.version().compareToIgnoreTimestamp(ver) <= 0)
-                return true;
-
-        return false;
-    }
-
-    /**
      * @param cacheName Cache name to check.
      * @return {@code true} if cache on local node is not a data cache or near cache disabled.
      */
@@ -156,7 +143,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     continue;
 
                 if (arg.systemCaches() ||
-                    !(isSystemCache(cacheName) || isIgfsCache(ignite.configuration(), cacheName))) {
+                    !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
                     long start0 = U.currentTimeMillis();
 
                     try {

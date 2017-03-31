@@ -226,7 +226,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         NULL_NAME_ON_USER_DEFINED_POLICY("User-defined MemoryPolicyConfiguration must have non-null and non-empty name."),
 
         /** */
-        MISSING_USER_DEFINED_DEFAULT("User-defined default MemoryPolicy name must be presented among configured MemoryPolices: ");
+        MISSING_USER_DEFINED_DEFAULT("User-defined default MemoryPolicy name is not presented among configured MemoryPolices: ");
 
         /**
          * @param violationMsg Violation message.

@@ -15,16 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+ #include <ignite/binary/binary_raw_reader.h>
+ #include <ignite/binary/binary_raw_writer.h>
 
-import org.apache.ignite.binary.BinaryObject;
+#include <ignite/impl/binary/binary_field_meta.h>
 
-/**
- * Test PUTs with binary hashed key.
- */
-public class IgniteLegacyBinaryIdentityPutBenchmark extends IgniteBinaryIdentityPutBenchmark {
-    /** {@inheritDoc} */
-    @Override BinaryObject createKey(int key) {
-        return createLegacyIdentityBinaryKey(key);
+namespace ignite
+{
+    namespace impl
+    {
+        namespace binary
+        {
+            void BinaryFieldMeta::Write(ignite::binary::BinaryRawWriter& writer) const
+            {
+                writer.WriteInt32(typeId);
+                writer.WriteInt32(fieldId);
+            }
+
+            void BinaryFieldMeta::Read(ignite::binary::BinaryRawReader& reader)
+            {
+                typeId = reader.ReadInt32();
+                fieldId = reader.ReadInt32();
+            }
+        }
     }
 }
