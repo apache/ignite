@@ -108,6 +108,16 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void TestFixtureTearDown()
+        {
+            Ignition.StopAll(true);
+            IgniteProcess.KillAll();
+        }
+
+        /// <summary>
         /// Verifies that custom-deployed node has started.
         /// </summary>
         private static void VerifyNodeStarted(string exePath)
