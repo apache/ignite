@@ -281,8 +281,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (ctx.isDaemon())
                 return;
 
-        busyLock.block();
-
         U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
         if (!ctx.clientNode())
