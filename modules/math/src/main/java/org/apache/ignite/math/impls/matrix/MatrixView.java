@@ -37,7 +37,7 @@ public class MatrixView extends AbstractMatrix {
     }
 
     /**
-     * 
+     *
      * @param parent
      * @param rowOff
      * @param colOff
@@ -45,7 +45,7 @@ public class MatrixView extends AbstractMatrix {
      * @param cols
      */
     public MatrixView(Matrix parent, int rowOff, int colOff, int rows, int cols) {
-        this(parent.getStorage(), rowOff, colOff, rows, cols);
+        this(parent == null ? null : parent.getStorage(), rowOff, colOff, rows, cols);
     }
 
     /**
@@ -61,7 +61,7 @@ public class MatrixView extends AbstractMatrix {
     }
 
     /**
-     * 
+     *
      * @return
      */
     private MatrixDelegateStorage storage() {

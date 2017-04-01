@@ -88,6 +88,7 @@ import org.junit.runners.Suite;
     DenseLocalOffHeapMatrixConstructorTest.class,
     RandomMatrixConstructorTest.class,
     FunctionMatrixConstructorTest.class,
+    MatrixViewConstructorTest.class,
     // Matrix tests.
     MatrixImplementationsTest.class,
     DiagonalMatrixTest.class,
