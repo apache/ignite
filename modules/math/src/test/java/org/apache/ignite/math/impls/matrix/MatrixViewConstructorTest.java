@@ -78,7 +78,7 @@ public class MatrixViewConstructorTest {
 
         for (int row = 0; row < rows; row++)
             for (int col = 0; col < cols; col++)
-                assertEquals("Unexpected value at " + row + "x" + col,
+                assertEquals("Unexpected value set at " + row + "x" + col,
                     0d, parent.get(row + rowOff, col + colOff), 0d);
     }
 }

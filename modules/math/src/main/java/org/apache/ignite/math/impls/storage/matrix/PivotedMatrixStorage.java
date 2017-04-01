@@ -48,7 +48,7 @@ public class PivotedMatrixStorage implements MatrixStorage {
         assert sto != null;
         assert rowPivot != null;
         assert colPivot != null;
-        
+
         this.sto = sto;
         this.rowPivot = rowPivot;
         this.colPivot = colPivot;
@@ -82,7 +82,7 @@ public class PivotedMatrixStorage implements MatrixStorage {
     }
 
     /**
-     * 
+     *
      * @return
      */
     public int[] columnUnpivot() {
@@ -95,15 +95,15 @@ public class PivotedMatrixStorage implements MatrixStorage {
      * @param pivot
      */
     public PivotedMatrixStorage(MatrixStorage sto, int[] pivot) {
-        this(sto, pivot, java.util.Arrays.copyOf(pivot, pivot.length));
+        this(sto, pivot, pivot == null ? null : java.util.Arrays.copyOf(pivot, pivot.length));
     }
 
     /**
-     * 
+     *
      * @param sto
      */
     public PivotedMatrixStorage(MatrixStorage sto) {
-        this(sto, identityPivot(sto.rowSize()),identityPivot(sto.columnSize()));
+        this(sto, sto == null ? null : identityPivot(sto.rowSize()), sto == null ? null : identityPivot(sto.columnSize()));
     }
 
     /**
@@ -246,7 +246,7 @@ public class PivotedMatrixStorage implements MatrixStorage {
     }
 
     /**
-     * 
+     *
      * @param pivot
      * @return
      */
@@ -255,7 +255,7 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
         for (int i = 0; i < pivot.length; i++)
             x[pivot[i]] = i;
-        
+
         return x;
     }
 }

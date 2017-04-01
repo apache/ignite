@@ -34,7 +34,7 @@ public class PivotedMatrixView extends AbstractMatrix {
     private Matrix mtx;
 
     /**
-     * 
+     *
      */
     public PivotedMatrixView() {
         // No-op.
@@ -47,7 +47,7 @@ public class PivotedMatrixView extends AbstractMatrix {
      * @param colPivot
      */
     public PivotedMatrixView(Matrix mtx, int[] rowPivot, int[] colPivot) {
-        super(new PivotedMatrixStorage(mtx.getStorage(), rowPivot, colPivot));
+        super(new PivotedMatrixStorage(mtx == null ? null : mtx.getStorage(), rowPivot, colPivot));
 
         this.mtx = mtx;
     }
@@ -57,7 +57,7 @@ public class PivotedMatrixView extends AbstractMatrix {
      * @param mtx
      */
     public PivotedMatrixView(Matrix mtx) {
-        super(new PivotedMatrixStorage(mtx.getStorage()));
+        super(new PivotedMatrixStorage(mtx == null ? null : mtx.getStorage()));
 
         this.mtx = mtx;
     }
@@ -68,7 +68,7 @@ public class PivotedMatrixView extends AbstractMatrix {
      * @param pivot
      */
     public PivotedMatrixView(Matrix mtx, int[] pivot) {
-        super(new PivotedMatrixStorage(mtx.getStorage(), pivot));
+        super(new PivotedMatrixStorage(mtx == null ? null : mtx.getStorage(), pivot));
 
         this.mtx = mtx;
     }
@@ -145,7 +145,7 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     * 
+     *
      * @return
      */
     public int[] columnPivot() {
@@ -180,7 +180,7 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     * 
+     *
      * @param i
      * @return
      */
