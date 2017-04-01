@@ -17,13 +17,16 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
@@ -66,6 +69,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
 
     /** */
     private boolean distributedJoins;
+
+    /** Partitions for query */
+    private int[] parts;
 
     /**
      * Constructs SQL fields query.
@@ -234,6 +240,40 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** {@inheritDoc} */
     @Override public SqlFieldsQuery setLocal(boolean loc) {
         return (SqlFieldsQuery)super.setLocal(loc);
+    }
+
+    /**
+     * Gets partitions for query, in ascending order.
+     */
+    @Nullable public int[] getPartitions() {
+        return parts;
+    }
+
+    /**
+     * Sets partitions for a query.
+     * The query will be executed only on nodes which are primary for specified partitions.
+     *
+     * @param parts Partitions.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setPartitions(@Nullable int... parts) {
+        this.parts = parts;
+
+        if (this.parts != null) {
+            A.notEmpty(parts, "Partitions");
+
+            // Validate partitions.
+            for (int i = 0; i < parts.length; i++) {
+                if (i < parts.length - 1)
+                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+
+                A.ensure(0 <= parts[i] && parts[i] < CacheConfiguration.MAX_PARTITIONS_COUNT, "Illegal partition");
+            }
+
+            Arrays.sort(this.parts);
+        }
+
+        return this;
     }
 
     /** {@inheritDoc} */

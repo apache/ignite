@@ -17,13 +17,16 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Query.
@@ -52,6 +55,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** */
     private boolean distributedJoins;
+
+    /** Partitions for query */
+    private int[] parts;
 
     /**
      * Constructs query for the given type name and SQL query.
@@ -223,6 +229,40 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
+    }
+
+    /**
+     * Gets partitions for query, in ascending order.
+     */
+    @Nullable public int[] getPartitions() {
+        return parts;
+    }
+
+    /**
+     * Sets partitions for a query.
+     * The query will be executed only on nodes which are primary for specified partitions.
+     *
+     * @param parts Partitions.
+     * @return {@code this} for chaining.
+     */
+    public SqlQuery setPartitions(@Nullable int... parts) {
+        this.parts = parts;
+
+        if (this.parts != null) {
+            A.notEmpty(parts, "Partitions");
+
+            // Validate partitions.
+            for (int i = 0; i < parts.length; i++) {
+                if (i < parts.length - 1)
+                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+
+                A.ensure(0 <= parts[i] && parts[i] < CacheConfiguration.MAX_PARTITIONS_COUNT, "Illegal partition");
+            }
+
+            Arrays.sort(this.parts);
+        }
+
+        return this;
     }
 
     /** {@inheritDoc} */
