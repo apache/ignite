@@ -513,7 +513,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             qry.getSql(),
                             qry.getArgs());
 
-                        return idx.queryLocalSql(cctx, qry, idx.backupFilter(requestTopVer.get(), null), keepBinary);
+                        return idx.queryLocalSql(cctx, qry, idx.backupFilter(requestTopVer.get(), qry.getPartitions()), keepBinary);
                     }
                 }, true);
         }
@@ -622,7 +622,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry,
-                        idx.backupFilter(requestTopVer.get(), null), cancel);
+                        idx.backupFilter(requestTopVer.get(), qry.getPartitions()), cancel);
 
                     return new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {

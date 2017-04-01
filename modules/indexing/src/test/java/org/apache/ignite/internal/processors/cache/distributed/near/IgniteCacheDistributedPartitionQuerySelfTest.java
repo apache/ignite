@@ -109,11 +109,11 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     public static final int DEPOSITS_PER_CLIENT = 10;
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName(int idx) {
+    @Override public String getTestIgniteInstanceName(int idx) {
         if (idx == 10)
             return "client";
 
-        return super.getTestGridName(idx);
+        return super.getTestIgniteInstanceName(idx);
     }
 
     /** {@inheritDoc} */
