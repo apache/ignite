@@ -48,7 +48,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
-import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -94,8 +93,6 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
         // TODO: IGNITE-3099 (hotfix the test to check the event order in common case).
         cfg.setPublicThreadPoolSize(1);
-
-        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
         return cfg;
     }

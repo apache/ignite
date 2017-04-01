@@ -120,8 +120,6 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-
         return cfg;
     }
 
@@ -319,6 +317,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         cfg.setLifecycleBeans(bean1, bean2);
         cfg.setGridName(gridName);
+
+        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
         cfg.setConnectorConfiguration(null);
 

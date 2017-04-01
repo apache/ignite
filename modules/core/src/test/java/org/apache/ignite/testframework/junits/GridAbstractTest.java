@@ -84,6 +84,7 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
@@ -1383,6 +1384,8 @@ public abstract class GridAbstractTest extends TestCase {
         cpSpi.setDirectoryPaths(paths);
 
         cfg.setCheckpointSpi(cpSpi);
+
+        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 

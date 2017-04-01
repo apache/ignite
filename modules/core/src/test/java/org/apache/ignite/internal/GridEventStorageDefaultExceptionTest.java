@@ -1,8 +1,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -17,6 +19,15 @@ public class GridEventStorageDefaultExceptionTest  extends GridCommonAbstractTes
     /** */
     public GridEventStorageDefaultExceptionTest() {
         super(/*start grid*/true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setEventStorageSpi(new NoopEventStorageSpi());
+
+        return cfg;
     }
 
     /**
