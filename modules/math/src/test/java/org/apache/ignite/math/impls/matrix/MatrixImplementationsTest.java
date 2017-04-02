@@ -54,7 +54,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void likeTest() {
+    public void testLike() {
         consumeSampleMatrix((m, desc) -> {
             if (typesMap().containsKey(m.getClass())) {
                 Matrix like = m.like(m.rowSize(), m.columnSize());
@@ -73,7 +73,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void copyTest() {
+    public void testCopy() {
         consumeSampleMatrix((m, desc) -> {
             Matrix cp = m.copy();
             assertTrue("Incorrect copy for empty matrix " + desc, cp.equals(m));
@@ -669,24 +669,6 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testCopy() {
-        consumeSampleMatrix((m, desc) -> {
-            if (ignore(m.getClass()))
-                return;
-
-            fillMatrix(m);
-
-            Matrix cp = m.copy();
-
-            for (int i = 0; i < m.rowSize(); i++)
-                for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(m.get(i, j), cp.get(i, j)) == 0);
-        });
-    }
-
-    /** */
-    @Test
     public void testViewPart() {
         consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
@@ -712,6 +694,19 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                     assertTrue("Unexpected view1 value for " + details + " at (" + i + "," + j + ")",
                         Double.compare(m.get(i + rowOff, j + colOff), view2.get(i, j)) == 0);
                 }
+        });
+    }
+
+    /** */
+    @Test
+    public void testDensity() {
+        consumeSampleMatrix((m, desc) -> {
+            if (!readOnly(m))
+                fillMatrix(m);
+
+            assertTrue("Unexpected density with threshold 0.", m.density(0.0));
+
+            // TODO find out why m.density(1.0) appears to run infinitely.
         });
     }
 
