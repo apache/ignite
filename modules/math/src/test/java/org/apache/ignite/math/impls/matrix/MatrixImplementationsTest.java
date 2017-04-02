@@ -229,35 +229,41 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             double[][] doubles = fillIntAndReturn(m);
 
-            if (m.rowSize() == 1)
+            if (m.rowSize() == 1) {
                 assertEquals("Unexpected value " + desc, m.determinant(), doubles[0][0], 0d);
-            else if (m.rowSize() == 2) {
+
+                return;
+            }
+
+            if (m.rowSize() == 2) {
                 double det = doubles[0][0] * doubles[1][1] - doubles[0][1] * doubles[1][0];
                 assertEquals("Unexpected value " + desc, m.determinant(), det, 0d);
-            } else {
-                if (ignore(m.getClass()))
-                    return;
 
-                if (m.rowSize() > 512)
-                    return; // IMPL NOTE if row size >= 30000 it takes unacceptably long for normal test run.
+                return;
+            }
 
-                Matrix diagMtx = m.like(m.rowSize(), m.columnSize());
+            if (m.rowSize() > 512)
+                return; // IMPL NOTE if row size >= 30000 it takes unacceptably long for normal test run.
 
-                diagMtx.assign(0);
-                for (int i = 0; i < m.rowSize(); i++)
-                    diagMtx.set(i, i, m.get(i, i));
+            if (ignore(m.getClass()))
+                return;
 
-                double det = 1;
+            Matrix diagMtx = m.like(m.rowSize(), m.columnSize());
 
-                for (int i = 0; i < diagMtx.rowSize(); i++)
-                    det *= diagMtx.get(i, i);
+            diagMtx.assign(0);
+            for (int i = 0; i < m.rowSize(); i++)
+                diagMtx.set(i, i, m.get(i, i));
 
-                try {
-                    assertEquals("Unexpected value " + desc, det, diagMtx.determinant(), DEFAULT_DELTA);
-                } catch (Exception e) {
-                    System.out.println(desc);
-                    throw e;
-                }
+            double det = 1;
+
+            for (int i = 0; i < diagMtx.rowSize(); i++)
+                det *= diagMtx.get(i, i);
+
+            try {
+                assertEquals("Unexpected value " + desc, det, diagMtx.determinant(), DEFAULT_DELTA);
+            } catch (Exception e) {
+                System.out.println(desc);
+                throw e;
             }
         });
     }
