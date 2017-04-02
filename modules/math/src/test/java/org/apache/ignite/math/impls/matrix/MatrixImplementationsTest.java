@@ -22,10 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.stream.IntStream;
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.exceptions.CardinalityException;
-import org.apache.ignite.math.functions.IntIntToDoubleFunction;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.vector.*;
 import org.junit.*;
 
@@ -35,7 +33,7 @@ import static org.junit.Assert.*;
  * Tests for {@link Matrix} implementations.
  */
 public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
-    private static final double DEFAULT_DELTA = 0.000000001d;
+    /** */ private static final double DEFAULT_DELTA = 0.000000001d;
 
     /** */
     private static final Map<Class<? extends Matrix>, Class<? extends Vector>> typesMap = typesMap();
@@ -47,13 +45,13 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void externalizeTest(){
-        consumeSampleMatrix((m, desc)-> externalizeTest(m));
+    public void externalizeTest() {
+        consumeSampleMatrix((m, desc) -> externalizeTest(m));
     }
 
     /** */
     @Test
-    public void likeTest(){
+    public void likeTest() {
         consumeSampleMatrix((m, desc) -> {
             if (typesMap().containsKey(m.getClass())) {
                 Matrix like = m.like(m.rowSize(), m.columnSize());
@@ -72,7 +70,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void copyTest(){
+    public void copyTest() {
         consumeSampleMatrix((m, desc) -> {
             Matrix cp = m.copy();
             assertTrue("Incorrect copy for empty matrix " + desc, cp.equals(m));
@@ -99,9 +97,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testLikeVector(){
-        consumeSampleMatrix((m, desc)->{
-            if (typesMap().containsKey(m.getClass())){
+    public void testLikeVector() {
+        consumeSampleMatrix((m, desc) -> {
+            if (typesMap().containsKey(m.getClass())) {
                 Vector likeVector = m.likeVector(m.columnSize());
 
                 assertNotNull(likeVector);
@@ -112,7 +110,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testAssignSingleElement(){
+    public void testAssignSingleElement() {
         consumeSampleMatrix((m,desc) -> {
             if (ignore(m.getClass()))
                 return;
@@ -129,7 +127,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testAssignArray(){
+    public void testAssignArray() {
         consumeSampleMatrix((m,desc) -> {
             if (ignore(m.getClass()))
                 return;
@@ -151,8 +149,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testPlus(){
-        consumeSampleMatrix((m, desc)->{
+    public void testPlus() {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -170,8 +168,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testTimes(){
-        consumeSampleMatrix((m, desc)->{
+    public void testTimes() {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -188,8 +186,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testDivide(){
-        consumeSampleMatrix((m, desc)->{
+    public void testDivide() {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -207,8 +205,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testTranspose(){
-        consumeSampleMatrix((m, desc)->{
+    public void testTranspose() {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -221,11 +219,11 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                     assertTrue("Unexpected value.", Double.compare(m.get(i, j), transpose.get(j, i)) == 0);
         });
     }
-    
+
     /** */
     @Test
-    public void testDeterminant(){
-        consumeSampleMatrix((m, desc)->{
+    public void testDeterminant() {
+        consumeSampleMatrix((m, desc) -> {
             if (m.rowSize() != m.columnSize())
                 return;
 
@@ -233,31 +231,32 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             if (m.rowSize() == 1)
                 assertEquals("Unexpected value " + desc, m.determinant(), doubles[0][0], 0d);
-            else if (m.rowSize() == 2){
+            else if (m.rowSize() == 2) {
                 double det = doubles[0][0] * doubles[1][1] - doubles[0][1] * doubles[1][0];
                 assertEquals("Unexpected value " + desc, m.determinant(), det, 0d);
             } else {
                 if (ignore(m.getClass()))
                     return;
 
-                if (m.rowSize() < 30000) { //Otherwise it's takes too long.
-                    Matrix diagMtx = m.like(m.rowSize(), m.columnSize());
+                if (m.rowSize() > 512)
+                    return; // IMPL NOTE if row size >= 30000 it takes unacceptably long for normal test run.
 
-                    diagMtx.assign(0);
-                    for (int i = 0; i < m.rowSize(); i++)
-                        diagMtx.set(i, i, m.get(i, i));
+                Matrix diagMtx = m.like(m.rowSize(), m.columnSize());
 
-                    double det = 1;
+                diagMtx.assign(0);
+                for (int i = 0; i < m.rowSize(); i++)
+                    diagMtx.set(i, i, m.get(i, i));
 
-                    for (int i = 0; i < diagMtx.rowSize(); i++)
-                        det *= diagMtx.get(i, i);
+                double det = 1;
 
-                    try {
-                        assertEquals("Unexpected value " + desc, det, diagMtx.determinant(), DEFAULT_DELTA);
-                    } catch (Exception e){
-                        System.out.println(desc);
-                        throw e;
-                    }
+                for (int i = 0; i < diagMtx.rowSize(); i++)
+                    det *= diagMtx.get(i, i);
+
+                try {
+                    assertEquals("Unexpected value " + desc, det, diagMtx.determinant(), DEFAULT_DELTA);
+                } catch (Exception e) {
+                    System.out.println(desc);
+                    throw e;
                 }
             }
         });
@@ -265,8 +264,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testMap(){
-        consumeSampleMatrix((m, desc)->{
+    public void testMap() {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -282,8 +281,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testMapMatrix(){
-        consumeSampleMatrix((m, desc)->{
+    public void testMapMatrix() {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -301,8 +300,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testViewRow(){
-        consumeSampleMatrix((m, desc)->{
+    public void testViewRow() {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -320,8 +319,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testViewCol(){
-        consumeSampleMatrix((m, desc)->{
+    public void testViewCol() {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -339,8 +338,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testFoldRow(){
-        consumeSampleMatrix((m, desc)->{
+    public void testFoldRow() {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -348,7 +347,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             Vector foldRows = m.foldRows(Vector::sum);
 
-            for (int i = 0; i < m.rowSize(); i++){
+            for (int i = 0; i < m.rowSize(); i++) {
                 Double locSum = 0d;
 
                 for (int j = 0; j < m.columnSize(); j++)
@@ -361,8 +360,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testFoldCol(){
-        consumeSampleMatrix((m, desc)->{
+    public void testFoldCol() {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -370,7 +369,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             Vector foldCols = m.foldColumns(Vector::sum);
 
-            for (int j = 0; j < m.columnSize(); j++){
+            for (int j = 0; j < m.columnSize(); j++) {
                 Double locSum = 0d;
 
                 for (int i = 0; i < m.rowSize(); i++)
@@ -383,16 +382,16 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testSum(){
-        consumeSampleMatrix((m, desc)->{
+    public void testSum() {
+        consumeSampleMatrix((m, desc) -> {
             double[][] arr = fillAndReturn(m);
 
             double sum = m.sum();
 
             double rawSum = 0;
-            for(int i = 0; i < arr.length; i++)
-                for(int j = 0; j < arr[0].length; j++)
-                    rawSum += arr[i][j];
+            for (double[] anArr : arr)
+                for (int j = 0; j < arr[0].length; j++)
+                    rawSum += anArr[j];
 
             assertTrue("Unexpected value.", Double.compare(sum, rawSum) == 0);
         });
@@ -400,8 +399,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testMax(){
-        consumeSampleMatrix((m, desc)->{
+    public void testMax() {
+        consumeSampleMatrix((m, desc) -> {
             double[][] doubles = fillAndReturn(m);
             double max = Double.NEGATIVE_INFINITY;
 
@@ -415,8 +414,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    public void testMin(){
-        consumeSampleMatrix((m, desc)->{
+    public void testMin() {
+        consumeSampleMatrix((m, desc) -> {
             double[][] doubles = fillAndReturn(m);
             double min = Double.MAX_VALUE;
 
@@ -429,10 +428,66 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     }
 
     /** */
+    @Test
+    public void testGetElement() {
+        consumeSampleMatrix((m, desc) -> {
+            if (!(readOnly(m)))
+                fillMatrix(m);
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++) {
+                    final Matrix.Element e = m.getElement(i, j);
+
+                    final String details = desc + " at [" + i + "," + j + "]";
+
+                    assertEquals("Unexpected element row " + details, i, e.row());
+                    assertEquals("Unexpected element col " + details, j, e.column());
+
+                    final double val = m.get(i, j);
+
+                    assertEquals("Unexpected value for " + details, val, e.get(), 0d);
+
+                    boolean expECaught = false;
+
+                    final double newVal = val * 2.0;
+
+                    try {
+                        e.set(newVal);
+                    } catch (UnsupportedOperationException uoe) {
+                        if (!(readOnly(m)))
+                            throw uoe;
+
+                        expECaught = true;
+                    }
+
+                    if (readOnly(m)) {
+                        if (!expECaught)
+                            fail("Expected exception was not caught for " + details);
+
+                        continue;
+                    }
+
+                    assertEquals("Unexpected value set for " + details, newVal, m.get(i, j), 0d);
+                }
+        });
+    }
+
+    /** */
+    @Test
+    public void testGetMetaStorage() {
+        consumeSampleMatrix((m, desc) -> assertNotNull("Null meta storage in " + desc, m.getMetaStorage()));
+    }
+
+    /** */
+    private boolean readOnly(Matrix m) {
+        return m instanceof RandomMatrix;
+    }
+
+    /** */
     private double[][] fillIntAndReturn(Matrix m) {
         double[][] arr = new double[m.rowSize()][m.columnSize()];
 
-        if (m instanceof RandomMatrix){
+        if (readOnly(m)) {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
                     arr[i][j] = m.get(i, j);
@@ -451,7 +506,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     private double[][] fillAndReturn(Matrix m) {
         double[][] arr = new double[m.rowSize()][m.columnSize()];
 
-        if (m instanceof RandomMatrix){
+        if (readOnly(m)) {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
                     arr[i][j] = m.get(i, j);
@@ -467,69 +522,19 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     }
 
     /** */
-    private double recDet(int[] idxX, int[] idxY, Matrix origin, IntIntToDoubleFunction getter){
-        int rows = idxX == null ? origin.rowSize() : idxX.length;
-        int cols = idxX == null ? origin.columnSize() : idxX.length;
-
-        if (rows != cols)
-            throw new CardinalityException(rows, cols);
-
-        if (rows == 1)
-            return getter.apply(0, 0);
-
-        if (rows == 2)
-            return getter.apply(0, 0) * getter.apply(1, 1) - getter.apply(0, 1) * getter.apply(1, 0);
-
-        if (rows == 3)
-            return getter.apply(0, 0) * (getter.apply(1, 1) * getter.apply(2, 2) - getter.apply(1, 2) * getter.apply(2, 1))
-                - getter.apply(0, 1) * (getter.apply(1, 0) * getter.apply(2, 2) - getter.apply(1, 2) * getter.apply(2, 0))
-                + getter.apply(0, 2) * (getter.apply(1, 0) * getter.apply(2, 1) - getter.apply(1, 1) * getter.apply(2, 0));
-
-        if (idxX == null){
-            idxX = IntStream.range(0, rows).toArray();
-            idxY = IntStream.range(0, cols).toArray();
-        }
-
-        double det = 0;
-
-        for (int i = 0; i < rows; i++) {
-            int[] finalIdxX = skipIdx(idxX, 0);
-            int[] finalIdxY = skipIdx(idxY, i);
-
-            IntIntToDoubleFunction get = (x, y) -> origin.getX(finalIdxX[x], finalIdxY[y]);
-
-            det += Math.pow(-1, i) * origin.getX(finalIdxX[0], finalIdxY[i]) * recDet(finalIdxX, finalIdxY, origin, get);
-        }
-
-        return det;
-    }
-
-    /** */
-    private int[] skipIdx(int[] idxs, int idx){
-        int[] res = new int[idxs.length -1];
-        int j = 0;
-
-        for (int i = 0; i < idxs.length; i++)
-            if (i != idx)
-                res[j++] = idxs[i];
-
-        return res;
-    }
-
-    /** */
-    private void fillMatrix(Matrix m){
+    private void fillMatrix(Matrix m) {
         for (int i = 0; i < m.rowSize(); i++)
             for (int j = 0; j < m.columnSize(); j++)
                 m.set(i, j, Math.random());
     }
 
     /** Ignore test for given matrix type. */
-    private boolean ignore(Class<? extends Matrix> clazz){
+    private boolean ignore(Class<? extends Matrix> clazz) {
         boolean isIgnored = false;
         List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(RandomMatrix.class, PivotedMatrixView.class);
 
         for (Class<? extends Matrix> ignoredClass : ignoredClasses) {
-            if (ignoredClass.isAssignableFrom(clazz)){
+            if (ignoredClass.isAssignableFrom(clazz)) {
                 isIgnored = true;
                 break;
             }
