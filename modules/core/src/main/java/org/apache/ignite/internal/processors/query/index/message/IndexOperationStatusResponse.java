@@ -21,6 +21,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -39,8 +40,8 @@ public class IndexOperationStatusResponse implements Message {
     /** Operation ID. */
     private UUID opId;
 
-    /** Error message. */
-    private String errMsg;
+    /** Error bytes (if any). */
+    private byte[] errBytes;
 
     /**
      * Default constructor.
@@ -54,12 +55,12 @@ public class IndexOperationStatusResponse implements Message {
      *
      * @param sndNodeId Sender node ID.
      * @param opId Operation ID.
-     * @param errMsg Error message.
+     * @param errBytes Error bytes.
      */
-    public IndexOperationStatusResponse(UUID sndNodeId, UUID opId, String errMsg) {
+    public IndexOperationStatusResponse(UUID sndNodeId, UUID opId, byte[] errBytes) {
         this.sndNodeId = sndNodeId;
         this.opId = opId;
-        this.errMsg = errMsg;
+        this.errBytes = errBytes;
     }
 
     /**
@@ -77,10 +78,10 @@ public class IndexOperationStatusResponse implements Message {
     }
 
     /**
-     * @return Error message.
+     * @return Error bytes.
      */
-    public String errorMessage() {
-        return errMsg;
+    @Nullable public byte[] errorBytes() {
+        return errBytes;
     }
 
     /** {@inheritDoc} */
@@ -108,7 +109,7 @@ public class IndexOperationStatusResponse implements Message {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeString("errMsg", errMsg))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
@@ -142,7 +143,7 @@ public class IndexOperationStatusResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                errMsg = reader.readString("errMsg");
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;

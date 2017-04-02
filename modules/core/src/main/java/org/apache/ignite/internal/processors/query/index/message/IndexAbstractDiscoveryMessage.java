@@ -63,6 +63,11 @@ public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMe
      */
     public abstract boolean exchange();
 
+    /**
+     * @return Deployment ID.
+     */
+    public abstract IgniteUuid deploymentId();
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IndexAbstractDiscoveryMessage.class, this);

@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.query.index.message;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Index creation finished discovery message.
@@ -31,23 +31,22 @@ public class IndexFinishDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Node reported an error. */
-    private final UUID errNodeId;
+    /** Cache deployment ID. */
+    private final IgniteUuid depId;
 
-    /** Error message. */
-    private final String errMsg;
+    /** Error. */
+    private final SchemaOperationException err;
     /**
      * Constructor.
      *
      * @param op Original operation.
-     * @param errNodeId Node reported an error.
-     * @param errMsg Error message.
+     * @param err Error.
      */
-    public IndexFinishDiscoveryMessage(IndexAbstractOperation op, UUID errNodeId, String errMsg) {
+    public IndexFinishDiscoveryMessage(IndexAbstractOperation op, IgniteUuid depId, SchemaOperationException err) {
         super(op);
 
-        this.errNodeId = errNodeId;
-        this.errMsg = errMsg;
+        this.depId = depId;
+        this.err = err;
     }
 
     /** {@inheritDoc} */
@@ -65,25 +64,23 @@ public class IndexFinishDiscoveryMessage extends IndexAbstractDiscoveryMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
+    public IgniteUuid deploymentId() {
+        return depId;
+    }
+
     /**
      * @return {@code True} if error was reported during init.
      */
     public boolean hasError() {
-        return errNodeId != null;
-    }
-
-    /**
-     * @return ID of the node reported an error (if any).
-     */
-    @Nullable public UUID errorNodeId() {
-        return errNodeId;
+        return err != null;
     }
 
     /**
      * @return Error message (if any).
      */
-    @Nullable public String errorMessage() {
-        return errMsg;
+    @Nullable public SchemaOperationException error() {
+        return err;
     }
 
     /** {@inheritDoc} */

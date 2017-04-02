@@ -15,54 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index.operation;
+package org.apache.ignite.internal.processors.query.index;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.io.Serializable;
-import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Abstract operation on index.
+ * Schema key.
  */
-public abstract class IndexAbstractOperation implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** ID of node that initiated this operation. */
-    private final UUID cliNodeId;
-
-    /** Operation ID. */
-    private final UUID opId;
-
+public class SchemaKey {
     /** Space. */
     private final String space;
+
+    /** Deployment ID. */
+    private final IgniteUuid depId;
 
     /**
      * Constructor.
      *
-     * @param cliNodeId Client node ID.
-     * @param opId Operation ID.
      * @param space Space.
+     * @param depId Deployment ID.
      */
-    public IndexAbstractOperation(UUID cliNodeId, UUID opId, String space) {
-        this.cliNodeId = cliNodeId;
-        this.opId = opId;
+    public SchemaKey(String space, IgniteUuid depId) {
         this.space = space;
-    }
-
-    /**
-     * @return Client node ID.
-     */
-    public UUID clientNodeId() {
-        return cliNodeId;
-    }
-
-    /**
-     * @return Operation id.
-     */
-    public UUID id() {
-        return opId;
+        this.depId = depId;
     }
 
     /**
@@ -73,12 +49,25 @@ public abstract class IndexAbstractOperation implements Serializable {
     }
 
     /**
-     * @return Index name.
+     * @return Deployment ID.
      */
-    public abstract String indexName();
+    public IgniteUuid deploymentId() {
+        return depId;
+    }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(IndexAbstractOperation.class, this);
+    @Override public int hashCode() {
+        return 31 * (space != null ? space.hashCode() : 0) + depId.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (obj instanceof SchemaKey) {
+            SchemaKey other = (SchemaKey)obj;
+
+            return F.eq(space, other.space) && F.eq(depId, other.depId);
+        }
+
+        return false;
     }
 }

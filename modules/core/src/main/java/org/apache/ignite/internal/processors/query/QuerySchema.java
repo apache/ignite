@@ -19,23 +19,18 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
 import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
-import org.apache.ignite.internal.processors.query.index.message.IndexAcceptDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Dynamic cache schema.
@@ -43,9 +38,6 @@ import java.util.UUID;
 public class QuerySchema implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Currently running operations in either proposed or accepted states. */
-    private final Map<String, QueryIndexActiveOperation> activeOps = new HashMap<>();
 
     /** Query entities. */
     private final Collection<QueryEntity> entities = new LinkedList<>();
@@ -68,7 +60,8 @@ public class QuerySchema implements Serializable {
     public QuerySchema(Collection<QueryEntity> entities) {
         assert entities != null;
 
-        this.entities.addAll(entities);
+        for (QueryEntity qryEntity : entities)
+            this.entities.add(new QueryEntity(qryEntity));
     }
 
     /**
@@ -80,60 +73,10 @@ public class QuerySchema implements Serializable {
         synchronized (mux) {
             QuerySchema res = new QuerySchema();
 
-            for (Map.Entry<String, QueryIndexActiveOperation> activeOpEntry : activeOps.entrySet())
-                res.activeOps.put(activeOpEntry.getKey(), activeOpEntry.getValue().copy());
-
             for (QueryEntity qryEntity : entities)
                 res.entities.add(new QueryEntity(qryEntity));
 
             return res;
-        }
-    }
-
-    /**
-     * Try propose new index operation. Result is communicated through message error state.
-     *
-     * @param locNodeId Local node ID.
-     * @param msg Propose message.
-     */
-    public void propose(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
-        // TODO: Validate state.
-
-        synchronized (mux) {
-            IndexAbstractOperation op = msg.operation();
-
-            String idxName = op.indexName();
-
-            if (activeOps.containsKey(idxName)) {
-                msg.onError(locNodeId, "Failed to initiate index create/drop because another operation on the same " +
-                    "index is in progress: " + idxName);
-            }
-
-            activeOps.put(idxName, new QueryIndexActiveOperation(op));
-        }
-    }
-
-    /**
-     * Process accept message propagating index from proposed to accepted state.
-     *
-     * @param msg Message.
-     */
-    public void accept(IndexAcceptDiscoveryMessage msg) {
-        synchronized (mux) {
-            IndexAbstractOperation op = msg.operation();
-
-            String idxName = op.indexName();
-
-            QueryIndexActiveOperation curOp = activeOps.get(idxName);
-
-            if (curOp != null && F.eq(curOp.operation().operationId(), op.operationId())) {
-                assert !curOp.accepted();
-
-                curOp.accept();
-            }
-            else
-                msg.onError("failed to apply dynamic index change operation because cache state changed " +
-                    "concurrently.");
         }
     }
 
@@ -146,78 +89,64 @@ public class QuerySchema implements Serializable {
         synchronized (mux) {
             IndexAbstractOperation op = msg.operation();
 
-            String idxName = op.indexName();
+            if (op instanceof IndexCreateOperation) {
+                IndexCreateOperation op0 = (IndexCreateOperation)op;
 
-            QueryIndexActiveOperation curOp = activeOps.remove(idxName);
+                for (QueryEntity entity : entities) {
+                    String tblName = QueryUtils.tableName(entity);
 
-            if (curOp != null) {
-                if (F.eq(curOp.operation().operationId(), op.operationId())) {
-                    if (!msg.hasError()) {
-                        if (op instanceof IndexCreateOperation) {
-                            IndexCreateOperation op0 = (IndexCreateOperation)op;
+                    if (F.eq(tblName, op0.tableName())) {
+                        boolean exists = false;
 
-                            for (QueryEntity entity : entities) {
-                                String tblName = QueryUtils.tableName(entity);
+                        for (QueryIndex idx : entity.getIndexes()) {
+                            if (F.eq(idx.getName(), op.indexName())) {
+                                exists = true;
 
-                                if (F.eq(tblName, op0.tableName())) {
-                                    List<QueryIndex> idxs = new ArrayList<>(entity.getIndexes());
-
-                                    idxs.add(op0.index());
-
-                                    entity.clearIndexes();
-                                    entity.setIndexes(idxs);
-
-                                    break;
-                                }
+                                break;
                             }
                         }
-                        else {
-                            assert op instanceof IndexDropOperation;
 
-                            for (QueryEntity entity : entities) {
-                                Collection<QueryIndex> idxs = entity.getIndexes();
+                        if (!exists) {
+                            List<QueryIndex> idxs = new ArrayList<>(entity.getIndexes());
 
-                                QueryIndex victim = null;
+                            idxs.add(op0.index());
 
-                                for (QueryIndex idx : idxs) {
-                                    if (F.eq(idx.getName(), idxName)) {
-                                        victim = idx;
-
-                                        break;
-                                    }
-                                }
-
-                                if (victim != null) {
-                                    List<QueryIndex> newIdxs = new ArrayList<>(entity.getIndexes());
-
-                                    newIdxs.remove(victim);
-
-                                    entity.clearIndexes();
-                                    entity.setIndexes(idxs);
-
-                                    break;
-                                }
-                            }
+                            entity.clearIndexes();
+                            entity.setIndexes(idxs);
                         }
+
+                        break;
                     }
                 }
             }
-        }
-    }
+            else {
+                assert op instanceof IndexDropOperation;
 
-    /**
-     * @return Accepted active operations.
-     */
-    public Map<String, QueryIndexActiveOperation> acceptedActiveOperations() {
-        synchronized (mux) {
-            HashMap<String, QueryIndexActiveOperation> res = new HashMap<>();
+                for (QueryEntity entity : entities) {
+                    Collection<QueryIndex> idxs = entity.getIndexes();
 
-            for (Map.Entry<String, QueryIndexActiveOperation> op : activeOps.entrySet()) {
-                if (op.getValue().accepted())
-                    res.put(op.getKey(), op.getValue());
+                    QueryIndex victim = null;
+
+                    for (QueryIndex idx : idxs) {
+                        if (F.eq(idx.getName(), op.indexName())) {
+                            victim = idx;
+
+                            break;
+                        }
+                    }
+
+                    if (victim != null) {
+                        List<QueryIndex> newIdxs = new ArrayList<>(entity.getIndexes());
+
+                        newIdxs.remove(victim);
+
+                        entity.clearIndexes();
+                        entity.setIndexes(idxs);
+
+                        break;
+                    }
+                }
             }
-
-            return res;
         }
     }
 

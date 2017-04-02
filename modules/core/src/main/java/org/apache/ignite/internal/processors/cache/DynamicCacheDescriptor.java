@@ -338,6 +338,15 @@ public class DynamicCacheDescriptor {
     }
 
     /**
+     * @return {@code True} is scheme for start is obtained.
+     */
+    public boolean schemaForStartObtained() {
+        synchronized (schemaMux) {
+            return schemaForStart != null;
+        }
+    }
+
+    /**
      * @return Index states.
      */
     public QuerySchema schema() {
@@ -360,38 +369,11 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * Try applying propose message.
-     *
-     * @param locNodeId Local node ID.
-     * @param msg Message.
-     */
-    public void schemaChangePropose(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
-        synchronized (schemaMux) {
-            schema.propose(locNodeId, msg);
-        }
-    }
-
-    /**
-     * Try applying accept message.
-     *
-     * @param msg Message.
-     */
-    public void schemaChangeAccept(IndexAcceptDiscoveryMessage msg) {
-        // TODO: No exchange in case of initial state.
-
-        synchronized (schemaMux) {
-            schema.accept(msg);
-        }
-    }
-
-    /**
      * Try applying finish message.
      *
      * @param msg Message.
      */
     public void schemaChangeFinish(IndexFinishDiscoveryMessage msg) {
-        // TODO: No exchange in case of initial state.
-
         synchronized (schemaMux) {
             schema.finish(msg);
         }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.index.operation;
 
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -61,7 +62,7 @@ public class IndexCreateOperation extends IndexAbstractOperation {
 
     /** {@inheritDoc} */
     @Override public String indexName() {
-        return idx.getName();
+        return idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
     }
 
     /**

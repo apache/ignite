@@ -153,9 +153,10 @@ public interface GridQueryIndexing {
      * @param spaceName Space name.
      * @param idxName Index name.
      * @param ifExists Ignore operation if index does not exist (instead of throwing an error).
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public void dropIndex(@Nullable String spaceName, String idxName, boolean ifExists);
+    public void dropIndex(@Nullable String spaceName, String idxName, boolean ifExists) throws IgniteCheckedException;
 
     /**
      * Registers cache.

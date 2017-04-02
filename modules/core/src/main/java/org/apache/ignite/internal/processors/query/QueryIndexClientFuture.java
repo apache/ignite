@@ -30,18 +30,13 @@ public class QueryIndexClientFuture extends GridFutureAdapter<Object> {
     /** Operation ID. */
     private final UUID opId;
 
-    /** Key. */
-    private final QueryIndexKey key;
-
     /**
      * Constructor.
      *
      * @param opId Operation ID.
-     * @param key Key.
      */
-    public QueryIndexClientFuture(UUID opId, QueryIndexKey key) {
+    public QueryIndexClientFuture(UUID opId) {
         this.opId = opId;
-        this.key = key;
     }
 
     /**
@@ -49,20 +44,6 @@ public class QueryIndexClientFuture extends GridFutureAdapter<Object> {
      */
     public UUID operationId() {
         return opId;
-    }
-
-    /**
-     * @return Index key.
-     */
-    public QueryIndexKey key() {
-        return key;
-    }
-
-    /**
-     * Handle cache stop.
-     */
-    public void onCacheStopped() {
-        onDone(new IgniteException("Operation failed because cache was stopped."));
     }
 
     /** {@inheritDoc} */

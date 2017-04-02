@@ -23,11 +23,11 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusRequest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -41,7 +41,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUE
 /**
  * Current index operation state.
  */
-public class IndexOperationState {
+@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+public class IndexOperationManager {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -52,34 +53,31 @@ public class IndexOperationState {
     private final IgniteLogger log;
 
     /** Operation handler. */
-    private final IndexOperationHandler hnd;
+    private final IndexOperationWorker worker;
 
     /** Mutex for concurrency control. */
     private final Object mux = new Object();
-
-    /** Whether node is coordinator. */
-    private boolean crd;
 
     /** Participants. */
     private Collection<UUID> nodeIds;
 
     /** Node results. */
-    private Map<UUID, String> nodeRess;
+    private Map<UUID, SchemaOperationException> nodeRess;
 
     /**
      * Constructor.
      *
      * @param ctx Context.
      * @param qryProc Query processor.
-     * @param hnd Operation handler.
+     * @param worker Operation handler.
      */
-    public IndexOperationState(GridKernalContext ctx, GridQueryProcessor qryProc, IndexOperationHandler hnd) {
+    public IndexOperationManager(GridKernalContext ctx, GridQueryProcessor qryProc, IndexOperationWorker worker) {
         this.ctx = ctx;
 
-        log = ctx.log(IndexOperationState.class);
+        log = ctx.log(IndexOperationManager.class);
 
         this.qryProc = qryProc;
-        this.hnd = hnd;
+        this.worker = worker;
     }
 
     /**
@@ -87,12 +85,11 @@ public class IndexOperationState {
      */
     @SuppressWarnings("unchecked")
     public void map() {
-        hnd.init();
+        worker.start();
 
         synchronized (mux) {
-            if (isLocalCoordinator()) {
-                // Initialize local structure.
-                crd = true;
+            if (qryProc.coordinator()) {
+                // Initialize local structures.
                 nodeIds = new HashSet<>();
                 nodeRess = new HashMap<>();
 
@@ -120,7 +117,7 @@ public class IndexOperationState {
                 }
 
                 // Listen for local completion.
-                hnd.future().listen(new IgniteInClosure<IgniteInternalFuture>() {
+                worker.future().listen(new IgniteInClosure<IgniteInternalFuture>() {
                     @Override public void apply(IgniteInternalFuture fut) {
                         try {
                             fut.get();
@@ -128,7 +125,7 @@ public class IndexOperationState {
                             onNodeFinished(ctx.localNodeId(), null);
                         }
                         catch (Exception e) {
-                            onNodeFinished(ctx.localNodeId(), e.getMessage());
+                            onNodeFinished(ctx.localNodeId(), QueryUtils.wrapIfNeeded(e));
                         }
                     }
                 });
@@ -140,21 +137,21 @@ public class IndexOperationState {
      * Handle node finish.
      *
      * @param nodeId Node ID.
-     * @param errMsg Error message.
+     * @param err Error.
      */
-    public void onNodeFinished(UUID nodeId, String errMsg) {
+    public void onNodeFinished(UUID nodeId, @Nullable SchemaOperationException err) {
         synchronized (mux) {
             if (nodeRess.containsKey(nodeId)) {
                 if (log.isDebugEnabled())
                     log.debug("Received duplicate result [opId=" + operationId() + ", nodeId=" + nodeId +
-                        ", errMsg=" + errMsg + ']');
+                        ", err=" + err + ']');
 
                 return;
             }
 
-            log.debug("Received result [opId=" + operationId() + ", nodeId=" + nodeId + ", errMsg=" + errMsg + ']');
+            log.debug("Received result [opId=" + operationId() + ", nodeId=" + nodeId + ", err=" + err + ']');
 
-            nodeRess.put(nodeId, errMsg);
+            nodeRess.put(nodeId, err);
 
             checkFinished();
         }
@@ -167,7 +164,7 @@ public class IndexOperationState {
      */
     public void onNodeLeave(UUID nodeId) {
         synchronized (mux) {
-            if (crd) {
+            if (qryProc.coordinator()) {
                 // Handle this as success.
                 if (nodeIds.remove(nodeId))
                     nodeRess.remove(nodeId);
@@ -187,38 +184,20 @@ public class IndexOperationState {
      */
     @SuppressWarnings("unchecked")
     public void onStatusRequest(final UUID nodeId) {
-        hnd.future().listen(new IgniteInClosure<IgniteInternalFuture>() {
+        worker.future().listen(new IgniteInClosure<IgniteInternalFuture>() {
             @Override public void apply(IgniteInternalFuture fut) {
-                String errMsg = null;
+                Exception err = null;
 
                 try {
                     fut.get();
                 }
                 catch (Exception e) {
-                    errMsg = e.getMessage();
+                    err = e;
                 }
 
-                qryProc.sendStatusResponse(nodeId, operationId(), errMsg);
+                qryProc.sendStatusResponse(nodeId, operationId(), QueryUtils.wrapIfNeeded(err));
             }
         });
-    }
-
-    /**
-     * Find current coordinator.
-     *
-     * @return {@code True} if node is coordinator.
-     */
-    private boolean isLocalCoordinator() {
-        ClusterNode res = null;
-
-        for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
-            if (res == null || res.order() > node.order())
-                res = node;
-        }
-
-        assert res != null; // Operation state can only exist on server nodes.
-
-        return F.eq(ctx.localNodeId(), res.id());
     }
 
     /**
@@ -226,17 +205,14 @@ public class IndexOperationState {
      */
     private void checkFinished() {
         assert Thread.holdsLock(mux);
-        assert crd;
 
         if (nodeIds.size() == nodeRess.size()) {
             // Initiate finish request.
-            UUID errNodeId = null;
-            String errNodeMsg = null;
+            SchemaOperationException err = null;
 
-            for (Map.Entry<UUID, String> nodeRes : nodeRess.entrySet()) {
+            for (Map.Entry<UUID, SchemaOperationException> nodeRes : nodeRess.entrySet()) {
                 if (nodeRes.getValue() != null) {
-                    errNodeId = nodeRes.getKey();
-                    errNodeMsg = nodeRes.getValue();
+                    err = nodeRes.getValue();
 
                     break;
                 }
@@ -244,24 +220,23 @@ public class IndexOperationState {
 
             if (log.isDebugEnabled())
                 log.debug("Collected all results, about to send finish message [opId=" + operationId() +
-                    ", errMsg=" + errNodeMsg + ']');
+                    ", err=" + err + ']');
 
-            IndexFinishDiscoveryMessage msg = new IndexFinishDiscoveryMessage(hnd.operation(), errNodeId, errNodeMsg);
-
-            try {
-                ctx.discovery().sendCustomEvent(msg);
-            }
-            catch (Exception e) {
-                // Failed to send finish message over discovery. This is something unrecoverable.
-                U.warn(log, "Failed to send index finish discovery message [opId=" + operationId() + ']', e);
-            }
+            qryProc.onCoordinatorFinished(operationId(), err);
         }
+    }
+
+    /**
+     * @return Worker.
+     */
+    public IndexOperationWorker worker() {
+        return worker;
     }
 
     /**
      * @return Operation ID.
      */
     private UUID operationId() {
-        return hnd.operation().operationId();
+        return worker.operation().id();
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.index.message;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,16 +30,18 @@ public class IndexAcceptDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Error message. */
-    private transient volatile String errMsg;
+    /** Cache deployment ID. */
+    private final IgniteUuid depId;
 
     /**
      * Constructor.
      *
      * @param op Original operation.
      */
-    public IndexAcceptDiscoveryMessage(IndexAbstractOperation op) {
+    public IndexAcceptDiscoveryMessage(IndexAbstractOperation op, IgniteUuid depId) {
         super(op);
+
+        this.depId = depId;
     }
 
     /** {@inheritDoc} */
@@ -56,20 +59,10 @@ public class IndexAcceptDiscoveryMessage extends IndexAbstractDiscoveryMessage {
         return true;
     }
 
-    /**
-     * @return Error message.
-     */
-    @Nullable public String onError() {
-        return errMsg;
+    /** {@inheritDoc} */
+    public IgniteUuid deploymentId() {
+        return depId;
     }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void onError(String errMsg) {
-        this.errMsg = errMsg;
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

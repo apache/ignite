@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -47,14 +48,17 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.index.IndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.index.IndexCacheVisitorImpl;
+import org.apache.ignite.internal.processors.query.index.SchemaKey;
+import org.apache.ignite.internal.processors.query.index.SchemaOperationDescriptor;
+import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
 import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
 import org.apache.ignite.internal.processors.query.index.message.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.IndexOperationCancellationToken;
-import org.apache.ignite.internal.processors.query.index.IndexOperationHandler;
-import org.apache.ignite.internal.processors.query.index.IndexOperationState;
+import org.apache.ignite.internal.processors.query.index.IndexOperationWorker;
+import org.apache.ignite.internal.processors.query.index.IndexOperationManager;
 import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusRequest;
 import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusResponse;
 import org.apache.ignite.internal.processors.query.index.message.IndexProposeDiscoveryMessage;
@@ -66,10 +70,13 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -82,8 +89,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -136,9 +144,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Index create/drop client futures. */
     private final ConcurrentMap<UUID, QueryIndexClientFuture> idxCliFuts = new ConcurrentHashMap<>();
 
-    /** Index operation states. */
-    private final ConcurrentHashMap<UUID, IndexOperationState> idxOpStates = new ConcurrentHashMap<>();
-
     /** IO message listener. */
     private final GridMessageListener ioLsnr;
 
@@ -153,6 +158,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** IO worker to process too early IO messages. */
     private volatile GridWorker ioWorker;
+
+    /** Schema operations. */
+    private final ConcurrentHashMap<SchemaKey, SchemaOperation> schemaOps = new ConcurrentHashMap<>();
+
+    /** Current active operations. */
+    private final LinkedHashMap<UUID, SchemaOperationDescriptor> activeOps = new LinkedHashMap<>();
+
+    /** Initial active operations received with discovery data. */
+    private final LinkedHashMap<UUID, SchemaOperationDescriptor> activeOpsInit = new LinkedHashMap<>();
+
+    /** Active operations mutex. */
+    private final Object activeOpsMux = new Object();
+
+    /** Coordinator flag (initialized lazily). */
+    private Boolean crd;
 
     /**
      * @param ctx Kernal context.
@@ -173,6 +193,34 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 dispatchIoMessage(obj);
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        synchronized (activeOpsMux) {
+            LinkedHashMap<UUID, SchemaOperationDescriptor> data = new LinkedHashMap<>();
+
+            for (Map.Entry<UUID, SchemaOperationDescriptor> activeOp : activeOps.entrySet())
+                data.put(activeOp.getKey(), new SchemaOperationDescriptor(activeOp.getValue()));
+
+            dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), data);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+        synchronized (activeOpsMux) {
+            assert activeOps.isEmpty();
+
+            LinkedHashMap<UUID, SchemaOperationDescriptor> data0 =
+                (LinkedHashMap<UUID, SchemaOperationDescriptor>)data.commonData();
+
+            for (Map.Entry<UUID, SchemaOperationDescriptor> dataEntry : data0.entrySet()) {
+                activeOpsInit.put(dataEntry.getKey(), new SchemaOperationDescriptor(dataEntry.getValue()));
+                activeOps.put(dataEntry.getKey(), new SchemaOperationDescriptor(dataEntry.getValue()));
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -206,6 +254,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onCacheKernalStart() throws IgniteCheckedException {
+        // Process initial operations.
+        synchronized (activeOpsMux) {
+            for (SchemaOperationDescriptor activeOpDesc : activeOpsInit.values()) {
+                onSchemaProposeDiscovery(activeOpDesc.messagePropose());
+
+                if (activeOpDesc.messageAccept() != null)
+                    onSchemaAccept(activeOpDesc.messageAccept());
+
+                if (activeOpDesc.messageFinish() != null)
+                    onSchemaFinish(activeOpDesc.messageFinish());
+            }
+
+            activeOpsInit.clear();
+        }
+
         // Start IO worker to consume racy IO messages.
         boolean startIoWorker = false;
 
@@ -295,11 +358,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
-     * @param initIdxStates Index states.
+     * @param schema Initial schema.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("deprecation")
-    private void initializeCache(GridCacheContext<?, ?> cctx, QuerySchema initIdxStates) throws IgniteCheckedException {
+    @SuppressWarnings({"deprecation", "ThrowableResultOfMethodCallIgnored"})
+    private void initializeCache(GridCacheContext<?, ?> cctx, QuerySchema schema) throws IgniteCheckedException {
         String space = cctx.name();
 
         // Prepare candidates.
@@ -307,7 +370,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         Collection<QueryTypeCandidate> cands = new ArrayList<>();
 
-        Collection<QueryEntity> qryEntities = initIdxStates.entities();
+        Collection<QueryEntity> qryEntities = schema.entities();
 
         if (!F.isEmpty(qryEntities)) {
             for (QueryEntity qryEntity : qryEntities) {
@@ -318,13 +381,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         // Ensure that candidates has unique index names. Otherwise we will not be able to apply pending operations.
+        Map<String, QueryTypeDescriptorImpl> tblTypMap = new HashMap<>();
         Map<String, QueryTypeDescriptorImpl> idxTypMap = new HashMap<>();
 
         for (QueryTypeCandidate cand : cands) {
             QueryTypeDescriptorImpl desc = cand.descriptor();
 
+            QueryTypeDescriptorImpl oldDesc = tblTypMap.put(desc.tableName(), desc);
+
+            if (oldDesc != null)
+                throw new IgniteException("Duplicate table name [tblName=" + desc.tableName() +
+                    ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
+
             for (String idxName : desc.indexes().keySet()) {
-                QueryTypeDescriptorImpl oldDesc = idxTypMap.put(idxName, desc);
+                oldDesc = idxTypMap.put(idxName, desc);
 
                 if (oldDesc != null)
                     throw new IgniteException("Duplicate index name [idxName=" + idxName +
@@ -332,79 +402,59 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-        IdentityHashMap<IndexAbstractOperation, T2<String, QueryTypeDescriptorImpl>> activeOps =
-            new IdentityHashMap<>();
+        // Apply pending operation which could have been completed as no-op at this point. There could be only one
+        // in-flight operation for a cache.
+        synchronized (activeOpsMux) {
+            for (SchemaOperationDescriptor desc : activeOps.values()) {
+                if (F.eq(desc.cacheDeploymentId(), cctx.dynamicDeploymentId())) {
+                    SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
 
-        // Apply pending operations.
-        for (Map.Entry<String, QueryIndexActiveOperation> acceptedOpEntry :
-            initIdxStates.acceptedActiveOperations().entrySet()) {
-            String errMsg = null;
+                    SchemaOperation op = schemaOps.get(key);
 
-            String idxName = acceptedOpEntry.getKey();
-            IndexAbstractOperation op = acceptedOpEntry.getValue().operation();
+                    assert op != null;
 
-            QueryTypeDescriptorImpl desc = null;
+                    IndexOperationManager mgr = op.manager();
 
-            if (op instanceof IndexCreateOperation) {
-                // Handle create.
-                IndexCreateOperation op0 = (IndexCreateOperation)op;
+                    if (mgr != null) {
+                        IndexOperationWorker worker = mgr.worker();
 
-                for (QueryTypeCandidate cand : cands) {
-                    if (F.eq(cand.descriptor().tableName(), op0.tableName())) {
-                        desc = cand.descriptor();
+                        assert !worker.cacheStarted();
 
-                        break;
-                    }
-                }
+                        if (!worker.nop()) {
+                            IgniteInternalFuture fut = worker.future();
 
-                if (desc == null)
-                    errMsg = "Table not found: " + op0.tableName();
-                else {
-                    QueryTypeDescriptorImpl oldDesc = idxTypMap.get(idxName);
+                            assert fut.isDone();
 
-                    if (oldDesc != null) {
-                        if (!op0.ifNotExists())
-                            errMsg = "Index already exists: " + idxName;
-                    }
-                    else {
-                        idxTypMap.put(idxName, desc);
+                            if (fut.error() == null) {
+                                IndexAbstractOperation op0 = op.descriptor().operation();
 
-                        QueryUtils.processDynamicIndexChange(idxName, op0.index(), desc);
+                                if (op0 instanceof IndexCreateOperation) {
+                                    IndexCreateOperation opCreate = (IndexCreateOperation)op0;
+
+                                    QueryTypeDescriptorImpl typeDesc = tblTypMap.get(opCreate.tableName());
+
+                                    assert typeDesc != null;
+
+                                    QueryUtils.processDynamicIndexChange(op0.indexName(), opCreate.index(), typeDesc);
+                                }
+                                else if (op0 instanceof IndexDropOperation) {
+                                    QueryTypeDescriptorImpl typeDesc = idxTypMap.get(op0.indexName());
+
+                                    assert typeDesc != null;
+
+                                    QueryUtils.processDynamicIndexChange(op0.indexName(), null, typeDesc);
+                                }
+                                else
+                                    assert false;
+                            }
+                        }
                     }
                 }
             }
-            else {
-                // Handle drop.
-                IndexDropOperation op0 = (IndexDropOperation)op;
-
-                desc = idxTypMap.get(op0.indexName());
-
-                if (desc == null) {
-                    if (!op0.ifExists())
-                        errMsg = "Index doesn't exist: " + idxName;
-                }
-                else {
-                    idxTypMap.remove(idxName);
-
-                    QueryUtils.processDynamicIndexChange(idxName, null, desc);
-                }
-            }
-
-            activeOps.put(op, new T2<>(errMsg, desc));
         }
 
         // Ready to register at this point.
         registerCache0(space, cctx, cands);
-
-        // If cache was registered successfully, start pending operations.
-        for (Map.Entry<IndexAbstractOperation, T2<String, QueryTypeDescriptorImpl>> activeOp : activeOps.entrySet()) {
-            String errMsg = activeOp.getValue().get1();
-            QueryTypeDescriptorImpl type = activeOp.getValue().get2();
-
-            Exception err = errMsg != null ? new IgniteException(errMsg) : null;
-
-            prepareIndexOperationState(type, activeOp.getKey(), true, err).map();
-        }
 
         // Warn about possible implicit deserialization.
         if (!mustDeserializeClss.isEmpty()) {
@@ -425,16 +475,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         // TODO: Complete index client futures, clear pending index state.
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        // TODO: Re-initialize?
+
+        return super.onReconnected(clusterRestarted);
+    }
+
     /**
      * Handle cache start. Invoked either from GridCacheProcessor.onKernalStart() method or from exchange worker.
      * When called for the first time, we initialize topology thus understanding whether current node is coordinator
      * or not.
      *
      * @param cctx Cache context.
-     * @param idxStates Index states.
+     * @param schema Index states.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart(GridCacheContext cctx, QuerySchema idxStates) throws IgniteCheckedException {
+    public void onCacheStart(GridCacheContext cctx, QuerySchema schema) throws IgniteCheckedException {
         if (idx == null)
             return;
 
@@ -442,7 +499,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            initializeCache(cctx, idxStates);
+            initializeCache(cctx, schema);
         }
         finally {
             busyLock.leaveBusy();
@@ -468,106 +525,449 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Handle index propose message. At this point we must prepare index operation so that concurrent re
+     * Process schema propose message from discovery thread.
      *
      * @param msg Message.
      */
-    public void onIndexProposeMessage(IndexProposeDiscoveryMessage msg) {
-        idxLock.writeLock().lock();
+    public void onSchemaProposeDiscovery(IndexProposeDiscoveryMessage msg) {
+        // TODO: Log
+        System.out.println("RECEIVED PROPOSE [opId=" + msg.operation().id() + ", locNodeId=" + ctx.localNodeId() + ']');
 
-        try {
-            IndexAbstractOperation op = msg.operation();
-            String space = op.space();
+        synchronized (activeOpsMux) {
+            SchemaOperationDescriptor desc = new SchemaOperationDescriptor(msg);
 
-            boolean completed = false;
-            String errMsg = null;
+            SchemaOperationDescriptor oldDesc = activeOps.put(desc.id(), desc);
 
-            // Validate.
-            QueryTypeDescriptorImpl type = null;
+            assert oldDesc == null;
 
-            if (op instanceof IndexCreateOperation) {
-                IndexCreateOperation op0 = (IndexCreateOperation)op;
+            SchemaOperation schemaOp = new SchemaOperation(desc);
 
-                QueryIndex idx = op0.index();
+            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
 
-                // Make sure table exists.
-                String tblName = op0.tableName();
+            SchemaOperation oldSchemaOp = schemaOps.get(key);
 
-                type = type(space, tblName);
-
-                if (type == null) {
-                    completed = true;
-                    errMsg = "Table doesn't exist: " + tblName;
-                }
-                else {
-                    // Make sure that index can be applied to the given table.
-                    for (String idxField : idx.getFieldNames()) {
-                        if (!type.fields().containsKey(idxField)) {
-                            completed = true;
-                            errMsg = "Field doesn't exist: " + idxField;
-
-                            break;
-                        }
-                    }
-                }
-
-                // Check conflict with other indexes.
-                if (errMsg != null) {
-                    String idxName = op0.index().getName();
-
-                    QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
-
-                    if (idxs.get(idxKey) != null) {
-                        completed = true;
-
-                        if (!op0.ifNotExists())
-                            errMsg = "Index already exists [space=" + space + ", index=" + idxName + ']';
-                    }
-                }
-            }
-            else if (op instanceof IndexDropOperation) {
-                IndexDropOperation op0 = (IndexDropOperation)op;
-
-                String idxName = op0.indexName();
-
-                QueryIndexDescriptorImpl oldIdx = idxs.get(new QueryIndexKey(space, idxName));
-
-                if (oldIdx == null) {
-                    completed = true;
-
-                    if (!op0.ifExists())
-                        errMsg = "Index doesn't exist: " + idxName;
-                }
-                else
-                    type = oldIdx.typeDescriptor();
-            }
-            else {
-                completed = true;
-                errMsg = "Unsupported operation: " + op;
-            }
-
-            // Start async operation.
-            Exception err = errMsg != null ? new IgniteException(errMsg) : null;
-
-            prepareIndexOperationState(type, op, completed, err);
+            if (oldSchemaOp != null)
+                oldSchemaOp.unwind().next(schemaOp);
+            else
+                schemaOps.put(key, schemaOp);
         }
-        finally {
-            idxLock.writeLock().unlock();
+    }
+
+    /** Process schema accept message from discovery thread.
+     *
+     * @param msg Message.
+     */
+    public void onSchemaAcceptDiscovery(IndexAcceptDiscoveryMessage msg) {
+        synchronized (activeOpsMux) {
+            SchemaOperationDescriptor desc = activeOps.get(msg.operation().id());
+
+            assert desc != null;
+            assert desc.messageAccept() == null;
+
+            desc.messageAccept(msg);
         }
     }
 
     /**
-     * Handle index accept message.
+     * Process schema finish message from discovery thread.
      *
      * @param msg Message.
      */
-    public void onIndexAcceptMessage(IndexAcceptDiscoveryMessage msg) {
-        IndexOperationState state = idxOpStates.get(msg.operation().operationId());
+    public void onSchemaFinishDiscovery(IndexFinishDiscoveryMessage msg) {
+        synchronized (activeOpsMux) {
+            SchemaOperationDescriptor desc = activeOps.get(msg.operation().id());
 
-        if (state != null)
-            state.map();
-        else {
-            // TODO: LOG!
+            assert desc != null;
+            assert desc.messageFinish() == null;
+
+            desc.messageFinish(msg);
+        }
+    }
+
+    /**
+     * Handle schema accept.
+     *
+     * @param msg Message.
+     */
+    @SuppressWarnings("ThrowableInstanceNeverThrown")
+    public void onSchemaAccept(IndexAcceptDiscoveryMessage msg) {
+        // TODO: Log
+        System.out.println("RECEIVED ACCEPT [opId=" + msg.operation().id() + ", locNodeId=" + ctx.localNodeId() + ']');
+
+        synchronized (activeOpsMux) {
+            UUID opId = msg.operation().id();
+
+            SchemaOperationDescriptor desc = activeOps.get(opId);
+
+            assert desc != null;
+
+            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+
+            SchemaOperation curOp = schemaOps.get(key);
+
+            assert curOp != null;
+
+            // If accepted operation is top-level operation for the given schema key, then start it immediately.
+            // Otherwise it will be handled later when previous operations complete.
+            if (F.eq(desc.id(), curOp.descriptor().id()))
+                onSchemaAccept0(curOp);
+        }
+    }
+
+    /**
+     * Initiate actual schema change operation.
+     *
+     * @param schemaOp Schema operation.
+     */
+    @SuppressWarnings({"unchecked", "ThrowableInstanceNeverThrown"})
+    private void onSchemaAccept0(SchemaOperation schemaOp) {
+        assert Thread.holdsLock(activeOpsMux);
+
+        // Get current cache state.
+        SchemaOperationDescriptor desc = schemaOp.descriptor();
+
+        DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(desc.space());
+
+        boolean cacheExists = cacheDesc != null && F.eq(desc.cacheDeploymentId(), cacheDesc.deploymentId());
+
+        boolean cacheStarted = cacheExists && cacheDesc.started();
+
+        // Validate schema state and decide whether we should proceed or not.
+        IndexAbstractOperation op = schemaOp.descriptor().operation();
+
+        QueryTypeDescriptorImpl type = null;
+        SchemaOperationException err = null;
+
+        boolean nop = false;
+
+        if (cacheExists) {
+            String space = op.space();
+
+            if (cacheStarted) {
+                // If cache is started, we perform validation against real schema.
+                if (op instanceof IndexCreateOperation) {
+                    IndexCreateOperation op0 = (IndexCreateOperation) op;
+
+                    QueryIndex idx = op0.index();
+
+                    // Make sure table exists.
+                    String tblName = op0.tableName();
+
+                    type = type(space, tblName);
+
+                    if (type == null)
+                        err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+                    else {
+                        // Make sure that index can be applied to the given table.
+                        for (String idxField : idx.getFieldNames()) {
+                            if (!type.fields().containsKey(idxField)) {
+                                err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
+                                    idxField);
+
+                                break;
+                            }
+                        }
+                    }
+
+                    // Check conflict with other indexes.
+                    if (err == null) {
+                        String idxName = op0.index().getName();
+
+                        QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+
+                        if (idxs.get(idxKey) != null) {
+                            if (op0.ifNotExists())
+                                nop = true;
+                            else
+                                err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxName);
+                        }
+                    }
+                }
+                else if (op instanceof IndexDropOperation) {
+                    IndexDropOperation op0 = (IndexDropOperation) op;
+
+                    String idxName = op0.indexName();
+
+                    QueryIndexDescriptorImpl oldIdx = idxs.get(new QueryIndexKey(space, idxName));
+
+                    if (oldIdx == null) {
+                        if (op0.ifExists())
+                            nop = true;
+                        else
+                            err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
+                    }
+                    else
+                        type = oldIdx.typeDescriptor();
+                }
+                else
+                    err = new SchemaOperationException("Unsupported operation: " + op);
+            }
+            else {
+                // If cache is not started yet, there is no schema. Take schema from cache descriptor and validate.
+                QuerySchema schema = cacheDesc.schema();
+
+                // Build table and index maps.
+                Map<String, QueryEntity> tblMap = new HashMap<>();
+                Map<String, T2<QueryEntity, QueryIndex>> idxMap = new HashMap<>();
+
+                for (QueryEntity entity : schema.entities()) {
+                    String tblName = QueryUtils.tableName(entity);
+
+                    QueryEntity oldEntity = tblMap.put(tblName, entity);
+
+                    if (oldEntity != null) {
+                        err = new SchemaOperationException("Invalid schema state (duplicate table found): " + tblName);
+
+                        break;
+                    }
+
+                    for (QueryIndex entityIdx : entity.getIndexes()) {
+                        String idxName = QueryEntity.defaultIndexName(entityIdx);
+
+                        T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.put(idxName, new T2<>(entity, entityIdx));
+
+                        if (oldIdxEntity != null) {
+                            err = new SchemaOperationException("Invalid schema state (duplicate index found): " +
+                                idxName);
+
+                            break;
+                        }
+                    }
+
+                    if (err != null)
+                        break;
+                }
+
+                // Now check whether operation can be applied to schema.
+                String idxName = op.indexName();
+
+                if (op instanceof IndexCreateOperation) {
+                    IndexCreateOperation op0 = (IndexCreateOperation)op;
+
+                    T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.get(idxName);
+
+                    if (oldIdxEntity == null) {
+                        String tblName = op0.tableName();
+
+                        QueryEntity oldEntity = tblMap.get(tblName);
+
+                        if (oldEntity == null)
+                            err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+                        else {
+                            for (String fieldName : op0.index().getFields().keySet()) {
+                                if (!oldEntity.getFields().containsKey(fieldName)) {
+                                    err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
+                                        fieldName);
+
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        if (op0.ifNotExists())
+                            nop = true;
+                        else
+                            err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxName);
+                    }
+                }
+                else if (op instanceof IndexDropOperation) {
+                    IndexDropOperation op0 = (IndexDropOperation)op;
+
+                    T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.get(idxName);
+
+                    if (oldIdxEntity == null) {
+                        if (op0.ifExists())
+                            nop = true;
+                        else
+                            err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
+                    }
+                }
+                else
+                    err = new SchemaOperationException("Unsupported operation: " + op);
+            }
+        }
+        else
+            err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
+
+        // Start operation.
+        if (cacheStarted && !nop && err == null)
+            schemaOp.type(type);
+
+        IndexOperationWorker worker =
+            new IndexOperationWorker(ctx, this, desc.cacheDeploymentId(), op, nop, err, cacheStarted);
+
+        IndexOperationManager mgr = new IndexOperationManager(ctx, this, worker);
+
+        schemaOp.manager(mgr);
+
+        mgr.map();
+    }
+
+    /**
+     * Invoked when coordinator finished ensured that all participants are ready.
+     *
+     * @param opId Operation ID.
+     * @param err Error (if any).
+     */
+    public void onCoordinatorFinished(UUID opId, @Nullable SchemaOperationException err) {
+        synchronized (activeOpsMux) {
+            SchemaOperationDescriptor desc = activeOps.get(opId);
+
+            assert desc != null;
+
+            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+
+            SchemaOperation op = schemaOps.get(key);
+
+            assert op != null;
+
+            IndexFinishDiscoveryMessage msg =
+                new IndexFinishDiscoveryMessage(desc.operation(), desc.cacheDeploymentId(), err);
+
+            try {
+                ctx.discovery().sendCustomEvent(msg);
+            }
+            catch (Exception e) {
+                // Failed to send finish message over discovery. This is something unrecoverable.
+                U.warn(log, "Failed to send index finish discovery message [opId=" + opId + ']', e);
+            }
+        }
+    }
+
+    /**
+     * @return {@code True} if current node is coordinator.
+     */
+    public boolean coordinator() {
+        if (crd == null)
+            refreshCoordinator();
+
+        assert crd != null;
+
+        return crd;
+    }
+
+    /**
+     * Refresh coordinator state.
+     */
+    private void refreshCoordinator() {
+        if (crd != null && crd)
+            return;
+
+        ClusterNode youngest = null;
+
+        for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
+            if (youngest == null || youngest.order() > node.order())
+                youngest = node;
+        }
+
+        crd = youngest != null && F.eq(ctx.localNodeId(), youngest.id());
+    }
+
+    /**
+     * Schema operation.
+     */
+    private class SchemaOperation {
+        /** Operation descriptor. */
+        private final SchemaOperationDescriptor desc;
+
+        /** Next schema operation. */
+        private SchemaOperation next;
+
+        /** Type descriptor. */
+        private QueryTypeDescriptorImpl type;
+
+        /** Operation manager. */
+        private IndexOperationManager mgr;
+
+        /** Pending status requests. */
+        private final Collection<UUID> pendingStatusReqs = new LinkedList<>();
+
+        /**
+         * Constructor.
+         *
+         * @param desc Operation descriptor.
+         */
+        public SchemaOperation(SchemaOperationDescriptor desc) {
+            this.desc = desc;
+        }
+
+        /**
+         * @return Operation descriptor.
+         */
+        public SchemaOperationDescriptor descriptor() {
+            return desc;
+        }
+
+        /**
+         * @return Next schema operation.
+         */
+        @Nullable public SchemaOperation next() {
+            return next;
+        }
+
+        /**
+         * @param next Next schema operation.
+         */
+        public void next(SchemaOperation next) {
+            this.next = next;
+        }
+
+        /**
+         * Unwind operation queue and get tail operation.
+         *
+         * @return Tail operation.
+         */
+        public SchemaOperation unwind() {
+            if (next == null)
+                return this;
+            else
+                return next.unwind();
+        }
+
+        /**
+         * @return Type descriptor.
+         */
+        public QueryTypeDescriptorImpl type() {
+            return type;
+        }
+
+        /**
+         * @param type Type descriptor.
+         */
+        public void type(QueryTypeDescriptorImpl type) {
+            this.type = type;
+        }
+
+        /**
+         * @return Operation manager.
+         */
+        public IndexOperationManager manager() {
+            return mgr;
+        }
+
+        /**
+         * @param mgr Operation manager.
+         */
+        public void manager(IndexOperationManager mgr) {
+            assert this.mgr == null;
+
+            this.mgr = mgr;
+
+            for (UUID nodeId : pendingStatusReqs)
+                mgr.onStatusRequest(nodeId);
+        }
+
+        /**
+         * Handle status request. Manager might not be initialized yet at this point, so enqueue request if needed.
+         *
+         * @param nodeId Node ID.
+         */
+        public void onStatusRequest(UUID nodeId) {
+            if (mgr != null)
+                mgr.onStatusRequest(nodeId);
+            else
+                pendingStatusReqs.add(nodeId);
         }
     }
 
@@ -577,48 +977,78 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
-        UUID opId = msg.operation().operationId();
+    public void onSchemaFinish(IndexFinishDiscoveryMessage msg) {
+        // TODO: Log
+        System.out.println("RECEIVED FINISH [opId=" + msg.operation().id() + ", locNodeId=" + ctx.localNodeId() + ']');
 
-        // Clear local operation.
-        idxOpStates.remove(opId);
+        UUID opId = msg.operation().id();
+
+        // Complete distributed operations.
+        synchronized (activeOpsMux) {
+            SchemaOperationDescriptor desc = activeOps.remove(opId);
+
+            assert desc != null;
+
+            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+
+            SchemaOperation op = schemaOps.remove(key);
+
+            assert op != null;
+            assert F.eq(opId, op.descriptor().id());
+
+            // Chain to the next operation (if any).
+            SchemaOperation nextOp = op.next();
+
+            if (nextOp != null) {
+                schemaOps.put(key, nextOp);
+
+                if (nextOp.descriptor().messageAccept() != null)
+                    onSchemaAccept0(nextOp);
+            }
+        }
 
         // Complete client future.
         QueryIndexClientFuture cliFut = idxCliFuts.remove(opId);
 
         if (cliFut != null) {
-            if (msg.hasError()) {
-                IgniteException err = new IgniteException(msg.errorMessage());
-
-                cliFut.onDone(err); // TODO: Better message and code handling.
-            }
+            if (msg.hasError())
+                cliFut.onDone(msg.error());
             else
                 cliFut.onDone();
         }
     }
 
     /**
-     * Apply index operation result.
+     * Apply positive index operation result.
      *
-     * @param type Type.
-     * @param op Operation.
-     * @param err Error.
+     * @param opId Operation ID.
      */
-    public void onLocalOperationFinished(QueryTypeDescriptorImpl type, IndexAbstractOperation op, Exception err) {
-        idxLock.writeLock().lock();
+    public void onLocalOperationFinished(UUID opId) {
+        synchronized (activeOpsMux) {
+            SchemaOperationDescriptor desc = activeOps.get(opId);
 
-        try {
+            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+
+            SchemaOperation schemaOp = schemaOps.get(key);
+
+            assert schemaOp != null;
+            assert F.eq(schemaOp.descriptor().id(), opId);
+
+            IndexAbstractOperation op = schemaOp.descriptor().operation();
+
             // No need to apply anything to obsolete type.
+            QueryTypeDescriptorImpl type = schemaOp.type();
+
             if (type == null || type.obsolete()) {
                 if (log.isDebugEnabled())
-                    log.debug("Local operation finished, but type decriptor is either missing or obsolete " +
-                        "(will ignore) [opId=" + op.operationId() + ']');
+                    log.debug("Local operation finished, but type descriptor is either missing or obsolete " +
+                        "(will ignore) [opId=" + op.id() + ']');
 
                 return;
             }
 
             if (log.isDebugEnabled())
-                log.debug("Local operation finished [opId=" + op.operationId() + ", err=" + err + ']');
+                log.debug("Local operation finished sucessfully [opId=" + op.id() + ']');
 
             QueryIndexKey idxKey = new QueryIndexKey(op.space(), op.indexName());
 
@@ -641,11 +1071,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
             catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to finish index operation [opId=" + op.operationId() + " op=" + op + ']', e);
+                U.warn(log, "Failed to finish index operation [opId=" + op.id() + " op=" + op + ']', e);
             }
-        }
-        finally {
-            idxLock.writeLock().unlock();
         }
     }
 
@@ -655,41 +1082,56 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param node Node.
      */
     public void onNodeLeave(ClusterNode node) {
-        for (IndexOperationState idxOpState : idxOpStates.values())
-            idxOpState.onNodeLeave(node.id());
+        refreshCoordinator();
+
+        synchronized (activeOpsMux) {
+            for (SchemaOperation op : schemaOps.values()) {
+                if (op.manager() != null)
+                    op.manager().onNodeLeave(node.id());
+            }
+        }
     }
 
     /**
      * Process index operation.
      *
      * @param op Operation.
+     * @param depId Cache deployment ID.
      * @param cancelTok Cancel token.
-     * @throws IgniteCheckedException If failed.
+     * @throws SchemaOperationException If failed.
      */
-    public void processIndexOperationLocal(IndexAbstractOperation op, IndexOperationCancellationToken cancelTok)
-        throws IgniteCheckedException {
+    public void processIndexOperationLocal(IndexAbstractOperation op, IgniteUuid depId,
+        IndexOperationCancellationToken cancelTok) throws SchemaOperationException {
         String space = op.space();
 
         GridCacheAdapter cache = ctx.cache().internalCache(op.space());
 
-        if (cache == null)
-            throw new IgniteException("Cache doesn't exist: " + op.space());
+        if (cache == null || !F.eq(depId, cache.context().dynamicDeploymentId()))
+            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
 
-        if (op instanceof IndexCreateOperation) {
-            IndexCreateOperation op0 = (IndexCreateOperation)op;
+        try {
+            if (op instanceof IndexCreateOperation) {
+                IndexCreateOperation op0 = (IndexCreateOperation) op;
 
-            IndexCacheVisitor visitor =
-                new IndexCacheVisitorImpl(this, cache.context(), space, op0.tableName(), cancelTok);
+                IndexCacheVisitor visitor =
+                    new IndexCacheVisitorImpl(this, cache.context(), space, op0.tableName(), cancelTok);
 
-            idx.createIndex(space, op0.tableName(), op0.index(), op0.ifNotExists(), visitor);
+                idx.createIndex(space, op0.tableName(), op0.index(), op0.ifNotExists(), visitor);
+            }
+            else if (op instanceof IndexDropOperation) {
+                IndexDropOperation op0 = (IndexDropOperation) op;
+
+                idx.dropIndex(space, op0.indexName(), op0.ifExists());
+            }
+            else
+                throw new SchemaOperationException("Unsupported operation: " + op);
         }
-        else if (op instanceof IndexDropOperation) {
-            IndexDropOperation op0 = (IndexDropOperation)op;
-
-            idx.dropIndex(space, op0.indexName(), op0.ifExists());
+        catch (Exception e) {
+            if (e instanceof SchemaOperationException)
+                throw (SchemaOperationException)e;
+            else
+                throw new SchemaOperationException("Schema change operation failed.", e);
         }
-        else
-            throw new IgniteException("Unsupported operation: " + op);
     }
 
     /**
@@ -787,21 +1229,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             // TODO Clear pending index operations.
-
-            // Complete relevant index futures.
-            Iterator<Map.Entry<UUID, QueryIndexClientFuture>> idxCliFutIt = idxCliFuts.entrySet().iterator();
-
-            while (idxCliFutIt.hasNext()) {
-                Map.Entry<UUID, QueryIndexClientFuture> idxCliFutEntry = idxCliFutIt.next();
-
-                QueryIndexClientFuture idxCliFut = idxCliFutEntry.getValue();
-
-                if (F.eq(space, idxCliFut.key().space())) {
-                    idxCliFut.onCacheStopped();
-
-                    idxCliFutIt.remove();
-                }
-            }
 
             // Notify indexing.
             try {
@@ -942,6 +1369,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     private QueryTypeDescriptorImpl type(@Nullable String space, CacheObject val) throws IgniteCheckedException {
         CacheObjectContext coctx = cacheObjectContext(space);
 
@@ -1121,7 +1549,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Create index.
+     * Entry point for index procedure.
      *
      * @param space Space name.
      * @param tblName Table name.
@@ -1131,88 +1559,47 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicIndexCreate(String space, String tblName, QueryIndex idx,
         boolean ifNotExists) {
-        String idxName = idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
+        IndexAbstractOperation op =
+            new IndexCreateOperation(ctx.localNodeId(), UUID.randomUUID(), space, tblName, idx, ifNotExists);
 
-        QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
-
-        idxLock.readLock().lock();
-
-        try {
-            QueryIndexDescriptorImpl oldIdxDesc = idxs.get(idxKey);
-
-            if (oldIdxDesc != null) {
-                if (ifNotExists)
-                    return new GridFinishedFuture<>();
-
-                return new GridFinishedFuture<>(new IgniteException("Index already exists [space=" + space +
-                    ", idxName=" + idxName + ']'));
-            }
-
-            IndexAbstractOperation op =
-                new IndexCreateOperation(ctx.localNodeId(), UUID.randomUUID(), space, tblName, idx, ifNotExists);
-
-            return startIndexOperationDistributed(idxKey, op);
-        }
-        finally {
-            idxLock.readLock().unlock();
-        }
+        return startIndexOperationDistributed(op);
     }
 
     /**
-     * Drop index.
+     * Entry point for index drop procedure
      *
      * @param idxName Index name.
      * @param ifExists When set to {@code true} operation fill fail if index doesn't exists.
      * @return Future completed when index is created.
      */
     public IgniteInternalFuture<?> dynamicIndexDrop(String space, String idxName, boolean ifExists) {
-        QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+        IndexAbstractOperation op =
+            new IndexDropOperation(ctx.localNodeId(), UUID.randomUUID(), space, idxName, ifExists);
 
-        idxLock.readLock().lock();
-
-        try {
-            QueryIndexDescriptorImpl idxDesc = idxs.get(idxKey);
-
-            if (idxDesc == null) {
-                if (ifExists)
-                    return new GridFinishedFuture<>();
-
-                return new GridFinishedFuture<>(new IgniteException("Index doesn't exist [space=" + space +
-                    ", idxName=" + idxName + ']'));
-            }
-
-            IndexAbstractOperation op =
-                new IndexDropOperation(ctx.localNodeId(), UUID.randomUUID(), space, idxName, ifExists);
-
-            return startIndexOperationDistributed(idxKey, op);
-        }
-        finally {
-            idxLock.readLock().unlock();
-        }
+        return startIndexOperationDistributed(op);
     }
 
     /**
      * Start distributed index change operation.
      *
-     * @param idxKey Index key.
      * @param op Operation.
      * @return Future.
      */
-    private IgniteInternalFuture<?> startIndexOperationDistributed(QueryIndexKey idxKey, IndexAbstractOperation op) {
+    private IgniteInternalFuture<?> startIndexOperationDistributed(IndexAbstractOperation op) {
         try {
             ctx.discovery().sendCustomEvent(new IndexProposeDiscoveryMessage(op));
 
             if (log.isDebugEnabled())
-                log.debug("Sent index propose discovery message [opId=" + op.operationId() + ", op=" + op + ']');
+                log.debug("Sent index propose discovery message [opId=" + op.id() + ", op=" + op + ']');
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(new IgniteException("Failed to start index change operation due to " +
-                "unexpected exception [space=" + idxKey.space() + ", idxName=" + idxKey.name() + ']'));
+                "unexpected exception [space=" + op.space() + ", idxName=" + op.indexName() + ']'));
         }
 
-        QueryIndexClientFuture fut = new QueryIndexClientFuture(op.operationId(), idxKey);
+        QueryIndexClientFuture fut = new QueryIndexClientFuture(op.id());
 
-        QueryIndexClientFuture oldFut = idxCliFuts.put(op.operationId(), fut);
+        QueryIndexClientFuture oldFut = idxCliFuts.put(op.id(), fut);
 
         assert oldFut == null;
 
@@ -1579,40 +1966,32 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Prepare index operation state.
-     *
-     * @param type Type descriptor.
-     * @param op Operation.
-     * @param completed Completed flag.
-     * @param err Error.
-     * @return State.
-     */
-    private IndexOperationState prepareIndexOperationState(QueryTypeDescriptorImpl type, IndexAbstractOperation op,
-        boolean completed, Exception err) {
-        IndexOperationHandler hnd = new IndexOperationHandler(ctx, this, type, op, completed, err);
-
-        IndexOperationState state = new IndexOperationState(ctx, this, hnd);
-
-        idxOpStates.put(op.operationId(), state);
-
-        return state;
-    }
-
-    /**
      * Process status request.
      *
      * @param req Status request.
      */
     private void processStatusRequest(IndexOperationStatusRequest req) {
-        UUID opId = req.operationId();
+        synchronized (activeOpsMux) {
+            UUID opId = req.operationId();
 
-        IndexOperationState idxOpState = idxOpStates.get(opId);
+            SchemaOperationDescriptor desc = activeOps.get(opId);
 
-        if (idxOpState != null)
-            idxOpState.onStatusRequest(req.senderNodeId());
-        else
-            // Operation completed successfully.
-            sendStatusResponse(req.senderNodeId(), opId, null);
+            assert desc != null;
+
+            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+
+            SchemaOperation op = schemaOps.get(key);
+
+            if (op != null && F.eq(op.descriptor().id(), opId))
+                op.onStatusRequest(req.senderNodeId());
+            else {
+                // TODO: Log
+                System.out.println("MISSING STATE [opNull=" + (op == null) + ']');
+
+                // Operation completed successfully and is not in local history any more.
+                sendStatusResponse(req.senderNodeId(), opId, null);
+            }
+        }
     }
 
     /**
@@ -1621,12 +2000,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param resp Status response.
      */
     private void processStatusResponse(IndexOperationStatusResponse resp) {
-        IndexOperationState idxOpState = idxOpStates.get(resp.operationId());
+        synchronized (activeOpsMux) {
+            UUID opId = resp.operationId();
 
-        if (idxOpState != null)
-            idxOpState.onNodeFinished(resp.senderNodeId(), resp.errorMessage());
-        else {
-            // TODO: Log!
+            SchemaOperationDescriptor desc = activeOps.get(opId);
+
+            assert desc != null;
+
+            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+
+            SchemaOperation op = schemaOps.get(key);
+
+            if (op != null && F.eq(op.descriptor().id(), opId)) {
+                assert op.manager() != null;
+
+                op.manager().onNodeFinished(resp.senderNodeId(), unmarshalSchemaError(resp.errorBytes()));
+            }
         }
     }
 
@@ -1635,17 +2024,69 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param destNodeId Destination node ID.
      * @param opId Operation ID.
-     * @param errMsg Error message.
+     * @param err Error.
      */
-    public void sendStatusResponse(UUID destNodeId, UUID opId, String errMsg) {
+    public void sendStatusResponse(UUID destNodeId, UUID opId, SchemaOperationException err) {
+        if (log.isDebugEnabled())
+            log.debug("Sending schema operation status response [opId=" + opId + ", crdNode=" + destNodeId +
+                ", err=" + err + ']');
+
         try {
-            IndexOperationStatusResponse resp = new IndexOperationStatusResponse(ctx.localNodeId(), opId, errMsg);
+            byte[] errBytes = marshalSchemaError(opId, err);
+
+            IndexOperationStatusResponse resp = new IndexOperationStatusResponse(ctx.localNodeId(), opId, errBytes);
 
             ctx.io().sendToGridTopic(destNodeId, TOPIC_DYNAMIC_SCHEMA, resp, QUERY_POOL);
         }
         catch (IgniteCheckedException e) {
             // Node left, ignore.
             // TODO: Better logging all over the state and handler to simplify debug!
+        }
+    }
+
+    /**
+     * Marshal schema error.
+     *
+     * @param err Error.
+     * @return Error bytes.
+     */
+    @Nullable private byte[] marshalSchemaError(UUID opId, @Nullable SchemaOperationException err) {
+        if (err == null)
+            return null;
+
+        try {
+            return U.marshal(ctx, err);
+        }
+        catch (Exception e) {
+            U.warn(log, "Failed to marshal schema operation error [opId=" + opId + ", err=" + err + ']', e);
+
+            try {
+                return U.marshal(ctx, new SchemaOperationException("Operation failed, but error cannot be serialized " +
+                    "(see local node log for more details) [opId=" + opId + ", nodeId=" + ctx.localNodeId() + ']'));
+            }
+            catch (Exception e0) {
+                assert false; // Impossible situation.
+
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Unmarshal schema error.
+     *
+     * @param errBytes Error bytes.
+     * @return Error.
+     */
+    @Nullable private SchemaOperationException unmarshalSchemaError(@Nullable byte[] errBytes) {
+        if (errBytes == null)
+            return null;
+
+        try {
+            return U.unmarshal(ctx, errBytes, U.resolveClassLoader(ctx.config()));
+        }
+        catch (Exception e) {
+            return new SchemaOperationException("Operation failed, but error cannot be deserialized.");
         }
     }
 

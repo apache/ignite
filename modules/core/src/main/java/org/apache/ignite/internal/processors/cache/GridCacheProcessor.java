@@ -65,6 +65,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.processors.query.index.message.IndexAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.message.IndexAcceptDiscoveryMessage;
@@ -407,11 +408,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             IndexAbstractDiscoveryMessage msg = ((IndexExchangeWorkerTask)task).message();
 
             if (msg instanceof IndexAcceptDiscoveryMessage)
-                ctx.query().onIndexAcceptMessage((IndexAcceptDiscoveryMessage)msg);
+                ctx.query().onSchemaAccept((IndexAcceptDiscoveryMessage)msg);
             else if (msg instanceof IndexFinishDiscoveryMessage)
-                ctx.query().onIndexFinishMessage((IndexFinishDiscoveryMessage)msg);
+                ctx.query().onSchemaFinish((IndexFinishDiscoveryMessage)msg);
             else
-                U.warn(log, "Unsupported index discovery message: " + msg);
+                U.warn(log, "Unsupported schema discovery message: " + msg);
         }
         else if (task instanceof IndexNodeLeaveExchangeWorkerTask) {
             IndexNodeLeaveExchangeWorkerTask task0 = (IndexNodeLeaveExchangeWorkerTask)task;
@@ -2724,7 +2725,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             IndexAbstractDiscoveryMessage msg0 = (IndexAbstractDiscoveryMessage)msg;
 
             if (log.isDebugEnabled())
-                log.debug("Received index discovery message [opId=" + msg0.operation().operationId() +
+                log.debug("Received index discovery message [opId=" + msg0.operation().id() +
                     ", msg=" + msg + ']');
 
             IgniteUuid id = msg0.id();
@@ -2736,11 +2737,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (msg instanceof IndexProposeDiscoveryMessage)
-                onIndexProposeMessageDiscovery((IndexProposeDiscoveryMessage)msg);
+                onSchemaProposeDiscovery((IndexProposeDiscoveryMessage)msg);
             else if (msg instanceof IndexAcceptDiscoveryMessage)
-                onIndexAcceptMessageDiscovery((IndexAcceptDiscoveryMessage)msg);
+                onSchemaAcceptDiscovery((IndexAcceptDiscoveryMessage)msg);
             else if (msg instanceof IndexFinishDiscoveryMessage)
-                onIndexFinishMessageDiscovery((IndexFinishDiscoveryMessage)msg);
+                onSchemaFinishDiscovery((IndexFinishDiscoveryMessage)msg);
             else
                 U.warn(log, "Unsupported index discovery message type (will ignore): " + msg);
 
@@ -2758,15 +2759,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onIndexProposeMessageDiscovery(IndexProposeDiscoveryMessage msg) {
-        UUID locNodeId = ctx.localNodeId();
-
+    private void onSchemaProposeDiscovery(IndexProposeDiscoveryMessage msg) {
         IndexAbstractOperation op = msg.operation();
 
         // Ignore in case error was reported by another node earlier.
         if (msg.hasError()) {
             if (log.isDebugEnabled())
-                log.debug("Received index init message with error reported by another node (will ignore): " + msg);
+                log.debug("Received schema propose discovery message with reported error (will ignore) [opId=" +
+                    msg.operation().id() + ", msg=" + msg + ']');
 
             return;
         }
@@ -2775,15 +2775,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
 
         if (desc == null) {
-            msg.onError(locNodeId, "Cache doesn't exit [cacheName=" + op.space() + ", nodeId=" + locNodeId + ']');
+            if (log.isDebugEnabled())
+                log.debug("Received schema propose discovery message, but cache doesn't exist [opId=" +
+                    msg.operation().id() + ", msg=" + msg + ']');
+
+            msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space()));
 
             return;
         }
 
-        desc.schemaChangePropose(locNodeId, msg);
+        // Preserve deployment ID so that we can distinguish between different caches with the same name.
+        if (msg.deploymentId() == null)
+            msg.deploymentId(desc.deploymentId());
 
-        if (!msg.hasError())
-            ctx.query().onIndexProposeMessage(msg);
+        assert F.eq(desc.deploymentId(), msg.deploymentId());
+
+        ctx.query().onSchemaProposeDiscovery(msg);
     }
 
     /**
@@ -2791,15 +2798,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onIndexAcceptMessageDiscovery(IndexAcceptDiscoveryMessage msg) {
+    private void onSchemaAcceptDiscovery(IndexAcceptDiscoveryMessage msg) {
         IndexAbstractOperation op = msg.operation();
 
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
 
-        if (desc == null)
-            msg.onError("Cache was stopped concurrently.");
-        else
-            desc.schemaChangeAccept(msg);
+        if (desc == null || !F.eq(desc.deploymentId(), msg.deploymentId())) {
+            if (log.isDebugEnabled())
+                log.debug("Received schema accept discovery message, but cache doesn't exist [opId=" + op.id() +
+                    ", msg=" + msg + ']');
+        }
+
+        ctx.query().onSchemaAcceptDiscovery(msg);
     }
 
     /**
@@ -2807,15 +2817,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onIndexFinishMessageDiscovery(IndexFinishDiscoveryMessage msg) {
+    private void onSchemaFinishDiscovery(IndexFinishDiscoveryMessage msg) {
         IndexAbstractOperation op = msg.operation();
 
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
 
-        if (desc == null)
-            return;
+        if (desc == null || !F.eq(desc.deploymentId(), msg.deploymentId())) {
+            if (log.isDebugEnabled())
+                log.debug("Received schema finish discovery message, but cache doesn't exist [opId=" + op.id() +
+                    ", msg=" + msg + ']');
+        }
+        else {
+            // Update public schema in case of success.
+            if (!msg.hasError())
+                desc.schemaChangeFinish(msg);
+        }
 
-        desc.schemaChangeFinish(msg);
+        ctx.query().onSchemaFinishDiscovery(msg);
     }
 
     /**
@@ -3487,7 +3505,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param name Name.
      * @return Descriptor.
      */
-    private DynamicCacheDescriptor cacheDescriptor(String name) {
+    public DynamicCacheDescriptor cacheDescriptor(String name) {
         return registeredCaches.get(maskNull(name));
     }
 

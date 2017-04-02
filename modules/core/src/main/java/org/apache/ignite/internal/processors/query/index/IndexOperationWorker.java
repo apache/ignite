@@ -1,0 +1,198 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.query.index;
+
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * Schema operation executor.
+ */
+public class IndexOperationWorker extends GridWorker {
+    /** Query processor */
+    private final GridQueryProcessor qryProc;
+
+    /** Deployment ID. */
+    private final IgniteUuid depId;
+
+    /** Target operation. */
+    private final IndexAbstractOperation op;
+
+    /** No-op flag. */
+    private final boolean nop;
+
+    /** Whether cache started. */
+    private final boolean cacheStarted;
+
+    /** Operation future. */
+    private final GridFutureAdapter fut;
+
+    /** Public operation future. */
+    private final GridFutureAdapter pubFut;
+
+    /** Start guard. */
+    private final AtomicBoolean startGuard = new AtomicBoolean();
+
+    /** Cancellation token. */
+    private final IndexOperationCancellationToken cancelToken = new IndexOperationCancellationToken();
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     * @param qryProc Query processor.
+     * @param depId Deployment ID.
+     * @param op Target operation.
+     * @param nop No-op flag.
+     * @param err Predefined error.
+     * @param cacheStarted Whether cache started.
+     */
+    public IndexOperationWorker(GridKernalContext ctx, GridQueryProcessor qryProc, IgniteUuid depId,
+        IndexAbstractOperation op, boolean nop, @Nullable SchemaOperationException err, boolean cacheStarted) {
+        super(ctx.igniteInstanceName(), workerName(op), ctx.log(IndexOperationWorker.class));
+
+        this.qryProc = qryProc;
+        this.depId = depId;
+        this.op = op;
+        this.nop = nop;
+        this.cacheStarted = cacheStarted;
+
+        fut = new GridFutureAdapter();
+
+        if (err != null)
+            fut.onDone(err);
+        else if (nop)
+            fut.onDone();
+
+        pubFut = publicFuture(fut);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+        try {
+            // Execute.
+            qryProc.processIndexOperationLocal(op, depId, cancelToken);
+
+            fut.onDone();
+        }
+        catch (Exception e) {
+            assert e instanceof SchemaOperationException;
+
+            fut.onDone(e);
+        }
+    }
+
+    /**
+     * Perform initialization routine.
+     *
+     * @return This instance.
+     */
+    public IndexOperationWorker start() {
+        if (startGuard.compareAndSet(false, true)) {
+            if (!fut.isDone())
+                new IgniteThread(this).start();
+        }
+
+        return this;
+    }
+
+    /**
+     * Chain the future making sure that operation is completed after local schema is updated.
+     *
+     * @param fut Current future.
+     * @return Chained future.
+     */
+    @SuppressWarnings("unchecked")
+    private GridFutureAdapter<?> publicFuture(GridFutureAdapter fut) {
+        final GridFutureAdapter<?> chainedFut = new GridFutureAdapter<>();
+
+        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+            @Override public void apply(IgniteInternalFuture fut) {
+                Exception err = null;
+
+                try {
+                    fut.get();
+                }
+                catch (Exception e) {
+                    err = e;
+                }
+
+                if (cacheStarted && !nop && err == null)
+                    qryProc.onLocalOperationFinished(op.id());
+
+                chainedFut.onDone(null, err);
+            }
+        });
+
+        return chainedFut;
+    }
+
+    /**
+     * @return No-op flag.
+     */
+    public boolean nop() {
+        return nop;
+    }
+
+    /**
+     * @return Whether cache started.
+     */
+    public boolean cacheStarted() {
+        return cacheStarted;
+    }
+
+    /**
+     * Cancel operation.
+     */
+    public void cancel() {
+        if (!cancelToken.cancel())
+            super.cancel();
+    }
+
+    /**
+     * @return Operation.
+     */
+    public IndexAbstractOperation operation() {
+        return op;
+    }
+
+    /**
+     * @return Future completed when operation is ready.
+     */
+    public IgniteInternalFuture future() {
+        return pubFut;
+    }
+
+    /**
+     * @return Worker name.
+     */
+    private static String workerName(IndexAbstractOperation op) {
+        return "schema-op-worker-" + op.id();
+    }
+}

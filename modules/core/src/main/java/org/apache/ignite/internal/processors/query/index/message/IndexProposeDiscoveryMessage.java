@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.query.index.message;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Propose part of a distributed index create/drop operation.
@@ -31,11 +31,11 @@ public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage 
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Node reported an error. */
-    private UUID errNodeId;
+    /** Cache deployment ID. */
+    private IgniteUuid depId;
 
-    /** Error message. */
-    private String errMsg;
+    /** Error. */
+    private SchemaOperationException err;
 
     /**
      * Constructor.
@@ -48,8 +48,8 @@ public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage 
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return hasError() ? new IndexFinishDiscoveryMessage(op, errNodeId, errMsg) :
-            new IndexAcceptDiscoveryMessage(op);
+        return hasError() ? new IndexFinishDiscoveryMessage(op, depId, err) :
+            new IndexAcceptDiscoveryMessage(op, depId);
     }
 
     /** {@inheritDoc} */
@@ -62,16 +62,26 @@ public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage 
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Nullable public IgniteUuid deploymentId() {
+        return depId;
+    }
+
+    /**
+     * @param depId Deployment ID.
+     */
+    public void deploymentId(IgniteUuid depId) {
+        this.depId = depId;
+    }
+
     /**
      * Set error.
      *
-     * @param errNodeId Error node ID.
-     * @param errMsg Error message.
+     * @param err Error.
      */
-    public void onError(UUID errNodeId, String errMsg) {
+    public void onError(SchemaOperationException err) {
         if (!hasError()) {
-            this.errNodeId = errNodeId;
-            this.errMsg = errMsg;
+            this.err = err;
         }
     }
 
@@ -79,21 +89,14 @@ public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage 
      * @return {@code True} if error was reported during init.
      */
     public boolean hasError() {
-        return errNodeId != null;
-    }
-
-    /**
-     * @return ID of the node reported an error (if any).
-     */
-    @Nullable public UUID errorNodeId() {
-        return errNodeId;
+        return err != null;
     }
 
     /**
      * @return Error message (if any).
      */
-    @Nullable public String errorMessage() {
-        return errMsg;
+    @Nullable public SchemaOperationException error() {
+        return err;
     }
 
     /** {@inheritDoc} */

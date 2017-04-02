@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
@@ -1042,6 +1043,22 @@ public class QueryUtils {
      */
     public static int discoveryHistorySize() {
         return DISCO_HIST_SIZE;
+    }
+
+    /**
+     * Wrap schema exception if needed.
+     *
+     * @param e Original exception.
+     * @return Schema exception.
+     */
+    @Nullable public static SchemaOperationException wrapIfNeeded(@Nullable Exception e) {
+        if (e == null)
+            return null;
+
+        if (e instanceof SchemaOperationException)
+            return (SchemaOperationException)e;
+
+        return new SchemaOperationException("Unexpected error.", e);
     }
 
     /**

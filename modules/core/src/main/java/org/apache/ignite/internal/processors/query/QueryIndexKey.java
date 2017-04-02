@@ -20,10 +20,15 @@ package org.apache.ignite.internal.processors.query;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.io.Serializable;
+
 /**
  * Index key.
  */
-public class QueryIndexKey {
+public class QueryIndexKey implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Space. */
     private final String space;
 

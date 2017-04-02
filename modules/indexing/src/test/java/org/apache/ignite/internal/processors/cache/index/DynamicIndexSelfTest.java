@@ -21,12 +21,13 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Tests for dynamic index creation.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
 public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -44,18 +45,14 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
         grid(0).getOrCreateCache(aliasCacheConfiguration());
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
-
         assertNoIndex(CACHE_NAME_SENSITIVE, TBL_NAME, IDX_NAME);
-
         assertNoIndex(CACHE_NAME_ALIAS, TBL_NAME_2, IDX_NAME);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         grid(0).destroyCache(CACHE_NAME);
-
         grid(0).destroyCache(CACHE_NAME_SENSITIVE);
-
         grid(0).destroyCache(CACHE_NAME_ALIAS);
 
         super.afterTest();
@@ -73,7 +70,6 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCreate() throws Exception {
         final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME));
 
@@ -86,7 +82,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, SchemaOperationException.class, null);
 
         queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
@@ -142,7 +138,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, SchemaOperationException.class, null);
 
         queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, true).get();
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);

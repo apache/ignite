@@ -52,7 +52,10 @@ public interface GridComponent {
         MARSHALLER_PROC,
 
         /** */
-        BINARY_PROC
+        BINARY_PROC,
+
+        /** Query processor. */
+        QUERY_PROC
     }
 
     /**
