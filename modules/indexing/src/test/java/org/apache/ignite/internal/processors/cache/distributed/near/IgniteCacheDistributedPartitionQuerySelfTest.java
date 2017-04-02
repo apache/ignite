@@ -28,6 +28,8 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import javax.cache.Cache;
+import javax.cache.CacheException;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -71,6 +73,9 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     /** Partitions per region distribution. */
     private static final int[] PARTS_PER_REGION = new int[] {100, 200, 300, 400, 24};
 
+    /** Unmapped region id. */
+    private static final int UNMAPPED_REGION = PARTS_PER_REGION.length;
+
     /** Clients per partition. */
     private static final int CLIENTS_PER_PARTITION = 10;
 
@@ -99,7 +104,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
             p += regCnt;
         }
 
-        // Last region was left empty intentionally.
+        /** Last region was left empty intentionally, see {@link #UNMAPPED_REGION} */
         TOTAL_CLIENTS = total - PARTS_PER_REGION[PARTS_PER_REGION.length - 1] * CLIENTS_PER_PARTITION;
 
         PARTS_COUNT = parts;
@@ -496,12 +501,20 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
             SqlQuery<ClientKey, Client> qry2 = new SqlQuery<>(Client.class, "1=1");
             qry2.setPartitions(createRange(range.get(0), range.get(1)));
 
-            List<Cache.Entry<ClientKey, Client>> clients2 = cl.query(qry2).getAll();
+            try {
+                List<Cache.Entry<ClientKey, Client>> clients2 = cl.query(qry2).getAll();
 
-            assertEquals("Region " + regionId + " count with partition set", expRegionCnt, clients2.size());
+                assertEquals("Region " + regionId + " count with partition set", expRegionCnt, clients2.size());
 
-            // Query must produce only results from single region.
-            validateClients(regionId, clients2);
+                // Query must produce only results from single region.
+                validateClients(regionId, clients2);
+
+                if (regionId == UNMAPPED_REGION)
+                    fail();
+            } catch (CacheException ignored) {
+                if (regionId != UNMAPPED_REGION)
+                    fail();
+            }
         }
     }
 
@@ -551,12 +564,20 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
 
             qry.setPartitions(p1, p2);
 
-            List<Cache.Entry<ClientKey, Client>> clients = cl.query(qry).getAll();
+            try {
+                List<Cache.Entry<ClientKey, Client>> clients = cl.query(qry).getAll();
 
-            // Query must produce only results from two partitions.
-            for (Cache.Entry<ClientKey, Client> client : clients) {
-                assertTrue("Incorrect partition for key",
-                        p1List.contains(client.getKey().clientId) || p2List.contains(client.getKey().clientId));
+                // Query must produce only results from two partitions.
+                for (Cache.Entry<ClientKey, Client> client : clients) {
+                    assertTrue("Incorrect partition for key",
+                            p1List.contains(client.getKey().clientId) || p2List.contains(client.getKey().clientId));
+                }
+
+                if (regionId == UNMAPPED_REGION)
+                    fail();
+            } catch (CacheException ignored) {
+                if (regionId != UNMAPPED_REGION)
+                    fail();
             }
         }
     }
@@ -577,15 +598,23 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
 
             qry.setPartitions(createRange(range.get(0), range.get(1)));
 
-            List<List<?>> rows = cl.query(qry).getAll();
+            try {
+                List<List<?>> rows = cl.query(qry).getAll();
 
-            int expRegionCnt = regionId == 5 ? 0 : PARTS_PER_REGION[regionId - 1] * CLIENTS_PER_PARTITION;
+                int expRegionCnt = regionId == 5 ? 0 : PARTS_PER_REGION[regionId - 1] * CLIENTS_PER_PARTITION;
 
-            assertEquals("Clients with deposits", expRegionCnt * DEPOSITS_PER_CLIENT, rows.size());
+                assertEquals("Clients with deposits", expRegionCnt * DEPOSITS_PER_CLIENT, rows.size());
 
-            // Query must produce only results from single region.
-            for (List<?> row : rows)
-                assertEquals("Region id", regionId, ((Integer)row.get(4)).intValue());
+                // Query must produce only results from single region.
+                for (List<?> row : rows)
+                    assertEquals("Region id", regionId, ((Integer)row.get(4)).intValue());
+
+                if (regionId == UNMAPPED_REGION)
+                    fail();
+            } catch (CacheException ignored) {
+                if (regionId != UNMAPPED_REGION)
+                    fail();
+            }
         }
     }
 

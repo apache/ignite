@@ -481,7 +481,7 @@ public class GridReduceQueryExecutor {
         Set<ClusterNode> nodes = map.keySet();
 
         if (F.isEmpty(map))
-            return Collections.emptyMap(); // Topology has no nodes containing query relevant data.
+            throw new CacheException("Failed to find data nodes for cache: " + cctx.name());
 
         if (!F.isEmpty(extraSpaces)) {
             for (int i = 0; i < extraSpaces.size(); i++) {
@@ -546,7 +546,7 @@ public class GridReduceQueryExecutor {
      * @param parts Partitions.
      * @return Rows iterator.
      */
-    public Iterator query(
+    public Iterator<List<?>> query(
         GridCacheContext<?, ?> cctx,
         GridCacheTwoStepQuery qry,
         boolean keepPortable,
@@ -606,22 +606,19 @@ public class GridReduceQueryExecutor {
                             partsMap = map;
                     }
                 }
-            }
 
-            if (nodes == null)
-                continue; // Retry.
+                if (nodes == null)
+                    continue; // Retry.
 
-            if (nodes.size() == 0)
-                return new GridEmptyIterator(); // No data nodes are found for query.
+                assert !nodes.isEmpty();
 
-            assert !nodes.isEmpty();
+                if (cctx.isReplicated() || qry.explain()) {
+                    assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
+                            "We must be on a client node.";
 
-            if (cctx.isReplicated() || qry.explain()) {
-                assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
-                        "We must be on a client node.";
-
-                // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
-                nodes = singletonList(F.rand(nodes));
+                    // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
+                    nodes = singletonList(F.rand(nodes));
+                }
             }
 
             int tblIdx = 0;
