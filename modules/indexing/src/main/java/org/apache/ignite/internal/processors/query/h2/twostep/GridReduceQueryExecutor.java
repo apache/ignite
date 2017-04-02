@@ -481,7 +481,7 @@ public class GridReduceQueryExecutor {
         Set<ClusterNode> nodes = map.keySet();
 
         if (F.isEmpty(map))
-            return Collections.emptyMap(); // Topology has no nodes containing query relevant data.
+            throw new CacheException("Failed to find data nodes for cache: " + cctx.name());
 
         if (!F.isEmpty(extraSpaces)) {
             for (int i = 0; i < extraSpaces.size(); i++) {
