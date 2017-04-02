@@ -106,8 +106,6 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @return Map from table name to type.
      */
     protected static Map<String, QueryTypeDescriptorImpl> types(IgniteEx node, String cacheName) {
-        assert node.cache(cacheName) != null;
-
         Map<String, QueryTypeDescriptorImpl> res = new HashMap<>();
 
         Collection<GridQueryTypeDescriptor> descs = node.context().query().types(cacheName);

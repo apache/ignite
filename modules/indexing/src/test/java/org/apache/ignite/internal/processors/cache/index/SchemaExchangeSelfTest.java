@@ -19,20 +19,29 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
  * Tests for schema exchange between nodes.
  */
 public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
+    /** Node on which filter should be applied (if any). */
+    private static String filterNodeName;
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        filterNodeName = null;
 
         super.afterTest();
     }
@@ -148,6 +157,10 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         assertTypes(node1, ValueClass.class);
         assertTypes(node2, ValueClass.class);
+
+        assertTypes(node3);
+
+        node3.cache(CACHE_NAME);
         assertTypes(node3, ValueClass.class);
 
         // Check restarts from the first node.
@@ -166,6 +179,10 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         assertTypes(node1, ValueClass.class, ValueClass2.class);
         assertTypes(node2, ValueClass.class, ValueClass2.class);
+
+        assertTypes(node3);
+
+        node3.cache(CACHE_NAME);
         assertTypes(node3, ValueClass.class, ValueClass2.class);
 
         // Check restarts from the second node.
@@ -184,7 +201,15 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         assertTypes(node1, ValueClass.class, ValueClass2.class);
         assertTypes(node2, ValueClass.class, ValueClass2.class);
+
+        assertTypes(node3);
+
+        node3.cache(CACHE_NAME);
         assertTypes(node3, ValueClass.class, ValueClass2.class);
+
+        assertTypes(node4);
+
+        node4.cache(CACHE_NAME);
         assertTypes(node4, ValueClass.class, ValueClass2.class);
 
         // Make sure that joining node observes correct state.
@@ -192,7 +217,13 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         assertTypes(startNoCache(6), ValueClass.class, ValueClass2.class);
 
         assertTypes(startClient(7), ValueClass.class, ValueClass2.class);
-        assertTypes(startClientNoCache(8), ValueClass.class, ValueClass2.class);
+
+        IgniteEx node8 = startClientNoCache(8);
+
+        assertTypes(node8);
+
+        node8.cache(CACHE_NAME);
+        assertTypes(node8, ValueClass.class, ValueClass2.class);
     }
 
     /**
@@ -246,6 +277,10 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         assertTypes(node1, ValueClass.class);
         assertTypes(node2, ValueClass.class);
         assertTypes(node3, ValueClass.class);
+
+        assertTypes(node4);
+
+        node4.cache(CACHE_NAME);
         assertTypes(node4, ValueClass.class);
     }
 
@@ -303,6 +338,9 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         assertTypes(node5, ValueClass.class);
         assertTypes(node6, ValueClass.class);
         assertTypes(node7, ValueClass.class);
+
+        assertTypes(node8);
+        node8.cache(CACHE_NAME);
         assertTypes(node8, ValueClass.class);
 
         node2.destroyCache(CACHE_NAME);
@@ -314,9 +352,43 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         assertTypes(node3, ValueClass.class, ValueClass2.class);
         assertTypes(node4, ValueClass.class, ValueClass2.class);
         assertTypes(node5, ValueClass.class, ValueClass2.class);
+
+        assertTypes(node6);
+        assertTypes(node7);
+        assertTypes(node8);
+
+        node6.cache(CACHE_NAME);
+        node7.cache(CACHE_NAME);
+        node8.cache(CACHE_NAME);
+
         assertTypes(node6, ValueClass.class, ValueClass2.class);
         assertTypes(node7, ValueClass.class, ValueClass2.class);
         assertTypes(node8, ValueClass.class, ValueClass2.class);
+    }
+
+    /**
+     * Test behavior when node filter is set.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNodeFilter() throws Exception {
+        filterNodeName = getTestIgniteInstanceName(1);
+
+        IgniteEx node1 = start(1, KeyClass.class, ValueClass.class);
+        assertTypes(node1, ValueClass.class);
+
+        IgniteEx node2 = start(2, KeyClass.class, ValueClass.class);
+        assertTypes(node1, ValueClass.class);
+        assertTypes(node2, ValueClass.class);
+
+        IgniteEx node3 = startNoCache(3);
+        assertTypes(node1, ValueClass.class);
+        assertTypes(node2, ValueClass.class);
+
+        assertTypes(node3);
+
+        node3.cache(CACHE_NAME);
+        assertTypes(node3, ValueClass.class);
     }
 
     /**
@@ -378,6 +450,9 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setCacheConfiguration(cacheConfiguration(clss));
 
+        if (filterNodeName != null && F.eq(name, filterNodeName))
+            cfg.setUserAttributes(Collections.singletonMap("AFF_NODE", true));
+
         return (IgniteEx)Ignition.start(cfg);
     }
 
@@ -430,7 +505,17 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("unchecked")
     private static CacheConfiguration cacheConfiguration(Class... clss) {
-        return new CacheConfiguration().setName(CACHE_NAME).setIndexedTypes(clss);
+        CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME).setIndexedTypes(clss);
+
+        if (filterNodeName != null) {
+            ccfg.setNodeFilter(new IgnitePredicate<ClusterNode>() {
+                @Override public boolean apply(ClusterNode node) {
+                    return node.attribute("AFF_NODE") != null;
+                }
+            });
+        }
+
+        return ccfg;
     }
 
     /**
