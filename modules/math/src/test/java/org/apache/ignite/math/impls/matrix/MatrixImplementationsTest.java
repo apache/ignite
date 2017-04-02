@@ -136,18 +136,18 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (ignore(m.getClass()))
                 return;
 
-            double[][] arr = new double[m.rowSize()][m.columnSize()];
+            double[][] data = new double[m.rowSize()][m.columnSize()];
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = Math.random();
+                    data[i][j] = Math.random();
 
-            m.assign(arr);
+            m.assign(data);
 
             for (int i = 0; i < m.rowSize(); i++) {
                 for (int j = 0; j < m.columnSize(); j++)
                     assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(m.get(i, j), arr[i][j]) == 0);
+                        Double.compare(m.get(i, j), data[i][j]) == 0);
             }
         });
     }
@@ -184,8 +184,44 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                  assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                      Double.compare(plus.get(i, j), m.get(i, j) + plusVal) == 0);
+                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        Double.compare(plus.get(i, j), m.get(i, j) + plusVal) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testPlusMatrix() {
+        consumeSampleMatrix((m, desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
+            double[][] data = fillAndReturn(m);
+
+            Matrix plus = m.plus(m);
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        Double.compare(plus.get(i, j), data[i][j] * 2.0) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testMinusMatrix() {
+        consumeSampleMatrix((m, desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            Matrix minus = m.minus(m);
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        Double.compare(minus.get(i, j), 0.0) == 0);
         });
     }
 
@@ -215,7 +251,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (ignore(m.getClass()))
                 return;
 
-            double[][] arr = fillAndReturn(m);
+            double[][] data = fillAndReturn(m);
 
             double divVal = Math.random();
 
@@ -224,7 +260,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
                     assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(divide.get(i, j), arr[i][j] / divVal) == 0);
+                        Double.compare(divide.get(i, j), data[i][j] / divVal) == 0);
         });
     }
 
@@ -424,13 +460,13 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testSum() {
         consumeSampleMatrix((m, desc) -> {
-            double[][] arr = fillAndReturn(m);
+            double[][] data = fillAndReturn(m);
 
             double sum = m.sum();
 
             double rawSum = 0;
-            for (double[] anArr : arr)
-                for (int j = 0; j < arr[0].length; j++)
+            for (double[] anArr : data)
+                for (int j = 0; j < data[0].length; j++)
                     rawSum += anArr[j];
 
             assertTrue("Unexpected value for " + desc,
@@ -521,6 +557,12 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
+    public void testGuid() {
+        consumeSampleMatrix((m, desc) -> assertNotNull("Null guid in " + desc, m.guid()));
+    }
+
+    /** */
+    @Test
     public void testSwapRows() {
         consumeSampleMatrix((m, desc) -> {
             if (readOnly(m))
@@ -578,6 +620,102 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     }
 
     /** */
+    @Test
+    public void testSetRow() {
+        consumeSampleMatrix((m, desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            int rowIdx = m.rowSize() / 2;
+
+            double[] newValues = new double[m.columnSize()];
+
+            for (int i = 0; i < newValues.length; i++)
+                newValues[i] = newValues.length - i;
+
+            m.setRow(rowIdx, newValues);
+
+            for (int col = 0; col < m.columnSize(); col++)
+                assertTrue("Unexpected value for " + desc + " at " + col,
+                    Double.compare(m.get(rowIdx, col), newValues[col]) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testSetColumn() {
+        consumeSampleMatrix((m, desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            int colIdx = m.columnSize() / 2;
+
+            double[] newValues = new double[m.rowSize()];
+
+            for (int i = 0; i < newValues.length; i++)
+                newValues[i] = newValues.length - i;
+
+            m.setColumn(colIdx, newValues);
+
+            for (int row = 0; row < m.rowSize(); row++)
+                assertTrue("Unexpected value for " + desc + " at " + row,
+                    Double.compare(m.get(row, colIdx), newValues[row]) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testCopy() {
+        consumeSampleMatrix((m, desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            Matrix cp = m.copy();
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        Double.compare(m.get(i, j), cp.get(i, j)) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testViewPart() {
+        consumeSampleMatrix((m, desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            int rowOff = m.rowSize() < 3 ? 0 : 1;
+            int rows = m.rowSize() < 3 ? 1 : m.rowSize() - 2;
+            int colOff = m.columnSize() < 3 ? 0 : 1;
+            int cols = m.columnSize() < 3 ? 1 : m.columnSize() - 2;
+
+            Matrix view1 = m.viewPart(rowOff, rows, colOff, cols);
+            Matrix view2 = m.viewPart(new int[] {rowOff, colOff}, new int[] {rows, cols});
+
+            String details = desc + " view [" + rowOff + ", " + rows + ", " + colOff + ", " + cols + "]";
+
+            for (int i = 0; i < rows; i++)
+                for (int j = 0; j < cols; j++) {
+                    assertTrue("Unexpected view1 value for " + details + " at (" + i + "," + j + ")",
+                        Double.compare(m.get(i + rowOff, j + colOff), view1.get(i, j)) == 0);
+
+                    assertTrue("Unexpected view1 value for " + details + " at (" + i + "," + j + ")",
+                        Double.compare(m.get(i + rowOff, j + colOff), view2.get(i, j)) == 0);
+                }
+        });
+    }
+
+    /** */
     private void testInvalidRowIndex(Supplier<Matrix> supplier, String desc) {
         try {
             supplier.get();
@@ -630,40 +768,40 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     private double[][] fillIntAndReturn(Matrix m) {
-        double[][] arr = new double[m.rowSize()][m.columnSize()];
+        double[][] data = new double[m.rowSize()][m.columnSize()];
 
         if (readOnly(m)) {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = m.get(i, j);
+                    data[i][j] = m.get(i, j);
 
         } else {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = i * m.rowSize() + j + 1;
+                    data[i][j] = i * m.rowSize() + j + 1;
 
-            m.assign(arr);
+            m.assign(data);
         }
-        return arr;
+        return data;
     }
 
     /** */
     private double[][] fillAndReturn(Matrix m) {
-        double[][] arr = new double[m.rowSize()][m.columnSize()];
+        double[][] data = new double[m.rowSize()][m.columnSize()];
 
         if (readOnly(m)) {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = m.get(i, j);
+                    data[i][j] = m.get(i, j);
 
         } else {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = -0.5d + Math.random();
+                    data[i][j] = -0.5d + Math.random();
 
-            m.assign(arr);
+            m.assign(data);
         }
-        return arr;
+        return data;
     }
 
     /** */
