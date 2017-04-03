@@ -971,11 +971,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     private static GridDhtPartitionState getPartState(long state) {
-        return GridDhtPartitionState.fromOrdinal((int) (state & (0x0000000000000008L)));
+        return GridDhtPartitionState.fromOrdinal((int) (state & (0x0000000000000007L)));
     }
 
     private static long setPartState(long state, GridDhtPartitionState partState) {
-        return (state & (~0x0000000000000008L)) | partState.ordinal();
+        return (state & (~0x0000000000000007L)) | partState.ordinal();
     }
 
     private static int getReservations(long state) {
