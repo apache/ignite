@@ -134,9 +134,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private final GridQueryIndexing idx;
 
-    /** RW lock for dynamic index create. */
-    private final ReadWriteLock idxLock = new ReentrantReadWriteLock();
-
     /** All indexes. */
     private final ConcurrentMap<QueryIndexKey, QueryIndexDescriptorImpl> idxs = new ConcurrentHashMap<>();
 
@@ -168,6 +165,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final LinkedHashMap<UUID, SchemaOperationDescriptor> activeOpsInit = new LinkedHashMap<>();
 
     /** Active operations mutex. */
+    // TODO: Can we have more relaxed mode?
     private final Object activeOpsMux = new Object();
 
     /** Coordinator flag (initialized lazily). */
@@ -470,15 +468,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
         if (idx != null)
             idx.onDisconnected(reconnectFut);
-
-        // TODO: Complete index client futures, clear pending index state.
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
-        // TODO: Re-initialize?
-
-        return super.onReconnected(clusterRestarted);
     }
 
     /**
@@ -1208,9 +1197,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private void registerCache0(String space, GridCacheContext<?, ?> cctx, Collection<QueryTypeCandidate> cands)
         throws IgniteCheckedException {
-        idxLock.writeLock().lock();
-
-        try {
+        synchronized (activeOpsMux) {
             idx.registerCache(space, cctx, cctx.config());
 
             try {
@@ -1249,9 +1236,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 throw e;
             }
         }
-        finally {
-            idxLock.writeLock().unlock();
-        }
     }
 
     /**
@@ -1262,9 +1246,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void unregisterCache0(String space) {
         assert idx != null;
 
-        idxLock.writeLock().lock();
-
-        try {
+        synchronized (activeOpsMux) {
             // Clear types.
             Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
 
@@ -1301,9 +1283,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             catch (Exception e) {
                 U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + space, e);
             }
-        }
-        finally {
-            idxLock.writeLock().unlock();
         }
     }
 
