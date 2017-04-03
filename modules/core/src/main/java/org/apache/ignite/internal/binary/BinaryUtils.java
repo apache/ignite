@@ -110,6 +110,10 @@ public class BinaryUtils {
     /** Flag: compact footer, no field IDs. */
     public static final short FLAG_COMPACT_FOOTER = 0x0020;
 
+    /** Flag: raw data contains .NET type information. Always 0 in Java. Keep it here for information only. */
+    @SuppressWarnings("unused")
+    public static final short FLAG_CUSTOM_DOTNET_TYPE = 0x0040;
+
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
 

@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 649
-#pragma warning disable 169
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -53,15 +51,21 @@ namespace Apache.Ignite.Core.Tests
             Assert.Greater(jars.Length, 3);
 
             foreach (var jar in jars)
-                // ReSharper disable once AssignNullToNotNullAttribute
-                File.Copy(jar, Path.Combine(folder, Path.GetFileName(jar)), true);
+            {
+                var fileName = Path.GetFileName(jar);
+                Assert.IsNotNull(fileName);
+                File.Copy(jar, Path.Combine(folder, fileName), true);
+            }
 
             // Build classpath
             var classpath = string.Join(";", Directory.GetFiles(folder).Select(Path.GetFileName));
 
             // Copy .NET binaries
-            foreach (var asm in new[] {typeof (IgniteRunner).Assembly, typeof (Ignition).Assembly, GetType().Assembly})
+            foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly, GetType().Assembly})
+            {
+                Assert.IsNotNull(asm.Location);
                 File.Copy(asm.Location, Path.Combine(folder, Path.GetFileName(asm.Location)));
+            }
 
             // Copy config
             var springPath = Path.GetFullPath("config\\compute\\compute-grid2.xml");
@@ -156,6 +160,7 @@ namespace Apache.Ignite.Core.Tests
             throw new InvalidOperationException();
         }
 
+        #pragma warning disable 649
         /// <summary>
         /// Function that returns process path.
         /// </summary>
