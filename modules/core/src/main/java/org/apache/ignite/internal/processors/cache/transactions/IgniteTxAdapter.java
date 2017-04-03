@@ -1365,6 +1365,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     sessionEnd(stores, false);
             }
         }
+        else
+            sessionEnd(stores, true);
     }
 
     /**

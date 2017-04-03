@@ -83,9 +83,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter implements IgniteCacheOffheapManager {
     /** */
-    private boolean indexingEnabled;
-
-    /** */
     // TODO GG-11208 need restore size after restart.
     private CacheDataStore locCacheDataStore;
 
@@ -121,8 +118,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
-
-        indexingEnabled = QueryUtils.isEnabled(cctx.config());
 
         updateValSizeThreshold = cctx.kernalContext().config().getMemoryConfiguration().getPageSize() / 2;
 
@@ -913,7 +908,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          */
         private boolean canUpdateOldRow(@Nullable CacheDataRow oldRow, DataRow dataRow)
             throws IgniteCheckedException {
-            if (oldRow == null || indexingEnabled)
+            if (oldRow == null || cctx.queries().enabled())
                 return false;
 
             if (oldRow.expireTime() != dataRow.expireTime())
@@ -1058,11 +1053,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             long expireTime = newRow.expireTime();
 
-            if (indexingEnabled) {
-                GridCacheQueryManager qryMgr = cctx.queries();
+            GridCacheQueryManager qryMgr = cctx.queries();
 
-                assert qryMgr.enabled();
-
+            if (qryMgr.enabled()) {
                 if (oldRow != null) {
                     qryMgr.store(key,
                         partId,
@@ -1137,13 +1130,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 ver = oldRow.version();
             }
 
-            if (indexingEnabled) {
-                GridCacheQueryManager qryMgr = cctx.queries();
+            GridCacheQueryManager qryMgr = cctx.queries();
 
-                assert qryMgr.enabled();
-
+            if (qryMgr.enabled())
                 qryMgr.remove(key, partId, val, ver);
-            }
 
             if (oldRow != null)
                 rowStore.removeRow(oldRow.link());

@@ -275,18 +275,16 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
+        if (ctx.isDaemon())
+            return;
+
         busyLock.block();
 
         try {
-            if (ctx.isDaemon())
-                return;
+            U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
-        busyLock.block();
-
-        U.shutdownNow(GridServiceProcessor.class, depExe, log);
-
-        if (!ctx.clientNode())
-            ctx.event().removeDiscoveryEventListener(topLsnr);
+            if (!ctx.clientNode())
+                ctx.event().removeDiscoveryEventListener(topLsnr);
 
             Collection<ServiceContextImpl> ctxs = new ArrayList<>();
 
