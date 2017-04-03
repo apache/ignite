@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -79,12 +77,6 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
     /** {@inheritDoc} */
     @Override public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
         @Nullable int... types) {
-
-        if (ctx.config().getEventStorageSpi() instanceof NoopEventStorageSpi) {
-            throw new IgniteException("Remote event query called with default noop event storage spi. " +
-                    "You must set another event storage spi via IngiteConfiguration.setEventStorageSpi(). " +
-                    "For example you can use [MemoryEventStorageSpi].");
-        }
 
         A.notNull(p, "p");
 
@@ -171,12 +163,6 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
 
     /** {@inheritDoc} */
     @Override public <T extends Event> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types) {
-
-        if (ctx.config().getEventStorageSpi() instanceof NoopEventStorageSpi) {
-            throw new IgniteException("Local event query called with default noop event storage spi. " +
-                    "You must set another event storage spi via IngiteConfiguration.setEventStorageSpi(). " +
-                    "For example you can use [MemoryEventStorageSpi].");
-        }
 
         A.notNull(p, "p");
 
