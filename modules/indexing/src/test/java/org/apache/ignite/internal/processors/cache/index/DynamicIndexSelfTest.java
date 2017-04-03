@@ -165,25 +165,11 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test drop when cache doesn't exist.
-     *
-     * @throws Exception If failed.
-     */
-    public void testDropNoCache() throws Exception {
-        assertSchemaException(new RunnableX() {
-            @Override public void run() throws Exception {
-                queryProcessor(grid(0)).dynamicIndexDrop(randomString(), "my_idx", false).get();
-            }
-        }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
-
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
-    }
-
-    /**
      * Test simple index create with schema case sensitivity considered.
      *
      * @throws Exception If failed.
      */
+    // TODO: What is that?
     public void testCreateCaseSensitive() throws Exception {
         QueryIndex idx = index(IDX_NAME, field("Id"), field(FIELD_NAME_1), field("id", true));
 
@@ -207,7 +193,14 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+    }
 
+    /**
+     * Test drop when there is no index.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoIndex() throws Exception {
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
                 queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
@@ -215,6 +208,21 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
         }, SchemaOperationException.CODE_INDEX_NOT_FOUND);
 
         queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, true).get();
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+    }
+
+    /**
+     * Test drop when cache doesn't exist.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoCache() throws Exception {
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
+                queryProcessor(grid(0)).dynamicIndexDrop(randomString(), "my_idx", false).get();
+            }
+        }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
+
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
     }
 
