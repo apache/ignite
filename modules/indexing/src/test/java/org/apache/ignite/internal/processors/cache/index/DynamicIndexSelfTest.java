@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -27,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.UUID;
 
 /**
@@ -232,9 +234,21 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
      * @return Default cache configuration.
      */
     private CacheConfiguration cacheConfiguration() {
-        return new CacheConfiguration<KeyClass, ValueClass>()
-            .setName(CACHE_NAME)
-            .setIndexedTypes(KeyClass.class, ValueClass.class);
+        CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
+
+        QueryEntity entity = new QueryEntity();
+
+        entity.setKeyType(KeyClass.class.getName());
+        entity.setValueType(ValueClass.class.getName());
+
+        entity.addQueryField("id", Long.class.getName(), null);
+        entity.addQueryField("field1", String.class.getName(), null);
+
+        entity.setKeyFields(Collections.singleton("id"));
+
+        ccfg.setQueryEntities(Collections.singletonList(entity));
+
+        return ccfg;
     }
 
     /**
