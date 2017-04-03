@@ -29,8 +29,12 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public class MixedClusterTest
     {
+        /** */
         private IIgnite _ignite;
+        
+        /** */
         private string _javaNodeName;
+
         /** */
         private const string SpringConfig = @"Config\Compute\compute-grid1.xml";
 

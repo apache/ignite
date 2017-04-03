@@ -69,6 +69,8 @@ public class PlatformStopIgniteTask extends ComputeTaskAdapter<String, Boolean> 
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
+            System.out.println("PlatformStartIgniteJob: " + igniteInstanceName);
+
             return Ignition.stop(igniteInstanceName, true);
         }
     }
