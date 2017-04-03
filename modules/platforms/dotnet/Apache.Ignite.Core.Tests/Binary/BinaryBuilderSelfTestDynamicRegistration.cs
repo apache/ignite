@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,34 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
+namespace Apache.Ignite.Core.Tests.Binary
 {
-    using System;
-    using Apache.Ignite.Core.Impl.Common;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// DateTime serializer.
+    /// Binary builder self test with dynamic type registration.
     /// </summary>
-    internal class DateTimeSerializer : IBinarySerializerInternal
+    public class BinaryBuilderSelfTestDynamicRegistration : BinaryBuilderSelfTest
     {
         /** <inheritdoc /> */
-        public void WriteBinary<T>(T obj, BinaryWriter writer)
+        protected override ICollection<BinaryTypeConfiguration> GetTypeConfigurations()
         {
-            TypeCaster<DateTimeHolder>.Cast(obj).WriteBinary(writer);
-        }
+            // The only type to be registered is TestEnumRegistered,
+            // because unregistered enums are handled differently.
 
-        /** <inheritdoc /> */
-        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
-        {
-            var holder = new DateTimeHolder(reader);
-
-            return TypeCaster<T>.Cast(holder.Item);
-        }
-
-        /** <inheritdoc /> */
-        public bool SupportsHandles
-        {
-            get { return false; }
+            return new []
+            {
+                new BinaryTypeConfiguration(typeof(TestEnumRegistered))
+            };
         }
     }
 }
