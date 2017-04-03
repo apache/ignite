@@ -345,5 +345,4 @@ public class LUDecomposition extends DecompositionSupport {
 
         return b.like(b.rowSize(), b.columnSize()).assign(bp);
     }
-
 }

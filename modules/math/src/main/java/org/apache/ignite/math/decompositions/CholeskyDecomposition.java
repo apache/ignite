@@ -36,12 +36,14 @@ public class CholeskyDecomposition {
      * Default threshold above which off-diagonal elements are considered too different
      * and matrix not symmetric.
      */
-    public static final double DEFAULT_RELATIVE_SYMMETRY_THRESHOLD = 1.0e-15;
+    public static final double DFLT_REL_SYMMETRY_THRESHOLD = 1.0e-15;
+
     /**
      * Default threshold below which diagonal elements are considered null
      * and matrix not positive definite.
      */
-    public static final double DEFAULT_ABSOLUTE_POSITIVITY_THRESHOLD = 1.0e-10;
+    public static final double DFLT_ABS_POSITIVITY_THRESHOLD = 1.0e-10;
+
     /** Row-oriented storage for L<sup>T</sup> matrix data. */
     private double[][] lTData;
     /** Cached value of L. */
@@ -53,75 +55,70 @@ public class CholeskyDecomposition {
 
     /**
      * Calculates the Cholesky decomposition of the given matrix.
-     * <p>
-     * Calling this constructor is equivalent to call {@link
-     * #CholeskyDecomposition(Matrix, double, double)} with the
-     * thresholds set to the default values {@link
-     * #DEFAULT_RELATIVE_SYMMETRY_THRESHOLD} and {@link
-     * #DEFAULT_ABSOLUTE_POSITIVITY_THRESHOLD}
-     * </p>
-     * @param matrix the matrix to decompose.
+     *
+     * Calling this constructor is equivalent to call {@link #CholeskyDecomposition(Matrix, double, double)} with the
+     * thresholds set to the default values {@link #DFLT_REL_SYMMETRY_THRESHOLD} and
+     * {@link #DFLT_ABS_POSITIVITY_THRESHOLD}.
+     *
+     * @param mtx the matrix to decompose.
      * @throws CardinalityException if matrix is not square.
      * @see #CholeskyDecomposition(Matrix, double, double)
-     * @see #DEFAULT_RELATIVE_SYMMETRY_THRESHOLD
-     * @see #DEFAULT_ABSOLUTE_POSITIVITY_THRESHOLD
+     * @see #DFLT_REL_SYMMETRY_THRESHOLD
+     * @see #DFLT_ABS_POSITIVITY_THRESHOLD
      */
-    public CholeskyDecomposition(final Matrix matrix) {
-        this(matrix, DEFAULT_RELATIVE_SYMMETRY_THRESHOLD,
-            DEFAULT_ABSOLUTE_POSITIVITY_THRESHOLD);
+    public CholeskyDecomposition(final Matrix mtx) {
+        this(mtx, DFLT_REL_SYMMETRY_THRESHOLD, DFLT_ABS_POSITIVITY_THRESHOLD);
     }
 
     /**
-     * * Calculates the Cholesky decomposition of the given matrix.
-     * @param matrix the matrix to decompose.
-     * @param relativeSymmetryThreshold threshold above which off-diagonal
-     * elements are considered too different and matrix not symmetric
-     * @param absolutePositivityThreshold threshold below which diagonal
-     * elements are considered null and matrix not positive definite
+     * Calculates the Cholesky decomposition of the given matrix.
+     * 
+     * @param mtx the matrix to decompose.
+     * @param relSymmetryThreshold threshold above which off-diagonal elements are considered too different and matrix not symmetric
+     * @param absPositivityThreshold threshold below which diagonal elements are considered null and matrix not positive definite
      * @see #CholeskyDecomposition(Matrix)
-     * @see #DEFAULT_RELATIVE_SYMMETRY_THRESHOLD
-     * @see #DEFAULT_ABSOLUTE_POSITIVITY_THRESHOLD
+     * @see #DFLT_REL_SYMMETRY_THRESHOLD
+     * @see #DFLT_ABS_POSITIVITY_THRESHOLD
      */
-    public CholeskyDecomposition(final Matrix matrix, final double relativeSymmetryThreshold, final double absolutePositivityThreshold) {
-        if (matrix.columnSize() != matrix.rowSize())
-            throw new CardinalityException(matrix.rowSize(), matrix.columnSize());
+    public CholeskyDecomposition(final Matrix mtx, final double relSymmetryThreshold, final double absPositivityThreshold) {
+        if (mtx.columnSize() != mtx.rowSize())
+            throw new CardinalityException(mtx.rowSize(), mtx.columnSize());
 
-        origin = matrix;
+        origin = mtx;
 
-        final int order = matrix.rowSize();
+        final int order = mtx.rowSize();
 
-        lTData   = matrix.getStorage().data();
-        cachedL  = null;
+        lTData = mtx.getStorage().data();
+        cachedL = null;
         cachedLT = null;
 
-        // check the matrix before transformation
+        // Check the matrix before transformation.
         for (int i = 0; i < order; ++i) {
             final double[] lI = lTData[i];
 
-            // check off-diagonal elements (and reset them to 0)
+            // Check off-diagonal elements (and reset them to 0).
             for (int j = i + 1; j < order; ++j) {
                 final double[] lJ = lTData[j];
 
                 final double lIJ = lI[j];
                 final double lJI = lJ[i];
 
-                final double maxDelta = relativeSymmetryThreshold * Math.max(Math.abs(lIJ), Math.abs(lJI));
+                final double maxDelta = relSymmetryThreshold * Math.max(Math.abs(lIJ), Math.abs(lJI));
 
                 if (Math.abs(lIJ - lJI) > maxDelta)
-                    throw new NonSymmetricMatrixException(i, j, relativeSymmetryThreshold);
+                    throw new NonSymmetricMatrixException(i, j, relSymmetryThreshold);
 
                 lJ[i] = 0;
             }
         }
 
-        // transform the matrix
+        // Transform the matrix.
         for (int i = 0; i < order; ++i) {
-
             final double[] ltI = lTData[i];
 
-            // check diagonal element
-            if (ltI[i] <= absolutePositivityThreshold)
-                throw new NonPositiveDefiniteMatrixException(ltI[i], i, absolutePositivityThreshold);
+            // Check diagonal element.
+            if (ltI[i] <= absPositivityThreshold)
+                throw new NonPositiveDefiniteMatrixException(ltI[i], i, absPositivityThreshold);
 
             ltI[i] = Math.sqrt(ltI[i]);
             final double inverse = 1.0 / ltI[i];
@@ -129,6 +126,7 @@ public class CholeskyDecomposition {
             for (int q = order - 1; q > i; --q) {
                 ltI[q] *= inverse;
                 final double[] ltQ = lTData[q];
+
                 for (int p = q; p < order; ++p)
                     ltQ[p] -= ltI[q] * ltI[p];
             }
@@ -138,6 +136,7 @@ public class CholeskyDecomposition {
     /**
      * Returns the matrix L of the decomposition.
      * <p>L is an lower-triangular matrix</p>
+     *
      * @return the L matrix
      */
     public Matrix getL() {
@@ -150,6 +149,7 @@ public class CholeskyDecomposition {
     /**
      * Returns the transpose of the matrix L of the decomposition.
      * <p>L<sup>T</sup> is an upper-triangular matrix</p>
+     *
      * @return the transpose of the matrix L of the decomposition
      */
     public Matrix getLT() {
@@ -171,10 +171,12 @@ public class CholeskyDecomposition {
      */
     public double getDeterminant() {
         double determinant = 1.0;
+
         for (int i = 0; i < lTData.length; ++i) {
             double lTii = lTData[i][i];
             determinant *= lTii * lTii;
         }
+
         return determinant;
     }
 

@@ -31,7 +31,7 @@ public class EigenDecomposition extends DecompositionSupport {
     /** Row and column dimension (square matrix). */
     private final int n;
 
-    /** Array for internal storage of eigenvectors. */
+    /** Array for internal storage of eigen vectors. */
     private final Matrix v;
 
     /** Arrays for internal storage of eigenvalues. */
@@ -60,15 +60,14 @@ public class EigenDecomposition extends DecompositionSupport {
             // Diagonalize.
             tql2();
 
-        } else {
+        } else
             // Reduce to Hessenberg form.
             // Reduce Hessenberg to real Schur form.
             hqr2(orthes(matrix));
-        }
     }
 
     /**
-     * Return the eigenvector matrix
+     * Return the eigen vector matrix
      *
      * @return V
      */
@@ -79,7 +78,7 @@ public class EigenDecomposition extends DecompositionSupport {
     /**
      * Return the real parts of the eigenvalues
      */
-    public Vector getRealEigenvalues() {
+    public Vector getRealEigenValues() {
         return d;
     }
 
@@ -142,13 +141,17 @@ public class EigenDecomposition extends DecompositionSupport {
                     d.setX(k, d.getX(k) / scale);
                     h += d.getX(k) * d.getX(k);
                 }
+
                 double f = d.getX(i - 1);
                 double g = Math.sqrt(h);
+
                 if (f > 0)
                     g = -g;
+
                 e.setX(i, scale * g);
                 h -= f * g;
                 d.setX(i - 1, f - g);
+
                 for (int j = 0; j < i; j++)
                     e.setX(j, 0.0);
 
@@ -158,29 +161,39 @@ public class EigenDecomposition extends DecompositionSupport {
                     f = d.getX(j);
                     v.setX(j, i, f);
                     g = e.getX(j) + v.getX(j, j) * f;
+
                     for (int k = j + 1; k <= i - 1; k++) {
                         g += v.getX(k, j) * d.getX(k);
                         e.setX(k, e.getX(k) + v.getX(k, j) * f);
                     }
+
                     e.setX(j, g);
                 }
+
                 f = 0.0;
+
                 for (int j = 0; j < i; j++) {
                     e.setX(j, e.getX(j) / h);
                     f += e.getX(j) * d.getX(j);
                 }
+
                 double hh = f / (h + h);
+
                 for (int j = 0; j < i; j++)
                     e.setX(j, e.getX(j) - hh * d.getX(j));
+
                 for (int j = 0; j < i; j++) {
                     f = d.getX(j);
                     g = e.getX(j);
+
                     for (int k = j; k <= i - 1; k++)
                         v.setX(k, j, v.getX(k, j) - (f * e.getX(k) + g * d.getX(k)));
+
                     d.setX(j, v.getX(i - 1, j));
                     v.setX(i, j, 0.0);
                 }
             }
+            
             d.setX(i, h);
         }
     }
@@ -208,13 +221,14 @@ public class EigenDecomposition extends DecompositionSupport {
 
             if (scale != 0.0) {
                 // Compute Householder transformation.
-
                 ort.viewPart(m, high - m + 1).map(hColumn, Functions.plusMult(1 / scale));
                 double h = ort.viewPart(m, high - m + 1).getLengthSquared();
 
                 double g = Math.sqrt(h);
+
                 if (ort.getX(m) > 0)
                     g = -g;
+
                 h -= ort.getX(m) * g;
                 ort.setX(m, ort.getX(m) - g);
 
@@ -222,6 +236,7 @@ public class EigenDecomposition extends DecompositionSupport {
                 // H = (I-u*u'/h)*H*(I-u*u')/h)
 
                 Vector ortPiece = ort.viewPart(m, high - m + 1);
+
                 for (int j = m; j < n; j++) {
                     double f = ortPiece.dot(hessenBerg.viewColumn(j).viewPart(m, high - m + 1)) / h;
                     hessenBerg.viewColumn(j).viewPart(m, high - m + 1).map(ortPiece, Functions.plusMult(-f));
@@ -231,6 +246,7 @@ public class EigenDecomposition extends DecompositionSupport {
                     double f = ortPiece.dot(hessenBerg.viewRow(i).viewPart(m, high - m + 1)) / h;
                     hessenBerg.viewRow(i).viewPart(m, high - m + 1).map(ortPiece, Functions.plusMult(-f));
                 }
+
                 ort.setX(m, scale * ort.getX(m));
                 hessenBerg.setX(m, m - 1, scale * g);
             }
@@ -244,20 +260,22 @@ public class EigenDecomposition extends DecompositionSupport {
         for (int m = high - 1; m >= low + 1; m--) {
             if (hessenBerg.getX(m, m - 1) != 0.0) {
                 ort.viewPart(m + 1, high - m).assign(hessenBerg.viewColumn(m - 1).viewPart(m + 1, high - m));
+
                 for (int j = m; j <= high; j++) {
                     double g = ort.viewPart(m, high - m + 1).dot(v.viewColumn(j).viewPart(m, high - m + 1));
+
                     // Double division avoids possible underflow
                     g = g / ort.getX(m) / hessenBerg.getX(m, m - 1);
                     v.viewColumn(j).viewPart(m, high - m + 1).map(ort.viewPart(m, high - m + 1), Functions.plusMult(g));
                 }
             }
         }
+
         return hessenBerg;
     }
 
     /** Symmetric tridiagonal QL algorithm. */
     private void tql2() {
-
         //  This is derived from the Algol procedures tql2, by
         //  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
         //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
@@ -269,15 +287,17 @@ public class EigenDecomposition extends DecompositionSupport {
         double f = 0.0;
         double tst1 = 0.0;
         double eps = Math.pow(2.0, -52.0);
-        for (int l = 0; l < n; l++) {
 
-            // Find small subdiagonal element
+        for (int l = 0; l < n; l++) {
+            // Find small subdiagonal element.
 
             tst1 = Math.max(tst1, Math.abs(d.getX(l)) + Math.abs(e.getX(l)));
             int m = l;
+
             while (m < n) {
                 if (Math.abs(e.getX(m)) <= eps * tst1)
                     break;
+
                 m++;
             }
 
@@ -291,14 +311,18 @@ public class EigenDecomposition extends DecompositionSupport {
                     double g = d.getX(l);
                     double p = (d.getX(l + 1) - g) / (2.0 * e.getX(l));
                     double r = Math.hypot(p, 1.0);
+
                     if (p < 0)
                         r = -r;
+
                     d.setX(l, e.getX(l) / (p + r));
                     d.setX(l + 1, e.getX(l) * (p + r));
                     double dl1 = d.getX(l + 1);
                     double h = g - d.getX(l);
+
                     for (int i = l + 2; i < n; i++)
                         d.setX(i, d.getX(i) - h);
+
                     f += h;
 
                     // Implicit QL transformation.
@@ -310,6 +334,7 @@ public class EigenDecomposition extends DecompositionSupport {
                     double el1 = e.getX(l + 1);
                     double s = 0.0;
                     double s2 = 0.0;
+
                     for (int i = m - 1; i >= l; i--) {
                         c3 = c2;
                         c2 = c;
@@ -331,6 +356,7 @@ public class EigenDecomposition extends DecompositionSupport {
                             v.setX(k, i, c * v.getX(k, i) - s * h);
                         }
                     }
+
                     p = -s * s2 * c3 * el1 * e.getX(l) / dl1;
                     e.setX(l, s * p);
                     d.setX(l, c * p);
@@ -339,6 +365,7 @@ public class EigenDecomposition extends DecompositionSupport {
 
                 } while (Math.abs(e.getX(l)) > eps * tst1);
             }
+
             d.setX(l, d.getX(l) + f);
             e.setX(l, 0.0);
         }
@@ -348,15 +375,17 @@ public class EigenDecomposition extends DecompositionSupport {
         for (int i = 0; i < n - 1; i++) {
             int k = i;
             double p = d.getX(i);
-            for (int j = i + 1; j < n; j++) {
+
+            for (int j = i + 1; j < n; j++)
                 if (d.getX(j) > p) {
                     k = j;
                     p = d.getX(j);
                 }
-            }
+
             if (k != i) {
                 d.setX(k, d.getX(i));
                 d.setX(i, p);
+
                 for (int j = 0; j < n; j++) {
                     p = v.getX(j, i);
                     v.setX(j, i, v.getX(j, k));
@@ -368,7 +397,6 @@ public class EigenDecomposition extends DecompositionSupport {
 
     /** */
     private void hqr2(Matrix h) {
-
         //  This is derived from the Algol procedure hqr2,
         //  by Martin and Wilkinson, Handbook for Auto. Comp.,
         //  Vol.ii-Linear Algebra, and the corresponding
@@ -399,16 +427,18 @@ public class EigenDecomposition extends DecompositionSupport {
 
         int iter = 0;
         while (n >= low) {
-
             // Look for single small sub-diagonal element
-
             int l = n;
+
             while (l > low) {
                 s = Math.abs(h.getX(l - 1, l - 1)) + Math.abs(h.getX(l, l));
+
                 if (s == 0.0)
                     s = norm;
+
                 if (Math.abs(h.getX(l, l - 1)) < eps * s)
                     break;
+
                 l--;
             }
 
@@ -421,9 +451,8 @@ public class EigenDecomposition extends DecompositionSupport {
                 e.setX(n, 0.0);
                 n--;
                 iter = 0;
-
-
-            } else if (l == n - 1) {
+            }
+            else if (l == n - 1) {
                 // Two roots found
                 w = h.getX(n, n - 1) * h.getX(n - 1, n);
                 p = (h.getX(n - 1, n - 1) - h.getX(n, n)) / 2.0;
@@ -439,10 +468,13 @@ public class EigenDecomposition extends DecompositionSupport {
                         z = p + z;
                     else
                         z = p - z;
+
                     d.setX(n - 1, x + z);
                     d.setX(n, d.getX(n - 1));
+
                     if (z != 0.0)
                         d.setX(n, x - w / z);
+
                     e.setX(n - 1, 0.0);
                     e.setX(n, 0.0);
                     x = h.getX(n, n - 1);
@@ -485,18 +517,18 @@ public class EigenDecomposition extends DecompositionSupport {
                     e.setX(n - 1, z);
                     e.setX(n, -z);
                 }
+
                 n -= 2;
                 iter = 0;
 
                 // No convergence yet
 
             } else {
-
                 // Form shift
-
                 x = h.getX(n, n);
                 y = 0.0;
                 w = 0.0;
+
                 if (l < n) {
                     y = h.getX(n - 1, n - 1);
                     w = h.getX(n, n - 1) * h.getX(n - 1, n);
@@ -506,8 +538,10 @@ public class EigenDecomposition extends DecompositionSupport {
 
                 if (iter == 10) {
                     exshift += x;
+
                     for (int i = low; i <= n; i++)
                         h.setX(i, i, x);
+
                     s = Math.abs(h.getX(n, n - 1)) + Math.abs(h.getX(n - 1, n - 2));
                     x = y = 0.75 * s;
                     w = -0.4375 * s * s;
@@ -518,13 +552,18 @@ public class EigenDecomposition extends DecompositionSupport {
                 if (iter == 30) {
                     s = (y - x) / 2.0;
                     s = s * s + w;
+
                     if (s > 0) {
                         s = Math.sqrt(s);
+
                         if (y < x)
                             s = -s;
+
                         s = x - w / ((y - x) / 2.0 + s);
+
                         for (int i = low; i <= n; i++)
                             h.setX(i, i, h.getX(i, i) - s);
+
                         exshift += s;
                         x = y = w = 0.964;
                     }
@@ -535,6 +574,7 @@ public class EigenDecomposition extends DecompositionSupport {
                 // Look for two consecutive small sub-diagonal elements
 
                 int m = n - 2;
+
                 while (m >= l) {
                     z = h.getX(m, m);
                     r = x - z;
@@ -546,17 +586,22 @@ public class EigenDecomposition extends DecompositionSupport {
                     p /= s;
                     q /= s;
                     r /= s;
+
                     if (m == l)
                         break;
+
                     double hmag = Math.abs(h.getX(m - 1, m - 1)) + Math.abs(h.getX(m + 1, m + 1));
                     double threshold = eps * Math.abs(p) * (Math.abs(z) + hmag);
+
                     if (Math.abs(h.getX(m, m - 1)) * (Math.abs(q) + Math.abs(r)) < threshold)
                         break;
+
                     m--;
                 }
 
                 for (int i = m + 2; i <= n; i++) {
                     h.setX(i, i - 2, 0.0);
+
                     if (i > m + 2)
                         h.setX(i, i - 3, 0.0);
                 }
@@ -565,6 +610,7 @@ public class EigenDecomposition extends DecompositionSupport {
 
                 for (int k = m; k <= n - 1; k++) {
                     boolean notlast = k != n - 1;
+
                     if (k != m) {
                         p = h.getX(k, k - 1);
                         q = h.getX(k + 1, k - 1);
@@ -576,16 +622,21 @@ public class EigenDecomposition extends DecompositionSupport {
                             r /= x;
                         }
                     }
+
                     if (x == 0.0)
                         break;
+
                     s = Math.sqrt(p * p + q * q + r * r);
+
                     if (p < 0)
                         s = -s;
+
                     if (s != 0) {
                         if (k != m)
                             h.setX(k, k - 1, -s * x);
                         else if (l != m)
                             h.setX(k, k - 1, -h.getX(k, k - 1));
+
                         p += s;
                         x = p / s;
                         y = q / s;
@@ -597,10 +648,12 @@ public class EigenDecomposition extends DecompositionSupport {
 
                         for (int j = k; j < nn; j++) {
                             p = h.getX(k, j) + q * h.getX(k + 1, j);
+
                             if (notlast) {
                                 p += r * h.getX(k + 2, j);
                                 h.setX(k + 2, j, h.getX(k + 2, j) - p * z);
                             }
+
                             h.setX(k, j, h.getX(k, j) - p * x);
                             h.setX(k + 1, j, h.getX(k + 1, j) - p * y);
                         }
@@ -609,10 +662,12 @@ public class EigenDecomposition extends DecompositionSupport {
 
                         for (int i = 0; i <= Math.min(n, k + 3); i++) {
                             p = x * h.getX(i, k) + y * h.getX(i, k + 1);
+
                             if (notlast) {
                                 p += z * h.getX(i, k + 2);
                                 h.setX(i, k + 2, h.getX(i, k + 2) - p * r);
                             }
+
                             h.setX(i, k, h.getX(i, k) - p);
                             h.setX(i, k + 1, h.getX(i, k + 1) - p * q);
                         }
@@ -621,10 +676,12 @@ public class EigenDecomposition extends DecompositionSupport {
 
                         for (int i = low; i <= high; i++) {
                             p = x * v.getX(i, k) + y * v.getX(i, k + 1);
+
                             if (notlast) {
                                 p += z * v.getX(i, k + 2);
                                 v.setX(i, k + 2, v.getX(i, k + 2) - p * r);
                             }
+
                             v.setX(i, k, v.getX(i, k) - p);
                             v.setX(i, k + 1, v.getX(i, k + 1) - p * q);
                         }
@@ -633,7 +690,7 @@ public class EigenDecomposition extends DecompositionSupport {
             }  // check convergence
         }  // while (n >= low)
 
-        // Backsubstitute to find vectors of upper triangular form
+        // Back substitute to find vectors of upper triangular form
 
         if (norm == 0.0)
             return;
@@ -645,19 +702,25 @@ public class EigenDecomposition extends DecompositionSupport {
             // Real vector
 
             double t;
+
             if (q == 0) {
                 int l = n;
                 h.setX(n, n, 1.0);
+
                 for (int i = n - 1; i >= 0; i--) {
                     w = h.getX(i, i) - p;
                     r = 0.0;
+
                     for (int j = l; j <= n; j++)
                         r += h.getX(i, j) * h.getX(j, n);
+
                     if (e.getX(i) < 0.0) {
                         z = w;
                         s = r;
-                    } else {
+                    }
+                    else {
                         l = i;
+
                         if (e.getX(i) == 0.0) {
                             if (w == 0.0)
                                 h.setX(i, n, -r / (eps * norm));
@@ -666,12 +729,14 @@ public class EigenDecomposition extends DecompositionSupport {
 
                             // Solve real equations
 
-                        } else {
+                        }
+                        else {
                             x = h.getX(i, i + 1);
                             y = h.getX(i + 1, i);
                             q = (d.getX(i) - p) * (d.getX(i) - p) + e.getX(i) * e.getX(i);
                             t = (x * s - z * r) / q;
                             h.setX(i, n, t);
+
                             if (Math.abs(x) > Math.abs(z))
                                 h.setX(i + 1, n, (-r - w * t) / x);
                             else
@@ -681,6 +746,7 @@ public class EigenDecomposition extends DecompositionSupport {
                         // Overflow control
 
                         t = Math.abs(h.getX(i, n));
+
                         if (eps * t * t > 1) {
                             for (int j = i; j <= n; j++)
                                 h.setX(j, n, h.getX(j, n) / t);
@@ -690,7 +756,8 @@ public class EigenDecomposition extends DecompositionSupport {
 
                 // Complex vector
 
-            } else if (q < 0) {
+            }
+            else if (q < 0) {
                 int l = n - 1;
 
                 // Last vector component imaginary so matrix is triangular
@@ -698,52 +765,67 @@ public class EigenDecomposition extends DecompositionSupport {
                 if (Math.abs(h.getX(n, n - 1)) > Math.abs(h.getX(n - 1, n))) {
                     h.setX(n - 1, n - 1, q / h.getX(n, n - 1));
                     h.setX(n - 1, n, -(h.getX(n, n) - p) / h.getX(n, n - 1));
-                } else {
+                }
+                else {
                     cdiv(0.0, -h.getX(n - 1, n), h.getX(n - 1, n - 1) - p, q);
                     h.setX(n - 1, n - 1, cdivr);
                     h.setX(n - 1, n, cdivi);
                 }
+
                 h.setX(n, n - 1, 0.0);
                 h.setX(n, n, 1.0);
+
                 for (int i = n - 2; i >= 0; i--) {
                     double ra = 0.0;
                     double sa = 0.0;
+
                     for (int j = l; j <= n; j++) {
                         ra += h.getX(i, j) * h.getX(j, n - 1);
                         sa += h.getX(i, j) * h.getX(j, n);
                     }
+
                     w = h.getX(i, i) - p;
 
                     if (e.getX(i) < 0.0) {
                         z = w;
                         r = ra;
                         s = sa;
-                    } else {
+                    }
+                    else {
                         l = i;
+
                         if (e.getX(i) == 0) {
                             cdiv(-ra, -sa, w, q);
                             h.setX(i, n - 1, cdivr);
                             h.setX(i, n, cdivi);
-                        } else {
+                        }
+                        else {
 
                             // Solve complex equations
 
                             x = h.getX(i, i + 1);
                             y = h.getX(i + 1, i);
+
                             double vr = (d.getX(i) - p) * (d.getX(i) - p) + e.getX(i) * e.getX(i) - q * q;
                             double vi = (d.getX(i) - p) * 2.0 * q;
+
                             if (vr == 0.0 && vi == 0.0) {
                                 double hmag = Math.abs(x) + Math.abs(y);
                                 vr = eps * norm * (Math.abs(w) + Math.abs(q) + hmag + Math.abs(z));
                             }
+
                             cdiv(x * r - z * ra + q * sa, x * s - z * sa - q * ra, vr, vi);
+
                             h.setX(i, n - 1, cdivr);
                             h.setX(i, n, cdivi);
+
                             if (Math.abs(x) > (Math.abs(z) + Math.abs(q))) {
                                 h.setX(i + 1, n - 1, (-ra - w * h.getX(i, n - 1) + q * h.getX(i, n)) / x);
                                 h.setX(i + 1, n, (-sa - w * h.getX(i, n) - q * h.getX(i, n - 1)) / x);
-                            } else {
+                            }
+                            else {
                                 cdiv(-r - y * h.getX(i, n - 1), -s - y * h.getX(i, n), z, q);
+
                                 h.setX(i + 1, n - 1, cdivr);
                                 h.setX(i + 1, n, cdivi);
                             }
@@ -752,12 +834,12 @@ public class EigenDecomposition extends DecompositionSupport {
                         // Overflow control
 
                         t = Math.max(Math.abs(h.getX(i, n - 1)), Math.abs(h.getX(i, n)));
-                        if (eps * t * t > 1) {
+
+                        if (eps * t * t > 1)
                             for (int j = i; j <= n; j++) {
                                 h.setX(j, n - 1, h.getX(j, n - 1) / t);
                                 h.setX(j, n, h.getX(j, n) / t);
                             }
-                        }
                     }
                 }
             }
@@ -765,37 +847,39 @@ public class EigenDecomposition extends DecompositionSupport {
 
         // Vectors of isolated roots
 
-        for (int i = 0; i < nn; i++) {
+        for (int i = 0; i < nn; i++)
             if (i < low || i > high) {
                 for (int j = i; j < nn; j++)
                     v.setX(i, j, h.getX(i, j));
             }
-        }
 
-        // Back transformation to get eigenvectors of original matrix
+        // Back transformation to get eigen vectors of original matrix
 
-        for (int j = nn - 1; j >= low; j--) {
+        for (int j = nn - 1; j >= low; j--)
             for (int i = low; i <= high; i++) {
                 z = 0.0;
+
                 for (int k = low; k <= Math.min(j, high); k++)
                     z += v.getX(i, k) * h.getX(k, j);
+
                 v.setX(i, j, z);
             }
-        }
     }
 
     /** */
     private static boolean isSymmetric(Matrix matrix) {
         int cols = matrix.columnSize();
         int rows  = matrix.rowSize();
+
         if (cols != rows)
             return false;
-        for (int i = 0; i < cols; i++) {
+
+        for (int i = 0; i < cols; i++)
             for (int j = 0; j < rows; j++) {
                 if (matrix.getX(i, j) != matrix.get(j, i))
                     return false;
             }
-        }
+
         return true;
     }
 
@@ -807,17 +891,18 @@ public class EigenDecomposition extends DecompositionSupport {
     private void cdiv(double xr, double xi, double yr, double yi) {
         double r;
         double d;
+
         if (Math.abs(yr) > Math.abs(yi)) {
             r = yi / yr;
             d = yr + r * yi;
             cdivr = (xr + r * xi) / d;
             cdivi = (xi - r * xr) / d;
-        } else {
+        }
+        else {
             r = yr / yi;
             d = yi + r * yr;
             cdivr = (r * xr + xi) / d;
             cdivi = (r * xi - xr) / d;
         }
     }
-
 }
