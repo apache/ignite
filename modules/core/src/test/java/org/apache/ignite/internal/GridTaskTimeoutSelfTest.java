@@ -66,6 +66,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
         super(true);
     }
 
+
     /**
      * @param execId Execution ID.
      */

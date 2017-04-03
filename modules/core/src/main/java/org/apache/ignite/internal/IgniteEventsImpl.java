@@ -80,6 +80,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
     /** {@inheritDoc} */
     @Override public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
         @Nullable int... types) {
+
         A.notNull(p, "p");
 
         guard();
@@ -241,6 +242,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
 
     /** {@inheritDoc} */
     @Override public <T extends Event> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types) {
+
         A.notNull(p, "p");
 
         guard();

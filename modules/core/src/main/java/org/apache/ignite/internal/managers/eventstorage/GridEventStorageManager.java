@@ -61,6 +61,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -957,6 +958,12 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
         assert p != null;
 
+        if (getSpi() instanceof NoopEventStorageSpi) {
+            throw new IgniteException("Local event query called with default noop event storage spi. " +
+                    "You must set another event storage spi via IngiteConfiguration.setEventStorageSpi(). " +
+                    "For example you can use [MemoryEventStorageSpi].");
+        }
+
         if (p instanceof PlatformEventFilterListener) {
             PlatformEventFilterListener p0 = (PlatformEventFilterListener)p;
 
@@ -983,6 +990,12 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         final Collection<? extends ClusterNode> nodes, final long timeout) {
         assert p != null;
         assert nodes != null;
+
+        if (getSpi() instanceof NoopEventStorageSpi) {
+            throw new IgniteException("Remote event query called with default noop event storage spi. " +
+                    "You must set another event storage spi via IngiteConfiguration.setEventStorageSpi(). " +
+                    "For example you can use [MemoryEventStorageSpi].");
+        }
 
         final GridFutureAdapter<List<T>> fut = new GridFutureAdapter<>();
 
