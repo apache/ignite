@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cluster;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,6 +31,9 @@ public class ClusterTopologyCheckedException extends IgniteCheckedException {
 
     /** Next topology version to wait. */
     private transient IgniteInternalFuture<?> readyFut;
+
+    /** Kernal context. */
+    private transient GridKernalContext ctx;
 
     /**
      * Creates new topology exception with given error message.
@@ -59,9 +63,18 @@ public class ClusterTopologyCheckedException extends IgniteCheckedException {
     }
 
     /**
-     * @param readyFut Retry ready future.
+     * @return Kernal context.
      */
-    public void retryReadyFuture(IgniteInternalFuture<?> readyFut) {
+    public GridKernalContext context() {
+        return ctx;
+    }
+
+    /**
+     * @param readyFut Retry ready future.
+     * @param ctx Kernal context.
+     */
+    public void retryReadyFuture(IgniteInternalFuture<?> readyFut, GridKernalContext ctx) {
         this.readyFut = readyFut;
+        this.ctx = ctx;
     }
 }

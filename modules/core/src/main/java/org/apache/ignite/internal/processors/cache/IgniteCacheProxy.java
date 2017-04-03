@@ -169,7 +169,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         boolean async,
         boolean lock
     ) {
-        super(async);
+        super(async, ctx.kernalContext());
 
         assert ctx != null;
         assert delegate != null;
@@ -490,6 +490,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
         qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
+
+        if (scanQry.getPageSize() > 0)
+            qry.pageSize(scanQry.getPageSize());
 
         if (grp != null)
             qry.projection(grp);
@@ -848,7 +851,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     private void validate(Query qry) {
         if (!GridQueryProcessor.isEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
-            !(qry instanceof ContinuousQuery))
+            !(qry instanceof ContinuousQuery) && !(qry instanceof SpiQuery))
             throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name() +
                 ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
 
@@ -2187,7 +2190,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param fut Future for async operation.
      */
     private <R> void setFuture(IgniteInternalFuture<R> fut) {
-        curFut.set(new IgniteCacheFutureImpl<>(fut));
+        curFut.set(new IgniteCacheFutureImpl<>(fut, ctx.kernalContext()));
     }
 
     /**
@@ -2328,7 +2331,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public IgniteFuture<?> rebalance() {
         ctx.preloader().forcePreload();
 
-        return new IgniteFutureImpl<>(ctx.preloader().syncFuture());
+        return new IgniteFutureImpl<>(ctx.preloader().syncFuture(), ctx.kernalContext());
     }
 
     /**

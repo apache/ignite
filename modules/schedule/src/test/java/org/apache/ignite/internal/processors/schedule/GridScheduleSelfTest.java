@@ -19,19 +19,26 @@ package org.apache.ignite.internal.processors.schedule;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.scheduler.SchedulerFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -43,8 +50,14 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 2;
 
+    /** Custom thread name. */
+    private static final String CUSTOM_THREAD_NAME = "custom-async-test";
+
     /** */
     private static AtomicInteger execCntr = new AtomicInteger(0);
+
+    /** Custom executor. */
+    private ExecutorService exec;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -61,6 +74,22 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         execCntr.set(0);
+        exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override public Thread newThread(@NotNull Runnable r) {
+                Thread t = new Thread(r);
+
+                t.setName(CUSTOM_THREAD_NAME);
+
+                return t;
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        U.shutdownNow(getClass(), exec, log);
+
+        exec = null;
     }
 
     /**
@@ -124,6 +153,46 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 }
             });
 
+            fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> fut) {
+                    String threadName = Thread.currentThread().getName();
+
+                    assert !threadName.contains("cron4j") : threadName;
+
+                    notifyCnt.incrementAndGet();
+                }
+            });
+
+            fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> fut) {
+                    assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
+
+                    notifyCnt.incrementAndGet();
+                }
+            }, exec);
+
+            IgniteFuture<String> chained1 = fut.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
+                @Override public String apply(IgniteFuture<?> fut) {
+                    String threadName = Thread.currentThread().getName();
+
+                    assert !threadName.contains("cron4j") : threadName;
+
+                    fut.get();
+
+                    return "done-default";
+                }
+            });
+
+            IgniteFuture<String> chained2 = fut.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
+                @Override public String apply(IgniteFuture<?> fut) {
+                    assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
+
+                    fut.get();
+
+                    return "done-custom";
+                }
+            }, exec);
+
             long timeTillRun = freq + delay;
 
             info("Going to wait for the first run: " + timeTillRun);
@@ -135,6 +204,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             assert !fut.isDone();
             assert !fut.isCancelled();
             assert fut.last() == null;
+            assertFalse(chained1.isDone());
+            assertFalse(chained2.isDone());
 
             info("Going to wait for 2nd run: " + timeTillRun);
 
@@ -142,10 +213,15 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             Thread.sleep(timeTillRun * 1000);
 
             assert fut.isDone();
-            assert notifyCnt.get() == 2;
+            assert notifyCnt.get() == 2 * 3;
             assert !fut.isCancelled();
             assert fut.last() == null;
 
+            assertEquals("done-default", chained1.get());
+            assertEquals("done-custom", chained2.get());
+
+            assertTrue(chained1.isDone());
+            assertTrue(chained2.isDone());
         }
         finally {
             assert fut != null;

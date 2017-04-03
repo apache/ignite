@@ -340,7 +340,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
                     ? services.serviceProxy(name, PlatformService.class, sticky)
-                    : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky,
+                    : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
                         platformCtx.kernalContext());
 
                 return new ServiceProxyHolder(proxy, d.serviceClass());

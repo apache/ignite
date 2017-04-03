@@ -25,7 +25,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 /**
  * Future listener to fill chained future with converted result of the source future.
  */
-public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInternalFuture<T>> {
+class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInternalFuture<T>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,7 +37,8 @@ public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInte
 
     /**
      * Constructs chain listener.
-     *  @param fut Target future.
+     *
+     * @param fut Target future.
      * @param doneCb Done callback.
      */
     public GridFutureChainListener(
@@ -49,7 +50,14 @@ public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInte
     }
 
     /** {@inheritDoc} */
-    @Override public void apply(IgniteInternalFuture<T> t) {
+    @Override public void apply(final IgniteInternalFuture<T> t) {
+        applyCallback(t);
+    }
+
+    /**
+     * @param t Target future.
+     */
+    private void applyCallback(IgniteInternalFuture<T> t) {
         try {
             fut.onDone(doneCb.apply(t));
         }

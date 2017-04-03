@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.binary.BinaryObject;
@@ -393,6 +394,17 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
 
         /** {@inheritDoc} */
+        @Override public void listenAsync(final IgniteInClosure lsnr, Executor exec) {
+            fut.listenAsync(new IgniteInClosure<IgniteInternalFuture>() {
+                private static final long serialVersionUID = 0L;
+
+                @Override public void apply(IgniteInternalFuture fut) {
+                    lsnr.apply(ComputeConvertingFuture.this);
+                }
+            }, exec);
+        }
+
+        /** {@inheritDoc} */
         @Override public void listen(final IgniteInClosure lsnr) {
             fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                 private static final long serialVersionUID = 0L;
@@ -405,6 +417,11 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture chain(IgniteClosure doneCb) {
+            throw new UnsupportedOperationException("Chain operation is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture chainAsync(IgniteClosure doneCb, Executor exec) {
             throw new UnsupportedOperationException("Chain operation is not supported.");
         }
 

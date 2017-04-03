@@ -81,7 +81,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
                     nodeId);
 
-                e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
 
                 f.onNodeLeft(e);
 
@@ -133,8 +133,10 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futuresCount(); i++) {
+            for (int i = 0; i < size; i++) {
                 MiniFuture mini = (MiniFuture) future(i);
 
                 if (mini.futureId().equals(miniId)) {
@@ -288,7 +290,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     }
                 }
                 catch (ClusterTopologyCheckedException e) {
-                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(topVer));
+                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(topVer), cctx.kernalContext());
 
                     fut.onNodeLeft(e);
                 }

@@ -108,7 +108,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
         // Return fake future. Future should be called in the same place where operation done.
-        return new IgniteFinishedFutureImpl<>();
+        return new IgniteFinishedFutureImpl<>(igniteProxy.context());
     }
 
     /** {@inheritDoc} */

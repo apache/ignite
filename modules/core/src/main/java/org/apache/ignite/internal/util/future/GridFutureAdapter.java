@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.future;
 
 import java.util.Arrays;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import org.apache.ignite.IgniteCheckedException;
@@ -61,7 +62,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     private byte resFlag;
 
     /** Result. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object res;
 
     /** Future start time. */
@@ -228,8 +229,27 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
+    @Override public void listenAsync(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr, Executor exec) {
+        assert lsnr != null;
+        assert exec != null;
+
+        listen(new AsyncListener<>(lsnr, exec));
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> IgniteInternalFuture<T> chain(final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb) {
-        return new ChainFuture<>(this, doneCb);
+        assert doneCb != null;
+
+        return new ChainFuture<>(this, doneCb, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteInternalFuture<T> chainAsync(final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb,
+        Executor exec) {
+        assert doneCb != null;
+        assert exec != null;
+
+        return new ChainFuture<>(this, doneCb, exec);
     }
 
     /**
@@ -467,6 +487,41 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     /**
      *
      */
+    private static class AsyncListener<R> implements IgniteInClosure<IgniteInternalFuture<R>> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Listener. */
+        private IgniteInClosure<? super IgniteInternalFuture<R>> lsnr;
+
+        /** Executor. */
+        private Executor exec;
+
+        /**
+         * @param lsnr Listener.
+         * @param exec Executor.
+         */
+        AsyncListener(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr, Executor exec) {
+            assert lsnr != null;
+            assert exec != null;
+
+            this.lsnr = lsnr;
+            this.exec = exec;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(final IgniteInternalFuture<R> fut) {
+            exec.execute(new Runnable() {
+                @Override public void run() {
+                    lsnr.apply(fut);
+                }
+            });
+        }
+    }
+
+    /**
+     *
+     */
     private static class ChainFuture<R, T> extends GridFutureAdapter<T> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -487,15 +542,20 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         /**
          * @param fut Future.
          * @param doneCb Closure.
+         * @param cbExec Optional executor to run callback.
          */
         ChainFuture(
             GridFutureAdapter<R> fut,
-            IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb
+            IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb,
+            @Nullable Executor cbExec
         ) {
             this.fut = fut;
             this.doneCb = doneCb;
 
-            fut.listen(new GridFutureChainListener<>(this, doneCb));
+            if (cbExec == null)
+                fut.listen(new GridFutureChainListener<>(this, doneCb));
+            else
+                fut.listenAsync(new GridFutureChainListener<>(this, doneCb), cbExec);
         }
 
         /** {@inheritDoc} */

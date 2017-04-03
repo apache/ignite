@@ -104,6 +104,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
@@ -1191,8 +1192,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Commits a transaction.
      *
      * @param tx Transaction to commit.
+     * @throws IgniteCheckedException If failed.
      */
-    public void commitTx(IgniteInternalTx tx) {
+    public void commitTx(IgniteInternalTx tx) throws IgniteCheckedException {
         assert tx != null;
         assert tx.state() == COMMITTING : "Invalid transaction state for commit from tm [state=" + tx.state() +
             ", expected=COMMITTING, tx=" + tx + ']';
@@ -1210,12 +1212,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Boolean committed = committed0 != null && !committed0.equals(Boolean.FALSE);
 
         // 1. Make sure that committed version has been recorded.
-        if (!((committed != null && committed) || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
+        if (!(committed || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
             uncommitTx(tx);
 
             tx.errorWhenCommitting();
 
-            throw new IgniteException("Missing commit version (consider increasing " +
+            throw new IgniteCheckedException("Missing commit version (consider increasing " +
                 IGNITE_MAX_COMPLETED_TX_COUNT + " system property) [ver=" + tx.xidVersion() +
                 ", tx=" + tx.getClass().getSimpleName() + ']');
         }
@@ -1617,7 +1619,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     assert serReadVer == null || (tx.optimistic() && tx.serializable()) : txEntry1;
 
-                    if (!entry1.tmLock(tx, timeout, serOrder, serReadVer, txEntry1.keepBinary())) {
+                    boolean read = serOrder != null && txEntry1.op() == READ;
+
+                    if (!entry1.tmLock(tx, timeout, serOrder, serReadVer, read)) {
                         // Unlock locks locked so far.
                         for (IgniteTxEntry txEntry2 : entries) {
                             if (txEntry2 == txEntry1)

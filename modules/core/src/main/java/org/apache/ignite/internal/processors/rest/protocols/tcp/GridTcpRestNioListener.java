@@ -145,7 +145,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
      */
     public GridTcpRestNioListener(IgniteLogger log, GridTcpRestProtocol proto, GridRestProtocolHandler hnd,
         GridKernalContext ctx) {
-        memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd, ctx);
+        memcachedLsnr = new GridTcpMemcachedNioListener(log, hnd);
         redisLsnr = new GridRedisNioListener(log, hnd, ctx);
 
         this.log = log;

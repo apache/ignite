@@ -217,7 +217,7 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
 
                                 assert execSvc != null;
 
-                                execSvc.submit(new Runnable() {
+                                execSvc.execute(new Runnable() {
                                     @Override public void run() {
                                         callcc0();
                                     }

@@ -201,7 +201,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             FinishMiniFuture finishFut = null;
 
             synchronized (sync) {
-                for (int i = 0; i < futuresCount(); i++) {
+                int size = futuresCountNoLock();
+
+                for (int i = 0; i < size; i++) {
                     IgniteInternalFuture<IgniteInternalTx> fut = future(i);
 
                     if (fut.getClass() == FinishMiniFuture.class) {
@@ -296,33 +298,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (isDone())
                 return false;
 
-            if (err != null) {
-                tx.commitError(err);
+            if (err != null)
+                tx.setRollbackOnly();
 
-                boolean marked = tx.setRollbackOnly();
-
-                if (err instanceof IgniteTxRollbackCheckedException) {
-                    if (marked) {
-                        try {
-                            tx.rollback();
-                        }
-                        catch (IgniteCheckedException ex) {
-                            U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
-                        }
-                    }
-                }
-                else if (tx.implicit() && tx.isSystemInvalidate()) { // Finish implicit transaction on heuristic error.
-                    try {
-                        tx.close();
-                    }
-                    catch (IgniteCheckedException ex) {
-                        U.error(log, "Failed to invalidate transaction: " + tx, ex);
-                    }
-                }
+            if (commit) {
+                if (tx.commitError() != null)
+                    err = tx.commitError();
+                else if (err != null)
+                    tx.commitError(err);
             }
-
-            if (commit && tx.commitError() != null)
-                err = tx.commitError();
 
             if (initialized() || err != null) {
                 if (tx.needCheckBackup()) {
@@ -347,7 +331,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                     finishOnePhase(commit);
 
-                    tx.tmFinish(commit);
+                    try {
+                        tx.tmFinish(commit);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to finish tx: " + tx, e);
+
+                        if (err == null)
+                            err = e;
+                    }
                 }
 
                 if (super.onDone(tx0, err)) {
@@ -511,7 +503,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     ClusterTopologyCheckedException cause =
                         new ClusterTopologyCheckedException("Backup node left grid: " + backupId);
 
-                    cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                    cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
 
                     onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
                         "(backup has left grid): " + tx.xidVersion(), cause));
@@ -574,7 +566,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                             ClusterTopologyCheckedException cause =
                                 new ClusterTopologyCheckedException("Primary node left grid: " + nodeId);
 
-                            cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                            cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
 
                             mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
                                 "(transaction has been rolled back on backup node): " + tx.xidVersion(), cause));
@@ -1064,7 +1056,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         ((IgniteCheckedException)err).getCause(ClusterTopologyCheckedException.class);
 
                     if (cause != null)
-                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
                 }
 
                 onDone(err);

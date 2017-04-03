@@ -157,7 +157,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                     ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
                         nodeId);
 
-                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
 
                     f.onNodeLeft(e);
 
@@ -230,8 +230,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futuresCount(); i++) {
+            for (int i = 0; i < size; i++) {
                 IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                 if (!isMini(fut))
@@ -368,7 +370,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         for (GridDistributedTxMapping m : mappings.values()) {
             assert !m.empty();
 
-            add(new MiniFuture(this, m));
+            add(new MiniFuture(this, m, cctx));
         }
 
         Collection<IgniteInternalFuture<?>> futs = (Collection)futures();
@@ -494,7 +496,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 cctx.io().send(n, req, tx.ioPolicy());
             }
             catch (ClusterTopologyCheckedException e) {
-                e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()), cctx.kernalContext());
 
                 fut.onNodeLeft(e);
 
@@ -700,6 +702,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         /** Parent future. */
         private final GridNearOptimisticSerializableTxPrepareFuture parent;
 
+        /** Cache shared context.. */
+        private final GridCacheSharedContext<?, ?> cctx;
+
         /** Keys. */
         @GridToStringInclude
         private GridDistributedTxMapping m;
@@ -711,10 +716,13 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         /**
          * @param parent Parent future.
          * @param m Mapping.
+         * @param cctx Cache shared context.
          */
-        MiniFuture(GridNearOptimisticSerializableTxPrepareFuture parent, GridDistributedTxMapping m) {
+        MiniFuture(GridNearOptimisticSerializableTxPrepareFuture parent, GridDistributedTxMapping m,
+            GridCacheSharedContext<?, ?> cctx) {
             this.parent = parent;
             this.m = m;
+            this.cctx = cctx;
         }
 
         /**
@@ -856,7 +864,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                             ClusterTopologyCheckedException err0 = new ClusterTopologyCheckedException(
                                                 "Cluster topology changed while client transaction is preparing.");
 
-                                            err0.retryReadyFuture(affFut);
+                                            err0.retryReadyFuture(affFut, cctx.kernalContext());
 
                                             ERR_UPD.compareAndSet(parent, null, err0);
 
