@@ -44,7 +44,7 @@ using namespace ignite::common;
 /**
  * CacheEntryModifier class for invoke tests.
  */
-class CacheEntryModifier : public CacheEntryProcessor<CacheEntryModifier, int, int, int, int>
+class CacheEntryModifier : public CacheEntryProcessor<int, int, int, int>
 {
 public:
     /**
@@ -151,7 +151,7 @@ namespace ignite
 /**
  * Divisor class for invoke tests.
  */
-class Divisor : public CacheEntryProcessor<Divisor, int, int, double, double>
+class Divisor : public CacheEntryProcessor<int, int, double, double>
 {
 public:
     /**
@@ -262,7 +262,7 @@ namespace ignite
 /**
  * Character remover class for invoke tests.
  */
-class CharRemover : public CacheEntryProcessor<CharRemover, std::string, std::string, int, bool>
+class CharRemover : public CacheEntryProcessor<std::string, std::string, int, bool>
 {
 public:
     /**

@@ -1101,10 +1101,10 @@ public class PlatformConfigurationUtils {
 
         SwapSpaceSpi swap = cfg.getSwapSpaceSpi();
 
-        if (swap instanceof FileSwapSpaceSpiMBean) {
+        if (swap instanceof FileSwapSpaceSpi) {
             w.writeByte(SWAP_TYP_FILE);
 
-            FileSwapSpaceSpiMBean fileSwap = (FileSwapSpaceSpiMBean)swap;
+            FileSwapSpaceSpi fileSwap = (FileSwapSpaceSpi)swap;
 
             w.writeString(fileSwap.getBaseDirectory());
             w.writeFloat(fileSwap.getMaximumSparsity());

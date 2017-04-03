@@ -103,6 +103,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CUSTOM_EXECUTORS_NAMES_SET;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 
 /**
@@ -1379,6 +1380,18 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
                     else {
+                        byte plc;
+
+                        if (internal)
+                            plc = MANAGEMENT_POOL;
+                        else {
+                            Byte ctxPlc = getThreadContext(TC_IO_POLICY);
+
+                            if (ctxPlc != null)
+                                plc = ctxPlc;
+                            else
+                                plc = PUBLIC_POOL;
+                        }
 
                         // Send job execution request.
                         if (ses.getExecutorName() == null)

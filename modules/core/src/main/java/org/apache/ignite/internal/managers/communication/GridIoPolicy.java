@@ -52,6 +52,9 @@ public class GridIoPolicy {
     /** Query execution pool. */
     public static final byte QUERY_POOL = 10;
 
+    /** Pool for service proxy executions. */
+    public static final byte SERVICE_POOL = 11;
+
     /** Query execution pool. */
     public static final byte CUSTOM_NAMED_POOL = 11;
 

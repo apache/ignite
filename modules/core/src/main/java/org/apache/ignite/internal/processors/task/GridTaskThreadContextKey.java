@@ -36,6 +36,9 @@ public enum GridTaskThreadContextKey {
     /** Security subject ID. */
     TC_SUBJ_ID,
 
+    /** IO manager policy. */
+    TC_IO_POLICY,
+
     /** Name of the custom executor service. */
     TC_EXEC_NAME
 }

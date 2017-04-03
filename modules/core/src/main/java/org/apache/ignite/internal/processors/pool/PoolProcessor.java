@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.pool;
 
 import java.util.Arrays;
+import java.util.concurrent.Executor;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -137,6 +137,11 @@ public class PoolProcessor extends GridProcessorAdapter {
                 assert ctx.getIgfsExecutorService() != null : "IGFS pool is not configured.";
 
                 return ctx.getIgfsExecutorService();
+
+            case GridIoPolicy.SERVICE_POOL:
+                assert ctx.getServiceExecutorService() != null : "Service pool is not configured.";
+
+                return ctx.getServiceExecutorService();
 
             case GridIoPolicy.DATA_STREAMER_POOL:
                 assert ctx.getDataStreamerExecutorService() != null : "Data streamer pool is not configured.";
