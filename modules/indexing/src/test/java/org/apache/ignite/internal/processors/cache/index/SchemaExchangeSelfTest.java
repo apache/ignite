@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
@@ -24,8 +25,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import java.util.Collections;
 import java.util.Map;
@@ -389,6 +393,51 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         node3.cache(CACHE_NAME);
         assertTypes(node3, ValueClass.class);
+    }
+
+    /**
+     * Test client reconnect.
+     *
+     * @throws Exception If failed.
+     */
+    public void testClientReconnect() throws Exception {
+        IgniteEx node1 = start(1, KeyClass.class, ValueClass.class);
+        assertTypes(node1, ValueClass.class);
+
+        IgniteEx node2 = startClientNoCache(2);
+        assertTypes(node2);
+
+        node2.cache(CACHE_NAME);
+        assertTypes(node2, ValueClass.class);
+
+        stopGrid(1);
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return grid(2).context().clientDisconnected();
+            }
+        }, 10_000L);
+
+        IgniteFuture reconnFut = null;
+
+        try {
+            node2.cache(CACHE_NAME);
+
+            fail();
+        }
+        catch (IgniteClientDisconnectedException e) {
+            reconnFut = e.reconnectFuture();
+        }
+
+        node1 = start(1, KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class);
+        assertTypes(node1, ValueClass.class, ValueClass2.class);
+
+        reconnFut.get();
+
+        assertTypes(node2);
+
+        node2.cache(CACHE_NAME);
+        assertTypes(node2, ValueClass.class, ValueClass2.class);
     }
 
     /**

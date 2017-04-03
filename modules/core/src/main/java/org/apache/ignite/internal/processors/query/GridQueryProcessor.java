@@ -1640,6 +1640,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         QueryIndexClientFuture fut = new QueryIndexClientFuture(op.id());
 
+        // TODO: Race with very quick response / disconnect.
         QueryIndexClientFuture oldFut = idxCliFuts.put(op.id(), fut);
 
         assert oldFut == null;
