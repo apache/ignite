@@ -17,14 +17,8 @@
 
 package org.apache.ignite.math.decompositions;
 
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.exceptions.CardinalityException;
-import org.apache.ignite.math.exceptions.SingularMatrixException;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.math.impls.matrix.PivotedMatrixView;
-import org.apache.ignite.math.impls.matrix.RandomMatrix;
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.math.*;
+import org.apache.ignite.math.exceptions.*;
 
 /**
  * Calculates the LU-decomposition of a square matrix.
@@ -37,6 +31,7 @@ import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 public class LUDecomposition extends DecompositionSupport {
     /** Default bound to determine effective singularity in LU decomposition. */
     private static final double DEFAULT_TOO_SMALL = 1e-11;
+    
     /** Pivot permutation associated with LU decomposition. */
     private final Vector pivot;
     /** Parity of the permutation associated with the LU decomposition. */
@@ -85,6 +80,7 @@ public class LUDecomposition extends DecompositionSupport {
         lu = copy(matrix);
 
         pivot = likeVector(matrix);
+
         for (int i = 0; i < pivot.size(); i++)
             pivot.setX(i, i);
 
