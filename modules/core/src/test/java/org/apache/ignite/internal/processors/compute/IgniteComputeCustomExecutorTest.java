@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -120,23 +121,11 @@ public class IgniteComputeCustomExecutorTest extends GridCommonAbstractTest {
     public void testAllComputeApiByCustomExecutor() throws Exception {
         IgniteCompute comp = grid(0).compute().withExecutor(EXEC_NAME0);
 
-        comp.affinityRun(CACHE_NAME, 0, new IgniteRunnable() {
+        comp.affinityRun(CACHE_NAME, primaryKey(grid(1).cache(CACHE_NAME)), new IgniteRunnable() {
             @Override public void run() {
                 assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
             }
         });
-
-        comp.affinityRunAsync(CACHE_NAME, 0, new IgniteRunnable() {
-            @Override public void run() {
-                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
-            }
-        }).listen(new IgniteInClosure<IgniteFuture<Void>>() {
-            @Override public void apply(IgniteFuture<Void> future) {
-                System.out.println("+++ " + Thread.currentThread().getName());
-                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
-            }
-        });
-
 
         comp.affinityCall(CACHE_NAME, 0, new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
