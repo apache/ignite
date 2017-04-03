@@ -590,8 +590,18 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<R>> lsnr, @Nullable Executor exec) {
+    @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<R>> lsnr, Executor exec) {
+        A.notNull(lsnr, "lsnr");
+        A.notNull(exec, "exec");
+
         listen(new AsyncListener<>(lsnr, executor(exec)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<R>> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        listen(new AsyncListener<>(lsnr, executor(null)));
     }
 
     /** {@inheritDoc} */
@@ -602,7 +612,14 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<R>, T> doneCb, Executor exec) {
+        A.notNull(exec, "exec");
+
         return chain(doneCb, executor(exec));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
+        return chain(doneCb, executor(null));
     }
 
     /**
@@ -611,6 +628,8 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
      * @return Future.
      */
     private <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb, Executor exec) {
+        A.notNull(doneCb, "doneCb");
+
         final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
             @Override public String toString() {
                 return "ChainFuture[orig=" + ScheduleFutureImpl.this + ", doneCb=" + doneCb + ']';
@@ -953,6 +972,11 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         }
 
         /** {@inheritDoc} */
+        @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<R>> lsnr) {
+            ref.listenAsync(lsnr);
+        }
+
+        /** {@inheritDoc} */
         @Override public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
             return ref.chain(doneCb);
         }
@@ -961,6 +985,11 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<R>, T> doneCb,
             Executor exec) {
             return ref.chainAsync(doneCb, exec);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
+            return ref.chainAsync(doneCb);
         }
     }
 

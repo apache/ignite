@@ -101,20 +101,40 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr, @Nullable Executor exec) {
+    @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr, Executor exec) {
         A.notNull(lsnr, "lsnr");
+        A.notNull(lsnr, "exec");
 
         fut.listenAsync(new InternalFutureListener(lsnr), exec == null ? dfltExec : exec);
     }
 
     /** {@inheritDoc} */
+    @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        fut.listenAsync(new InternalFutureListener(lsnr), dfltExec);
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
+        A.notNull(doneCb, "doneCb");
+
         return new IgniteFutureImpl<>(chainInternal(doneCb), dfltExec);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<V>, T> doneCb, @Nullable Executor exec) {
-        return new IgniteFutureImpl<>(chainInternalAsync(doneCb, exec == null ? dfltExec : exec), dfltExec);
+    @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec) {
+        A.notNull(doneCb, "doneCb");
+        A.notNull(exec, "exec");
+
+        return new IgniteFutureImpl<>(chainInternalAsync(doneCb, exec), dfltExec);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
+        A.notNull(doneCb, "doneCb");
+
+        return new IgniteFutureImpl<>(chainInternalAsync(doneCb, dfltExec), dfltExec);
     }
 
     /**
