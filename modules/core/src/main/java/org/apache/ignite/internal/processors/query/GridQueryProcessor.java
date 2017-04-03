@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -530,8 +529,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     public void onSchemaProposeDiscovery(IndexProposeDiscoveryMessage msg) {
-        // TODO: Log
-        System.out.println("RECEIVED PROPOSE [opId=" + msg.operation().id() + ", locNodeId=" + ctx.localNodeId() + ']');
+        UUID opId = msg.operation().id();
+
+        if (log.isDebugEnabled())
+            log.debug("Received schema propose message (discovery) [opId=" + opId + ", msg=" + msg + ']');
 
         synchronized (activeOpsMux) {
             SchemaOperationDescriptor desc = new SchemaOperationDescriptor(msg);
@@ -546,8 +547,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             SchemaOperation oldSchemaOp = schemaOps.get(key);
 
-            if (oldSchemaOp != null)
-                oldSchemaOp.unwind().next(schemaOp);
+            if (oldSchemaOp != null) {
+                oldSchemaOp = oldSchemaOp.unwind();
+
+                if (log.isDebugEnabled())
+                    log.debug("Schema change is enqueued and will be executed after previous operation is completed [" +
+                        "opId=" + opId + ", prevOpId=" + oldSchemaOp.id() + ']');
+
+                oldSchemaOp.next(schemaOp);
+            }
             else
                 schemaOps.put(key, schemaOp);
         }
@@ -558,29 +566,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     public void onSchemaAcceptDiscovery(IndexAcceptDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
+
+        if (log.isDebugEnabled())
+            log.debug("Received schema accept message (discovery) [opId=" + opId + ", msg=" + msg + ']');
+
         synchronized (activeOpsMux) {
-            SchemaOperationDescriptor desc = activeOps.get(msg.operation().id());
+            SchemaOperationDescriptor desc = activeOps.get(opId);
 
             assert desc != null;
             assert desc.messageAccept() == null;
 
             desc.messageAccept(msg);
-        }
-    }
-
-    /**
-     * Process schema finish message from discovery thread.
-     *
-     * @param msg Message.
-     */
-    public void onSchemaFinishDiscovery(IndexFinishDiscoveryMessage msg) {
-        synchronized (activeOpsMux) {
-            SchemaOperationDescriptor desc = activeOps.get(msg.operation().id());
-
-            assert desc != null;
-            assert desc.messageFinish() == null;
-
-            desc.messageFinish(msg);
         }
     }
 
@@ -591,12 +588,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("ThrowableInstanceNeverThrown")
     public void onSchemaAccept(IndexAcceptDiscoveryMessage msg) {
-        // TODO: Log
-        System.out.println("RECEIVED ACCEPT [opId=" + msg.operation().id() + ", locNodeId=" + ctx.localNodeId() + ']');
+        UUID opId = msg.operation().id();
+
+        if (log.isDebugEnabled())
+            log.debug("Received schema accept message (exchange) [opId=" + opId + ", msg=" + msg + ']');
 
         synchronized (activeOpsMux) {
-            UUID opId = msg.operation().id();
-
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
             assert desc != null;
@@ -609,8 +606,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // If accepted operation is top-level operation for the given schema key, then start it immediately.
             // Otherwise it will be handled later when previous operations complete.
-            if (F.eq(desc.id(), curOp.descriptor().id()))
+            if (F.eq(desc.id(), curOp.id()))
                 onSchemaAccept0(curOp);
+            else {
+                if (log.isDebugEnabled()) {
+                    curOp = curOp.unwind();
+
+                    log.debug("Schema accept processing will be delayed until previous operation is completed [" +
+                        "opId=" + opId + ", prevOpId=" + curOp.id() + ']');
+                }
+            }
         }
     }
 
@@ -893,6 +898,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /**
+         * @return Operation ID.
+         */
+        public UUID id() {
+            return desc.id();
+        }
+
+        /**
          * @return Operation descriptor.
          */
         public SchemaOperationDescriptor descriptor() {
@@ -972,38 +984,77 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Process schema finish message from discovery thread.
+     *
+     * @param msg Message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void onSchemaFinishDiscovery(IndexFinishDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
+
+        if (log.isDebugEnabled())
+            log.debug("Received schema finish message (discovery) [opId=" + opId + ", msg=" + msg + ']');
+
+        synchronized (activeOpsMux) {
+            SchemaOperationDescriptor desc = activeOps.get(msg.operation().id());
+
+            if (desc != null) {
+                assert desc.messageFinish() == null;
+
+                desc.messageFinish(msg);
+            }
+            else
+                assert msg.hasError();
+        }
+    }
+
+    /**
      * Handle index finish message.
      *
      * @param msg Message.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void onSchemaFinish(IndexFinishDiscoveryMessage msg) {
-        // TODO: Log
-        System.out.println("RECEIVED FINISH [opId=" + msg.operation().id() + ", locNodeId=" + ctx.localNodeId() + ']');
-
         UUID opId = msg.operation().id();
+
+        if (log.isDebugEnabled())
+            log.debug("Received schema finish message (exchange) [opId=" + opId + ", msg=" + msg + ']');
 
         // Complete distributed operations.
         synchronized (activeOpsMux) {
             SchemaOperationDescriptor desc = activeOps.remove(opId);
 
-            assert desc != null;
+            if (desc != null) {
+                SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
 
-            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+                SchemaOperation op = schemaOps.remove(key);
 
-            SchemaOperation op = schemaOps.remove(key);
+                assert op != null;
+                assert F.eq(opId, op.id());
 
-            assert op != null;
-            assert F.eq(opId, op.descriptor().id());
+                // Chain to the next operation (if any).
+                SchemaOperation nextOp = op.next();
 
-            // Chain to the next operation (if any).
-            SchemaOperation nextOp = op.next();
+                if (nextOp != null) {
+                    schemaOps.put(key, nextOp);
 
-            if (nextOp != null) {
-                schemaOps.put(key, nextOp);
+                    if (nextOp.descriptor().messageAccept() != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Next schema change operation started [opId=" + opId +
+                                ", nextOpId=" + nextOp.id() + ']');
 
-                if (nextOp.descriptor().messageAccept() != null)
-                    onSchemaAccept0(nextOp);
+                        onSchemaAccept0(nextOp);
+                    }
+                }
+            }
+            else {
+                SchemaOperationException err = msg.error();
+
+                if (log.isDebugEnabled())
+                    log.debug("Finish schema change without descriptor (error on propose?) [opId=" + opId +
+                        ", err=" + err + ']');
+
+                assert err != null;
             }
         }
 
@@ -1032,7 +1083,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             SchemaOperation schemaOp = schemaOps.get(key);
 
             assert schemaOp != null;
-            assert F.eq(schemaOp.descriptor().id(), opId);
+            assert F.eq(schemaOp.id(), opId);
 
             IndexAbstractOperation op = schemaOp.descriptor().operation();
 
@@ -1982,7 +2033,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             SchemaOperation op = schemaOps.get(key);
 
-            if (op != null && F.eq(op.descriptor().id(), opId))
+            if (op != null && F.eq(op.id(), opId))
                 op.onStatusRequest(req.senderNodeId());
             else {
                 // TODO: Log
@@ -2011,7 +2062,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             SchemaOperation op = schemaOps.get(key);
 
-            if (op != null && F.eq(op.descriptor().id(), opId)) {
+            if (op != null && F.eq(op.id(), opId)) {
                 assert op.manager() != null;
 
                 op.manager().onNodeFinished(resp.senderNodeId(), unmarshalSchemaError(resp.errorBytes()));

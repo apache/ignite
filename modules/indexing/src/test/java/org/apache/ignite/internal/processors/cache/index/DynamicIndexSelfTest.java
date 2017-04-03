@@ -21,6 +21,9 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
 
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Tests for dynamic index creation.
  */
@@ -81,6 +84,23 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
+    }
+
+    /**
+     * Test create when no cache exists.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoCache() throws Exception {
+        final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME));
+
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
+                String cacheName = "random-cache-" + Integer.toString(ThreadLocalRandom.current().nextInt());
+
+                queryProcessor(grid(0)).dynamicIndexCreate(cacheName, TBL_NAME, idx, false).get();
+            }
+        }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
     }
 
     /**
