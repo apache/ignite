@@ -27,7 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.UUID;
 
 /**
  * Tests for dynamic index creation.
@@ -92,7 +92,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test create when no cache exists.
+     * Test create when cache doesn't exist.
      *
      * @throws Exception If failed.
      */
@@ -101,25 +101,50 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                String cacheName = "random-cache-" + Integer.toString(ThreadLocalRandom.current().nextInt());
-
-                queryProcessor(grid(0)).dynamicIndexCreate(cacheName, TBL_NAME, idx, false).get();
+                queryProcessor(grid(0)).dynamicIndexCreate(randomString(), TBL_NAME, idx, false).get();
             }
         }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
     }
 
     /**
-     * Test drop when no cache exists.
+     * Test create when table doesn't exist.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoTable() throws Exception {
+        final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME));
+
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
+                queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, randomString(), idx, false).get();
+            }
+        }, SchemaOperationException.CODE_TABLE_NOT_FOUND);
+    }
+
+    /**
+     * Test create when table doesn't exist.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoColumn() throws Exception {
+        final QueryIndex idx = index(IDX_NAME, field(randomString()));
+
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
+                queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+            }
+        }, SchemaOperationException.CODE_COLUMN_NOT_FOUND);
+    }
+
+    /**
+     * Test drop when cache doesn't exist.
      *
      * @throws Exception If failed.
      */
     public void testDropNoCache() throws Exception {
         assertSchemaException(new RunnableX() {
-            @Override
-            public void run() throws Exception {
-                String cacheName = "random-cache-" + Integer.toString(ThreadLocalRandom.current().nextInt());
-
-                queryProcessor(grid(0)).dynamicIndexDrop(cacheName, "my_idx", false).get();
+            @Override public void run() throws Exception {
+                queryProcessor(grid(0)).dynamicIndexDrop(randomString(), "my_idx", false).get();
             }
         }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
     }
@@ -252,6 +277,13 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
         }
 
         fail(SchemaOperationException.class.getSimpleName() +  " is not thrown.");
+    }
+
+    /**
+     * @return Random string.
+     */
+    private static String randomString() {
+        return UUID.randomUUID().toString();
     }
 
     /**
