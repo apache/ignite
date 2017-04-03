@@ -314,6 +314,8 @@ public class IgnitionEx {
     public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
+        printGrids("STOPPING");
+
         if (grid != null && stopNotStarted && grid.startLatch.getCount() != 0) {
             grid.starterThreadInterrupted = true;
 
@@ -338,6 +340,8 @@ public class IgnitionEx {
 
             if (fireEvt)
                 notifyStateChange(grid.getName(), grid.state());
+
+            printGrids("STOPPED");
 
             return true;
         }
@@ -1031,13 +1035,7 @@ public class IgnitionEx {
     private static T2<IgniteNamedInstance, Boolean> start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
         assert startCtx != null;
 
-        String gridStr = "STARTED-GRIDS:";
-
-        for (IgniteNamedInstance o : grids.values()) {
-            gridStr += o.getName() + "|";
-        }
-
-        System.out.println(gridStr);
+        printGrids("STARTING");
 
         String name = startCtx.config().getIgniteInstanceName();
 
@@ -1107,10 +1105,28 @@ public class IgnitionEx {
             }
         }
 
+        printGrids("STARTED");
+
         if (grid == null)
             throw new IgniteCheckedException("Failed to start grid with provided configuration.");
 
         return new T2<>(grid, true);
+    }
+
+    private static void printGrids(String msg) {
+        String gridStr = msg + "#STARTED-GRIDS:";
+
+        IgniteNamedInstance d = dfltGrid;
+
+        if (d != null) {
+            gridStr += d.getName() + "(DEFAULT)|";
+        }
+
+        for (IgniteNamedInstance o : grids.values()) {
+            gridStr += o.getName() + "|";
+        }
+
+        System.out.println(gridStr);
     }
 
     /**
