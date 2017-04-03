@@ -630,16 +630,15 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             int rowIdx = m.rowSize() / 2;
 
-            double[] newValues = new double[m.columnSize()];
-
-            for (int i = 0; i < newValues.length; i++)
-                newValues[i] = newValues.length - i;
+            double[] newValues = fillArray(m.columnSize());
 
             m.setRow(rowIdx, newValues);
 
             for (int col = 0; col < m.columnSize(); col++)
                 assertTrue("Unexpected value for " + desc + " at " + col,
                     Double.compare(m.get(rowIdx, col), newValues[col]) == 0);
+
+            testInvalidCardinality(() -> m.setRow(rowIdx, new double[m.columnSize() + 1]), desc);
         });
     }
 
@@ -654,16 +653,15 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             int colIdx = m.columnSize() / 2;
 
-            double[] newValues = new double[m.rowSize()];
-
-            for (int i = 0; i < newValues.length; i++)
-                newValues[i] = newValues.length - i;
+            double[] newValues = fillArray(m.rowSize());
 
             m.setColumn(colIdx, newValues);
 
             for (int row = 0; row < m.rowSize(); row++)
                 assertTrue("Unexpected value for " + desc + " at " + row,
                     Double.compare(m.get(row, colIdx), newValues[row]) == 0);
+
+            testInvalidCardinality(() -> m.setColumn(colIdx, new double[m.rowSize() + 1]), desc);
         });
     }
 
@@ -704,10 +702,92 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (!readOnly(m))
                 fillMatrix(m);
 
-            assertTrue("Unexpected density with threshold 0.", m.density(0.0));
+            assertTrue("Unexpected density with threshold 0 for " + desc, m.density(0.0));
 
-            assertFalse("Unexpected density with threshold 1.", m.density(1.0));
+            assertFalse("Unexpected density with threshold 1 for " + desc, m.density(1.0));
         });
+    }
+
+    /** */
+    @Test
+    public void testMaxAbsRowSumNorm() {
+        consumeSampleMatrix((m, desc) -> {
+            if (!readOnly(m))
+                fillMatrix(m);
+
+            assertTrue("Unexpected value for " + desc,
+                Double.compare(m.maxAbsRowSumNorm(), maxAbsRowSumNorm(m)) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testAssignRow() {
+        consumeSampleMatrix((m, desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            int rowIdx = m.rowSize() / 2;
+
+            double[] newValues = fillArray(m.columnSize());
+
+            m.assignRow(rowIdx, new DenseLocalOnHeapVector(newValues));
+
+            for (int col = 0; col < m.columnSize(); col++)
+                assertTrue("Unexpected value for " + desc + " at " + col,
+                    Double.compare(m.get(rowIdx, col), newValues[col]) == 0);
+
+            testInvalidCardinality(() -> m.assignRow(rowIdx, new DenseLocalOnHeapVector(m.columnSize() + 1)), desc);
+        });
+    }
+
+    /** */
+    @Test
+    public void testAssignColumn() {
+        consumeSampleMatrix((m, desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            int colIdx = m.columnSize() / 2;
+
+            double[] newValues = fillArray(m.rowSize());
+
+            m.assignColumn(colIdx, new DenseLocalOnHeapVector(newValues));
+
+            for (int row = 0; row < m.rowSize(); row++)
+                assertTrue("Unexpected value for " + desc + " at " + row,
+                    Double.compare(m.get(row, colIdx), newValues[row]) == 0);
+        });
+    }
+
+    /** */
+    private double[] fillArray(int len) {
+        double[] newValues = new double[len];
+
+        for (int i = 0; i < newValues.length; i++)
+            newValues[i] = newValues.length - i;
+        return newValues;
+    }
+
+    /** */
+    private double maxAbsRowSumNorm(Matrix m) {
+        double max = 0.0;
+
+        for (int x = 0; x < m.rowSize(); x++) {
+            double sum = 0;
+
+            for (int y = 0; y < m.columnSize(); y++)
+                sum += Math.abs(m.getX(x, y));
+
+            if (sum > max)
+                max = sum;
+        }
+
+        return max;
     }
 
     /** */
@@ -745,15 +825,20 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 if (rowNew < 1 || colNew < 1)
                     continue;
 
-                try {
-                    m.map(new DenseLocalOnHeapMatrix(rowNew, colNew), (m1, m2) -> m1 + m2);
-                } catch (CardinalityException ce) {
-                    continue;
-                }
-
-                fail("Expected exception was not caught on mapping wrong cardinality " + desc
-                    + " mapping to size " + rowNew + "x" + colNew);
+                testInvalidCardinality(() -> m.map(new DenseLocalOnHeapMatrix(rowNew, colNew), (m1, m2) -> m1 + m2),
+                    desc + " wrong cardinality when mapping to size " + rowNew + "x" + colNew);
             }
+    }
+
+    /** */
+    private void testInvalidCardinality(Supplier<Matrix> supplier, String desc) {
+        try {
+            supplier.get();
+        } catch (CardinalityException ce) {
+            return;
+        }
+
+        fail("Expected exception was not caught for " + desc);
     }
 
     /** */
