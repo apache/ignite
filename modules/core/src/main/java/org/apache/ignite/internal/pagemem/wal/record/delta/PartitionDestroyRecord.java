@@ -18,45 +18,29 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 
 /**
  *
  */
-public class PartitionMetaStateRecord extends WALRecord {
-    /** State. */
-    private final byte state;
+public class PartitionDestroyRecord extends WALRecord {
+    /** */
+    private int cacheId;
 
-    /** Cache id. */
-    private final int cacheId;
-
-    /** Partition id. */
-    private final int partId;
-
-    /** Update counter. */
-    private final long updateCounter;
+    /** */
+    private int partId;
 
     /**
      * @param cacheId Cache ID.
-     * @param state Page ID.
+     * @param partId Partition ID.
      */
-    public PartitionMetaStateRecord(int cacheId, int partId, GridDhtPartitionState state, long updateCounter) {
+    public PartitionDestroyRecord(int cacheId, int partId) {
         this.cacheId = cacheId;
         this.partId = partId;
-        this.state = (byte)state.ordinal();
-        this.updateCounter = updateCounter;
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return WALRecord.RecordType.PART_META_UPDATE_STATE;
-    }
-
-    /**
-     *
-     */
-    public byte state() {
-        return state;
+        return RecordType.PARTITION_DESTROY;
     }
 
     /**
@@ -67,16 +51,23 @@ public class PartitionMetaStateRecord extends WALRecord {
     }
 
     /**
-     *
+     * @param cacheId Cache ID.
+     */
+    public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
+    }
+
+    /**
+     * @return Partition ID.
      */
     public int partitionId() {
         return partId;
     }
 
     /**
-     *
+     * @param partId Partition ID.
      */
-    public long updateCounter() {
-        return updateCounter;
+    public void partitionId(int partId) {
+        this.partId = partId;
     }
 }

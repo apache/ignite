@@ -157,11 +157,11 @@ public class SnapshotOperation implements Serializable {
 
     @Override public String toString() {
         return "SnapshotOperation{" +
-                "type=" + type +
-                ", snapshotId=" + snapshotId +
-                ", cacheNames=" + cacheNames +
-                ", msg='" + msg + '\'' +
-                ", extraParam=" + extraParam +
-                '}';
+            "type=" + type +
+            ", snapshotId=" + snapshotId +
+            ", cacheNames=" + cacheNames +
+            ", msg='" + msg + '\'' +
+            ", extraParam=" + extraParam +
+            '}';
     }
 }

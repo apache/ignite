@@ -1452,8 +1452,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             ok = false;
         }
 
-        if (ok)
-            info("Deleted OK: " + file.getAbsolutePath() +
+        if (ok && log().isDebugEnabled()) // too much logging on real data
+            log().debug("Deleted OK: " + file.getAbsolutePath() +
                 (size >= 0 ? "(" + IgniteUtils.readableSize(size, false) + ")" : ""));
 
         return ok;

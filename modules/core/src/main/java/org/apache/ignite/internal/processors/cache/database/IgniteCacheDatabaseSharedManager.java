@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.database;
 import java.io.File;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -95,7 +97,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void initDataBase() throws IgniteCheckedException{
+    public void initDataBase() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -152,7 +154,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    public void unLock(){
+    public void unLock() {
 
     }
 
@@ -224,6 +226,40 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     @Nullable public IgniteInternalFuture indexRebuildFuture(int cacheId) {
         return null;
+    }
+
+    /**
+     * Reserve update history for exchange.
+     *
+     * @return Reserved update counters per cache and partition.
+     */
+    public Map<Integer, Map<Integer, Long>> reserveHistoryForExchange() {
+        return Collections.emptyMap();
+    }
+
+    /**
+     * Release reserved update history.
+     */
+    public void releaseHistoryForExchange() {
+        // No-op
+    }
+
+    /**
+     * Reserve update history for preloading.
+     * @param cacheId Cache ID.
+     * @param partId Partition Id.
+     * @param cntr Update counter.
+     * @return True if successfully reserved.
+     */
+    public boolean reserveHistoryForPreloading(int cacheId, int partId, long cntr) {
+        return false;
+    }
+
+    /**
+     * Release reserved update history.
+     */
+    public void releaseHistoryForPreloading() {
+        // No-op
     }
 
     /**

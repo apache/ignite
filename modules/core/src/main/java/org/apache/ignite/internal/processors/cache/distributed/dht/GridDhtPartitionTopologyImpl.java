@@ -32,13 +32,12 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ClusterState;
@@ -59,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
@@ -70,8 +68,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Partition topology.
  */
-@GridToStringExclude
-class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
+@GridToStringExclude class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -101,6 +98,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** */
     private volatile AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
+
+    /** Discovery cache. */
+    private volatile DiscoCache discoCache;
 
     /** */
     private volatile boolean stopping;
@@ -166,6 +166,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             rebalancedTopVer = AffinityTopologyVersion.NONE;
 
             topVer = AffinityTopologyVersion.NONE;
+
+            discoCache = cctx.discovery().discoCache();
         }
         finally {
             lock.writeLock().unlock();
@@ -187,93 +189,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @SuppressWarnings({"ConstantConditions"})
     private String mapString(GridDhtPartitionMap2 map) {
         return map == null ? "null" : FULL_MAP_DEBUG ? map.toFullString() : map.toString();
-    }
-
-    /**
-     * Waits for renting partitions.
-     *
-     * @return {@code True} if mapping was changed.
-     * @throws IgniteCheckedException If failed.
-     */
-    private boolean waitForRent() throws IgniteCheckedException {
-        final long longOpDumpTimeout =
-            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
-
-        int dumpCnt = 0;
-
-        GridDhtLocalPartition part;
-
-        for (int i = 0; i < locParts.length(); i++) {
-            part = locParts.get(i);
-
-            if (part == null)
-                continue;
-
-            GridDhtPartitionState state = part.state();
-
-            if (state == RENTING || state == EVICTED) {
-                if (log.isDebugEnabled())
-                    log.debug("Waiting for renting partition: " + part);
-
-                part.tryEvictAsync(false);
-
-                // Wait for partition to empty out.
-                if (longOpDumpTimeout > 0) {
-                    while (true) {
-                        try {
-                            part.rent(true).get(longOpDumpTimeout);
-
-                            break;
-                        }
-                        catch (IgniteFutureTimeoutCheckedException e) {
-                            if (dumpCnt++ < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
-                                U.warn(log, "Failed to wait for partition eviction [" +
-                                    "topVer=" + topVer +
-                                    ", cache=" + cctx.name() +
-                                    ", part=" + part.id() +
-                                    ", partState=" + part.state() +
-                                    ", size=" + part.size() +
-                                    ", reservations=" + part.reservations() +
-                                    ", grpReservations=" + part.groupReserved() +
-                                    ", node=" + cctx.localNodeId() + "]");
-
-                                if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
-                                    U.dumpThreads(log);
-                            }
-                        }
-                    }
-                }
-                else
-                    part.rent(true).get();
-
-                if (log.isDebugEnabled())
-                    log.debug("Finished waiting for renting partition: " + part);
-            }
-        }
-
-        // Remove evicted partition.
-        lock.writeLock().lock();
-
-        try {
-            boolean changed = false;
-
-            for (int i = 0; i < locParts.length(); i++) {
-                part = locParts.get(i);
-
-                if (part == null)
-                    continue;
-
-                if (part.state() == EVICTED) {
-                    locParts.set(i, null);
-                    changed = true;
-                }
-            }
-
-            return changed;
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
     }
 
     /** {@inheritDoc} */
@@ -310,6 +225,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             rebalancedTopVer = AffinityTopologyVersion.NONE;
 
             topVer = exchId.topologyVersion();
+
+            discoCache = exchFut.discoCache();
         }
         finally {
             lock.writeLock().unlock();
@@ -372,7 +289,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private void initPartitions0(GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
         ClusterNode loc = cctx.localNode();
 
-        ClusterNode oldest = currentCoordinator();
+        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
         GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
@@ -422,7 +339,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             // If preloader is disabled, then we simply clear out
             // the partitions this node is not responsible for.
             for (int p = 0; p < num; p++) {
-                GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
+                GridDhtLocalPartition locPart = localPartition0(p, topVer, false, true, false);
 
                 boolean belongs = localNode(p, aff);
 
@@ -498,9 +415,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             && !cctx.kernalContext().clientNode()
         );
 
-        // Wait for rent outside of checkpoint lock.
-        waitForRent();
-
         ClusterNode loc = cctx.localNode();
 
         cctx.shared().database().checkpointReadLock();
@@ -524,7 +438,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (exchId.isLeft())
                         removeNode(exchId.nodeId());
 
-                    ClusterNode oldest = currentCoordinator();
+                    ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
                     if (log.isDebugEnabled())
                         log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
@@ -580,16 +494,13 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         finally {
             cctx.shared().database().checkpointReadUnlock();
         }
-
-        // Wait for evictions.
-        waitForRent();
     }
 
     /** {@inheritDoc} */
     @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
         treatAllPartAsLoc = false;
 
-        boolean changed = waitForRent();
+        boolean changed = false;
 
         int num = cctx.affinity().partitions();
 
@@ -616,7 +527,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             long updateSeq = this.updateSeq.incrementAndGet();
 
             for (int p = 0; p < num; p++) {
-                GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
+                GridDhtLocalPartition locPart = localPartition0(p, topVer, false, false, false);
 
                 if (cctx.affinity().partitionLocalNode(p, topVer)) {
                     // This partition will be created during next topology event,
@@ -697,7 +608,13 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
         boolean create)
         throws GridDhtInvalidPartitionException {
-        return localPartition(p, topVer, create, true);
+        return localPartition0(p, topVer, create, false, true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
+        boolean create, boolean showRenting) throws GridDhtInvalidPartitionException {
+        return localPartition0(p, topVer, create, showRenting, true);
     }
 
     /**
@@ -734,9 +651,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @return Local partition.
      */
     @SuppressWarnings("TooBroadScope")
-    private GridDhtLocalPartition localPartition(int p,
+    private GridDhtLocalPartition localPartition0(int p,
         AffinityTopologyVersion topVer,
         boolean create,
+        boolean showRenting,
         boolean updateSeq) {
         GridDhtLocalPartition loc;
 
@@ -744,7 +662,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         GridDhtPartitionState state = loc != null ? loc.state() : null;
 
-        if (loc != null && state != EVICTED && (state != RENTING || !cctx.allowFastEviction()))
+        if (loc != null && state != EVICTED && (state != RENTING || showRenting))
             return loc;
 
         if (!create)
@@ -769,8 +687,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
             }
-            else if (loc != null && state == RENTING && cctx.allowFastEviction())
-                throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently evicted.");
+            else if (loc != null && state == RENTING && !showRenting)
+                throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently evicted " +
+                    "[part=" + p + ", shouldBeMoving=" + loc.reload() + "]");
 
             if (loc == null) {
                 if (!treatAllPartAsLoc && !belongs)
@@ -964,7 +883,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         AffinityTopologyVersion topVer,
         GridDhtPartitionState state,
         GridDhtPartitionState... states) {
-        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.affinityNodes(cctx, topVer)) : null;
+        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(discoCache.cacheAffinityNodes(cctx.cacheId())) : null;
 
         lock.readLock().lock();
 
@@ -1062,10 +981,13 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Nullable @Override public GridDhtPartitionMap2 update(
-        @Nullable GridDhtPartitionExchangeId exchId,
+        @Nullable GridDhtPartitionsExchangeFuture exchFut,
         GridDhtPartitionFullMap partMap,
-        @Nullable Map<Integer, T2<Long, Long>> cntrMap
+        @Nullable Map<Integer, T2<Long, Long>> cntrMap,
+        Set<Integer> partsToReload
     ) {
+        GridDhtPartitionExchangeId exchId = exchFut != null ? exchFut.exchangeId() : null;
+
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchId=" + exchId + ", parts=" + fullMapString() + ']');
 
@@ -1116,8 +1038,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 return null;
             }
-
-            long updateSeq = this.updateSeq.incrementAndGet();
 
             if (exchId != null)
                 lastExchangeId = exchId;
@@ -1186,10 +1106,31 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     int p = e.getKey();
                     GridDhtPartitionState state = e.getValue();
 
-                   if (state == MOVING) {
+                    if (state == OWNING) {
                         GridDhtLocalPartition locPart = locParts.get(p);
 
                         assert locPart != null;
+
+                        if (cntrMap != null) {
+                            T2<Long, Long> cntr = cntrMap.get(p);
+
+                            if (cntr != null && cntr.get2() > locPart.updateCounter())
+                                locPart.updateCounter(cntr.get2());
+                        }
+
+                        if (locPart.state() == MOVING) {
+                            boolean success = locPart.own();
+
+                            assert success : locPart;
+
+                            changed |= success;
+                        }
+                    }
+                    else if (state == MOVING) {
+                        GridDhtLocalPartition locPart = locParts.get(p);
+
+                        if (locPart == null || locPart.state() == EVICTED)
+                            locPart = createPartition(p);
 
                         if (locPart.state() == OWNING) {
                             locPart.moving();
@@ -1204,8 +1145,29 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 locPart.updateCounter(cntr.get2());
                         }
                     }
+                    else if (state == RENTING && partsToReload.contains(p)) {
+                        GridDhtLocalPartition locPart = locParts.get(p);
+
+                        if (locPart == null || locPart.state() == EVICTED) {
+                            createPartition(p);
+
+                            changed = true;
+                        }
+                        else if (locPart.state() == OWNING || locPart.state() == MOVING) {
+                            locPart.reload(true);
+
+                            locPart.rent(false);
+
+                            changed = true;
+                        }
+                        else {
+                            locPart.reload(true);
+                        }
+                    }
                 }
             }
+
+            long updateSeq = this.updateSeq.incrementAndGet();
 
             if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
@@ -1536,24 +1498,42 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void setOwners(int p, Set<UUID> owners, boolean updateSeq) {
+    @Override public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq) {
+        Set<UUID> result = haveHistory ? Collections.<UUID>emptySet() : new HashSet<UUID>();
+
         lock.writeLock().lock();
 
         try {
-
             GridDhtLocalPartition locPart = locParts.get(p);
 
             if (locPart != null) {
-                if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId()))
-                    locPart.moving();
+                if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId())) {
+                    if (haveHistory)
+                        locPart.moving();
+                    else {
+                        locPart.rent(false);
+
+                        locPart.reload(true);
+
+                        result.add(cctx.localNodeId());
+                    }
+
+                }
             }
 
             for (Map.Entry<UUID, GridDhtPartitionMap2> e : node2part.entrySet()) {
                 if (!e.getValue().containsKey(p))
                     continue;
 
-                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey()))
-                    e.getValue().put(p, MOVING);
+                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey())) {
+                    if (haveHistory)
+                        e.getValue().put(p, MOVING);
+                    else {
+                        e.getValue().put(p, RENTING);
+
+                        result.add(e.getKey());
+                    }
+                }
             }
 
             if (updateSeq)
@@ -1562,6 +1542,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         finally {
             lock.writeLock().unlock();
         }
+
+        return result;
     }
 
     /**
@@ -1625,10 +1607,13 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 List<ClusterNode> affNodes = aff.get(p);
 
                 if (!affNodes.contains(cctx.localNode())) {
-                    Collection<UUID> nodeIds = F.nodeIds(nodes(p, topVer, OWNING));
+                    List<ClusterNode> nodes = nodes(p, topVer, OWNING);
+                    Collection<UUID> nodeIds = F.nodeIds(nodes);
 
                     // If all affinity nodes are owners, then evict partition from local node.
                     if (nodeIds.containsAll(F.nodeIds(affNodes))) {
+                        part.reload(false);
+
                         part.rent(false);
 
                         updateSeq = updateLocal(part.id(), part.state(), updateSeq);
@@ -1643,17 +1628,17 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         int affCnt = affNodes.size();
 
                         if (ownerCnt > affCnt) {
-                            List<ClusterNode> sorted = new ArrayList<>(cctx.discovery().nodes(nodeIds));
-
                             // Sort by node orders in ascending order.
-                            Collections.sort(sorted, CU.nodeComparator(true));
+                            Collections.sort(nodes, CU.nodeComparator(true));
 
-                            int diff = sorted.size() - affCnt;
+                            int diff = nodes.size() - affCnt;
 
                             for (int i = 0; i < diff; i++) {
-                                ClusterNode n = sorted.get(i);
+                                ClusterNode n = nodes.get(i);
 
                                 if (locId.equals(n.id())) {
+                                    part.reload(false);
+
                                     part.rent(false);
 
                                     updateSeq = updateLocal(part.id(), part.state(), updateSeq);
@@ -1677,17 +1662,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /**
-     * @return Current coordinator node.
-     */
-    @Nullable private ClusterNode currentCoordinator() {
-        ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(topVer);
-
-        assert oldest != null || cctx.kernalContext().clientNode();
-
-        return oldest;
-    }
-
-    /**
      * Updates value for single partition.
      *
      * @param p Partition.
@@ -1697,7 +1671,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     private long updateLocal(int p, GridDhtPartitionState state, long updateSeq) {
-        ClusterNode oldest = currentCoordinator();
+        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
         assert oldest != null || cctx.kernalContext().clientNode();
 
@@ -1764,7 +1738,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private void removeNode(UUID nodeId) {
         assert nodeId != null;
 
-        ClusterNode oldest = CU.oldest(cctx.discovery().serverNodes(topVer));
+        ClusterNode oldest = discoCache.oldestAliveServerNode();
 
         assert oldest != null;
 
@@ -1832,6 +1806,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             assert part.state() == EVICTED;
 
             long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();
+
+            if (part.reload())
+                part = createPartition(part.id());
 
             updateLocal(part.id(), part.state(), seq);
 

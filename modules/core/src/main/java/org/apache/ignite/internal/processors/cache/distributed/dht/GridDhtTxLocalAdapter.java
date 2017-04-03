@@ -147,7 +147,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             storeEnabled,
             onePhaseCommit,
             txSize,
-            subjId, 
+            subjId,
             taskNameHash
         );
 

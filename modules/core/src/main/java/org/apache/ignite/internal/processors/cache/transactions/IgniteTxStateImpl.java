@@ -56,7 +56,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     private GridLongList activeCacheIds = new GridLongList();
 
     /** Per-transaction read map. */
-    @GridToStringInclude
+    @GridToStringExclude
     protected Map<IgniteTxKey, IgniteTxEntry> txMap;
 
     /** Read view on transaction map. */
@@ -475,6 +475,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     public String toString() {
-        return S.toString(IgniteTxStateImpl.class, this);
+        return S.toString(IgniteTxStateImpl.class, this, "txMap", allEntriesCopy());
     }
 }
