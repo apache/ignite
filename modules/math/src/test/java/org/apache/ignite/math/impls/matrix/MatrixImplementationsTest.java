@@ -706,7 +706,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             assertTrue("Unexpected density with threshold 0.", m.density(0.0));
 
-            // TODO find out why m.density(1.0) appears to run infinitely.
+            assertFalse("Unexpected density with threshold 1.", m.density(1.0));
         });
     }
 
