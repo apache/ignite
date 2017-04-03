@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests
+namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
     using System.Collections.Generic;
@@ -26,32 +26,20 @@ namespace Apache.Ignite.Core.Tests
     using System.Xml;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for native serialization.
+    /// Tests additional [Serializable] scenarios.
     /// </summary>
-    public class SerializationTest
+    public class AdvancedSerializationTest
     {
-        /** Grid name. */
-        private const string GridName = "SerializationTest";
-
         /// <summary>
         /// Set up routine.
         /// </summary>
         [TestFixtureSetUp]
         public void SetUp()
         {
-            var cfg = new IgniteConfiguration
-            {
-                IgniteInstanceName = GridName,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                SpringConfigUrl = "config\\native-client-test-cache.xml"
-            };
-
-            Ignition.Start(cfg);
+            Ignition.Start(TestUtils.GetTestConfiguration());
         }
 
         /// <summary>
@@ -69,8 +57,8 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSerializableXmlDoc()
         {
-            var grid = Ignition.GetIgnite(GridName);
-            var cache = grid.GetCache<int, SerializableXmlDoc>("replicated");
+            var grid = Ignition.GetIgnite(null);
+            var cache = grid.GetOrCreateCache<int, SerializableXmlDoc>("cache");
 
             var doc = new SerializableXmlDoc();
 
@@ -115,9 +103,9 @@ namespace Apache.Ignite.Core.Tests
         {
             const int count = 50;
 
-            var cache = Ignition.GetIgnite(GridName).GetCache<int, object>("local");
+            var cache = Ignition.GetIgnite(null).GetOrCreateCache<int, object>("cache");
 
-            // Put multiple objects from muliple same-named assemblies to cache
+            // Put multiple objects from multiple same-named assemblies to cache
             for (var i = 0; i < count; i++)
             {
                 dynamic val = Activator.CreateInstance(GenerateDynamicType());
@@ -142,7 +130,7 @@ namespace Apache.Ignite.Core.Tests
         /// Generates a Type in runtime, puts it into a dynamic assembly.
         /// </summary>
         /// <returns></returns>
-        public static Type GenerateDynamicType()
+        private static Type GenerateDynamicType()
         {
             var asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(
                 new AssemblyName("GridSerializationTestDynamicAssembly"), AssemblyBuilderAccess.Run);

@@ -175,6 +175,61 @@ private:
     ConcurrentQueue< CacheEntryEvent<K, V> > eventQueue;
 };
 
+/**
+ * Only lets through keys from the range.
+ */
+template<typename K, typename V>
+struct RangeFilter : CacheEntryEventFilter<K, V>
+{
+    /**
+     * Default constructor.
+     */
+    RangeFilter() :
+        rangeBegin(0),
+        rangeEnd(0)
+    {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param from Range beginning. Inclusive.
+     * @param to Range end. Not inclusive.
+     */
+    RangeFilter(const K& from, const K& to) :
+        rangeBegin(from),
+        rangeEnd(to)
+    {
+        // No-op.
+    }
+
+    /**
+     * Destructor.
+     */
+    virtual ~RangeFilter()
+    {
+        // No-op.
+    }
+
+    /**
+     * Event callback.
+     *
+     * @param event Event.
+     * @return True if the event passes filter.
+     */
+    virtual bool Process(const CacheEntryEvent<K, V>& event)
+    {
+        return event.GetKey() >= rangeBegin && event.GetKey() < rangeEnd;
+    }
+
+    /** Beginning of the range. */
+    K rangeBegin;
+
+    /** End of the range. */
+    K rangeEnd;
+};
+
 /*
  * Test entry.
  */
@@ -204,10 +259,9 @@ namespace ignite
 {
     namespace binary
     {
-        /**
-        * Binary type definition.
-        */
-        IGNITE_BINARY_TYPE_START(TestEntry)
+        template<>
+        struct BinaryType<TestEntry>
+        {
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestEntry)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestEntry)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
@@ -227,8 +281,52 @@ namespace ignite
 
                 return res;
             }
+        };
 
-        IGNITE_BINARY_TYPE_END
+        template<typename K, typename V>
+        struct BinaryType< RangeFilter<K,V> >
+        {
+            int32_t GetTypeId()
+            {
+                return GetBinaryStringHashCode("RangeFilter");
+            }
+
+            std::string GetTypeName()
+            {
+                return "RangeFilter";
+
+            }
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+
+            int32_t GetHashCode(const RangeFilter<K,V>&)
+            {
+                return 0;
+            }
+
+            bool IsNull(const RangeFilter<K,V>&)
+            {
+                return false;
+            }
+
+            RangeFilter<K,V> GetNull()
+            {
+                return RangeFilter<K,V>();
+            }
+
+            void Write(BinaryWriter& writer, const RangeFilter<K,V>& obj)
+            {
+                writer.WriteObject("rangeBegin", obj.rangeBegin);
+                writer.WriteObject("rangeEnd", obj.rangeEnd);
+            }
+
+            RangeFilter<K,V> Read(BinaryReader& reader)
+            {
+                K begin = reader.ReadObject<K>("rangeBegin");
+                K end = reader.ReadObject<K>("rangeEnd");
+
+                return RangeFilter<K,V>(begin, end);
+            }
+        };
     }
 }
 
@@ -237,7 +335,7 @@ namespace ignite
  */
 struct ContinuousQueryTestSuiteFixture
 {
-    Ignite grid;
+    Ignite node;
 
     Cache<int, TestEntry> cache;
 
@@ -245,8 +343,8 @@ struct ContinuousQueryTestSuiteFixture
      * Constructor.
      */
     ContinuousQueryTestSuiteFixture() :
-        grid(ignite_test::StartNode("cache-query-continuous.xml", "node-01")),
-        cache(grid.GetCache<int, TestEntry>("transactional_no_backup"))
+        node(ignite_test::StartNode("cache-query-continuous.xml", "node-01")),
+        cache(node.GetCache<int, TestEntry>("transactional_no_backup"))
     {
         // No-op.
     }
@@ -258,7 +356,7 @@ struct ContinuousQueryTestSuiteFixture
     {
         Ignition::StopAll(false);
 
-        grid = Ignite();
+        node = Ignite();
     }
 };
 
@@ -579,6 +677,92 @@ BOOST_AUTO_TEST_CASE(TestPublicPrivateConstantsConsistence)
 
     BOOST_CHECK_EQUAL(static_cast<int>(QueryImplType::DEFAULT_BUFFER_SIZE),
         static_cast<int>(QueryType::DEFAULT_BUFFER_SIZE));
+}
+
+BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
+{
+    node.GetBinding().RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
+
+    Listener<int, TestEntry> lsnr;
+    RangeFilter<int, TestEntry> filter(100, 150);
+
+    ContinuousQuery<int, TestEntry> qry(MakeReference(lsnr), MakeReference(filter));
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry);
+
+    cache.Put(1, TestEntry(10));
+    cache.Put(1, TestEntry(11));
+
+    cache.Put(2, TestEntry(20));
+    cache.Remove(2);
+
+    cache.Put(100, TestEntry(1000));
+    cache.Put(101, TestEntry(1010));
+
+    cache.Put(142, TestEntry(1420));
+    cache.Put(142, TestEntry(1421));
+    cache.Remove(142);
+
+    cache.Put(149, TestEntry(1490));
+    cache.Put(150, TestEntry(1500));
+    cache.Put(150, TestEntry(1502));
+    cache.Remove(150);
+
+    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000));
+    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010));
+
+    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
+    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
+    lsnr.CheckNextEvent(142, TestEntry(1421), boost::none);
+
+    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
+}
+
+BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
+{
+    Ignite node2 = ignite_test::StartNode("cache-query-continuous.xml", "node-02");
+    Ignite node3 = ignite_test::StartNode("cache-query-continuous.xml", "node-03");
+
+    node.GetBinding().RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
+
+    Listener<int, TestEntry> lsnr;
+    RangeFilter<int, TestEntry> filter(100, 150);
+
+    ContinuousQuery<int, TestEntry> qry(MakeReference(lsnr), MakeReference(filter));
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry);
+
+    Cache<int, TestEntry> cache2 = node2.GetCache<int, TestEntry>("transactional_no_backup");
+
+    cache2.Put(1, TestEntry(10));
+    cache2.Put(1, TestEntry(11));
+
+    cache2.Put(2, TestEntry(20));
+    cache2.Remove(2);
+
+    cache2.Put(100, TestEntry(1000));
+    cache2.Put(101, TestEntry(1010));
+
+    cache2.Put(142, TestEntry(1420));
+    cache2.Put(142, TestEntry(1421));
+    cache2.Remove(142);
+
+    cache2.Put(149, TestEntry(1490));
+    cache2.Put(150, TestEntry(1500));
+    cache2.Put(150, TestEntry(1502));
+    cache2.Remove(150);
+
+    for (int i = 200; i < 250; ++i)
+        cache2.Put(i, TestEntry(i * 10));
+
+    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000));
+    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010));
+
+    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
+    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
+    lsnr.CheckNextEvent(142, TestEntry(1421), boost::none);
+
+    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

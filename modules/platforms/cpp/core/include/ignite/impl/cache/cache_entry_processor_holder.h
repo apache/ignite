@@ -75,20 +75,6 @@ namespace ignite
             /**
              * Holder for the Cache Entry Processor and its argument. Used as a convenient way to
              * transmit Cache Entry Processor between nodes.
-             *
-             * Both key and value types should be default-constructable,
-             * copy-constructable and assignable.
-             *
-             * Additionally, for the processor class public methods with the
-             * following signatures should be defined:
-             * @code{.cpp}
-             * // Should return unique ID for every class.
-             * static int64_t GetJobId();
-             *
-             * // Main processing method. Takes cache entry and argument and
-             * // returns processing result.
-             * R Process(ignite::cache::MutableCacheEntry<K, V>&, const A&);
-             * @endcode
              */
             template<typename P, typename A>
             class CacheEntryProcessorHolder
@@ -202,7 +188,6 @@ namespace ignite
             typedef impl::cache::CacheEntryProcessorHolder<P, A> UnderlyingType;
 
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(UnderlyingType)
             IGNITE_BINARY_IS_NULL_FALSE(UnderlyingType)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(UnderlyingType)
 
