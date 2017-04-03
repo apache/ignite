@@ -1031,6 +1031,14 @@ public class IgnitionEx {
     private static T2<IgniteNamedInstance, Boolean> start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
         assert startCtx != null;
 
+        String gridStr = "STARTED-GRIDS:";
+
+        for (IgniteNamedInstance o : grids.values()) {
+            gridStr += o.getName() + "|";
+        }
+
+        System.out.println(gridStr);
+
         String name = startCtx.config().getIgniteInstanceName();
 
         if (name != null && name.isEmpty())
