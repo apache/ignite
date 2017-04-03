@@ -56,7 +56,7 @@ public class GridIoPolicy {
     public static final byte SERVICE_POOL = 11;
 
     /** Query execution pool. */
-    public static final byte CUSTOM_NAMED_POOL = 11;
+    public static final byte CUSTOM_NAMED_POOL = 12;
 
     /**
      * Defines the range of reserved pools that are not available for plugins.

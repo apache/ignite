@@ -47,7 +47,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Manual test to reproduce IGNITE-4053
+ * Tests custom executor named pools.
+ *
+ * https://issues.apache.org/jira/browse/IGNITE-4699
  */
 public class IgniteComputeCustomExecutorTest extends GridCommonAbstractTest {
     /** */
