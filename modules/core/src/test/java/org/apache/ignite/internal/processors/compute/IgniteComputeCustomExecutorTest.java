@@ -36,6 +36,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -124,6 +125,18 @@ public class IgniteComputeCustomExecutorTest extends GridCommonAbstractTest {
                 assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
             }
         });
+
+        comp.affinityRunAsync(CACHE_NAME, 0, new IgniteRunnable() {
+            @Override public void run() {
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+            }
+        }).listen(new IgniteInClosure<IgniteFuture<Void>>() {
+            @Override public void apply(IgniteFuture<Void> future) {
+                System.out.println("+++ " + Thread.currentThread().getName());
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+            }
+        });
+
 
         comp.affinityCall(CACHE_NAME, 0, new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
