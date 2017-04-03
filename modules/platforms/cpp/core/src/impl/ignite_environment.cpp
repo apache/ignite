@@ -356,7 +356,7 @@ namespace ignite
             InteropOutputStream outStream(mem.Get());
             BinaryWriterImpl writer(&outStream, GetTypeManager());
 
-            BinaryObjectImpl binFilter = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position());
+            BinaryObjectImpl binFilter = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position(), metaMgr);
 
             int32_t filterId = binFilter.GetTypeId();
 
