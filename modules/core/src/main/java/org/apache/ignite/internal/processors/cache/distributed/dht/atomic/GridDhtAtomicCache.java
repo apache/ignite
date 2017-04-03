@@ -2437,7 +2437,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         AffinityTopologyVersion topVer = req.topologyVersion();
 
-        boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer);
+        boolean checkReaders = hasNear || ctx.discovery().hasNearCache(ctx.cacheId(), topVer);
 
         boolean readersOnly = false;
 
@@ -2672,7 +2672,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         AffinityTopologyVersion topVer = req.topologyVersion();
 
-        boolean checkReaders = hasNear || ctx.discovery().hasNearCache(name(), topVer);
+        boolean checkReaders = hasNear || ctx.discovery().hasNearCache(ctx.cacheId(), topVer);
 
         CacheStorePartialUpdateException storeErr = null;
 
