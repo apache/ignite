@@ -246,6 +246,35 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
+    public void testTimesVector() {
+        consumeSampleMatrix((m, desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
+            double[][] data = fillAndReturn(m);
+
+            double[] arr = fillArray(m.columnSize());
+
+            Vector times = m.times(new DenseLocalOnHeapVector(arr));
+
+            assertEquals("Unexpected vector size for " + desc, times.size(), m.rowSize());
+
+            for (int i = 0; i < m.rowSize(); i++) {
+                double exp = 0.0;
+
+                for (int j = 0; j < m.columnSize(); j++)
+                     exp += arr[j] * data[i][j];
+
+                assertTrue("Unexpected value for " + desc + " at " + i,
+                    Double.compare(times.get(i), exp) == 0);
+            }
+
+            testInvalidCardinality(() -> m.times(new DenseLocalOnHeapVector(m.columnSize() + 1)), desc);
+        });
+    }
+
+    /** */
+    @Test
     public void testDivide() {
         consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
@@ -831,7 +860,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     }
 
     /** */
-    private void testInvalidCardinality(Supplier<Matrix> supplier, String desc) {
+    private void testInvalidCardinality(Supplier<Object> supplier, String desc) {
         try {
             supplier.get();
         } catch (CardinalityException ce) {
