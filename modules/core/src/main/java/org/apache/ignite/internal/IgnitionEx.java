@@ -1513,6 +1513,9 @@ public class IgnitionEx {
         /** Executor service. */
         private ThreadPoolExecutor execSvc;
 
+        /** Executor service for services. */
+        private ThreadPoolExecutor svcExecSvc;
+
         /** System executor service. */
         private ThreadPoolExecutor sysExecSvc;
 
@@ -1715,6 +1718,18 @@ public class IgnitionEx {
 
             execSvc.allowCoreThreadTimeOut(true);
 
+            validateThreadPoolSize(cfg.getServiceThreadPoolSize(), "service");
+
+            svcExecSvc = new IgniteThreadPoolExecutor(
+                "svc",
+                cfg.getGridName(),
+                cfg.getServiceThreadPoolSize(),
+                cfg.getServiceThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            svcExecSvc.allowCoreThreadTimeOut(true);
+
             validateThreadPoolSize(cfg.getSystemThreadPoolSize(), "system");
 
             sysExecSvc = new IgniteThreadPoolExecutor(
@@ -1871,6 +1886,7 @@ public class IgnitionEx {
                     myCfg,
                     utilityCacheExecSvc,
                     execSvc,
+                    svcExecSvc,
                     sysExecSvc,
                     stripedExecSvc,
                     p2pExecSvc,

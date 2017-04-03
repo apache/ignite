@@ -34,7 +34,7 @@ using namespace boost::unit_test;
  */
 struct ClusterTestSuiteFixture
 {
-    Ignite grid;
+    Ignite node;
 
     /*
      * Constructor.
@@ -52,8 +52,6 @@ struct ClusterTestSuiteFixture
     {
         Ignition::StopAll(true);
     }
-
-    Ignite node;
 };
 
 BOOST_FIXTURE_TEST_SUITE(ClusterTestSuite, ClusterTestSuiteFixture)

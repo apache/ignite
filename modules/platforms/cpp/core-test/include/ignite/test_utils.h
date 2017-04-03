@@ -58,6 +58,17 @@ namespace ignite_test
      * @return New node.
      */
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
+
+    /**
+     * Check if the error is generic.
+     *
+     * @param err Error.
+     * @return True if the error is generic.
+     */
+    inline bool IsGenericError(const ignite::IgniteError& err)
+    {
+        return err.GetCode() == ignite::IgniteError::IGNITE_ERR_GENERIC;
+    }
 }
 
 #endif // _IGNITE_CORE_TEST_TEST_UTILS
