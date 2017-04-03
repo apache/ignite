@@ -186,11 +186,12 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
-    <Compile Include="Impl\Binary\DateTimeSerializer.cs" />
     <Compile Include="Impl\Binary\IO\IBinaryStreamProcessor.cs" />
     <Compile Include="Impl\Binary\Metadata\BinaryField.cs" />
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
+    <Compile Include="Impl\Binary\DeserializationCallbackProcessor.cs" />
+    <Compile Include="Impl\Binary\ReflectionUtils.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
     <Compile Include="Impl\Cache\Store\CacheStore.cs" />
     <Compile Include="Impl\Cache\Store\ICacheStoreInternal.cs" />
@@ -319,6 +320,7 @@
     <Compile Include="Impl\Common\CopyOnWriteConcurrentDictionary.cs" />
     <Compile Include="Impl\Common\DelegateConverter.cs" />
     <Compile Include="Impl\Common\DelegateTypeDescriptor.cs" />
+    <Compile Include="Impl\Common\SerializableTypeDescriptor.cs" />
     <Compile Include="Impl\Events\EventTypeConverter.cs" />
     <Compile Include="Impl\Common\Fnv1Hash.cs" />
     <Compile Include="Impl\Common\Future.cs" />
@@ -385,11 +387,9 @@
     <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
-    <Compile Include="Impl\Binary\DateTimeHolder.cs" />
     <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
     <Compile Include="Impl\Binary\IO\BinaryStreamBase.cs" />
     <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
-    <Compile Include="Impl\Binary\IO\BinaryStreamAdapter.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />
     <Compile Include="Impl\Binary\Metadata\IBinaryTypeHandler.cs" />
@@ -419,7 +419,6 @@
     <Compile Include="Impl\Binary\BinaryObject.cs" />
     <Compile Include="Impl\Binary\BinaryUtils.cs" />
     <Compile Include="Impl\Binary\BinaryWriter.cs" />
-    <Compile Include="Impl\Binary\SerializableObjectHolder.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructure.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureEntry.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureJumpTable.cs" />
