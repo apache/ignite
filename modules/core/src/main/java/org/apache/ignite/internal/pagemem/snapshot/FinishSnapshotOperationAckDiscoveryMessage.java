@@ -25,6 +25,9 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class FinishSnapshotOperationAckDiscoveryMessage implements DiscoveryCustomMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Id. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
