@@ -40,7 +40,7 @@ import java.util.UUID;
  * Tests for dynamic index creation.
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
+public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
     /** Attribute to filter node out of cache data nodes. */
     private static final String ATTR_FILTERED = "FILTERED";
 
@@ -56,8 +56,8 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        grid(0).getOrCreateCache(cacheConfiguration());
-        grid(0).getOrCreateCache(caseSensitiveCacheConfiguration());
+        node().getOrCreateCache(cacheConfiguration());
+        node().getOrCreateCache(caseSensitiveCacheConfiguration());
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
         assertNoIndex(CACHE_NAME_SENSITIVE, TBL_NAME, IDX_NAME);
@@ -65,8 +65,8 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).destroyCache(CACHE_NAME);
-        grid(0).destroyCache(CACHE_NAME_SENSITIVE);
+        node().destroyCache(CACHE_NAME);
+        node().destroyCache(CACHE_NAME_SENSITIVE);
 
         super.afterTest();
     }
@@ -86,16 +86,16 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     public void testCreate() throws Exception {
         final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_1));
 
-        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
             }
         }, SchemaOperationException.CODE_INDEX_EXISTS);
 
-        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
+        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
     }
 
@@ -109,7 +109,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(grid(0)).dynamicIndexCreate(randomString(), TBL_NAME, idx, false).get();
+                queryProcessor(node()).dynamicIndexCreate(randomString(), TBL_NAME, idx, false).get();
             }
         }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
 
@@ -126,7 +126,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, randomString(), idx, false).get();
+                queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, randomString(), idx, false).get();
             }
         }, SchemaOperationException.CODE_TABLE_NOT_FOUND);
 
@@ -143,7 +143,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
             }
         }, SchemaOperationException.CODE_COLUMN_NOT_FOUND);
 
@@ -160,7 +160,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
             @Override public void run() throws Exception {
                 QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_2));
 
-                queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
             }
         }, SchemaOperationException.CODE_COLUMN_NOT_FOUND);
 
@@ -168,7 +168,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         QueryIndex idx = index(IDX_NAME, field(alias(FIELD_NAME_2)));
 
-        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(alias(FIELD_NAME_2)));
     }
 
@@ -181,10 +181,10 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     public void testCreateCaseSensitive() throws Exception {
         QueryIndex idx = index(IDX_NAME, field("Id"), field(FIELD_NAME_1), field("id", true));
 
-        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME_SENSITIVE, TBL_NAME, idx, false).get();
+        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME_SENSITIVE, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME_SENSITIVE, TBL_NAME, IDX_NAME, field("Id"), field(FIELD_NAME_1), field("id", true));
 
-        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME_SENSITIVE, TBL_NAME, idx, true).get();
+        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME_SENSITIVE, TBL_NAME, idx, true).get();
         assertIndex(CACHE_NAME_SENSITIVE, TBL_NAME, IDX_NAME, field("Id"), field(FIELD_NAME_1), field("id", true));
     }
 
@@ -196,10 +196,10 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     public void testDrop() throws Exception {
         QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_1));
 
-        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
 
-        queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
+        queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
     }
 
@@ -211,11 +211,11 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     public void testDropNoIndex() throws Exception {
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
+                queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
             }
         }, SchemaOperationException.CODE_INDEX_NOT_FOUND);
 
-        queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, true).get();
+        queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME, true).get();
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
     }
 
@@ -227,7 +227,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     public void testDropNoCache() throws Exception {
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(grid(0)).dynamicIndexDrop(randomString(), "my_idx", false).get();
+                queryProcessor(node()).dynamicIndexDrop(randomString(), "my_idx", false).get();
             }
         }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
 
@@ -248,9 +248,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
      *
      * @return If failed.
      */
-    protected int nodeIndex() {
-        return 0;
-    }
+    protected abstract int nodeIndex();
 
     /**
      * Get configurations to be used in test.
