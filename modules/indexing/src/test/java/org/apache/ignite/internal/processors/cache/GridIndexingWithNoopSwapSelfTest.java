@@ -108,6 +108,6 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         SqlQuery<Integer, ObjectValue> qry =
             new SqlQuery(ObjectValue.class, "intVal >= ? order by intVal");
 
-        assertEquals(0, cache.query(qry.setArgs(0)).getAll().size());
+        assertEquals(10, cache.query(qry.setArgs(0)).getAll().size());
     }
 }
