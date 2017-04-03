@@ -1883,7 +1883,7 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return doReadObjectArray(in, ctx, ldr, handles, false);
+                return doReadObjectArray(in, ctx, ldr, handles, true);
 
             case GridBinaryMarshaller.COL:
                 return doReadCollection(in, ctx, ldr, handles, false, null);
@@ -1933,7 +1933,7 @@ public class BinaryUtils {
 
         int len = in.readInt();
 
-        Object[] arr = deserialize ? (Object[])Array.newInstance(compType, len) : new Object[len];
+        Object[] arr = (Object[])Array.newInstance(compType, len);
 
         handles.setHandle(arr, hPos);
 
