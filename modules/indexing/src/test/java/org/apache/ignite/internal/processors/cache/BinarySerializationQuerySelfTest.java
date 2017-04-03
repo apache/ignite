@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -141,7 +142,7 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
         QueryEntity entity = new QueryEntity(Integer.class.getName(), cls.getName());
 
         entity.addQueryField("val", Integer.class.getName(), null);
-        entity.addIndex(new QueryIndex("val", true));
+        entity.setIndexes(Collections.singletonList(new QueryIndex("val", true)));
 
         return entity;
     }

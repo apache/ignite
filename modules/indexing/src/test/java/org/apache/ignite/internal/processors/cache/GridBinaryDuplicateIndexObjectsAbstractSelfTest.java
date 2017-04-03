@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -69,8 +70,9 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
         queryEntity.addQueryField("fieldOne", String.class.getName(), null);
         queryEntity.addQueryField("fieldTwo", Integer.class.getName(), null);
 
-        queryEntity.addIndex(new QueryIndex("fieldOne", true));
-        queryEntity.addIndex(new QueryIndex("fieldTwo", true));
+        queryEntity.setIndexes(Arrays.asList(
+            new QueryIndex("fieldOne", true),
+            new QueryIndex("fieldTwo", true)));
 
         ccfg.setQueryEntities(Collections.singletonList(queryEntity));
 
