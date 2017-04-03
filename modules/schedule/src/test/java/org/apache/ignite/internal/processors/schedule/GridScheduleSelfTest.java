@@ -161,7 +161,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
                     notifyCnt.incrementAndGet();
                 }
-            }, null);
+            });
 
             fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> fut) {
@@ -181,7 +181,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
                     return "done-default";
                 }
-            }, null);
+            });
 
             IgniteFuture<String> chained2 = fut.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
                 @Override public String apply(IgniteFuture<?> fut) {

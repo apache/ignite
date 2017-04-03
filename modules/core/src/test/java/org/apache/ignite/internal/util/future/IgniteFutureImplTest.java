@@ -312,7 +312,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
         assertFalse(fut.isDone());
 
-        fut.listenAsync(lsnr1, null);
+        fut.listenAsync(lsnr1);
         fut.listenAsync(lsnr2, customExec);
 
         U.sleep(100);
@@ -328,7 +328,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         IgniteInClosure<? super IgniteFuture<String>> lsnr3 = createAsyncListener(latch2, CTX_THREAD_NAME, null);
         IgniteInClosure<? super IgniteFuture<String>> lsnr4 = createAsyncListener(latch2, CUSTOM_THREAD_NAME, null);
 
-        fut.listenAsync(lsnr3, null);
+        fut.listenAsync(lsnr3);
         fut.listenAsync(lsnr4, customExec);
 
         assert latch1.await(1, TimeUnit.SECONDS) : latch2.getCount();
@@ -355,7 +355,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         IgniteInClosure<? super IgniteFuture<String>> lsnr1 = createAsyncListener(latch1, CTX_THREAD_NAME, err0);
         IgniteInClosure<? super IgniteFuture<String>> lsnr2 = createAsyncListener(latch1, CUSTOM_THREAD_NAME, err0);
 
-        fut.listenAsync(lsnr1, null);
+        fut.listenAsync(lsnr1);
         fut.listenAsync(lsnr2, customExec);
 
         assertEquals(2, latch1.getCount());
@@ -369,7 +369,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
         IgniteInClosure<? super IgniteFuture<String>> lsnr3 = createAsyncListener(latch2, CTX_THREAD_NAME, err0);
         IgniteInClosure<? super IgniteFuture<String>> lsnr4 = createAsyncListener(latch2, CUSTOM_THREAD_NAME, err0);
 
-        fut.listenAsync(lsnr3, null);
+        fut.listenAsync(lsnr3);
         fut.listenAsync(lsnr4, customExec);
 
         assert latch2.await(1, TimeUnit.SECONDS);
@@ -624,7 +624,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                 return Integer.valueOf(fut.get());
             }
-        }, null);
+        });
 
         IgniteFuture<Integer> chained2 = fut.chainAsync(new C1<IgniteFuture<String>, Integer>() {
             @Override public Integer apply(IgniteFuture<String> fut) {
@@ -723,7 +723,7 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
 
                 return -1;
             }
-        }, null);
+        });
 
         IgniteFuture<Integer> chained2 = fut.chainAsync(new C1<IgniteFuture<String>, Integer>() {
             @Override public Integer apply(IgniteFuture<String> fut) {
