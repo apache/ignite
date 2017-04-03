@@ -19,7 +19,13 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.DiscoverySpiListener;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -104,6 +110,23 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test drop when no cache exists.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoCache() throws Exception {
+        final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME));
+
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
+                String cacheName = "random-cache-" + Integer.toString(ThreadLocalRandom.current().nextInt());
+
+                queryProcessor(grid(0)).dynamicIndexDrop(cacheName, "my_idx", false).get();
+            }
+        }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
+    }
+
+    /**
      * Test simple index create with schema case sensitivity considered.
      *
      * @throws Exception If failed.
@@ -155,6 +178,31 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, true).get();
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
+            @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
+                super.setListener(GridTestUtils.DiscoverySpiListenerWrapper.wrap(lsnr, new Hook()));
+            }
+        };
+
+        cfg.setDiscoverySpi(discoSpi);
+
+        return cfg;
+    }
+
+    /**
+     * Generic discovery hook.
+     */
+    private static class Hook extends GridTestUtils.DiscoveryHook {
+        @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+            if (msg != null)
+                System.out.println("DISCO: " + msg);
+        }
     }
 
     /**

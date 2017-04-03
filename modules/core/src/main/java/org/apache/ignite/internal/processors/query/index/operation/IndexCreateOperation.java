@@ -44,16 +44,15 @@ public class IndexCreateOperation extends IndexAbstractOperation {
     /**
      * Constructor.
      *
-     * @param cliNodeId Id of node that initiated this operation.
      * @param opId Operation id.
      * @param space Space.
      * @param tblName Table name.
      * @param idx Index params.
      * @param ifNotExists Ignore operation if index exists.
      */
-    public IndexCreateOperation(UUID cliNodeId, UUID opId, String space, String tblName, QueryIndex idx,
+    public IndexCreateOperation(UUID opId, String space, String tblName, QueryIndex idx,
         boolean ifNotExists) {
-        super(cliNodeId, opId, space);
+        super(opId, space);
 
         this.tblName = tblName;
         this.idx = idx;

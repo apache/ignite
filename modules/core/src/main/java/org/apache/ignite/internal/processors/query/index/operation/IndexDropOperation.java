@@ -37,14 +37,13 @@ public class IndexDropOperation extends IndexAbstractOperation {
     /**
      * Constructor.
      *
-     * @param cliNodeId Client node ID.
      * @param opId Operation id.
      * @param space Space.
      * @param idxName Index name.
      * @param ifExists Ignore operation if index doesn't exist.
      */
-    public IndexDropOperation(UUID cliNodeId, UUID opId, String space, String idxName, boolean ifExists) {
-        super(cliNodeId, opId, space);
+    public IndexDropOperation(UUID opId, String space, String idxName, boolean ifExists) {
+        super(opId, space);
 
         this.idxName = idxName;
         this.ifExists = ifExists;

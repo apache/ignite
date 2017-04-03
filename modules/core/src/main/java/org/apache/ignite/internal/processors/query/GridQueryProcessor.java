@@ -606,8 +606,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // If accepted operation is top-level operation for the given schema key, then start it immediately.
             // Otherwise it will be handled later when previous operations complete.
-            if (F.eq(desc.id(), curOp.id()))
-                onSchemaAccept0(curOp);
+            if (F.eq(desc.id(), curOp.id())) {
+                if (!curOp.started())
+                    startSchemaChange(curOp);
+            }
             else {
                 if (log.isDebugEnabled()) {
                     curOp = curOp.unwind();
@@ -625,8 +627,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schemaOp Schema operation.
      */
     @SuppressWarnings({"unchecked", "ThrowableInstanceNeverThrown"})
-    private void onSchemaAccept0(SchemaOperation schemaOp) {
+    private void startSchemaChange(SchemaOperation schemaOp) {
         assert Thread.holdsLock(activeOpsMux);
+        assert !schemaOp.started();
 
         // Get current cache state.
         SchemaOperationDescriptor desc = schemaOp.descriptor();
@@ -952,6 +955,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /**
+         * Whether operation started.
+         *
+         * @return {@code True} if started.
+         */
+        public boolean started() {
+            return mgr != null;
+        }
+
+        /**
          * @return Operation manager.
          */
         public IndexOperationManager manager() {
@@ -1043,7 +1055,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             log.debug("Next schema change operation started [opId=" + opId +
                                 ", nextOpId=" + nextOp.id() + ']');
 
-                        onSchemaAccept0(nextOp);
+                        if (!nextOp.started())
+                            startSchemaChange(nextOp);
                     }
                 }
             }
@@ -1137,7 +1150,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         synchronized (activeOpsMux) {
             for (SchemaOperation op : schemaOps.values()) {
-                if (op.manager() != null)
+                if (op.started())
                     op.manager().onNodeLeave(node.id());
             }
         }
@@ -1610,8 +1623,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicIndexCreate(String space, String tblName, QueryIndex idx,
         boolean ifNotExists) {
-        IndexAbstractOperation op =
-            new IndexCreateOperation(ctx.localNodeId(), UUID.randomUUID(), space, tblName, idx, ifNotExists);
+        IndexAbstractOperation op = new IndexCreateOperation(UUID.randomUUID(), space, tblName, idx, ifNotExists);
 
         return startIndexOperationDistributed(op);
     }
@@ -1624,8 +1636,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future completed when index is created.
      */
     public IgniteInternalFuture<?> dynamicIndexDrop(String space, String idxName, boolean ifExists) {
-        IndexAbstractOperation op =
-            new IndexDropOperation(ctx.localNodeId(), UUID.randomUUID(), space, idxName, ifExists);
+        IndexAbstractOperation op = new IndexDropOperation(UUID.randomUUID(), space, idxName, ifExists);
 
         return startIndexOperationDistributed(op);
     }
@@ -2063,7 +2074,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             SchemaOperation op = schemaOps.get(key);
 
             if (op != null && F.eq(op.id(), opId)) {
-                assert op.manager() != null;
+                assert op.started();
 
                 op.manager().onNodeFinished(resp.senderNodeId(), unmarshalSchemaError(resp.errorBytes()));
             }
