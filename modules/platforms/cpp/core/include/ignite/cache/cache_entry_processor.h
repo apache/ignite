@@ -42,16 +42,20 @@ namespace ignite
          * All templated types should be default-constructable,
          * copy-constructable and assignable.
          *
-         * @tparam P The processor itself which inherits from CacheEntryProcessor.
          * @tparam K Key type.
          * @tparam V Value type.
          * @tparam R Process method return type.
          * @tparam A Process method argument type.
          */
-        template<typename P, typename K, typename V, typename R, typename A>
+        template<typename K, typename V, typename R, typename A>
         class CacheEntryProcessor
         {
             friend class ignite::IgniteBinding;
+
+            typedef A ArgumentType;
+            typedef K KeyType;
+            typedef V ValueType;
+            typedef R ReturnType;
 
         public:
             /**
@@ -70,40 +74,6 @@ namespace ignite
              * @return Processing result.
              */
             virtual R Process(MutableCacheEntry<K, V>& entry, const A& arg) = 0;
-
-        private:
-            /**
-             * Process input streaming data to produce output streaming data.
-             *
-             * Deserializes cache entry and processor using provided reader, invokes
-             * cache entry processor, gets result and serializes it using provided
-             * writer.
-             *
-             * @param reader Reader.
-             * @param writer Writer.
-             */
-            static void InternalProcess(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl& writer)
-            {
-                typedef impl::cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
-
-                ProcessorHolder procHolder = reader.ReadObject<ProcessorHolder>();
-
-                K key = reader.ReadObject<K>();
-
-                V value;
-                bool exists = reader.TryReadObject<V>(value);
-
-                impl::cache::MutableCacheEntryState entryState;
-
-                R res = procHolder.template Process<R, K, V>(key, value, exists, entryState);
-
-                writer.WriteInt8(static_cast<int8_t>(entryState));
-
-                if (entryState == impl::cache::ENTRY_STATE_VALUE_SET)
-                    writer.WriteTopObject(value);
-
-                writer.WriteTopObject(res);
-            }
         };
     }
 }

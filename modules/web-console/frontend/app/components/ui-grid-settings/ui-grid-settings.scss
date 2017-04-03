@@ -70,6 +70,41 @@
         }
     }
 
+    &-number-filter {
+        float: right;
+
+        .ignite-form-field {
+            width: 180px;
+            margin-right: 0;
+
+            &__label {
+            }
+
+            &__control {
+            }
+
+            &:nth-child(1) {
+                float: left;
+
+                .ignite-form-field__label {
+                    margin-right: 0;
+                    width: 70%;
+                    max-width: 100%;
+                }
+
+                .ignite-form-field__control {
+                    width: 30%;
+                }
+            }
+        }
+
+        button {
+            width: auto;
+            display: inline-block;
+            margin-left: 5px;
+        }
+    }
+
     &-dateperiod {
         float: right;
 
@@ -92,6 +127,16 @@
 
                 .ignite-form-field__control {
                     width: 60%;
+                }
+            }
+
+            &:nth-child(2) {
+                float: left;
+
+                width: 100px;
+
+                .ignite-form-field__control {
+                    width: 100%;
                 }
             }
         }

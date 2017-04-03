@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEvictionRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheEvictionResponse;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -141,7 +143,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
-import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
 import org.apache.ignite.internal.util.GridByteArrayList;
@@ -160,7 +161,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class GridIoMessageFactory implements MessageFactory {
     /** Custom messages registry. Used for test purposes. */
-    private static final Map<Byte, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
+    private static final Map<Short, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
 
     /** Extensions. */
     private final MessageFactory[] ext;
@@ -173,7 +174,7 @@ public class GridIoMessageFactory implements MessageFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public Message create(byte type) {
+    @Override public Message create(short type) {
         Message msg = null;
 
         switch (type) {
@@ -652,6 +653,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 80:
+                msg = new MetadataRequestMessage();
+
+                break;
+
+            case 81:
+                msg = new MetadataResponseMessage();
+
+                break;
+
             case 82:
                 msg = new JobStealingRequest();
 
@@ -793,8 +804,8 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 110:
-                msg = new GridQueryRequest();
-
+                // EMPTY type
+                // GridQueryRequest was removed
                 break;
 
             case 111:
@@ -895,7 +906,7 @@ public class GridIoMessageFactory implements MessageFactory {
      * @param type Message type.
      * @param c Message producer.
      */
-    public static void registerCustom(byte type, IgniteOutClosure<Message> c) {
+    public static void registerCustom(short type, IgniteOutClosure<Message> c) {
         assert c != null;
 
         CUSTOM.put(type, c);

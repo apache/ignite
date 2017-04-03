@@ -357,7 +357,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                 try {
                     IgniteCache<Integer, TestValue> cache = g.cache(null);
-                    IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -365,9 +364,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     refs.add(new WeakReference<Object>(val));
 
-                    cacheAsync.putIfAbsent(0, val);
-
-                    cacheAsync.future().get();
+                    cache.putIfAbsentAsync(0, val).get();
                 }
                 finally {
                     G.stop(g.name(), cancel);
@@ -393,7 +390,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                 try {
                     IgniteCache<Integer, TestValue> cache = g.cache(null);
-                    IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -404,9 +400,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                         refs.add(new WeakReference<Object>(val));
 
-                        cacheAsync.putIfAbsent(0, val);
-
-                        futs.add(cacheAsync.future());
+                        futs.add(cache.putIfAbsentAsync(0, val));
                     }
 
                     for (IgniteFuture<?> fut : futs)
@@ -473,7 +467,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                 try {
                     IgniteCache<Integer, TestValue> cache = g.cache(null);
-                    IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -484,9 +477,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                         refs.add(new WeakReference<Object>(val));
 
-                        cacheAsync.put(i, val);
-
-                        cacheAsync.future().get();
+                        cache.putAsync(i, val).get();
                     }
 
                     tx.commit();

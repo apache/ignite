@@ -29,16 +29,6 @@
 using namespace ignite;
 using namespace boost::unit_test;
 
-/* Nodes started during the test. */
-Ignite grid0 = Ignite();
-Ignite grid1 = Ignite();
-
-/** Cache accessor. */
-cache::Cache<int, int> Cache()
-{
-    return grid0.GetCache<int, int>("partitioned");
-}
-
 struct Person
 {
     std::string name;
@@ -88,7 +78,18 @@ namespace ignite
 /*
  * Test setup fixture.
  */
-struct CacheTestSuiteFixture {
+struct CacheTestSuiteFixture
+{
+    /* Nodes started during the test. */
+    Ignite grid0;
+    Ignite grid1;
+
+    /** Cache accessor. */
+    cache::Cache<int, int> Cache()
+    {
+        return grid0.GetCache<int, int>("partitioned");
+    }
+
     /*
      * Constructor.
      */
@@ -446,6 +447,18 @@ BOOST_AUTO_TEST_CASE(TestPutGetDate)
     cache::Cache<int, Date> cache = grid0.GetOrCreateCache<int, Date>("partitioned");
 
     Date now = Date(time(NULL) * 1000);
+
+    cache.Put(5, now);
+
+    BOOST_REQUIRE(now == cache.Get(5));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutGetTime)
+{
+    // Get existing cache
+    cache::Cache<int, Time> cache = grid0.GetOrCreateCache<int, Time>("partitioned");
+
+    Time now = Time(time(NULL) * 1000);
 
     cache.Put(5, now);
 

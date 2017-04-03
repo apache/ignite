@@ -103,7 +103,7 @@ namespace ignite
                     ignite::binary::BinaryType<T> bt;
                     ignite::Reference<ignite::binary::BinaryIdentityResolver> resolver = bt.GetIdentityResolver();
 
-                    return resolver.Get().GetHashCode(obj);
+                    return resolver.Get()->GetHashCode(obj);
                 }
             };
 
