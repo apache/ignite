@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Tests for dynamic index creation.
@@ -76,13 +73,11 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
         queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
                 queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
-
-                return null;
             }
-        }, SchemaOperationException.class, null);
+        }, SchemaOperationException.CODE_INDEX_EXISTS);
 
         queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
@@ -132,13 +127,11 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
         queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
                 queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
-
-                return null;
             }
-        }, SchemaOperationException.class, null);
+        }, SchemaOperationException.CODE_INDEX_NOT_FOUND);
 
         queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, true).get();
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
@@ -170,5 +163,40 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
         return new CacheConfiguration<KeyClass, ValueClass2>()
             .setName(CACHE_NAME_ALIAS)
             .setIndexedTypes(KeyClass.class, ValueClass2.class);
+    }
+
+    /**
+     * Ensure that schema exception is thrown.
+     *
+     * @param r Runnable.
+     * @param expCode Error code.
+     */
+    private static void assertSchemaException(RunnableX r, int expCode) {
+        try {
+            r.run();
+        }
+        catch (SchemaOperationException e) {
+            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.code() + ']',
+                expCode, e.code());
+
+            return;
+        }
+        catch (Exception e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        fail(SchemaOperationException.class.getSimpleName() +  " is not thrown.");
+    }
+
+    /**
+     * Runnable which can throw checked exceptions.
+     */
+    private interface RunnableX {
+        /**
+         * Do run.
+         *
+         * @throws Exception If failed.
+         */
+        public void run() throws Exception;
     }
 }
