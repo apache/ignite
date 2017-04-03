@@ -81,6 +81,7 @@ public class IgniteComputeCustomExecutorTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setExecutorConfiguration(createExecConfiguration(EXEC_NAME0), createExecConfiguration(EXEC_NAME1));
+        cfg.setPublicThreadPoolSize(1);
 
         CacheConfiguration ccfg = new CacheConfiguration();
         ccfg.setName(CACHE_NAME);
@@ -247,14 +248,14 @@ public class IgniteComputeCustomExecutorTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStarvation() throws Exception {
-        IgniteCompute comp = grid(0).compute().withExecutor(EXEC_NAME0);
+        IgniteCompute comp = grid(0).compute();
 
-        IgniteFuture<Void> f = comp.runAsync(new IgniteRunnable() {
+        IgniteFuture<Void> f = comp.broadcastAsync(new IgniteRunnable() {
             @IgniteInstanceResource
             private Ignite ig;
 
             @Override public void run() {
-                ig.compute().withExecutor(EXEC_NAME0).run(new IgniteRunnable() {
+                ig.compute().broadcast(new IgniteRunnable() {
                     @Override public void run() {
                         //No-op.
                     }
