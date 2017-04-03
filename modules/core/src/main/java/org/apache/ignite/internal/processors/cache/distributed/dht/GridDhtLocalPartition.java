@@ -97,7 +97,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Partition ID. */
     private final int id;
 
-    /** State. */
+    /** State. 32 bits - size, 16 bits - reservations, 13 bits - reserved, 3 bits - GridDhtPartitionState. */
     @GridToStringExclude
     private final AtomicLong state = new AtomicLong((long)MOVING.ordinal() << 32);
 
@@ -191,9 +191,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code false} If such reservation already added.
      */
     public boolean addReservation(GridDhtPartitionsReservation r) {
-        assert GridDhtPartitionState.fromOrdinal((int)(state.get() >> 32)) != EVICTED :
-            "we can reserve only active partitions";
-        assert (state.get() & 0xFFFF) != 0 : "partition must be already reserved before adding group reservation";
+        assert (getPartState(state.get())) != EVICTED : "we can reserve only active partitions";
+        assert (getReservations(state.get())) != 0 : "partition must be already reserved before adding group reservation";
 
         return reservations.addIfAbsent(r);
     }
@@ -224,14 +223,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Partition state.
      */
     public GridDhtPartitionState state() {
-        return GridDhtPartitionState.fromOrdinal((int)(state.get() >> 32));
+        return getPartState(state.get());
     }
 
     /**
      * @return Reservations.
      */
     public int reservations() {
-        return (int)(state.get() & 0xFFFF);
+        return getReservations(state.get());
     }
 
     /**
@@ -421,12 +420,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     @Override public boolean reserve() {
         while (true) {
-            long reservations = state.get();
+            long state = this.state.get();
 
-            if ((int)(reservations >> 32) == EVICTED.ordinal())
+            if (getPartState(state) == EVICTED)
                 return false;
 
-            if (state.compareAndSet(reservations, reservations + 1))
+            long newState = setReservations(state, getReservations(state) + 1);
+
+            if (this.state.compareAndSet(state, newState))
                 return true;
         }
     }
@@ -436,16 +437,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     @Override public void release() {
         while (true) {
-            long reservations = state.get();
+            long state = this.state.get();
 
-            if ((int)(reservations & 0xFFFF) == 0)
+            int reservations = getReservations(state);
+
+            if (reservations == 0)
                 return;
 
-            assert (int)(reservations >> 32) != EVICTED.ordinal();
+            assert getPartState(state) != EVICTED;
+
+            long newState = setReservations(state, --reservations);
 
             // Decrement reservations.
-            if (state.compareAndSet(reservations, --reservations)) {
-                if ((reservations & 0xFFFF) == 0 && shouldBeRenting)
+            if (this.state.compareAndSet(state, newState)) {
+                if (reservations == 0 && shouldBeRenting)
                     rent(true);
 
                 try {
@@ -464,18 +469,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param stateToRestore State to restore.
      */
     public void restoreState(GridDhtPartitionState stateToRestore) {
-        state.set(((long)stateToRestore.ordinal())  <<  32);
+        state.set(setPartState(state.get(), stateToRestore));
     }
 
     /**
-     * @param reservations Current aggregated value.
+     * @param state Current aggregated value.
      * @param toState State to switch to.
      * @return {@code true} if cas succeeds.
      */
-    private boolean casState(long reservations, GridDhtPartitionState toState) {
+    private boolean casState(long state, GridDhtPartitionState toState) {
         if (cctx.shared().database().persistenceEnabled()) {
             synchronized (this) {
-                boolean update = state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
+                boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
                 if (update)
                     try {
@@ -489,7 +494,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
         }
         else
-            return state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
+            return this.state.compareAndSet(state, setPartState(state, toState));
     }
 
     /**
@@ -497,19 +502,19 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     boolean own() {
         while (true) {
-            long reservations = state.get();
+            long state = this.state.get();
 
-            int ord = (int)(reservations >> 32);
+            GridDhtPartitionState partState = getPartState(state);
 
-            if (ord == RENTING.ordinal() || ord == EVICTED.ordinal())
+            if (partState == RENTING || partState == EVICTED)
                 return false;
 
-            if (ord == OWNING.ordinal())
+            if (partState == OWNING)
                 return true;
 
-            assert ord == MOVING.ordinal() || ord == LOST.ordinal();
+            assert partState== MOVING || partState == LOST;
 
-            if (casState(reservations, OWNING)) {
+            if (casState(state, OWNING)) {
                 if (log.isDebugEnabled())
                     log.debug("Owned partition: " + this);
 
@@ -526,13 +531,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     void moving() {
         while (true) {
-            long reservations = state.get();
+            long state = this.state.get();
 
-            int ord = (int)(reservations >> 32);
+            GridDhtPartitionState partState = getPartState(state);
 
-            assert ord == OWNING.ordinal() : "Only OWNed partitions should be moved to MOVING state";
+            assert partState == OWNING : "Only OWNed partitions should be moved to MOVING state";
 
-            if (casState(reservations, MOVING)) {
+            if (casState(state, MOVING)) {
                 if (log.isDebugEnabled())
                     log.debug("Forcibly moved partition to a MOVING state: " + this);
 
@@ -546,14 +551,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     boolean markLost() {
         while (true) {
-            long reservations = state.get();
+            long state = this.state.get();
 
-            int ord = (int)(reservations >> 32);
+            GridDhtPartitionState partState = getPartState(state);
 
-            if (ord == LOST.ordinal())
+            if (partState == LOST)
                 return false;
 
-            if (casState(reservations, LOST)) {
+            if (casState(state, LOST)) {
                 if (log.isDebugEnabled())
                     log.debug("Marked partition as LOST: " + this);
 
@@ -570,16 +575,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Future to signal that this node is no longer an owner or backup.
      */
     IgniteInternalFuture<?> rent(boolean updateSeq) {
-        long reservations = state.get();
+        long state = this.state.get();
 
-        int ord = (int)(reservations >> 32);
+        GridDhtPartitionState partState = getPartState(state);
 
-        if (ord == RENTING.ordinal() || ord == EVICTED.ordinal())
+        if (partState == RENTING || partState == EVICTED)
             return rent;
 
         shouldBeRenting = true;
 
-        if ((reservations & 0xFFFF) == 0 && casState(reservations, RENTING)) {
+        if (getReservations(state) == 0 && casState(state, RENTING)) {
             shouldBeRenting = false;
 
             if (log.isDebugEnabled())
@@ -599,13 +604,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     void tryEvictAsync(boolean updateSeq) {
         assert cctx.kernalContext().state().active();
 
-        long reservations = state.get();
+        long state = this.state.get();
 
-        int ord = (int)(reservations >> 32);
+        GridDhtPartitionState partState = getPartState(state);
 
         if (isEmpty() && !QueryUtils.isEnabled(cctx.config()) &&
-            ord == RENTING.ordinal() && (reservations & 0xFFFF) == 0 && !groupReserved() &&
-            casState(reservations, EVICTED)) {
+            partState == RENTING && getReservations(state) == 0 && !groupReserved() &&
+            casState(state, EVICTED)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
@@ -709,11 +714,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @throws NodeStoppingException If node is stopping.
      */
     public void tryEvict() throws NodeStoppingException {
-        long reservations = state.get();
+        long state = this.state.get();
 
-        int ord = (int)(reservations >> 32);
+        GridDhtPartitionState partState = getPartState(state);
 
-        if (ord != RENTING.ordinal() || (reservations & 0xFFFF) != 0 || groupReserved())
+        if (partState != RENTING || getReservations(state) != 0 || groupReserved())
             return;
 
         if (addEvicting()) {
@@ -721,7 +726,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 // Attempt to evict partition entries from cache.
                 clearAll();
 
-                if (isEmpty() && casState(reservations, EVICTED)) {
+                if (isEmpty() && casState(state, EVICTED)) {
                     if (log.isDebugEnabled())
                         log.debug("Evicted partition: " + this);
                     // finishDestroy() will be initiated by clearEvicting().
@@ -963,6 +968,30 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             "reservations", reservations(),
             "empty", isEmpty(),
             "createTime", U.format(createTime));
+    }
+
+    private static GridDhtPartitionState getPartState(long state) {
+        return GridDhtPartitionState.fromOrdinal((int) (state & (0x0000000000000008L)));
+    }
+
+    private static long setPartState(long state, GridDhtPartitionState partState) {
+        return (state & (~0x0000000000000008L)) | partState.ordinal();
+    }
+
+    private static int getReservations(long state) {
+        return (int) ((state & 0x00000000FFFF0000L) >> 16);
+    }
+
+    private static long setReservations(long state, int reservations) {
+        return (state & (~0x00000000FFFF0000L)) | (reservations << 16);
+    }
+
+    private static int getSize(long state) {
+        return (int)((state & 0xFFFFFFFF00000000L) >> 32);
+    }
+
+    private static long setSize(long state, int size) {
+        return (state & (~0xFFFFFFFF00000000L)) | ((long) size << 32);
     }
 
     /**
