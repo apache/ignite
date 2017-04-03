@@ -72,7 +72,7 @@ public abstract class AbstractMatrix implements Matrix {
      */
     protected void setStorage(MatrixStorage sto) {
         assert sto != null;
-        
+
         this.sto = sto;
     }
 
@@ -205,7 +205,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         for (int y = 0; y < cols; y++) {
             double v = getX(row1, y);
-            
+
             setX(row1, y, getX(row2, y));
             setX(row2, y, v);
         }
@@ -636,7 +636,7 @@ public abstract class AbstractMatrix implements Matrix {
             if (sum > max)
                 max = sum;
         }
-        
+
         return max;
     }
 
@@ -729,7 +729,7 @@ public abstract class AbstractMatrix implements Matrix {
                 mean++;
 
         mean /= MIN_SAMPLES;
-        
+
         double iv = Z80 * Math.sqrt(pq / n);
 
         if (mean < threshold - iv)
@@ -745,13 +745,16 @@ public abstract class AbstractMatrix implements Matrix {
             double stdErr = ivX / Z80;
             double nX = Math.min(Math.max((int)Math.ceil(pq / (stdErr * stdErr)), n), MAX_SAMPLES) - n;
 
+            if(nX < 1.0) // IMPL NOTE this can happen with threshold 1.0
+                nX = 1.0;
+
             double meanNext = 0.0;
 
             for (int i = 0; i < nX; i++)
                 if (getX(rnd.nextInt(rows), rnd.nextInt(cols)) != 0.0) meanNext++;
 
             mean = (n * mean + meanNext) / (n + nX);
-            
+
             n += nX;
 
             // Are we good now?
