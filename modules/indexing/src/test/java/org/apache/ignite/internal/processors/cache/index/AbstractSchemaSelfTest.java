@@ -49,9 +49,6 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /** Cache with case sensitive field names. */
     protected static final String CACHE_NAME_SENSITIVE = "cacheSensitive";
 
-    /** Cache with field alias. */
-    protected static final String CACHE_NAME_ALIAS = "cacheAlias";
-
     /** Table name. */
     protected static final String TBL_NAME = tableName(ValueClass.class);
 
@@ -68,7 +65,13 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     protected static final String IDX_NAME_3 = "idx_3";
 
     /** Field 1. */
-    protected static final String FIELD_NAME = "field1";
+    protected static final String FIELD_NAME_1 = "field1";
+
+    /** Field 1. */
+    protected static final String FIELD_NAME_2 = "field2";
+
+    /** Field 3. */
+    protected static final String FIELD_NAME_3 = "field3";
 
     /**
      * Get type on the given node for the given cache and table name. Type must exist.
@@ -281,6 +284,14 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      */
     protected static IgniteBiTuple<String, Boolean> field(String name, boolean asc) {
         return F.t(name, asc);
+    }
+
+    /**
+     * @param fieldName Field name.
+     * @return Alias.
+     */
+    protected static String alias(String fieldName) {
+        return fieldName + "_alias";
     }
 
     /**
