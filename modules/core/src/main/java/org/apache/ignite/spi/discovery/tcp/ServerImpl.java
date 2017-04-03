@@ -6229,7 +6229,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 "[sock=" + sock + ", locNodeId=" + getLocalNodeId() +
                                 ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
                     }
-                    else {
+
+                    if (clientVer != null) {
                         if (msgLog.isDebugEnabled())
                             msgLog.debug("Sending message ack to client [sock=" + sock + ", locNodeId="
                                 + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');

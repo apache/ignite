@@ -1250,7 +1250,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             fq = fieldsQuery.GetFieldsQuery();
             Assert.AreEqual("select _T0.Name from \"\".Person as _T0", fq.Sql);
             Assert.IsFalse(fq.Local);
-            Assert.AreEqual(SqlFieldsQuery.DfltPageSize, fq.PageSize);
+            Assert.AreEqual(SqlFieldsQuery.DefaultPageSize, fq.PageSize);
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsFalse(fq.EnforceJoinOrder);
 

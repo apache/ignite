@@ -931,7 +931,7 @@ public class QueryUtils {
      * @return {@code True} if will be deserialized.
      */
     private static boolean mustDeserializeBinary(GridKernalContext ctx, Class cls) {
-        if (cls != null && ctx.config().getMarshaller() instanceof BinaryMarshaller) {
+        if (cls != null && cls != Object.class && ctx.config().getMarshaller() instanceof BinaryMarshaller) {
             CacheObjectBinaryProcessorImpl proc0 = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
             return proc0.binaryContext().mustDeserialize(cls);

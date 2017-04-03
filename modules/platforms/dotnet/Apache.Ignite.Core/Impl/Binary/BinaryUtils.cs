@@ -52,6 +52,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: object. */
         public const byte TypeObject = HdrFull;
 
+        /** Type: unregistered. */
+        public const byte TypeUnregistered = 0;
+
         /** Type: unsigned byte. */
         public const byte TypeByte = 1;
 
@@ -166,12 +169,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: Compute job wrapper. */
         public const byte TypeComputeJobWrapper = 86;
 
-        /** Type: Serializable wrapper. */
-        public const byte TypeSerializableHolder = 87;
-
-        /** Type: DateTime wrapper. */
-        public const byte TypeDateTimeHolder = 93;
-
         /** Type: action wrapper. */
         public const byte TypeComputeActionJob = 88;
 
@@ -235,8 +232,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Bindig flags for static search. */
         private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        /** Default poratble marshaller. */
-        private static readonly Marshaller Marsh = new Marshaller(null);
+        /** System marshaller. */
+        private static readonly Marshaller Marsh = new Marshaller(
+            new BinaryConfiguration {CompactFooter = false})
+        {
+            RegistrationDisabled = true
+        };
 
         /** Method: ReadArray. */
         public static readonly MethodInfo MtdhReadArray =
@@ -1265,14 +1266,31 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="val">Array.</param>
         /// <param name="ctx">Write context.</param>
-        /// <param name="elementType">Type of the array element.</param>
-        public static void WriteArray(Array val, BinaryWriter ctx, int elementType = ObjTypeId)
+        /// <param name="elemTypeId">The element type id.</param>
+        public static void WriteArray(Array val, BinaryWriter ctx, int? elemTypeId = null)
         {
             Debug.Assert(val != null && ctx != null);
 
             IBinaryStream stream = ctx.Stream;
 
-            stream.WriteInt(elementType);
+            if (elemTypeId != null && elemTypeId != TypeUnregistered)
+            {
+                stream.WriteInt(elemTypeId.Value);
+            }
+            else
+            {
+                var elemType = val.GetType().GetElementType();
+
+                var typeId = ObjTypeId;
+
+                if (elemType != typeof(object))
+                    typeId = ctx.Marshaller.GetDescriptor(elemType).TypeId;
+
+                stream.WriteInt(typeId);
+
+                if (typeId == TypeUnregistered)
+                    ctx.WriteString(elemType.FullName);
+            }
 
             stream.WriteInt(val.Length);
 
@@ -1313,7 +1331,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             var pos = stream.Position;
 
             if (typed)
-                stream.ReadInt();
+            {
+                int typeId = stream.ReadInt();
+
+                if (typeId == TypeUnregistered)
+                    ctx.ReadString();
+            }
 
             int len = stream.ReadInt();
 
@@ -1538,7 +1561,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var desc = marshaller.GetDescriptor(enumType);
 
-                return desc == null ? ObjTypeId : desc.TypeId;
+                return desc.TypeId;
             }
 
             throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
@@ -1559,10 +1582,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return TypeCaster<T>.Cast(value);
 
             // All enums are user types
-            var desc = marsh.GetDescriptor(true, typeId);
+            var desc = marsh.GetDescriptor(true, typeId, true);
 
             if (desc == null || desc.Type == null)
-                throw new BinaryObjectException("Unknown enum type id: " + typeId);
+                return TypeCaster<T>.Cast(value);
 
             return (T)Enum.ToObject(desc.Type, value);
         }
@@ -1743,7 +1766,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static int FieldId(int typeId, string fieldName, IBinaryNameMapper nameMapper,
             IBinaryIdMapper idMapper)
         {
-            Debug.Assert(typeId != 0);
             Debug.Assert(fieldName != null);
 
             fieldName = ConvertFieldName(fieldName, nameMapper);
