@@ -37,7 +37,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
 /**
  * Implementation of concurrent cache map.
  */
-public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
+public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     /** Default load factor. */
     private static final float DFLT_LOAD_FACTOR = 0.75f;
 
@@ -52,9 +52,6 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
     /** Cache context. */
     private final GridCacheContext ctx;
-
-    /** Public size counter. */
-    private final AtomicInteger pubSize = new AtomicInteger();
 
     /**
      * Creates a new, empty map with the specified initial
@@ -211,8 +208,12 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
                     topVer);
         }
 
-        if (sizeChange != 0)
-            pubSize.addAndGet(sizeChange);
+        assert Math.abs(sizeChange) <= 1;
+
+        if (sizeChange == -1)
+            decrementPublicSize(cur);
+        else if (sizeChange == 1)
+            incrementPublicSize(cur);
 
         return cur;
     }
@@ -239,21 +240,6 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     /** {@inheritDoc} */
     @Override public int size() {
         return map.size();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int publicSize() {
-        return pubSize.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void incrementPublicSize(GridCacheEntryEx e) {
-        pubSize.incrementAndGet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void decrementPublicSize(GridCacheEntryEx e) {
-        pubSize.decrementAndGet();
     }
 
     /** {@inheritDoc} */

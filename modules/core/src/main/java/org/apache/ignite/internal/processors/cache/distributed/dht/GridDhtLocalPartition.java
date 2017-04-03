@@ -512,7 +512,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (partState == OWNING)
                 return true;
 
-            assert partState== MOVING || partState == LOST;
+            assert partState == MOVING || partState == LOST;
 
             if (casState(state, OWNING)) {
                 if (log.isDebugEnabled())
@@ -608,7 +608,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         GridDhtPartitionState partState = getPartState(state);
 
-        if (isEmpty() && !QueryUtils.isEnabled(cctx.config()) &&
+        if (isEmpty() && !QueryUtils.isEnabled(cctx.config()) && getSize(state) == 0 &&
             partState == RENTING && getReservations(state) == 0 && !groupReserved() &&
             casState(state, EVICTED)) {
             if (log.isDebugEnabled())
@@ -652,7 +652,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      *
      */
     private void clearEvicting() {
-       boolean free;
+        boolean free;
 
         while (true) {
             int cnt = evictGuard.get();
@@ -726,7 +726,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 // Attempt to evict partition entries from cache.
                 clearAll();
 
-                if (isEmpty() && casState(state, EVICTED)) {
+                if (isEmpty() && getSize(state) == 0 && casState(state, EVICTED)) {
                     if (log.isDebugEnabled())
                         log.debug("Evicted partition: " + this);
                     // finishDestroy() will be initiated by clearEvicting().
@@ -808,6 +808,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         store.updateCounter(val);
     }
 
+    /**
+     * @param val Initial update index value.
+     */
     public void initialUpdateCounter(long val) {
         store.updateInitialCounter(val);
     }
@@ -970,8 +973,38 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             "createTime", U.format(createTime));
     }
 
+    /** {@inheritDoc} */
+    @Override public int publicSize() {
+        return getSize(state.get());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void incrementPublicSize(GridCacheEntryEx e) {
+        while (true) {
+            long state = this.state.get();
+
+            assert getPartState(state) != EVICTED;
+
+            if (this.state.compareAndSet(state, setSize(state, getSize(state) + 1)))
+                return;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void decrementPublicSize(GridCacheEntryEx e) {
+        while (true) {
+            long state = this.state.get();
+
+            assert getPartState(state) != EVICTED;
+            assert getSize(state) > 0;
+
+            if (this.state.compareAndSet(state, setSize(state, getSize(state) - 1)))
+                return;
+        }
+    }
+
     private static GridDhtPartitionState getPartState(long state) {
-        return GridDhtPartitionState.fromOrdinal((int) (state & (0x0000000000000007L)));
+        return GridDhtPartitionState.fromOrdinal((int)(state & (0x0000000000000007L)));
     }
 
     private static long setPartState(long state, GridDhtPartitionState partState) {
@@ -979,7 +1012,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     private static int getReservations(long state) {
-        return (int) ((state & 0x00000000FFFF0000L) >> 16);
+        return (int)((state & 0x00000000FFFF0000L) >> 16);
     }
 
     private static long setReservations(long state, int reservations) {
@@ -991,7 +1024,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     private static long setSize(long state, int size) {
-        return (state & (~0xFFFFFFFF00000000L)) | ((long) size << 32);
+        return (state & (~0xFFFFFFFF00000000L)) | ((long)size << 32);
     }
 
     /**

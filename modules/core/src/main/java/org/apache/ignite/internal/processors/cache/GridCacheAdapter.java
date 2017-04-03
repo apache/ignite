@@ -563,7 +563,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (!isLocal())
                 initSize /= ctx.affinity().partitions();
 
-            map = new GridCacheConcurrentMapImpl(ctx, entryFactory(), initSize);
+            map = new GridCacheLocalConcurrentMap(ctx, entryFactory(), initSize);
         }
     }
 
