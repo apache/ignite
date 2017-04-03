@@ -27,7 +27,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -115,10 +114,9 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception If failed.
      */
     public void testDropNoCache() throws Exception {
-        final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME));
-
         assertSchemaException(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override
+            public void run() throws Exception {
                 String cacheName = "random-cache-" + Integer.toString(ThreadLocalRandom.current().nextInt());
 
                 queryProcessor(grid(0)).dynamicIndexDrop(cacheName, "my_idx", false).get();

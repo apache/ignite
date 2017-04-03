@@ -1627,23 +1627,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     private IgniteInternalFuture<?> startIndexOperationDistributed(IndexAbstractOperation op) {
+        QueryIndexClientFuture fut = new QueryIndexClientFuture(op.id());
+
+        QueryIndexClientFuture oldFut = idxCliFuts.put(op.id(), fut);
+
+        assert oldFut == null;
+
         try {
             ctx.discovery().sendCustomEvent(new IndexProposeDiscoveryMessage(op));
 
             if (log.isDebugEnabled())
                 log.debug("Sent index propose discovery message [opId=" + op.id() + ", op=" + op + ']');
         }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(new IgniteException("Failed to start index change operation due to " +
-                "unexpected exception [space=" + op.space() + ", idxName=" + op.indexName() + ']'));
+        catch (Exception e) {
+            if (e instanceof SchemaOperationException)
+                fut.onDone(e);
+            else {
+                fut.onDone(new SchemaOperationException("Failed to start schema change operation due to " +
+                    "unexpected exception [opId=" + op.id() + ", op=" + op + ']', e));
+            }
+
+            idxCliFuts.remove(op.id());
         }
-
-        QueryIndexClientFuture fut = new QueryIndexClientFuture(op.id());
-
-        // TODO: Race with very quick response / disconnect.
-        QueryIndexClientFuture oldFut = idxCliFuts.put(op.id(), fut);
-
-        assert oldFut == null;
 
         return fut;
     }
