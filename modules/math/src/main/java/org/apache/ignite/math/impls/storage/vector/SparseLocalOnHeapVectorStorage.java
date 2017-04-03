@@ -66,24 +66,29 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         return acsMode;
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return size;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int i) {
         return sto.containsKey(i) ? sto.get(i) : 0.0;
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         sto.put(i, v);
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
         out.writeInt(acsMode);
         out.writeObject(sto);
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
@@ -91,10 +96,12 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         sto = (Map<Integer, Double>)in.readObject();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return acsMode == SEQUENTIAL_ACCESS_MODE;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return false;
     }
@@ -109,6 +116,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }
