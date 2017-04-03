@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -29,7 +31,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,11 +41,15 @@ import java.util.UUID;
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
 public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
+    /** Attribute to filter node out of cache data nodes. */
+    private static final String ATTR_FILTERED = "FILTERED";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(2);
+        for (IgniteConfiguration cfg : configurations())
+            Ignition.start(cfg);
     }
 
     /** {@inheritDoc} */
@@ -226,9 +234,82 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    /**
+     * Get node which should be used to start operations.
+     *
+     * @return If failed.
+     */
+    protected IgniteEx node() {
+        return grid(nodeIndex());
+    }
+
+    /**
+     * Get index of the node which should be used to start operations.
+     *
+     * @return If failed.
+     */
+    protected int nodeIndex() {
+        return 0;
+    }
+
+    /**
+     * Get configurations to be used in test.
+     *
+     * @return Configurations.
+     * @throws Exception If failed.
+     */
+    protected List<IgniteConfiguration> configurations() throws Exception {
+        return Arrays.asList(serverConfiguration(0), serverConfiguration(1));
+    }
+
+    /**
+     * Create server configuration.
+     *
+     * @param idx Index.
+     * @return Configuration.
+     * @throws Exception If failed.
+     */
+    protected IgniteConfiguration serverConfiguration(int idx) throws Exception {
+        return serverConfiguration(idx, false);
+    }
+
+    /**
+     * Create server configuration.
+     *
+     * @param idx Index.
+     * @param filter Whether to filter the node out of cache.
+     * @return Configuration.
+     * @throws Exception If failed.
+     */
+    protected IgniteConfiguration serverConfiguration(int idx, boolean filter) throws Exception {
+        IgniteConfiguration cfg = commonConfiguration(idx);
+
+        if (filter)
+            cfg.setUserAttributes(Collections.singletonMap(ATTR_FILTERED, true));
+
+        return cfg;
+    }
+
+    /**
+     * Create client configuration.
+     *
+     * @param idx Index.
+     * @return Configuration.
+     * @throws Exception If failed.
+     */
+    protected IgniteConfiguration clientConfiguration(int idx) throws Exception {
+        return commonConfiguration(idx).setClientMode(true);
+    }
+
+    /**
+     * Create common node configuration.
+     *
+     * @param idx Index.
+     * @return Configuration.
+     * @throws Exception If failed.
+     */
+    protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
             @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
@@ -240,7 +321,7 @@ public class DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        return cfg;
+        return optimize(cfg);
     }
 
     /**
