@@ -53,7 +53,7 @@ public class GridIoPolicy {
     public static final byte QUERY_POOL = 10;
 
     /** Pool for service proxy executions. */
-    public static final byte SERVICE_POOL = 9;
+    public static final byte SERVICE_POOL = 11;
 
     /**
      * Defines the range of reserved pools that are not available for plugins.
