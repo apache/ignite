@@ -263,13 +263,48 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 double exp = 0.0;
 
                 for (int j = 0; j < m.columnSize(); j++)
-                     exp += arr[j] * data[i][j];
+                    exp += arr[j] * data[i][j];
 
                 assertTrue("Unexpected value for " + desc + " at " + i,
                     Double.compare(times.get(i), exp) == 0);
             }
 
             testInvalidCardinality(() -> m.times(new DenseLocalOnHeapVector(m.columnSize() + 1)), desc);
+        });
+    }
+
+    /** */
+    @Test
+    public void testTimesMatrix() {
+        consumeSampleMatrix((m, desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
+            double[][] data = fillAndReturn(m);
+
+            double[] arr = fillArray(m.columnSize());
+
+            Matrix mult = new DenseLocalOnHeapMatrix(m.columnSize(), 1);
+
+            mult.setColumn(0, arr);
+
+            Matrix times = m.times(mult);
+
+            assertEquals("Unexpected rows for " + desc, times.rowSize(), m.rowSize());
+
+            assertEquals("Unexpected cols for " + desc, times.columnSize(), 1);
+
+            for (int i = 0; i < m.rowSize(); i++) {
+                double exp = 0.0;
+
+                for (int j = 0; j < m.columnSize(); j++)
+                    exp += arr[j] * data[i][j];
+
+                assertTrue("Unexpected value for " + desc + " at " + i,
+                    Double.compare(times.get(i, 0), exp) == 0);
+            }
+
+            testInvalidCardinality(() -> m.times(new DenseLocalOnHeapMatrix(m.columnSize() + 1, 1)), desc);
         });
     }
 
