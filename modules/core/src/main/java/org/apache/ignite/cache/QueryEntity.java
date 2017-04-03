@@ -230,6 +230,7 @@ public class QueryEntity implements Serializable {
      * Utility method for building query entities programmatically.
      * @param fullName Full name of the field.
      * @param cls Class of the field.
+     * @return {@code this} for chaining.
      */
     public QueryEntity addQueryField(String fullName, Class<?> cls) {
         A.notNull(fullName, "fullName");
@@ -240,6 +241,9 @@ public class QueryEntity implements Serializable {
 
     /**
      * Utility method for building query entities programmatically.
+     * @param fullName Full name of the field.
+     * @param type Type of the field.
+     * @param alias Field alias.
      * @return {@code this} for chaining.
      */
     public QueryEntity addQueryField(String fullName, String type, String alias) {
@@ -257,8 +261,9 @@ public class QueryEntity implements Serializable {
     /**
      * Utility method for building indexes programmatically.
      * @param idx Index to add.
+     * @return {@code this} for chaining.
      */
-    public void addIndex(QueryIndex idx) {
+    public QueryEntity addIndex(QueryIndex idx) {
         A.notNull(idx, "index");
 
         assert !F.isEmpty(idx.getFields()) : "Index must contain one or more fields";
@@ -273,6 +278,8 @@ public class QueryEntity implements Serializable {
             idxs.put(idx.getName(), idx);
         else
             throw new IllegalArgumentException("Duplicate index name: " + idx.getName());
+
+        return this;
     }
 
     /**
