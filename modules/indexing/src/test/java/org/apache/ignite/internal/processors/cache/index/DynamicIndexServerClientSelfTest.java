@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 /**
- * Test dynamic schema operations from non-coordinator node.
+ * Test dynamic schema operations from client node.
  */
-public class DynamicIndexServerNotCoordinatorSelfTest extends DynamicIndexAbstractSelfTest {
+public class DynamicIndexServerClientSelfTest extends DynamicIndexAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeIndex() {
-        return 1;
+        return 2;
     }
 }

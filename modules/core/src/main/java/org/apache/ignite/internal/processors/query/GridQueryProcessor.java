@@ -719,7 +719,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
 
                     for (QueryIndex entityIdx : entity.getIndexes()) {
-                        String idxName = QueryEntity.defaultIndexName(entityIdx);
+                        String idxName = QueryUtils.indexName(entityIdx);
 
                         T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.put(idxName, new T2<>(entity, entityIdx));
 

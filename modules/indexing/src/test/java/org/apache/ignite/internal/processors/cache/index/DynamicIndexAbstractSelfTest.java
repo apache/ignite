@@ -257,7 +257,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @throws Exception If failed.
      */
     protected List<IgniteConfiguration> configurations() throws Exception {
-        return Arrays.asList(serverConfiguration(0), serverConfiguration(1));
+        return Arrays.asList(serverConfiguration(0), serverConfiguration(1), clientConfiguration(2));
     }
 
     /**

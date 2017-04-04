@@ -110,6 +110,21 @@ public class QueryUtils {
     }
 
     /**
+     * Get index name.
+     *
+     * @param idx Index.
+     * @return Index name.
+     */
+    public static String indexName(QueryIndex idx) {
+        String res = idx.getName();
+
+        if (res == null)
+            res = QueryEntity.defaultIndexName(idx);
+
+        return res;
+    }
+
+    /**
      * Create type candidate for query entity.
      *
      * @param space Space.
@@ -658,10 +673,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed to build index information.
      */
     private static void processIndex(QueryIndex idx, QueryTypeDescriptorImpl d) throws IgniteCheckedException {
-        String idxName = idx.getName();
-
-        if (idxName == null)
-            idxName = QueryEntity.defaultIndexName(idx);
+        String idxName = indexName(idx);
 
         QueryIndexType idxTyp = idx.getIndexType();
 

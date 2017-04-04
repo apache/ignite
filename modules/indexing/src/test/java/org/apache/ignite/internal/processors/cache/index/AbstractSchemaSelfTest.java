@@ -17,26 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests for dynamic schema changes.
@@ -147,9 +155,56 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      */
     protected static void assertIndex(IgniteEx node, String cacheName, String tblName, String idxName,
         IgniteBiTuple<String, Boolean>... fields) {
-        QueryTypeDescriptorImpl typeDesc = typeExisting(node, cacheName, tblName);
+        assertIndexDescriptor(node, cacheName, tblName, idxName, fields);
 
-        assertIndex(typeDesc, idxName, fields);
+        if (affinityNode(node, cacheName)) {
+            QueryTypeDescriptorImpl typeDesc = typeExisting(node, cacheName, tblName);
+
+            assertIndex(typeDesc, idxName, fields);
+        }
+    }
+
+    /**
+     * Make sure index exists in cache descriptor.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param fields Fields.
+     */
+    protected static void assertIndexDescriptor(IgniteEx node, String cacheName, String tblName, String idxName,
+        IgniteBiTuple<String, Boolean>... fields) {
+        awaitCompletion();
+
+        DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
+
+        assert desc != null;
+
+        for (QueryEntity entity : desc.schema().entities()) {
+            if (F.eq(tblName, QueryUtils.tableName(entity))) {
+                for (QueryIndex idx : entity.getIndexes()) {
+                    if (F.eq(QueryUtils.indexName(idx), idxName)) {
+                        LinkedHashMap<String, Boolean> idxFields = idx.getFields();
+
+                        assertEquals(idxFields.size(), fields.length);
+
+                        int i = 0;
+
+                        for (String idxField : idxFields.keySet()) {
+                            assertEquals(idxField, fields[i].get1());
+                            assertEquals(idxFields.get(idxField), fields[i].get2());
+
+                            i++;
+                        }
+
+                        return;
+                    }
+                }
+            }
+        }
+
+        fail("Index not found [cacheName=" + cacheName + ", tlbName=" + tblName + ", idxName=" + idxName + ']');
     }
 
     /**
@@ -208,9 +263,49 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param idxName Index name.
      */
     protected static void assertNoIndex(IgniteEx node, String cacheName, String tblName, String idxName) {
-        QueryTypeDescriptorImpl typeDesc = typeExisting(node, cacheName, tblName);
+        assertNoIndexDescriptor(node, cacheName, tblName, idxName);
 
-        assertNoIndex(typeDesc, idxName);
+        if (affinityNode(node, cacheName)) {
+            QueryTypeDescriptorImpl typeDesc = typeExisting(node, cacheName, tblName);
+
+            assertNoIndex(typeDesc, idxName);
+        }
+    }
+
+    /**
+     * Assert index doesn't exist in particular node's cache descriptor.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     */
+    protected static void assertNoIndexDescriptor(IgniteEx node, String cacheName, String tblName, String idxName) {
+        awaitCompletion();
+
+        DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
+
+        if (desc == null)
+            return;
+
+        for (QueryEntity entity : desc.schema().entities()) {
+            for (QueryIndex idx : entity.getIndexes()) {
+                if (F.eq(idxName, QueryUtils.indexName(idx)))
+                    fail("Index exists: " + idxName);
+            }
+        }
+    }
+
+    /**
+     * Await completion (hopefully) of pending operations.
+     */
+    private static void awaitCompletion() {
+        try {
+            U.sleep(100);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            fail();
+        }
     }
 
     /**
@@ -221,6 +316,24 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      */
     protected static void assertNoIndex(QueryTypeDescriptorImpl typeDesc, String idxName) {
         assertNull(typeDesc.index(idxName));
+    }
+
+    /**
+     * Check whether this is affinity node for cache.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @return {@code True} if affinity node.
+     */
+    private static boolean affinityNode(IgniteEx node, String cacheName) {
+        if (node.configuration().isClientMode())
+            return false;
+
+        DynamicCacheDescriptor cacheDesc = node.context().cache().cacheDescriptor(cacheName);
+
+        IgnitePredicate<ClusterNode> filter = cacheDesc.cacheConfiguration().getNodeFilter();
+
+        return filter == null || filter.apply(node.localNode());
     }
 
     /**
