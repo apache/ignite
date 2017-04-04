@@ -45,13 +45,15 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** */
     public SparseLocalOffHeapVectorStorage(int cap){
+        assert cap > 0;
+
         gridOffHeapMap = GridOffHeapMapFactory.unsafeMap(cap / INIT_DENSITY);
         size = cap;
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return (int) gridOffHeapMap.size();
+        return size;
     }
 
     /** {@inheritDoc} */

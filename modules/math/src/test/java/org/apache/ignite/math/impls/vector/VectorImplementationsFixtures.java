@@ -37,17 +37,18 @@ import static org.junit.Assert.assertNotNull;
 class VectorImplementationsFixtures {
     /** */
     private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
-        (Supplier<Iterable<Vector>>) DenseLocalOnHeapVectorFixture::new,
-        (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
-        (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
-        (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
-        (Supplier<Iterable<Vector>>) ConstantVectorFixture::new,
-        (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new,
-        (Supplier<Iterable<Vector>>) FunctionVectorFixture::new,
-        (Supplier<Iterable<Vector>>) SingleElementVectorFixture::new,
-        (Supplier<Iterable<Vector>>) PivotedVectorViewFixture::new,
-        (Supplier<Iterable<Vector>>) SingleElementVectorViewFixture::new,
-        (Supplier<Iterable<Vector>>) MatrixVectorViewFixture::new
+//        (Supplier<Iterable<Vector>>) DenseLocalOnHeapVectorFixture::new,
+//        (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
+//        (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
+//        (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
+//        (Supplier<Iterable<Vector>>) ConstantVectorFixture::new,
+//        (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new,
+//        (Supplier<Iterable<Vector>>) FunctionVectorFixture::new,
+//        (Supplier<Iterable<Vector>>) SingleElementVectorFixture::new,
+//        (Supplier<Iterable<Vector>>) PivotedVectorViewFixture::new,
+//        (Supplier<Iterable<Vector>>) SingleElementVectorViewFixture::new,
+//        (Supplier<Iterable<Vector>>) MatrixVectorViewFixture::new,
+        (Supplier<Iterable<Vector>>) SparseLocalOffHeapVectorFixture::new
     );
 
     /** */
@@ -599,6 +600,14 @@ class VectorImplementationsFixtures {
 
             return new Double(scale).equals(that.scale)
                 && (arr != null ? Arrays.equals(arr, that.arr) : that.arr == null);
+        }
+    }
+
+    private static class SparseLocalOffHeapVectorFixture extends VectorSizesFixture{
+
+        /** */
+        SparseLocalOffHeapVectorFixture() {
+            super("SparseLocalOffHeapVector", SparseLocalOffHeapVector::new);
         }
     }
 }
