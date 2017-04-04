@@ -48,23 +48,22 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.index.IndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.index.IndexCacheVisitorImpl;
+import org.apache.ignite.internal.processors.query.index.IndexOperationCancellationToken;
+import org.apache.ignite.internal.processors.query.index.IndexOperationManager;
+import org.apache.ignite.internal.processors.query.index.IndexOperationWorker;
 import org.apache.ignite.internal.processors.query.index.SchemaKey;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationDescriptor;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
-import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
-import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
-import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
 import org.apache.ignite.internal.processors.query.index.message.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.IndexOperationCancellationToken;
-import org.apache.ignite.internal.processors.query.index.IndexOperationWorker;
-import org.apache.ignite.internal.processors.query.index.IndexOperationManager;
 import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusRequest;
 import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusResponse;
 import org.apache.ignite.internal.processors.query.index.message.IndexProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
+import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
+import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -89,12 +88,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -753,7 +754,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
                         else {
                             for (String fieldName : op0.index().getFields().keySet()) {
-                                if (!oldEntity.getFields().containsKey(fieldName)) {
+                                Set<String> oldEntityFields = new HashSet<>(oldEntity.getFields().keySet());
+
+                                for (Map.Entry<String, String> alias : oldEntity.getAliases().entrySet()) {
+                                    oldEntityFields.remove(alias.getKey());
+                                    oldEntityFields.add(alias.getValue());
+                                }
+
+                                if (!oldEntityFields.contains(fieldName)) {
                                     err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
                                         fieldName);
 
