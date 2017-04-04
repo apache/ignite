@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +40,7 @@ public class GridH2KeyValueRowOnheap extends GridH2AbstractKeyValueRow {
      * @throws IgniteCheckedException If failed.
      */
     public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val, int valType,
-                                   @Nullable byte[] ver, long expirationTime) throws IgniteCheckedException {
+                                   @Nullable GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
         super(desc, key, keyType, val, valType, ver, expirationTime);
     }
 
