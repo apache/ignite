@@ -17,10 +17,7 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import javax.cache.Cache;
 import javax.persistence.Cacheable;
 import javax.persistence.GeneratedValue;
@@ -40,6 +37,10 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistryBuilder;
+import org.hibernate.stat.SecondLevelCacheStatistics;
+import org.springframework.cglib.core.EmitUtils;
+import org.hamcrest.core.Is;
+import static org.junit.Assert.assertThat;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -54,10 +55,15 @@ import static org.hibernate.cfg.AvailableSettings.RELEASE_CONNECTIONS;
 import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 
+
 /**
  * Tests Hibernate L2 cache configuration.
  */
 public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTest {
+    /** Entity names for stats output */
+    private static final List<String> ENTITY_NAMES =
+        Arrays.asList(Entity1.class.getName(), Entity2.class.getName());
+
     /** */
     public static final String ENTITY1_NAME = Entity1.class.getName();
 
@@ -268,6 +274,164 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testEntityCacheNonStrictFails() {
+        SessionFactory sessionFactory
+            = startHibernate(getTestIgniteInstanceName(0));
+
+        try {
+            Session session = sessionFactory.openSession();
+
+            try {
+                Transaction transaction = session.beginTransaction();
+
+                session.save(new Entity1(0, "name1"));
+                session.save(new Entity2(0, "name2"));
+
+                transaction.commit();
+
+            } finally {
+                session.close();
+            }
+
+            session = sessionFactory.openSession();
+
+            try {
+                List<Entity1> list1 = session
+                    .createCriteria(ENTITY1_NAME).list();
+
+                assertThat(list1.size(),Is.is(1));
+
+                for(Entity1 e1 : list1){
+                    session.load(ENTITY1_NAME, e1.getId());
+                    System.out.println("/n/n======== Entity1 id is " + e1.getId());
+                    assertNotNull(e1.getId());
+                }
+
+                assertEquals(1, sessionFactory.getStatistics()
+                    .getSecondLevelCacheStatistics(ENTITY1_NAME).getPutCount());
+                assertEquals(0, sessionFactory.getStatistics()
+                    .getSecondLevelCacheStatistics(ENTITY2_NAME).getPutCount());
+                assertEquals(1, grid(0).cache("cache1").size());
+                assertEquals(0, grid(0).cache("cache2").size());
+
+                List<Entity2> list2 = session
+                    .createCriteria(ENTITY2_NAME).list();
+
+                assertEquals(1, list2.size());
+
+                for(Entity2 e2 : list2){
+                    session.load(ENTITY2_NAME, e2.getId());
+                    System.out.println("/n/n====== Entity2 id is " + e2.getId());
+                    assertNotNull(e2.getId());
+                }
+
+                assertEquals(1, sessionFactory.getStatistics()
+                    .getSecondLevelCacheStatistics(ENTITY1_NAME).getPutCount());
+                assertEquals(1, sessionFactory.getStatistics()
+                    .getSecondLevelCacheStatistics(ENTITY2_NAME).getPutCount());
+                assertEquals(1, grid(0).cache("cache1").size());
+                assertEquals(1, grid(0).cache("cache2").size());
+
+            } finally {
+                session.close();
+            }
+
+
+            // Updtaing
+            session = sessionFactory.openSession();
+
+            session.createCriteria(ENTITY1_NAME).list();
+
+            try {
+                Transaction tx = session.beginTransaction();
+
+                Entity1 e1 = (Entity1) session.load(Entity1.class, 0);
+
+                session.update(e1);
+
+                tx.commit();
+
+            } finally {
+                session.close();
+            }
+
+            session = sessionFactory.openSession();
+
+            assertEquals(2, sessionFactory.getStatistics()
+                .getSecondLevelCacheStatistics(ENTITY1_NAME).getPutCount());
+            assertEquals(1, sessionFactory.getStatistics()
+                .getSecondLevelCacheStatistics(ENTITY2_NAME).getPutCount());
+            assertEquals(1, grid(0).cache("cache1").size());
+            assertEquals(1, grid(0).cache("cache2").size());
+
+            session = sessionFactory.openSession();
+
+            session.createCriteria(ENTITY2_NAME).list();
+
+            try {
+                Transaction tx = session.beginTransaction();
+
+                Entity2 e2 = (Entity2) session.load(Entity2.class, 1);
+
+                e2.setName("name-1-changed");
+
+                session.update(e2);
+
+                Entity2 e3 = (Entity2) session.load(Entity2.class, 1);
+
+                session.update(e3);
+
+                e3.setName("name-1-changed");
+
+                session.update(e3);
+
+                tx.commit();
+
+            } finally {
+                session.close();
+            }
+
+            session = sessionFactory.openSession();
+
+            assertEquals(2, sessionFactory.getStatistics()
+                .getSecondLevelCacheStatistics(ENTITY1_NAME).getPutCount());
+            assertEquals(3, sessionFactory.getStatistics()
+                .getSecondLevelCacheStatistics(ENTITY2_NAME).getPutCount());
+            assertEquals(1, grid(0).cache("cache1").size());
+            assertEquals(1, grid(0).cache("cache2").size());
+
+            printStats(sessionFactory);
+
+            sessionFactory.getStatistics().logSummary();
+
+            session.close();
+
+        } finally {
+            sessionFactory.close();
+        }
+
+    }
+
+    private void printStats(SessionFactory sessionFactory) {
+        System.out.println("===  Hibernate L2 cache statistics  ====");
+
+        for (String entityName : ENTITY_NAMES) {
+            System.out.println("\tEntity: " + entityName);
+
+            SecondLevelCacheStatistics statistics =
+                sessionFactory.getStatistics().getSecondLevelCacheStatistics(entityName);
+
+            System.out.println("\t\tPuts: " + statistics.getPutCount());
+            System.out.println("\t\tHits: " + statistics.getHitCount());
+            System.out.println("\t\tMisses: " + statistics.getMissCount());
+        }
+
+        System.out.println("========================================");
+    }
+
+    /**
      *
      */
     private <K, V> Set<Cache.Entry<K, V>> toSet(Iterator<Cache.Entry<K, V>> iter){
@@ -305,6 +469,18 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         /** */
         private int id;
 
+        /** */
+        private String name;
+
+        /** */
+        public Entity1() {}
+
+        /** */
+        public Entity1(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
         /**
          * @return ID.
          */
@@ -319,6 +495,20 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
          */
         public void setId(int id) {
             this.id = id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * @param name Name.
+         */
+        public void setName(String name) {
+            this.name = name;
         }
     }
 
@@ -333,6 +523,18 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         /** */
         private int id;
 
+        /** */
+        private String name;
+
+        /** */
+        public Entity2() {}
+
+        /** */
+        public Entity2(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
         /**
          * @return ID.
          */
@@ -348,6 +550,20 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         public void setId(int id) {
             this.id = id;
         }
+
+        /**
+         * @return Name.
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * @param name Name.
+         */
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 
     /**
@@ -360,6 +576,18 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     public static class Entity3 {
         /** */
         private int id;
+
+        /** */
+        private String name;
+
+        /** */
+        public Entity3() {}
+
+        /** */
+        public Entity3(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
 
         /**
          * @return ID.
@@ -388,6 +616,17 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     public static class Entity4 {
         /** */
         private int id;
+        /** */
+        private String name;
+
+        /** */
+        public Entity4() {}
+
+        /** */
+        public Entity4(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
 
         /**
          * @return ID.
