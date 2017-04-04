@@ -232,7 +232,7 @@ public class CacheUtils {
     }
 
     /**
-     * s
+     *
      * @param cacheName
      * @param keyMapper
      * @param valMapper
@@ -240,13 +240,31 @@ public class CacheUtils {
      * @param <K>
      * @param <V>
      */
-    public static <K, V> void map(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper, IgniteFunction<Double, Double> mapper) {
+    public static <K, V> void map(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper,
+        IgniteFunction<Double, Double> mapper) {
         foreach(cacheName, (CacheEntry<K, V> ce) -> {
             K k = ce.entry().getKey();
 
             if (keyMapper.isValid(k))
                 // Actual assignment.
                 ce.cache().put(k, valMapper.fromDouble(mapper.apply(valMapper.toDouble(ce.entry().getValue()))));
+        });
+    }
+
+    /**
+     *
+     * @param cacheName
+     * @param mapper
+     */
+    public static <K, V> void sparseMap(String cacheName, IgniteFunction<Double, Double> mapper) {
+        foreach(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce) -> {
+            Integer k = ce.entry().getKey();
+            Map<Integer, Double> v = ce.entry().getValue();
+
+            for (Map.Entry<Integer, Double> e : v.entrySet())
+                e.setValue(mapper.apply(e.getValue()));
+
+            ce.cache().put(k, v);
         });
     }
 
@@ -264,7 +282,7 @@ public class CacheUtils {
 
             int partsCnt = ignite.affinity(cacheName).partitions();
 
-            // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
+            // Use affinity in filter for scan query. Otherwise we accept consumer in each node which is wrong.
             Affinity affinity = ignite.affinity(cacheName);
             ClusterNode localNode = ignite.cluster().localNode();
 

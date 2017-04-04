@@ -26,8 +26,8 @@
 
 package org.apache.ignite.math.impls.matrix;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.functions.*;
 import org.apache.ignite.math.impls.*;
 import org.apache.ignite.math.impls.storage.matrix.*;
 
@@ -36,9 +36,6 @@ import org.apache.ignite.math.impls.storage.matrix.*;
  *
  * Unlike {@link CacheMatrix} that is based on existing cache, this implementation creates distributed
  * cache internally and doesn't rely on pre-existing cache.
- *
- * To get an existing matrix of this type use {@link #locateMatrix(IgniteUuid)} and {@link #guid()} methods.
- * Note that when you create this matrix using its constructors it will create a new independent cache.
  *
  * You also need to call {@link #destroy()} to remove the underlying cache when you no longer need this
  * matrix.
@@ -69,40 +66,76 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 
     /**
      *
-     * @param guid
-     * @return
-     */
-    public static SparseDistributedMatrix locateMatrix(IgniteUuid guid) {
-        return null; // TODO
-    }
-
-    /**
-     *
      * @return
      */
     private SparseDistributedMatrixStorage storage() {
         return (SparseDistributedMatrixStorage)getStorage();
     }
 
+    /**
+     * Return the same matrix with updates values (broken contract).
+     *
+     * @param d
+     * @return
+     */
+    @Override public Matrix divide(double d) {
+        return mapOverValues((Double v) -> v / d);
+    }
+
+    /**
+     * Return the same matrix with updates values (broken contract).
+     *
+     * @param x
+     * @return
+     */
+    @Override public Matrix plus(double x) {
+        return mapOverValues((Double v) -> v + x);
+    }
+
+    /**
+     * Return the same matrix with updates values (broken contract).
+     *
+     * @param x
+     * @return
+     */
+    @Override public Matrix times(double x) {
+        return mapOverValues((Double v) -> v * x);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix assign(double val) {
+        return mapOverValues((Double v) -> val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix map(IgniteDoubleFunction<Double> fun) {
+        return mapOverValues(fun::apply);
+    }
+
+    /**
+     *
+     * @param mapper
+     * @return
+     */
+    private Matrix mapOverValues(IgniteFunction<Double, Double> mapper) {
+        CacheUtils.sparseMap(storage().cache().getName(), mapper);
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public double sum() {
-        SparseDistributedMatrixStorage sto = storage();
-
-        return CacheUtils.sparseSum(sto.cache().getName());
+        return CacheUtils.sparseSum(storage().cache().getName());
     }
 
     /** {@inheritDoc} */
     @Override public double maxValue() {
-        SparseDistributedMatrixStorage sto = storage();
-
-        return CacheUtils.sparseMax(sto.cache().getName());
+        return CacheUtils.sparseMax(storage().cache().getName());
     }
 
     /** {@inheritDoc} */
     @Override public double minValue() {
-        SparseDistributedMatrixStorage sto = storage();
-
-        return CacheUtils.sparseMin(sto.cache().getName());
+        return CacheUtils.sparseMin(storage().cache().getName());
     }
 
     /** {@inheritDoc} */

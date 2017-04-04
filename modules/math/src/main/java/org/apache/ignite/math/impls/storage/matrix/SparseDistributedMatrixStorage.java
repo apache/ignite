@@ -10,16 +10,14 @@
 package org.apache.ignite.math.impls.storage.matrix;
 
 import it.unimi.dsi.fastutil.ints.*;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.math.*;
+import org.apache.ignite.math.impls.*;
 import java.io.*;
 import java.util.*;
-import org.apache.ignite.math.StorageConstants;
-import org.apache.ignite.math.impls.CacheUtils;
-import org.apache.ignite.math.MatrixStorage;
 
 /**
  * TODO: add description.
@@ -30,9 +28,9 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /** Actual distributed storage. */
     private IgniteCache<
-            Integer /* Row or column index. */,
-            Map<Integer, Double> /* Map-based row or column. */
-        > cache = null;
+        Integer /* Row or column index. */,
+        Map<Integer, Double> /* Map-based row or column. */
+    > cache = null;
 
     /**
      *
