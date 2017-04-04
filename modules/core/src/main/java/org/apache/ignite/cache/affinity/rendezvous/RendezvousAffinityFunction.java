@@ -14,22 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
@@ -218,12 +202,14 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Sets total number of partitions.
      *
      * @param parts Total number of partitions.
+     * @return {@code this} for chaining.
      */
-    public void setPartitions(int parts) {
-        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT,
-            "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
+    public RendezvousAffinityFunction setPartitions(int parts) {
+        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
 
         this.parts = parts;
+
+        return this;
     }
 
     /**
@@ -270,10 +256,13 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param hashIdRslvr Hash ID resolver.
      *
      * @deprecated Use {@link IgniteConfiguration#setConsistentId(Serializable)} instead.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setHashIdResolver(AffinityNodeHashResolver hashIdRslvr) {
+    public RendezvousAffinityFunction setHashIdResolver(AffinityNodeHashResolver hashIdRslvr) {
         this.hashIdRslvr = hashIdRslvr;
+
+        return this;
     }
 
     /**
@@ -298,10 +287,14 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      *
      * @param backupFilter Optional backup filter.
      * @deprecated Use {@code affinityBackupFilter} instead.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+    public RendezvousAffinityFunction setBackupFilter(
+        @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
+
+        return this;
     }
 
     /**
@@ -325,9 +318,13 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param affinityBackupFilter Optional backup filter.
+     * @return {@code this} for chaining.
      */
-    public void setAffinityBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
+    public RendezvousAffinityFunction setAffinityBackupFilter(
+        @Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
         this.affinityBackupFilter = affinityBackupFilter;
+
+        return this;
     }
 
     /**
@@ -347,9 +344,12 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
+     * @return {@code this} for chaining.
      */
-    public void setExcludeNeighbors(boolean exclNeighbors) {
+    public RendezvousAffinityFunction setExcludeNeighbors(boolean exclNeighbors) {
         this.exclNeighbors = exclNeighbors;
+
+        return this;
     }
 
     /**

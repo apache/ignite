@@ -451,13 +451,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.join(statsPrinter, log);
 
         Collection<TcpDiscoveryNode> rmts = null;
+        Collection<TcpDiscoveryNode> nodes = null;
 
         if (!disconnect)
             spi.printStopInfo();
         else {
             spi.getSpiContext().deregisterPorts();
 
-            rmts = ring.visibleRemoteNodes();
+            nodes = ring.visibleNodes();
+            rmts = F.view(nodes, F.remoteNodes(locNode.id()));
         }
 
         long topVer = ring.topologyVersion();
@@ -477,7 +479,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     processed.add(n);
 
-                    List<ClusterNode> top = U.arrayList(rmts, F.notIn(processed));
+                    List<ClusterNode> top = U.arrayList(nodes, F.notIn(processed));
 
                     topVer++;
 
@@ -6227,7 +6229,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 "[sock=" + sock + ", locNodeId=" + getLocalNodeId() +
                                 ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
                     }
-                    else {
+
+                    if (clientVer != null) {
                         if (msgLog.isDebugEnabled())
                             msgLog.debug("Sending message ack to client [sock=" + sock + ", locNodeId="
                                 + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');

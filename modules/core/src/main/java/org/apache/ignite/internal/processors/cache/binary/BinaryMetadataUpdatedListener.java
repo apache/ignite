@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,35 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.binary;
 
-namespace Apache.Ignite.Core.Impl.Binary
-{
-    using System;
-    using Apache.Ignite.Core.Impl.Common;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 
-    /// <summary>
-    /// DateTime serializer.
-    /// </summary>
-    internal class DateTimeSerializer : IBinarySerializerInternal
-    {
-        /** <inheritdoc /> */
-        public void WriteBinary<T>(T obj, BinaryWriter writer)
-        {
-            TypeCaster<DateTimeHolder>.Cast(obj).WriteBinary(writer);
-        }
-
-        /** <inheritdoc /> */
-        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
-        {
-            var holder = new DateTimeHolder(reader);
-
-            return TypeCaster<T>.Cast(holder.Item);
-        }
-
-        /** <inheritdoc /> */
-        public bool SupportsHandles
-        {
-            get { return false; }
-        }
-    }
+/**
+ *  Interface allows any component to register for events of binary metadata updates.
+ */
+public interface BinaryMetadataUpdatedListener {
+    /**
+     * @param metadata Updated metadata.
+     */
+    public void binaryMetadataUpdated(BinaryMetadata metadata);
 }
