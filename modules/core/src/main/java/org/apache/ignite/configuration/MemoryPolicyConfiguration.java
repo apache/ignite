@@ -19,6 +19,8 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 
 /**
  * Configuration bean used for creating {@link MemoryPolicy} instances.
@@ -42,6 +44,18 @@ public final class MemoryPolicyConfiguration implements Serializable {
     public String getName() {
         return name;
     }
+
+    /** Algorithm for per-page eviction. If {@link DataPageEvictionMode#DISABLED} set, eviction is not performed. */
+    private DataPageEvictionMode pageEvictionMode = DataPageEvictionMode.DISABLED;
+
+    /** Allocation of new {@link DataPageIO} pages is stopped when this percentage of pages are allocated. */
+    private double evictionThreshold = 0.9;
+
+    /** Allocation of new {@link DataPageIO} pages is stopped by maintaining this amount of empty pages in
+     * corresponding {@link FreeList} bucket. Pages get into the bucket through evicting all data entries one by one.
+     * Higher load and contention require larger pool size.
+     */
+    private int emptyPagesPoolSize = 100;
 
     /**
      * @param name Unique name of MemoryPolicy.
@@ -76,5 +90,48 @@ public final class MemoryPolicyConfiguration implements Serializable {
      */
     public void setSwapFilePath(String swapFilePath) {
         this.swapFilePath = swapFilePath;
+    }
+
+
+    /**
+     *
+     */
+    public DataPageEvictionMode getPageEvictionMode() {
+        return pageEvictionMode;
+    }
+
+    /**
+     * @param evictionMode Eviction mode.
+     */
+    public void setPageEvictionMode(DataPageEvictionMode evictionMode) {
+        this.pageEvictionMode = evictionMode;
+    }
+
+    /**
+     *
+     */
+    public double getEvictionThreshold() {
+        return evictionThreshold;
+    }
+
+    /**
+     * @param evictionThreshold Eviction threshold.
+     */
+    public void setEvictionThreshold(double evictionThreshold) {
+        this.evictionThreshold = evictionThreshold;
+    }
+
+    /**
+     *
+     */
+    public int getEmptyPagesPoolSize() {
+        return emptyPagesPoolSize;
+    }
+
+    /**
+     * @param emptyPagesPoolSize Empty pages pool size.
+     */
+    public void setEmptyPagesPoolSize(int emptyPagesPoolSize) {
+        this.emptyPagesPoolSize = emptyPagesPoolSize;
     }
 }

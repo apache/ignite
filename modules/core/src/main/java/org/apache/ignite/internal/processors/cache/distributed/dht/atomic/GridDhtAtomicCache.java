@@ -1771,6 +1771,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         IgniteCacheExpiryPolicy expiry = null;
 
         try {
+            ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
+
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
             List<GridDhtCacheEntry> locked = null;
