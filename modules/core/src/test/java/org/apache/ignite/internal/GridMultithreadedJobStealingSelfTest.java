@@ -18,12 +18,18 @@
 package org.apache.ignite.internal;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,6 +46,7 @@ import org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -77,6 +84,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         final AtomicInteger stolen = new AtomicInteger(0);
         final AtomicInteger noneStolen = new AtomicInteger(0);
+        final ConcurrentHashSet nodes = new ConcurrentHashSet();
 
         int threadsNum = 10;
 
@@ -84,28 +92,13 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             /** */
             @Override public void run() {
                 try {
-                    JobStealingResult res = ignite.compute().execute(JobStealingTask.class, null);
+                    JobStealingResult res = ignite.compute().execute(new JobStealingTask(2), null);
 
                     info("Task result: " + res);
 
-                    switch(res) {
-                        case NONE_STOLEN : {
-                            noneStolen.addAndGet(2);
-                            break;
-                        }
-                        case ONE_STOLEN : {
-                            noneStolen.addAndGet(1);
-                            stolen.addAndGet(1);
-                            break;
-                        }
-                        case BOTH_STOLEN: {
-                            stolen.addAndGet(2);
-                            break;
-                        }
-                        default: {
-                            assert false : "Result is: " + res;
-                        }
-                    }
+                    stolen.addAndGet(res.stolen);
+                    noneStolen.addAndGet(res.nonStolen);
+                    nodes.addAll(res.nodes);
                 }
                 catch (IgniteException e) {
                     log.error("Failed to execute task.", e);
@@ -119,19 +112,89 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             info("Metrics [nodeId=" + g.cluster().localNode().id() +
                 ", metrics=" + g.cluster().localNode().metrics() + ']');
 
-        assert fail.get() == null : "Test failed with exception: " + fail.get();
+        assertNull("Test failed with exception: ",fail.get());
 
         // Total jobs number is threadsNum * 2
-        assert stolen.get() + noneStolen.get() == threadsNum * 2 : "Incorrect processed jobs number";
+        assertEquals("Incorrect processed jobs number",threadsNum * 2, stolen.get() + noneStolen.get());
 
-        assert stolen.get() != 0 : "No jobs were stolen.";
+        assertFalse( "No jobs were stolen.",stolen.get() == 0);
+
+        for (Ignite g : G.allGrids())
+            assertTrue("Node get no jobs.", nodes.contains(g.name()));
 
         // Under these circumstances we should not have  more than 2 jobs
         // difference.
         //(but muted to 4 due to very rare fails and low priority of fix)
-        assert Math.abs(stolen.get() - noneStolen.get()) <= 4 : "Stats [stolen=" + stolen +
-            ", noneStolen=" + noneStolen + ']';
+        assertTrue( "Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
+            Math.abs(stolen.get() - noneStolen.get()) <= 4);
     }
+
+    /**
+     * Test newly joined node can steal jobs.
+     *
+     * @throws Exception If test failed.
+     */
+    public void testJoinedNodeCanStealJobs() throws Exception {
+        final AtomicReference<Exception> fail = new AtomicReference<>(null);
+
+        final AtomicInteger stolen = new AtomicInteger(0);
+        final AtomicInteger noneStolen = new AtomicInteger(0);
+        final ConcurrentHashSet nodes = new ConcurrentHashSet();
+
+        int threadsNum = 10;
+
+        final CountDownLatch latch = new CountDownLatch(threadsNum);
+
+        final IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            /** */
+            @Override public void run() {
+                try {
+                    final IgniteCompute compute = ignite.compute().withAsync();
+
+                    compute.execute(new JobStealingTask(3), null);
+
+                    latch.countDown();
+
+                    JobStealingResult res = (JobStealingResult)compute.future().get();
+
+                    info("Task result: " + res);
+
+                    stolen.addAndGet(res.stolen);
+                    noneStolen.addAndGet(res.nonStolen);
+                    nodes.addAll(res.nodes);
+                }
+                catch (IgniteException e) {
+                    log.error("Failed to execute task.", e);
+
+                    fail.getAndSet(e);
+                }
+            }
+        }, threadsNum, "JobStealingThread");
+
+        latch.await();
+
+        startGrid(2);
+
+        for (Ignite g : G.allGrids())
+            info("Metrics [nodeId=" + g.cluster().localNode().id() +
+                ", metrics=" + g.cluster().localNode().metrics() + ']');
+
+        future.get();
+
+        assertNull("Test failed with exception: ",fail.get());
+
+        // Total jobs number is threadsNum * 3
+        assertEquals("Incorrect processed jobs number",threadsNum * 3, stolen.get() + noneStolen.get());
+
+        assertFalse( "No jobs were stolen.",stolen.get() == 0);
+
+        for (Ignite g : G.allGrids())
+            assertTrue("Node get no jobs.", nodes.contains(g.name()));
+
+        assertTrue( "Stats [stolen=" + stolen + ", noneStolen=" + noneStolen + ']',
+            Math.abs(stolen.get() - 2 * noneStolen.get()) <= 4);
+    }
+
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -166,38 +229,50 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         @LoggerResource
         private IgniteLogger log;
 
+        /** */
+        private int jobsToRun;
+
+        /** */
+        public JobStealingTask(int jobsToRun) {
+            this.jobsToRun = jobsToRun;
+        }
+
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-            @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) {
             assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             // Put all jobs onto local node.
-            for (int i = 0; i < subgrid.size(); i++)
-                map.put(new GridJobStealingJob(2000L), ignite.cluster().localNode());
+            for (int i = 0; i < jobsToRun; i++)
+                map.put(new GridJobStealingJob(3000L), ignite.cluster().localNode());
 
             return map;
         }
 
         /** {@inheritDoc} */
         @Override public JobStealingResult reduce(List<ComputeJobResult> results) {
-            assert results.size() == 2;
+            int stolen = 0;
+            int nonStolen = 0;
 
-            for (ComputeJobResult res : results)
-                log.info("Job result: " + res.getData());
+            Set<String> nodes = new HashSet<>(results.size());
 
-            Object obj0 = results.get(0).getData();
+            for (ComputeJobResult res : results) {
+                String data = res.getData();
 
-            if (obj0.equals(results.get(1).getData())) {
-                if (obj0.equals(ignite.name()))
-                    return JobStealingResult.NONE_STOLEN;
+                log.info("Job result: " + data);
 
-                return JobStealingResult.BOTH_STOLEN;
+                nodes.add(data);
+
+                if (!data.equals(ignite.name()))
+                    stolen++;
+                else
+                    nonStolen++;
             }
 
-            return JobStealingResult.ONE_STOLEN;
+            return new JobStealingResult(stolen, nonStolen, nodes);
         }
     }
 
@@ -236,14 +311,30 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
     /**
      * Job stealing result.
      */
-    private enum JobStealingResult {
+    private static class JobStealingResult {
         /** */
-        BOTH_STOLEN,
+        int stolen;
 
         /** */
-        ONE_STOLEN,
+        int nonStolen;
 
         /** */
-        NONE_STOLEN
+        Set nodes;
+
+        /** */
+        public JobStealingResult(int stolen, int nonStolen, Set nodes) {
+            this.stolen = stolen;
+            this.nonStolen = nonStolen;
+            this.nodes = nodes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "JobStealingResult{" +
+                "stolen=" + stolen +
+                ", nonStolen=" + nonStolen +
+                ", nodes=" + Arrays.toString(nodes.toArray()) +
+                '}';
+        }
     }
 }

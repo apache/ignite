@@ -92,6 +92,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JOBS_HISTORY_SIZE;
 import static org.apache.ignite.events.EventType.EVT_JOB_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_TASK_SESSION_ATTR_SET;
@@ -1043,6 +1044,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
+                        IgnitePredicate<ClusterNode> topologyPred = req.getTopologyPred();
+
+                        if(topologyPred == null)
+                            topologyPred = U.unmarshal(marsh, req.getTopologyPredBytes(), U.resolveClassLoader(ctx.config()));
+
                         // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.getSessionId(),
@@ -1051,6 +1057,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             dep,
                             req.getTaskClassName(),
                             req.topology(),
+                            topologyPred,
                             req.getStartTaskTime(),
                             endTime,
                             siblings,
@@ -1937,6 +1944,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             // since we wait for jobs to complete if processor is stopped
             // without cancellation).
             switch (evt.type()) {
+                case EVT_NODE_JOINED:
                 case EVT_NODE_LEFT:
                 case EVT_NODE_FAILED:
                     if (!jobAlwaysActivate) {
@@ -1971,7 +1979,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     handleCollisions = true;
 
                     break;
-
                 case EVT_NODE_METRICS_UPDATED:
                     // Check for less-than-equal rather than just equal
                     // in guard against topology changes.

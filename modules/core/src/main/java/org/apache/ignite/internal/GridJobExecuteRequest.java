@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -137,6 +139,12 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     private Collection<UUID> top;
 
     /** */
+    private IgnitePredicate<ClusterNode> topPred;
+
+    /** */
+    private byte[] topPredBytes;
+
+    /** */
     private int[] idsOfCaches;
 
     /** */
@@ -197,6 +205,8 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
             long startTaskTime,
             long timeout,
             @Nullable Collection<UUID> top,
+            @Nullable IgnitePredicate<ClusterNode> topPred,
+            byte[] topPredBytes,
             byte[] siblingsBytes,
             Collection<ComputeJobSibling> siblings,
             byte[] sesAttrsBytes,
@@ -216,7 +226,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
             int part,
             @Nullable AffinityTopologyVersion topVer,
             @Nullable String execName) {
-        this.top = top;
         assert sesId != null;
         assert jobId != null;
         assert taskName != null;
@@ -224,6 +233,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
         assert job != null || jobBytes != null;
         assert sesAttrs != null || sesAttrsBytes != null || !sesFullSup;
         assert jobAttrs != null || jobAttrsBytes != null;
+        assert top != null || topPred != null || topPredBytes != null;
         assert clsLdrId != null;
         assert userVer != null;
         assert depMode != null;
@@ -238,6 +248,9 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
         this.startTaskTime = startTaskTime;
         this.timeout = timeout;
         this.top = top;
+        this.topVer = topVer;
+        this.topPred = topPred;
+        this.topPredBytes = topPredBytes;
         this.siblingsBytes = siblingsBytes;
         this.siblings = siblings;
         this.sesAttrsBytes = sesAttrsBytes;
@@ -424,6 +437,21 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     @Nullable public Collection<UUID> topology() {
         return top;
     }
+
+    /**
+     * @return Topology predicate.
+     */
+    public IgnitePredicate<ClusterNode> getTopologyPred() {
+        return topPred;
+    }
+
+    /**
+     * @return Topology predicate.
+     */
+    public byte[] getTopologyPredBytes() {
+        return topPredBytes;
+    }
+
     /**
      * @return {@code True} if session attributes are enabled.
      */
@@ -634,6 +662,12 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
             case 24:
                 if (!writer.writeString("executorName", execName))
+                    return false;
+
+                writer.incrementState();
+
+            case 25:
+                if (!writer.writeByteArray("topPred", topPredBytes))
                     return false;
 
                 writer.incrementState();
@@ -849,6 +883,14 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
             case 24:
                 execName = reader.readString("executorName");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 25:
+                topPredBytes = reader.readByteArray("topPred");
 
                 if (!reader.isLastRead())
                     return false;
