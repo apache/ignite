@@ -120,6 +120,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -3560,15 +3561,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Registers MBean for cache components.
      *
-     * @param o Cache component.
+     * @param obj Cache component.
      * @param cacheName Cache name.
      * @param near Near flag.
      * @throws IgniteCheckedException If registration failed.
      */
     @SuppressWarnings("unchecked")
-    private void registerMbean(Object o, @Nullable String cacheName, boolean near)
+    private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
         throws IgniteCheckedException {
-        assert o != null;
+        assert obj != null;
 
         MBeanServer srvr = ctx.config().getMBeanServer();
 
@@ -3578,14 +3579,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheName = near ? cacheName + "-near" : cacheName;
 
-        for (Class<?> itf : o.getClass().getInterfaces()) {
+        final Object mbeanImpl = (obj instanceof IgniteMBeanAware) ? ((IgniteMBeanAware)obj).getMBean() : obj;
+
+        for (Class<?> itf : mbeanImpl.getClass().getInterfaces()) {
             if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
                 try {
-                    U.registerCacheMBean(srvr, ctx.igniteInstanceName(), cacheName, o.getClass().getName(), o,
+                    U.registerCacheMBean(srvr, ctx.igniteInstanceName(), cacheName, obj.getClass().getName(), mbeanImpl,
                         (Class<Object>)itf);
                 }
                 catch (JMException e) {
-                    throw new IgniteCheckedException("Failed to register MBean for component: " + o, e);
+                    throw new IgniteCheckedException("Failed to register MBean for component: " + obj, e);
                 }
 
                 break;
@@ -3611,16 +3614,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheName = near ? cacheName + "-near" : cacheName;
 
-        for (Class<?> itf : o.getClass().getInterfaces()) {
-            if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
-                try {
-                    srvr.unregisterMBean(U.makeCacheMBeanName(ctx.igniteInstanceName(), cacheName, o.getClass().getName()));
-                }
-                catch (JMException e) {
-                    U.error(log, "Failed to unregister MBean for component: " + o, e);
-                }
+        boolean needToUnregister = o instanceof IgniteMBeanAware;
 
-                break;
+        if (!needToUnregister) {
+            for (Class<?> itf : o.getClass().getInterfaces()) {
+                if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
+                    needToUnregister = true;
+
+                    break;
+                }
+            }
+        }
+
+        if (needToUnregister) {
+            try {
+                srvr.unregisterMBean(U.makeCacheMBeanName(ctx.igniteInstanceName(), cacheName, o.getClass().getName()));
+            }
+            catch (JMException e) {
+                U.error(log, "Failed to unregister MBean for component: " + o, e);
             }
         }
     }

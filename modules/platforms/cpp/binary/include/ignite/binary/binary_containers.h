@@ -596,7 +596,7 @@ namespace ignite
              *
              * @throw IgniteError if there is no element to read.
              */
-            void GetNext(K* key, V* val)
+            void GetNext(K& key, V& val)
             {
                 return impl->ReadElement<K, V>(id, key, val);
             }

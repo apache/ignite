@@ -537,7 +537,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // 3. Handle metadata.
                 if (metaHnd != null)
                 {
-                    IDictionary<string, int> meta = metaHnd.OnObjectWriteFinished();
+                    IDictionary<string, BinaryField> meta = metaHnd.OnObjectWriteFinished();
 
                     if (meta != null)
                         _parent._ctx.Writer.SaveMetadata(desc, meta);
@@ -675,6 +675,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                             var flags = inHeader.IsUserType
                                 ? BinaryObjectHeader.Flag.UserType
                                 : BinaryObjectHeader.Flag.None;
+
+                            if (inHeader.IsCustomDotNetType)
+                                flags |= BinaryObjectHeader.Flag.CustomDotNetType;
 
                             // Write raw data.
                             int outRawOff = outStream.Position - outStartPos;
@@ -936,14 +939,34 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryUtils.TypeArrayString:
                 case BinaryUtils.TypeArrayGuid:
                 case BinaryUtils.TypeArrayTimestamp:
-                case BinaryUtils.TypeArrayEnum:
-                case BinaryUtils.TypeArray:
                     int arrLen = inStream.ReadInt();
 
                     outStream.WriteInt(arrLen);
 
                     for (int i = 0; i < arrLen; i++)
                         Mutate0(ctx, inStream, outStream, false, null);
+
+                    break;
+
+                case BinaryUtils.TypeArrayEnum:
+                case BinaryUtils.TypeArray:
+                    int type = inStream.ReadInt();
+
+                    outStream.WriteInt(type);
+
+                    if (type == BinaryUtils.TypeUnregistered)
+                    {
+                        outStream.WriteByte(inStream.ReadByte());  // String header.
+
+                        BinaryUtils.WriteString(BinaryUtils.ReadString(inStream), outStream);  // String data.
+                    }
+
+                    arrLen = inStream.ReadInt();
+
+                    outStream.WriteInt(arrLen);
+
+                    for (int i = 0; i < arrLen; i++)
+                        Mutate0(ctx, inStream, outStream, false, EmptyVals);
 
                     break;
 

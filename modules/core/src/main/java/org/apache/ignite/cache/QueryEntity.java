@@ -103,9 +103,12 @@ public class QueryEntity implements Serializable {
      * Sets key type for this query pair.
      *
      * @param keyType Key type.
+     * @return {@code this} for chaining.
      */
-    public void setKeyType(String keyType) {
+    public QueryEntity setKeyType(String keyType) {
         this.keyType = keyType;
+
+        return this;
     }
 
     /**
@@ -121,9 +124,12 @@ public class QueryEntity implements Serializable {
      * Sets value type for this query pair.
      *
      * @param valType Value type.
+     * @return {@code this} for chaining.
      */
-    public void setValueType(String valType) {
+    public QueryEntity setValueType(String valType) {
         this.valType = valType;
+
+        return this;
     }
 
     /**
@@ -189,9 +195,12 @@ public class QueryEntity implements Serializable {
      * order of columns returned by the 'select *' queries.
      *
      * @param fields Field-to-type map.
+     * @return {@code this} for chaining.
      */
-    public void setFields(LinkedHashMap<String, String> fields) {
+    public QueryEntity setFields(LinkedHashMap<String, String> fields) {
         this.fields = fields;
+
+        return this;
     }
 
     /**
@@ -211,9 +220,12 @@ public class QueryEntity implements Serializable {
      * Thus, setting this parameter in XML is not mandatory and should be based on particular use case.
      *
      * @param keyFields Set of names of key fields.
+     * @return {@code this} for chaining.
      */
-    public void setKeyFields(Set<String> keyFields) {
+    public QueryEntity setKeyFields(Set<String> keyFields) {
         this.keyFields = keyFields;
+
+        return this;
     }
 
     /**
@@ -239,17 +251,21 @@ public class QueryEntity implements Serializable {
      * Example: {"parent.name" -> "parentName"}.
      *
      * @param aliases Aliases map.
+     * @return {@code this} for chaining.
      */
-    public void setAliases(Map<String, String> aliases) {
+    public QueryEntity setAliases(Map<String, String> aliases) {
         this.aliases = aliases;
+
+        return this;
     }
 
     /**
      * Sets a collection of index entities.
      *
      * @param idxs Collection of index entities.
+     * @return {@code this} for chaining.
      */
-    public void setIndexes(Collection<QueryIndex> idxs) {
+    public QueryEntity setIndexes(Collection<QueryIndex> idxs) {
         for (QueryIndex idx : idxs) {
             if (!F.isEmpty(idx.getFields())) {
                 if (idx.getName() == null)
@@ -264,6 +280,8 @@ public class QueryEntity implements Serializable {
                     throw new IllegalArgumentException("Duplicate index name: " + idx.getName());
             }
         }
+
+        return this;
     }
 
     /**
@@ -285,8 +303,9 @@ public class QueryEntity implements Serializable {
 
     /**
      * Utility method for building query entities programmatically.
+     * @return {@code this} for chaining.
      */
-    public void addQueryField(String fullName, String type, String alias) {
+    public QueryEntity addQueryField(String fullName, String type, String alias) {
         A.notNull(fullName, "fullName");
         A.notNull(type, "type");
 
@@ -294,6 +313,8 @@ public class QueryEntity implements Serializable {
 
         if (alias != null)
             aliases.put(fullName, alias);
+
+        return this;
     }
 
     /**

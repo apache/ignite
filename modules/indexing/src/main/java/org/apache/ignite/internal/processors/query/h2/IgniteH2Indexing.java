@@ -1654,8 +1654,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     @Override public boolean registerType(@Nullable String spaceName, GridQueryTypeDescriptor type)
         throws IgniteCheckedException {
-        if (!validateTypeDescriptor(type))
-            return false;
+        validateTypeDescriptor(type);
 
         String schemaName = schema(spaceName);
 
@@ -1683,10 +1682,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Validates properties described by query types.
      *
      * @param type Type descriptor.
-     * @return True if type is valid.
      * @throws IgniteCheckedException If validation failed.
      */
-    private boolean validateTypeDescriptor(GridQueryTypeDescriptor type)
+    private void validateTypeDescriptor(GridQueryTypeDescriptor type)
         throws IgniteCheckedException {
         assert type != null;
 
@@ -1704,8 +1702,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME) || name.equalsIgnoreCase(VER_FIELD_NAME))
                 throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
-
-        return true;
     }
 
     /**

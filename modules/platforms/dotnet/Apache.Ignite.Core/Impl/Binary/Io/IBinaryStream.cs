@@ -25,9 +25,8 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     /// <summary>
     /// Stream capable of working with binary objects.
     /// </summary>
-    [CLSCompliant(false)]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public unsafe interface IBinaryStream : IDisposable
+    internal unsafe interface IBinaryStream : IDisposable
     {
         /// <summary>
         /// Write bool.
