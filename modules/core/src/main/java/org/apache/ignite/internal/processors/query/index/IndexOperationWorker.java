@@ -87,7 +87,7 @@ public class IndexOperationWorker extends GridWorker {
 
         if (err != null)
             fut.onDone(err);
-        else if (nop)
+        else if (nop || !cacheStarted)
             fut.onDone();
 
         pubFut = publicFuture(fut);

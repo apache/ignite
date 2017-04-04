@@ -20,17 +20,20 @@ package org.apache.ignite.internal.processors.cache.index;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -238,7 +241,12 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @throws Exception If failed.
      */
     protected List<IgniteConfiguration> configurations() throws Exception {
-        return Arrays.asList(serverConfiguration(0), serverConfiguration(1), clientConfiguration(2));
+        return Arrays.asList(
+            serverConfiguration(0),
+            serverConfiguration(1),
+            clientConfiguration(2),
+            serverConfiguration(3, true)
+        );
     }
 
     /**
@@ -334,6 +342,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         ccfg.setQueryEntities(Collections.singletonList(entity));
 
+        ccfg.setNodeFilter(new NodeFilter());
+
         return ccfg;
     }
 
@@ -377,5 +387,18 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
          * @throws Exception If failed.
          */
         public void run() throws Exception;
+    }
+
+    /**
+     * Node filter.
+     */
+    private static class NodeFilter implements IgnitePredicate<ClusterNode>, Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return node.attribute(ATTR_FILTERED) == null;
+        }
     }
 }

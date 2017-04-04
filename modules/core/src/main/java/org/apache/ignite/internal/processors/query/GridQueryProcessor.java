@@ -74,6 +74,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -627,7 +628,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         boolean cacheExists = cacheDesc != null && F.eq(desc.cacheDeploymentId(), cacheDesc.deploymentId());
 
-        boolean cacheStarted = cacheExists && cacheDesc.started();
+        boolean cacheStarted = cacheExists && localAffinityNode(cacheDesc);
 
         // Validate schema state and decide whether we should proceed or not.
         IndexAbstractOperation op = schemaOp.descriptor().operation();
@@ -799,6 +800,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         schemaOp.manager(mgr);
 
         mgr.map();
+    }
+
+    /**
+     * Check if local node is affinity node for cache.
+     *
+     * @param desc Descriptor.
+     * @return {@code True) if affinity node.
+     */
+    @SuppressWarnings("unchecked")
+    private boolean localAffinityNode(DynamicCacheDescriptor desc) {
+        if (ctx.clientNode())
+            return false;
+
+        IgnitePredicate<ClusterNode> nodeFilter = desc.cacheConfiguration().getNodeFilter();
+
+        return nodeFilter == null || nodeFilter.apply(ctx.discovery().localNode());
     }
 
     /**
@@ -1155,6 +1172,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void processIndexOperationLocal(IndexAbstractOperation op, IgniteUuid depId,
         IndexOperationCancellationToken cancelTok) throws SchemaOperationException {
+        System.out.println("PROCESS INDEX OPERATION LOCAL: " + ctx.igniteInstanceName());
+
         String space = op.space();
 
         GridCacheAdapter cache = ctx.cache().internalCache(op.space());
