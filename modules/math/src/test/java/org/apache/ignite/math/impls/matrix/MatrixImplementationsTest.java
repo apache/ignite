@@ -78,10 +78,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             Matrix cp = m.copy();
             assertTrue("Incorrect copy for empty matrix " + desc, cp.equals(m));
 
-            if (ignore(m.getClass()))
-                return;
+            if (!readOnly(m))
+                fillMatrix(m);
 
-            fillMatrix(m);
             cp = m.copy();
 
             assertTrue("Incorrect copy for matrix " + desc, cp.equals(m));

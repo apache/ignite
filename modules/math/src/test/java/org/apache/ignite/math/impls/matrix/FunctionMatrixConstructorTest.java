@@ -96,5 +96,7 @@ public class FunctionMatrixConstructorTest {
         for (int row = 0; row < rows; row++)
             for (int col = 0; col < cols; col++)
                 assertEquals("Unexpected value set at " + row + "x" + col, -(row * cols + row), m.get(row, col), 0d);
+
+        assertTrue("Incorrect copy for empty matrix.", m.copy().equals(m));
     }
 }
