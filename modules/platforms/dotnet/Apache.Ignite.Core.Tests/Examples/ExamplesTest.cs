@@ -131,7 +131,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                 var proc = new IgniteProcess(args.ToArray());
 
-                Assert.IsTrue(ignite.WaitTopology(2), 
+                Assert.IsTrue(ignite.WaitTopology(2),
                     string.Format("Standalone node failed to join topology: [{0}]", proc.GetInfo()));
 
                 Assert.IsTrue(proc.Alive, string.Format("Standalone node stopped unexpectedly: [{0}]",

@@ -43,7 +43,7 @@ namespace ignite
             /**
              * Binary object header layout.
              */
-            struct IGNITE_IMPORT_EXPORT BinaryObjectHeaderLayout
+            struct BinaryObjectHeaderLayout
             {
                 int8_t  headerType;
                 int8_t  version;
@@ -230,6 +230,19 @@ namespace ignite
                 }
 
                 /**
+                 * Get footer length.
+                 *
+                 * @return Footer length.
+                 */
+                int32_t GetFooterLength() const
+                {
+                    if (!HasSchema())
+                        return 0;
+
+                    return GetLength() - GetSchemaOffset();
+                }
+
+                /**
                  * Get size of data without header and footer.
                  *
                  * @return Data length.
@@ -238,6 +251,13 @@ namespace ignite
                 {
                     return GetFooterOffset() - SIZE;
                 }
+
+                /**
+                 * Get underlying memory.
+                 *
+                 * @return Underlying memory.
+                 */
+                int8_t* GetMem();
 
             private:
                 /** Header layout */

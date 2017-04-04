@@ -148,7 +148,7 @@ namespace ignite
                 InTransactionStartOperation inOp(concurrency, isolation, timeout, txSize);
                 OutTransactionStartOperation outOp;
 
-                OutInOp(OP_START, inOp, outOp, &err);
+                OutInOp(OP_START, inOp, outOp, err);
 
                 return outOp.Get();
             }
@@ -157,7 +157,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = static_cast<int>(OutInOpLong(OP_COMMIT, id, &err));
+                int state = static_cast<int>(OutInOpLong(OP_COMMIT, id, err));
 
                 return ToTransactionState(state);
             }
@@ -166,7 +166,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = static_cast<int>(OutInOpLong(OP_ROLLBACK, id, &err));
+                int state = static_cast<int>(OutInOpLong(OP_ROLLBACK, id, err));
 
                 return ToTransactionState(state);
             }
@@ -175,7 +175,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = static_cast<int>(OutInOpLong(OP_CLOSE, id, &err));
+                int state = static_cast<int>(OutInOpLong(OP_CLOSE, id, err));
 
                 return ToTransactionState(state);
             }
@@ -184,7 +184,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                bool rollbackOnly = OutInOpLong(OP_SET_ROLLBACK_ONLY, id, &err) == 1;
+                bool rollbackOnly = OutInOpLong(OP_SET_ROLLBACK_ONLY, id, err) == 1;
 
                 return rollbackOnly;
             }
@@ -193,7 +193,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = static_cast<int>(OutInOpLong(OP_STATE, id, &err));
+                int state = static_cast<int>(OutInOpLong(OP_STATE, id, err));
 
                 return ToTransactionState(state);
             }
@@ -248,7 +248,7 @@ namespace ignite
             {
                 OutTransactionMetricsOperation op;
 
-                InOp(OP_METRICS, op, &err);
+                InOp(OP_METRICS, op, err);
 
                 if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                     return op.Get();

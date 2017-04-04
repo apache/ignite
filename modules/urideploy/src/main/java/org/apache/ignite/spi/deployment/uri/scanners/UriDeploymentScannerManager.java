@@ -31,8 +31,8 @@ import org.apache.ignite.spi.IgniteSpiThread;
  * URI deployment scanner manager.
  */
 public class UriDeploymentScannerManager implements UriDeploymentScannerContext {
-    /** Grid name. */
-    private final String gridName;
+    /** Ignite instance name. */
+    private final String igniteInstanceName;
 
     /** URI that scanner should looks after. */
     @GridToStringExclude
@@ -65,7 +65,7 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
     /**
      * Creates new scanner.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param uri URI which scanner should looks after.
      * @param deployDir Temporary deployment directory.
      * @param freq Scan frequency.
@@ -75,7 +75,7 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
      * @param scanner Scanner.
      */
     public UriDeploymentScannerManager(
-        String gridName,
+        String igniteInstanceName,
         URI uri,
         File deployDir,
         long freq,
@@ -91,7 +91,7 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
         assert lsnr != null;
         assert scanner != null;
 
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.uri = uri;
         this.deployDir = deployDir;
         this.freq = freq;
@@ -105,7 +105,7 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
      * Starts scanner.
      */
     public void start() {
-        scannerThread = new IgniteSpiThread(gridName, "grid-uri-scanner", log) {
+        scannerThread = new IgniteSpiThread(igniteInstanceName, "grid-uri-scanner", log) {
             /** {@inheritDoc} */
             @SuppressWarnings({"BusyWait"})
             @Override protected void body() throws InterruptedException  {

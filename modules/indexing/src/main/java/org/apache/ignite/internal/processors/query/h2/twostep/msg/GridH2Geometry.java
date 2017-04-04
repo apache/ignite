@@ -126,7 +126,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -21;
     }
 

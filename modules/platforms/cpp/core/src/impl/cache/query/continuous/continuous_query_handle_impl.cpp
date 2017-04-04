@@ -75,7 +75,7 @@ namespace ignite
 
                         jobject res = env.Get()->Context()->TargetOutObject(javaRef, GET_INITIAL_QUERY, &jniErr);
 
-                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                         if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                             return 0;
@@ -83,11 +83,6 @@ namespace ignite
                         extracted = true;
 
                         return new QueryCursorImpl(env, res);
-                    }
-
-                    void ContinuousQueryHandleImpl::SetQuery(SP_ContinuousQueryImplBase query)
-                    {
-                        qry = query;
                     }
                 }
             }

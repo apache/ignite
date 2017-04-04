@@ -111,6 +111,34 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(javaEx);
             Assert.IsTrue(javaEx.Message.Contains("at " + ExceptionTask));
+            Assert.AreEqual(name, javaEx.JavaMessage);
+            Assert.IsTrue(javaEx.JavaClassName.EndsWith("." + name));
+
+            // Check serialization.
+            var formatter = new BinaryFormatter();
+            using (var ms = new MemoryStream())
+            {
+                formatter.Serialize(ms, ex);
+
+                ms.Seek(0, SeekOrigin.Begin);
+
+                var res = (T) formatter.Deserialize(ms);
+
+                Assert.AreEqual(ex.Message, res.Message);
+                Assert.AreEqual(ex.Source, res.Source);
+                Assert.AreEqual(ex.StackTrace, res.StackTrace);
+                Assert.AreEqual(ex.HelpLink, res.HelpLink);
+
+                var resJavaEx = res.InnerException as JavaException;
+
+                Assert.IsNotNull(resJavaEx);
+                Assert.AreEqual(javaEx.Message, resJavaEx.Message);
+                Assert.AreEqual(javaEx.JavaClassName, resJavaEx.JavaClassName);
+                Assert.AreEqual(javaEx.JavaMessage, resJavaEx.JavaMessage);
+                Assert.AreEqual(javaEx.StackTrace, resJavaEx.StackTrace);
+                Assert.AreEqual(javaEx.Source, resJavaEx.Source);
+                Assert.AreEqual(javaEx.HelpLink, resJavaEx.HelpLink);
+            }
         }
 
         /// <summary>
@@ -393,7 +421,7 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "config\\native-client-test-cache.xml",
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                GridName = gridName,
+                IgniteInstanceName = gridName,
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]

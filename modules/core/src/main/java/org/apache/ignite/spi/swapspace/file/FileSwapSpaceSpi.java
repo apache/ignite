@@ -63,6 +63,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.swapspace.SwapContext;
@@ -140,7 +141,7 @@ import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_DATA_STORED;
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false, checkClient = false)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
-public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, FileSwapSpaceSpiMBean {
+public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     /**
      * Default base directory. Note that this path is relative to {@code IGNITE_HOME/work} folder
      * if {@code IGNITE_HOME} system or environment variable specified, otherwise it is relative to
@@ -190,8 +191,12 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     @LoggerResource
     private IgniteLogger log;
 
-    /** {@inheritDoc} */
-    @Override public String getBaseDirectory() {
+    /**
+     * Gets base directory.
+     *
+     * @return Base directory.
+     */
+    public String getBaseDirectory() {
         return baseDir;
     }
 
@@ -199,14 +204,21 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * Sets base directory.
      *
      * @param baseDir Base directory.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setBaseDirectory(String baseDir) {
+    public FileSwapSpaceSpi setBaseDirectory(String baseDir) {
         this.baseDir = baseDir;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public float getMaximumSparsity() {
+    /**
+     * See {@link #setMaximumSparsity(float)}.
+     *
+     * @return Maximum sparsity.
+     */
+    public float getMaximumSparsity() {
         return maxSparsity;
     }
 
@@ -215,13 +227,20 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * When this ratio becomes higher than specified number compacting thread starts working.
      *
      * @param maxSparsity Maximum sparsity. Must be between 0 and 1, default is {@link #DFLT_MAX_SPARSITY}.
+     * @return {@code this} for chaining.
      */
-    public void setMaximumSparsity(float maxSparsity) {
+    public FileSwapSpaceSpi setMaximumSparsity(float maxSparsity) {
         this.maxSparsity = maxSparsity;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getWriteBufferSize() {
+    /**
+     * See {@link #setWriteBufferSize(int)}.
+     *
+     * @return Write buffer size in bytes.
+     */
+    public int getWriteBufferSize() {
         return writeBufSize;
     }
 
@@ -230,13 +249,20 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * {@link #DFLT_BUF_SIZE}.
      *
      * @param writeBufSize Write buffer size in bytes.
+     * @return {@code this} for chaining.
      */
-    public void setWriteBufferSize(int writeBufSize) {
+    public FileSwapSpaceSpi setWriteBufferSize(int writeBufSize) {
         this.writeBufSize = writeBufSize;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getMaxWriteQueueSize() {
+    /**
+     * See {@link #setMaxWriteQueueSize(int)}.
+     *
+     * @return Max write queue size in bytes.
+     */
+    public int getMaxWriteQueueSize() {
         return maxWriteQueSize;
     }
 
@@ -246,13 +272,20 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * {@link #DFLT_QUE_SIZE}.
      *
      * @param maxWriteQueSize Max write queue size in bytes.
+     * @return {@code this} for chaining.
      */
-    public void setMaxWriteQueueSize(int maxWriteQueSize) {
+    public FileSwapSpaceSpi setMaxWriteQueueSize(int maxWriteQueSize) {
         this.maxWriteQueSize = maxWriteQueSize;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getReadStripesNumber() {
+    /**
+     * See {@link #setReadStripesNumber(int)}.
+     *
+     * @return Read pool size.
+     */
+    public int getReadStripesNumber() {
         return readStripesNum;
     }
 
@@ -261,16 +294,19 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
      * CPU cores available to this JVM.
      *
      * @param readStripesNum Read stripe number.
+     * @return {@code this} for chaining.
      */
-    public void setReadStripesNumber(int readStripesNum) {
+    public FileSwapSpaceSpi setReadStripesNumber(int readStripesNum) {
         A.ensure(readStripesNum == -1 || (readStripesNum & (readStripesNum - 1)) == 0,
             "readStripesNum must be positive and power of two");
 
         this.readStripesNum = readStripesNum;
+
+        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         assertParameter(!F.isEmpty(baseDir), "!F.isEmpty(baseDir)");
         assertParameter(maxSparsity >= 0 && maxSparsity < 1, "maxSparsity >= 0 && maxSparsity < 1");
         assertParameter(readStripesNum == -1 || (readStripesNum & (readStripesNum - 1)) == 0,
@@ -294,9 +330,9 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         startStopwatch();
 
-        registerMBean(gridName, this, FileSwapSpaceSpiMBean.class);
+        registerMBean(igniteInstanceName, new FileSwapSpaceSpiMBeanImpl(this), FileSwapSpaceSpiMBean.class);
 
-        String path = baseDir + File.separator + gridName + File.separator + ignite.configuration().getNodeId();
+        String path = baseDir + File.separator + igniteInstanceName + File.separator + ignite.configuration().getNodeId();
 
         try {
             dir = U.resolveWorkDirectory(ignite.configuration().getWorkDirectory(), path, true);
@@ -692,6 +728,13 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             throw new IgniteSpiException("Space name is reserved for default space: " + name);
         else if (name.contains("/") || name.contains("\\"))
             throw new IgniteSpiException("Space name contains invalid characters: " + name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public FileSwapSpaceSpi setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -1521,7 +1564,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
                         final Object mux = new Object();
 
-                        writer = new IgniteSpiThread(gridName,  "Swap writer: " + name, log) {
+                        writer = new IgniteSpiThread(igniteInstanceName,  "Swap writer: " + name, log) {
                             @Override protected void body() throws InterruptedException {
                                 while (!isInterrupted()) {
                                     SwapValues vals = que.take();
@@ -1540,7 +1583,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                             }
                         };
 
-                        compactor = new IgniteSpiThread(gridName, "Swap compactor: " + name, log) {
+                        compactor = new IgniteSpiThread(igniteInstanceName, "Swap compactor: " + name, log) {
                             @Override protected void body() throws InterruptedException {
                                 SwapFile w = null;
                                 SwapFile c = null;
@@ -1942,6 +1985,41 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                     }
                 }
             };
+        }
+    }
+
+    /**
+     * MBean implementation for LocalDeploymentSpi.
+     */
+    private class FileSwapSpaceSpiMBeanImpl extends IgniteSpiMBeanAdapter implements FileSwapSpaceSpiMBean {
+        /** {@inheritDoc} */
+        FileSwapSpaceSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getBaseDirectory() {
+            return FileSwapSpaceSpi.this.getBaseDirectory();
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getMaximumSparsity() {
+            return FileSwapSpaceSpi.this.getMaximumSparsity();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getWriteBufferSize() {
+            return FileSwapSpaceSpi.this.getWriteBufferSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxWriteQueueSize() {
+            return FileSwapSpaceSpi.this.getMaxWriteQueueSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getReadStripesNumber() {
+            return FileSwapSpaceSpi.this.getReadStripesNumber();
         }
     }
 }

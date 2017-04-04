@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.callback;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 
 /**
@@ -1117,6 +1118,34 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Stops plugin processor.
+     */
+    public void pluginProcessorStop(boolean cancel) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.PluginProcessorStop, cancel ? 1 : 0);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Notifies plugin processor about Ignite stop.
+     */
+    public void pluginProcessorIgniteStop(boolean cancel) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.PluginProcessorIgniteStop, cancel ? 1 : 0);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Redirects the console output to platform.
      *
      * @param str String to write.
@@ -1124,6 +1153,96 @@ public class PlatformCallbackGateway {
      */
     public static void consoleWrite(String str, boolean isErr) {
         PlatformCallbackUtils.consoleWrite(str, isErr);
+    }
+
+    /**
+     * Create cache plugin.
+     *
+     * @param memPtr Memory pointer.
+     * @return Pointer.
+     */
+    public long cachePluginCreate(long memPtr) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CachePluginCreate, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Notify cache plugin on ignite start.
+     *
+     * @param objPtr Object pointer.
+     */
+    public void cachePluginIgniteStart(long objPtr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.CachePluginIgniteStart, objPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Notify cache plugin on ignite start.
+     *
+     * @param objPtr Object pointer.
+     */
+    public void cachePluginIgniteStop(long objPtr, boolean cancel) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.CachePluginIgniteStop, objPtr,
+                    cancel ? 1 : 0, 0, null);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Destroy cache plugin.
+     *
+     * @param objPtr Object pointer.
+     */
+    public void cachePluginDestroy(long objPtr, boolean cancel) {
+        if (!lock.enterBusy())
+            return;  // no need to destroy plugins on grid stop
+
+        try {
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.CachePluginDestroy,
+                    objPtr, cancel ? 1 : 0, 0, null);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Invoke plugin callback by id.
+     *
+     * @param callbackId Id of a callback registered in Platform.
+     * @param outMem Out memory (Java writes, platform reads).
+     * @param inMem In memory (platform writes, Java reads).
+     */
+    public long pluginCallback(long callbackId, PlatformMemory outMem, PlatformMemory inMem) {
+        enter();
+
+        try {
+            long outPtr = outMem == null ? 0 : outMem.pointer();
+            long inPtr = inMem == null ? 0 : inMem.pointer();
+
+            return PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                    PlatformCallbackOp.PluginCallbackInLongLongOutLong, callbackId, outPtr, inPtr, null);
+        }
+        finally {
+            leave();
+        }
     }
 
     /**

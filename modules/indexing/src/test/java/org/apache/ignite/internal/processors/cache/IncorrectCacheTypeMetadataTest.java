@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -63,7 +63,7 @@ public class IncorrectCacheTypeMetadataTest extends GridCommonAbstractTest {
         }
         catch (Exception exception) {
             if (!exception.getMessage().contains(
-                GridQueryProcessor.propertyInitializationExceptionMessage(
+                QueryUtils.propertyInitializationExceptionMessage(
                     Object.class, Object.class, "exceptionOid", Object.class))) {
                 fail("property initialization exception must be thrown, but got " + exception.getMessage());
             }

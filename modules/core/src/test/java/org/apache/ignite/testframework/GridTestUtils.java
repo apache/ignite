@@ -96,6 +96,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -109,6 +111,61 @@ import org.jetbrains.annotations.Nullable;
 public final class GridTestUtils {
     /** Default busy wait sleep interval in milliseconds.  */
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
+
+
+
+    /**
+     * Hook object intervenes to discovery message handling
+     * and thus allows to make assertions or other actions like skipping certain discovery messages.
+     */
+    public static class DiscoveryHook {
+        /**
+         * @param msg Message.
+         */
+        public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+        }
+
+        /**
+         * @param ignite Ignite.
+         */
+        public void ignite(IgniteEx ignite) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Injects {@link DiscoveryHook} into handling logic.
+     */
+    public static final class DiscoverySpiListenerWrapper implements DiscoverySpiListener {
+        /** */
+        private final DiscoverySpiListener delegate;
+
+        /** */
+        private final DiscoveryHook hook;
+
+        /**
+         * @param delegate Delegate.
+         * @param hook Hook.
+         */
+        private DiscoverySpiListenerWrapper(DiscoverySpiListener delegate, DiscoveryHook hook) {
+            this.hook = hook;
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
+            hook.handleDiscoveryMessage(spiCustomMsg);
+            delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+        }
+
+        /**
+         * @param delegate Delegate.
+         * @param discoveryHook Discovery hook.
+         */
+        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoveryHook) {
+            return new DiscoverySpiListenerWrapper(delegate, discoveryHook);
+        }
+    }
 
     /** */
     private static final Map<Class<?>, String> addrs = new HashMap<>();
@@ -966,16 +1023,16 @@ public final class GridTestUtils {
      * Silent stop grid.
      * Method doesn't throw any exception.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param log Logger.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    public static void stopGrid(String gridName, IgniteLogger log) {
+    public static void stopGrid(String igniteInstanceName, IgniteLogger log) {
         try {
-            G.stop(gridName, false);
+            G.stop(igniteInstanceName, false);
         }
         catch (Throwable e) {
-            U.error(log, "Failed to stop grid: " + gridName, e);
+            U.error(log, "Failed to stop grid: " + igniteInstanceName, e);
         }
     }
 
@@ -1061,7 +1118,7 @@ public final class GridTestUtils {
                     Collection<ClusterNode> nodes = top.nodes(p, AffinityTopologyVersion.NONE);
 
                     if (nodes.size() > backups + 1) {
-                        LT.warn(log, "Partition map was not updated yet (will wait) [grid=" + g.name() +
+                        LT.warn(log, "Partition map was not updated yet (will wait) [igniteInstanceName=" + g.name() +
                             ", p=" + p + ", nodes=" + F.nodeIds(nodes) + ']');
 
                         wait = true;

@@ -63,8 +63,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -114,6 +114,12 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testParseSelectAndUnion() throws Exception {
+        checkQuery("select 1 from Person p where addrIds in ((1,2,3), (3,4,5))");
+        checkQuery("select 1 from Person p where addrId in ((1,))");
+        checkQuery("select 1 from Person p " +
+            "where p.addrId in (select a.id from Address a)");
+        checkQuery("select 1 from Person p " +
+            "where exists(select 1 from Address a where p.addrId = a.id)");
         checkQuery("select 42");
         checkQuery("select ()");
         checkQuery("select (1)");
@@ -289,7 +295,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testParseTableFilter() throws Exception {
-        Prepared prepared = parse("select Person.old, p1.old from Person, Person p1");
+        Prepared prepared = parse("select Person.old, p1.old, p1.addrId from Person, Person p1 " +
+            "where exists(select 1 from Address a where a.id = p1.addrId)");
 
         GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser(false).parse(prepared);
 
@@ -312,6 +319,21 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         // Alias in FROM must be included in column.
         assertSame(tbl2Alias, col2.expressionInFrom());
+
+        // In EXISTS we must correctly reference the column from the outer query.
+        GridSqlAst exists = select.where();
+        GridSqlSubquery subqry = exists.child();
+        GridSqlSelect subSelect = subqry.child();
+
+        GridSqlColumn p1AddrIdCol = (GridSqlColumn)select.column(2);
+
+        assertEquals("ADDRID", p1AddrIdCol.column().getName());
+        assertSame(tbl2Alias, p1AddrIdCol.expressionInFrom());
+
+        GridSqlColumn p1AddrIdColExists = subSelect.where().child(1);
+        assertEquals("ADDRID", p1AddrIdCol.column().getName());
+
+        assertSame(tbl2Alias, p1AddrIdColExists.expressionInFrom());
     }
 
     /** */
@@ -500,6 +522,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         @QuerySqlField(index = true)
         public int addrId;
+
+        @QuerySqlField
+        public Integer[] addrIds;
 
         @QuerySqlField(index = true)
         public int old;

@@ -42,7 +42,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -71,6 +70,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_EVENT;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
@@ -207,7 +207,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             lsnrsCnt += lsnrs0.size();
 
         X.println(">>>");
-        X.println(">>> Event storage manager memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Event storage manager memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  Total listeners: " + lsnrsCnt);
         X.println(">>>  Recordable events size: " + recordableEvts.length);
         X.println(">>>  User recordable events size: " + userRecordableEvts.length);
@@ -494,7 +494,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return {@code true} if this is a system hidden event.
      */
     private boolean isHiddenEvent(int type) {
-        return type == EVT_NODE_METRICS_UPDATED;
+        return type == EVT_NODE_METRICS_UPDATED || type == EVT_DISCOVERY_CUSTOM_EVT;
     }
 
     /**
@@ -507,7 +507,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return {@code true} if this is an internal event.
      */
     private boolean isInternalEvent(int type) {
-        return type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT || F.contains(EVTS_DISCOVERY_ALL, type);
+        return type == EVT_DISCOVERY_CUSTOM_EVT || F.contains(EVTS_DISCOVERY_ALL, type);
     }
 
     /**
@@ -1190,12 +1190,12 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(ctx.localNodeId()));
 
         if (locNode != null)
-            ctx.io().send(locNode, topic, msg, plc);
+            ctx.io().sendToGridTopic(locNode, topic, msg, plc);
 
         if (!rmtNodes.isEmpty()) {
             msg.responseTopicBytes(U.marshal(marsh, msg.responseTopic()));
 
-            ctx.io().send(rmtNodes, topic, msg, plc);
+            ctx.io().sendToGridTopic(rmtNodes, topic, msg, plc);
         }
     }
 
@@ -1314,7 +1314,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         res.exceptionBytes(U.marshal(marsh, res.exception()));
                     }
 
-                    ctx.io().send(node, req.responseTopic(), res, PUBLIC_POOL);
+                    ctx.io().sendToCustomTopic(node, req.responseTopic(), res, PUBLIC_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send event query response to node [node=" + nodeId + ", res=" +
