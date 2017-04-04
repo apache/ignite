@@ -1408,6 +1408,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         /** */
         public LongWrapper(long val) {
             this.val = val + 1;
+            if (this.val == 0)
+                this.val = 1;
         }
 
         /** */
