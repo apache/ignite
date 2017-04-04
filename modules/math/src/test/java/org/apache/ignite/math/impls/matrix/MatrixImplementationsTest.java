@@ -39,9 +39,6 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     /** */ private static final double DEFAULT_DELTA = 0.000000001d;
 
     /** */
-    private static final Map<Class<? extends Matrix>, Class<? extends Vector>> typesMap = typesMap();
-
-    /** */
     private void consumeSampleMatrix(BiConsumer<Matrix, String> consumer) {
         new MatrixImplementationFixtures().consumeSampleMatrix(consumer);
     }
@@ -56,18 +53,31 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testLike() {
         consumeSampleMatrix((m, desc) -> {
-            if (typesMap().containsKey(m.getClass())) {
+            Class<? extends Matrix> cls = likeMatrixType(m);
+
+            if (cls != null) {
                 Matrix like = m.like(m.rowSize(), m.columnSize());
 
-                assertEquals("Wrong \"like\" matrix for " + desc + "; Unexpected class: " + like.getClass().toString(),
-                    like.getClass(),
-                    m.getClass());
                 assertEquals("Wrong \"like\" matrix for " + desc + "; Unexpected rows.", like.rowSize(), m.rowSize());
                 assertEquals("Wrong \"like\" matrix for " + desc + "; Unexpected columns.", like.columnSize(), m.columnSize());
-                assertEquals("Wrong \"like\" matrix for " + desc + "; Unexpected storage class: " + like.getStorage().getClass().toString(),
-                    like.getStorage().getClass(),
-                    m.getStorage().getClass());
+
+                assertEquals("Wrong \"like\" matrix for " + desc
+                    + "; Unexpected class: " + like.getClass().toString(),
+                    cls,
+                    like.getClass());
+
+                return;
             }
+
+            boolean expECaught = false;
+
+            try {
+                m.like(1, 1);
+            } catch (UnsupportedOperationException uoe) {
+                expECaught = true;
+            }
+
+            assertTrue("Expected exception was not caught for " + desc, expECaught);
         });
     }
 
@@ -78,10 +88,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             Matrix cp = m.copy();
             assertTrue("Incorrect copy for empty matrix " + desc, cp.equals(m));
 
-            if (ignore(m.getClass()))
-                return;
+            if (!readOnly(m))
+                fillMatrix(m);
 
-            fillMatrix(m);
             cp = m.copy();
 
             assertTrue("Incorrect copy for matrix " + desc, cp.equals(m));
@@ -90,8 +99,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */ @Test
     public void testHaveLikeVector() throws InstantiationException, IllegalAccessException {
-        for (Class<? extends Matrix> key : typesMap.keySet()) {
-            Class<? extends Vector> val = typesMap.get(key);
+        for (Class<? extends Matrix> key : likeVectorTypesMap().keySet()) {
+            Class<? extends Vector> val = likeVectorTypesMap().get(key);
 
             if (val == null && !ignore(key))
                 System.out.println("Missing test for implementation of likeMatrix for " + key.getSimpleName());
@@ -102,12 +111,24 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testLikeVector() {
         consumeSampleMatrix((m, desc) -> {
-            if (typesMap().containsKey(m.getClass())) {
+            if (likeVectorTypesMap().containsKey(m.getClass())) {
                 Vector likeVector = m.likeVector(m.columnSize());
 
                 assertNotNull(likeVector);
                 assertEquals("Unexpected value for " + desc, likeVector.size(), m.columnSize());
+
+                return;
             }
+
+            boolean expECaught = false;
+
+            try {
+                m.likeVector(1);
+            } catch (UnsupportedOperationException uoe) {
+                expECaught = true;
+            }
+
+            assertTrue("Expected exception was not caught for " + desc, expECaught);
         });
     }
 
@@ -968,7 +989,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     /** Ignore test for given matrix type. */
     private boolean ignore(Class<? extends Matrix> clazz) {
         List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(RandomMatrix.class, PivotedMatrixView.class,
-            MatrixView.class, FunctionMatrix.class);
+            MatrixView.class, FunctionMatrix.class, TransposedMatrixView.class);
 
         for (Class<? extends Matrix> ignoredClass : ignoredClasses)
             if (ignoredClass.isAssignableFrom(clazz))
@@ -978,11 +999,37 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     }
 
     /** */
-    private static Map<Class<? extends Matrix>, Class<? extends Vector>> typesMap() {
+    private Class<? extends Matrix> likeMatrixType(Matrix m) {
+        for (Class<? extends Matrix> clazz : likeTypesMap().keySet())
+            if (clazz.isAssignableFrom(m.getClass()))
+                return likeTypesMap().get(clazz);
+
+        return null;
+    }
+
+    /** */
+    private static Map<Class<? extends Matrix>, Class<? extends Vector>> likeVectorTypesMap() {
         return new LinkedHashMap<Class<? extends Matrix>, Class<? extends Vector>>() {{
             put(DenseLocalOnHeapMatrix.class, DenseLocalOnHeapVector.class);
             put(DenseLocalOffHeapMatrix.class, DenseLocalOffHeapVector.class);
             put(RandomMatrix.class, RandomVector.class);
+            put(SparseLocalOnHeapMatrix.class, SparseLocalVector.class);
+            put(DenseLocalOnHeapMatrix.class, DenseLocalOnHeapVector.class);
+            put(DiagonalMatrix.class, DenseLocalOnHeapVector.class); // IMPL NOTE per fixture
+            // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
+        }};
+    }
+
+    /** */
+    private static Map<Class<? extends Matrix>, Class<? extends Matrix>> likeTypesMap() {
+        return new LinkedHashMap<Class<? extends Matrix>, Class<? extends Matrix>>() {{
+            put(DenseLocalOnHeapMatrix.class, DenseLocalOnHeapMatrix.class);
+            put(DenseLocalOffHeapMatrix.class, DenseLocalOffHeapMatrix.class);
+            put(RandomMatrix.class, RandomMatrix.class);
+            put(SparseLocalOnHeapMatrix.class, SparseLocalOnHeapMatrix.class);
+            put(DenseLocalOnHeapMatrix.class, DenseLocalOnHeapMatrix.class);
+            put(DiagonalMatrix.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
+            put(FunctionMatrix.class, FunctionMatrix.class);
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
         }};
     }
