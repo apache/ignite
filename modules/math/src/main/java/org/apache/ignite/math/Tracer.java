@@ -69,7 +69,7 @@ public class Tracer {
      * @param log
      * @param fmt
      */
-    static void showAscii(Vector vec, IgniteLogger log, String fmt) {
+    public static void showAscii(Vector vec, IgniteLogger log, String fmt) {
         String cls = vec.getClass().getSimpleName();
 
         log.info(String.format("%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
@@ -79,7 +79,7 @@ public class Tracer {
      *
      * @param vec
      */
-    static void showAscii(Vector vec, IgniteLogger log) {
+    public static void showAscii(Vector vec, IgniteLogger log) {
         showAscii(vec, log, "%4f");
     }
 
@@ -87,7 +87,7 @@ public class Tracer {
      *
      * @param vec
      */
-    static void showAscii(Vector vec, String fmt) {
+    public static void showAscii(Vector vec, String fmt) {
         String cls = vec.getClass().getSimpleName();
 
         System.out.println(String.format("%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
@@ -97,7 +97,7 @@ public class Tracer {
      *
      * @param mtx
      */
-    static void showAscii(Matrix mtx) {
+    public static void showAscii(Matrix mtx) {
         showAscii(mtx, "%4f");
     }
 
@@ -133,7 +133,7 @@ public class Tracer {
      * @param mtx
      * @param fmt
      */
-    static void showAscii(Matrix mtx, String fmt) {
+    public static void showAscii(Matrix mtx, String fmt) {
         String cls = mtx.getClass().getSimpleName();
 
         int rows = mtx.rowSize();
@@ -151,7 +151,7 @@ public class Tracer {
      * @param log
      * @param fmt
      */
-    static void showAscii(Matrix mtx, IgniteLogger log, String fmt) {
+    public static void showAscii(Matrix mtx, IgniteLogger log, String fmt) {
         String cls = mtx.getClass().getSimpleName();
 
         int rows = mtx.rowSize();
@@ -167,7 +167,7 @@ public class Tracer {
      *
      * @param vec
      */
-    static void showAscii(Vector vec) {
+    public static void showAscii(Vector vec) {
         showAscii(vec, "%4f");
     }
 
@@ -178,7 +178,7 @@ public class Tracer {
      * @param fmt Format to use.
      * @param filePath Path of the file to save to.
      */
-    static void saveAsCsv(Vector vec, String fmt, String filePath) throws IOException {
+    public static void saveAsCsv(Vector vec, String fmt, String filePath) throws IOException {
         String s = mkString(vec, fmt);
 
         Files.write(Paths.get(filePath),s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -191,7 +191,7 @@ public class Tracer {
      * @param fmt Format to use.
      * @param filePath Path of the file to save to.
      */
-    static void saveAsCsv(Matrix mtx, String fmt, String filePath) throws IOException {
+    public static void saveAsCsv(Matrix mtx, String fmt, String filePath) throws IOException {
         String s = mkString(mtx, fmt);
 
         Files.write(Paths.get(filePath),s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -203,7 +203,7 @@ public class Tracer {
      * @param mtx Matrix to show.
      * @throws IOException Thrown in case of any errors.
      */
-    static void showHtml(Matrix mtx) throws IOException {
+    public static void showHtml(Matrix mtx) throws IOException {
         showHtml(mtx, mkMatrixColorMapper(mtx));
     }
 
@@ -214,7 +214,7 @@ public class Tracer {
      * @param cm Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
      * @throws IOException Thrown in case of any errors.
      */
-    static void showHtml(Matrix mtx, ColorMapper cm) throws IOException {
+    public static void showHtml(Matrix mtx, ColorMapper cm) throws IOException {
         // Read it every time so that we can change it at runtime.
         String tmpl = fileToString("d3-matrix-template.html");
 
@@ -237,7 +237,7 @@ public class Tracer {
      * @param vec Vector to show.
      * @throws IOException Thrown in case of any errors.
      */
-    static void showHtml(Vector vec) throws IOException {
+    public static void showHtml(Vector vec) throws IOException {
         showHtml(vec, mkVectorColorMapper(vec));
     }
 
@@ -263,7 +263,7 @@ public class Tracer {
      * @param cm Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
      * @throws IOException Thrown in case of any errors.
      */
-    static void showHtml(Vector vec, ColorMapper cm) throws IOException {
+    public static void showHtml(Vector vec, ColorMapper cm) throws IOException {
         // Read it every time so that we can change it at runtime.
         String tmpl = fileToString("d3-vector-template.html");
 
