@@ -24,14 +24,11 @@ import java.nio.ByteBuffer;
 
 import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
 import org.apache.ignite.internal.util.offheap.GridOffHeapMapFactory;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMap;
 import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 
 /**
  * TODO:add description
- *
- * TODO: use {@link GridUnsafeMap}
  */
 public class SparseLocalOffHeapVectorStorage implements VectorStorage {
     /** Assume 10% density.*/
