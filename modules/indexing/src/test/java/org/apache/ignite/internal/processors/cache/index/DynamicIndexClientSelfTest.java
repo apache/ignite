@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.index;
 /**
  * Test dynamic schema operations from client node.
  */
-public class DynamicIndexServerClientSelfTest extends DynamicIndexAbstractSelfTest {
+public class DynamicIndexClientSelfTest extends DynamicIndexAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeIndex() {
         return 2;

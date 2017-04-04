@@ -54,9 +54,6 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /** Cache. */
     protected static final String CACHE_NAME = "cache";
 
-    /** Cache with case sensitive field names. */
-    protected static final String CACHE_NAME_SENSITIVE = "cacheSensitive";
-
     /** Table name. */
     protected static final String TBL_NAME = tableName(ValueClass.class);
 
@@ -454,64 +451,6 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
          */
         public String field1() {
             return field1;
-        }
-    }
-
-    /**
-     * Key class with two ids.
-     */
-    public static class KeyClass2 {
-        /** ID. */
-        @QuerySqlField
-        private long id;
-
-        /** Another ID. */
-        @QuerySqlField
-        private long Id;
-
-        /**
-         * Constructor.
-         *
-         * @param id ID.
-         * @param Id Another ID.
-         */
-        public KeyClass2(long id, long Id) {
-            this.id = id;
-
-            this.Id = id;
-        }
-
-        /**
-         * @return ID.
-         */
-        public long id() {
-            return id;
-        }
-
-        /**
-         * @return Another ID.
-         */
-        public long Id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            KeyClass2 keyClass2 = (KeyClass2) o;
-
-            if (id != keyClass2.id) return false;
-            return Id == keyClass2.Id;
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = (int) (id ^ (id >>> 32));
-            result = 31 * result + (int) (Id ^ (Id >>> 32));
-            return result;
         }
     }
 

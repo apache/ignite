@@ -57,16 +57,13 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         super.beforeTest();
 
         node().getOrCreateCache(cacheConfiguration());
-        node().getOrCreateCache(caseSensitiveCacheConfiguration());
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
-        assertNoIndex(CACHE_NAME_SENSITIVE, TBL_NAME, IDX_NAME);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         node().destroyCache(CACHE_NAME);
-        node().destroyCache(CACHE_NAME_SENSITIVE);
 
         super.afterTest();
     }
@@ -170,22 +167,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(alias(FIELD_NAME_2)));
-    }
-
-    /**
-     * Test simple index create with schema case sensitivity considered.
-     *
-     * @throws Exception If failed.
-     */
-    // TODO: What is that?
-    public void testCreateCaseSensitive() throws Exception {
-        QueryIndex idx = index(IDX_NAME, field("Id"), field(FIELD_NAME_1), field("id", true));
-
-        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME_SENSITIVE, TBL_NAME, idx, false).get();
-        assertIndex(CACHE_NAME_SENSITIVE, TBL_NAME, IDX_NAME, field("Id"), field(FIELD_NAME_1), field("id", true));
-
-        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME_SENSITIVE, TBL_NAME, idx, true).get();
-        assertIndex(CACHE_NAME_SENSITIVE, TBL_NAME, IDX_NAME, field("Id"), field(FIELD_NAME_1), field("id", true));
     }
 
     /**
@@ -354,16 +335,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         ccfg.setQueryEntities(Collections.singletonList(entity));
 
         return ccfg;
-    }
-
-    /**
-     * @return Default cache configuration.
-     */
-    private CacheConfiguration caseSensitiveCacheConfiguration() {
-        return new CacheConfiguration<KeyClass2, ValueClass>()
-            .setName(CACHE_NAME_SENSITIVE)
-            .setSqlEscapeAll(true)
-            .setIndexedTypes(KeyClass2.class, ValueClass.class);
     }
 
     /**

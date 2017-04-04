@@ -420,7 +420,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         IgniteFuture reconnFut = null;
 
-        try {
+        try {   
             node2.cache(CACHE_NAME);
 
             fail();
