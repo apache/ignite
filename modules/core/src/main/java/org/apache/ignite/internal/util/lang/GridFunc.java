@@ -53,8 +53,8 @@ import org.apache.ignite.internal.util.lang.gridfunc.AtomicBooleanFactoryCallabl
 import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.AtomicLongFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.AtomicReferenceFactoryCallable;
-import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetKeyClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetId8Closure;
 import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
@@ -91,6 +91,7 @@ import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
 import org.apache.ignite.internal.util.lang.gridfunc.PredicateSetView;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
+import org.apache.ignite.internal.util.lang.gridfunc.RunnableWrapperClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.SetFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.StringConcatReducer;
 import org.apache.ignite.internal.util.lang.gridfunc.ToStringClosure;
@@ -967,6 +968,17 @@ public class GridFunc {
      */
     public static <T> Iterator<T> flatIterators(@Nullable final Iterable<Iterator<T>> c) {
         return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<T>(c);
+    }
+
+    /**
+     * Converts given runnable to an absolute closure.
+     *
+     * @param r Runnable to convert to closure. If {@code null} - no-op closure is returned.
+     * @return Closure that wraps given runnable. Note that wrapping closure always returns {@code null}.
+     */
+    @Deprecated
+    public static GridAbsClosure as(@Nullable final Runnable r) {
+        return new RunnableWrapperClosure(r);
     }
 
     /**
