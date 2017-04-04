@@ -968,7 +968,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     /** Ignore test for given matrix type. */
     private boolean ignore(Class<? extends Matrix> clazz) {
         List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(RandomMatrix.class, PivotedMatrixView.class,
-            MatrixView.class, FunctionMatrix.class);
+            MatrixView.class, FunctionMatrix.class, TransposedMatrixView.class);
 
         for (Class<? extends Matrix> ignoredClass : ignoredClasses)
             if (ignoredClass.isAssignableFrom(clazz))

@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.matrix.MatrixDelegateStorage;
@@ -35,29 +36,40 @@ public class TransposedMatrixView extends AbstractMatrix {
      *
      */
     public TransposedMatrixView(Matrix mtx){
-        assert mtx != null;
+        this(mtx == null ? null : mtx.getStorage());
+    }
 
-        setStorage(new MatrixDelegateStorage(mtx.getStorage(), 0, 0, mtx.rowSize(), mtx.columnSize()));
+    /** */
+    private TransposedMatrixView(MatrixStorage sto){
+        super(new MatrixDelegateStorage(sto, 0, 0,
+            sto == null ? 0 : sto.rowSize(), sto == null ? 0 : sto.columnSize()));
     }
 
     /** {@inheritDoc} */
-    @Override public double get(int row, int col) {
-        return super.get(col, row);
+    @Override protected void storageSet(int row, int col, double v) {
+        super.storageSet(col, row, v);
     }
 
     /** {@inheritDoc} */
-    @Override public double getX(int row, int col) {
-        return super.getX(col, row);
+    @Override protected double storageGet(int row, int col) {
+        return super.storageGet(col, row);
     }
 
     /** {@inheritDoc} */
     @Override public int rowSize() {
-        return super.columnSize();
+        return getStorage().columnSize();
     }
 
     /** {@inheritDoc} */
     @Override public int columnSize() {
-        return super.rowSize();
+        return getStorage().rowSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix copy() {
+        MatrixDelegateStorage sto = (MatrixDelegateStorage)getStorage();
+
+        return new TransposedMatrixView(sto.delegate());
     }
 
     /** {@inheritDoc} */
