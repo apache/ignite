@@ -20,8 +20,13 @@ package org.apache.ignite.math.impls.storage.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+
+import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMapFactory;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMap;
 import org.apache.ignite.math.VectorStorage;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 
 /**
  * TODO:add description
@@ -29,29 +34,48 @@ import org.apache.ignite.math.VectorStorage;
  * TODO: use {@link GridUnsafeMap}
  */
 public class SparseLocalOffHeapVectorStorage implements VectorStorage {
+    /** Assume 10% density.*/
+    private static final int INIT_DENSITY = 10;
+    /** Storage capacity. */
+    private int size;
+    /** Local off heap map.*/
+    private GridOffHeapMap gridOffHeapMap;
+
+    /** */
+    public SparseLocalOffHeapVectorStorage(){
+        //No-op.
+    }
+
+    /** */
+    public SparseLocalOffHeapVectorStorage(int cap){
+        gridOffHeapMap = GridOffHeapMapFactory.unsafeMap(cap / INIT_DENSITY);
+        size = cap;
+    }
+
     /** {@inheritDoc} */
     @Override public int size() {
-        return 0;
+        return (int) gridOffHeapMap.size();
     }
 
     /** {@inheritDoc} */
     @Override public double get(int i) {
-        return 0;
+        byte[] bytes = gridOffHeapMap.get(hash(i), intToByteArray(i));
+        return bytes == null ? 0 : ByteBuffer.wrap(bytes).getDouble();
     }
 
     /** {@inheritDoc} */
     @Override public void set(int i, double v) {
-
+        gridOffHeapMap.put(hash(i), intToByteArray(i), doubleToByteArray(v));
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-
+        throw new UnsupportedOperationException(); // TODO: add externalization support.
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -61,7 +85,7 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public boolean isRandomAccess() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -77,5 +101,44 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public boolean isDistributed() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy() {
+        gridOffHeapMap.destruct();
+    }
+
+    private int hash(int h){
+        // Apply base step of MurmurHash; see http://code.google.com/p/smhasher/
+        // Despite two multiplies, this is often faster than others
+        // with comparable bit-spread properties.
+        h ^= h >>> 16;
+        h *= 0x85ebca6b;
+        h ^= h >>> 13;
+        h *= 0xc2b2ae35;
+
+        return (h >>> 16) ^ h;
+    }
+
+    private byte[] intToByteArray(int value) {
+        return new byte[] {
+                (byte)(value >>> 24),
+                (byte)(value >>> 16),
+                (byte)(value >>> 8),
+                (byte)value};
+    }
+
+    private byte[] doubleToByteArray(double value){
+        long l = Double.doubleToRawLongBits(value);
+        return new byte[] {
+                (byte)((l >> 56) & 0xff),
+                (byte)((l >> 48) & 0xff),
+                (byte)((l >> 40) & 0xff),
+                (byte)((l >> 32) & 0xff),
+                (byte)((l >> 24) & 0xff),
+                (byte)((l >> 16) & 0xff),
+                (byte)((l >> 8) & 0xff),
+                (byte)((l) & 0xff),
+        };
     }
 }
