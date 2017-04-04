@@ -43,7 +43,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     private void consumeSampleMatrix(BiConsumer<Matrix, String> consumer) {
-        new MatrixImplementationFixtures().consumeSampleMatrix(null, consumer);
+        new MatrixImplementationFixtures().consumeSampleMatrix(consumer);
     }
 
     /** */
@@ -353,6 +353,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (m.rowSize() != m.columnSize())
                 return;
 
+            if (ignore(m.getClass()))
+                return;
+
             double[][] doubles = fillIntAndReturn(m);
 
             if (m.rowSize() == 1) {
@@ -370,9 +373,6 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             if (m.rowSize() > 512)
                 return; // IMPL NOTE if row size >= 30000 it takes unacceptably long for normal test run.
-
-            if (ignore(m.getClass()))
-                return;
 
             Matrix diagMtx = m.like(m.rowSize(), m.columnSize());
 
@@ -438,10 +438,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testViewRow() {
         consumeSampleMatrix((m, desc) -> {
-            if (ignore(m.getClass()))
-                return;
-
-            fillMatrix(m);
+            if (!readOnly(m))
+                fillMatrix(m);
 
             for (int i = 0; i < m.rowSize(); i++) {
                 Vector vector = m.viewRow(i);
@@ -458,10 +456,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testViewCol() {
         consumeSampleMatrix((m, desc) -> {
-            if (ignore(m.getClass()))
-                return;
-
-            fillMatrix(m);
+            if (!readOnly(m))
+                fillMatrix(m);
 
             for (int i = 0; i < m.columnSize(); i++) {
                 Vector vector = m.viewColumn(i);
@@ -957,17 +953,14 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** Ignore test for given matrix type. */
     private boolean ignore(Class<? extends Matrix> clazz) {
-        boolean isIgnored = false;
-        List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(RandomMatrix.class, PivotedMatrixView.class);
+        List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(RandomMatrix.class, PivotedMatrixView.class,
+            MatrixView.class);
 
-        for (Class<? extends Matrix> ignoredClass : ignoredClasses) {
-            if (ignoredClass.isAssignableFrom(clazz)) {
-                isIgnored = true;
-                break;
-            }
-        }
+        for (Class<? extends Matrix> ignoredClass : ignoredClasses)
+            if (ignoredClass.isAssignableFrom(clazz))
+                return true;
 
-        return isIgnored;
+        return false;
     }
 
     /** */

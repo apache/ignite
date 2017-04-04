@@ -69,6 +69,13 @@ public class PivotedMatrixViewConstructorTest {
 
         assertEquals("Row unpivot value in view.", 0, view.rowUnpivot(0));
         assertEquals("Col unpivot value in view.", 0, view.columnUnpivot(0));
+
+        Matrix swap = view.swap(1, 1);
+
+        for (int row = 0; row < view.rowSize(); row++)
+            for (int col = 0; col < view.columnSize(); col++)
+                assertEquals("Unexpected swap value set at (" + row + "," + col + ")",
+                    view.get(row, col), swap.get(row, col), 0d);
     }
 
     /** */ @Test

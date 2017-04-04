@@ -19,6 +19,7 @@ package org.apache.ignite.math.impls.matrix;
 
 import java.util.function.BiFunction;
 import org.apache.ignite.math.Matrix;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -27,25 +28,23 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 /** */
-public class MatrixImplementationFixtures {
+class MatrixImplementationFixtures {
     /** */
     private static final List<Supplier<Iterable<Matrix>>> suppliers = Arrays.asList(
         (Supplier<Iterable<Matrix>>)DenseLocalOnHeapMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)DenseLocalOffHeapMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)RandomMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)SparseLocalOnHeapMatrixFixture::new,
-        (Supplier<Iterable<Matrix>>)PivotedMatrixViewFixture::new
+        (Supplier<Iterable<Matrix>>)PivotedMatrixViewFixture::new,
+        (Supplier<Iterable<Matrix>>)MatrixViewFixture::new
     );
 
     /** */
-    void consumeSampleMatrix(BiConsumer<Integer, Integer> paramsConsumer, BiConsumer<Matrix, String> consumer){
+    void consumeSampleMatrix(BiConsumer<Matrix, String> consumer){
         for (Supplier<Iterable<Matrix>> fixtureSupplier : suppliers) {
             final Iterable<Matrix> fixture = fixtureSupplier.get();
 
             for (Matrix matrix : fixture) {
-                if (paramsConsumer != null)
-                    paramsConsumer.accept(matrix.rowSize(), matrix.columnSize());
-
                 consumer.accept(matrix, fixture.toString());
 
                 matrix.destroy();
@@ -86,19 +85,22 @@ public class MatrixImplementationFixtures {
     }
 
     /** */
-    private static class PivotedMatrixViewFixture extends MatrixSizeIterator{
+    private static class PivotedMatrixViewFixture extends MatrixSizeIterator {
         /** */
         PivotedMatrixViewFixture() {
             super(DenseLocalOnHeapMatrix::new, "PivotedMatrixView over DenseLocalOnHeapMatrix");
         }
 
-        /** */
+        /** {@inheritDoc} */
+        @NotNull
         @Override public Iterator<Matrix> iterator() {
             return new Iterator<Matrix>() {
+                /** {@inheritDoc} */
                 @Override public boolean hasNext() {
                     return hasNextCol(getSizeIdx()) && hasNextRow(getSizeIdx());
                 }
 
+                /** {@inheritDoc} */
                 @Override public Matrix next() {
                     Matrix matrix = getConstructor().apply(getRow(getSizeIdx()), getCol(getSizeIdx()));
 
@@ -111,12 +113,45 @@ public class MatrixImplementationFixtures {
     }
 
     /** */
-    private static class MatrixSizeIterator implements Iterable<Matrix>{
+    private static class MatrixViewFixture extends MatrixSizeIterator {
+        /** */
+        MatrixViewFixture() {
+            super(DenseLocalOnHeapMatrix::new, "MatrixView over DenseLocalOnHeapMatrix");
+        }
+
+        /** {@inheritDoc} */
+        @NotNull
+        @Override public Iterator<Matrix> iterator() {
+            return new Iterator<Matrix>() {
+                /** {@inheritDoc} */
+                @Override public boolean hasNext() {
+                    return hasNextCol(getSizeIdx()) && hasNextRow(getSizeIdx());
+                }
+
+                /** {@inheritDoc} */
+                @Override public Matrix next() {
+                    Matrix matrix = getConstructor().apply(getRow(getSizeIdx()), getCol(getSizeIdx()));
+
+                    nextIdx();
+
+                    return new MatrixView(matrix, 0, 0, matrix.rowSize(), matrix.columnSize());
+                }
+            };
+        }
+    }
+
+    /** */
+    private static class MatrixSizeIterator implements Iterable<Matrix> {
+        /** */
         private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
+        /** */
         private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
+        /** */
         private int sizeIdx = 0;
 
+        /** */
         private BiFunction<Integer, Integer, ? extends Matrix> constructor;
+        /** */
         private String desc;
 
         /** */
@@ -160,13 +195,16 @@ public class MatrixImplementationFixtures {
             return cols[idx];
         }
 
-        /** */
+        /** {@inheritDoc} */
+        @NotNull
         @Override public Iterator<Matrix> iterator() {
             return new Iterator<Matrix>() {
+                /** {@inheritDoc} */
                 @Override public boolean hasNext() {
                     return hasNextCol(sizeIdx) && hasNextRow(sizeIdx);
                 }
 
+                /** {@inheritDoc} */
                 @Override public Matrix next() {
                     Matrix matrix = constructor.apply(rows[sizeIdx], cols[sizeIdx]);
 
