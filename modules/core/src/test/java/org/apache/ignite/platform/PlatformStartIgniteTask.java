@@ -70,8 +70,6 @@ public class PlatformStartIgniteTask extends ComputeTaskAdapter<String, String> 
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
-            System.out.println("PlatformStartIgniteJob: " + springConfig);
-
             Ignite ignite = Ignition.start(springConfig);
 
             return ignite.name();
