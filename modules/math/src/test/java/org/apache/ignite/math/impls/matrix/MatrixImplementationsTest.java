@@ -78,10 +78,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             Matrix cp = m.copy();
             assertTrue("Incorrect copy for empty matrix " + desc, cp.equals(m));
 
-            if (ignore(m.getClass()))
-                return;
+            if (!readOnly(m))
+                fillMatrix(m);
 
-            fillMatrix(m);
             cp = m.copy();
 
             assertTrue("Incorrect copy for matrix " + desc, cp.equals(m));
@@ -968,7 +967,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     /** Ignore test for given matrix type. */
     private boolean ignore(Class<? extends Matrix> clazz) {
         List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(RandomMatrix.class, PivotedMatrixView.class,
-            MatrixView.class, FunctionMatrix.class);
+            MatrixView.class, FunctionMatrix.class, TransposedMatrixView.class);
 
         for (Class<? extends Matrix> ignoredClass : ignoredClasses)
             if (ignoredClass.isAssignableFrom(clazz))

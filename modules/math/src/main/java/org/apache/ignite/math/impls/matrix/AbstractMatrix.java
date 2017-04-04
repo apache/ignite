@@ -105,8 +105,8 @@ public abstract class AbstractMatrix implements Matrix {
             double max = Double.NEGATIVE_INFINITY;
             int row = 0, col = 0;
 
-            int rows = sto.rowSize();
-            int cols = sto.columnSize();
+            int rows = rowSize();
+            int cols = columnSize();
 
             for (int x = 0; x < rows; x++)
                 for (int y = 0; y < cols; y++) {
@@ -131,8 +131,8 @@ public abstract class AbstractMatrix implements Matrix {
             double min = Double.MAX_VALUE;
             int row = 0, col = 0;
 
-            int rows = sto.rowSize();
-            int cols = sto.columnSize();
+            int rows = rowSize();
+            int cols = columnSize();
 
             for (int x = 0; x < rows; x++)
                 for (int y = 0; y < cols; y++) {
@@ -266,7 +266,7 @@ public abstract class AbstractMatrix implements Matrix {
      * @param row Row index.
      */
     private void checkRowIndex(int row) {
-        if (row < 0 || row >= sto.rowSize())
+        if (row < 0 || row >= rowSize())
             throw new RowIndexException(row);
     }
 
@@ -276,7 +276,7 @@ public abstract class AbstractMatrix implements Matrix {
      * @param col Column index.
      */
     private void checkColumnIndex(int col) {
-        if (col < 0 || col >= sto.columnSize())
+        if (col < 0 || col >= columnSize())
             throw new ColumnIndexException(col);
     }
 
@@ -286,7 +286,7 @@ public abstract class AbstractMatrix implements Matrix {
      * @param row Row index.
      * @param col Column index.
      */
-    private void checkIndex(int row, int col) {
+    protected void checkIndex(int row, int col) {
         checkRowIndex(row);
         checkColumnIndex(col);
     }
@@ -317,8 +317,8 @@ public abstract class AbstractMatrix implements Matrix {
             for (double[] column : sto.data())
                 Arrays.fill(column, val);
         else {
-            int rows = sto.rowSize();
-            int cols = sto.columnSize();
+            int rows = rowSize();
+            int cols = columnSize();
 
             for (int x = 0; x < rows; x++)
                 for (int y = 0; y < cols; y++)
@@ -330,8 +330,8 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public Matrix assign(IntIntToDoubleFunction fun) {
-        int rows = sto.rowSize();
-        int cols = sto.columnSize();
+        int rows = rowSize();
+        int cols = columnSize();
 
         for (int x = 0; x < rows; x++)
             for (int y = 0; y < cols; y++)
@@ -347,10 +347,10 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** */
     private void checkCardinality(int rows, int cols) {
-        if (rows != sto.rowSize())
+        if (rows != rowSize())
             throw new CardinalityException(rowSize(), rows);
 
-        if (cols != sto.columnSize())
+        if (cols != columnSize())
             throw new CardinalityException(columnSize(), cols);
     }
 
@@ -358,8 +358,8 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public Matrix assign(double[][] vals) {
         checkCardinality(vals.length, vals[0].length);
 
-        int rows = sto.rowSize();
-        int cols = sto.columnSize();
+        int rows = rowSize();
+        int cols = columnSize();
 
         for (int x = 0; x < rows; x++)
             for (int y = 0; y < cols; y++)
@@ -372,8 +372,8 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public Matrix assign(Matrix mtx) {
         checkCardinality(mtx);
 
-        int rows = sto.rowSize();
-        int cols = sto.columnSize();
+        int rows = rowSize();
+        int cols = columnSize();
 
         for (int x = 0; x < rows; x++)
             for (int y = 0; y < cols; y++)
@@ -384,8 +384,8 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public Matrix map(IgniteDoubleFunction<Double> fun) {
-        int rows = sto.rowSize();
-        int cols = sto.columnSize();
+        int rows = rowSize();
+        int cols = columnSize();
 
         for (int x = 0; x < rows; x++)
             for (int y = 0; y < cols; y++)
@@ -398,8 +398,8 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public Matrix map(Matrix mtx, IgniteBiFunction<Double, Double, Double> fun) {
         checkCardinality(mtx);
 
-        int rows = sto.rowSize();
-        int cols = sto.columnSize();
+        int rows = rowSize();
+        int cols = columnSize();
 
         for (int x = 0; x < rows; x++)
             for (int y = 0; y < cols; y++)
@@ -412,7 +412,7 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public Matrix assignColumn(int col, org.apache.ignite.math.Vector vec) {
         checkColumnIndex(col);
 
-        int rows = sto.rowSize();
+        int rows = rowSize();
 
         for (int x = 0; x < rows; x++)
             storageSet(x, col, vec.getX(x));
@@ -424,7 +424,7 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public Matrix assignRow(int row, Vector vec) {
         checkRowIndex(row);
 
-        int cols = sto.columnSize();
+        int cols = columnSize();
 
         if (cols != vec.size())
             throw new CardinalityException(cols, vec.size());

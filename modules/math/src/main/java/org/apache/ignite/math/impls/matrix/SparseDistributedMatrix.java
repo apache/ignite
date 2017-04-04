@@ -28,8 +28,8 @@ package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.matrix.SparseDistributedMatrixStorage;
+import org.apache.ignite.math.impls.*;
+import org.apache.ignite.math.impls.storage.matrix.*;
 
 /**
  * Sparse distributed matrix implementation based on data grid.
@@ -74,6 +74,35 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      */
     public static SparseDistributedMatrix locateMatrix(IgniteUuid guid) {
         return null; // TODO
+    }
+
+    /**
+     *
+     * @return
+     */
+    private SparseDistributedMatrixStorage storage() {
+        return (SparseDistributedMatrixStorage)getStorage();
+    }
+
+    /** {@inheritDoc} */
+    @Override public double sum() {
+        SparseDistributedMatrixStorage sto = storage();
+
+        return CacheUtils.sparseSum(sto.cache().getName());
+    }
+
+    /** {@inheritDoc} */
+    @Override public double maxValue() {
+        SparseDistributedMatrixStorage sto = storage();
+
+        return CacheUtils.sparseMax(sto.cache().getName());
+    }
+
+    /** {@inheritDoc} */
+    @Override public double minValue() {
+        SparseDistributedMatrixStorage sto = storage();
+
+        return CacheUtils.sparseMin(sto.cache().getName());
     }
 
     /** {@inheritDoc} */

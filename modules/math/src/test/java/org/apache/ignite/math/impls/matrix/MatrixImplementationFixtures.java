@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /** */
@@ -42,7 +43,8 @@ class MatrixImplementationFixtures {
         (Supplier<Iterable<Matrix>>)PivotedMatrixViewFixture::new,
         (Supplier<Iterable<Matrix>>)MatrixViewFixture::new,
         (Supplier<Iterable<Matrix>>)FunctionMatrixFixture::new,
-        (Supplier<Iterable<Matrix>>)DiagonalMatrixFixture::new
+        (Supplier<Iterable<Matrix>>)DiagonalMatrixFixture::new,
+        (Supplier<Iterable<Matrix>>)TransposedMatrixViewFixture::new
     );
 
     /** */
@@ -91,86 +93,27 @@ class MatrixImplementationFixtures {
     }
 
     /** */
-    private static class PivotedMatrixViewFixture extends MatrixSizeIterator {
+    private static class PivotedMatrixViewFixture extends WrapperMatrixIterator {
         /** */
         PivotedMatrixViewFixture() {
-            super(DenseLocalOnHeapMatrix::new, "PivotedMatrixView over DenseLocalOnHeapMatrix");
-        }
-
-        /** {@inheritDoc} */
-        @NotNull
-        @Override public Iterator<Matrix> iterator() {
-            return new Iterator<Matrix>() {
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    return hasNextCol(getSizeIdx()) && hasNextRow(getSizeIdx());
-                }
-
-                /** {@inheritDoc} */
-                @Override public Matrix next() {
-                    Matrix matrix = getConstructor().apply(getRow(getSizeIdx()), getCol(getSizeIdx()));
-
-                    nextIdx();
-
-                    return new PivotedMatrixView(matrix);
-                }
-            };
+            super(PivotedMatrixView::new, "PivotedMatrixView over DenseLocalOnHeapMatrix");
         }
     }
 
     /** */
-    private static class MatrixViewFixture extends MatrixSizeIterator {
+    private static class MatrixViewFixture extends WrapperMatrixIterator {
         /** */
         MatrixViewFixture() {
-            super(DenseLocalOnHeapMatrix::new, "MatrixView over DenseLocalOnHeapMatrix");
-        }
-
-        /** {@inheritDoc} */
-        @NotNull
-        @Override public Iterator<Matrix> iterator() {
-            return new Iterator<Matrix>() {
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    return hasNextCol(getSizeIdx()) && hasNextRow(getSizeIdx());
-                }
-
-                /** {@inheritDoc} */
-                @Override public Matrix next() {
-                    Matrix matrix = getConstructor().apply(getRow(getSizeIdx()), getCol(getSizeIdx()));
-
-                    nextIdx();
-
-                    return new MatrixView(matrix, 0, 0, matrix.rowSize(), matrix.columnSize());
-                }
-            };
+            super((matrix) -> new MatrixView(matrix, 0, 0, matrix.rowSize(), matrix.columnSize()),
+                "MatrixView over DenseLocalOnHeapMatrix");
         }
     }
 
     /** */
-    private static class FunctionMatrixFixture extends MatrixSizeIterator {
+    private static class FunctionMatrixFixture extends WrapperMatrixIterator {
         /** */
         FunctionMatrixFixture() {
-            super(DenseLocalOnHeapMatrix::new, "FunctionMatrix wrapping DenseLocalOnHeapMatrix");
-        }
-
-        /** {@inheritDoc} */
-        @NotNull
-        @Override public Iterator<Matrix> iterator() {
-            return new Iterator<Matrix>() {
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    return hasNextCol(getSizeIdx()) && hasNextRow(getSizeIdx());
-                }
-
-                /** {@inheritDoc} */
-                @Override public Matrix next() {
-                    Matrix matrix = getConstructor().apply(getRow(getSizeIdx()), getCol(getSizeIdx()));
-
-                    nextIdx();
-
-                    return new FunctionMatrixForTest(matrix);
-                }
-            };
+            super(FunctionMatrixForTest::new, "FunctionMatrix wrapping DenseLocalOnHeapMatrix");
         }
     }
 
@@ -201,6 +144,14 @@ class MatrixImplementationFixtures {
                     return new DiagonalMatrix(matrix);
                 }
             };
+        }
+    }
+
+    /** */
+    private static class TransposedMatrixViewFixture extends WrapperMatrixIterator {
+        /** */
+        TransposedMatrixViewFixture() {
+            super(TransposedMatrixView::new, "TransposedMatrixView over DenseLocalOnHeapMatrix");
         }
     }
 
@@ -250,6 +201,39 @@ class MatrixImplementationFixtures {
         /** */
         void nextIdx() {
             sizeIdx++;
+        }
+    }
+
+    /** */
+    private static class WrapperMatrixIterator extends MatrixSizeIterator {
+        /** */
+        private final Function<Matrix, Matrix> wrapperCtor;
+
+        /** */
+        WrapperMatrixIterator(Function<Matrix, Matrix> wrapperCtor, String desc) {
+            super(DenseLocalOnHeapMatrix::new, desc);
+
+            this.wrapperCtor = wrapperCtor;
+        }
+
+        /** {@inheritDoc} */
+        @NotNull
+        @Override public Iterator<Matrix> iterator() {
+            return new Iterator<Matrix>() {
+                /** {@inheritDoc} */
+                @Override public boolean hasNext() {
+                    return hasNextCol(getSizeIdx()) && hasNextRow(getSizeIdx());
+                }
+
+                /** {@inheritDoc} */
+                @Override public Matrix next() {
+                    Matrix matrix = getConstructor().apply(getRow(getSizeIdx()), getCol(getSizeIdx()));
+
+                    nextIdx();
+
+                    return wrapperCtor.apply(matrix);
+                }
+            };
         }
     }
 

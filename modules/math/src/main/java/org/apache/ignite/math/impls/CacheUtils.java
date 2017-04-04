@@ -105,9 +105,35 @@ public class CacheUtils {
                 return acc;
         });
 
+        return sum(subSums);
+    }
+
+    /**
+     *
+     * @param cacheName
+     * @return
+     */
+    public static <K, V> double sparseSum(String cacheName) {
+        Collection<Double> subSums = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
+            Map<Integer, Double> map = ce.entry().getValue();
+
+            double sum = sum(map.values());
+
+            return acc == null ? sum : acc + sum;
+        });
+
+        return sum(subSums);
+    }
+
+    /**
+     *
+     * @param c
+     * @return
+     */
+    private static double sum(Collection<Double> c) {
         double sum = 0.0;
 
-        for (double d : subSums)
+        for (double d : c)
             sum += d;
 
         return sum;
@@ -137,6 +163,46 @@ public class CacheUtils {
         });
 
         return Collections.min(mins);
+    }
+
+    /**
+     *
+     * @param cacheName
+     * @return
+     */
+    public static <K, V> double sparseMin(String cacheName) {
+        Collection<Double> mins = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
+            Map<Integer, Double> map = ce.entry().getValue();
+
+            double min = Collections.min(map.values());
+
+            if (acc == null)
+                return min;
+            else
+                return Math.min(acc, min);
+        });
+
+        return Collections.min(mins);
+    }
+
+    /**
+     *
+     * @param cacheName
+     * @return
+     */
+    public static <K, V> double sparseMax(String cacheName) {
+        Collection<Double> maxes = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
+            Map<Integer, Double> map = ce.entry().getValue();
+
+            double max = Collections.max(map.values());
+
+            if (acc == null)
+                return max;
+            else
+                return Math.max(acc, max);
+        });
+
+        return Collections.max(maxes);
     }
 
     /**
@@ -208,7 +274,8 @@ public class CacheUtils {
 
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
-                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part, (k, v) -> affinity.mapPartitionToNode(p) == localNode)))
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
+                    (k, v) -> affinity.mapPartitionToNode(p) == localNode)))
                     fun.accept(new CacheEntry<K, V>(entry, cache));
             }
         });
@@ -242,7 +309,8 @@ public class CacheUtils {
 
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
-                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part, (k, v) -> affinity.mapPartitionToNode(p) == localNode)))
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
+                    (k, v) -> affinity.mapPartitionToNode(p) == localNode)))
                     a = folder.apply(new CacheEntry<K, V>(entry, cache), a);
             }
 
