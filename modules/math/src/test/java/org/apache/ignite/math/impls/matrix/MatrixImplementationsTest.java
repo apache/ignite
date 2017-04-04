@@ -173,10 +173,10 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testPlus() {
         consumeSampleMatrix((m, desc) -> {
-            if (ignore(m.getClass()))
+            if (readOnly(m))
                 return;
 
-            fillMatrix(m);
+            double[][] data = fillAndReturn(m);
 
             double plusVal = Math.random();
 
@@ -185,7 +185,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
                     assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(plus.get(i, j), m.get(i, j) + plusVal) == 0);
+                        Double.compare(plus.get(i, j), data[i][j] + plusVal) == 0);
         });
     }
 
@@ -229,10 +229,10 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testTimes() {
         consumeSampleMatrix((m, desc) -> {
-            if (ignore(m.getClass()))
+            if (readOnly(m))
                 return;
 
-            fillMatrix(m);
+            double[][] data = fillAndReturn(m);
 
             double timeVal = Math.random();
             Matrix times = m.times(timeVal);
@@ -240,7 +240,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
                     assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(times.get(i, j), m.get(i, j) * timeVal) == 0);
+                        Double.compare(times.get(i, j), data[i][j] * timeVal) == 0);
         });
     }
 

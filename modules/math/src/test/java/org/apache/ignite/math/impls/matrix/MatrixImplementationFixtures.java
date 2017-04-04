@@ -41,7 +41,8 @@ class MatrixImplementationFixtures {
         (Supplier<Iterable<Matrix>>)SparseLocalOnHeapMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)PivotedMatrixViewFixture::new,
         (Supplier<Iterable<Matrix>>)MatrixViewFixture::new,
-        (Supplier<Iterable<Matrix>>)FunctionMatrixFixture::new
+        (Supplier<Iterable<Matrix>>)FunctionMatrixFixture::new,
+        (Supplier<Iterable<Matrix>>)DiagonalMatrixFixture::new
     );
 
     /** */
@@ -174,6 +175,85 @@ class MatrixImplementationFixtures {
     }
 
     /** */
+    private static class DiagonalMatrixFixture extends DiagonalIterator {
+        /** */
+        DiagonalMatrixFixture() {
+            super(DenseLocalOnHeapMatrix::new, "DiagonalMatrix over DenseLocalOnHeapMatrix");
+        }
+
+        /** {@inheritDoc} */
+        @NotNull
+        @Override public Iterator<Matrix> iterator() {
+            return new Iterator<Matrix>() {
+                /** {@inheritDoc} */
+                @Override public boolean hasNext() {
+                    return hasNextSize(getSizeIdx());
+                }
+
+                /** {@inheritDoc} */
+                @Override public Matrix next() {
+                    assert getSize(getSizeIdx()) == 1 : "Only size 1 allowed for diagonal matrix fixture.";
+
+                    Matrix matrix = getConstructor().apply(getSize(getSizeIdx()), getSize(getSizeIdx()));
+
+                    nextIdx();
+
+                    return new DiagonalMatrix(matrix);
+                }
+            };
+        }
+    }
+
+    /** */
+    private static abstract class DiagonalIterator implements Iterable<Matrix> {
+        /** */
+        private final Integer[] sizes = new Integer[] {1, null};
+        /** */
+        private int sizeIdx = 0;
+
+        /** */
+        private BiFunction<Integer, Integer, ? extends Matrix> constructor;
+        /** */
+        private String desc;
+
+        /** */
+        DiagonalIterator(BiFunction<Integer,Integer, ? extends Matrix> constructor, String desc){
+            this.constructor = constructor;
+            this.desc = desc;
+        }
+
+        /** */
+        public BiFunction<Integer, Integer, ? extends Matrix> getConstructor() {
+            return constructor;
+        }
+
+        /** */
+        int getSizeIdx() {
+            return sizeIdx;
+        }
+
+        /** */
+        @Override public String toString() {
+            return desc + "{rows=" + sizes[sizeIdx] + ", cols=" + sizes[sizeIdx] + "}";
+        }
+
+        /** */
+        boolean hasNextSize(int idx){
+            return sizes[idx] != null;
+        }
+
+        /** */
+        Integer getSize(int idx){
+            return sizes[idx];
+        }
+
+        /** */
+        void nextIdx() {
+            sizeIdx++;
+        }
+    }
+
+    /** */
     private static class MatrixSizeIterator implements Iterable<Matrix> {
         /** */
         private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
@@ -219,7 +299,7 @@ class MatrixImplementationFixtures {
         }
 
         /** */
-        int getRow(int idx){
+        Integer getRow(int idx){
             return rows[idx];
         }
 
