@@ -93,7 +93,8 @@ public class PoolProcessor extends GridProcessorAdapter {
         // Avoid external thread pools GC retention.
         Arrays.fill(extPools, null);
 
-        customNamedPools.clear();
+        if (customNamedPools != null)
+            customNamedPools.clear();
     }
 
     /**
