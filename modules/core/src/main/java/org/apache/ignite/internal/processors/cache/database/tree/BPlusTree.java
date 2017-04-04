@@ -122,19 +122,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private volatile TreeMetaData treeMeta;
 
     /** */
-    private final GridCursor<T> emptyCursor = new GridCursor<T>() {
-        @Override
-        public boolean next() throws IgniteCheckedException {
-            return false;
-        }
-
-        @Override
-        public T get() throws IgniteCheckedException {
-            return null;
-        }
-    };
-
-    /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
         /** */
         private boolean keys = true;
@@ -258,7 +245,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             g.backId(0L); // Usually we'll go left down and don't need it.
 
             int cnt = io.getCount(pageAddr);
-            int idx = findInsertionPoint(io, pageAddr, 0, cnt, g.row, g.shift);
+
+            int idx;
+            if (g.findLast)
+                idx = io.isLeaf()? cnt - 1: -cnt - 1; //(-cnt - 1) mimics not_found result of findInsertionPoint
+            else
+                idx = findInsertionPoint(io, pageAddr, 0, cnt, g.row, g.shift);
 
             boolean found = idx >= 0;
 
@@ -952,45 +944,63 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<T> findLast() throws IgniteCheckedException {
+    @Override public T findFirst() throws IgniteCheckedException {
         checkDestroyed();
 
-        try (Page meta = page(metaPageId)) {
-            int rootLvl = getRootLevel();
+        try {
+            long firstPageId;
 
-            assert rootLvl >= 0;
+            try (Page meta = page(metaPageId)) {
+                firstPageId = getFirstPageId(meta, 0);
+            }
 
-            long rootPageId = getFirstPageId(meta, rootLvl);
+            try (Page first = page(firstPageId)) {
+                long pageAddr = readLock(first);
 
-            long pageId = rootPageId;
+                try {
+                    BPlusIO<L> io = io(pageAddr);
 
-            for (;;) {
-                try (Page page = page(pageId)) {
-                    long pageAddr = readLock(page);
+                    int cnt = io.getCount(pageAddr);
 
-                    try {
-                        BPlusIO<L> io = io(pageAddr);
+                    if (cnt == 0)
+                        return null;
 
-                        int cnt = io.getCount(pageAddr);
-                        assert cnt >= 0;
-
-                        if (io.isLeaf()) {
-                            if (cnt == 0)
-                                return emptyCursor;
-
-                            L maxRow = io.getLookupRow(this, pageAddr, cnt - 1);
-                            ForwardCursor cursor = new ForwardCursor(maxRow, null);
-                            cursor.init(pageAddr, io, cnt - 1);
-                            return cursor;
-                        }
-
-                        pageId = inner(io).getRight(pageAddr, cnt - 1);
-
-                    } finally {
-                        readUnlock(page, pageAddr);
-                    }
+                    return getRow(io, pageAddr, 0);
+                } finally {
+                    readUnlock(first, pageAddr);
                 }
             }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on first row lookup", e);
+        }
+        catch (RuntimeException e) {
+            throw new IgniteException("Runtime failure on first row lookup", e);
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Assertion error on first row lookup", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public T findLast() throws IgniteCheckedException {
+        checkDestroyed();
+
+        try {
+            GetOne g = new GetOne(null, null, true);
+            doFind(g);
+
+            return (T)g.row;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on last row lookup", e);
+        }
+        catch (RuntimeException e) {
+            throw new IgniteException("Runtime failure on last row lookup", e);
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Assertion error on last row lookup", e);
         }
     }
 
@@ -1005,7 +1015,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         checkDestroyed();
 
         try {
-            GetOne g = new GetOne(row, x);
+            GetOne g = new GetOne(row, x, false);
 
             doFind(g);
 
@@ -2268,13 +2278,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** If this operation is a part of invoke. */
         Invoke invoke;
 
+        /** Ignore row passed, find last row */
+        boolean findLast;
+
         /**
          * @param row Row.
+         * @param findLast find last row.
          */
-        Get(L row) {
-            assert row != null;
+        Get(L row, boolean findLast) {
+            if (!findLast)
+                assert row != null;
 
             this.row = row;
+            this.findLast = findLast;
         }
 
         /**
@@ -2288,6 +2304,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             fwdId = g.fwdId;
             backId = g.backId;
             shift = g.shift;
+            findLast = g.findLast;
 
             return this;
         }
@@ -2392,9 +2409,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @param row Row.
          * @param x Implementation specific argument.
+         * @param findLast Ignore row passed, find last row
          */
-        private GetOne(L row, Object x) {
-            super(row);
+        private GetOne(L row, Object x, boolean findLast) {
+            super(row, findLast);
 
             this.x = x;
         }
@@ -2425,7 +2443,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param cursor Cursor.
          */
         GetCursor(L lower, int shift, ForwardCursor cursor) {
-            super(lower);
+            super(lower, false);
 
             assert shift != 0; // Either handle range of equal rows or find a greater row after concurrent merge.
 
@@ -2485,7 +2503,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param needOld {@code True} If need return old value.
          */
         private Put(T row, boolean needOld) {
-            super(row);
+            super(row, false);
 
             this.needOld = needOld;
         }
@@ -2795,7 +2813,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param clo Closure.
          */
         private Invoke(L row, Object x, final InvokeClosure<T> clo) {
-            super(row);
+            super(row, false);
 
             assert clo != null;
 
@@ -3094,7 +3112,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param needOld {@code True} If need return old value.
          */
         private Remove(L row, boolean needOld) {
-            super(row);
+            super(row, false);
 
             this.needOld = needOld;
         }

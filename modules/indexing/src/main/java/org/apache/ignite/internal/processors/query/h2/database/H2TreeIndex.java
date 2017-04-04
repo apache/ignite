@@ -39,6 +39,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
+import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
@@ -310,10 +311,9 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            GridCursor<GridH2Row> cursor = b ? tree.find(null, null) : tree.findLast();
+            GridH2Row row = b ? tree.findFirst(): tree.findLast();
 
-            //H2 wants cursor to be prepared for get()
-            return new H2Cursor(cursor.next() ? cursor : EMPTY_CURSOR);
+            return new SingleRowCursor(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);

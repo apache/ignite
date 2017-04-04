@@ -1197,23 +1197,25 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testFindLast() throws IgniteCheckedException {
+    public void testFindFirstAndLast() throws IgniteCheckedException {
         MAX_PER_PAGE = 5;
 
         TestTree tree = createTestTree(true);
 
-        GridCursor<Long> cursor = tree.findLast();
-        assertFalse(cursor.next());
-        assertNull(cursor.get());
+        Long first = tree.findFirst();
+        assertNull(first);
+
+        Long last = tree.findLast();
+        assertNull(last);
 
         for (long idx = 1L; idx <= 10L; ++idx)
             tree.put(idx);
 
-        cursor = tree.findLast();
+        first = tree.findFirst();
+        assertEquals((Long)1L, first);
 
-        assertTrue(cursor.next());
-        assertEquals(10L, cursor.get().longValue());
-        assertFalse(cursor.next());
+        last = tree.findLast();
+        assertEquals((Long)10L, last);
 
         assertNoLocks();
     }

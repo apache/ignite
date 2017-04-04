@@ -515,19 +515,19 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIndexFindFirstOrLast() throws Exception {
-        Index index = tbl.getIndexes().get(1);
+        Index index = tbl.getIndexes().get(2);
         assertTrue(index instanceof GridH2TreeIndex);
         assertTrue(index.canGetFirstOrLast());
 
         //find first on empty data
         Cursor cursor = index.findFirstOrLast(null, true);
-        assertNull(cursor.get());
         assertFalse(cursor.next());
+        assertNull(cursor.get());
 
         //find last on empty data
         cursor = index.findFirstOrLast(null, false);
-        assertNull(cursor.get());
         assertFalse(cursor.next());
+        assertNull(cursor.get());
 
         //fill with data
         int rows = 100;
@@ -548,11 +548,13 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         //find first
         cursor = index.findFirstOrLast(null, true);
-        assertEquals(min, cursor.get().getValue(0).getObject());
         assertTrue(cursor.next());
+        assertEquals(min, cursor.get().getValue(0).getObject());
+        assertFalse(cursor.next());
 
         //find last
         cursor = index.findFirstOrLast(null, false);
+        assertTrue(cursor.next());
         assertEquals(max, cursor.get().getValue(0).getObject());
         assertFalse(cursor.next());
     }

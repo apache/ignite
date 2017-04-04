@@ -36,6 +36,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
+import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
@@ -391,10 +392,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
             IgniteTree t = treeForRead(seg);
 
-            GridCursor<GridH2Row> cursor = first ? doFind0(t, null, true, null, threadLocalFilter()) : t.findLast();
+            GridH2Row row = (GridH2Row)(first ? t.findFirst() : t.findLast());
 
-            //H2 wants cursor to be prepared for get()
-            return new H2Cursor(cursor.next() ? cursor : EMPTY_CURSOR);
+            return new SingleRowCursor(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -561,28 +561,15 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<GridH2Row> findLast() throws IgniteCheckedException {
+        @Override public GridH2Row findFirst() throws IgniteCheckedException {
+            Map.Entry<GridSearchRowPointer, GridH2Row> first = tree.firstEntry();
+            return (first == null) ? null : first.getValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row findLast() throws IgniteCheckedException {
             Map.Entry<GridSearchRowPointer, GridH2Row> last = tree.lastEntry();
-
-            return new GridCursor<GridH2Row>() {
-                GridH2Row row = (last==null) ? null : last.getValue();
-                boolean end = (last == null);
-
-                @Override
-                public boolean next() throws IgniteCheckedException {
-                    if (row == null || end) {
-                        row = null;
-                        return false;
-                    }
-                    end = true;
-                    return true;
-                }
-
-                @Override
-                public GridH2Row get() throws IgniteCheckedException {
-                    return row;
-                }
-            };
+            return (last == null) ? null : last.getValue();
         }
 
         /** {@inheritDoc} */
