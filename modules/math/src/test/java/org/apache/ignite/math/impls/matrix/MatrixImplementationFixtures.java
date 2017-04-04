@@ -17,8 +17,12 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.function.BiFunction;
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.impls.storage.matrix.FunctionMatrixStorage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -36,7 +40,8 @@ class MatrixImplementationFixtures {
         (Supplier<Iterable<Matrix>>)RandomMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)SparseLocalOnHeapMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)PivotedMatrixViewFixture::new,
-        (Supplier<Iterable<Matrix>>)MatrixViewFixture::new
+        (Supplier<Iterable<Matrix>>)MatrixViewFixture::new,
+        (Supplier<Iterable<Matrix>>)FunctionMatrixFixture::new
     );
 
     /** */
@@ -141,6 +146,34 @@ class MatrixImplementationFixtures {
     }
 
     /** */
+    private static class FunctionMatrixFixture extends MatrixSizeIterator {
+        /** */
+        FunctionMatrixFixture() {
+            super(DenseLocalOnHeapMatrix::new, "FunctionMatrix wrapping DenseLocalOnHeapMatrix");
+        }
+
+        /** {@inheritDoc} */
+        @NotNull
+        @Override public Iterator<Matrix> iterator() {
+            return new Iterator<Matrix>() {
+                /** {@inheritDoc} */
+                @Override public boolean hasNext() {
+                    return hasNextCol(getSizeIdx()) && hasNextRow(getSizeIdx());
+                }
+
+                /** {@inheritDoc} */
+                @Override public Matrix next() {
+                    Matrix matrix = getConstructor().apply(getRow(getSizeIdx()), getCol(getSizeIdx()));
+
+                    nextIdx();
+
+                    return new FunctionMatrixForTest(matrix);
+                }
+            };
+        }
+    }
+
+    /** */
     private static class MatrixSizeIterator implements Iterable<Matrix> {
         /** */
         private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
@@ -218,6 +251,67 @@ class MatrixImplementationFixtures {
         /** */
         void nextIdx() {
             sizeIdx++;
+        }
+    }
+
+    /** Subclass tweaked for serialization */
+    private static class FunctionMatrixForTest extends FunctionMatrix {
+        /** */ Matrix underlying;
+
+        /** */
+        public FunctionMatrixForTest() {
+            // No-op.
+        }
+
+        /** */
+        FunctionMatrixForTest(Matrix underlying) {
+            super(underlying.rowSize(), underlying.columnSize(), underlying::get, underlying::set);
+
+            this.underlying = underlying;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Matrix copy() {
+            return new FunctionMatrixForTest(underlying);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+
+            out.writeObject(underlying);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+
+            underlying = (Matrix)in.readObject();
+
+            setStorage(new FunctionMatrixStorage(underlying.rowSize(), underlying.columnSize(),
+                underlying::get, underlying::set));
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = 1;
+
+            res = res * 37 + underlying.hashCode();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            FunctionMatrixForTest that = (FunctionMatrixForTest) o;
+
+            return underlying != null ? underlying.equals(that.underlying) : that.underlying == null;
         }
     }
 }
