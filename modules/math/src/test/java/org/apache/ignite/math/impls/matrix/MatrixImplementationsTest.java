@@ -124,8 +124,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(m.get(i, j), assignVal) == 0);
+                    assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        assignVal, m.get(i, j), 0d);
         });
     }
 
@@ -146,8 +146,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++) {
                 for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(m.get(i, j), data[i][j]) == 0);
+                    assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        data[i][j], m.get(i, j), 0d);
             }
         });
     }
@@ -163,8 +163,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++) {
                 for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(m.get(i, j), (double) (i * m.columnSize() + j)) == 0);
+                    assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        (double) (i * m.columnSize() + j), m.get(i, j), 0d);
             }
         });
     }
@@ -184,8 +184,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(plus.get(i, j), data[i][j] + plusVal) == 0);
+                    assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        data[i][j] + plusVal, plus.get(i, j), 0d);
         });
     }
 
@@ -202,8 +202,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(plus.get(i, j), data[i][j] * 2.0) == 0);
+                    assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        data[i][j] * 2.0, plus.get(i, j), 0d);
         });
     }
 
@@ -220,8 +220,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(minus.get(i, j), 0.0) == 0);
+                    assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        0.0, minus.get(i, j), 0d);
         });
     }
 
@@ -239,8 +239,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(times.get(i, j), data[i][j] * timeVal) == 0);
+                    assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        data[i][j] * timeVal, times.get(i, j), 0d);
         });
     }
 
@@ -265,8 +265,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 for (int j = 0; j < m.columnSize(); j++)
                     exp += arr[j] * data[i][j];
 
-                assertTrue("Unexpected value for " + desc + " at " + i,
-                    Double.compare(times.get(i), exp) == 0);
+                assertEquals("Unexpected value for " + desc + " at " + i,
+                    times.get(i), exp, 0d);
             }
 
             testInvalidCardinality(() -> m.times(new DenseLocalOnHeapVector(m.columnSize() + 1)), desc);
@@ -300,8 +300,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 for (int j = 0; j < m.columnSize(); j++)
                     exp += arr[j] * data[i][j];
 
-                assertTrue("Unexpected value for " + desc + " at " + i,
-                    Double.compare(times.get(i, 0), exp) == 0);
+                assertEquals("Unexpected value for " + desc + " at " + i,
+                    exp, times.get(i, 0), 0d);
             }
 
             testInvalidCardinality(() -> m.times(new DenseLocalOnHeapMatrix(m.columnSize() + 1, 1)), desc);
@@ -323,8 +323,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(divide.get(i, j), data[i][j] / divVal) == 0);
+                    assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        data[i][j] / divVal, divide.get(i, j), 0d);
         });
     }
 
@@ -341,8 +341,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(m.get(i, j), transpose.get(j, i)) == 0);
+                    assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        m.get(i, j), transpose.get(j, i), 0d);
         });
     }
 
@@ -407,8 +407,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        Double.compare(m.get(i, j), 10d) == 0);
+                    assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
+                        10d, m.get(i, j), 0d);
         });
     }
 
@@ -529,8 +529,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 for (int j = 0; j < data[0].length; j++)
                     rawSum += anArr[j];
 
-            assertTrue("Unexpected value for " + desc,
-                Double.compare(sum, rawSum) == 0);
+            assertEquals("Unexpected value for " + desc,
+                rawSum, sum, 0d);
         });
     }
 
@@ -606,6 +606,20 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
                     assertEquals("Unexpected value set for " + details, newVal, m.get(i, j), 0d);
                 }
+        });
+    }
+
+    /** */
+    @Test
+    public void testGetX() {
+        consumeSampleMatrix((m, desc) -> {
+            if (!(readOnly(m)))
+                fillMatrix(m);
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    assertEquals("Unexpected value for " + desc + " at [" + i + "," + j + "]",
+                        m.get(i, j), m.getX(i, j), 0d);
         });
     }
 
@@ -695,8 +709,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             m.setRow(rowIdx, newValues);
 
             for (int col = 0; col < m.columnSize(); col++)
-                assertTrue("Unexpected value for " + desc + " at " + col,
-                    Double.compare(m.get(rowIdx, col), newValues[col]) == 0);
+                assertEquals("Unexpected value for " + desc + " at " + col,
+                    newValues[col], m.get(rowIdx, col), 0d);
 
             testInvalidCardinality(() -> m.setRow(rowIdx, new double[m.columnSize() + 1]), desc);
         });
@@ -718,8 +732,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             m.setColumn(colIdx, newValues);
 
             for (int row = 0; row < m.rowSize(); row++)
-                assertTrue("Unexpected value for " + desc + " at " + row,
-                    Double.compare(m.get(row, colIdx), newValues[row]) == 0);
+                assertEquals("Unexpected value for " + desc + " at " + row,
+                    newValues[row], m.get(row, colIdx), 0d);
 
             testInvalidCardinality(() -> m.setColumn(colIdx, new double[m.rowSize() + 1]), desc);
         });
@@ -746,11 +760,11 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             for (int i = 0; i < rows; i++)
                 for (int j = 0; j < cols; j++) {
-                    assertTrue("Unexpected view1 value for " + details + " at (" + i + "," + j + ")",
-                        Double.compare(m.get(i + rowOff, j + colOff), view1.get(i, j)) == 0);
+                    assertEquals("Unexpected view1 value for " + details + " at (" + i + "," + j + ")",
+                        m.get(i + rowOff, j + colOff), view1.get(i, j), 0d);
 
-                    assertTrue("Unexpected view1 value for " + details + " at (" + i + "," + j + ")",
-                        Double.compare(m.get(i + rowOff, j + colOff), view2.get(i, j)) == 0);
+                    assertEquals("Unexpected view2 value for " + details + " at (" + i + "," + j + ")",
+                        m.get(i + rowOff, j + colOff), view2.get(i, j), 0d);
                 }
         });
     }
@@ -775,8 +789,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (!readOnly(m))
                 fillMatrix(m);
 
-            assertTrue("Unexpected value for " + desc,
-                Double.compare(m.maxAbsRowSumNorm(), maxAbsRowSumNorm(m)) == 0);
+            assertEquals("Unexpected value for " + desc,
+                maxAbsRowSumNorm(m), m.maxAbsRowSumNorm(), 0d);
         });
     }
 
@@ -796,8 +810,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             m.assignRow(rowIdx, new DenseLocalOnHeapVector(newValues));
 
             for (int col = 0; col < m.columnSize(); col++)
-                assertTrue("Unexpected value for " + desc + " at " + col,
-                    Double.compare(m.get(rowIdx, col), newValues[col]) == 0);
+                assertEquals("Unexpected value for " + desc + " at " + col,
+                    newValues[col], m.get(rowIdx, col), 0d);
 
             testInvalidCardinality(() -> m.assignRow(rowIdx, new DenseLocalOnHeapVector(m.columnSize() + 1)), desc);
         });
@@ -819,8 +833,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             m.assignColumn(colIdx, new DenseLocalOnHeapVector(newValues));
 
             for (int row = 0; row < m.rowSize(); row++)
-                assertTrue("Unexpected value for " + desc + " at " + row,
-                    Double.compare(m.get(row, colIdx), newValues[row]) == 0);
+                assertEquals("Unexpected value for " + desc + " at " + row,
+                    newValues[row], m.get(row, colIdx), 0d);
         });
     }
 
