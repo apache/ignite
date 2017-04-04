@@ -276,7 +276,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     Map<String, String> fields = meta.fields("Person");
 
                     assert fields != null;
-                    assert fields.size() == 5;
+                    assert fields.size() == 6;
 
                     if (binaryMarshaller) {
                         assert Object.class.getName().equals(fields.get("_KEY"));
@@ -291,12 +291,13 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                         assert int.class.getName().equals(fields.get("ORGID"));
                     }
 
+                    assert byte[].class.getName().equals(fields.get("_VER"));
                     assert String.class.getName().equals(fields.get("NAME"));
 
                     fields = meta.fields("Organization");
 
                     assert fields != null;
-                    assertEquals("Fields: " + fields, 5, fields.size());
+                    assertEquals("Fields: " + fields, 6, fields.size());
 
                     if (binaryMarshaller) {
                         assert Object.class.getName().equals(fields.get("_VAL"));
@@ -313,16 +314,18 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     fields = meta.fields("String");
 
                     assert fields != null;
-                    assert fields.size() == 2;
+                    assert fields.size() == 3;
                     assert String.class.getName().equals(fields.get("_KEY"));
                     assert String.class.getName().equals(fields.get("_VAL"));
+                    assert byte[].class.getName().equals(fields.get("_VER"));
 
                     fields = meta.fields("Integer");
 
                     assert fields != null;
-                    assert fields.size() == 2;
+                    assert fields.size() == 3;
                     assert Integer.class.getName().equals(fields.get("_KEY"));
                     assert Integer.class.getName().equals(fields.get("_VAL"));
+                    assert byte[].class.getName().equals(fields.get("_VER"));
 
                     Collection<GridCacheSqlIndexMetadata> indexes = meta.indexes("Person");
 
@@ -583,7 +586,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     /** @throws Exception If failed. */
     public void testSelectAllJoined() throws Exception {
         QueryCursor<List<?>> qry = grid(0).cache(null)
-            .query(new SqlFieldsQuery("select * from Person p, Organization o where p.orgId = o.id"));
+            .query(new SqlFieldsQuery("select p._key, p._val, p.*, o._key, o._val, o.*"+
+                    "from Person p, Organization o where p.orgId = o.id"));
 
         List<List<?>> res = new ArrayList<>(qry.getAll());
 
@@ -655,7 +659,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /** @throws Exception If failed. */
     public void testQueryString() throws Exception {
-        QueryCursor<List<?>> qry = grid(0).cache(null).query(new SqlFieldsQuery("select * from String"));
+        QueryCursor<List<?>> qry = grid(0).cache(null).query(new SqlFieldsQuery("select _key, _val from String"));
 
         Collection<List<?>> res = qry.getAll();
 
@@ -696,7 +700,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     public void testPagination() throws Exception {
         // Query with page size 20.
         QueryCursor<List<?>> qry = grid(0).cache(null)
-                .query(new SqlFieldsQuery("select * from Integer").setPageSize(20));
+                .query(new SqlFieldsQuery("select _key,_val from Integer").setPageSize(20));
 
         List<List<?>> res = new ArrayList<>(qry.getAll());
 
@@ -753,7 +757,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
         cache.put(key, val);
 
-        Collection<List<?>> res = cache.query(new SqlFieldsQuery("select * from Person")).getAll();
+        Collection<List<?>> res = cache.query(new SqlFieldsQuery("select _key,_val,* from Person")).getAll();
 
         assertEquals(1, res.size());
 

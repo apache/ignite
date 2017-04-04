@@ -373,7 +373,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
+    @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         if (qctx == null || qctx.distributedJoinMode() == OFF || !getTable().isPartitioned())
@@ -386,7 +386,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         if (affCol != null) {
             affColId = affCol.column.getColumnId();
-            int[] masks = filter.getMasks();
+            int[] masks = filters[filter].getMasks();
 
             if (masks != null) {
                 ucast = (masks[affColId] & IndexCondition.EQUALITY) != 0 ||

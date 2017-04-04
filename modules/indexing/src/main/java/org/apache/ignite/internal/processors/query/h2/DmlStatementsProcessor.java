@@ -582,9 +582,12 @@ public class DmlStatementsProcessor {
             if (newVal == null)
                 throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
-            // Skip key and value - that's why we start off with 2nd column
-            for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
-                Column c = plan.tbl.getColumn(i + 2);
+            for (int i = 0; i < plan.tbl.getColumns().length; i++) {
+                Column c = plan.tbl.getColumn(i);
+                int colId = desc.mapAliasColumnId(c.getColumnId());
+                // Skip key and value
+                if (colId <= 2)
+                    continue;
 
                 GridQueryProperty prop = desc.type().property(c.getName());
 
@@ -599,7 +602,7 @@ public class DmlStatementsProcessor {
                 Object colVal = newColVals.get(c.getName());
 
                 // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key.
-                desc.setColumnValue(null, newVal, colVal, i);
+                desc.setColumnValue(null, newVal, colVal, colId - desc.getHiddenColumnCount());
             }
 
             if (bin && hasProps) {
@@ -960,8 +963,13 @@ public class DmlStatementsProcessor {
         // column order preserves their precedence for correct update of nested properties.
         Column[] cols = plan.tbl.getColumns();
 
-        // First 2 columns are _key and _val, skip 'em.
-        for (int i = 2; i < cols.length; i++) {
+        // Skip key and value
+        for (int i = 0; i < cols.length; i++) {
+            int colId = cols[i].getColumnId();
+            colId = plan.tbl.rowDescriptor().mapAliasColumnId(colId);
+            if (colId <= 2)
+               continue;
+
             String colName = cols[i].getName();
 
             if (!newColVals.containsKey(colName))

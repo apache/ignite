@@ -2372,6 +2372,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @IgniteInstanceResource
         private Ignite ignite;
 
+        /** Default key field name */
+        private final String DFLT_KEY_FIELD_NAME = "_KEY";
+
+        /** Default value field name */
+        private final String DFLT_VAL_FIELD_NAME = "_VAL";
+
+        /** Default version field name */
+        private final String DFLT_VER_FIELD_NAME = "_VER";
+
         /** {@inheritDoc} */
         @Override public Collection<CacheSqlMetadata> call() {
             final GridKernalContext ctx = ((IgniteKernal)ignite).context();
@@ -2410,13 +2419,25 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         keyClasses.put(type.name(), type.keyClass().getName());
                         valClasses.put(type.name(), type.valueClass().getName());
 
-                        int size = 2 + type.fields().size();
+                        final boolean addKeyAlias = (type.keyFieldName() != null) && type.fields().containsKey(type.keyFieldName());
+                        final boolean addValAlias = (type.valueFieldName() != null) && type.fields().containsKey(type.valueFieldName());
+                        final boolean addVerAlias = (type.versionFieldName() != null) && type.fields().containsKey(type.versionFieldName());
+                        int size = type.fields().size() + 3 + (addKeyAlias ? 1 : 0) + (addValAlias ? 1 : 0) + (addVerAlias ? 1 : 0);
 
                         Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
-                        // _KEY and _VAL are not included in GridIndexingTypeDescriptor.valueFields
-                        fieldsMap.put("_KEY", type.keyClass().getName());
-                        fieldsMap.put("_VAL", type.valueClass().getName());
+                        fieldsMap.put(DFLT_KEY_FIELD_NAME, type.keyClass().getName());
+                        fieldsMap.put(DFLT_VAL_FIELD_NAME, type.valueClass().getName());
+                        fieldsMap.put(DFLT_VER_FIELD_NAME, byte[].class.getName());
+
+                        if (addKeyAlias)
+                            fieldsMap.put(type.keyFieldName().toUpperCase(), type.keyClass().getName());
+
+                        if (addValAlias)
+                            fieldsMap.put(type.valueFieldName().toUpperCase(), type.valueClass().getName());
+
+                        if (addVerAlias)
+                            fieldsMap.put(type.versionFieldName().toUpperCase(), byte[].class.getName());
 
                         for (Map.Entry<String, Class<?>> e : type.fields().entrySet())
                             fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());

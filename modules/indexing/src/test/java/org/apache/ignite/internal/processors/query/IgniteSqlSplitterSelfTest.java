@@ -379,6 +379,38 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     */
+    public void testUseIndexHints() {
+        CacheConfiguration ccfg = cacheConfig("pers", true,
+            Integer.class, Person2.class);
+
+        IgniteCache<Integer, Person2> c = ignite(0).getOrCreateCache(ccfg);
+
+        try {
+            String select = "select 1 from Person2 use index (\"orgId_idx\") where name = '' and orgId = 1";
+
+            String plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
+
+            X.println("Plan: \n" + plan);
+
+            assertTrue(plan.contains("USE INDEX (\"orgId_idx\")"));
+            assertTrue(plan.contains("/* \"pers\".\"orgId_idx\":"));
+
+            select = "select 1 from Person2 use index (\"name_idx\") where name = '' and orgId = 1";
+
+            plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
+
+            X.println("Plan: \n" + plan);
+
+            assertTrue(plan.contains("USE INDEX (\"name_idx\")"));
+            assertTrue(plan.contains("/* \"pers\".\"name_idx\":"));
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testDistributedJoins() throws Exception {
@@ -632,14 +664,14 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 false,
                 0,
                 "select p._key k1, o._key k2 " +
-                    "from \"persPart\".Person2 p, (select * from \"orgRepl\".Organization) o " +
+                    "from \"persPart\".Person2 p, (select _key, _val, * from \"orgRepl\".Organization) o " +
                     "where p.orgId = o._key");
 
             checkQueryPlan(persPart,
                 false,
                 0,
                 "select p._key k1, o._key k2 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPart\".Person2 p " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPart\".Person2 p " +
                     "where p.orgId = o._key");
 
             checkQueryPlan(persPart,
@@ -852,7 +884,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                     sql);
 
                 sql = "select p1._key k1, p2._key k2, o._key k3 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
                     "where p1._key=p2.name and p2.orgId = o._key";
 
                 checkQueryPlan(persPart,
@@ -862,7 +894,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                     "batched:unicast");
 
                 sql = "select p1._key k1, p2._key k2, o._key k3 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
                     "where p1._key=p2._key and p2.orgId = o._key";
 
                 checkQueryPlan(persPart,
@@ -1802,7 +1834,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         int orgId;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         String name;
 
         /**
