@@ -49,7 +49,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public void addWriteEntry(IgniteTxKey key, IgniteTxEntry e) {
-        this.entry = e;
+        entry = e;
     }
 
     /** {@inheritDoc} */

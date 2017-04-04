@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractByteArrayValuesSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
@@ -64,7 +63,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         cc1.setAtomicityMode(TRANSACTIONAL);
         cc1.setCacheMode(LOCAL);
         cc1.setWriteSynchronizationMode(FULL_SYNC);
-        cc1.setSwapEnabled(true);
         cc1.setEvictSynchronized(false);
 
         CacheConfiguration cc2 = new CacheConfiguration();
@@ -77,8 +75,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         cc2.setOffHeapMaxMemory(100 * 1024 * 1024);
 
         c.setCacheConfiguration(cc1, cc2);
-
-        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return c;
     }
@@ -180,7 +176,8 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      */
     @SuppressWarnings("TooBroadScope")
     public void testSwap() throws Exception {
-        assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
+        // TODO GG-11148.
+        // assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
 
         byte[] val1 = wrap(1);
         Object val2 = 2;

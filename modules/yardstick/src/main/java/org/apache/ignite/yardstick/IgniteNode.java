@@ -27,6 +27,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -157,6 +158,18 @@ public class IgniteNode implements BenchmarkServer {
             commSpi = new TcpCommunicationSpi();
 
         c.setCommunicationSpi(commSpi);
+
+        if (args.getPageSize() != MemoryConfiguration.DFLT_PAGE_SIZE) {
+            MemoryConfiguration dbCfg = c.getMemoryConfiguration();
+
+            if (dbCfg == null) {
+                dbCfg = new MemoryConfiguration();
+
+                c.setMemoryConfiguration(dbCfg);
+            }
+
+            dbCfg.setPageSize(args.getPageSize());
+        }
 
         ignite = IgniteSpring.start(c, appCtx);
 

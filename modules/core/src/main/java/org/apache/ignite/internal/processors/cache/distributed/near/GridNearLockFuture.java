@@ -100,6 +100,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     private long threadId;
 
     /** Keys to lock. */
+    @GridToStringInclude
     private final Collection<KeyCacheObject> keys;
 
     /** Future ID. */
@@ -164,6 +165,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     /** Keep binary context flag. */
     private final boolean keepBinary;
 
+    /** Recovery mode context flag. */
+    private final boolean recovery;
+
     /** */
     private int miniId;
 
@@ -191,7 +195,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean recovery
+    ) {
         super(CU.boolReducer());
 
         assert keys != null;
@@ -208,6 +214,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         this.filter = filter;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.recovery = recovery;
 
         ignoreInterrupts(true);
 
@@ -561,7 +568,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         return null;
     }
 
-
     /**
      * @param t Error.
      */
@@ -783,7 +789,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
                 if (fut.topologyVersion().equals(topVer)){
-                    Throwable err = fut.validateCache(cctx);
+                    Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                     if (err != null) {
                         onDone(err);
@@ -831,7 +837,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
-                Throwable err = fut.validateCache(cctx);
+                Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                 if (err != null) {
                     onDone(err);

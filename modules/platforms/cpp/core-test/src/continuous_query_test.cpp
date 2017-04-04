@@ -343,7 +343,11 @@ struct ContinuousQueryTestSuiteFixture
      * Constructor.
      */
     ContinuousQueryTestSuiteFixture() :
+#ifdef IGNITE_TESTS_32
+        node(ignite_test::StartNode("cache-query-continuous-32.xml", "node-01")),
+#else
         node(ignite_test::StartNode("cache-query-continuous.xml", "node-01")),
+#endif
         cache(node.GetCache<int, TestEntry>("transactional_no_backup"))
     {
         // No-op.

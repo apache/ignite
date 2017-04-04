@@ -65,7 +65,6 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
-        ccfg.setSwapEnabled(false);
         ccfg.setEvictSynchronized(true);
         ccfg.setEvictSynchronizedKeyBufferSize(10);
 

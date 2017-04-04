@@ -42,7 +42,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
@@ -88,7 +87,6 @@ import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
@@ -100,9 +98,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 import static org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
- * Cache eviction manager.
+ * TODO GG-11140 (old evictions implementation, now created for near cache, evictions to be reconsidered as part of GG-11140).
  */
-public class GridCacheEvictionManager extends GridCacheManagerAdapter {
+public class GridCacheEvictionManager extends GridCacheManagerAdapter implements CacheEvictionManager {
     /** Attribute name used to queue node in entry metadata. */
     private static final int META_KEY = GridMetadataAwareAdapter.EntryKey.CACHE_EVICTION_MANAGER_KEY.key();
 
@@ -145,9 +143,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
     /** Policy enabled. */
     private boolean plcEnabled;
 
-    /** */
-    private CacheMemoryMode memoryMode;
-
     /** Backup entries worker. */
     private BackupWorker backupWorker;
 
@@ -175,9 +170,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         plc = cctx.isNear() ? cfg.getNearConfiguration().getNearEvictionPolicy() : cfg.getEvictionPolicy();
 
-        memoryMode = cctx.config().getMemoryMode();
-
-        plcEnabled = plc != null && (cctx.isNear() || memoryMode != OFFHEAP_TIERED);
+        plcEnabled = plc != null && cctx.isNear();
 
         filter = cfg.getEvictionFilter();
 
@@ -188,7 +181,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             throw new IgniteCheckedException("Configuration parameter 'evictSynchronizedKeyBufferSize' cannot be negative.");
 
         if (!cctx.isLocal()) {
-            evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isSwapOrOffheapEnabled();
+            evictSync = cfg.isEvictSynchronized() && !cctx.isNear();
 
             nearSync = isNearEnabled(cctx) && !cctx.isNear() && cfg.isEvictSynchronized();
         }
@@ -734,7 +727,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         boolean hasVal = recordable && entry.hasValue();
 
-        boolean evicted = entry.evictInternal(cctx.isSwapOrOffheapEnabled(), obsoleteVer, filter);
+        boolean evicted = entry.evictInternal(obsoleteVer, filter);
 
         if (evicted) {
             // Remove manually evicted entry from policy.
@@ -761,11 +754,9 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         return evicted;
     }
 
-    /**
-     * @param txEntry Transactional entry.
-     */
-    public void touch(IgniteTxEntry txEntry, boolean loc) {
-        if (!plcEnabled && memoryMode != OFFHEAP_TIERED)
+    /** {@inheritDoc} */
+    @Override public void touch(IgniteTxEntry txEntry, boolean loc) {
+        if (!plcEnabled)
             return;
 
         if (!loc) {
@@ -789,27 +780,14 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
         }
 
-        if (memoryMode == OFFHEAP_TIERED) {
-            try {
-                evict0(cctx.cache(), e, cctx.versions().next(), null, false);
-            }
-            catch (IgniteCheckedException ex) {
-                U.error(log, "Failed to evict entry from on heap memory: " + e, ex);
-            }
-        }
-        else {
-            notifyPolicy(e);
+        notifyPolicy(e);
 
-            if (evictSyncAgr)
-                waitForEvictionFutures();
-        }
+        if (evictSyncAgr)
+            waitForEvictionFutures();
     }
 
-    /**
-     * @param e Entry for eviction policy notification.
-     * @param topVer Topology version.
-     */
-    public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
+    /** {@inheritDoc} */
+    @Override  public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
         if (e.detached() || e.isInternal())
             return;
 
@@ -819,17 +797,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
-        }
-
-        if (!cctx.isNear() && memoryMode == OFFHEAP_TIERED) {
-            try {
-                evict0(cctx.cache(), e, cctx.versions().next(), null, false);
-            }
-            catch (IgniteCheckedException ex) {
-                U.error(log, "Failed to evict entry from on heap memory: " + e, ex);
-            }
-
-            return;
         }
 
         if (!plcEnabled)
@@ -907,23 +874,13 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             "Evictions started (cache may have reached its capacity): " + cctx.name());
     }
 
-    /**
-     * @return {@code True} if either evicts or near evicts are synchronized, {@code false} otherwise.
-     */
-    public boolean evictSyncOrNearSync() {
+    /** {@inheritDoc} */
+    @Override public boolean evictSyncOrNearSync() {
         return evictSyncAgr;
     }
 
-    /**
-     * @param entry Entry to attempt to evict.
-     * @param obsoleteVer Obsolete version.
-     * @param filter Optional entry filter.
-     * @param explicit {@code True} if evict is called explicitly, {@code false} if it's called
-     *      from eviction policy.
-     * @return {@code True} if entry was marked for eviction.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public boolean evict(@Nullable GridCacheEntryEx entry, @Nullable GridCacheVersion obsoleteVer,
+    /** {@inheritDoc} */
+    @Override public boolean evict(@Nullable GridCacheEntryEx entry, @Nullable GridCacheVersion obsoleteVer,
         boolean explicit, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         if (entry == null)
             return true;
@@ -974,14 +931,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         return true;
     }
 
-    /**
-     * @param keys Keys to evict.
-     * @param obsoleteVer Obsolete version.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void batchEvict(Collection<?> keys, @Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void batchEvict(Collection<?> keys, @Nullable GridCacheVersion obsoleteVer)
+        throws IgniteCheckedException {
         assert !evictSyncAgr;
-        assert cctx.isSwapOrOffheapEnabled();
 
         List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
 
@@ -1048,7 +1001,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
             // Batch write to swap.
             if (!swapped.isEmpty())
-                cctx.swap().writeAll(swapped);
+                cctx.offheap().writeAll(swapped);
         }
         finally {
             // Unlock entries in reverse order.
@@ -1387,10 +1340,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         return new IgnitePair<>(backups, readers);
     }
 
-    /**
-     * Notifications.
-     */
-    public void unwind() {
+    /** {@inheritDoc} */
+    @Override public void unwind() {
         if (!evictSyncAgr)
             return;
 

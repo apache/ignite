@@ -50,7 +50,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -102,8 +101,6 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
         if (testClientNode() && getTestIgniteInstanceName(0).equals(igniteInstanceName))
             cfg.setClientMode(true);
-
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 

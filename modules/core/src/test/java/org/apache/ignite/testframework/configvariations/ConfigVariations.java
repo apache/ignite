@@ -46,7 +46,7 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
+import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 
 import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
 
@@ -106,7 +106,6 @@ public class ConfigVariations {
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigParameter[][] {
         Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), optimizedMarshallerFactory()),
         Parameters.booleanParameters("setPeerClassLoadingEnabled"),
-        Parameters.objectParameters("setSwapSpaceSpi", Parameters.factory(GridTestSwapSpaceSpi.class)),
     };
 
     /** */
@@ -117,7 +116,6 @@ public class ConfigVariations {
         Parameters.enumParameters("setMemoryMode", CacheMemoryMode.class),
         // Set default parameters.
         Parameters.objectParameters("setLoadPreviousValue", true),
-        Parameters.objectParameters("setSwapEnabled", true),
         asArray(SIMPLE_CACHE_STORE_PARAM),
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
         Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
@@ -138,7 +136,6 @@ public class ConfigVariations {
         Parameters.booleanParameters("setReadFromBackup"),
         Parameters.booleanParameters("setStoreKeepBinary"),
         Parameters.objectParameters("setRebalanceMode", CacheRebalanceMode.SYNC, CacheRebalanceMode.ASYNC),
-        Parameters.booleanParameters("setSwapEnabled"),
         Parameters.booleanParameters("setCopyOnRead"),
         Parameters.objectParameters(true, "setNearConfiguration", nearCacheConfigurationFactory()),
         asArray(null,

@@ -165,6 +165,8 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
             Set<String> names = new HashSet<>();
 
             for (BinaryType meta : metaCol) {
+                info("Binary type: " + meta);
+
                 assertTrue(names.add(meta.typeName()));
 
                 assertNull(meta.affinityKeyFieldName());

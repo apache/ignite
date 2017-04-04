@@ -241,7 +241,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @return Cache map entry factory.
      */
-    protected GridCacheMapEntryFactory entryFactory() {
+    @Override protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
@@ -250,9 +250,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 int hash,
                 CacheObject val
             ) {
-                if (ctx.useOffheapEntry())
-                    return new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash, val);
-
                 return new GridDhtCacheEntry(ctx, topVer, key, hash, val);
             }
         };
@@ -602,14 +599,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, Map, boolean, AffinityTopologyVersion, UUID, int, IgniteCacheExpiryPolicy, boolean)}
+     * {@link #getDhtAsync(UUID, long, Map, boolean, AffinityTopologyVersion, UUID, int, IgniteCacheExpiryPolicy, boolean, boolean)}
      * method instead to retrieve DHT value.
-     *
-     * @param keys {@inheritDoc}
+     *  @param keys {@inheritDoc}
      * @param forcePrimary {@inheritDoc}
      * @param skipTx {@inheritDoc}
-     * @param needVer Need version.
-     * @return {@inheritDoc}
+     * @param needVer Need version.  @return {@inheritDoc}
      */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
         @Nullable Collection<? extends K> keys,
@@ -618,6 +613,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         boolean skipVals,
         boolean canRemap,
         boolean needVer
@@ -631,6 +627,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             subjId,
             taskName,
             deserializeBinary,
+            opCtx != null && opCtx.recovery(),
             forcePrimary,
             null,
             skipVals,
@@ -657,7 +654,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
-        boolean canRemap
+        boolean canRemap,
+        boolean recovery
     ) {
         return getAllAsync0(keys,
             readerArgs,
@@ -669,6 +667,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             /*keep cache objects*/true,
+            recovery,
             canRemap,
             /*need version*/true);
     }
@@ -693,7 +692,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
-        boolean skipVals
+        boolean skipVals,
+        boolean recovery
     ) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
@@ -704,7 +704,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             subjId,
             taskNameHash,
             expiry,
-            skipVals);
+            skipVals,
+            recovery);
 
         fut.init();
 
@@ -734,7 +735,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
-        boolean skipVals
+        boolean skipVals,
+        boolean recovery
     ) {
         GridDhtGetSingleFuture<K, V> fut = new GridDhtGetSingleFuture<>(
             ctx,
@@ -747,7 +749,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             subjId,
             taskNameHash,
             expiry,
-            skipVals);
+            skipVals,
+            recovery);
 
         fut.init();
 
@@ -774,7 +777,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.subjectId(),
                 req.taskNameHash(),
                 expiryPlc,
-                req.skipValues());
+                req.skipValues(),
+                req.recovery());
 
         fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
             @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> f) {
@@ -872,7 +876,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.subjectId(),
                 req.taskNameHash(),
                 expiryPlc,
-                req.skipValues());
+                req.skipValues(),
+                req.recovery());
 
         fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
@@ -1025,8 +1030,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         int size = keys.size();
 
-        boolean swap = cache.context().isSwapOrOffheapEnabled();
-
         for (int i = 0; i < size; i++) {
             try {
                 GridCacheEntryEx entry = null;
@@ -1034,21 +1037,15 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 try {
                     while (true) {
                         try {
-                            if (swap) {
-                                entry = cache.entryEx(keys.get(i));
+                            entry = cache.entryEx(keys.get(i));
 
-                                entry.unswap(false);
-                            }
-                            else
-                                entry = cache.peekEx(keys.get(i));
+                            entry.unswap(false);
 
-                            if (entry != null)
-                                entry.updateTtl(vers.get(i), ttl);
+                            entry.updateTtl(vers.get(i), ttl);
 
                             break;
                         }
                         catch (GridCacheEntryRemovedException ignore) {
-                            // Retry
                             if (log.isDebugEnabled())
                                 log.debug("Got removed entry: " + entry);
                         }

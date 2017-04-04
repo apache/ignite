@@ -67,7 +67,6 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
         ccfg.setName("offheap-cache");
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        ccfg.setSwapEnabled(false);
         ccfg.setIndexedTypes(
             Long.class, Person.class
         );

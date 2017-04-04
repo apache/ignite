@@ -502,8 +502,10 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
 
             CacheObjectContext cacheObjCtx = cacheAdapter.context().cacheObjectContext();
 
-            GridCacheMapEntry mapEntry = cacheAdapter.map().getEntry(cacheObjects.toCacheKeyObject(
-                cacheObjCtx, null, e.getKey(), true));
+            GridCacheEntryEx mapEntry = cacheAdapter.entryEx(cacheObjects.toCacheKeyObject(
+                cacheObjCtx, cacheAdapter.context(), e.getKey(), true));
+
+            mapEntry.unswap();
 
             assertNotNull("No entry for key: " + e.getKey(), mapEntry);
             assertEquals(mapEntry.version(), e.version());

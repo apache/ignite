@@ -249,7 +249,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         ccfg.setNodeFilter(new TestFilterExcludeOldest());
 
-        assertNotNull(ignite0.getOrCreateCache(ccfg));
+        assertNotNull(ignite(1).getOrCreateCache(ccfg));
 
         stopGrid(0);
 
@@ -276,7 +276,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         ccfg.setNodeFilter(new TestFilterIncludeNode(3));
 
-        assertNotNull(ignite0.getOrCreateCache(ccfg));
+        assertNotNull(ignite(1).getOrCreateCache(ccfg));
 
         stopGrid(0);
 
@@ -295,11 +295,13 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     public void testOldestChanged3() throws Exception {
         IgniteEx ignite0 = grid(0);
 
+        assertEquals(1L, ignite0.localNode().order());
+
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setNodeFilter(new TestFilterIncludeNode(3));
 
-        assertNotNull(ignite0.getOrCreateCache(ccfg));
+        assertNotNull(ignite(1).getOrCreateCache(ccfg));
 
         stopGrid(0);
 

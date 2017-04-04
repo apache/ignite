@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
-import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
@@ -120,7 +119,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrid("client-1");
 
-        IgniteCache cache = ignite.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
         cache.get(0);
         cache.getAll(F.asSet(0, 1));
@@ -211,7 +210,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrid("client-1");
 
-        IgniteCache cache = ignite.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
         cache.get(0);
         cache.getAll(F.asSet(0, 1));
@@ -233,7 +232,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * Load cache created on client as LOCAL and see if it only loaded on client
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testLocalLoadClient() throws Exception {
         cacheMode = CacheMode.LOCAL;
@@ -243,7 +242,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         Ignite client = startGrid("client-1");
 
-        IgniteCache cache = client.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
 
         cache.loadCache(null);
 
@@ -258,7 +257,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * Load cache from server that created on client as LOCAL and see if it only loaded on server
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testLocalLoadServer() throws Exception {
         cacheMode = CacheMode.LOCAL;
@@ -355,6 +354,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      */
     private static class EP implements CacheEntryProcessor {
+        /** {@inheritDoc} */
         @Override public Object process(MutableEntry entry, Object... arguments) {
             return null;
         }
@@ -364,24 +364,27 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
      * Test store that loads 10 item
      */
     public static class TestStore extends CacheStoreAdapter<Object, Object> {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
-        @Override
-        public Integer load(Object key) throws CacheLoaderException {
+        /** {@inheritDoc} */
+        @Override public Integer load(Object key) {
             return null;
         }
 
-        @Override
-        public void write(Cache.Entry<? extends Object, ? extends Object> entry) throws CacheWriterException {
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) {
+            // No-op.
         }
 
-        @Override
-        public void delete(Object key) throws CacheWriterException {
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            // No-op.
         }
 
-        @Override
-        public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
+        /** {@inheritDoc} */
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             if (ignite.cluster().localNode().isClient())
                 loadedFromClient = true;
 

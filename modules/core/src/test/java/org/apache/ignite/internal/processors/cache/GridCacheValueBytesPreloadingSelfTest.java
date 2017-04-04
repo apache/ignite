@@ -119,7 +119,7 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void checkByteArrays() throws Exception {
+    private void checkByteArrays() throws Exception {
         int keyCnt = 1000;
 
         byte[] val = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
@@ -132,13 +132,14 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
 
         startGrid(1);
 
-        if (memMode == ONHEAP_TIERED) {
-            for (int i = 0; i < keyCnt; i++)
-                grid(0).cache(null).localEvict(Collections.<Object>singleton(String.valueOf(i)));
-
-            for (int i = 0; i < keyCnt; i++)
-                grid(0).cache(null).localPromote(Collections.singleton(String.valueOf(i)));
-        }
+// TODO: GG-11148 check if evict/promote make sense.
+//        if (memMode == ONHEAP_TIERED) {
+//            for (int i = 0; i < keyCnt; i++)
+//                grid(0).cache(null).localEvict(Collections.<Object>singleton(String.valueOf(i)));
+//
+//            for (int i = 0; i < keyCnt; i++)
+//                grid(0).cache(null).localPromote(Collections.singleton(String.valueOf(i)));
+//        }
 
         startGrid(2);
 

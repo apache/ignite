@@ -71,7 +71,6 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setSwapEnabled(true);
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setEvictSynchronized(false);

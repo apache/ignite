@@ -115,13 +115,8 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration[] cacheConfigurations() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void setIndexedTypes(CacheConfiguration<?, ?> cc, CacheMode mode) {
-        throw new UnsupportedOperationException();
+    @Override protected void createCaches() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

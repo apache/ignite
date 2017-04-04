@@ -17,6 +17,22 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.lang.management.ManagementFactory;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.Collections;
+import java.util.ServiceLoader;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryFieldIdentityResolver;
@@ -26,7 +42,6 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -49,12 +64,12 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
-import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.platform.PlatformCachePluginConfigurationClosure;
 import org.apache.ignite.plugin.platform.PlatformCachePluginConfigurationClosureFactory;
@@ -67,40 +82,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpiMBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-
-import javax.cache.configuration.Factory;
-import javax.cache.expiry.ExpiryPolicy;
-import java.lang.management.ManagementFactory;
-import java.net.InetSocketAddress;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.Set;
 
 /**
  * Configuration utils.
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
 public class PlatformConfigurationUtils {
-    /** */
-    private static final byte SWAP_TYP_NONE = 0;
-
-    /** */
-    private static final byte SWAP_TYP_FILE = 1;
-
     /**
      * Write .Net configuration to the stream.
      *
@@ -156,7 +145,6 @@ public class PlatformConfigurationUtils {
         ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
         ccfg.setCopyOnRead(in.readBoolean());
         ccfg.setEagerTtl(in.readBoolean());
-        ccfg.setSwapEnabled(in.readBoolean());
         ccfg.setEvictSynchronized(in.readBoolean());
         ccfg.setEvictSynchronizedConcurrencyLevel(in.readInt());
         ccfg.setEvictSynchronizedKeyBufferSize(in.readInt());
@@ -168,7 +156,6 @@ public class PlatformConfigurationUtils {
         ccfg.setLongQueryWarningTimeout(in.readLong());
         ccfg.setMaxConcurrentAsyncOperations(in.readInt());
         ccfg.setEvictMaxOverflowRatio(in.readFloat());
-        ccfg.setMemoryMode(CacheMemoryMode.values()[in.readInt()]);
         ccfg.setName(in.readString());
         ccfg.setOffHeapMaxMemory(in.readLong());
         ccfg.setReadFromBackup(in.readBoolean());
@@ -200,7 +187,8 @@ public class PlatformConfigurationUtils {
         if (qryEntCnt > 0) {
             Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
 
-            for (int i = 0; i < qryEntCnt; i++)
+            for (int i
+                 = 0; i < qryEntCnt; i++)
                 entities.add(readQueryEntity(in));
 
             ccfg.setQueryEntities(entities);
@@ -656,27 +644,6 @@ public class PlatformConfigurationUtils {
             cfg.setTransactionConfiguration(tx);
         }
 
-        byte swapType = in.readByte();
-
-        switch (swapType) {
-            case SWAP_TYP_FILE: {
-                FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
-
-                swap.setBaseDirectory(in.readString());
-                swap.setMaximumSparsity(in.readFloat());
-                swap.setMaxWriteQueueSize(in.readInt());
-                swap.setReadStripesNumber(in.readInt());
-                swap.setWriteBufferSize(in.readInt());
-
-                cfg.setSwapSpaceSpi(swap);
-
-                break;
-            }
-
-            default:
-                assert swapType == SWAP_TYP_NONE;
-        }
-
         readPluginConfiguration(cfg, in);
     }
 
@@ -810,7 +777,6 @@ public class PlatformConfigurationUtils {
         writeEnumInt(writer, ccfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
         writer.writeBoolean(ccfg.isCopyOnRead());
         writer.writeBoolean(ccfg.isEagerTtl());
-        writer.writeBoolean(ccfg.isSwapEnabled());
         writer.writeBoolean(ccfg.isEvictSynchronized());
         writer.writeInt(ccfg.getEvictSynchronizedConcurrencyLevel());
         writer.writeInt(ccfg.getEvictSynchronizedKeyBufferSize());
@@ -822,7 +788,6 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
         writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
-        writeEnumInt(writer, ccfg.getMemoryMode(), CacheConfiguration.DFLT_MEMORY_MODE);
         writer.writeString(ccfg.getName());
         writer.writeLong(ccfg.getOffHeapMaxMemory());
         writer.writeBoolean(ccfg.isReadFromBackup());
@@ -1106,23 +1071,6 @@ public class PlatformConfigurationUtils {
         }
         else
             w.writeBoolean(false);
-
-        SwapSpaceSpi swap = cfg.getSwapSpaceSpi();
-
-        if (swap instanceof FileSwapSpaceSpi) {
-            w.writeByte(SWAP_TYP_FILE);
-
-            FileSwapSpaceSpi fileSwap = (FileSwapSpaceSpi)swap;
-
-            w.writeString(fileSwap.getBaseDirectory());
-            w.writeFloat(fileSwap.getMaximumSparsity());
-            w.writeInt(fileSwap.getMaxWriteQueueSize());
-            w.writeInt(fileSwap.getReadStripesNumber());
-            w.writeInt(fileSwap.getWriteBufferSize());
-        }
-        else {
-            w.writeByte(SWAP_TYP_NONE);
-        }
 
         w.writeString(cfg.getIgniteHome());
 

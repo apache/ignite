@@ -95,8 +95,6 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
         nearPlc.setMaxSize(EVICT_CACHE_SIZE);
         cc.getNearConfiguration().setNearEvictionPolicy(nearPlc);
 
-        cc.setSwapEnabled(false);
-
         // We set 1 backup explicitly.
         cc.setBackups(1);
 

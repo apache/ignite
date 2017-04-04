@@ -43,8 +43,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -92,14 +90,6 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /**
-     * Creates a SwapSpaceSpi.
-     * @return the Spi
-     */
-    protected SwapSpaceSpi spi() {
-        return new FileSwapSpaceSpi();
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -112,12 +102,9 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        cfg.setSwapSpaceSpi(spi());
-
         CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(true);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setOffHeapMaxMemory(OFFHEAP_MEM);
@@ -302,62 +289,6 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         assertEquals(0, offheapedCnt.get());
     }
 
-    /** @throws Exception If failed. */
-    public void testPartitionIterators() throws Exception {
-        populate();
-
-        GridCacheAdapter<Long, Object> cacheAdapter = ((IgniteKernal)grid(0)).internalCache();
-        GridNearCacheAdapter<Long, Object> cache = (GridNearCacheAdapter<Long, Object>)cacheAdapter;
-
-        Map<Integer, Collection<Long>> grouped = new HashMap<>();
-
-        for (long i = 0; i < ENTRY_CNT; i++) {
-            // Avoid entry creation.
-            int part = grid(0).affinity(null).partition(i);
-
-            Collection<Long> list = grouped.get(part);
-
-            if (list == null) {
-                list = new LinkedList<>();
-
-                grouped.put(part, list);
-            }
-
-            list.add(i);
-        }
-
-        // Now check that partition iterators contain all values.
-        for (Map.Entry<Integer, Collection<Long>> entry : grouped.entrySet()) {
-            int part = entry.getKey();
-            Collection<Long> vals = entry.getValue();
-
-            GridCacheContext<Long, Object> ctx = cache.dht().context();
-
-            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = ctx.swap().iterator(part);
-
-            assert it != null || vals.isEmpty();
-
-            if (it != null) {
-                while (it.hasNext()) {
-                    Map.Entry<byte[], GridCacheSwapEntry> swapEntry = it.next();
-
-                    Long key = ctx.marshaller().unmarshal(swapEntry.getKey(), ctx.deploy().globalLoader());
-
-                    assertTrue(vals.contains(key));
-
-                    vals.remove(key);
-                }
-            }
-        }
-
-        info(String.valueOf(grouped));
-
-        for (Map.Entry<Integer, Collection<Long>> entry : grouped.entrySet()) {
-            assertTrue("Got skipped keys in partition iterator [partId=" + entry.getKey() +
-                ", keys=" + entry.getValue(), F.isEmpty(entry.getValue()));
-        }
-    }
-
     /**
      * Tests offheap and swap iterators.
      *
@@ -518,53 +449,5 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         assert onheapedCnt.get() == 0;
 
         checkEntries(cache);
-    }
-
-    /**
-     * Tests weak iterators cleanup after garbage collections.
-     *
-     * @throws Exception If failed.
-     */
-    public void testIteratorsCleanup() throws Exception {
-        final IgniteCache<Long, Long> cache = populate();
-
-        IgniteInternalFuture<?> offHeapFut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                int cnt = 0;
-
-                for (Cache.Entry<Long, Long> e : cache.localEntries(CachePeekMode.OFFHEAP)) {
-                    assertEquals(e.getKey(), e.getValue());
-
-                    cnt++;
-                }
-
-                assertEquals(cache.localSize(CachePeekMode.OFFHEAP), cnt);
-
-            }
-        }, 20);
-
-        IgniteInternalFuture<?> swapFut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                int cnt = 0;
-
-                for (Cache.Entry<Long, Long> e : cache.localEntries(CachePeekMode.SWAP)) {
-                    assertEquals(e.getKey(), e.getValue());
-
-                    cnt++;
-                }
-
-                assertEquals(ENTRY_CNT - cache.localSize(CachePeekMode.OFFHEAP), cnt);
-            }
-        }, 20);
-
-        offHeapFut.get();
-        swapFut.get();
-
-        System.gc();
-
-        // Runs iterator queue cleanup in GridCacheSwapManager.read method.
-        cache.get(1L + ENTRY_CNT);
-
-        assertEquals(0, ((IgniteKernal)grid(0)).internalCache().context().swap().iteratorSetSize());
     }
 }

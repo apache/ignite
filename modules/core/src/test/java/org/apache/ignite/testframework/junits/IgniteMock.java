@@ -421,6 +421,21 @@ public class IgniteMock implements Ignite {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetLostPartitions(Collection<String> cacheNames) {
+        // No-op.
+    }
+
     /**
      * @param staticCfg Configuration.
      */

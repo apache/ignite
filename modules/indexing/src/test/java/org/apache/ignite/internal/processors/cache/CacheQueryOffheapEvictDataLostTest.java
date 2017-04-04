@@ -57,7 +57,6 @@ public class CacheQueryOffheapEvictDataLostTest extends GridCommonAbstractTest {
         ccfg1.setMemoryMode(OFFHEAP_TIERED);
         ccfg1.setOffHeapMaxMemory(1024);
         ccfg1.setIndexedTypes(Integer.class, TestData.class);
-        ccfg1.setSwapEnabled(false);
 
         CacheConfiguration<Object, Object> ccfg2 = new CacheConfiguration<>();
 
@@ -66,7 +65,6 @@ public class CacheQueryOffheapEvictDataLostTest extends GridCommonAbstractTest {
         ccfg2.setEvictionPolicy(new LruEvictionPolicy(10));
         ccfg2.setOffHeapMaxMemory(1024);
         ccfg2.setIndexedTypes(Integer.class, TestData.class);
-        ccfg2.setSwapEnabled(false);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
 

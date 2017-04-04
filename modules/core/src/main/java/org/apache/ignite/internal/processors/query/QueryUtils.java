@@ -421,12 +421,12 @@ public class QueryUtils {
                 idxName = propName + "_idx";
 
             if (idxOrder == 0) // Add index only on the first field.
-                d.addIndex(idxName, isGeometryClass(propCls) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+                d.addIndex(idxName, isGeometryClass(propCls) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, 0);
 
             if (idxType == IndexType.TEXT)
                 d.addFieldToTextIndex(propName);
             else
-                d.addFieldToIndex(idxName, propName, idxOrder, idxType == IndexType.DESC);
+                d.addFieldToIndex(idxName, propName, idxOrder, 0, idxType == IndexType.DESC);
         }
     }
     
@@ -453,9 +453,9 @@ public class QueryUtils {
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, 0);
 
-            d.addFieldToIndex(idxName, prop.name(), 0, false);
+            d.addFieldToIndex(idxName, prop.name(), 0, 0, false);
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
@@ -465,9 +465,9 @@ public class QueryUtils {
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, 0);
 
-            d.addFieldToIndex(idxName, prop.name(), 0, true);
+            d.addFieldToIndex(idxName, prop.name(), 0, 0, true);
         }
 
         for (String txtIdx : meta.getTextFields()) {
@@ -496,7 +496,7 @@ public class QueryUtils {
 
                     Boolean descending = idxField.getValue().get2();
 
-                    d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
+                    d.addFieldToIndex(idxName, prop.name(), order, 0, descending != null && descending);
 
                     order++;
                 }
@@ -614,7 +614,7 @@ public class QueryUtils {
                 QueryIndexType idxTyp = idx.getIndexType();
 
                 if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
-                    d.addIndex(idxName, idxTyp);
+                    d.addIndex(idxName, idxTyp, idx.getInlineSize());
 
                     int i = 0;
 
@@ -627,7 +627,7 @@ public class QueryUtils {
                         if (alias != null)
                             field = alias;
 
-                        d.addFieldToIndex(idxName, field, i++, !asc);
+                        d.addFieldToIndex(idxName, field, i++, idx.getInlineSize(), !asc);
                     }
                 }
                 else if (idxTyp == QueryIndexType.FULLTEXT){

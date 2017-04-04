@@ -18,12 +18,21 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
+import org.apache.ignite.IgniteCacheAffinitySelfTest;
+import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
+import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
+import org.apache.ignite.cache.affinity.fair.FairAffinityDynamicCacheSelfTest;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionNodesSelfTest;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionSelfTest;
+import org.apache.ignite.cache.affinity.fair.FairAffinityNodesRestart;
+import org.apache.ignite.cache.affinity.local.LocalAffinityFunctionTest;
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
+import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
-import org.apache.ignite.internal.processors.cache.GridCacheOffHeapCleanupTest;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapSpaceSpiConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
@@ -31,6 +40,8 @@ import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscovery
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentFairAffinityTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteActiveOnStartNodeJoinValidationSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
@@ -52,20 +63,33 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(IgniteCacheStoreCollectionTest.class);
         suite.addTestSuite(IgniteCacheWriteBehindNoUpdateSelfTest.class);
         suite.addTestSuite(IgniteCachePutStackOverflowSelfTest.class);
-        suite.addTestSuite(GridCacheSwapSpaceSpiConsistencySelfTest.class);
 
         suite.addTestSuite(CacheLateAffinityAssignmentTest.class);
         suite.addTestSuite(CacheLateAffinityAssignmentFairAffinityTest.class);
         suite.addTestSuite(CacheLateAffinityAssignmentNodeJoinValidationTest.class);
+        suite.addTestSuite(IgniteActiveOnStartNodeJoinValidationSelfTest.class);
         suite.addTestSuite(EntryVersionConsistencyReadThroughTest.class);
         suite.addTestSuite(IgniteCacheSyncRebalanceModeSelfTest.class);
 
         suite.addTest(IgniteCacheReadThroughEvictionsVariationsSuite.suite());
         suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
 
-        suite.addTestSuite(GridCacheOffHeapCleanupTest.class);
+        suite.addTestSuite(ClusterStatePartitionedSelfTest.class);
+        suite.addTestSuite(ClusterStateReplicatedSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionLossPolicySelfTest.class);
 
         suite.addTestSuite(CacheRebalancingSelfTest.class);
+
+        // Affinity tests.
+        suite.addTestSuite(FairAffinityFunctionNodesSelfTest.class);
+        suite.addTestSuite(FairAffinityFunctionSelfTest.class);
+        suite.addTestSuite(FairAffinityDynamicCacheSelfTest.class);
+        suite.addTestSuite(FairAffinityNodesRestart.class);
+        suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
+        suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
+        suite.addTestSuite(AffinityClientNodeSelfTest.class);
+        suite.addTestSuite(LocalAffinityFunctionTest.class);
+        suite.addTestSuite(AffinityHistoryCleanupTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicProtocolTest.class);
 

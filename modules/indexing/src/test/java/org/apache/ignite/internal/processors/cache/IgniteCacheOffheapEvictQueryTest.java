@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -61,14 +60,11 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
-
         CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(true);
         cacheCfg.setBackups(0);
         cacheCfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
         cacheCfg.setEvictionPolicy(null);

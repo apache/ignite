@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractPartitionedByteArrayValuesSelfTest;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -79,8 +78,6 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
             atomicCacheCfg,
             atomicOffheapCacheCfg,
             atomicOffheapTieredCacheCfg);
-
-        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         c.setPeerClassLoadingEnabled(peerClassLoading());
 

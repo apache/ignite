@@ -85,7 +85,6 @@
     <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
     <Compile Include="Cache\CacheMetricsTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
-    <Compile Include="Cache\CacheSwapSpaceTest.cs" />
     <Compile Include="Cache\Query\CacheDmlQueriesTest.cs" />
     <Compile Include="Cache\CacheAbstractTransactionalTest.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />

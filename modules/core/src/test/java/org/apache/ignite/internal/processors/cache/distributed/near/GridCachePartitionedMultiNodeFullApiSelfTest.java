@@ -185,9 +185,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     }
 
     /**
+     * TODO: GG-11148 check if test makes sense.
+     *
      * @throws Exception If failed.
      */
-    public void testUnswapShort() throws Exception {
+    public void _testUnswapShort() throws Exception {
         if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED)
             return;
 

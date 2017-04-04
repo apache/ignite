@@ -287,13 +287,13 @@ public class MarshallerContextImpl implements MarshallerContext {
             String clsName
     ) {
         return new IgniteCheckedException("Duplicate ID [platformId="
-                + platformId
-                + ", typeId="
-                + typeId
-                + ", oldCls="
-                + conflictingClsName
-                + ", newCls="
-                + clsName + "]");
+            + platformId
+            + ", typeId="
+            + typeId
+            + ", oldCls="
+            + conflictingClsName
+            + ", newCls="
+            + clsName + "]");
     }
 
     /**

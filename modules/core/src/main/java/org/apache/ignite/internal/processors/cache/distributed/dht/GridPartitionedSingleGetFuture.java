@@ -118,6 +118,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     private final boolean keepCacheObjects;
 
     /** */
+    private boolean recovery;
+
+    /** */
     @GridToStringInclude
     private ClusterNode node;
 
@@ -149,7 +152,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         boolean skipVals,
         boolean canRemap,
         boolean needVer,
-        boolean keepCacheObjects
+        boolean keepCacheObjects,
+        boolean recovery
     ) {
         assert key != null;
 
@@ -173,6 +177,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         this.canRemap = canRemap;
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
+        this.recovery = recovery;
         this.topVer = topVer;
 
         futId = IgniteUuid.randomUuid();
@@ -187,6 +192,16 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     public void init() {
         AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
             canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
+
+        GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
+
+        Throwable err = topFut != null ? topFut.validateCache(cctx, recovery, true, key, null) : null;
+
+        if (err != null) {
+            onDone(err);
+
+            return;
+        }
 
         map(topVer);
     }
@@ -218,7 +233,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 subjId,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc,
-                skipVals);
+                skipVals,
+                recovery);
 
             final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -277,7 +293,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 skipVals,
                 /**add reader*/false,
                 needVer,
-                cctx.deploymentEnabled());
+                cctx.deploymentEnabled(),
+                recovery);
 
             try {
                 cctx.io().send(node, req, cctx.ioPolicy());
@@ -334,11 +351,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         GridDhtCacheAdapter colocated = cctx.dht();
 
         while (true) {
-            GridCacheEntryEx entry;
-
             try {
-                entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
-                    colocated.peekEx(key);
+                GridCacheEntryEx entry = colocated.entryEx(key);
 
                 // If our DHT cache do has value, then we peek it.
                 if (entry != null) {
@@ -351,8 +365,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         EntryGetResult res = entry.innerGetVersioned(
                             null,
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
                             subjId,
@@ -371,11 +383,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         v = entry.innerGet(
                             null,
                             null,
-                            /*swap*/true,
                             /*read-through*/false,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,

@@ -123,6 +123,11 @@ public interface GridQueryTypeDescriptor {
     public String affinityKey();
 
     /**
+     * @return BinaryObject's type ID if indexed value is BinaryObject, otherwise value class' hash code.
+     */
+    public int typeId();
+
+    /**
      * Gets key field name.
      * @return Key field name.
      */

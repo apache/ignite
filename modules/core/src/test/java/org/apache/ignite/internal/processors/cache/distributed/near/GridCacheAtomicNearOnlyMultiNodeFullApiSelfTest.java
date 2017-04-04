@@ -120,7 +120,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
     }
 
     /** {@inheritDoc} */
-    @Override public void testEvictExpired() throws Exception {
+    @Override public void _testEvictExpired() throws Exception {
         if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1113");
 

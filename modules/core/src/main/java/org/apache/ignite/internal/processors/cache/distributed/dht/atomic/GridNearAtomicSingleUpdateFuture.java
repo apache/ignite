@@ -80,6 +80,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
+     * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Maximum number of retries.
      * @param waitTopFut If {@code false} does not wait for affinity change future.
      */
@@ -99,6 +100,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         int remapCnt,
         boolean waitTopFut
     ) {
@@ -115,6 +117,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             taskNameHash,
             skipStore,
             keepBinary,
+            recovery,
             remapCnt,
             waitTopFut);
 
@@ -444,7 +447,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         GridDhtTopologyFuture fut = cache.topology().topologyVersionFuture();
 
         if (fut.isDone()) {
-            Throwable err = fut.validateCache(cctx);
+            Throwable err = fut.validateCache(cctx, recovery, /*read*/false, key, null);
 
             if (err != null) {
                 onDone(err);
@@ -631,6 +634,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     needPrimaryRes,
                     skipStore,
                     keepBinary,
+                    recovery,
                     cctx.deploymentEnabled());
             }
             else {
@@ -649,6 +653,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         needPrimaryRes,
                         skipStore,
                         keepBinary,
+                        recovery,
                         cctx.deploymentEnabled());
                 }
                 else {
@@ -667,6 +672,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         needPrimaryRes,
                         skipStore,
                         keepBinary,
+                        recovery,
                         cctx.deploymentEnabled());
                 }
             }
@@ -689,6 +695,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 needPrimaryRes,
                 skipStore,
                 keepBinary,
+                recovery,
                 cctx.deploymentEnabled(),
                 1);
         }

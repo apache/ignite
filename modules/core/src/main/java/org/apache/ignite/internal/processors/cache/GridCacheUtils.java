@@ -86,7 +86,6 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -331,10 +330,6 @@ public class GridCacheUtils {
             return "Cache extended entry to key converter.";
         }
     };
-
-    /** NoopSwapSpaceSpi used attribute. */
-    private static final String NOOP_SWAP_SPACE_SPI_ATTR_NAME = U.spiAttribute(new NoopSwapSpaceSpi(),
-        IgniteNodeAttributes.ATTR_SPI_CLASS);
 
     /**
      * Ensure singleton.
@@ -927,14 +922,10 @@ public class GridCacheUtils {
 
         ctx.evicts().unwind();
 
-        ctx.swap().unwindOffheapEvicts();
-
         if (ctx.isNear()) {
             GridCacheContext dhtCtx = ctx.near().dht().context();
 
             dhtCtx.evicts().unwind();
-
-            dhtCtx.swap().unwindOffheapEvicts();
         }
 
         ctx.ttl().expire();
@@ -1139,7 +1130,6 @@ public class GridCacheUtils {
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
         cache.setEvictionPolicy(null);
-        cache.setSwapEnabled(false);
         cache.setCacheStoreFactory(null);
         cache.setNodeFilter(CacheConfiguration.ALL_NODES);
         cache.setEagerTtl(true);
@@ -1506,7 +1496,7 @@ public class GridCacheUtils {
      * @return {@code True} if node is not client node and pass given filter.
      */
     public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
-        return !clientNode(node) && filter.apply(node);
+        return !node.isDaemon() && !clientNode(node) && filter.apply(node);
     }
 
     /**
@@ -1684,16 +1674,6 @@ public class GridCacheUtils {
         }
 
         return res;
-    }
-
-    /**
-     * Checks if swap is enabled on node.
-     *
-     * @param node Node
-     * @return {@code true} if swap is enabled, {@code false} otherwise.
-     */
-    public static boolean isSwapEnabled(ClusterNode node) {
-        return !node.attributes().containsKey(NOOP_SWAP_SPACE_SPI_ATTR_NAME);
     }
 
     /**

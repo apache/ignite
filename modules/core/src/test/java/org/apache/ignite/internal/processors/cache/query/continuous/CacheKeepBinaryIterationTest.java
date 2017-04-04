@@ -304,6 +304,9 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                     cache0 = cache0.withKeepBinary();
 
                 for (CachePeekMode mode : CachePeekMode.values()) {
+                    if (mode == CachePeekMode.SWAP)
+                        continue;
+
                     int size = 0;
 
                     for (Cache.Entry<Object, Object> e : cache0.localEntries(mode)) {
@@ -333,8 +336,7 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                             ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED &&
                             ccfg.getNearConfiguration() != null) ||
                         (mode == CachePeekMode.ONHEAP && ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED) ||
-                        (mode == CachePeekMode.OFFHEAP && ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED) ||
-                        (mode == CachePeekMode.SWAP && ccfg.isSwapEnabled()))
+                        (mode == CachePeekMode.OFFHEAP && ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED))
                         assertTrue("Zero result at mode: " + mode, size > 0);
                 }
             }

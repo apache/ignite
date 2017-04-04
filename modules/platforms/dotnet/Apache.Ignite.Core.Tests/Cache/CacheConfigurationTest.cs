@@ -198,7 +198,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultMaxConcurrentAsyncOperations, cfg.MaxConcurrentAsyncOperations);
             Assert.AreEqual(CacheConfiguration.DefaultMaxEvictionOverflowRatio, cfg.MaxEvictionOverflowRatio);
-            Assert.AreEqual(CacheConfiguration.DefaultMemoryMode, cfg.MemoryMode);
             Assert.AreEqual(CacheConfiguration.DefaultOffHeapMaxMemory, cfg.OffHeapMaxMemory);
             Assert.AreEqual(CacheConfiguration.DefaultReadFromBackup, cfg.ReadFromBackup);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchSize, cfg.RebalanceBatchSize);
@@ -208,7 +207,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultSqlOnheapRowCacheSize, cfg.SqlOnheapRowCacheSize);
             Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
             Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
-            Assert.AreEqual(CacheConfiguration.DefaultEnableSwap, cfg.EnableSwap);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindBatchSize, cfg.WriteBehindBatchSize);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindEnabled, cfg.WriteBehindEnabled);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushFrequency, cfg.WriteBehindFlushFrequency);
@@ -237,7 +235,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.LongQueryWarningTimeout, y.LongQueryWarningTimeout);
             Assert.AreEqual(x.MaxConcurrentAsyncOperations, y.MaxConcurrentAsyncOperations);
             Assert.AreEqual(x.MaxEvictionOverflowRatio, y.MaxEvictionOverflowRatio);
-            Assert.AreEqual(x.MemoryMode, y.MemoryMode);
             Assert.AreEqual(x.OffHeapMaxMemory, y.OffHeapMaxMemory);
             Assert.AreEqual(x.ReadFromBackup, y.ReadFromBackup);
             Assert.AreEqual(x.RebalanceBatchSize, y.RebalanceBatchSize);
@@ -247,7 +244,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.SqlOnheapRowCacheSize, y.SqlOnheapRowCacheSize);
             Assert.AreEqual(x.StartSize, y.StartSize);
             Assert.AreEqual(x.StartSize, y.StartSize);
-            Assert.AreEqual(x.EnableSwap, y.EnableSwap);
             Assert.AreEqual(x.WriteBehindBatchSize, y.WriteBehindBatchSize);
             Assert.AreEqual(x.WriteBehindEnabled, y.WriteBehindEnabled);
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
@@ -507,14 +503,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Backups = 8,
                 CacheMode = CacheMode.Partitioned,
                 EagerTtl = true,
-                EnableSwap = true,
                 EvictSynchronizedConcurrencyLevel = 9,
                 EvictSynchronizedTimeout = TimeSpan.FromSeconds(10),
                 Invalidate = true,
                 KeepBinaryInStore = true,
                 LockTimeout = TimeSpan.FromSeconds(11),
                 MaxEvictionOverflowRatio = 0.5f,
-                MemoryMode = CacheMemoryMode.OnheapTiered,
                 ReadFromBackup = true,
                 RebalanceBatchSize = 12,
                 RebalanceDelay = TimeSpan.FromSeconds(13),
@@ -603,14 +597,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Backups = 8,
                 CacheMode = CacheMode.Partitioned,
                 EagerTtl = true,
-                EnableSwap = true,
                 EvictSynchronizedConcurrencyLevel = 9,
                 EvictSynchronizedTimeout = TimeSpan.FromSeconds(10),
                 Invalidate = true,
                 KeepBinaryInStore = true,
                 LockTimeout = TimeSpan.FromSeconds(11),
                 MaxEvictionOverflowRatio = 0.5f,
-                MemoryMode = CacheMemoryMode.OnheapTiered,
                 ReadFromBackup = true,
                 RebalanceBatchSize = 12,
                 RebalanceDelay = TimeSpan.FromSeconds(13),

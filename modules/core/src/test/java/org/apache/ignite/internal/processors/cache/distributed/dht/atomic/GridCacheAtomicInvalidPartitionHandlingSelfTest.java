@@ -384,17 +384,13 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                     GridCacheEntryEx entry = null;
 
-                    if (memMode == TestMemoryMode.HEAP)
-                        entry = c.peekEx(k);
-                    else {
-                        try {
-                            entry = c.entryEx(k);
+                    try {
+                        entry = c.entryEx(k);
 
-                            entry.unswap();
-                        }
-                        catch (GridDhtInvalidPartitionException ignored) {
-                            // Skip key.
-                        }
+                        entry.unswap();
+                    }
+                    catch (GridDhtInvalidPartitionException ignored) {
+                        // Skip key.
                     }
 
                     for (int r = 0; r < 10; r++) {
@@ -410,7 +406,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 if (val == null) {
                                     assertNull(ver);
 
-                                    val = CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false);
+                                    val = CU.value(entry.rawGet(), entry.context(), false);
                                     ver = entry.version();
                                     nodeId = locNode.id();
                                 }
@@ -419,7 +415,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                                     assertEquals("Failed to check value for key [key=" + k + ", node=" +
                                         locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
-                                        val, CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false));
+                                        val, CU.value(entry.rawGet(), entry.context(), false));
 
                                     assertEquals("Failed to check version for key [key=" + k + ", node=" +
                                         locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',

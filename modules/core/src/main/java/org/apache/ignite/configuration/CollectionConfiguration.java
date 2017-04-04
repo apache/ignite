@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -41,9 +40,6 @@ public class CollectionConfiguration implements Serializable {
 
     /** Cache mode. */
     private CacheMode cacheMode = PARTITIONED;
-
-    /** Cache memory mode. */
-    private CacheMemoryMode memoryMode = ONHEAP_TIERED;
 
     /** Node filter specifying nodes on which this cache should be deployed. */
     private IgnitePredicate<ClusterNode> nodeFilter;
@@ -115,7 +111,7 @@ public class CollectionConfiguration implements Serializable {
      * @return Cache memory mode.
      */
     public CacheMemoryMode getMemoryMode() {
-        return memoryMode;
+        return null;
     }
 
     /**
@@ -123,8 +119,6 @@ public class CollectionConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public CollectionConfiguration setMemoryMode(CacheMemoryMode memoryMode) {
-        this.memoryMode = memoryMode;
-
         return this;
     }
 

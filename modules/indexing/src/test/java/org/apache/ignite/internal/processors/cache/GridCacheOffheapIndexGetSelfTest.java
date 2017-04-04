@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -66,12 +65,18 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+        cfg.setDeploymentMode(SHARED);
 
+        return cfg;
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setSwapEnabled(true);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setOffHeapMaxMemory(OFFHEAP_MEM);
@@ -80,13 +85,8 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setMemoryMode(OFFHEAP_TIERED);
         cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setIndexedTypes(Long.class, Long.class, String.class, TestEntity.class);
 
-        cfg.setCacheConfiguration(cacheCfg);
-
-        cfg.setDeploymentMode(SHARED);
-
-        return cfg;
+        return cacheCfg;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,11 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).clear();
+        for(String cacheName : grid(0).cacheNames()) {
+            info("Clear cache: " + cacheName);
+
+            grid(0).cache(cacheName).clear();
+        }
     }
 
     /**
@@ -110,7 +114,7 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGet() throws Exception {
-        IgniteCache<Long, Long> cache = grid(0).cache(null);
+        IgniteCache<Long, Long> cache = jcache(grid(0), cacheConfiguration(), Long.class, Long.class);
 
         for (long i = 0; i < 100; i++)
             cache.put(i, i);
@@ -134,7 +138,7 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutGet() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = jcache(grid(0), cacheConfiguration(), Object.class, Object.class);
 
         Map map = new HashMap();
 
@@ -161,7 +165,7 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWithExpiryPolicy() throws Exception {
-        IgniteCache<Long, Long> cache = grid(0).cache(null);
+        IgniteCache<Long, Long> cache = jcache(grid(0), cacheConfiguration(), Long.class, Long.class);
 
         cache = cache.withExpiryPolicy(new TestExiryPolicy());
 

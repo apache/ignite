@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -188,9 +189,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                         throw e;
                 }
             }
-
-            for (Cache.Entry<String, Integer> entry : jcache(i).localEntries(CachePeekMode.SWAP))
-                jcache(i).remove(entry.getKey());
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
@@ -216,6 +214,12 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
+
+        TcpCommunicationSpi comm = new TcpCommunicationSpi();
+
+        comm.setSharedMemoryPort(-1);
+
+        cfg.setCommunicationSpi(comm);
 
         return cfg;
     }
@@ -243,7 +247,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        cfg.setSwapEnabled(swapEnabled());
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
@@ -399,8 +402,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Value.
      */
     @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) {
-        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
-            cache.localPeek(key, CachePeekMode.ONHEAP);
+        return cache.localPeek(key);
     }
 
     /**

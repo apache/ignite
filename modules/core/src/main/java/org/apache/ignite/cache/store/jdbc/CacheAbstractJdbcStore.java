@@ -161,7 +161,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     private final Lock cacheMappingsLock = new ReentrantLock();
 
     /** Data source. */
-    protected DataSource dataSrc;
+    protected volatile DataSource dataSrc;
 
     /** Cache with entry mapping description. (cache name, (key id, mapping description)). */
     protected volatile Map<String, Map<Object, EntryMapping>> cacheMappings = Collections.emptyMap();
@@ -423,8 +423,13 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param fetchSize Number of rows to fetch from DB.
      * @return Callable for pool submit.
      */
-    private Callable<Void> loadCacheRange(final EntryMapping em, final IgniteBiInClosure<K, V> clo,
-        @Nullable final Object[] lowerBound, @Nullable final Object[] upperBound, final int fetchSize) {
+    private Callable<Void> loadCacheRange(
+        final EntryMapping em,
+        final IgniteBiInClosure<K, V> clo,
+        @Nullable final Object[] lowerBound,
+        @Nullable final Object[] upperBound,
+        final int fetchSize
+    ) {
         return new Callable<Void>() {
             @Override public Void call() throws Exception {
                 Connection conn = null;

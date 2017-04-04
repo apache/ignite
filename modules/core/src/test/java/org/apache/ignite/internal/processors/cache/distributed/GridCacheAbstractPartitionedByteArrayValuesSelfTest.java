@@ -33,6 +33,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extends
     GridCacheAbstractDistributedByteArrayValuesSelfTest {
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -54,7 +55,6 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
         cfg.setNearConfiguration(nearConfiguration());
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setSwapEnabled(true);
         cfg.setEvictSynchronized(false);
 
         return cfg;

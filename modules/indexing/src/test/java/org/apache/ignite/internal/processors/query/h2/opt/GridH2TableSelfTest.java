@@ -27,12 +27,15 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
+import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.Driver;
@@ -65,6 +68,9 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PK_NAME = "__GG_PK_";
 
+    /** Hash. */
+    private static final String HASH = "__GG_HASH";
+
     /** */
     private static final String STR_IDX_NAME = "__GG_IDX_";
 
@@ -87,6 +93,10 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         conn = DriverManager.getConnection(DB_URL);
 
         tbl = GridH2Table.Engine.createTable(conn, CREATE_TABLE_SQL, null, new GridH2Table.IndexesFactory() {
+            @Override public H2RowFactory createRowFactory(GridH2Table tbl) {
+                return null;
+            }
+
             @Override public ArrayList<Index> createIndexes(GridH2Table tbl) {
                 ArrayList<Index> idxs = new ArrayList<>();
 
@@ -95,6 +105,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
                 IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
+                idxs.add(new H2PkHashIndex(null, tbl, HASH, F.asList(id)));
                 idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
                 idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
                 idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
@@ -525,21 +536,21 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @param rowSet Rows.
      * @return Rows.
      */
-    private Set<Row> checkIndexesConsistent(ArrayList<Index> idxs, @Nullable Set<Row> rowSet) {
+    private Set<Row> checkIndexesConsistent(ArrayList<Index> idxs, @Nullable Set<Row> rowSet) throws IgniteCheckedException {
         for (Index idx : idxs) {
             if (!(idx instanceof GridH2TreeIndex))
                 continue;
 
             Set<Row> set = new HashSet<>();
 
-            Iterator<GridH2Row> iter = ((GridH2TreeIndex)idx).rows();
+            GridCursor<GridH2Row> cursor = ((GridH2TreeIndex)idx).rows();
 
-            while(iter.hasNext())
-                assertTrue(set.add(iter.next()));
+            while(cursor.next())
+                assertTrue(set.add(cursor.get()));
 
             //((GridH2SnapTreeSet)((GridH2Index)idx).tree).print();
 
-            if (rowSet == null)
+            if (rowSet == null || rowSet.isEmpty())
                 rowSet = set;
             else
                 assertEquals(rowSet, set);
@@ -551,7 +562,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     /**
      * @param idxs Indexes list.
      */
-    private void checkOrdered(ArrayList<Index> idxs) {
+    private void checkOrdered(ArrayList<Index> idxs) throws IgniteCheckedException {
         for (Index idx : idxs) {
             if (!(idx instanceof GridH2TreeIndex))
                 continue;
@@ -566,13 +577,15 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @param cmp Comparator.
      */
-    private void checkOrdered(GridH2TreeIndex idx, Comparator<? super GridH2Row> cmp) {
-        Iterator<GridH2Row> rows = idx.rows();
+    private void checkOrdered(GridH2TreeIndex idx, Comparator<? super GridH2Row> cmp) throws IgniteCheckedException {
+        GridCursor<GridH2Row> cursor = idx.rows();
 
         GridH2Row min = null;
 
-        while (rows.hasNext()) {
-            GridH2Row row = rows.next();
+        while (cursor.next()) {
+            GridH2Row row = cursor.get();
+
+            System.out.println(row);
 
             assertNotNull(row);
 

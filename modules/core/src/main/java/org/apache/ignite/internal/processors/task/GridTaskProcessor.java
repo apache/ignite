@@ -140,7 +140,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void start(boolean activeOnStart) {
         ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(TOPIC_JOB_SIBLINGS, new JobSiblingsMessageListener());
@@ -152,7 +152,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
         tasksMetaCache = ctx.security().enabled() && !ctx.isDaemon() ?
             ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
 
@@ -421,7 +421,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         try {
             return taskMetaCache().localPeek(
-                new GridTaskNameHashKey(taskNameHash), CachePeekModes.ONHEAP_ONLY, null);
+                new GridTaskNameHashKey(taskNameHash), null, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

@@ -666,7 +666,11 @@ struct CacheQueryTestSuiteFixture
 {
     Ignite StartNode(const char* name)
     {
+#ifdef IGNITE_TESTS_32
+        return ignite_test::StartNode("cache-query-32.xml", name);
+#else
         return ignite_test::StartNode("cache-query.xml", name);
+#endif
     }
 
     void CheckFieldsQueryPages(int32_t pageSize, int32_t pagesNum, int32_t additionalNum)

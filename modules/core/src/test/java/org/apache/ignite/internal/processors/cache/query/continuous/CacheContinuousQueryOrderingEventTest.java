@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -616,7 +617,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setName("test-cache-" + atomicityMode + "-" + cacheMode + "-" + memoryMode + "-" + memoryMode + "-"
-            + backups);
+            + backups + "-" + UUID.randomUUID()); // TODO GG-11220 (remove setName when fixed).
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
         ccfg.setMemoryMode(memoryMode);

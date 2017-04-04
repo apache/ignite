@@ -95,6 +95,9 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
 
         ctx.onMappingAccepted(item1);
 
+        // Wait until marshaller context write class to file.
+        U.sleep(2_000);
+
         checkFileName("java.lang.String", Paths.get(workDir + "/1.classname0"));
 
         MarshallerMappingItem item2 = new MarshallerMappingItem((byte) 2, 2, "Random.Class.Name");
@@ -103,6 +106,7 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         ctx.onMappingAccepted(item2);
 
         execSvc.shutdown();
+
         if (execSvc.awaitTermination(1000, TimeUnit.MILLISECONDS))
             checkFileName("Random.Class.Name", Paths.get(workDir + "/2.classname2"));
         else
@@ -181,6 +185,10 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
      * @param pathToReal Path to real.
      */
     private void checkFileName(String expected, Path pathToReal) throws IOException {
-        assertEquals(expected, new String(readAllBytes(pathToReal)));
+        byte[] fileContent = readAllBytes(pathToReal);
+
+        assert fileContent != null && fileContent.length > 0;
+
+        assertEquals(expected, new String(fileContent));
     }
 }

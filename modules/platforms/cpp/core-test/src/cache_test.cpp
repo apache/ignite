@@ -95,8 +95,13 @@ struct CacheTestSuiteFixture
      */
     CacheTestSuiteFixture()
     {
+#ifdef IGNITE_TESTS_32
+        grid0 = ignite_test::StartNode("cache-test-32.xml", "grid-0");
+        grid1 = ignite_test::StartNode("cache-test-32.xml", "grid-1");
+#else
         grid0 = ignite_test::StartNode("cache-test.xml", "grid-0");
         grid1 = ignite_test::StartNode("cache-test.xml", "grid-1");
+#endif
     }
 
     /*

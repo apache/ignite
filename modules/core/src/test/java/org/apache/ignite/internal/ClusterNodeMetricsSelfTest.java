@@ -116,6 +116,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAllocatedMemory() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
+
         Ignite ignite = grid();
 
         final IgniteCache onHeapCache = ignite.getOrCreateCache(ON_HEAP_TIERED_NAME);

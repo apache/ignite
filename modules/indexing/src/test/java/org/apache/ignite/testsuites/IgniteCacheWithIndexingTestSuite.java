@@ -23,13 +23,13 @@ import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexingOffheapCleanupTest;
 import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
+import org.apache.ignite.internal.processors.cache.CacheQueryFilterExpiredTest;
 import org.apache.ignite.internal.processors.cache.CacheRandomOperationsMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapAndSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridIndexingWithNoopSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimitiveTypesSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
@@ -56,7 +56,6 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
         suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
-        suite.addTestSuite(GridCacheSwapSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapSelfTest.class);
 
         suite.addTestSuite(CacheTtlOffheapAtomicLocalSelfTest.class);
@@ -81,6 +80,7 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(CacheOperationsWithExpirationTest.class);
         suite.addTestSuite(CacheBinaryKeyConcurrentQueryTest.class);
         suite.addTestSuite(CacheIndexingOffheapCleanupTest.class);
+        suite.addTestSuite(CacheQueryFilterExpiredTest.class);
 
         suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
 

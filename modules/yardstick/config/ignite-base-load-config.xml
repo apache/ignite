@@ -46,8 +46,6 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="swapEnabled" value="false"/>
     </bean>
 
     <bean name="atomic-offheap" class="org.apache.ignite.configuration.CacheConfiguration">
@@ -56,8 +54,6 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="swapEnabled" value="false"/>
 
         <property name="memoryMode" value="OFFHEAP_TIERED"/>
     </bean>
@@ -68,8 +64,6 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="swapEnabled" value="false"/>
 
         <property name="memoryMode" value="OFFHEAP_VALUES"/>
 
@@ -82,8 +76,6 @@
 
         <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-        <property name="swapEnabled" value="false"/>
-
     </bean>
 
     <bean name="tx-offheap" class="org.apache.ignite.configuration.CacheConfiguration">
@@ -92,8 +84,6 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-        <property name="swapEnabled" value="false"/>
 
         <property name="memoryMode" value="OFFHEAP_TIERED"/>
 
@@ -106,8 +96,6 @@
 
         <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-        <property name="swapEnabled" value="false"/>
-
         <property name="memoryMode" value="OFFHEAP_VALUES"/>
 
     </bean>
@@ -119,16 +107,8 @@
 
         <property name="atomicityMode" value="ATOMIC"/>
 
-        <property name="swapEnabled" value="false"/>
-
         <property name="indexedTypes">
             <list>
-                <value>java.lang.Integer</value>
-                <value>org.apache.ignite.yardstick.cache.model.Person1</value>
-
-                <value>java.lang.Integer</value>
-                <value>org.apache.ignite.yardstick.cache.model.Person2</value>
-
                 <value>java.lang.Integer</value>
                 <value>org.apache.ignite.yardstick.cache.model.Person8</value>
             </list>
@@ -141,8 +121,6 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="swapEnabled" value="false"/>
 
         <!-- Configure query entities -->
         <property name="queryEntities">
@@ -190,8 +168,6 @@
 
         <property name="atomicityMode" value="ATOMIC"/>
 
-        <property name="swapEnabled" value="false"/>
-
         <!-- Configure query entities -->
         <property name="queryEntities">
             <list>
@@ -228,8 +204,6 @@
 
         <property name="atomicityMode" value="ATOMIC"/>
 
-        <property name="swapEnabled" value="false"/>
-
         <property name="memoryMode" value="OFFHEAP_TIERED"/>
 
         <property name="indexedTypes">
@@ -249,7 +223,5 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-        <property name="swapEnabled" value="false"/>
     </bean>
 </beans>

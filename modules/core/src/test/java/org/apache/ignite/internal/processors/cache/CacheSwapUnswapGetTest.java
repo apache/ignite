@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.ConcurrentHashSet;
@@ -66,8 +65,6 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
         return cfg;
     }
 
@@ -93,13 +90,14 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
             ccfg.setEvictionPolicy(plc);
         }
 
-        if (swap) {
-            ccfg.setSwapEnabled(true);
-
-            ccfg.setOffHeapMaxMemory(OFFHEAP_MEM);
-        }
-        else
-            ccfg.setOffHeapMaxMemory(0);
+        // TODO GG-11148.
+//        if (swap) {
+//            ccfg.setSwapEnabled(true);
+//
+//            ccfg.setOffHeapMaxMemory(OFFHEAP_MEM);
+//        }
+//        else
+//            ccfg.setOffHeapMaxMemory(0);
 
         return ccfg;
     }
@@ -262,7 +260,6 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
 
                 log.info("Cache size [heap=" + cache.localSize(CachePeekMode.ONHEAP) +
                     ", offheap=" + cache.localSize(CachePeekMode.OFFHEAP) +
-                    ", swap=" + cache.localSize(CachePeekMode.SWAP) +
                     ", total=" + cache.localSize() +
                     ", offheapMem=" + cache.localMetrics().getOffHeapAllocatedSize() + ']');
             }

@@ -2426,7 +2426,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         assertNotNull("Failed to find exchange future:", evt);
 
-        List<ClusterNode> allNodes = ctx.discovery().serverNodes(topVer0);
+        Collection<ClusterNode> allNodes = ctx.discovery().cacheNodes(topVer0);
 
         for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors()) {
             if (assignments.get(cacheDesc.cacheId()) != null)

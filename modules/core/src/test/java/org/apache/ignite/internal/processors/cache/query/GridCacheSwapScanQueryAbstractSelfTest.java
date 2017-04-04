@@ -33,7 +33,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -52,10 +51,22 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    protected static final String ATOMIC_CACHE_NAME = "atomicCache";
+    protected static final String ATOMIC_PERSON_CACHE_NAME = "atomicPerson";
 
     /** */
-    protected static final String TRANSACTIONAL_CACHE_NAME = "transactionalCache";
+    protected static final String ATOMIC_PRIMITIVE_CACHE_NAME = "atomicPrimitive";
+
+    /** */
+    protected static final String ATOMIC_BYTREARR_CACHE_NAME = "atomicByteArr";
+
+    /** */
+    protected static final String TRANSACTIONAL_PERSON_CACHE_NAME = "transactionalPerson";
+
+    /** */
+    protected static final String TRANSACTIONAL_PRIMITIVE_CACHE_NAME = "transactionalPrimitive";
+
+    /** */
+    protected static final String TRANSACTIONAL_BYTEARR_CACHE_NAME = "transactionalByteArr";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -67,25 +78,29 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
-        cfg.setCacheConfiguration(cacheConfiguration(ATOMIC_CACHE_NAME, ATOMIC),
-            cacheConfiguration(TRANSACTIONAL_CACHE_NAME, TRANSACTIONAL));
+        cfg.setCacheConfiguration(
+            cacheConfiguration(ATOMIC_PERSON_CACHE_NAME, ATOMIC, Key.class, Person.class),
+            cacheConfiguration(TRANSACTIONAL_PERSON_CACHE_NAME, TRANSACTIONAL, Key.class, Person.class),
+            cacheConfiguration(ATOMIC_PRIMITIVE_CACHE_NAME, ATOMIC, String.class, Long.class),
+            cacheConfiguration(TRANSACTIONAL_PRIMITIVE_CACHE_NAME, TRANSACTIONAL, String.class, Long.class),
+            cacheConfiguration(ATOMIC_BYTREARR_CACHE_NAME, ATOMIC,  Integer.class, byte[].class),
+            cacheConfiguration(TRANSACTIONAL_BYTEARR_CACHE_NAME, TRANSACTIONAL,  Integer.class, byte[].class));
 
         return cfg;
     }
 
     /**
-     * @param name Cache name.
+     * @param name Name.
      * @param atomicityMode Atomicity mode.
+     * @param clsK Class k.
+     * @param clsV Class v.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode) {
+    protected CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode,
+        Class<?> clsK, Class<?> clsV) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
-
-        ccfg.setSwapEnabled(true);
 
         ccfg.setMemoryMode(OFFHEAP_TIERED);
 
@@ -98,6 +113,8 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        ccfg.setIndexedTypes(clsK, clsV);
 
         return ccfg;
     }
@@ -118,13 +135,13 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        checkQuery(grid(0).cache(ATOMIC_CACHE_NAME), false);
+        checkQuery(grid(0).cache(ATOMIC_PERSON_CACHE_NAME), false);
 
-        checkQuery(grid(0).cache(TRANSACTIONAL_CACHE_NAME), false);
+        checkQuery(grid(0).cache(TRANSACTIONAL_PERSON_CACHE_NAME), false);
 
-        checkQuery(grid(0).cache(ATOMIC_CACHE_NAME), true);
+        checkQuery(grid(0).cache(ATOMIC_PERSON_CACHE_NAME), true);
 
-        checkQuery(grid(0).cache(TRANSACTIONAL_CACHE_NAME), true);
+        checkQuery(grid(0).cache(TRANSACTIONAL_PERSON_CACHE_NAME), true);
     }
 
     /**
@@ -246,9 +263,8 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQueryPrimitives() throws Exception {
-        checkQueryPrimitives(grid(0).cache(ATOMIC_CACHE_NAME));
-
-        checkQueryPrimitives(grid(0).cache(TRANSACTIONAL_CACHE_NAME));
+        checkQueryPrimitives(grid(0).cache(ATOMIC_PRIMITIVE_CACHE_NAME));
+        checkQueryPrimitives(grid(0).cache(TRANSACTIONAL_PRIMITIVE_CACHE_NAME));
     }
 
     /**
@@ -300,9 +316,8 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQueryValueByteArray() throws Exception {
-        checkQueryValueByteArray(grid(0).cache(ATOMIC_CACHE_NAME));
-
-        checkQueryValueByteArray(grid(0).cache(TRANSACTIONAL_CACHE_NAME));
+        checkQueryValueByteArray(grid(0).cache(ATOMIC_BYTREARR_CACHE_NAME));
+        checkQueryValueByteArray(grid(0).cache(TRANSACTIONAL_BYTEARR_CACHE_NAME));
     }
 
     /**

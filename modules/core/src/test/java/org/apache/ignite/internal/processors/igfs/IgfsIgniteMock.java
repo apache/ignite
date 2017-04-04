@@ -511,6 +511,23 @@ public class IgfsIgniteMock implements IgniteEx {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        throwUnsupported();
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        throwUnsupported();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetLostPartitions(Collection<String> cacheNames) {
+        throwUnsupported();
+    }
+
     /**
      * Throw {@link UnsupportedOperationException}.
      */

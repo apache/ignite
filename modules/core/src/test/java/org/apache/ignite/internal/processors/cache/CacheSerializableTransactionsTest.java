@@ -68,7 +68,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -123,8 +122,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setClientMode(client);
-
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         return cfg;
     }
@@ -4903,11 +4900,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         log.info("Test cache [mode=" + ccfg.getCacheMode() +
             ", sync=" + ccfg.getWriteSynchronizationMode() +
             ", backups=" + ccfg.getBackups() +
-            ", memMode=" + ccfg.getMemoryMode() +
             ", near=" + (ccfg.getNearConfiguration() != null) +
             ", store=" + ccfg.isWriteThrough() +
             ", evictPlc=" + (ccfg.getEvictionPolicy() != null) +
-            ", swap=" + ccfg.isSwapEnabled()  +
             ", maxOffheap=" + ccfg.getOffHeapMaxMemory()  +
             ']');
     }
@@ -5063,10 +5058,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             catch (IgniteException ignore) {
                 // No-op.
             }
-
-            GridTestSwapSpaceSpi spi = (GridTestSwapSpaceSpi)ignite.configuration().getSwapSpaceSpi();
-
-            spi.clearAll();
         }
     }
 

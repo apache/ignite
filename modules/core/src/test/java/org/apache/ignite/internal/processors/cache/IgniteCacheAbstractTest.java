@@ -122,7 +122,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setSwapEnabled(swapEnabled());
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
 

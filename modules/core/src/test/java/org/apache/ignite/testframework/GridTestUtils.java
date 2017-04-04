@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -98,7 +99,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
@@ -112,7 +112,8 @@ public final class GridTestUtils {
     /** Default busy wait sleep interval in milliseconds.  */
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
 
-
+    /** */
+    static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
 
     /**
      * Hook object intervenes to discovery message handling
@@ -156,6 +157,11 @@ public final class GridTestUtils {
         @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
             hook.handleDiscoveryMessage(spiCustomMsg);
             delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+            delegate.onLocalNodeInitialized(locNode);
         }
 
         /**
@@ -809,6 +815,72 @@ public final class GridTestUtils {
     }
 
     /**
+     * Create future async result.
+     *
+     * @param thrFactory Thr factory.
+     */
+    private static<T> GridFutureAdapter<T> createFutureAdapter(final GridTestSafeThreadFactory thrFactory){
+       return new GridFutureAdapter<T>() {
+            @Override public boolean cancel() throws IgniteCheckedException {
+                super.cancel();
+
+                thrFactory.interruptAllThreads();
+
+                onCancelled();
+
+                return true;
+            }
+        };
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    public static IgniteInternalFuture runAsync(final Runnable task) {
+        return runAsync(task,"async-runnable-runner");
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to start new threads (test is being stopped).");
+
+        try {
+            final GridTestSafeThreadFactory thrFactory = new GridTestSafeThreadFactory(threadName);
+
+            final GridFutureAdapter fut = createFutureAdapter(thrFactory);
+
+            thrFactory.newThread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        task.run();
+
+                        fut.onDone();
+                    }
+                    catch (Throwable e) {
+                        fut.onDone(e);
+                    }
+                }
+            }).start();
+
+            return fut;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
      * Runs callable task asyncronously.
      *
      * @param task Callable.
@@ -816,7 +888,7 @@ public final class GridTestUtils {
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task) {
-        return runAsync(task, "async-runner");
+        return runAsync(task, "async-callable-runner");
     }
 
     /**
@@ -834,17 +906,7 @@ public final class GridTestUtils {
         try {
             final GridTestSafeThreadFactory thrFactory = new GridTestSafeThreadFactory(threadName);
 
-            final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
-                @Override public boolean cancel() throws IgniteCheckedException {
-                    super.cancel();
-
-                    thrFactory.interruptAllThreads();
-
-                    onCancelled();
-
-                    return true;
-                }
-            };
+            final GridFutureAdapter<T> fut = createFutureAdapter(thrFactory);
 
             thrFactory.newThread(new Runnable() {
                 @Override public void run() {
@@ -1877,10 +1939,6 @@ public final class GridTestUtils {
         }
 
         ccfg.setMemoryMode(memMode);
-        ccfg.setSwapEnabled(swap);
-
-        if (swap && cfg != null)
-            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         if (evictionPlc) {
             LruEvictionPolicy plc = new LruEvictionPolicy();
@@ -1892,6 +1950,25 @@ public final class GridTestUtils {
 
         ccfg.setOffHeapMaxMemory(offheapMaxMem);
     }
+
+    /**
+     * Generate random alphabetical string.
+     *
+     * @param rnd Random object.
+     * @param maxLen Maximal length of string
+     * @return Random string object.
+     */
+    public static String randomString(Random rnd, int maxLen) {
+        int len = rnd.nextInt(maxLen);
+
+        StringBuilder b = new StringBuilder(len);
+
+        for (int i = 0; i < len; i++)
+            b.append(ALPHABETH.charAt(rnd.nextInt(ALPHABETH.length())));
+
+        return b.toString();
+    }
+
 
     /**
      *

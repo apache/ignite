@@ -80,8 +80,6 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         cc.setCacheMode(cacheMode());
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setSwapEnabled(false);
-
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cc.setEvictionPolicy(plc);

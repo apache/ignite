@@ -34,6 +34,8 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Expiry Policy Test Suite");
 
+        suite.addTestSuite(IgniteCacheLargeValueExpireTest.class);
+
         suite.addTestSuite(IgniteCacheAtomicLocalExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheAtomicWithStoreExpiryPolicyTest.class);

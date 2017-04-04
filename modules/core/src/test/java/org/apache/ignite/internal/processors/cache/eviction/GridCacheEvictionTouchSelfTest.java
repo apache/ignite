@@ -71,8 +71,6 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(REPLICATED);
 
-        cc.setSwapEnabled(false);
-
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         cc.setEvictionPolicy(plc);

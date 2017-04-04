@@ -36,13 +36,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 
@@ -72,7 +72,6 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setMarshaller(new BinaryMarshaller());
-        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return c;
     }
@@ -93,7 +92,6 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
         cfg.setAtomicityMode(atomicityMode);
         cfg.setMemoryMode(memoryMode);
         cfg.setBackups(1);
-        cfg.setSwapEnabled(true);
 
         return cfg;
     }

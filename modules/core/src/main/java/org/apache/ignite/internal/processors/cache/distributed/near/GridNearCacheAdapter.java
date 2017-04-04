@@ -99,11 +99,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 int hash,
                 CacheObject val
             ) {
-                // Can't hold any locks here - this method is invoked when
-                // holding write-lock on the whole cache map.
-                if (ctx.useOffheapEntry())
-                    return new GridNearOffHeapCacheEntry(ctx, key, hash, val);
-
                 return new GridNearCacheEntry(ctx, key, hash, val);
             }
         };
@@ -235,12 +230,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param needVer Need version.
      * @return Loaded values.
      */
-    public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
+    public IgniteInternalFuture<Map<K, V>> loadAsync(
+        @Nullable IgniteInternalTx tx,
         @Nullable Collection<KeyCacheObject> keys,
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
@@ -266,7 +263,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             skipVal,
             canRemap,
             needVer,
-            false);
+            false,
+            recovery);
 
         // init() will register future for responses if future has remote mappings.
         fut.init(null);
@@ -403,20 +401,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public V promote(K key, boolean deserializeBinary) throws IgniteCheckedException {
-        // Unswap only from dht(). Near cache does not have swap storage.
-        return dht().promote(key, deserializeBinary);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        // Unswap only from dht(). Near cache does not have swap storage.
-        // In near-only cache this is a no-op.
-        if (ctx.affinityNode())
-            dht().promoteAll(keys);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public Cache.Entry<K, V> randomEntry() {
         return ctx.affinityNode() && ctx.isNear() ? dht().randomEntry() : super.randomEntry();
     }
@@ -429,16 +413,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public long offHeapAllocatedSize() {
         return dht().offHeapAllocatedSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long swapSize() throws IgniteCheckedException {
-        return dht().swapSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long swapKeys() throws IgniteCheckedException {
-        return dht().swapKeys();
     }
 
     /** {@inheritDoc} */

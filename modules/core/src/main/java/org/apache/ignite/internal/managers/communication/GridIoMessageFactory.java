@@ -33,7 +33,10 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotFinishedMessage;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotProgressMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
 import org.apache.ignite.internal.processors.cache.CacheEntrySerializablePredicate;
@@ -178,23 +181,38 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            case -48:
+            case -51:
                 msg = new NearCacheUpdates();
 
                 break;
 
-            case -47:
+            case -50:
                 msg = new GridNearAtomicCheckUpdateRequest();
 
                 break;
 
-            case -46:
+            case -49:
                 msg = new UpdateErrors();
 
                 break;
 
-            case -45:
+            case -48:
                 msg = new GridDhtAtomicNearResponse();
+
+                break;
+
+            case -47:
+                msg = new SnapshotProgressMessage();
+
+                break;
+
+            case -46:
+                msg = new GridChangeGlobalStateMessageResponse();
+
+                break;
+
+            case -45:
+                msg = new SnapshotFinishedMessage();
 
                 break;
 
@@ -873,7 +891,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124..127] [-36..-44]- this
+            // [-3..119] [124..127] [-23..-27] [-36..-47]- this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             default:

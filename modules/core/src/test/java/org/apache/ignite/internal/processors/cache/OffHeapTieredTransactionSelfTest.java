@@ -57,7 +57,6 @@ public class OffHeapTieredTransactionSelfTest extends GridCommonAbstractTest {
         ccfg.setMemoryMode(OFFHEAP_TIERED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setOffHeapMaxMemory(0);
-        ccfg.setSwapEnabled(true);
         ccfg.setCacheMode(REPLICATED);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

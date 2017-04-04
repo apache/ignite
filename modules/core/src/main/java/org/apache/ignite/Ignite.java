@@ -589,11 +589,30 @@ public interface Ignite extends AutoCloseable {
     @Override public void close() throws IgniteException;
 
     /**
-     * Gets affinity service to provide information about data partitioning
-     * and distribution.
+     * Gets affinity service to provide information about data partitioning and distribution.
+     *
      * @param cacheName Cache name.
      * @param <K> Cache key type.
      * @return Affinity.
      */
     public <K> Affinity<K> affinity(String cacheName);
+
+    /**
+     * Checks Ignite grid is active or not active.
+     *
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
+     */
+    public boolean active();
+
+    /**
+     * Changes Ignite grid state to active or inactive.
+     *
+     * @param active If {@code True} start activation process. If {@code False} start deactivation process.
+     */
+    public void active(boolean active);
+
+    /**
+     * Clears partition's lost state and moves caches to a normal mode.
+     */
+    public void resetLostPartitions(Collection<String> cacheNames);
 }

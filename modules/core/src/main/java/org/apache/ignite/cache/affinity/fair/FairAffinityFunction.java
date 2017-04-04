@@ -170,6 +170,7 @@ public class FairAffinityFunction implements AffinityFunction {
     private FairAffinityFunction(boolean exclNeighbors, int parts,
         IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         A.ensure(parts > 0, "parts > 0");
+        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <=" + CacheConfiguration.MAX_PARTITIONS_COUNT);
 
         this.exclNeighbors = exclNeighbors;
         this.parts = parts;

@@ -76,7 +76,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setEvictSynchronized(true);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(atomicityMode());
