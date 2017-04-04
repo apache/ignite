@@ -1612,17 +1612,43 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert req.start() : req;
         assert req.cacheType() != null : req;
 
-        prepareCacheStart(
-            req.startCacheConfiguration(),
-            req.nearCacheConfiguration(),
-            req.cacheType(),
-            req.clientStartOnly(),
-            req.initiatingNodeId(),
-            req.deploymentId(),
-            topVer
-        );
+        String cacheName = maskNull(req.cacheName());
 
-        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+        try {
+            prepareCacheStart(
+                req.startCacheConfiguration(),
+                req.nearCacheConfiguration(),
+                req.cacheType(),
+                req.clientStartOnly(),
+                req.initiatingNodeId(),
+                req.deploymentId(),
+                topVer
+            );
+        }
+        catch (IgniteCheckedException | RuntimeException e) {
+            U.error(log, "Failed to initialize cache. Will try to rollback cache start routine.", e);
+
+            IgniteInternalFuture fut = pendingFuts.get(cacheName);
+
+            caches.remove(maskNull(cacheName));
+
+            GridCacheContext<?, ?> cctx = sharedCtx.cacheContext(CU.cacheId(cacheName));
+
+            GridCacheAdapter<?, ?> cache;
+
+            if (cctx != null && (cache = cctx.cache()) != null)
+                stopCache(cache, true);
+
+            if (fut != null) {
+                ((GridFutureAdapter)fut).onDone(e);
+
+                pendingFuts.remove(cacheName, fut);
+            }
+
+            throw e;
+        }
+
+        DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
         if (desc != null)
             desc.onStart();
