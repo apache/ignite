@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -31,7 +30,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -46,9 +44,11 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationClientFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
+import org.apache.ignite.internal.processors.query.schema.SchemaIoManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationWorker;
 import org.apache.ignite.internal.processors.query.schema.SchemaKey;
@@ -73,13 +73,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -96,14 +94,10 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DYNAMIC_SCHEMA;
@@ -141,23 +135,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** All indexes. */
     private final ConcurrentMap<QueryIndexKey, QueryIndexDescriptorImpl> idxs = new ConcurrentHashMap<>();
 
-    /** Index create/drop client futures. */
-    private final ConcurrentMap<UUID, QueryIndexClientFuture> idxCliFuts = new ConcurrentHashMap<>();
+    /** Schema operation futures created on client side. */
+    private final ConcurrentMap<UUID, SchemaOperationClientFuture> schemaCliFuts = new ConcurrentHashMap<>();
 
     /** IO message listener. */
     private final GridMessageListener ioLsnr;
 
-    /** Queue with pending IO messages. */
-    private final Queue<Object> ioMsgs = new ConcurrentLinkedDeque<>();
-
-    /** IO init lock. */
-    private final ReadWriteLock ioInitLock = new ReentrantReadWriteLock();
-
-    /** IO init flag. */
-    private volatile boolean ioInit;
-
-    /** IO worker to process too early IO messages. */
-    private volatile GridWorker ioWorker;
+    /** IO manager. */
+    private final SchemaIoManager ioMgr;
 
     /** Schema operations. */
     private final ConcurrentHashMap<SchemaKey, SchemaOperation> schemaOps = new ConcurrentHashMap<>();
@@ -168,9 +153,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Initial active operations received with discovery data. */
     private final LinkedHashMap<UUID, SchemaOperationDescriptor> activeOpsInit = new LinkedHashMap<>();
 
-    /** Active operations mutex. */
+    /** General state mutex. */
     // TODO: Can we have more relaxed mode?
-    private final Object activeOpsMux = new Object();
+    private final Object stateMux = new Object();
 
     /** Coordinator flag (initialized lazily). */
     private Boolean crd;
@@ -179,8 +164,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final Collection<String> spaces = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     /** ID history for index create/drop discovery messages. */
-    private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> idxDiscoMsgIdHist =
+    private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> dscoMsgIdHist =
         new GridBoundedConcurrentLinkedHashSet<>(QueryUtils.discoveryHistorySize());
+
+    /** Disconnected flag. */
+    private boolean disconnected;
 
     /**
      * @param ctx Kernal context.
@@ -196,16 +184,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
 
+        ioMgr = new SchemaIoManager(ctx, this);
+
         ioLsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object obj) {
-                dispatchIoMessage(obj);
+                ioMgr.onMessage(obj);
             }
         };
     }
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             LinkedHashMap<UUID, SchemaOperationDescriptor> data = new LinkedHashMap<>();
 
             for (Map.Entry<UUID, SchemaOperationDescriptor> activeOp : activeOps.entrySet())
@@ -218,7 +208,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             assert activeOps.isEmpty();
 
             LinkedHashMap<UUID, SchemaOperationDescriptor> data0 =
@@ -263,7 +253,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onCacheKernalStart() throws IgniteCheckedException {
         // Process initial operations.
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             for (SchemaOperationDescriptor activeOpDesc : activeOpsInit.values()) {
                 onSchemaProposeDiscovery0(activeOpDesc.messagePropose());
 
@@ -277,47 +267,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             activeOpsInit.clear();
         }
 
-        // Start IO worker to consume racy IO messages.
-        boolean startIoWorker = false;
-
-        ioInitLock.writeLock().lock();
-
-        try {
-            if (!ioMsgs.isEmpty())
-                startIoWorker = true;
-
-            ioInit = true;
-        }
-        finally {
-            ioInitLock.writeLock().unlock();
-        }
-
-        if (startIoWorker) {
-            ioWorker = new IoWorker(ctx.igniteInstanceName(), "query-proc-io-worker", log);
-
-            new IgniteThread(ioWorker).start();
-        }
+        ioMgr.onStartOrReconnect();
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         super.onKernalStop(cancel);
 
-        GridWorker ioWorker0 = ioWorker;
-
-        if (ioWorker0 != null) {
-            ioWorker0.cancel();
-
-            try {
-                ioWorker0.join();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                if (log.isDebugEnabled())
-                    log.debug("Got interrupted while waiting for IO worker to finish.");
-            }
-        }
+        ioMgr.onStop();
 
         if (cancel && idx != null) {
             try {
@@ -412,7 +369,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         // Apply pending operation which could have been completed as no-op at this point. There could be only one
         // in-flight operation for a cache.
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             for (SchemaOperationDescriptor desc : activeOps.values()) {
                 if (F.eq(desc.cacheDeploymentId(), cctx.dynamicDeploymentId())) {
                     SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
@@ -480,8 +437,35 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        ioMgr.onDisconnect();
+
+        Collection<SchemaOperationClientFuture> futs;
+
+        synchronized (stateMux) {
+            disconnected = true;
+
+            futs = new ArrayList<>(schemaCliFuts.values());
+
+            schemaCliFuts.clear();
+        }
+
+        // Complete client futures outside of synchonized block because they may have listeners/chains.
+        for (SchemaOperationClientFuture fut : futs)
+            fut.onDone(new SchemaOperationException("Client node is disconnected (operation result is unknown)."));
+
         if (idx != null)
             idx.onDisconnected(reconnectFut);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        synchronized (stateMux) {
+            disconnected = false;
+        }
+
+        ioMgr.onStartOrReconnect();
+
+        return super.onReconnected(clusterRestarted);
     }
 
     /**
@@ -534,7 +518,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void onDiscovery(SchemaAbstractDiscoveryMessage msg) {
         IgniteUuid id = msg.id();
 
-        if (!idxDiscoMsgIdHist.add(id)) {
+        if (!dscoMsgIdHist.add(id)) {
             U.warn(log, "Received duplicate schema custom discovery message (will ignore) [opId=" +
                 msg.operation().id() + ", msg=" + msg  +']');
 
@@ -603,7 +587,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void onSchemaProposeDiscovery0(SchemaProposeDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             SchemaOperationDescriptor desc = new SchemaOperationDescriptor(msg);
 
             SchemaOperationDescriptor oldDesc = activeOps.put(desc.id(), desc);
@@ -640,7 +624,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received schema accept message (discovery) [opId=" + opId + ", msg=" + msg + ']');
 
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
             assert desc != null;
@@ -662,7 +646,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received schema accept message (exchange) [opId=" + opId + ", msg=" + msg + ']');
 
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
             assert desc != null;
@@ -697,7 +681,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings({"unchecked", "ThrowableInstanceNeverThrown"})
     private void startSchemaChange(SchemaOperation schemaOp) {
-        assert Thread.holdsLock(activeOpsMux);
+        assert Thread.holdsLock(stateMux);
         assert !schemaOp.started();
 
         // Get current cache state.
@@ -939,7 +923,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param err Error (if any).
      */
     public void onCoordinatorFinished(UUID opId, @Nullable SchemaOperationException err) {
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
             assert desc != null;
@@ -1117,7 +1101,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             cacheDesc.schemaChangeFinish(msg);
 
         // Process message.
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
             if (desc != null) {
@@ -1143,7 +1127,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             log.debug("Received schema finish message (exchange) [opId=" + opId + ", msg=" + msg + ']');
 
         // Complete distributed operations.
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             SchemaOperationDescriptor desc = activeOps.remove(opId);
 
             if (desc != null) {
@@ -1182,7 +1166,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         // Complete client future.
-        QueryIndexClientFuture cliFut = idxCliFuts.remove(opId);
+        SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
 
         if (cliFut != null) {
             if (msg.hasError())
@@ -1199,7 +1183,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param type Type descriptor (if available),
      */
     public void onLocalOperationFinished(UUID opId, @Nullable QueryTypeDescriptorImpl type) {
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
             SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
@@ -1263,7 +1247,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void onNodeLeave(ClusterNode node) {
         refreshCoordinator();
 
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             for (SchemaOperation op : schemaOps.values()) {
                 if (op.started())
                     op.manager().onNodeLeave(node.id());
@@ -1325,7 +1309,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private void registerCache0(String space, GridCacheContext<?, ?> cctx, Collection<QueryTypeCandidate> cands)
         throws IgniteCheckedException {
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             idx.registerCache(space, cctx, cctx.config());
 
             try {
@@ -1376,7 +1360,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void unregisterCache0(String space) {
         assert idx != null;
 
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             // Clear types.
             Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
 
@@ -1761,9 +1745,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     private IgniteInternalFuture<?> startIndexOperationDistributed(SchemaAbstractOperation op) {
-        QueryIndexClientFuture fut = new QueryIndexClientFuture(op.id());
+        SchemaOperationClientFuture fut = new SchemaOperationClientFuture(op.id());
 
-        QueryIndexClientFuture oldFut = idxCliFuts.put(op.id(), fut);
+        SchemaOperationClientFuture oldFut = schemaCliFuts.put(op.id(), fut);
 
         assert oldFut == null;
 
@@ -1771,7 +1755,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ctx.discovery().sendCustomEvent(new SchemaProposeDiscoveryMessage(op));
 
             if (log.isDebugEnabled())
-                log.debug("Sent index propose discovery message [opId=" + op.id() + ", op=" + op + ']');
+                log.debug("Sent schema propose discovery message [opId=" + op.id() + ", op=" + op + ']');
+
+            boolean disconnected0;
+
+            synchronized (stateMux) {
+                disconnected0 = disconnected;
+            }
+
+            if (disconnected0) {
+                fut.onDone(new SchemaOperationException("Client node is disconnected (operation result is unknown)."));
+
+                schemaCliFuts.remove(op.id());
+            }
         }
         catch (Exception e) {
             if (e instanceof SchemaOperationException)
@@ -1781,7 +1777,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     "unexpected exception [opId=" + op.id() + ", op=" + op + ']', e));
             }
 
-            idxCliFuts.remove(op.id());
+            schemaCliFuts.remove(op.id());
         }
 
         return fut;
@@ -2112,26 +2108,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Dispatch IO message.
+     * Process IO message.
      *
      * @param msg Message.
      */
-    private void dispatchIoMessage(Object msg) {
-        if (!ioInit) {
-            ioInitLock.readLock().lock();
-
-            try {
-                if (!ioInit) {
-                    ioMsgs.add(msg);
-
-                    return;
-                }
-            }
-            finally {
-                ioInitLock.readLock().unlock();
-            }
-        }
-
+    public void processMessage(Object msg) {
         if (msg instanceof SchemaOperationStatusRequest) {
             SchemaOperationStatusRequest req = (SchemaOperationStatusRequest)msg;
 
@@ -2152,12 +2133,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param req Status request.
      */
     private void processStatusRequest(SchemaOperationStatusRequest req) {
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             UUID opId = req.operationId();
 
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
-            assert desc != null;
+            if (desc == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Received schema operation status request, but no ");
+
+                return;
+            }
 
             SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
 
@@ -2182,7 +2168,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param resp Status response.
      */
     private void processStatusResponse(SchemaOperationStatusResponse resp) {
-        synchronized (activeOpsMux) {
+        synchronized (stateMux) {
             UUID opId = resp.operationId();
 
             SchemaOperationDescriptor desc = activeOps.get(opId);
@@ -2285,33 +2271,5 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
         return requestTopVer.get();
-    }
-
-    /**
-     * IO worker to process pending IO messages.
-     */
-    private class IoWorker extends GridWorker {
-        /**
-         * Constructor.
-         *
-         * @param igniteInstanceName Ignite instance name.
-         * @param name Worker name.
-         * @param log Logger.
-         */
-        public IoWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
-            super(igniteInstanceName, name, log);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                Object msg = ioMsgs.poll();
-
-                if (msg == null)
-                    break;
-
-                dispatchIoMessage(msg);
-            }
-        }
     }
 }

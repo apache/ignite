@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.UUID;
 
 /**
- * Future for dynamic index create/drop returned to the client..
+ * Schema operation client future.
  */
-public class QueryIndexClientFuture extends GridFutureAdapter<Object> {
+public class SchemaOperationClientFuture extends GridFutureAdapter<Object> {
     /** Operation ID. */
     private final UUID opId;
 
@@ -35,7 +34,7 @@ public class QueryIndexClientFuture extends GridFutureAdapter<Object> {
      *
      * @param opId Operation ID.
      */
-    public QueryIndexClientFuture(UUID opId) {
+    public SchemaOperationClientFuture(UUID opId) {
         this.opId = opId;
     }
 
@@ -48,6 +47,6 @@ public class QueryIndexClientFuture extends GridFutureAdapter<Object> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryIndexClientFuture.class, this);
+        return S.toString(SchemaOperationClientFuture.class, this);
     }
 }
