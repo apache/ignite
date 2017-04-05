@@ -3915,19 +3915,6 @@ public class GridFunc {
     }
 
     /**
-     * Creates vararg tuple with given values.
-     *
-     * @param objs Values for vararg tuple.
-     * @return Vararg tuple with given values.
-     */
-    @Deprecated
-    public static GridTupleV tv(Object... objs) {
-        assert objs != null;
-
-        return new GridTupleV(objs);
-    }
-
-    /**
      * Factory method returning new empty tuple.
      *
      * @param <V1> Type of the 1st tuple parameter.
