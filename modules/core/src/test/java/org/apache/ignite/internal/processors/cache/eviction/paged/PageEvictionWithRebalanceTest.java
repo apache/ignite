@@ -28,6 +28,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
  *
  */
 public abstract class PageEvictionWithRebalanceTest extends PageEvictionAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      *
      */

@@ -276,10 +276,10 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 }
                 else
                     put(null, page, pageAddr, newBucket);
-            }
 
-            if (newFreeSpace == MIN_SIZE_FOR_DATA_PAGE)
-                evictionTracker.forgetPage(page.id());
+                if (io.isEmpty(pageAddr))
+                    evictionTracker.forgetPage(page.id());
+            }
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
@@ -431,7 +431,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             }
 
             if (pageId == 0L)
-                 pageId = tryTakeEmptyPageWithFreeSpace(freeSpace, bucket);
+                pageId = tryTakeEmptyPageWithFreeSpace(freeSpace, bucket);
 
             try (Page page = pageId == 0 ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.
@@ -447,14 +447,15 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /**
      * Takes one page from the bucket.
-     * @return Page ID if the page has enough free space, 0L otherwise (page is returned to the bucket in such case).
      *
      * @param freeSpace Free space.
      * @param bucket Bucket.
+     * @return Page ID if the page has enough free space, 0L otherwise (page is returned to the bucket in such case).
      */
     private long tryTakeEmptyPageWithFreeSpace(int freeSpace, int bucket) throws IgniteCheckedException {
         long pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
 
+        // TODO: get rid of 2 readlocks.
         if (pageId != 0L) {
             Page page = pageMem.page(cacheId, pageId);
 

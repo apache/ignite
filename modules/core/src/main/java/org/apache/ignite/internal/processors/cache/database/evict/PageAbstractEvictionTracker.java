@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -53,6 +55,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /** Shared context. */
     private final GridCacheSharedContext sharedCtx;
 
+    // TODO: create JIRA about refactoring and put JIRA number here.
     /* Will be removed after segments refactoring >>>> */
     protected final int segBits;
     protected final int idxBits;
@@ -102,22 +105,24 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         trackingSize = segmentPageCount << segBits;
 
-        baseCompactTs = (System.currentTimeMillis() - DAY) >> COMPACT_TS_SHIFT;
+        baseCompactTs = (U.currentTimeMillis() - DAY) >> COMPACT_TS_SHIFT;
         // We subtract day to avoid fail in case of daylight shift or timezone change.
     }
 
     /**
      * @param pageIdx Page index.
      */
-    boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
+    final boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
         long fakePageId = PageIdUtils.pageId(0, (byte)0, pageIdx);
 
+        // TODO IGNITE-4534: collect only keys.
         List<CacheDataRowAdapter> rowsToEvict = new ArrayList<>();
 
         try (Page page = pageMem.page(0, fakePageId)) {
             long pageAddr = page.getForReadPointerForce();
 
             try {
+                // TODO IGNITE-4534: check ts in read-lock.
                 if (PageIO.getType(pageAddr) != PageIO.T_DATA)
                     return false; // Can't evict: page has been recycled into non-data page
 
@@ -162,14 +167,14 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
             GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(cacheId);
 
-            if (!cacheCtx.userCache())
-                continue;
+            assert !cacheCtx.userCache() : cacheCtx.name();
 
+            // TODO IGNITE-4534: collect only keys.
             dataRow.initCacheObjects(CacheDataRowAdapter.RowData.KEY_ONLY, cacheCtx.cacheObjectContext());
 
             GridCacheEntryEx entryEx = cacheCtx.cache().entryEx(dataRow.key());
 
-            evictionDone |= entryEx.evictInternal(dataRow.version(), null, true);
+            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true);
         }
 
         return evictionDone;
@@ -178,7 +183,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /**
      * @param epochMilli Time millis.
      */
-    long compactTimestamp(long epochMilli) {
+    final long compactTimestamp(long epochMilli) {
         return (epochMilli >> COMPACT_TS_SHIFT) - baseCompactTs;
     }
 
@@ -190,11 +195,11 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     int trackingIdx(int pageIdx) {
         int inSegmentPageIdx = inSegmentPageIdx(pageIdx);
 
-        assert inSegmentPageIdx < segmentPageCount;
+        assert inSegmentPageIdx < segmentPageCount : inSegmentPageIdx;
 
         int trackingIdx = segmentIdx(pageIdx) * segmentPageCount + inSegmentPageIdx;
 
-        assert trackingIdx < trackingSize;
+        assert trackingIdx < trackingSize : trackingIdx;
 
         return trackingIdx;
     }
@@ -215,7 +220,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         res = (res << segBits) | (segIdx & segMask);
         res = (res << idxBits) | (pageIdx & idxMask);
 
-        assert (res & (-1L << 32)) == 0;
+        assert (res & (-1L << 32)) == 0 : res;
 
         return (int)res;
     }

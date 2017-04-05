@@ -54,6 +54,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
     @GridToStringInclude
     protected KeyCacheObject key;
 
+    // TODO: try get rid of new fields except cacheId.
+
     /** */
     private byte[] marshalledKey;
 

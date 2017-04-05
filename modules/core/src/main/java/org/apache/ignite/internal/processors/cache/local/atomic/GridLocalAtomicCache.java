@@ -791,6 +791,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CacheEntryPredicate[] filters = CU.filterArray(filter);
 
+        ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
+
         if (writeThrough && keys.size() > 1) {
             return updateWithBatch(op,
                 keys,
@@ -934,8 +936,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         UUID subjId,
         String taskName
     ) throws IgniteCheckedException {
-        ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
-
         List<GridCacheEntryEx> locked = lockEntries(keys);
 
         try {
@@ -997,8 +997,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             null,
                             null,
                             /*read-through*/true,
-                            /**update-metrics*/true,
-                            /**event*/true,
+                            /*update-metrics*/true,
+                            /*event*/true,
                             subjId,
                             entryProcessor,
                             taskName,

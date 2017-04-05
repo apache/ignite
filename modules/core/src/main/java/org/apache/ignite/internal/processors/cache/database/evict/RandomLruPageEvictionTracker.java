@@ -24,6 +24,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -57,6 +58,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         assert plcCfg.getSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
 
+        // TODO IGNITE-4534: free memory.
         trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 4);
 
         GridUnsafe.setMemory(trackingArrPtr, trackingSize * 4, (byte)0);
@@ -66,7 +68,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override public void touchPage(long pageId) throws IgniteCheckedException {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
-        long res = compactTimestamp(System.currentTimeMillis());
+        long res = compactTimestamp(U.currentTimeMillis());
         
         assert res >= 0 && res < Integer.MAX_VALUE;
         
@@ -80,7 +82,6 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         int evictAttemptsCnt = 0;
 
         while (evictAttemptsCnt < EVICT_ATTEMPTS_LIMIT) {
-
             int lruTrackingIdx = -1;
 
             int lruCompactTs = Integer.MAX_VALUE;
@@ -107,6 +108,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                 sampleSpinCnt++;
 
+                // TODO: change to warning (LT.warn).
                 if (sampleSpinCnt > SAMPLE_SPIN_LIMIT)
                     throw new IgniteCheckedException("Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
             }
@@ -117,6 +119,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
             evictAttemptsCnt++;
         }
 
+        // TODO: change to warning (LT.warn).
         throw new IgniteCheckedException("Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
     }
 

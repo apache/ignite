@@ -1319,8 +1319,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         EntryProcessorResult<Object> invokeRes = null;
 
-        ensureFreeSpace();
-
         synchronized (this) {
             boolean internal = isInternal() || !context().userCache();
 
@@ -1649,6 +1647,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert cctx.atomic() && !detached();
 
         AtomicCacheUpdateClosure c;
+
+        if (!primary && !isNear())
+            ensureFreeSpace();
 
         synchronized (this) {
             checkObsolete();
@@ -3391,10 +3392,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * Evicts necessary number of data pages if per-page eviction is configured in current {@link MemoryPolicy}.
      */
-    public void ensureFreeSpace() throws IgniteCheckedException {
+    private void ensureFreeSpace() throws IgniteCheckedException {
         // Deadlock alert: evicting data page causes removing (and locking) all entries on the page one by one.
-        if (!Thread.holdsLock(this))
-            cctx.shared().database().ensureFreeSpace(cctx.memoryPolicy());
+        assert !Thread.holdsLock(this);
+
+        cctx.shared().database().ensureFreeSpace(cctx.memoryPolicy());
     }
 
     /**

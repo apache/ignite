@@ -22,10 +22,10 @@ package org.apache.ignite.configuration;
 public enum DataPageEvictionMode {
     /** Disabled. */
     DISABLED,
+
     /** Random lru. */
     RANDOM_LRU,
+
     /** Random 2-lru. */
-    RANDOM_2_LRU,
-    /** Clock-PRO. */
-    CLOCK_PRO
+    RANDOM_2_LRU
 }

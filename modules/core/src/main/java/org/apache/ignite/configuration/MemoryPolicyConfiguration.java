@@ -48,6 +48,8 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Algorithm for per-page eviction. If {@link DataPageEvictionMode#DISABLED} set, eviction is not performed. */
     private DataPageEvictionMode pageEvictionMode = DataPageEvictionMode.DISABLED;
 
+    // TODO IGNITE-4534: validate configuration.
+
     /** Allocation of new {@link DataPageIO} pages is stopped when this percentage of pages are allocated. */
     private double evictionThreshold = 0.9;
 
@@ -91,7 +93,6 @@ public final class MemoryPolicyConfiguration implements Serializable {
     public void setSwapFilePath(String swapFilePath) {
         this.swapFilePath = swapFilePath;
     }
-
 
     /**
      *

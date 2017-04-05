@@ -24,6 +24,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -57,6 +58,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         assert plcCfg.getSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
 
+        // TODO IGNITE-4534: free memory.
         trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 8);
 
         GridUnsafe.setMemory(trackingArrPtr, trackingSize * 8, (byte)0);
@@ -66,11 +68,12 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override public void touchPage(long pageId) throws IgniteCheckedException {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
-        long latestTs = compactTimestamp(System.currentTimeMillis());
+        long latestTs = compactTimestamp(U.currentTimeMillis());
 
         assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
 
         boolean success;
+
         do {
             int trackingIdx = trackingIdx(pageIdx);
 
@@ -94,7 +97,6 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         int evictAttemptsCnt = 0;
 
         while (evictAttemptsCnt < EVICT_ATTEMPTS_LIMIT) {
-
             int lruTrackingIdx = -1;
 
             int lruCompactTs = Integer.MAX_VALUE;
@@ -127,6 +129,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                 sampleSpinCnt++;
 
+                // TODO: change to warning (LT.warn).
                 if (sampleSpinCnt > SAMPLE_SPIN_LIMIT)
                     throw new IgniteCheckedException("Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
             }

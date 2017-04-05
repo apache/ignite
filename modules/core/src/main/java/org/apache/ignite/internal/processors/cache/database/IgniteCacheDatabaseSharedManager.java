@@ -515,9 +515,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 return new RandomLruPageEvictionTracker(pageMem, plc, cctx);
             case RANDOM_2_LRU:
                 return new Random2LruPageEvictionTracker(pageMem, plc, cctx);
-            case CLOCK_PRO:
-                return new NoOpPageEvictionTracker();
-                // Not yet implemented.
             default:
                 return new NoOpPageEvictionTracker();
         }

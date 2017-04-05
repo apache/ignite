@@ -1040,8 +1040,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                         old = dataTree.put(dataRow);
                 }
 
-                cctx.memoryPolicy().evictionTracker().touchPage(dataRow.link());
-
                 finishUpdate(dataRow, old);
             }
             finally {
