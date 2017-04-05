@@ -33,9 +33,9 @@ public class CholeskyDecompositionExample {
         // l^{*} is its conjugate transpose
 
         DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][]{
-            {6.0d,  15.0d,  55.0d},
-            {15.0d, 55.0d,  255.0d},
-            {55.0d, 255.0d, 979.0d}
+            {2.0d,  -1.0d,  0.0d},
+            {-1.0d, 2.0d,  -1.0d},
+            {0.0d, -1.0d, 2.0d}
         });
 
         // This decomposition is useful when dealing with systems of linear equations of the form

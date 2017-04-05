@@ -271,6 +271,6 @@ public class CholeskyDecomposition {
             }
         }
 
-        return origin.like(m, m).assign(x);
+        return origin.like(m, b.columnSize()).assign(x);
     }
 }
