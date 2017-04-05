@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethods
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
@@ -49,7 +47,6 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -241,331 +238,6 @@ public class QueryUtils {
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
 
-    /**
-     * Create type candidate for type metadata.
-     *
-     * @param space Space.
-     * @param cctx Cache context.
-     * @param meta Type metadata.
-     * @param mustDeserializeClss Classes which must be deserialized.
-     * @return Type candidate.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("deprecation")
-    @Nullable public static QueryTypeCandidate typeForCacheMetadata(String space, GridCacheContext cctx,
-        CacheTypeMetadata meta, List<Class<?>> mustDeserializeClss) throws IgniteCheckedException {
-        if (F.isEmpty(meta.getValueType()))
-            throw new IgniteCheckedException("Value type is not set: " + meta);
-
-        GridKernalContext ctx = cctx.kernalContext();
-        CacheConfiguration<?,?> ccfg = cctx.config();
-
-        boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
-
-        CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
-
-        if (meta.getQueryFields().isEmpty() && meta.getAscendingFields().isEmpty() &&
-            meta.getDescendingFields().isEmpty() && meta.getGroups().isEmpty())
-            return null;
-
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(space);
-
-        desc.aliases(meta.getAliases());
-
-        // Key and value classes still can be available if they are primitive or JDK part.
-        // We need that to set correct types for _key and _val columns.
-        Class<?> keyCls = U.classForName(meta.getKeyType(), null);
-        Class<?> valCls = U.classForName(meta.getValueType(), null);
-
-        // If local node has the classes and they are externalizable, we must use reflection properties.
-        boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);
-        boolean valMustDeserialize = mustDeserializeBinary(ctx, valCls);
-
-        boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
-
-        if (keyCls == null)
-            keyCls = Object.class;
-
-        String simpleValType = meta.getSimpleValueType();
-
-        if (simpleValType == null)
-            simpleValType = typeName(meta.getValueType());
-
-        desc.name(simpleValType);
-
-        if (binaryEnabled && !keyOrValMustDeserialize) {
-            // Safe to check null.
-            if (SQL_TYPES.contains(valCls))
-                desc.valueClass(valCls);
-            else
-                desc.valueClass(Object.class);
-
-            if (SQL_TYPES.contains(keyCls))
-                desc.keyClass(keyCls);
-            else
-                desc.keyClass(Object.class);
-        }
-        else {
-            desc.valueClass(valCls);
-            desc.keyClass(keyCls);
-        }
-
-        desc.keyTypeName(meta.getKeyType());
-        desc.valueTypeName(meta.getValueType());
-
-        if (binaryEnabled && keyOrValMustDeserialize) {
-            if (keyMustDeserialize)
-                mustDeserializeClss.add(keyCls);
-
-            if (valMustDeserialize)
-                mustDeserializeClss.add(valCls);
-        }
-
-        QueryTypeIdKey typeId;
-        QueryTypeIdKey altTypeId = null;
-
-        if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
-            processBinaryMeta(ctx, meta, desc);
-
-            typeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(meta.getValueType()));
-
-            if (valCls != null)
-                altTypeId = new QueryTypeIdKey(space, valCls);
-        }
-        else {
-            processClassMeta(meta, desc, coCtx);
-
-            typeId = new QueryTypeIdKey(space, valCls);
-            altTypeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(meta.getValueType()));
-        }
-
-        return new QueryTypeCandidate(typeId, altTypeId, desc);
-    }
-    
-    /**
-     * Processes declarative metadata for class.
-     *
-     * @param meta Type metadata.
-     * @param d Type descriptor.
-     * @param coCtx Cache object context.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("deprecation")
-    private static void processClassMeta(CacheTypeMetadata meta, QueryTypeDescriptorImpl d, CacheObjectContext coCtx)
-        throws IgniteCheckedException {
-        Class<?> keyCls = d.keyClass();
-        Class<?> valCls = d.valueClass();
-
-        assert keyCls != null;
-        assert valCls != null;
-
-        Map<String, QueryIndexDescriptorImpl> idxDescs = new HashMap<>();
-
-        for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet())
-            addToIndex(d, idxDescs, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null,
-                d.aliases(), coCtx);
-
-        for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet())
-            addToIndex(d, idxDescs, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null,
-                d.aliases(), coCtx);
-
-        for (String txtField : meta.getTextFields())
-            addToIndex(d, idxDescs, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, d.aliases(),
-                coCtx);
-
-        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
-
-        if (grps != null) {
-            for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
-                String idxName = entry.getKey();
-
-                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
-
-                int order = 0;
-
-                for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    Boolean descending = idxField.getValue().get2();
-
-                    if (descending == null)
-                        descending = false;
-
-                    addToIndex(d, idxDescs, keyCls, valCls, idxField.getKey(), idxField.getValue().get1(), order,
-                        descending ? IndexType.DESC : IndexType.ASC, idxName, d.aliases(), coCtx);
-
-                    order++;
-                }
-            }
-        }
-
-        for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            QueryClassProperty prop = buildClassProperty(
-                keyCls,
-                valCls,
-                entry.getKey(),
-                entry.getValue(),
-                d.aliases(),
-                coCtx);
-
-            d.addProperty(prop, false);
-        }
-
-        for (QueryIndexDescriptorImpl idxDesc : idxDescs.values())
-            d.addIndex(idxDesc);
-    }
-    
-    /**
-     * @param d Type descriptor.
-     * @param idxDescs Index descriptors.
-     * @param keyCls Key class.
-     * @param valCls Value class.
-     * @param pathStr Path string.
-     * @param resType Result type.
-     * @param idxOrder Order number in index or {@code -1} if no need to index.
-     * @param idxType Index type.
-     * @param idxName Index name.
-     * @param aliases Aliases.
-     * @throws IgniteCheckedException If failed.
-     */
-    private static void addToIndex(
-        QueryTypeDescriptorImpl d,
-        Map<String, QueryIndexDescriptorImpl> idxDescs,
-        Class<?> keyCls,
-        Class<?> valCls,
-        String pathStr,
-        Class<?> resType,
-        int idxOrder,
-        IndexType idxType,
-        String idxName,
-        Map<String,String> aliases,
-        CacheObjectContext coCtx
-    ) throws IgniteCheckedException {
-        String propName;
-        Class<?> propCls;
-
-        if (_VAL.equals(pathStr)) {
-            propName = _VAL;
-            propCls = valCls;
-        }
-        else {
-            QueryClassProperty prop = buildClassProperty(
-                keyCls,
-                valCls,
-                pathStr,
-                resType,
-                aliases,
-                coCtx);
-
-            d.addProperty(prop, false);
-
-            propName = prop.name();
-            propCls = prop.type();
-        }
-
-        if (idxType != null) {
-            if (idxName == null)
-                idxName = propName + "_idx";
-
-            if (idxType == IndexType.TEXT)
-                d.addFieldToTextIndex(propName);
-            else {
-                QueryIndexDescriptorImpl idxDesc = idxDescs.get(idxName);
-
-                if (idxDesc == null) {
-                    assert idxOrder == 0;
-
-                    QueryIndexType idxTyp =
-                        isGeometryClass(propCls) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED;
-
-                    idxDesc = new QueryIndexDescriptorImpl(d, idxName, idxTyp);
-
-                    idxDescs.put(idxName, idxDesc);
-                }
-
-                idxDesc.addField(propName, idxOrder, idxType == IndexType.DESC);
-            }
-        }
-    }
-    
-    /**
-     * Processes declarative metadata for binary object.
-     *
-     * @param ctx Kernal context.
-     * @param meta Declared metadata.
-     * @param d Type descriptor.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("deprecation")
-    public static void processBinaryMeta(GridKernalContext ctx, CacheTypeMetadata meta, QueryTypeDescriptorImpl d)
-        throws IgniteCheckedException {
-        for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(), entry.getValue(), d.aliases(), null);
-
-            d.addProperty(prop, false);
-
-            String idxName = prop.name() + "_idx";
-            QueryIndexType idxTyp = isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED;
-
-            d.addIndex(new QueryIndexDescriptorImpl(d, idxName, idxTyp).addField(prop.name(), 0, false));
-        }
-
-        for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(), entry.getValue(), d.aliases(), null);
-
-            d.addProperty(prop, false);
-
-            String idxName = prop.name() + "_idx";
-            QueryIndexType idxTyp = isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED;
-
-            d.addIndex(new QueryIndexDescriptorImpl(d, idxName, idxTyp).addField(prop.name(), 0, true));
-        }
-
-        for (String txtIdx : meta.getTextFields()) {
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, txtIdx, String.class, d.aliases(), null);
-
-            d.addProperty(prop, false);
-
-            d.addFieldToTextIndex(prop.name());
-        }
-
-        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
-
-        if (grps != null) {
-            for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
-                String idxName = entry.getKey();
-
-                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
-
-                if (!idxFields.isEmpty()) {
-                    QueryIndexDescriptorImpl idxDesc = new QueryIndexDescriptorImpl(d, idxName, QueryIndexType.SORTED);
-
-                    int order = 0;
-
-                    for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                        QueryBinaryProperty prop = buildBinaryProperty(ctx, idxField.getKey(),
-                            idxField.getValue().get1(), d.aliases(), null);
-
-                        d.addProperty(prop, false);
-
-                        Boolean descending = idxField.getValue().get2();
-
-                        idxDesc.addField(prop.name(), order, descending != null && descending);
-
-                        order++;
-                    }
-
-                    d.addIndex(idxDesc);
-                }
-            }
-        }
-
-        for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(), entry.getValue(), d.aliases(), null);
-
-            if (!d.properties().containsKey(prop.name()))
-                d.addProperty(prop, false);
-        }
-    }
-    
     /**
      * Processes declarative metadata for binary object.
      *
@@ -1044,7 +716,6 @@ public class QueryUtils {
      */
     public static boolean isEnabled(CacheConfiguration<?,?> ccfg) {
         return !F.isEmpty(ccfg.getIndexedTypes()) ||
-            !F.isEmpty(ccfg.getTypeMetadata()) ||
             !F.isEmpty(ccfg.getQueryEntities());
     }
 
@@ -1079,18 +750,4 @@ public class QueryUtils {
     private QueryUtils() {
         // No-op.
     }
-    /**
-     * The way to index.
-     */
-    private enum IndexType {
-        /** Ascending index. */
-        ASC,
-
-        /** Descending index. */
-        DESC,
-
-        /** Text index. */
-        TEXT
-    }
-    
 }

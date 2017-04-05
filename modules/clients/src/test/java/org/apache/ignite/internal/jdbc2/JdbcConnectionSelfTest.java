@@ -276,7 +276,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxAllowedCommit() throws Exception {
-        String url = CFG_URL_PREFIX + "transactionsAllowed=true@" + CFG_URL;
+        String url = CFG_URL_PREFIX + "transactionsAllowed=true@" + configURL();
 
         try (final Connection conn = DriverManager.getConnection(url)) {
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -293,7 +293,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxAllowedRollback() throws Exception {
-        String url = CFG_URL_PREFIX + "transactionsAllowed=true@" + CFG_URL;
+        String url = CFG_URL_PREFIX + "transactionsAllowed=true@" + configURL();
 
         try (final Connection conn = DriverManager.getConnection(url)) {
             conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
