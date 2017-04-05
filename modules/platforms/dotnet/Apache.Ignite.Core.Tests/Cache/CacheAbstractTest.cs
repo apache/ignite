@@ -2469,7 +2469,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Existing entries
             var res = cache.InvokeAll(entries.Keys, new T(), arg);
 
-            var results = res.OrderBy(x => x.Key).Select(x => x.Value.Result);
+            var results = res.OrderBy(x => x.Key).Select(x => x.Result);
             var expectedResults = entries.OrderBy(x => x.Key).Select(x => x.Value + arg);
             
             Assert.IsTrue(results.SequenceEqual(expectedResults));
@@ -2481,13 +2481,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Remove entries
             res = cache.InvokeAll(entries.Keys, new T {Remove = true}, arg);
 
-            Assert.IsTrue(res.All(x => x.Value.Result == 0));
+            Assert.IsTrue(res.All(x => x.Result == 0));
             Assert.AreEqual(0, cache.GetAll(entries.Keys).Count);
 
             // Non-existing entries
             res = cache.InvokeAll(entries.Keys, new T {Exists = false}, arg);
 
-            Assert.IsTrue(res.All(x => x.Value.Result == arg));
+            Assert.IsTrue(res.All(x => x.Result == arg));
             Assert.IsTrue(cache.GetAll(entries.Keys).All(x => x.Value == arg)); 
 
             // Test exceptions
@@ -2510,9 +2510,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 if (procRes.Key == errKey)
                     // ReSharper disable once AccessToForEachVariableInClosure
-                    AssertThrowsCacheEntryProcessorException(() => { var x = procRes.Value.Result; }, exceptionText);
+                    AssertThrowsCacheEntryProcessorException(() => { var x = procRes.Result; }, exceptionText);
                 else
-                    Assert.Greater(procRes.Value.Result, 0);
+                    Assert.Greater(procRes.Result, 0);
             }
         }
 

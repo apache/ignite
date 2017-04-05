@@ -449,12 +449,12 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public IDictionary<int, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<int> keys, ICacheEntryProcessor<int, int, TArg, TRes> processor, TArg arg)
+            public ICollection<ICacheEntryProcessorResult<int, TRes>> InvokeAll<TArg, TRes>(IEnumerable<int> keys, ICacheEntryProcessor<int, int, TArg, TRes> processor, TArg arg)
             {
                 throw new NotImplementedException();
             }
 
-            public Task<IDictionary<int, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<int> keys, ICacheEntryProcessor<int, int, TArg, TRes> processor, TArg arg)
+            public Task<ICollection<ICacheEntryProcessorResult<int, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<int> keys, ICacheEntryProcessor<int, int, TArg, TRes> processor, TArg arg)
             {
                 throw new NotImplementedException();
             }
