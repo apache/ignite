@@ -34,9 +34,8 @@ import java.util.ServiceLoader;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryArrayIdentityResolver;
-import org.apache.ignite.binary.BinaryFieldIdentityResolver;
-import org.apache.ignite.binary.BinaryIdentityResolver;
+import org.apache.ignite.internal.binary.BinaryArrayIdentityResolver;
+import org.apache.ignite.internal.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
@@ -598,7 +597,6 @@ public class PlatformConfigurationUtils {
                     BinaryTypeConfiguration type = new BinaryTypeConfiguration(in.readString());
 
                     type.setEnum(in.readBoolean());
-                    type.setIdentityResolver(readBinaryIdentityResolver(in));
 
                     types.add(type);
                 }
@@ -1016,7 +1014,7 @@ public class PlatformConfigurationUtils {
                 for (BinaryTypeConfiguration type : types) {
                     w.writeString(type.getTypeName());
                     w.writeBoolean(type.isEnum());
-                    writeBinaryIdentityResolver(w, type.getIdentityResolver());
+                    writeBinaryIdentityResolver(w, BinaryArrayIdentityResolver.instance());
                 }
             }
             else
@@ -1193,17 +1191,6 @@ public class PlatformConfigurationUtils {
 
             case 1:
                 return new BinaryArrayIdentityResolver();
-
-            case 2:
-                int cnt = r.readInt();
-
-                String[] fields = new String[cnt];
-
-                for (int i = 0; i < cnt; i++)
-                    fields[i] = r.readString();
-
-                return new BinaryFieldIdentityResolver().setFieldNames(fields);
-
             default:
                 assert false;
                 return null;
@@ -1219,23 +1206,8 @@ public class PlatformConfigurationUtils {
     private static void writeBinaryIdentityResolver(BinaryRawWriter w, BinaryIdentityResolver resolver) {
         if (resolver instanceof BinaryArrayIdentityResolver)
             w.writeByte((byte)1);
-        else if (resolver instanceof BinaryFieldIdentityResolver) {
-            w.writeByte((byte)2);
-
-            String[] fields = ((BinaryFieldIdentityResolver)resolver).getFieldNames();
-
-            if (fields != null) {
-                w.writeInt(fields.length);
-
-                for (String field : fields)
-                    w.writeString(field);
-            }
-            else
-                w.writeInt(0);
-        }
-        else {
+        else
             w.writeByte((byte)0);
-        }
     }
 
     /**

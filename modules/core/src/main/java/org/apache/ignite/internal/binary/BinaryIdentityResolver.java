@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.binary;
+package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.binary.BinaryObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
