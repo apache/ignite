@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
-import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
-import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
+import org.apache.ignite.internal.processors.query.index.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaIndexCreateOperation;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -85,12 +85,12 @@ public class QuerySchema implements Serializable {
      *
      * @param msg Message.
      */
-    public void finish(IndexFinishDiscoveryMessage msg) {
+    public void finish(SchemaFinishDiscoveryMessage msg) {
         synchronized (mux) {
-            IndexAbstractOperation op = msg.operation();
+            SchemaAbstractOperation op = msg.operation();
 
-            if (op instanceof IndexCreateOperation) {
-                IndexCreateOperation op0 = (IndexCreateOperation)op;
+            if (op instanceof SchemaIndexCreateOperation) {
+                SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 
                 for (QueryEntity entity : entities) {
                     String tblName = QueryUtils.tableName(entity);
@@ -99,7 +99,7 @@ public class QuerySchema implements Serializable {
                         boolean exists = false;
 
                         for (QueryIndex idx : entity.getIndexes()) {
-                            if (F.eq(idx.getName(), op.indexName())) {
+                            if (F.eq(idx.getName(), op0.indexName())) {
                                 exists = true;
 
                                 break;
@@ -120,7 +120,9 @@ public class QuerySchema implements Serializable {
                 }
             }
             else {
-                assert op instanceof IndexDropOperation;
+                assert op instanceof SchemaIndexDropOperation;
+
+                SchemaIndexDropOperation op0 = (SchemaIndexDropOperation)op;
 
                 for (QueryEntity entity : entities) {
                     Collection<QueryIndex> idxs = entity.getIndexes();
@@ -128,7 +130,7 @@ public class QuerySchema implements Serializable {
                     QueryIndex victim = null;
 
                     for (QueryIndex idx : idxs) {
-                        if (F.eq(idx.getName(), op.indexName())) {
+                        if (F.eq(idx.getName(), op0.indexName())) {
                             victim = idx;
 
                             break;

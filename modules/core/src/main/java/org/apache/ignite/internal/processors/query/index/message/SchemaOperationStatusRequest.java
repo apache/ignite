@@ -26,9 +26,9 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 /**
- * Operation status request.
+ * Schema operation status request.
  */
-public class IndexOperationStatusRequest implements Message {
+public class SchemaOperationStatusRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +41,7 @@ public class IndexOperationStatusRequest implements Message {
     /**
      * Default constructor.
      */
-    public IndexOperationStatusRequest() {
+    public SchemaOperationStatusRequest() {
         // No-op.
     }
 
@@ -51,7 +51,7 @@ public class IndexOperationStatusRequest implements Message {
      * @param sndNodeId Sender node ID.
      * @param opId Operation ID.
      */
-    public IndexOperationStatusRequest(UUID sndNodeId, UUID opId) {
+    public SchemaOperationStatusRequest(UUID sndNodeId, UUID opId) {
         this.sndNodeId = sndNodeId;
         this.opId = opId;
     }
@@ -123,7 +123,7 @@ public class IndexOperationStatusRequest implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(IndexOperationStatusRequest.class);
+        return reader.afterMessageRead(SchemaOperationStatusRequest.class);
     }
 
     /** {@inheritDoc} */
@@ -143,6 +143,6 @@ public class IndexOperationStatusRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexOperationStatusRequest.class, this);
+        return S.toString(SchemaOperationStatusRequest.class, this);
     }
 }

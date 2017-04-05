@@ -19,54 +19,70 @@ package org.apache.ignite.internal.processors.query.index.message;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
-import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Index creation finished discovery message.
+ * Schema change propose discovery message.
  */
-public class IndexFinishDiscoveryMessage extends IndexAbstractDiscoveryMessage {
+public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache deployment ID. */
-    private final IgniteUuid depId;
+    private IgniteUuid depId;
 
     /** Error. */
-    private final SchemaOperationException err;
+    private SchemaOperationException err;
+
     /**
      * Constructor.
      *
-     * @param op Original operation.
-     * @param err Error.
+     * @param op Operation.
      */
-    public IndexFinishDiscoveryMessage(IndexAbstractOperation op, IgniteUuid depId, SchemaOperationException err) {
+    public SchemaProposeDiscoveryMessage(SchemaAbstractOperation op) {
         super(op);
-
-        this.depId = depId;
-        this.err = err;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
+        return hasError() ? new SchemaFinishDiscoveryMessage(op, depId, err) :
+            new SchemaAcceptDiscoveryMessage(op, depId);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean exchange() {
         return true;
     }
 
     /** {@inheritDoc} */
-    public IgniteUuid deploymentId() {
+    @Override public boolean exchange() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable public IgniteUuid deploymentId() {
         return depId;
+    }
+
+    /**
+     * @param depId Deployment ID.
+     */
+    public void deploymentId(IgniteUuid depId) {
+        this.depId = depId;
+    }
+
+    /**
+     * Set error.
+     *
+     * @param err Error.
+     */
+    public void onError(SchemaOperationException err) {
+        if (!hasError()) {
+            this.err = err;
+        }
     }
 
     /**
@@ -85,7 +101,6 @@ public class IndexFinishDiscoveryMessage extends IndexAbstractDiscoveryMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexFinishDiscoveryMessage.class, this, "parent", super.toString());
+        return S.toString(SchemaProposeDiscoveryMessage.class, this, "parent", super.toString());
     }
-
 }

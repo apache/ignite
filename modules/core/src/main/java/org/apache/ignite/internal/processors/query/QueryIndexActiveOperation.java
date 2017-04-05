@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -32,7 +32,7 @@ public class QueryIndexActiveOperation implements Serializable {
 
     /** Operation. */
     @GridToStringInclude
-    private final IndexAbstractOperation op;
+    private final SchemaAbstractOperation op;
 
     /** Whether operation is accepted. */
     private boolean accepted;
@@ -42,7 +42,7 @@ public class QueryIndexActiveOperation implements Serializable {
      *
      * @param op Operation.
      */
-    public QueryIndexActiveOperation(IndexAbstractOperation op) {
+    public QueryIndexActiveOperation(SchemaAbstractOperation op) {
         this.op = op;
     }
 
@@ -62,7 +62,7 @@ public class QueryIndexActiveOperation implements Serializable {
     /**
      * @return Operation.
      */
-    public IndexAbstractOperation operation() {
+    public SchemaAbstractOperation operation() {
         return op;
     }
 

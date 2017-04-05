@@ -22,7 +22,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
-import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Schema operation executor.
  */
-public class IndexOperationWorker extends GridWorker {
+public class SchemaOperationWorker extends GridWorker {
     /** Query processor */
     private final GridQueryProcessor qryProc;
 
@@ -43,7 +43,7 @@ public class IndexOperationWorker extends GridWorker {
     private final IgniteUuid depId;
 
     /** Target operation. */
-    private final IndexAbstractOperation op;
+    private final SchemaAbstractOperation op;
 
     /** No-op flag. */
     private final boolean nop;
@@ -78,10 +78,10 @@ public class IndexOperationWorker extends GridWorker {
      * @param cacheStarted Whether cache started.
      * @param type Type descriptor (if available).
      */
-    public IndexOperationWorker(GridKernalContext ctx, GridQueryProcessor qryProc, IgniteUuid depId,
-        IndexAbstractOperation op, boolean nop, @Nullable SchemaOperationException err, boolean cacheStarted,
+    public SchemaOperationWorker(GridKernalContext ctx, GridQueryProcessor qryProc, IgniteUuid depId,
+        SchemaAbstractOperation op, boolean nop, @Nullable SchemaOperationException err, boolean cacheStarted,
         @Nullable QueryTypeDescriptorImpl type) {
-        super(ctx.igniteInstanceName(), workerName(op), ctx.log(IndexOperationWorker.class));
+        super(ctx.igniteInstanceName(), workerName(op), ctx.log(SchemaOperationWorker.class));
 
         this.qryProc = qryProc;
         this.depId = depId;
@@ -120,7 +120,7 @@ public class IndexOperationWorker extends GridWorker {
      *
      * @return This instance.
      */
-    public IndexOperationWorker start() {
+    public SchemaOperationWorker start() {
         if (startGuard.compareAndSet(false, true)) {
             if (!fut.isDone())
                 new IgniteThread(this).start();
@@ -185,7 +185,7 @@ public class IndexOperationWorker extends GridWorker {
     /**
      * @return Operation.
      */
-    public IndexAbstractOperation operation() {
+    public SchemaAbstractOperation operation() {
         return op;
     }
 
@@ -199,7 +199,7 @@ public class IndexOperationWorker extends GridWorker {
     /**
      * @return Worker name.
      */
-    private static String workerName(IndexAbstractOperation op) {
+    private static String workerName(SchemaAbstractOperation op) {
         return "schema-op-worker-" + op.id();
     }
 }

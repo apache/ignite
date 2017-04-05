@@ -22,9 +22,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import java.util.UUID;
 
 /**
- * Arguments for {@code CREATE INDEX}.
+ * Schema index drop operation.
  */
-public class IndexDropOperation extends IndexAbstractOperation {
+public class SchemaIndexDropOperation extends SchemaIndexAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +42,7 @@ public class IndexDropOperation extends IndexAbstractOperation {
      * @param idxName Index name.
      * @param ifExists Ignore operation if index doesn't exist.
      */
-    public IndexDropOperation(UUID opId, String space, String idxName, boolean ifExists) {
+    public SchemaIndexDropOperation(UUID opId, String space, String idxName, boolean ifExists) {
         super(opId, space);
 
         this.idxName = idxName;
@@ -63,6 +63,6 @@ public class IndexDropOperation extends IndexAbstractOperation {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexDropOperation.class, this, "parent", super.toString());
+        return S.toString(SchemaIndexDropOperation.class, this, "parent", super.toString());
     }
 }

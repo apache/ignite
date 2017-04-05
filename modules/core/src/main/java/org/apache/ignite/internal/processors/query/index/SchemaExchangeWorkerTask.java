@@ -18,22 +18,22 @@
 package org.apache.ignite.internal.processors.query.index;
 
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
-import org.apache.ignite.internal.processors.query.index.message.IndexAbstractDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Cache index exchange worker task.
+ * Cache schema change task for exchange worker.
  */
-public class IndexExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+public class SchemaExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
     /** Message. */
-    private final IndexAbstractDiscoveryMessage msg;
+    private final SchemaAbstractDiscoveryMessage msg;
 
     /**
      * Constructor.
      *
      * @param msg Message.
      */
-    public IndexExchangeWorkerTask(IndexAbstractDiscoveryMessage msg) {
+    public SchemaExchangeWorkerTask(SchemaAbstractDiscoveryMessage msg) {
         assert msg != null;
 
         this.msg = msg;
@@ -42,7 +42,7 @@ public class IndexExchangeWorkerTask implements CachePartitionExchangeWorkerTask
     /**
      * @return Message.
      */
-    public IndexAbstractDiscoveryMessage message() {
+    public SchemaAbstractDiscoveryMessage message() {
         return msg;
     }
 
@@ -53,6 +53,6 @@ public class IndexExchangeWorkerTask implements CachePartitionExchangeWorkerTask
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexExchangeWorkerTask.class, this);
+        return S.toString(SchemaExchangeWorkerTask.class, this);
     }
 }

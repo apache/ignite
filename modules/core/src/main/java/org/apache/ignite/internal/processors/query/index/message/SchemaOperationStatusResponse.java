@@ -27,10 +27,9 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 /**
- * Message with index operation status. Sent from participant to coordinator when index creation is completed or
- * when coordinator changes.
+ * Schema operation status response.
  */
-public class IndexOperationStatusResponse implements Message {
+public class SchemaOperationStatusResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,7 +45,7 @@ public class IndexOperationStatusResponse implements Message {
     /**
      * Default constructor.
      */
-    public IndexOperationStatusResponse() {
+    public SchemaOperationStatusResponse() {
         // No-op.
     }
 
@@ -57,7 +56,7 @@ public class IndexOperationStatusResponse implements Message {
      * @param opId Operation ID.
      * @param errBytes Error bytes.
      */
-    public IndexOperationStatusResponse(UUID sndNodeId, UUID opId, byte[] errBytes) {
+    public SchemaOperationStatusResponse(UUID sndNodeId, UUID opId, byte[] errBytes) {
         this.sndNodeId = sndNodeId;
         this.opId = opId;
         this.errBytes = errBytes;
@@ -151,7 +150,7 @@ public class IndexOperationStatusResponse implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(IndexOperationStatusResponse.class);
+        return reader.afterMessageRead(SchemaOperationStatusResponse.class);
     }
 
     /** {@inheritDoc} */
@@ -171,6 +170,6 @@ public class IndexOperationStatusResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexOperationStatusResponse.class, this);
+        return S.toString(SchemaOperationStatusResponse.class, this);
     }
 }

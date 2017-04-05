@@ -26,9 +26,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
-import org.apache.ignite.internal.processors.query.index.message.IndexAcceptDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.IndexProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -373,7 +371,7 @@ public class DynamicCacheDescriptor {
      *
      * @param msg Message.
      */
-    public void schemaChangeFinish(IndexFinishDiscoveryMessage msg) {
+    public void schemaChangeFinish(SchemaFinishDiscoveryMessage msg) {
         synchronized (schemaMux) {
             schema.finish(msg);
         }

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.index;
 
-import org.apache.ignite.internal.processors.query.index.message.IndexAcceptDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.IndexProposeDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
+import org.apache.ignite.internal.processors.query.index.message.SchemaAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.SchemaProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -36,20 +36,20 @@ public class SchemaOperationDescriptor implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Propose message. */
-    private final IndexProposeDiscoveryMessage msgPropose;
+    private final SchemaProposeDiscoveryMessage msgPropose;
 
     /** Accept message. */
-    private IndexAcceptDiscoveryMessage msgAccept;
+    private SchemaAcceptDiscoveryMessage msgAccept;
 
     /** Finish message. */
-    private IndexFinishDiscoveryMessage msgFinish;
+    private SchemaFinishDiscoveryMessage msgFinish;
 
     /**
      * Constructor.
      *
      * @param msgPropose Propose message.
      */
-    public SchemaOperationDescriptor(IndexProposeDiscoveryMessage msgPropose) {
+    public SchemaOperationDescriptor(SchemaProposeDiscoveryMessage msgPropose) {
         this.msgPropose = msgPropose;
     }
 
@@ -74,7 +74,7 @@ public class SchemaOperationDescriptor implements Serializable {
     /**
      * @return Operation.
      */
-    public IndexAbstractOperation operation() {
+    public SchemaAbstractOperation operation() {
         return msgPropose.operation();
     }
 
@@ -95,35 +95,35 @@ public class SchemaOperationDescriptor implements Serializable {
     /**
      * @return Propose message.
      */
-    public IndexProposeDiscoveryMessage messagePropose() {
+    public SchemaProposeDiscoveryMessage messagePropose() {
         return msgPropose;
     }
 
     /**
      * @return Accept message.
      */
-    @Nullable public IndexAcceptDiscoveryMessage messageAccept() {
+    @Nullable public SchemaAcceptDiscoveryMessage messageAccept() {
         return msgAccept;
     }
 
     /**
      * @param msgAccept Accept message.
      */
-    public void messageAccept(IndexAcceptDiscoveryMessage msgAccept) {
+    public void messageAccept(SchemaAcceptDiscoveryMessage msgAccept) {
         this.msgAccept = msgAccept;
     }
 
     /**
      * @return Finish message.
      */
-    @Nullable public IndexFinishDiscoveryMessage messageFinish() {
+    @Nullable public SchemaFinishDiscoveryMessage messageFinish() {
         return msgFinish;
     }
 
     /**
      * @param msgFinish Finish message.
      */
-    public void messageFinish(IndexFinishDiscoveryMessage msgFinish) {
+    public void messageFinish(SchemaFinishDiscoveryMessage msgFinish) {
         this.msgFinish = msgFinish;
     }
 

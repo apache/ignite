@@ -66,13 +66,13 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
-import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
-import org.apache.ignite.internal.processors.query.index.message.IndexAbstractDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.IndexAcceptDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.IndexExchangeWorkerTask;
-import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.index.message.SchemaAbstractDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.SchemaAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.SchemaExchangeWorkerTask;
+import org.apache.ignite.internal.processors.query.index.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.IndexNodeLeaveExchangeWorkerTask;
-import org.apache.ignite.internal.processors.query.index.message.IndexProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -388,11 +388,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Task or {@code null} if message doesn't require any special processing.
      */
     public CachePartitionExchangeWorkerTask exchangeTaskForCustomDiscoveryMessage(DiscoveryCustomMessage msg) {
-        if (msg instanceof IndexAbstractDiscoveryMessage) {
-            IndexAbstractDiscoveryMessage msg0 = (IndexAbstractDiscoveryMessage)msg;
+        if (msg instanceof SchemaAbstractDiscoveryMessage) {
+            SchemaAbstractDiscoveryMessage msg0 = (SchemaAbstractDiscoveryMessage)msg;
 
             if (msg0.exchange())
-                return new IndexExchangeWorkerTask(msg0);
+                return new SchemaExchangeWorkerTask(msg0);
         }
 
         return null;
@@ -404,13 +404,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param task Task.
      */
     public void processCustomExchangeTask(CachePartitionExchangeWorkerTask task) {
-        if (task instanceof IndexExchangeWorkerTask) {
-            IndexAbstractDiscoveryMessage msg = ((IndexExchangeWorkerTask)task).message();
+        if (task instanceof SchemaExchangeWorkerTask) {
+            SchemaAbstractDiscoveryMessage msg = ((SchemaExchangeWorkerTask)task).message();
 
-            if (msg instanceof IndexAcceptDiscoveryMessage)
-                ctx.query().onSchemaAccept((IndexAcceptDiscoveryMessage)msg);
-            else if (msg instanceof IndexFinishDiscoveryMessage)
-                ctx.query().onSchemaFinish((IndexFinishDiscoveryMessage)msg);
+            if (msg instanceof SchemaAcceptDiscoveryMessage)
+                ctx.query().onSchemaAccept((SchemaAcceptDiscoveryMessage)msg);
+            else if (msg instanceof SchemaFinishDiscoveryMessage)
+                ctx.query().onSchemaFinish((SchemaFinishDiscoveryMessage)msg);
             else
                 U.warn(log, "Unsupported schema discovery message: " + msg);
         }
@@ -2721,8 +2721,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if minor topology version should be increased.
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer) {
-        if (msg instanceof IndexAbstractDiscoveryMessage) {
-            IndexAbstractDiscoveryMessage msg0 = (IndexAbstractDiscoveryMessage)msg;
+        if (msg instanceof SchemaAbstractDiscoveryMessage) {
+            SchemaAbstractDiscoveryMessage msg0 = (SchemaAbstractDiscoveryMessage)msg;
 
             if (log.isDebugEnabled())
                 log.debug("Received index discovery message [opId=" + msg0.operation().id() +
@@ -2736,12 +2736,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return false;
             }
 
-            if (msg instanceof IndexProposeDiscoveryMessage)
-                onSchemaProposeDiscovery((IndexProposeDiscoveryMessage)msg);
-            else if (msg instanceof IndexAcceptDiscoveryMessage)
-                onSchemaAcceptDiscovery((IndexAcceptDiscoveryMessage)msg);
-            else if (msg instanceof IndexFinishDiscoveryMessage)
-                onSchemaFinishDiscovery((IndexFinishDiscoveryMessage)msg);
+            if (msg instanceof SchemaProposeDiscoveryMessage)
+                onSchemaProposeDiscovery((SchemaProposeDiscoveryMessage)msg);
+            else if (msg instanceof SchemaAcceptDiscoveryMessage)
+                onSchemaAcceptDiscovery((SchemaAcceptDiscoveryMessage)msg);
+            else if (msg instanceof SchemaFinishDiscoveryMessage)
+                onSchemaFinishDiscovery((SchemaFinishDiscoveryMessage)msg);
             else
                 U.warn(log, "Unsupported index discovery message type (will ignore): " + msg);
 
@@ -2759,8 +2759,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onSchemaProposeDiscovery(IndexProposeDiscoveryMessage msg) {
-        IndexAbstractOperation op = msg.operation();
+    private void onSchemaProposeDiscovery(SchemaProposeDiscoveryMessage msg) {
+        SchemaAbstractOperation op = msg.operation();
 
         // Ignore in case error was reported by another node earlier.
         if (msg.hasError()) {
@@ -2798,8 +2798,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onSchemaAcceptDiscovery(IndexAcceptDiscoveryMessage msg) {
-        IndexAbstractOperation op = msg.operation();
+    private void onSchemaAcceptDiscovery(SchemaAcceptDiscoveryMessage msg) {
+        SchemaAbstractOperation op = msg.operation();
 
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
 
@@ -2817,8 +2817,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onSchemaFinishDiscovery(IndexFinishDiscoveryMessage msg) {
-        IndexAbstractOperation op = msg.operation();
+    private void onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
+        SchemaAbstractOperation op = msg.operation();
 
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
 

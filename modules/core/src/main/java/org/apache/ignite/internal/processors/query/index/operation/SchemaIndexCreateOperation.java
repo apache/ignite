@@ -25,9 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import java.util.UUID;
 
 /**
- * Arguments for {@code CREATE INDEX}.
+ * Schema index create operation.
  */
-public class IndexCreateOperation extends IndexAbstractOperation {
+public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,8 +50,7 @@ public class IndexCreateOperation extends IndexAbstractOperation {
      * @param idx Index params.
      * @param ifNotExists Ignore operation if index exists.
      */
-    public IndexCreateOperation(UUID opId, String space, String tblName, QueryIndex idx,
-        boolean ifNotExists) {
+    public SchemaIndexCreateOperation(UUID opId, String space, String tblName, QueryIndex idx, boolean ifNotExists) {
         super(opId, space);
 
         this.tblName = tblName;
@@ -87,6 +86,6 @@ public class IndexCreateOperation extends IndexAbstractOperation {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexCreateOperation.class, this, "parent", super.toString());
+        return S.toString(SchemaIndexCreateOperation.class, this, "parent", super.toString());
     }
 }

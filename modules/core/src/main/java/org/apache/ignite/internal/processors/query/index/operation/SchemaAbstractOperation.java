@@ -23,9 +23,9 @@ import java.io.Serializable;
 import java.util.UUID;
 
 /**
- * Abstract operation on index.
+ * Abstract operation on schema.
  */
-public abstract class IndexAbstractOperation implements Serializable {
+public abstract class SchemaAbstractOperation implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +41,7 @@ public abstract class IndexAbstractOperation implements Serializable {
      * @param opId Operation ID.
      * @param space Space.
      */
-    public IndexAbstractOperation(UUID opId, String space) {
+    public SchemaAbstractOperation(UUID opId, String space) {
         this.opId = opId;
         this.space = space;
     }
@@ -60,13 +60,8 @@ public abstract class IndexAbstractOperation implements Serializable {
         return space;
     }
 
-    /**
-     * @return Index name.
-     */
-    public abstract String indexName();
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexAbstractOperation.class, this);
+        return S.toString(SchemaAbstractOperation.class, this);
     }
 }

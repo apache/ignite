@@ -24,7 +24,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusRequest;
+import org.apache.ignite.internal.processors.query.index.message.SchemaOperationStatusRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
@@ -39,10 +39,10 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_DYNAMIC_SCHEMA;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 
 /**
- * Current index operation state.
+ * Schema operation manager.
  */
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-public class IndexOperationManager {
+public class SchemaOperationManager {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -53,7 +53,7 @@ public class IndexOperationManager {
     private final IgniteLogger log;
 
     /** Operation handler. */
-    private final IndexOperationWorker worker;
+    private final SchemaOperationWorker worker;
 
     /** Mutex for concurrency control. */
     private final Object mux = new Object();
@@ -71,10 +71,10 @@ public class IndexOperationManager {
      * @param qryProc Query processor.
      * @param worker Operation handler.
      */
-    public IndexOperationManager(GridKernalContext ctx, GridQueryProcessor qryProc, IndexOperationWorker worker) {
+    public SchemaOperationManager(GridKernalContext ctx, GridQueryProcessor qryProc, SchemaOperationWorker worker) {
         this.ctx = ctx;
 
-        log = ctx.log(IndexOperationManager.class);
+        log = ctx.log(SchemaOperationManager.class);
 
         this.qryProc = qryProc;
         this.worker = worker;
@@ -94,8 +94,8 @@ public class IndexOperationManager {
                 nodeRess = new HashMap<>();
 
                 // Send remote requests.
-                IndexOperationStatusRequest req =
-                    new IndexOperationStatusRequest(ctx.localNodeId(), operationId());
+                SchemaOperationStatusRequest req =
+                    new SchemaOperationStatusRequest(ctx.localNodeId(), operationId());
 
                 for (ClusterNode alive : ctx.discovery().aliveServerNodes())
                     nodeIds.add(alive.id());
@@ -229,7 +229,7 @@ public class IndexOperationManager {
     /**
      * @return Worker.
      */
-    public IndexOperationWorker worker() {
+    public SchemaOperationWorker worker() {
         return worker;
     }
 

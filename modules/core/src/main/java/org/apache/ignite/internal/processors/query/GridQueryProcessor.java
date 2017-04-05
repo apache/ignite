@@ -49,19 +49,19 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.index.IndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.index.IndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.index.IndexOperationCancellationToken;
-import org.apache.ignite.internal.processors.query.index.IndexOperationManager;
-import org.apache.ignite.internal.processors.query.index.IndexOperationWorker;
+import org.apache.ignite.internal.processors.query.index.SchemaOperationManager;
+import org.apache.ignite.internal.processors.query.index.SchemaOperationWorker;
 import org.apache.ignite.internal.processors.query.index.SchemaKey;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationDescriptor;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
-import org.apache.ignite.internal.processors.query.index.message.IndexAcceptDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusRequest;
-import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusResponse;
-import org.apache.ignite.internal.processors.query.index.message.IndexProposeDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
-import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
-import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
+import org.apache.ignite.internal.processors.query.index.message.SchemaAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.SchemaOperationStatusRequest;
+import org.apache.ignite.internal.processors.query.index.message.SchemaOperationStatusResponse;
+import org.apache.ignite.internal.processors.query.index.message.SchemaProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaIndexCreateOperation;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -413,10 +413,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     assert op != null;
 
-                    IndexOperationManager mgr = op.manager();
+                    SchemaOperationManager mgr = op.manager();
 
                     if (mgr != null) {
-                        IndexOperationWorker worker = mgr.worker();
+                        SchemaOperationWorker worker = mgr.worker();
 
                         assert !worker.cacheStarted();
 
@@ -426,23 +426,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             assert fut.isDone();
 
                             if (fut.error() == null) {
-                                IndexAbstractOperation op0 = op.descriptor().operation();
+                                SchemaAbstractOperation op0 = op.descriptor().operation();
 
-                                if (op0 instanceof IndexCreateOperation) {
-                                    IndexCreateOperation opCreate = (IndexCreateOperation)op0;
+                                if (op0 instanceof SchemaIndexCreateOperation) {
+                                    SchemaIndexCreateOperation opCreate = (SchemaIndexCreateOperation)op0;
 
                                     QueryTypeDescriptorImpl typeDesc = tblTypMap.get(opCreate.tableName());
 
                                     assert typeDesc != null;
 
-                                    QueryUtils.processDynamicIndexChange(op0.indexName(), opCreate.index(), typeDesc);
+                                    QueryUtils.processDynamicIndexChange(opCreate.indexName(), opCreate.index(),
+                                        typeDesc);
                                 }
-                                else if (op0 instanceof IndexDropOperation) {
-                                    QueryTypeDescriptorImpl typeDesc = idxTypMap.get(op0.indexName());
+                                else if (op0 instanceof SchemaIndexDropOperation) {
+                                    SchemaIndexDropOperation opDrop = (SchemaIndexDropOperation)op0;
+
+                                    QueryTypeDescriptorImpl typeDesc = idxTypMap.get(opDrop.indexName());
 
                                     assert typeDesc != null;
 
-                                    QueryUtils.processDynamicIndexChange(op0.indexName(), null, typeDesc);
+                                    QueryUtils.processDynamicIndexChange(opDrop.indexName(), null, typeDesc);
                                 }
                                 else
                                     assert false;
@@ -520,7 +523,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    public void onSchemaProposeDiscovery(IndexProposeDiscoveryMessage msg) {
+    public void onSchemaProposeDiscovery(SchemaProposeDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
         if (log.isDebugEnabled())
@@ -557,7 +560,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    public void onSchemaAcceptDiscovery(IndexAcceptDiscoveryMessage msg) {
+    public void onSchemaAcceptDiscovery(SchemaAcceptDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
         if (log.isDebugEnabled())
@@ -579,7 +582,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     @SuppressWarnings("ThrowableInstanceNeverThrown")
-    public void onSchemaAccept(IndexAcceptDiscoveryMessage msg) {
+    public void onSchemaAccept(SchemaAcceptDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
         if (log.isDebugEnabled())
@@ -633,7 +636,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         boolean cacheStarted = cacheExists && localAffinityNode(cacheDesc);
 
         // Validate schema state and decide whether we should proceed or not.
-        IndexAbstractOperation op = schemaOp.descriptor().operation();
+        SchemaAbstractOperation op = schemaOp.descriptor().operation();
 
         QueryTypeDescriptorImpl type = null;
         SchemaOperationException err;
@@ -667,10 +670,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
 
         // Start operation.
-        IndexOperationWorker worker =
-            new IndexOperationWorker(ctx, this, desc.cacheDeploymentId(), op, nop, err, cacheStarted, type);
+        SchemaOperationWorker worker =
+            new SchemaOperationWorker(ctx, this, desc.cacheDeploymentId(), op, nop, err, cacheStarted, type);
 
-        IndexOperationManager mgr = new IndexOperationManager(ctx, this, worker);
+        SchemaOperationManager mgr = new SchemaOperationManager(ctx, this, worker);
 
         schemaOp.manager(mgr);
 
@@ -684,15 +687,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Result: affected type, nop flag, error.
      */
     private T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> prepareChangeOnStartedCache(
-        IndexAbstractOperation op) {
+        SchemaAbstractOperation op) {
         QueryTypeDescriptorImpl type = null;
         boolean nop = false;
         SchemaOperationException err = null;
 
         String space = op.space();
 
-        if (op instanceof IndexCreateOperation) {
-            IndexCreateOperation op0 = (IndexCreateOperation) op;
+        if (op instanceof SchemaIndexCreateOperation) {
+            SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation) op;
 
             QueryIndex idx = op0.index();
 
@@ -729,8 +732,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
         }
-        else if (op instanceof IndexDropOperation) {
-            IndexDropOperation op0 = (IndexDropOperation) op;
+        else if (op instanceof SchemaIndexDropOperation) {
+            SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
 
             String idxName = op0.indexName();
 
@@ -758,7 +761,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schema Known cache schema.
      * @return Result: nop flag, error.
      */
-    private T2<Boolean, SchemaOperationException> prepareChangeOnNotStartedCache(IndexAbstractOperation op,
+    private T2<Boolean, SchemaOperationException> prepareChangeOnNotStartedCache(SchemaAbstractOperation op,
         QuerySchema schema) {
         boolean nop = false;
         SchemaOperationException err = null;
@@ -796,10 +799,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         // Now check whether operation can be applied to schema.
-        String idxName = op.indexName();
+        if (op instanceof SchemaIndexCreateOperation) {
+            SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 
-        if (op instanceof IndexCreateOperation) {
-            IndexCreateOperation op0 = (IndexCreateOperation)op;
+            String idxName = op0.indexName();
 
             T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.get(idxName);
 
@@ -835,8 +838,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxName);
             }
         }
-        else if (op instanceof IndexDropOperation) {
-            IndexDropOperation op0 = (IndexDropOperation)op;
+        else if (op instanceof SchemaIndexDropOperation) {
+            SchemaIndexDropOperation op0 = (SchemaIndexDropOperation)op;
+
+            String idxName = op0.indexName();
 
             T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.get(idxName);
 
@@ -887,8 +892,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             assert op != null;
 
-            IndexFinishDiscoveryMessage msg =
-                new IndexFinishDiscoveryMessage(desc.operation(), desc.cacheDeploymentId(), err);
+            SchemaFinishDiscoveryMessage msg =
+                new SchemaFinishDiscoveryMessage(desc.operation(), desc.cacheDeploymentId(), err);
 
             try {
                 ctx.discovery().sendCustomEvent(msg);
@@ -940,7 +945,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private SchemaOperation next;
 
         /** Operation manager. */
-        private IndexOperationManager mgr;
+        private SchemaOperationManager mgr;
 
         /** Pending status requests. */
         private final Collection<UUID> pendingStatusReqs = new LinkedList<>();
@@ -1006,14 +1011,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /**
          * @return Operation manager.
          */
-        public IndexOperationManager manager() {
+        public SchemaOperationManager manager() {
             return mgr;
         }
 
         /**
          * @param mgr Operation manager.
          */
-        public void manager(IndexOperationManager mgr) {
+        public void manager(SchemaOperationManager mgr) {
             assert this.mgr == null;
 
             this.mgr = mgr;
@@ -1041,7 +1046,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void onSchemaFinishDiscovery(IndexFinishDiscoveryMessage msg) {
+    public void onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
         if (log.isDebugEnabled())
@@ -1066,7 +1071,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void onSchemaFinish(IndexFinishDiscoveryMessage msg) {
+    public void onSchemaFinish(SchemaFinishDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
         if (log.isDebugEnabled())
@@ -1139,7 +1144,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             assert schemaOp != null;
             assert F.eq(schemaOp.id(), opId);
 
-            IndexAbstractOperation op = schemaOp.descriptor().operation();
+            SchemaAbstractOperation op = schemaOp.descriptor().operation();
 
             // No need to apply anything to obsolete type.
             if (type == null || type.obsolete()) {
@@ -1153,22 +1158,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Local operation finished sucessfully [opId=" + op.id() + ']');
 
-            QueryIndexKey idxKey = new QueryIndexKey(op.space(), op.indexName());
+
 
             try {
-                if (op instanceof IndexCreateOperation) {
-                    IndexCreateOperation op0 = (IndexCreateOperation) op;
+                if (op instanceof SchemaIndexCreateOperation) {
+                    SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation) op;
 
                     QueryUtils.processDynamicIndexChange(op0.indexName(), op0.index(), type);
 
                     QueryIndexDescriptorImpl idxDesc = type.index(op0.indexName());
 
+                    QueryIndexKey idxKey = new QueryIndexKey(op.space(), op0.indexName());
+
                     idxs.put(idxKey, idxDesc);
                 }
                 else {
-                    assert op instanceof IndexDropOperation;
+                    assert op instanceof SchemaIndexDropOperation;
 
-                    QueryUtils.processDynamicIndexChange(op.indexName(), null, type);
+                    SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
+
+                    QueryUtils.processDynamicIndexChange(op0.indexName(), null, type);
+
+                    QueryIndexKey idxKey = new QueryIndexKey(op.space(), op0.indexName());
 
                     idxs.remove(idxKey);
                 }
@@ -1203,7 +1214,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cancelTok Cancel token.
      * @throws SchemaOperationException If failed.
      */
-    public void processIndexOperationLocal(IndexAbstractOperation op, IgniteUuid depId,
+    public void processIndexOperationLocal(SchemaAbstractOperation op, IgniteUuid depId,
         IndexOperationCancellationToken cancelTok) throws SchemaOperationException {
         System.out.println("PROCESS INDEX OPERATION LOCAL: " + ctx.igniteInstanceName());
 
@@ -1215,16 +1226,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
 
         try {
-            if (op instanceof IndexCreateOperation) {
-                IndexCreateOperation op0 = (IndexCreateOperation) op;
+            if (op instanceof SchemaIndexCreateOperation) {
+                SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation) op;
 
                 IndexCacheVisitor visitor =
                     new IndexCacheVisitorImpl(this, cache.context(), space, op0.tableName(), cancelTok);
 
                 idx.createIndex(space, op0.tableName(), op0.index(), op0.ifNotExists(), visitor);
             }
-            else if (op instanceof IndexDropOperation) {
-                IndexDropOperation op0 = (IndexDropOperation) op;
+            else if (op instanceof SchemaIndexDropOperation) {
+                SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
 
                 idx.dropIndex(space, op0.indexName(), op0.ifExists());
             }
@@ -1654,7 +1665,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicIndexCreate(String space, String tblName, QueryIndex idx,
         boolean ifNotExists) {
-        IndexAbstractOperation op = new IndexCreateOperation(UUID.randomUUID(), space, tblName, idx, ifNotExists);
+        SchemaAbstractOperation op = new SchemaIndexCreateOperation(UUID.randomUUID(), space, tblName, idx, ifNotExists);
 
         return startIndexOperationDistributed(op);
     }
@@ -1667,7 +1678,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future completed when index is created.
      */
     public IgniteInternalFuture<?> dynamicIndexDrop(String space, String idxName, boolean ifExists) {
-        IndexAbstractOperation op = new IndexDropOperation(UUID.randomUUID(), space, idxName, ifExists);
+        SchemaAbstractOperation op = new SchemaIndexDropOperation(UUID.randomUUID(), space, idxName, ifExists);
 
         return startIndexOperationDistributed(op);
     }
@@ -1678,7 +1689,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param op Operation.
      * @return Future.
      */
-    private IgniteInternalFuture<?> startIndexOperationDistributed(IndexAbstractOperation op) {
+    private IgniteInternalFuture<?> startIndexOperationDistributed(SchemaAbstractOperation op) {
         QueryIndexClientFuture fut = new QueryIndexClientFuture(op.id());
 
         QueryIndexClientFuture oldFut = idxCliFuts.put(op.id(), fut);
@@ -1686,7 +1697,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert oldFut == null;
 
         try {
-            ctx.discovery().sendCustomEvent(new IndexProposeDiscoveryMessage(op));
+            ctx.discovery().sendCustomEvent(new SchemaProposeDiscoveryMessage(op));
 
             if (log.isDebugEnabled())
                 log.debug("Sent index propose discovery message [opId=" + op.id() + ", op=" + op + ']');
@@ -2050,13 +2061,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (msg instanceof IndexOperationStatusRequest) {
-            IndexOperationStatusRequest req = (IndexOperationStatusRequest)msg;
+        if (msg instanceof SchemaOperationStatusRequest) {
+            SchemaOperationStatusRequest req = (SchemaOperationStatusRequest)msg;
 
             processStatusRequest(req);
         }
-        else if (msg instanceof IndexOperationStatusResponse) {
-            IndexOperationStatusResponse resp = (IndexOperationStatusResponse)msg;
+        else if (msg instanceof SchemaOperationStatusResponse) {
+            SchemaOperationStatusResponse resp = (SchemaOperationStatusResponse)msg;
 
             processStatusResponse(resp);
         }
@@ -2069,7 +2080,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param req Status request.
      */
-    private void processStatusRequest(IndexOperationStatusRequest req) {
+    private void processStatusRequest(SchemaOperationStatusRequest req) {
         synchronized (activeOpsMux) {
             UUID opId = req.operationId();
 
@@ -2098,7 +2109,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param resp Status response.
      */
-    private void processStatusResponse(IndexOperationStatusResponse resp) {
+    private void processStatusResponse(SchemaOperationStatusResponse resp) {
         synchronized (activeOpsMux) {
             UUID opId = resp.operationId();
 
@@ -2133,7 +2144,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             byte[] errBytes = marshalSchemaError(opId, err);
 
-            IndexOperationStatusResponse resp = new IndexOperationStatusResponse(ctx.localNodeId(), opId, errBytes);
+            SchemaOperationStatusResponse resp = new SchemaOperationStatusResponse(ctx.localNodeId(), opId, errBytes);
 
             ctx.io().sendToGridTopic(destNodeId, TOPIC_DYNAMIC_SCHEMA, resp, QUERY_POOL);
         }

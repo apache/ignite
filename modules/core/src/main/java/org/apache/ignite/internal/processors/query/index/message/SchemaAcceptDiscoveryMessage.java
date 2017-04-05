@@ -18,58 +18,54 @@
 package org.apache.ignite.internal.processors.query.index.message;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Abstract discovery message for index operations.
+ * Schema change accept discovery message.
  */
-public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMessage {
+public class SchemaAcceptDiscoveryMessage extends SchemaAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** ID */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
-    /** Operation. */
-    @GridToStringInclude
-    protected final IndexAbstractOperation op;
+    /** Cache deployment ID. */
+    private final IgniteUuid depId;
 
     /**
      * Constructor.
      *
-     * @param op Operation.
+     * @param op Original operation.
      */
-    protected IndexAbstractDiscoveryMessage(IndexAbstractOperation op) {
-        this.op = op;
+    public SchemaAcceptDiscoveryMessage(SchemaAbstractOperation op, IgniteUuid depId) {
+        super(op);
+
+        this.depId = depId;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        return null;
     }
 
-    /**
-     * @return Operation.
-     */
-    public IndexAbstractOperation operation() {
-        return op;
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return false;
     }
 
-    /**
-     * @return Whether request must be propagated to exchange thread.
-     */
-    public abstract boolean exchange();
+    /** {@inheritDoc} */
+    @Override public boolean exchange() {
+        return true;
+    }
 
-    /**
-     * @return Deployment ID.
-     */
-    public abstract IgniteUuid deploymentId();
+    /** {@inheritDoc} */
+    public IgniteUuid deploymentId() {
+        return depId;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexAbstractDiscoveryMessage.class, this);
+        return S.toString(SchemaAcceptDiscoveryMessage.class, this, "parent", super.toString());
     }
 }
