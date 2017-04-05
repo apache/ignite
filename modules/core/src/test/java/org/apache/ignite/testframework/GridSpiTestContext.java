@@ -36,7 +36,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
-import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -66,7 +65,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
-import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 
 /**
  * Test SPI context.
@@ -83,7 +81,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** */
     @SuppressWarnings("deprecation")
-    private final Collection<GridMessageListener> msgLsnrs = new ArrayList<>();
+    private final Collection<IgniteBiPredicate<UUID, Object>> msgLsnrsPredicate = new ArrayList<>();
 
     /** */
     private final Map<ClusterNode, Serializable> sentMsgs = new HashMap<>();
@@ -327,63 +325,21 @@ public class GridSpiTestContext implements IgniteSpiContext {
      */
     @SuppressWarnings("deprecation")
     public void triggerMessage(ClusterNode node, Object msg) {
-        for (GridMessageListener lsnr : msgLsnrs)
-            lsnr.onMessage(node.id(), msg);
+        for (IgniteBiPredicate<UUID, Object> lsnr : msgLsnrsPredicate)
+            lsnr.apply(node.id(), msg);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
-        try {
-            addMessageListener(TOPIC_COMM_USER,
-                new GridLocalMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        msgLsnrsPredicate.add((IgniteBiPredicate<UUID, Object>)p);
     }
 
-    /**
-     * @param topic Listener's topic.
-     * @param lsnr Listener to add.
-     */
-    @SuppressWarnings({"TypeMayBeWeakened", "deprecation"})
-    public void addMessageListener(GridTopic topic, GridMessageListener lsnr) {
-        addMessageListener(lsnr, ((Object)topic).toString());
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public void addMessageListener(GridMessageListener lsnr, String topic) {
-        msgLsnrs.add(lsnr);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Override public boolean removeMessageListener(GridMessageListener lsnr, String topic) {
-        return msgLsnrs.remove(lsnr);
-    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
-        try {
-            removeMessageListener(TOPIC_COMM_USER,
-                new GridLocalMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * @param topic Listener's topic.
-     * @param lsnr Listener to remove.
-     * @return Whether or not the lsnr was removed.
-     */
-    @SuppressWarnings("deprecation")
-    public boolean removeMessageListener(GridTopic topic, @Nullable GridMessageListener lsnr) {
-        return removeMessageListener(lsnr, ((Object)topic).toString());
+        msgLsnrsPredicate.remove(p);
     }
 
     /**

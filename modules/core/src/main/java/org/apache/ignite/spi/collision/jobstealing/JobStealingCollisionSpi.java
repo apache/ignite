@@ -36,13 +36,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
@@ -297,7 +297,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     private GridLocalEventListener discoLsnr;
 
     /** Communication listener. */
-    private GridMessageListener msgLsnr;
+    private IgniteBiPredicate<UUID, ?> msgLsnrPredicate;
 
     /** Number of steal requests. */
     private final AtomicInteger stealReqs = new AtomicInteger();
@@ -646,9 +646,9 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
                 iter.remove();
         }
 
-        spiCtx.addMessageListener(
-            msgLsnr = new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+        spiCtx.addLocalMessageListener(JOB_STEALING_COMM_TOPIC,
+            msgLsnrPredicate = new IgniteBiPredicate<UUID, Object>() {
+                @Override public boolean apply(UUID nodeId, Object msg) {
                     MessageInfo info = rcvMsgMap.get(nodeId);
 
                     if (info == null) {
@@ -656,7 +656,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
                             log.debug("Ignoring message steal request as discovery event has not yet been received " +
                                 "for node: " + nodeId);
 
-                        return;
+                        return true;
                     }
 
                     int stealReqs0;
@@ -681,9 +681,10 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
                     // Let grid know that collisions should be resolved.
                     if (tmp != null)
                         tmp.onExternalCollision();
+
+                    return true;
                 }
-            },
-            JOB_STEALING_COMM_TOPIC);
+            });
     }
 
     /** {@inheritDoc} */
@@ -691,8 +692,8 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         if (discoLsnr != null)
             getSpiContext().removeLocalEventListener(discoLsnr);
 
-        if (msgLsnr != null)
-            getSpiContext().removeMessageListener(msgLsnr, JOB_STEALING_COMM_TOPIC);
+        if (msgLsnrPredicate != null)
+            getSpiContext().removeLocalMessageListener(JOB_STEALING_COMM_TOPIC, msgLsnrPredicate);
     }
 
     /** {@inheritDoc} */

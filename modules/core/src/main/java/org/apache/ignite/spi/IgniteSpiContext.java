@@ -135,34 +135,6 @@ public interface IgniteSpiContext {
     public void removeLocalMessageListener(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p);
 
     /**
-     * Register a message listener to receive messages sent by remote nodes. The underlying
-     * communication mechanism is defined by {@link org.apache.ignite.spi.communication.CommunicationSpi} implementation used.
-     * <p>
-     * This method can be used by jobs to communicate with other nodes in the grid. Remote nodes
-     * can send messages by calling {@link #send(org.apache.ignite.cluster.ClusterNode, Serializable, String)} method.
-     *
-     * @param lsnr Message listener to register.
-     * @param topic Topic to register listener for.
-     *
-     * @deprecated Use {@link #addLocalMessageListener(Object, IgniteBiPredicate)} instead.
-     */
-    @Deprecated
-    public void addMessageListener(GridMessageListener lsnr, String topic);
-
-    /**
-     * Removes a previously registered message listener.
-     *
-     * @param lsnr Message listener to remove.
-     * @param topic Topic to unregister listener for.
-     * @return {@code true} of message listener was removed, {@code false} if it was not
-     *      previously registered.
-     *
-     * @deprecated Use {@link #removeLocalMessageListener(Object, IgniteBiPredicate)} instead.
-     */
-    @Deprecated
-    public boolean removeMessageListener(GridMessageListener lsnr, String topic);
-
-    /**
      * Adds an event listener for local events.
      *
      * @param lsnr Event listener for local events.
