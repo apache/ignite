@@ -364,7 +364,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
             session = sessionFactory.openSession();
 
-            assertEquals(2, sessionFactory.getStatistics()
+            assertEquals(1, sessionFactory.getStatistics()
                 .getSecondLevelCacheStatistics(ENTITY1_NAME).getPutCount());
             assertEquals(2, sessionFactory.getStatistics()
                 .getSecondLevelCacheStatistics(ENTITY2_NAME).getPutCount());
