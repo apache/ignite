@@ -55,7 +55,7 @@ namespace ignite
             PrimaryKeysQuery::PrimaryKeysQuery(diagnostic::Diagnosable& diag,
                 Connection& connection, const std::string& catalog,
                 const std::string& schema, const std::string& table) :
-                Query(diag),
+                Query(diag, PRIMARY_KEYS),
                 connection(connection),
                 catalog(catalog),
                 schema(schema),

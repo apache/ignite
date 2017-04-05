@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadTh
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapCleanupTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentFairAffinityTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
@@ -58,6 +59,8 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTest(IgniteCacheReadThroughEvictionsVariationsSuite.suite());
         suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
+
+        suite.addTestSuite(GridCacheOffHeapCleanupTest.class);
 
         return suite;
     }

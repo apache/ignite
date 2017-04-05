@@ -60,7 +60,7 @@ export default class Notebook {
     }
 
     remove(notebook) {
-        return this.confirmModal.confirm(`Are you sure you want to remove: "${notebook.name}"?`)
+        return this.confirmModal.confirm(`Are you sure you want to remove notebook: "${notebook.name}"?`)
             .then(() => this.NotebookData.findIndex(notebook))
             .then((idx) => {
                 this.NotebookData.remove(notebook)

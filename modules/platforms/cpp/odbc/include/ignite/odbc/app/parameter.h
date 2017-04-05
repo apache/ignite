@@ -81,7 +81,7 @@ namespace ignite
                  * Write request using provided writer.
                  * @param writer Writer.
                  */
-                void Write(ignite::impl::binary::BinaryWriterImpl& writer) const;
+                void Write(impl::binary::BinaryWriterImpl& writer) const;
 
                 /**
                  * Get data buffer.

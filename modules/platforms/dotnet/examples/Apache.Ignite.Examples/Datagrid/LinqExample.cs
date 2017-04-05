@@ -123,12 +123,14 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             const int zip = 94109;
 
+            var cache0 = cache.AsCacheQueryable();
+
             // Compile cache query to eliminate LINQ overhead on multiple runs.
             Func<int, IQueryCursor<ICacheEntry<int, Employee>>> qry =
-                CompiledQuery.Compile((int z) => cache.AsCacheQueryable().Where(emp => emp.Value.Address.Zip == z));
+                CompiledQuery2.Compile((int z) => cache0.Where(emp => emp.Value.Address.Zip == z));
 
             Console.WriteLine();
-            Console.WriteLine(">>> Employees with zipcode using compiled query " + zip + ":");
+            Console.WriteLine(">>> Employees with zipcode {0} using compiled query:", zip);
 
             foreach (ICacheEntry<int, Employee> entry in qry(zip))
                 Console.WriteLine(">>>    " + entry.Value);

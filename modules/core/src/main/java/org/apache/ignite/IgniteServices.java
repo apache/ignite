@@ -62,9 +62,9 @@ import org.jetbrains.annotations.Nullable;
  * you can also automatically deploy services on startup by specifying them in {@link IgniteConfiguration}
  * like so:
  * <pre name="code" class="java">
- * IgniteConfiguration gridCfg = new IgniteConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
- * GridServiceConfiguration svcCfg1 = new GridServiceConfiguration();
+ * ServiceConfiguration svcCfg1 = new ServiceConfiguration();
  *
  * // Cluster-wide singleton configuration.
  * svcCfg1.setName("myClusterSingletonService");
@@ -72,16 +72,16 @@ import org.jetbrains.annotations.Nullable;
  * svcCfg1.setTotalCount(1);
  * svcCfg1.setService(new MyClusterSingletonService());
  *
- * GridServiceConfiguration svcCfg2 = new GridServiceConfiguration();
+ * ServiceConfiguration svcCfg2 = new ServiceConfiguration();
  *
  * // Per-node singleton configuration.
  * svcCfg2.setName("myNodeSingletonService");
  * svcCfg2.setMaxPerNodeCount(1);
  * svcCfg2.setService(new MyNodeSingletonService());
  *
- * gridCfg.setServiceConfiguration(svcCfg1, svcCfg2);
+ * cfg.setServiceConfiguration(svcCfg1, svcCfg2);
  * ...
- * Ignition.start(gridCfg);
+ * Ignition.start(cfg);
  * </pre>
  * <h1 class="header">Load Balancing</h1>
  * In all cases, other than singleton service deployment, Ignite will automatically make sure that
@@ -106,18 +106,18 @@ import org.jetbrains.annotations.Nullable;
  * Here is an example of how an distributed service may be implemented and deployed:
  * <pre name="code" class="java">
  * // Simple service implementation.
- * public class MyGridService implements GridService {
+ * public class MyIgniteService implements Service {
  *      ...
  *      // Example of ignite resource injection. All resources are optional.
  *      // You should inject resources only as needed.
  *      &#64;IgniteInstanceResource
- *      private Grid grid;
+ *      private Ignite ignite;
  *      ...
- *      &#64;Override public void cancel(GridServiceContext ctx) {
+ *      &#64;Override public void cancel(ServiceContext ctx) {
  *          // No-op.
  *      }
  *
- *      &#64;Override public void execute(GridServiceContext ctx) {
+ *      &#64;Override public void execute(ServiceContext ctx) {
  *          // Loop until service is cancelled.
  *          while (!ctx.isCancelled()) {
  *              // Do something.
@@ -126,16 +126,16 @@ import org.jetbrains.annotations.Nullable;
  *      }
  *  }
  * ...
- * GridServices svcs = grid.services();
+ * IgniteServices svcs = ignite.services();
  *
- * svcs.deployClusterSingleton("mySingleton", new MyGridService());
+ * svcs.deployClusterSingleton("mySingleton", new MyIgniteService());
  * </pre>
  */
 public interface IgniteServices extends IgniteAsyncSupport {
     /**
-     * Gets the cluster group to which this {@code GridServices} instance belongs.
+     * Gets the cluster group to which this {@code IgniteServices} instance belongs.
      *
-     * @return Cluster group to which this {@code GridServices} instance belongs.
+     * @return Cluster group to which this {@code IgniteServices} instance belongs.
      */
     public ClusterGroup clusterGroup();
 
@@ -187,7 +187,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.services.ServiceConfiguration)} method
      * as follows:
      * <pre name="code" class="java">
-     *     GridServiceConfiguration cfg = new GridServiceConfiguration();
+     *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
      *     cfg.setService(svc);
@@ -196,7 +196,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *     cfg.setTotalCount(1);
      *     cfg.setMaxPerNodeCount(1);
      *
-     *     grid.services().deploy(cfg);
+     *     ignite.services().deploy(cfg);
      * </pre>
      *
      * @param name Service name.
@@ -224,14 +224,14 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.services.ServiceConfiguration)} method
      * as follows:
      * <pre name="code" class="java">
-     *     GridServiceConfiguration cfg = new GridServiceConfiguration();
+     *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
      *     cfg.setService(svc);
      *     cfg.setTotalCount(totalCnt);
      *     cfg.setMaxPerNodeCount(maxPerNodeCnt);
      *
-     *     grid.services().deploy(cfg);
+     *     ignite.services().deploy(cfg);
      * </pre>
      *
      * @param name Service name.
@@ -266,14 +266,14 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * <p>
      * Here is an example of creating service deployment configuration:
      * <pre name="code" class="java">
-     *     GridServiceConfiguration cfg = new GridServiceConfiguration();
+     *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
      *     cfg.setService(svc);
      *     cfg.setTotalCount(0); // Unlimited.
      *     cfg.setMaxPerNodeCount(2); // Deploy 2 instances of service on each node.
      *
-     *     grid.services().deploy(cfg);
+     *     ignite.services().deploy(cfg);
      * </pre>
      *
      * @param cfg Service configuration.
@@ -312,14 +312,14 @@ public interface IgniteServices extends IgniteAsyncSupport {
     public void cancelAll() throws IgniteException;
 
     /**
-     * Gets metadata about all deployed services.
+     * Gets metadata about all deployed services in the grid.
      *
-     * @return Metadata about all deployed services.
+     * @return Metadata about all deployed services in the grid.
      */
     public Collection<ServiceDescriptor> serviceDescriptors();
 
     /**
-     * Gets deployed service with specified name.
+     * Gets locally deployed service with specified name.
      *
      * @param name Service name.
      * @param <T> Service type
@@ -328,7 +328,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
     public <T> T service(String name);
 
     /**
-     * Gets all deployed services with specified name.
+     * Gets all locally deployed services with specified name.
      *
      * @param name Service name.
      * @param <T> Service type.

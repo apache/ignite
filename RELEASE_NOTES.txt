@@ -1,6 +1,28 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 1.8
+---------------------------------------
+Ignite:
+* SQL: Added DML operations support (INSERT, UPDATE, DELETE, MERGE)
+* SQL: Improved DISTINCT keyword handling in aggregates
+* Hadoop: Added MapR distribution support
+* Visor: Improved SQL statistics
+* Added Redis protocol support
+* Added transactions deadlock detection
+* Many stability and fault-tolerance fixes
+
+Ignite.NET:
+* ASP.NET session state store provider
+* Entity Framework second level cache
+* Custom loggers support: NLog, Apache log4Net
+
+ODBC driver:
+* Added DML operations support
+* Added distributed joins support
+* Added DSN support
+* Performance improvements
+
 Apache Ignite In-Memory Data Fabric 1.7
 ---------------------------------------
 Ignite:

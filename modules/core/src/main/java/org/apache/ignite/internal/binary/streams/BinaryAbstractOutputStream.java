@@ -244,6 +244,11 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     }
 
     /** {@inheritDoc} */
+    @Override public long rawOffheapPointer() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public void unsafeEnsure(int cap) {
         ensureCapacity(pos + cap);
     }

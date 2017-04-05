@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
@@ -42,6 +43,9 @@ public class BinaryTypeConfiguration {
     /** Serializer. */
     private BinarySerializer serializer;
 
+    /** Identity. */
+    private BinaryIdentityResolver identityRslvr;
+
     /** Enum flag. */
     private boolean isEnum;
 
@@ -60,10 +64,11 @@ public class BinaryTypeConfiguration {
     public BinaryTypeConfiguration(BinaryTypeConfiguration other) {
         A.notNull(other, "other");
 
-        typeName = other.typeName;
+        identityRslvr = other.identityRslvr;
         idMapper = other.idMapper;
-        serializer = other.serializer;
         isEnum = other.isEnum;
+        serializer = other.serializer;
+        typeName = other.typeName;
     }
 
     /**
@@ -143,6 +148,24 @@ public class BinaryTypeConfiguration {
      */
     public void setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
+    }
+
+    /**
+     * Gets identity resolver.
+     *
+     * @return Identity resolver.
+     */
+    @Nullable public BinaryIdentityResolver getIdentityResolver() {
+        return identityRslvr;
+    }
+
+    /**
+     * Sets identity resolver.
+     *
+     * @param identityRslvr Identity resolver.
+     */
+    public void setIdentityResolver(@Nullable BinaryIdentityResolver identityRslvr) {
+        this.identityRslvr = identityRslvr;
     }
 
     /**

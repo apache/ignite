@@ -289,6 +289,11 @@ public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
         return 0;
     }
 
+    /** {@inheritDoc} */
+    @Override public long rawOffheapPointer() {
+        return 0;
+    }
+
     /**
      * Ensure that there is enough data.
      *

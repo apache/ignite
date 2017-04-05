@@ -501,6 +501,18 @@
                                                 </xs:attribute>
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="expiryPolicyFactory" minOccurs="0">
+                                            <xs:annotation>
+                                                <xs:documentation>Factory for IExpiryPolicy to be used for all cache operations, unless ICache.WithExpiryPolicy is called. Default is null, which means no expiration.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:attribute name="type" type="xs:string" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
+                                        </xs:element>
                                     </xs:all>
                                     <xs:attribute name="name" type="xs:string">
                                         <xs:annotation>
@@ -704,6 +716,11 @@
                                     <xs:attribute name="writeBehindFlushFrequency" type="xs:string">
                                         <xs:annotation>
                                             <xs:documentation>Frequency with which write-behind cache is flushed to the cache store. This value defines the maximum time interval between object insertion/deletion from the cache at the moment when corresponding operation is applied to the cache store.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="enableStatistics" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>Value indicating whether statistics gathering is enabled on a cache. These statistics can be retrieved via ICache.GetMetrics().</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                 </xs:complexType>

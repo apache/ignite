@@ -37,7 +37,7 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
     private IgniteUuid setId;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object item;
 
     /**

@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.platform.dotnet.*;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -57,6 +58,8 @@ import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpiMBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.ExpiryPolicy;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -164,6 +167,7 @@ public class PlatformConfigurationUtils {
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
         ccfg.setReadThrough(in.readBoolean());
         ccfg.setWriteThrough(in.readBoolean());
+        ccfg.setStatisticsEnabled(in.readBoolean());
 
         Object storeFactory = in.readObjectDetached();
 
@@ -186,8 +190,43 @@ public class PlatformConfigurationUtils {
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
         ccfg.setAffinity(readAffinityFunction(in));
+        ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
 
         return ccfg;
+    }
+
+    /**
+     * Reads the expiry policy factory.
+     *
+     * @param in Reader.
+     * @return Expiry policy factory.
+     */
+    private static Factory<? extends ExpiryPolicy> readExpiryPolicyFactory(BinaryRawReader in) {
+        if (!in.readBoolean())
+            return null;
+
+        return new PlatformExpiryPolicyFactory(in.readLong(), in.readLong(), in.readLong());
+    }
+
+    /**
+     * Writes the policy factory.
+     *
+     * @param out Writer.
+     */
+    private static void writeExpiryPolicyFactory(BinaryRawWriter out, Factory<? extends ExpiryPolicy> factory) {
+        if (!(factory instanceof PlatformExpiryPolicyFactory)) {
+            out.writeBoolean(false);
+
+            return;
+        }
+
+        out.writeBoolean(true);
+
+        PlatformExpiryPolicyFactory f = (PlatformExpiryPolicyFactory)factory;
+
+        out.writeLong(f.getCreate());
+        out.writeLong(f.getUpdate());
+        out.writeLong(f.getAccess());
     }
 
     /**
@@ -352,6 +391,7 @@ public class PlatformConfigurationUtils {
      * @param out Stream.
      * @param p Policy.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     private static void writeEvictionPolicy(BinaryRawWriter out, EvictionPolicy p) {
         if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);
@@ -685,12 +725,10 @@ public class PlatformConfigurationUtils {
         assert writer != null;
         assert ccfg != null;
 
-        writer.writeInt(ccfg.getAtomicityMode() == null ?
-            CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE.ordinal() : ccfg.getAtomicityMode().ordinal());
-        writer.writeInt(ccfg.getAtomicWriteOrderMode() == null ? 0 : ccfg.getAtomicWriteOrderMode().ordinal());
+        writeEnumInt(writer, ccfg.getAtomicityMode(), CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE);
+        writeEnumInt(writer, ccfg.getAtomicWriteOrderMode());
         writer.writeInt(ccfg.getBackups());
-        writer.writeInt(ccfg.getCacheMode() == null ?
-            CacheConfiguration.DFLT_CACHE_MODE.ordinal() : ccfg.getCacheMode().ordinal());
+        writeEnumInt(writer, ccfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
         writer.writeBoolean(ccfg.isCopyOnRead());
         writer.writeBoolean(ccfg.isEagerTtl());
         writer.writeBoolean(ccfg.isSwapEnabled());
@@ -705,15 +743,13 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
         writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
-        writer.writeInt(ccfg.getMemoryMode() == null ?
-            CacheConfiguration.DFLT_MEMORY_MODE.ordinal() : ccfg.getMemoryMode().ordinal());
+        writeEnumInt(writer, ccfg.getMemoryMode(), CacheConfiguration.DFLT_MEMORY_MODE);
         writer.writeString(ccfg.getName());
         writer.writeLong(ccfg.getOffHeapMaxMemory());
         writer.writeBoolean(ccfg.isReadFromBackup());
         writer.writeInt(ccfg.getRebalanceBatchSize());
         writer.writeLong(ccfg.getRebalanceDelay());
-        writer.writeInt(ccfg.getRebalanceMode() == null ?
-            CacheConfiguration.DFLT_REBALANCE_MODE.ordinal() : ccfg.getRebalanceMode().ordinal());
+        writeEnumInt(writer, ccfg.getRebalanceMode(), CacheConfiguration.DFLT_REBALANCE_MODE);
         writer.writeLong(ccfg.getRebalanceThrottle());
         writer.writeLong(ccfg.getRebalanceTimeout());
         writer.writeBoolean(ccfg.isSqlEscapeAll());
@@ -724,9 +760,10 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getWriteBehindFlushFrequency());
         writer.writeInt(ccfg.getWriteBehindFlushSize());
         writer.writeInt(ccfg.getWriteBehindFlushThreadCount());
-        writer.writeInt(ccfg.getWriteSynchronizationMode() == null ? 0 : ccfg.getWriteSynchronizationMode().ordinal());
+        writeEnumInt(writer, ccfg.getWriteSynchronizationMode());
         writer.writeBoolean(ccfg.isReadThrough());
         writer.writeBoolean(ccfg.isWriteThrough());
+        writer.writeBoolean(ccfg.isStatisticsEnabled());
 
         if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());
@@ -756,6 +793,7 @@ public class PlatformConfigurationUtils {
 
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
+        writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
     }
 
     /**
@@ -821,7 +859,7 @@ public class PlatformConfigurationUtils {
         assert index != null;
 
         writer.writeString(index.getName());
-        writer.writeByte((byte)index.getIndexType().ordinal());
+        writeEnumByte(writer, index.getIndexType());
 
         LinkedHashMap<String, Boolean> fields = index.getFields();
 
@@ -928,7 +966,7 @@ public class PlatformConfigurationUtils {
 
             w.writeInt(atomic.getAtomicSequenceReserveSize());
             w.writeInt(atomic.getBackups());
-            w.writeInt(atomic.getCacheMode().ordinal());
+            writeEnumInt(w, atomic.getCacheMode(), AtomicConfiguration.DFLT_CACHE_MODE);
         }
         else
             w.writeBoolean(false);
@@ -939,8 +977,8 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(true);
 
             w.writeInt(tx.getPessimisticTxLogSize());
-            w.writeInt(tx.getDefaultTxConcurrency().ordinal());
-            w.writeInt(tx.getDefaultTxIsolation().ordinal());
+            writeEnumInt(w, tx.getDefaultTxConcurrency(), TransactionConfiguration.DFLT_TX_CONCURRENCY);
+            writeEnumInt(w, tx.getDefaultTxIsolation(), TransactionConfiguration.DFLT_TX_ISOLATION);
             w.writeLong(tx.getDefaultTxTimeout());
             w.writeInt(tx.getPessimisticTxLogLinger());
         }
@@ -1044,6 +1082,38 @@ public class PlatformConfigurationUtils {
         w.writeInt(tcp.getThreadPriority());
         w.writeLong(tcp.getHeartbeatFrequency());
         w.writeInt((int)tcp.getTopHistorySize());
+    }
+
+    /**
+     * Writes enum as byte.
+     *
+     * @param w Writer.
+     * @param e Enum.
+     */
+    private static void writeEnumByte(BinaryRawWriter w, Enum e) {
+        w.writeByte(e == null ? 0 : (byte)e.ordinal());
+    }
+
+    /**
+     * Writes enum as int.
+     *
+     * @param w Writer.
+     * @param e Enum.
+     */
+    private static void writeEnumInt(BinaryRawWriter w, Enum e) {
+        w.writeInt(e == null ? 0 : e.ordinal());
+    }
+
+    /**
+     * Writes enum as int.
+     *
+     * @param w Writer.
+     * @param e Enum.
+     */
+    private static void writeEnumInt(BinaryRawWriter w, Enum e, Enum def) {
+        assert def != null;
+
+        w.writeInt(e == null ? def.ordinal() : e.ordinal());
     }
 
     /**

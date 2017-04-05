@@ -312,7 +312,7 @@ public class BinaryUtils {
      * @param flag Flag.
      * @return {@code True} if flag is set in flags.
      */
-    static boolean isFlagSet(short flags, short flag) {
+    public static boolean isFlagSet(short flags, short flag) {
         return (flags & flag) == flag;
     }
 
@@ -2228,7 +2228,9 @@ public class BinaryUtils {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
-        return new BinaryTypeProxy(ctx, obj.typeId());
+        String clsName = obj instanceof BinaryEnumObjectImpl ? ((BinaryEnumObjectImpl)obj).className() : null;
+
+        return new BinaryTypeProxy(ctx, obj.typeId(), clsName);
     }
 
     /**

@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache;
-using Apache.Ignite.Core.Cache.Configuration;
-using Apache.Ignite.Core.Transactions;
-
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using System;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Transactions;
+
     /// <summary>
     /// This example demonstrates optimistic transaction concurrency control.
     /// <para />

@@ -154,6 +154,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     Assert.AreEqual(2, cursor.GetAll().Single().Key);
                 }
 
+                using (var cursor = cache.Query(new SqlQuery(typeof(AttributeQueryPerson), "salary > ?", 10)))
+                {
+                    Assert.AreEqual(2, cursor.GetAll().Single().Key);
+                }
+
                 using (var cursor = cache.Query(new SqlQuery(typeof(AttributeQueryPerson), "Country = ?", "USA")))
                 {
                     Assert.AreEqual(1, cursor.GetAll().Single().Key);

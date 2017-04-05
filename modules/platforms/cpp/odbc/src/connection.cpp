@@ -180,7 +180,9 @@ namespace ignite
             if (!connected)
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
 
-            common::FixedSizeArray<int8_t> msg(len + sizeof(OdbcProtocolHeader));
+            int32_t newLen = static_cast<int32_t>(len + sizeof(OdbcProtocolHeader));
+
+            common::FixedSizeArray<int8_t> msg(newLen);
 
             OdbcProtocolHeader *hdr = reinterpret_cast<OdbcProtocolHeader*>(msg.GetData());
 

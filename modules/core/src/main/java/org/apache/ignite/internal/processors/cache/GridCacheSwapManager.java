@@ -138,6 +138,20 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             initOffHeap();
     }
 
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        if (offheapEnabled)
+            offheap.destruct(spaceName);
+
+        try {
+            clearSwap();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to clear cache swap space", e);
+        }
+    }
+
     /**
      *
      */
@@ -1413,14 +1427,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_SWAPPED))
             cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid) null, null,
                 EVT_CACHE_OBJECT_SWAPPED, null, false, null, true, null, null, null, false);
-    }
-
-    /**
-     * Clears off-heap.
-     */
-    public void clearOffHeap() {
-        if (offheapEnabled)
-            initOffHeap();
     }
 
     /**

@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Cluster;
 
     /// <summary>
     /// Wraps IGridCache implementation to simplify async mode testing.
@@ -520,6 +521,18 @@ namespace Apache.Ignite.Core.Tests.Cache
         public ICacheMetrics GetMetrics()
         {
             return _cache.GetMetrics();
+        }
+
+        /** <inheritDoc /> */
+        public ICacheMetrics GetMetrics(IClusterGroup clusterGroup)
+        {
+            return _cache.GetMetrics(clusterGroup);
+        }
+
+        /** <inheritDoc /> */
+        public ICacheMetrics GetLocalMetrics()
+        {
+            return _cache.GetLocalMetrics();
         }
 
         /** <inheritDoc /> */

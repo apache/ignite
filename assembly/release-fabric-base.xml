@@ -174,6 +174,12 @@
             <outputDirectory>/platforms/cpp/docs</outputDirectory>
         </fileSet>
 
+        <!-- Move CPP binaries. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/bin</directory>
+            <outputDirectory>/platforms/cpp/bin</outputDirectory>
+        </fileSet>
+
         <!-- Other files. -->
         <fileSet>
             <directory>bin</directory>
@@ -203,6 +209,7 @@
             <includes>
                 <include>rest/**</include>
                 <include>memcached/**</include>
+                <include>redis/**</include>
                 <include>schema-import/src/**</include>
                 <include>schema-import/bin/**</include>
                 <include>schema-import/README.txt</include>
