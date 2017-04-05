@@ -22,6 +22,7 @@ import javax.cache.Cache;
 import javax.persistence.Cacheable;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,6 +41,7 @@ import org.hibernate.service.ServiceRegistryBuilder;
 import org.hibernate.stat.SecondLevelCacheStatistics;
 import org.springframework.cglib.core.EmitUtils;
 import org.hamcrest.core.Is;
+
 import static org.junit.Assert.assertThat;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -60,7 +62,9 @@ import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
  * Tests Hibernate L2 cache configuration.
  */
 public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTest {
-    /** Entity names for stats output */
+    /**
+     * Entity names for stats output
+     */
     private static final List<String> ENTITY_NAMES =
         Arrays.asList(Entity1.class.getName(), Entity2.class.getName());
 
@@ -85,27 +89,41 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /** */
     public static final String CONNECTION_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
-    /** If {@code true} then sets default cache in configuration. */
+    /**
+     * If {@code true} then sets default cache in configuration.
+     */
     private boolean dfltCache;
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void beforeTestsStarted() throws Exception {
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal)grid(0)).caches())
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void afterTest() throws Exception {
+        for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal) grid(0)).caches())
             cache.clear();
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -136,6 +154,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         return cfg;
     }
+
     /**
      * @param igniteInstanceName Ignite instance name.
      * @return Hibernate configuration.
@@ -192,9 +211,9 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * @param expCache1 Expected size of cache with name 'cache1'.
-     * @param expCache2 Expected size of cache with name 'cache2'.
-     * @param expCache3 Expected size of cache with name 'cache3'.
+     * @param expCache1  Expected size of cache with name 'cache1'.
+     * @param expCache2  Expected size of cache with name 'cache2'.
+     * @param expCache3  Expected size of cache with name 'cache3'.
      * @param expCacheE3 Expected size of cache with name {@link #ENTITY3_NAME}.
      * @param expCacheE4 Expected size of cache with name {@link #ENTITY4_NAME}.
      */
@@ -214,8 +233,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
                 ses.save(new Entity4());
 
                 tx.commit();
-            }
-            finally {
+            } finally {
                 ses.close();
             }
 
@@ -251,8 +269,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
                 for (Entity4 e : list4)
                     assertNotNull(e.getId());
-            }
-            finally {
+            } finally {
                 ses.close();
             }
 
@@ -267,8 +284,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
             assertEquals("Unexpected entries: " + toSet(cache3.iterator()), expCache3, cache3.size());
             assertEquals("Unexpected entries: " + toSet(cacheE3.iterator()), expCacheE3, cacheE3.size());
             assertEquals("Unexpected entries: " + toSet(cacheE4.iterator()), expCacheE4, cacheE4.size());
-        }
-        finally {
+        } finally {
             sesFactory.close();
         }
     }
@@ -276,9 +292,11 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testEntityCacheNonStrictFails() {
+    public void testEntityCacheNonStrictFails() throws Exception {
         SessionFactory sessionFactory
             = startHibernate(getTestIgniteInstanceName(0));
+
+        Entity2 e2forUpdate = new Entity2(0, "name2");
 
         try {
             Session session = sessionFactory.openSession();
@@ -287,7 +305,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
                 Transaction transaction = session.beginTransaction();
 
                 session.save(new Entity1(0, "name1"));
-                session.save(new Entity2(0, "name2"));
+                session.save(e2forUpdate);
 
                 transaction.commit();
 
@@ -301,11 +319,11 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
                 List<Entity1> list1 = session
                     .createCriteria(ENTITY1_NAME).list();
 
-                assertThat(list1.size(),Is.is(1));
+                assertThat(list1.size(), Is.is(1));
 
-                for(Entity1 e1 : list1){
+                for (Entity1 e1 : list1) {
                     session.load(ENTITY1_NAME, e1.getId());
-                    System.out.println("/n/n======== Entity1 id is " + e1.getId());
+                    System.out.println("/n/n======== Entity1 id is " + e1.getId() + " " + e1.getName());
                     assertNotNull(e1.getId());
                 }
 
@@ -321,7 +339,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
                 assertEquals(1, list2.size());
 
-                for(Entity2 e2 : list2){
+                for (Entity2 e2 : list2) {
                     session.load(ENTITY2_NAME, e2.getId());
                     System.out.println("/n/n====== Entity2 id is " + e2.getId());
                     assertNotNull(e2.getId());
@@ -349,7 +367,11 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
                 Entity1 e1 = (Entity1) session.load(Entity1.class, 0);
 
-                session.update(e1);
+//                session.update(e1);
+
+                e2forUpdate.setName("XXXXXXX");
+
+                session.update(e2forUpdate);
 
                 tx.commit();
 
@@ -359,9 +381,9 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
             session = sessionFactory.openSession();
 
-            assertEquals(2, sessionFactory.getStatistics()
-                .getSecondLevelCacheStatistics(ENTITY1_NAME).getPutCount());
             assertEquals(1, sessionFactory.getStatistics()
+                .getSecondLevelCacheStatistics(ENTITY1_NAME).getPutCount());
+            assertEquals(2, sessionFactory.getStatistics()
                 .getSecondLevelCacheStatistics(ENTITY2_NAME).getPutCount());
             assertEquals(1, grid(0).cache("cache1").size());
             assertEquals(1, grid(0).cache("cache2").size());
@@ -434,7 +456,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /**
      *
      */
-    private <K, V> Set<Cache.Entry<K, V>> toSet(Iterator<Cache.Entry<K, V>> iter){
+    private <K, V> Set<Cache.Entry<K, V>> toSet(Iterator<Cache.Entry<K, V>> iter) {
         Set<Cache.Entry<K, V>> set = new HashSet<>();
 
         while (iter.hasNext())
@@ -473,7 +495,8 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         private String name;
 
         /** */
-        public Entity1() {}
+        public Entity1() {
+        }
 
         /** */
         public Entity1(int id, String name) {
@@ -527,7 +550,8 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         private String name;
 
         /** */
-        public Entity2() {}
+        public Entity2() {
+        }
 
         /** */
         public Entity2(int id, String name) {
@@ -581,7 +605,8 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         private String name;
 
         /** */
-        public Entity3() {}
+        public Entity3() {
+        }
 
         /** */
         public Entity3(int id, String name) {
@@ -620,7 +645,8 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         private String name;
 
         /** */
-        public Entity4() {}
+        public Entity4() {
+        }
 
         /** */
         public Entity4(int id, String name) {
