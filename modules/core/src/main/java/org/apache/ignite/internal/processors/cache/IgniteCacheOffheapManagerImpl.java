@@ -119,15 +119,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        updateValSizeThreshold = cctx.kernalContext().config().getMemoryConfiguration().getPageSize() / 2;
+        updateValSizeThreshold = cctx.shared().database().pageSize() / 2;
 
         if (cctx.affinityNode()) {
-            if (cctx.kernalContext().clientNode()) {
-                assert cctx.isLocal() : cctx.name();
-
-                cctx.shared().database().init();
-            }
-
             cctx.shared().database().checkpointReadLock();
 
             try {
