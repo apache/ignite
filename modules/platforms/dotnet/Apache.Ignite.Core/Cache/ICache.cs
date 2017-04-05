@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys.</param>
         /// <returns>Map of key-value pairs.</returns>
-        IDictionary<TK, TV> GetAll(IEnumerable<TK> keys);
+        ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys);
 
         /// <summary>
         /// Retrieves values mapped to the specified keys from cache.
@@ -328,7 +328,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys.</param>
         /// <returns>Map of key-value pairs.</returns>
-        Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys);
+        Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys);
 
         /// <summary>
         /// Associates the specified value with the specified key in the cache.

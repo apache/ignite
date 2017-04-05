@@ -199,13 +199,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
+        public ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys)
         {
             return GetResult(_cache.GetAllAsync(keys));
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
+        public Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys)
         {
             return _cache.GetAllAsync(keys);
         }

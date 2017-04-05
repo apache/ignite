@@ -406,7 +406,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
+        public ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
@@ -417,7 +417,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
+        public Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
@@ -1227,7 +1227,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Dictionary.</returns>
-        private static IDictionary<TK, TV> ReadGetAllDictionary(BinaryReader reader)
+        private static ICollection<ICacheEntry<TK, TV>> ReadGetAllDictionary(BinaryReader reader)
         {
             if (reader == null)
                 return null;
@@ -1238,14 +1238,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 int size = stream.ReadInt();
 
-                IDictionary<TK, TV> res = new Dictionary<TK, TV>(size);
+                var res = new List<ICacheEntry<TK, TV>>(size);
 
                 for (int i = 0; i < size; i++)
                 {
                     TK key = reader.ReadObject<TK>();
                     TV val = reader.ReadObject<TV>();
 
-                    res[key] = val;
+                    res.Add(new CacheEntry<TK, TV>(key, val));
                 }
 
                 return res;

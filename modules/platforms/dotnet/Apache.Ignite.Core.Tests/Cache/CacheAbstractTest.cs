@@ -565,7 +565,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(4, 4);
             cache.Put(5, 5);
 
-            IDictionary<int, int> map = cache.GetAll(new List<int> { 0, 1, 2, 5 });
+            var map = cache.GetAll(new List<int> {0, 1, 2, 5}).ToDictionary(x => x.Key, x => x.Value);
 
             Assert.AreEqual(3, map.Count);
 
@@ -582,7 +582,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(2, 2);
             cache.Put(3, 3);
 
-            var map = cache.GetAll(new List<int> { 0, 1, 2 });
+            var map = cache.GetAll(new List<int> {0, 1, 2}).ToDictionary(x => x.Key, x => x.Value);
 
             Assert.AreEqual(2, map.Count);
 
@@ -2709,9 +2709,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
 
             // Check keepBinary for GetAll operation.
-            var allObjs1 = binCache.GetAll(keys);
+            var allObjs1 = binCache.GetAll(keys).ToDictionary(x => x.Key, x => x.Value);
 
-            var allObjs2 = binCache.GetAll(keys);
+            var allObjs2 = binCache.GetAll(keys).ToDictionary(x => x.Key, x => x.Value);
 
             for (int i = 0; i < cnt; i++)
             {

@@ -209,12 +209,12 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public IDictionary<int, int> GetAll(IEnumerable<int> keys)
+            public ICollection<ICacheEntry<int, int>> GetAll(IEnumerable<int> keys)
             {
                 throw new NotImplementedException();
             }
 
-            public Task<IDictionary<int, int>> GetAllAsync(IEnumerable<int> keys)
+            public Task<ICollection<ICacheEntry<int, int>>> GetAllAsync(IEnumerable<int> keys)
             {
                 throw new NotImplementedException();
             }
