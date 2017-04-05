@@ -90,8 +90,6 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="swapEnabled" value="false"/>
     </bean>
 
     <bean id="atomic-offheap" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
@@ -100,8 +98,6 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="swapEnabled" value="false"/>
 
         <property name="memoryMode" value="OFFHEAP_TIERED"/>
     </bean>
@@ -118,8 +114,6 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-        <property name="swapEnabled" value="false"/>
 
         <property name="memoryMode" value="OFFHEAP_TIERED"/>
     </bean>
