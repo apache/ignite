@@ -84,13 +84,13 @@ public class DynamicCacheDescriptor {
     /** */
     private AffinityTopologyVersion rcvdFromVer;
 
-    /** Mutex to control index states. */
+    /** Mutex to control schema. */
     private final Object schemaMux = new Object();
 
-    /** Current index states. */
+    /** Current schema. */
     private QuerySchema schema;
 
-    /** Initial index states which is used to start cache. */
+    /** Initial schema which is used to start cache. */
     private QuerySchema schemaForStart;
 
     /**
@@ -322,9 +322,9 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * Get index state for cache start. Once requested it never changes afterwards.
+     * Get schema for cache start. Once requested it never changes afterwards.
      *
-     * @return Index states for cache start.
+     * @return Schema for cache start.
      */
     public QuerySchema schemaForStart() {
         synchronized (schemaMux) {
@@ -336,16 +336,7 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return {@code True} is scheme for start is obtained.
-     */
-    public boolean schemaForStartObtained() {
-        synchronized (schemaMux) {
-            return schemaForStart != null;
-        }
-    }
-
-    /**
-     * @return Index states.
+     * @return Schema.
      */
     public QuerySchema schema() {
         synchronized (schemaMux) {
@@ -354,15 +345,15 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * Set index states.
+     * Set schema
      *
-     * @param idxStates Index states.
+     * @param schema Schema.
      */
-    public void schema(QuerySchema idxStates) {
-        assert idxStates != null;
+    public void schema(QuerySchema schema) {
+        assert schema != null;
 
         synchronized (schemaMux) {
-            this.schema = idxStates.copy();
+            this.schema = schema.copy();
         }
     }
 
