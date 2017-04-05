@@ -654,7 +654,7 @@ namespace ignite
                  * @param val Object.
                  */
                 template<typename T>
-                void WriteObject(const char* fieldName, T val)
+                void WriteObject(const char* fieldName, const T& val)
                 {
                     CheckRawMode(false);
 

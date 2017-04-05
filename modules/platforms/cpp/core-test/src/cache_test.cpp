@@ -623,7 +623,7 @@ BOOST_AUTO_TEST_CASE(TestCreateCache)
     // Attempt to create cache with existing name
     IgniteError err;
 
-    grid0.CreateCache<int, int>("dynamic_cache", &err);
+    grid0.CreateCache<int, int>("dynamic_cache", err);
 
     BOOST_REQUIRE(err.GetCode() != IgniteError::IGNITE_SUCCESS);
 }
