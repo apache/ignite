@@ -17,37 +17,42 @@
 
 package org.apache.ignite.internal.processors.query.index;
 
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 /**
- * Index operation cancellation token.
+ * Node leave exchange worker task.
  */
-public class IndexOperationCancellationToken {
-    /** Cancel flag. */
-    private final AtomicBoolean flag = new AtomicBoolean();
+public class SchemaIndexNodeLeaveExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+    /** Node. */
+    @GridToStringInclude
+    private final ClusterNode node;
 
     /**
-     * Get cancel state.
+     * Constructor.
      *
-     * @return {@code True} if cancelled.
+     * @param node Node.
      */
-    public boolean isCancelled() {
-        return flag.get();
+    public SchemaIndexNodeLeaveExchangeWorkerTask(ClusterNode node) {
+        this.node = node;
     }
 
     /**
-     * Do cancel.
-     *
-     * @return {@code True} if cancel flag was set by this call.
+     * @return Node.
      */
-    public boolean cancel() {
-        return flag.compareAndSet(false, true);
+    public ClusterNode node() {
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isExchange() {
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexOperationCancellationToken.class, this);
+        return S.toString(SchemaIndexNodeLeaveExchangeWorkerTask.class, this);
     }
 }

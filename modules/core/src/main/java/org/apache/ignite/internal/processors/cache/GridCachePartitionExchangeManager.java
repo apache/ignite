@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -77,7 +76,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.index.IndexNodeLeaveExchangeWorkerTask;
+import org.apache.ignite.internal.processors.query.index.SchemaIndexNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -300,7 +299,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
-                    exchWorker.addCustomTask(new IndexNodeLeaveExchangeWorkerTask(evt.eventNode()));
+                    exchWorker.addCustomTask(new SchemaIndexNodeLeaveExchangeWorkerTask(evt.eventNode()));
             }
             finally {
                 leaveBusy();

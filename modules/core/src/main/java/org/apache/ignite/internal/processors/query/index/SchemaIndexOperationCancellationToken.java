@@ -17,21 +17,37 @@
 
 package org.apache.ignite.internal.processors.query.index;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Index closure accepting current entry state.
+ * Index operation cancellation token.
  */
-public interface IndexCacheVisitorClosure {
+public class SchemaIndexOperationCancellationToken {
+    /** Cancel flag. */
+    private final AtomicBoolean flag = new AtomicBoolean();
+
     /**
-     * Apply closure.
+     * Get cancel state.
      *
-     * @param key Key.
-     * @param val Value.
-     * @param expiration Expiration.
-     * @throws IgniteCheckedException If failed.
+     * @return {@code True} if cancelled.
      */
-    public void apply(KeyCacheObject key, CacheObject val, long expiration) throws IgniteCheckedException;
+    public boolean isCancelled() {
+        return flag.get();
+    }
+
+    /**
+     * Do cancel.
+     *
+     * @return {@code True} if cancel flag was set by this call.
+     */
+    public boolean cancel() {
+        return flag.compareAndSet(false, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SchemaIndexOperationCancellationToken.class, this);
+    }
 }

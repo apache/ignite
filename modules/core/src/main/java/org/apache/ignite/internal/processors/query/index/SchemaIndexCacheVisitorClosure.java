@@ -18,16 +18,20 @@
 package org.apache.ignite.internal.processors.query.index;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
- * Closure that internally applies given {@link IndexCacheVisitorClosure} to some set of entries.
+ * Index closure accepting current entry state.
  */
-public interface IndexCacheVisitor {
+public interface SchemaIndexCacheVisitorClosure {
     /**
-     * Visit cache entries and pass them to closure.
+     * Apply closure.
      *
-     * @param clo Closure.
+     * @param key Key.
+     * @param val Value.
+     * @param expiration Expiration.
      * @throws IgniteCheckedException If failed.
      */
-    public void visit(IndexCacheVisitorClosure clo) throws IgniteCheckedException;
+    public void apply(KeyCacheObject key, CacheObject val, long expiration) throws IgniteCheckedException;
 }

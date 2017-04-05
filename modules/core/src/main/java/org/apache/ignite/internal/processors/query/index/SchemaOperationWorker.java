@@ -64,7 +64,7 @@ public class SchemaOperationWorker extends GridWorker {
     private final AtomicBoolean startGuard = new AtomicBoolean();
 
     /** Cancellation token. */
-    private final IndexOperationCancellationToken cancelToken = new IndexOperationCancellationToken();
+    private final SchemaIndexOperationCancellationToken cancelToken = new SchemaIndexOperationCancellationToken();
 
     /**
      * Constructor.

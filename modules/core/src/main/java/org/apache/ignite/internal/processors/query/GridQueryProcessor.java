@@ -46,9 +46,9 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.query.index.IndexCacheVisitor;
-import org.apache.ignite.internal.processors.query.index.IndexCacheVisitorImpl;
-import org.apache.ignite.internal.processors.query.index.IndexOperationCancellationToken;
+import org.apache.ignite.internal.processors.query.index.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.index.SchemaIndexCacheVisitorImpl;
+import org.apache.ignite.internal.processors.query.index.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationManager;
 import org.apache.ignite.internal.processors.query.index.SchemaOperationWorker;
 import org.apache.ignite.internal.processors.query.index.SchemaKey;
@@ -1201,7 +1201,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws SchemaOperationException If failed.
      */
     public void processIndexOperationLocal(SchemaAbstractOperation op, IgniteUuid depId,
-        IndexOperationCancellationToken cancelTok) throws SchemaOperationException {
+        SchemaIndexOperationCancellationToken cancelTok) throws SchemaOperationException {
         System.out.println("PROCESS INDEX OPERATION LOCAL: " + ctx.igniteInstanceName());
 
         String space = op.space();
@@ -1215,8 +1215,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (op instanceof SchemaIndexCreateOperation) {
                 SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation) op;
 
-                IndexCacheVisitor visitor =
-                    new IndexCacheVisitorImpl(this, cache.context(), space, op0.tableName(), cancelTok);
+                SchemaIndexCacheVisitor visitor =
+                    new SchemaIndexCacheVisitorImpl(this, cache.context(), space, op0.tableName(), cancelTok);
 
                 idx.createIndex(space, op0.tableName(), op0.index(), op0.ifNotExists(), visitor);
             }

@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
@@ -61,7 +60,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConfl
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.query.index.IndexCacheVisitorClosure;
+import org.apache.ignite.internal.processors.query.index.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -4262,7 +4261,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIndex(IndexCacheVisitorClosure proc) throws IgniteCheckedException,
+    @Override public void updateIndex(SchemaIndexCacheVisitorClosure proc) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
         synchronized (this) {
             if (isInternal())

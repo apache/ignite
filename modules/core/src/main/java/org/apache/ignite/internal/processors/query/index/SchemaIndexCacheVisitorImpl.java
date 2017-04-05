@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Traversor operating all primary and backup partitions of given cache.
  */
-public class IndexCacheVisitorImpl implements IndexCacheVisitor {
+public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Query procssor. */
     private final GridQueryProcessor qryProc;
 
@@ -55,7 +55,7 @@ public class IndexCacheVisitorImpl implements IndexCacheVisitor {
     private final String tblName;
 
     /** Cancellation token. */
-    private final IndexOperationCancellationToken cancel;
+    private final SchemaIndexOperationCancellationToken cancel;
 
     /**
      * Constructor.
@@ -65,8 +65,8 @@ public class IndexCacheVisitorImpl implements IndexCacheVisitor {
      * @param tblName Table name.
      * @param cancel Cancellation token.
      */
-    public IndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String spaceName, String tblName,
-        IndexOperationCancellationToken cancel) {
+    public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String spaceName, String tblName,
+        SchemaIndexOperationCancellationToken cancel) {
         this.qryProc = qryProc;
         this.cctx = cctx;
         this.spaceName = spaceName;
@@ -75,7 +75,7 @@ public class IndexCacheVisitorImpl implements IndexCacheVisitor {
     }
 
     /** {@inheritDoc} */
-    @Override public void visit(IndexCacheVisitorClosure clo) throws IgniteCheckedException {
+    @Override public void visit(SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException {
         assert clo != null;
 
         FilteringVisitorClosure filterClo = new FilteringVisitorClosure(clo);
@@ -183,23 +183,23 @@ public class IndexCacheVisitorImpl implements IndexCacheVisitor {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexCacheVisitorImpl.class, this);
+        return S.toString(SchemaIndexCacheVisitorImpl.class, this);
     }
 
     /**
      * Filtering visitor closure.
      */
-    private class FilteringVisitorClosure implements IndexCacheVisitorClosure {
+    private class FilteringVisitorClosure implements SchemaIndexCacheVisitorClosure {
 
         /** Target closure. */
-        private final IndexCacheVisitorClosure target;
+        private final SchemaIndexCacheVisitorClosure target;
 
         /**
          * Constructor.
          *
          * @param target Target.
          */
-        public FilteringVisitorClosure(IndexCacheVisitorClosure target) {
+        public FilteringVisitorClosure(SchemaIndexCacheVisitorClosure target) {
             this.target = target;
         }
 

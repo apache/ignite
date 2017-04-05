@@ -116,8 +116,8 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
-import org.apache.ignite.internal.processors.query.index.IndexCacheVisitor;
-import org.apache.ignite.internal.processors.query.index.IndexCacheVisitorClosure;
+import org.apache.ignite.internal.processors.query.index.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.index.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -818,7 +818,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void createIndex(@Nullable final String spaceName, final String tblName, final QueryIndex idx,
-        boolean ifNotExists, IndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
+        boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
         String schemaName = schema(spaceName);
 
         Schema schema = schemas.get(schemaName);
@@ -846,7 +846,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         tbl.addTempIndex(idx0);
         final GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
 
-        IndexCacheVisitorClosure clo = new IndexCacheVisitorClosure() {
+        SchemaIndexCacheVisitorClosure clo = new SchemaIndexCacheVisitorClosure() {
             @Override public void apply(KeyCacheObject key, CacheObject val, long expTime)
                 throws IgniteCheckedException {
                 GridH2Row row = rowDesc.createRow(key, val, expTime);
