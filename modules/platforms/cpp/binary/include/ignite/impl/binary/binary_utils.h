@@ -20,14 +20,15 @@
 
 #include <stdint.h>
 
-#include "ignite/common/utils.h"
+#include <ignite/common/utils.h>
 
-#include "ignite/guid.h"
-#include "ignite/date.h"
-#include "ignite/timestamp.h"
-#include "ignite/time.h"
+#include <ignite/guid.h>
+#include <ignite/date.h>
+#include <ignite/timestamp.h>
+#include <ignite/time.h>
 
-#include "ignite/binary/binary_type.h"
+#include <ignite/binary/binary_type.h>
+#include <ignite/impl/binary/binary_writer_impl.h>
 
 namespace ignite
 {

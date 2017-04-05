@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/interop/interop_external_memory.h"
-#include "ignite/impl/binary/binary_reader_impl.h"
-#include "ignite/impl/ignite_environment.h"
-#include "ignite/cache/query/continuous/continuous_query.h"
-#include "ignite/binary/binary.h"
-#include "ignite/impl/binary/binary_type_updater_impl.h"
-#include "ignite/impl/module_manager.h"
-#include "ignite/ignite_binding.h"
+#include <ignite/impl/interop/interop_external_memory.h>
+#include <ignite/impl/binary/binary_reader_impl.h>
+#include <ignite/impl/binary/binary_type_updater_impl.h>
+#include <ignite/impl/module_manager.h>
+#include <ignite/impl/ignite_binding_impl.h>
+
+#include <ignite/binary/binary.h>
+#include <ignite/cache/query/continuous/continuous_query.h>
+#include <ignite/ignite_binding.h>
+#include <ignite/ignite_binding_context.h>
+
+#include <ignite/impl/ignite_environment.h>
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -42,6 +46,8 @@ namespace ignite
         {
             CACHE_INVOKE = 8,
             CONTINUOUS_QUERY_LISTENER_APPLY = 18,
+            CONTINUOUS_QUERY_FILTER_CREATE = 19,
+            CONTINUOUS_QUERY_FILTER_APPLY = 20,
             CONTINUOUS_QUERY_FILTER_RELEASE = 21,
             REALLOC = 36,
             ON_START = 49,
@@ -57,6 +63,7 @@ namespace ignite
          */
         long long IGNITE_CALL InLongOutLong(void* target, int type, long long val)
         {
+            int64_t res = 0;
             SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
             switch (type)
@@ -73,6 +80,24 @@ namespace ignite
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
                     env->Get()->OnContinuousQueryListenerApply(mem);
+
+                    break;
+                }
+
+                case CONTINUOUS_QUERY_FILTER_CREATE:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+
+                    res = env->Get()->OnContinuousQueryFilterCreate(mem);
+
+                    break;
+                }
+
+                case CONTINUOUS_QUERY_FILTER_APPLY:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+
+                    res = env->Get()->OnContinuousQueryFilterApply(mem);
 
                     break;
                 }
@@ -98,7 +123,7 @@ namespace ignite
                 }
             }
 
-            return 0;
+            return res;
         }
 
         /**
@@ -152,10 +177,14 @@ namespace ignite
             registry(DEFAULT_FAST_PATH_CONTAINERS_CAP, DEFAULT_SLOW_PATH_CONTAINERS_CAP),
             metaMgr(new BinaryTypeManager()),
             metaUpdater(0),
-            binding(new IgniteBindingImpl()),
-            moduleMgr(new ModuleManager(GetBindingContext()))
+            binding(),
+            moduleMgr()
         {
-            // No-op.
+            binding = SharedPointer<IgniteBindingImpl>(new IgniteBindingImpl(*this));
+
+            IgniteBindingContext bindingContext(cfg, GetBinding());
+
+            moduleMgr = SharedPointer<ModuleManager>(new ModuleManager(bindingContext));
         }
 
         IgniteEnvironment::~IgniteEnvironment()
@@ -263,14 +292,9 @@ namespace ignite
             return metaUpdater;
         }
 
-        IgniteBinding IgniteEnvironment::GetBinding() const
+        SharedPointer<IgniteBindingImpl> IgniteEnvironment::GetBinding() const
         {
-            return IgniteBinding(binding);
-        }
-
-        IgniteBindingContext IgniteEnvironment::GetBindingContext() const
-        {
-            return IgniteBindingContext(*cfg, GetBinding());
+            return binding;
         }
 
         void IgniteEnvironment::ProcessorReleaseStart()
@@ -321,6 +345,62 @@ namespace ignite
             }
         }
 
+        int64_t IgniteEnvironment::OnContinuousQueryFilterCreate(SharedPointer<InteropMemory>& mem)
+        {
+            if (!binding.Get())
+                throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "IgniteBinding is not initialized.");
+
+            InteropInputStream inStream(mem.Get());
+            BinaryReaderImpl reader(&inStream);
+
+            InteropOutputStream outStream(mem.Get());
+            BinaryWriterImpl writer(&outStream, GetTypeManager());
+
+            BinaryObjectImpl binFilter = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position(), metaMgr);
+
+            int32_t filterId = binFilter.GetTypeId();
+
+            bool invoked = false;
+
+            int64_t res = binding.Get()->InvokeCallback(invoked,
+                IgniteBindingImpl::CACHE_ENTRY_FILTER_CREATE, filterId, reader, writer);
+
+            if (!invoked)
+            {
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
+                    "C++ remote filter is not registered on the node (did you compile your program without -rdynamic?).",
+                    "filterId", filterId);
+            }
+
+            outStream.Synchronize();
+
+            return res;
+        }
+
+        int64_t IgniteEnvironment::OnContinuousQueryFilterApply(SharedPointer<InteropMemory>& mem)
+        {
+            InteropInputStream inStream(mem.Get());
+            BinaryReaderImpl reader(&inStream);
+            BinaryRawReader rawReader(&reader);
+
+            int64_t handle = rawReader.ReadInt64();
+
+            SharedPointer<ContinuousQueryImplBase> qry =
+                StaticPointerCast<ContinuousQueryImplBase>(registry.Get(handle));
+
+            if (!qry.Get())
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC, "Null query for handle.", "handle", handle);
+
+            cache::event::CacheEntryEventFilterBase* filter = qry.Get()->GetFilterHolder().GetFilter();
+
+            if (!filter)
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC, "Null filter for handle.", "handle", handle);
+
+            bool res = filter->ReadAndProcessEvent(rawReader);
+
+            return res ? 1 : 0;
+        }
+
         void IgniteEnvironment::CacheInvokeCallback(SharedPointer<InteropMemory>& mem)
         {
             if (!binding.Get())
@@ -340,9 +420,11 @@ namespace ignite
             BinaryObjectImpl binProcHolder = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position(), 0);
             BinaryObjectImpl binProc = binProcHolder.GetField(0);
 
-            int64_t procId = binProc.GetTypeId();
+            int32_t procId = binProc.GetTypeId();
 
-            bool invoked = binding.Get()->InvokeCallbackById(procId, reader, writer);
+            bool invoked = false;
+
+            binding.Get()->InvokeCallback(invoked, IgniteBindingImpl::CACHE_ENTRY_PROCESSOR_APPLY, procId, reader, writer);
 
             if (!invoked)
             {

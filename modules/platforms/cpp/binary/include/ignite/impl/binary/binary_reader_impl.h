@@ -798,7 +798,7 @@ namespace ignite
                  * @param val Value.
                  */
                 template<typename K, typename V>
-                void ReadElement(const int32_t id, K* key, V* val)
+                void ReadElement(const int32_t id, K& key, V& val)
                 {
                     CheckSession(id);
 
@@ -808,8 +808,8 @@ namespace ignite
                         elemRead = 0;
                     }
 
-                    *key = ReadTopObject<K>();
-                    *val = ReadTopObject<V>();
+                    key = ReadTopObject<K>();
+                    val = ReadTopObject<V>();
                 }
 
                 /**

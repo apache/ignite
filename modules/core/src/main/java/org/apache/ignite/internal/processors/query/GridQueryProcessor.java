@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -155,15 +154,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(space, cctx, qryEntity, mustDeserializeClss);
 
                 cands.add(cand);
-            }
-        }
-
-        if (!F.isEmpty(ccfg.getTypeMetadata())) {
-            for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
-                QueryTypeCandidate cand = QueryUtils.typeForCacheMetadata(space, cctx, meta, mustDeserializeClss);
-
-                if (cand != null)
-                    cands.add(cand);
             }
         }
 
