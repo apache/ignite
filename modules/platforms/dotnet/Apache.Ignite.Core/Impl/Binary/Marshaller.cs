@@ -502,8 +502,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
             Debug.Assert(typeName != null);
 
-            ValidateUserType(type);
-
             var ser = GetSerializer(_cfg, null, type, typeId, null, null, _log);
 
             desc = desc == null
