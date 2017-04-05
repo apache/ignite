@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index.message;
+package org.apache.ignite.internal.processors.query.schema.message;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index.operation;
+package org.apache.ignite.internal.processors.query.schema.operation;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 

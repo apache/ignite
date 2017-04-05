@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.internal.processors.query.index.message.SchemaFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
-import org.apache.ignite.internal.processors.query.index.operation.SchemaIndexCreateOperation;
-import org.apache.ignite.internal.processors.query.index.operation.SchemaIndexDropOperation;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 

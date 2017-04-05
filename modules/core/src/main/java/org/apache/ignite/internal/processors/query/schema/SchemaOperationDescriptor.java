@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index;
+package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.internal.processors.query.index.message.SchemaAcceptDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.SchemaFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.message.SchemaProposeDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;

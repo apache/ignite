@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index;
+package org.apache.ignite.internal.processors.query.schema;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -93,7 +93,7 @@ public class SchemaOperationException extends IgniteCheckedException {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SchemaOperationException.class, this);
+        return S.toString(SchemaOperationException.class, this, "msg", getMessage());
     }
 
     /**

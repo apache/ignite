@@ -15,44 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index;
+package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
-import org.apache.ignite.internal.processors.query.index.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
- * Cache schema change task for exchange worker.
+ * Index operation cancellation token.
  */
-public class SchemaExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
-    /** Message. */
-    private final SchemaAbstractDiscoveryMessage msg;
+public class SchemaIndexOperationCancellationToken {
+    /** Cancel flag. */
+    private final AtomicBoolean flag = new AtomicBoolean();
 
     /**
-     * Constructor.
+     * Get cancel state.
      *
-     * @param msg Message.
+     * @return {@code True} if cancelled.
      */
-    public SchemaExchangeWorkerTask(SchemaAbstractDiscoveryMessage msg) {
-        assert msg != null;
-
-        this.msg = msg;
+    public boolean isCancelled() {
+        return flag.get();
     }
 
     /**
-     * @return Message.
+     * Do cancel.
+     *
+     * @return {@code True} if cancel flag was set by this call.
      */
-    public SchemaAbstractDiscoveryMessage message() {
-        return msg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isExchange() {
-        return false;
+    public boolean cancel() {
+        return flag.compareAndSet(false, true);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SchemaExchangeWorkerTask.class, this);
+        return S.toString(SchemaIndexOperationCancellationToken.class, this);
     }
 }

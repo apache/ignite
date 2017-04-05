@@ -15,38 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index.message;
+package org.apache.ignite.internal.processors.query.schema.message;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
-import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Schema change finish discovery message.
+ * Schema change accept discovery message.
  */
-public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage {
+public class SchemaAcceptDiscoveryMessage extends SchemaAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache deployment ID. */
     private final IgniteUuid depId;
 
-    /** Error. */
-    private final SchemaOperationException err;
     /**
      * Constructor.
      *
      * @param op Original operation.
-     * @param err Error.
      */
-    public SchemaFinishDiscoveryMessage(SchemaAbstractOperation op, IgniteUuid depId, SchemaOperationException err) {
+    public SchemaAcceptDiscoveryMessage(SchemaAbstractOperation op, IgniteUuid depId) {
         super(op);
 
         this.depId = depId;
-        this.err = err;
     }
 
     /** {@inheritDoc} */
@@ -69,23 +64,8 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
         return depId;
     }
 
-    /**
-     * @return {@code True} if error was reported during init.
-     */
-    public boolean hasError() {
-        return err != null;
-    }
-
-    /**
-     * @return Error message (if any).
-     */
-    @Nullable public SchemaOperationException error() {
-        return err;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SchemaFinishDiscoveryMessage.class, this, "parent", super.toString());
+        return S.toString(SchemaAcceptDiscoveryMessage.class, this, "parent", super.toString());
     }
-
 }

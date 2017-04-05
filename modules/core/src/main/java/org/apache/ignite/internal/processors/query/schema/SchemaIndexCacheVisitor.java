@@ -15,23 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index;
+package org.apache.ignite.internal.processors.query.schema;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
- * Index closure accepting current entry state.
+ * Closure that internally applies given {@link SchemaIndexCacheVisitorClosure} to some set of entries.
  */
-public interface SchemaIndexCacheVisitorClosure {
+public interface SchemaIndexCacheVisitor {
     /**
-     * Apply closure.
+     * Visit cache entries and pass them to closure.
      *
-     * @param key Key.
-     * @param val Value.
-     * @param expiration Expiration.
+     * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public void apply(KeyCacheObject key, CacheObject val, long expiration) throws IgniteCheckedException;
+    public void visit(SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException;
 }

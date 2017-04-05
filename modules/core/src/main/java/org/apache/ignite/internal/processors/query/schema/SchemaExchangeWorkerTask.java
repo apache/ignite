@@ -15,53 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index.operation;
+package org.apache.ignite.internal.processors.query.schema;
 
+import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import java.io.Serializable;
-import java.util.UUID;
-
 /**
- * Abstract operation on schema.
+ * Cache schema change task for exchange worker.
  */
-public abstract class SchemaAbstractOperation implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Operation ID. */
-    private final UUID opId;
-
-    /** Space. */
-    private final String space;
+public class SchemaExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+    /** Message. */
+    private final SchemaAbstractDiscoveryMessage msg;
 
     /**
      * Constructor.
      *
-     * @param opId Operation ID.
-     * @param space Space.
+     * @param msg Message.
      */
-    public SchemaAbstractOperation(UUID opId, String space) {
-        this.opId = opId;
-        this.space = space;
+    public SchemaExchangeWorkerTask(SchemaAbstractDiscoveryMessage msg) {
+        assert msg != null;
+
+        this.msg = msg;
     }
 
     /**
-     * @return Operation id.
+     * @return Message.
      */
-    public UUID id() {
-        return opId;
+    public SchemaAbstractDiscoveryMessage message() {
+        return msg;
     }
 
-    /**
-     * @return Space.
-     */
-    public String space() {
-        return space;
+    /** {@inheritDoc} */
+    @Override public boolean isExchange() {
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SchemaAbstractOperation.class, this);
+        return S.toString(SchemaExchangeWorkerTask.class, this);
     }
 }

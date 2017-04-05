@@ -15,74 +15,58 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index.message;
+package org.apache.ignite.internal.processors.query.schema.message;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.query.index.SchemaOperationException;
-import org.apache.ignite.internal.processors.query.index.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Schema change propose discovery message.
+ * Schema change finish discovery message.
  */
-public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessage {
+public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache deployment ID. */
-    private IgniteUuid depId;
+    private final IgniteUuid depId;
 
     /** Error. */
-    private SchemaOperationException err;
-
+    private final SchemaOperationException err;
     /**
      * Constructor.
      *
-     * @param op Operation.
+     * @param op Original operation.
+     * @param err Error.
      */
-    public SchemaProposeDiscoveryMessage(SchemaAbstractOperation op) {
+    public SchemaFinishDiscoveryMessage(SchemaAbstractOperation op, IgniteUuid depId, SchemaOperationException err) {
         super(op);
+
+        this.depId = depId;
+        this.err = err;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return hasError() ? new SchemaFinishDiscoveryMessage(op, depId, err) :
-            new SchemaAcceptDiscoveryMessage(op, depId);
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean exchange() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Nullable public IgniteUuid deploymentId() {
+    @Override public boolean exchange() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    public IgniteUuid deploymentId() {
         return depId;
-    }
-
-    /**
-     * @param depId Deployment ID.
-     */
-    public void deploymentId(IgniteUuid depId) {
-        this.depId = depId;
-    }
-
-    /**
-     * Set error.
-     *
-     * @param err Error.
-     */
-    public void onError(SchemaOperationException err) {
-        if (!hasError()) {
-            this.err = err;
-        }
     }
 
     /**
@@ -101,6 +85,7 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SchemaProposeDiscoveryMessage.class, this, "parent", super.toString());
+        return S.toString(SchemaFinishDiscoveryMessage.class, this, "parent", super.toString());
     }
+
 }

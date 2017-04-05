@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.processors.query.index.operation;
+package org.apache.ignite.internal.processors.query.schema.operation;
 
 import java.util.UUID;
 

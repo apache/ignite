@@ -15,44 +15,53 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index;
+package org.apache.ignite.internal.processors.query.schema.operation;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.io.Serializable;
+import java.util.UUID;
+
 /**
- * Node leave exchange worker task.
+ * Abstract operation on schema.
  */
-public class SchemaNodeLeaveExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
-    /** Node. */
-    @GridToStringInclude
-    private final ClusterNode node;
+public abstract class SchemaAbstractOperation implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Operation ID. */
+    private final UUID opId;
+
+    /** Space. */
+    private final String space;
 
     /**
      * Constructor.
      *
-     * @param node Node.
+     * @param opId Operation ID.
+     * @param space Space.
      */
-    public SchemaNodeLeaveExchangeWorkerTask(ClusterNode node) {
-        this.node = node;
+    public SchemaAbstractOperation(UUID opId, String space) {
+        this.opId = opId;
+        this.space = space;
     }
 
     /**
-     * @return Node.
+     * @return Operation id.
      */
-    public ClusterNode node() {
-        return node;
+    public UUID id() {
+        return opId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isExchange() {
-        return false;
+    /**
+     * @return Space.
+     */
+    public String space() {
+        return space;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SchemaNodeLeaveExchangeWorkerTask.class, this);
+        return S.toString(SchemaAbstractOperation.class, this);
     }
 }
