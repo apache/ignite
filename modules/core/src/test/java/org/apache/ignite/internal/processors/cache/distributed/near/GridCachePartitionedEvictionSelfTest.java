@@ -74,8 +74,6 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);

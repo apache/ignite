@@ -53,8 +53,6 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);

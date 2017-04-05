@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 
@@ -37,15 +36,6 @@ public class GridCacheReplicatedFullApiSelfTest extends GridCacheAbstractFullApi
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
-        return c;
     }
 
     /** {@inheritDoc} */

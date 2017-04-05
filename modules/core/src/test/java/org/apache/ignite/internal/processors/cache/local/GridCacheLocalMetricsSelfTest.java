@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheTransactionalAbstractMetricsSelfTest;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -29,15 +28,6 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 public class GridCacheLocalMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
     /** */
     private static final int GRID_CNT = 1;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
-        return c;
-    }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {

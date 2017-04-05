@@ -68,8 +68,6 @@ public class OffHeapTieredTransactionSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         return cfg;
     }
 

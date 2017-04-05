@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -68,15 +67,6 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
-
-        return cfg;
     }
 
     /** {@inheritDoc} */

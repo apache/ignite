@@ -56,8 +56,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         CacheConfiguration cc1 = new CacheConfiguration();
 
         cc1.setName(CACHE_REGULAR);

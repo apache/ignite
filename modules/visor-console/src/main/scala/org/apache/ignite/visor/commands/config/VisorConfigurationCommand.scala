@@ -195,7 +195,6 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         cmnT += ("Transaction Timeout", trn.defaultTxTimeout() + "ms")
         cmnT += ("Transaction Log Cleanup Delay", trn.pessimisticTxLogLinger() + "ms")
         cmnT += ("Transaction Log Size", trn.getPessimisticTxLogSize)
-        cmnT += ("Transaction Serializable Enabled", bool2Str(trn.txSerializableEnabled()))
 
         cmnT.render()
 

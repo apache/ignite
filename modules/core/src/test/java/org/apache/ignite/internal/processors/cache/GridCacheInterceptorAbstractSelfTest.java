@@ -103,8 +103,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         c.setDiscoverySpi(spi);
 
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         return c;
     }
 

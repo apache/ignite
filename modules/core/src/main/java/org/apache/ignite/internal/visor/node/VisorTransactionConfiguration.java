@@ -46,9 +46,6 @@ public class VisorTransactionConfiguration implements Serializable, LessNamingBe
     /** Pessimistic tx log size. */
     private int pessimisticTxLogSize;
 
-    /** Default transaction serializable flag. */
-    private boolean txSerEnabled;
-
     /**
      * Create data transfer object for transaction configuration.
      *
@@ -63,7 +60,6 @@ public class VisorTransactionConfiguration implements Serializable, LessNamingBe
         cfg.dfltTxTimeout = src.getDefaultTxTimeout();
         cfg.pessimisticTxLogLinger = src.getPessimisticTxLogLinger();
         cfg.pessimisticTxLogSize = src.getPessimisticTxLogSize();
-        cfg.txSerEnabled = src.isTxSerializableEnabled();
 
         return cfg;
     }
@@ -101,13 +97,6 @@ public class VisorTransactionConfiguration implements Serializable, LessNamingBe
      */
     public int getPessimisticTxLogSize() {
         return pessimisticTxLogSize;
-    }
-
-    /**
-     * @return {@code True} if serializable transactions are enabled, {@code false} otherwise.
-     */
-    public boolean txSerializableEnabled() {
-        return txSerEnabled;
     }
 
     /** {@inheritDoc} */

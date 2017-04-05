@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.processors.cache.jta;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides possibility to integrate cache transactions with JTA.
@@ -33,20 +30,4 @@ public abstract class CacheJtaManagerAdapter extends GridCacheSharedManagerAdapt
      * @throws IgniteCheckedException In case of error.
      */
     public abstract void checkJta() throws IgniteCheckedException;
-
-    /**
-     * @param cfg Cache configuration.
-     * @throws IgniteCheckedException If {@link CacheConfiguration#getTransactionManagerLookupClassName()} is incompatible with
-     *     another caches or {@link TransactionConfiguration#getTxManagerLookupClassName()}.
-     */
-    public abstract void registerCache(CacheConfiguration<?, ?> cfg) throws IgniteCheckedException;
-
-    /**
-     * Gets transaction manager finder. Returns Object to avoid dependency on JTA library.
-     *
-     * Used only in test purposes.
-     *
-     * @return Transaction manager finder.
-     */
-    @Nullable public abstract Object tmLookup();
 }

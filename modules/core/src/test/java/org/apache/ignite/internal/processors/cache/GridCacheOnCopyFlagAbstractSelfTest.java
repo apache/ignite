@@ -91,8 +91,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
 
         c.setPeerClassLoadingEnabled(p2pEnabled);
 
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         return c;
     }
 

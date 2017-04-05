@@ -53,8 +53,6 @@ public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTe
 
         disco.setIpFinder(IP_FINDER);
 
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         cfg.setDiscoverySpi(disco);
 
         return cfg;

@@ -299,9 +299,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Flag indicating whether this is invalidation-based cache. */
     private boolean invalidate = DFLT_INVALIDATE;
 
-    /** Name of class implementing GridCacheTmLookup. */
-    private String tmLookupClsName;
-
     /** Distributed cache rebalance mode. */
     private CacheRebalanceMode rebalanceMode = DFLT_REBALANCE_MODE;
 
@@ -492,7 +489,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeFactory = cc.getCacheStoreFactory();
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
         swapEnabled = cc.isSwapEnabled();
-        tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
@@ -1130,32 +1126,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setInvalidate(boolean invalidate) {
         this.invalidate = invalidate;
-
-        return this;
-    }
-
-    /**
-     * Gets class name of transaction manager finder for integration for JEE app servers.
-     *
-     * @return Transaction manager finder.
-     * @deprecated Use {@link TransactionConfiguration#getTxManagerFactory()} instead.
-     */
-    @Deprecated
-    public String getTransactionManagerLookupClassName() {
-        return tmLookupClsName;
-    }
-
-    /**
-     * Sets look up mechanism for available {@code TransactionManager} implementation, if any.
-     *
-     * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
-     *      receive JTA transaction manager.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link TransactionConfiguration#setTxManagerFactory(Factory)} instead.
-     */
-    @Deprecated
-    public CacheConfiguration<K, V> setTransactionManagerLookupClassName(String tmLookupClsName) {
-        this.tmLookupClsName = tmLookupClsName;
 
         return this;
     }

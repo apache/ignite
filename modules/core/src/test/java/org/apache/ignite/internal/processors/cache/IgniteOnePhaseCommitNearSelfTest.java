@@ -63,8 +63,6 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         cfg.setCommunicationSpi(new MessageCountingCommunicationSpi());
 
         return cfg;

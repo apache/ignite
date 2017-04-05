@@ -41,7 +41,6 @@ public class GridCacheReplicatedTxTimeoutSelfTest extends IgniteTxTimeoutAbstrac
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxTimeout(TIMEOUT);
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

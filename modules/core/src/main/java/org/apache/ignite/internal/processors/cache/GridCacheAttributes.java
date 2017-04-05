@@ -27,7 +27,6 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -176,16 +175,6 @@ public class GridCacheAttributes implements Serializable {
      */
     public String storeFactoryClassName() {
         return className(ccfg.getCacheStoreFactory());
-    }
-
-    /**
-     * @return Transaction manager lookup class name.
-     * @deprecated Transaction manager lookup must be configured in 
-     *  {@link TransactionConfiguration#getTxManagerLookupClassName()}.
-     */
-    @Deprecated
-    public String transactionManagerLookupClassName() {
-        return ccfg.getTransactionManagerLookupClassName();
     }
 
     /**

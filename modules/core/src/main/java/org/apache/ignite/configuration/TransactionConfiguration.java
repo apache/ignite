@@ -30,9 +30,6 @@ public class TransactionConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default value for 'txSerializableEnabled' flag. */
-    public static final boolean DFLT_TX_SERIALIZABLE_ENABLED = false;
-
     /** Default concurrency mode. */
     public static final TransactionConcurrency DFLT_TX_CONCURRENCY = TransactionConcurrency.PESSIMISTIC;
 
@@ -44,9 +41,6 @@ public class TransactionConfiguration implements Serializable {
 
     /** Default size of pessimistic transactions log. */
     public static final int DFLT_PESSIMISTIC_TX_LOG_LINGER = 10_000;
-
-    /** Default transaction serializable flag. */
-    private boolean txSerEnabled = DFLT_TX_SERIALIZABLE_ENABLED;
 
     /** Transaction isolation. */
     private TransactionIsolation dfltIsolation = DFLT_TX_ISOLATION;
@@ -62,9 +56,6 @@ public class TransactionConfiguration implements Serializable {
 
     /** Pessimistic tx log linger. */
     private int pessimisticTxLogLinger = DFLT_PESSIMISTIC_TX_LOG_LINGER;
-
-    /** Name of class implementing GridCacheTmLookup. */
-    private String tmLookupClsName;
 
     /** {@code javax.transaction.TransactionManager} factory. */
     private Factory txManagerFactory;
@@ -91,35 +82,8 @@ public class TransactionConfiguration implements Serializable {
         dfltTxTimeout = cfg.getDefaultTxTimeout();
         pessimisticTxLogLinger = cfg.getPessimisticTxLogLinger();
         pessimisticTxLogSize = cfg.getPessimisticTxLogSize();
-        txSerEnabled = cfg.isTxSerializableEnabled();
-        tmLookupClsName = cfg.getTxManagerLookupClassName();
         txManagerFactory = cfg.getTxManagerFactory();
         useJtaSync = cfg.isUseJtaSynchronization();
-    }
-
-    /**
-     * Gets flag to enable/disable {@link TransactionIsolation#SERIALIZABLE} isolation
-     * level for cache transactions. Serializable level does carry certain overhead and
-     * if not used, should be disabled. Default value is {@code false}.
-     *
-     * @return {@code True} if serializable transactions are enabled, {@code false} otherwise.
-     */
-    @Deprecated
-    public boolean isTxSerializableEnabled() {
-        return txSerEnabled;
-    }
-
-    /**
-     * @param txSerEnabled Flag to enable/disable serializable cache transactions.
-
-     * @deprecated This method has no effect, {@link TransactionIsolation#SERIALIZABLE} isolation is always enabled.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public TransactionConfiguration setTxSerializableEnabled(boolean txSerEnabled) {
-        this.txSerEnabled = txSerEnabled;
-
-        return this;
     }
 
     /**
@@ -236,32 +200,6 @@ public class TransactionConfiguration implements Serializable {
      */
     public TransactionConfiguration setPessimisticTxLogLinger(int pessimisticTxLogLinger) {
         this.pessimisticTxLogLinger = pessimisticTxLogLinger;
-
-        return this;
-    }
-
-    /**
-     * Gets class name of transaction manager finder for integration for JEE app servers.
-     *
-     * @return Transaction manager finder.
-     * @deprecated Use {@link #getTxManagerFactory()} instead.
-     */
-    @Deprecated
-    public String getTxManagerLookupClassName() {
-        return tmLookupClsName;
-    }
-
-    /**
-     * Sets look up mechanism for available {@code TransactionManager} implementation, if any.
-     *
-     * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
-     *      receive JTA transaction manager.
-     * @deprecated Use {@link #setTxManagerFactory(Factory)} instead.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public TransactionConfiguration setTxManagerLookupClassName(String tmLookupClsName) {
-        this.tmLookupClsName = tmLookupClsName;
 
         return this;
     }

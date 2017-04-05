@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -36,15 +35,6 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return LOCAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
-
-        return c;
     }
 
     /** {@inheritDoc} */

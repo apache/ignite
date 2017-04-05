@@ -30,7 +30,6 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -54,15 +53,6 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
     /** {@inheritDoc} */
     @Override protected Factory<CacheStore> cacheStoreFactory() {
         return new NoReadThroughStoreFactory();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
-
-        return cfg;
     }
 
     /** {@inheritDoc} */

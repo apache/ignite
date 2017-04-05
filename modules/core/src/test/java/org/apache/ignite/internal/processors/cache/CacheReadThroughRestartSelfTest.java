@@ -52,8 +52,6 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
 
         TransactionConfiguration txCfg = new TransactionConfiguration();
 
-        txCfg.setTxSerializableEnabled(true);
-
         cfg.setTransactionConfiguration(txCfg);
 
         CacheConfiguration cc = cacheConfiguration(igniteInstanceName);

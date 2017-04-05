@@ -504,10 +504,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "You must either disable query indexing or disable off-heap values only flag for cache: " +
                     U.maskName(cc.getName()));
         }
-
-        if (cc.getAtomicityMode() == ATOMIC)
-            assertParameter(cc.getTransactionManagerLookupClassName() == null,
-                "transaction manager can not be used with ATOMIC cache");
     }
 
     /**
@@ -759,8 +755,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 for (ClusterNode n : ctx.discovery().remoteNodes()) {
                     if (n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED))
                         continue;
-
-                    checkTransactionConfiguration(n);
 
                     DeploymentMode locDepMode = ctx.config().getDeploymentMode();
                     DeploymentMode rmtDepMode = n.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
@@ -1292,8 +1286,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             pluginMgr = new CachePluginManager(ctx, cfg);
 
         pluginMgr.validate();
-
-        sharedCtx.jta().registerCache(cfg);
 
         // Skip suggestions for internal caches.
         if (cacheType.userCache())
@@ -2966,10 +2958,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
                 locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
 
-            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
-                "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
-                rmtAttr.transactionManagerLookupClassName(), false);
-
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
                 "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
 
@@ -3023,25 +3011,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "Affinity key backups", locAttr.affinityKeyBackups(),
                     rmtAttr.affinityKeyBackups(), true);
             }
-        }
-    }
-
-    /**
-     * @param rmt Remote node to check.
-     * @throws IgniteCheckedException If check failed.
-     */
-    private void checkTransactionConfiguration(ClusterNode rmt) throws IgniteCheckedException {
-        TransactionConfiguration txCfg = rmt.attribute(ATTR_TX_CONFIG);
-
-        if (txCfg != null) {
-            TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
-
-            if (locTxCfg.isTxSerializableEnabled() != txCfg.isTxSerializableEnabled())
-                throw new IgniteCheckedException("Serializable transactions enabled mismatch " +
-                    "(fix txSerializableEnabled property or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
-                    "system property) [rmtNodeId=" + rmt.id() +
-                    ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
-                    ", rmtTxSerializableEnabled=" + txCfg.isTxSerializableEnabled() + ']');
         }
     }
 

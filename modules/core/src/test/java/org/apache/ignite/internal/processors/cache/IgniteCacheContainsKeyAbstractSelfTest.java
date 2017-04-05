@@ -57,8 +57,6 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
 
         TransactionConfiguration tcfg = new TransactionConfiguration();
 
-        tcfg.setTxSerializableEnabled(true);
-
         cfg.setTransactionConfiguration(tcfg);
 
         return cfg;

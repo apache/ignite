@@ -44,7 +44,6 @@ public class GridCachePartitionedTxTimeoutSelfTest extends IgniteTxTimeoutAbstra
 
         TransactionConfiguration txCfg = c.getTransactionConfiguration();
 
-        txCfg.setTxSerializableEnabled(true);
         txCfg.setDefaultTxTimeout(TIMEOUT);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();

@@ -45,8 +45,6 @@ public class IgniteWarmupClosureSelfTest extends GridCommonAbstractTest {
 
         disco.setIpFinder(IP_FINDER);
 
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         cfg.setDiscoverySpi(disco);
 
         BasicWarmupClosure warmupClosure = new BasicWarmupClosure();
