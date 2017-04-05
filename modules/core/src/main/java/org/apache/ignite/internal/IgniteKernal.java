@@ -2428,6 +2428,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackMemoryConfiguration() {
         MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
 
+        if (memCfg == null)
+            return;
+
         U.log(log, "System cache MemoryPolicy size is configured to " +
                 (memCfg.getSystemCacheMemorySize() / (1024 * 1024)) +
         "MB size. " +

@@ -2086,7 +2086,7 @@ public class IgnitionEx {
 
             initializeDefaultCacheConfiguration(myCfg);
 
-            if (myCfg.getMemoryConfiguration() == null) {
+            if (!myCfg.isClientMode() && myCfg.getMemoryConfiguration() == null) {
                 MemoryConfiguration dbCfg = new MemoryConfiguration();
 
                 dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);

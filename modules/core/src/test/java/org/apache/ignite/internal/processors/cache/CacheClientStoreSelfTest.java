@@ -32,6 +32,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -72,6 +73,9 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
         boolean client = igniteInstanceName != null && igniteInstanceName.startsWith("client");
 
         cfg.setClientMode(client);
+
+        if (client)
+            cfg.setMemoryConfiguration(new MemoryConfiguration());
 
         CacheConfiguration cc = new CacheConfiguration();
 
