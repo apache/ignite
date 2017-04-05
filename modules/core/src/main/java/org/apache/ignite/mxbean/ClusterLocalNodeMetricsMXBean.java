@@ -19,6 +19,8 @@ package org.apache.ignite.mxbean;
 
 import org.apache.ignite.cluster.ClusterMetrics;
 
+import javax.management.MXBean;
+
 /**
  * MBean for local node metrics.
  */
@@ -172,6 +174,10 @@ public interface ClusterLocalNodeMetricsMXBean extends ClusterMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("The total amount of memory in bytes; -1 if undefined.")
     public long getHeapMemoryTotal();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("The total system allocated size in bytes; -1 if undefined.")
+    public long getSystemAllocatedSize();
 
     /** {@inheritDoc} */
     @MXBeanDescription("The initial size of memory in bytes; -1 if undefined.")

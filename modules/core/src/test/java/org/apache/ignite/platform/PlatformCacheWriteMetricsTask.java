@@ -425,6 +425,9 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
 
         /** {@inheritDoc} */
+        @Override public long getSystemAllocatedSize() { return 64; }
+
+        /** {@inheritDoc} */
         @Override public String getKeyType() {
             return "foo";
         }

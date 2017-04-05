@@ -252,6 +252,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public long getSystemAllocatedSize() { return cctx.unsafeMemory().systemAllocatedSize(); }
+
+    /** {@inheritDoc} */
     @Override public long getSwapGets() {
         return swapGets.get();
     }

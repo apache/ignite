@@ -148,6 +148,9 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     }
 
     /** {@inheritDoc} */
+    @Override public long getSystemAllocatedSize() { return node.metrics().getSystemAllocatedSize(); }
+
+    /** {@inheritDoc} */
     @Override public float getIdleTimePercentage() {
         return node.metrics().getIdleTimePercentage() * 100;
     }

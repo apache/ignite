@@ -73,6 +73,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         8/*heap memory committed*/ +
         8/*heap memory max*/ +
         8/*heap memory total*/ +
+        8/*system allocated size*/+
         8/*non-heap memory init*/ +
         8/*non-heap memory used*/ +
         8/*non-heap memory committed*/ +
@@ -196,6 +197,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     private long heapTotal = -1;
 
     /** */
+    private long systemAllocatedSize = -1;
+
+    /** */
     private long nonHeapInit = -1;
 
     /** */
@@ -304,6 +308,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         heapUsed = 0;
         heapCommitted = 0;
         heapMax = 0;
+        systemAllocatedSize = 0;
         nonHeapInit = 0;
         nonHeapUsed = 0;
         nonHeapCommitted = 0;
@@ -844,6 +849,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     @Override public long getHeapMemoryMaximum() {
         return heapMax;
     }
+
+    /** {@inheritDoc} */
+    @Override public long getSystemAllocatedSize() { return systemAllocatedSize; }
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryInitialized() {

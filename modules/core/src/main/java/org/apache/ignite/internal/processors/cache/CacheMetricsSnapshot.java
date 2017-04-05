@@ -110,6 +110,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Off-heap memory maximum size*/
     private long offHeapMaxSize;
 
+    /** Off-heap memory allocated for internal data structures. */
+    private long systemAllocatedSize;
+
     /** Number of reads from swap. */
     private long swapGets;
 
@@ -275,6 +278,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
         offHeapMaxSize = m.getOffHeapMaxSize();
+        systemAllocatedSize = m.getSystemAllocatedSize();
 
         swapGets = m.getSwapGets();
         swapPuts = m.getSwapPuts();
@@ -380,6 +384,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             offHeapPrimaryEntriesCnt += e.getOffHeapPrimaryEntriesCount();
             offHeapBackupEntriesCnt += e.getOffHeapBackupEntriesCount();
             offHeapAllocatedSize += e.getOffHeapAllocatedSize();
+            systemAllocatedSize += e.getSystemAllocatedSize();
 
             swapGets += e.getSwapGets();
             swapPuts += e.getSwapPuts();
@@ -624,6 +629,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     @Override public long getOffHeapMaxSize() {
         return offHeapMaxSize;
     }
+
+    /** {@inheritDoc} */
+    @Override public long getSystemAllocatedSize() { return systemAllocatedSize; }
 
     /** {@inheritDoc} */
     @Override public long getSwapGets() {
@@ -880,6 +888,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeLong(offHeapBackupEntriesCnt);
         out.writeLong(offHeapAllocatedSize);
         out.writeLong(offHeapMaxSize);
+        out.writeLong(systemAllocatedSize);
 
         out.writeLong(swapGets);
         out.writeLong(swapPuts);
@@ -938,6 +947,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapBackupEntriesCnt = in.readLong();
         offHeapAllocatedSize = in.readLong();
         offHeapMaxSize = in.readLong();
+        systemAllocatedSize = in.readLong();
 
         swapGets = in.readLong();
         swapPuts = in.readLong();

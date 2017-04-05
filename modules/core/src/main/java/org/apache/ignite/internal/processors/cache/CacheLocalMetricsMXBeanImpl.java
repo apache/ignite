@@ -114,6 +114,9 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getSystemAllocatedSize() { return cache.metrics0().getSystemAllocatedSize(); }
+
+    /** {@inheritDoc} */
     @Override public long getSwapGets() {
         return cache.metrics0().getSwapGets();
     }

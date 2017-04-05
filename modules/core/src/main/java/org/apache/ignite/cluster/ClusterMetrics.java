@@ -488,6 +488,14 @@ public interface ClusterMetrics {
     public long getHeapMemoryTotal();
 
     /**
+     * Returns the off-heap memory allocated for internal data structures. This method
+     * returns {@code -1} if the system allocated size is undefined.
+     *
+     * @return offHeap allocated for internal data structures; {@code -1} if undefined.
+     */
+    public long getSystemAllocatedSize();
+
+    /**
      * Returns the amount of non-heap memory in bytes that the JVM
      * initially requests from the operating system for memory management.
      * This method returns {@code -1} if the initial memory size is undefined.
