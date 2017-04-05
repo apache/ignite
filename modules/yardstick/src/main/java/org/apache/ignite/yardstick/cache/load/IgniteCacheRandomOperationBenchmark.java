@@ -49,7 +49,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -300,29 +299,29 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                     }
                 }
 
-                if (configuration.getTypeMetadata() != null) {
-                    Collection<CacheTypeMetadata> entries = configuration.getTypeMetadata();
+                if (configuration.getQueryEntities() != null) {
+                    Collection<QueryEntity> entities = configuration.getQueryEntities();
 
-                    for (CacheTypeMetadata cacheTypeMetadata : entries) {
+                    for (QueryEntity entity : entities) {
                         try {
-                            if (cacheTypeMetadata.getKeyType() != null) {
-                                Class keyCls = Class.forName(cacheTypeMetadata.getKeyType());
+                            if (entity.getKeyType() != null) {
+                                Class keyCls = Class.forName(entity.getKeyType());
 
                                 if (ModelUtil.canCreateInstance(keyCls))
                                     keys.add(keyCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [clsName=" + cacheTypeMetadata.getKeyType() + ']');
+                                        "specified its full name [clsName=" + entity.getKeyType() + ']');
                             }
 
-                            if (cacheTypeMetadata.getValueType() != null) {
-                                Class valCls = Class.forName(cacheTypeMetadata.getValueType());
+                            if (entity.getValueType() != null) {
+                                Class valCls = Class.forName(entity.getValueType());
 
                                 if (ModelUtil.canCreateInstance(valCls))
                                     values.add(valCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [clsName=" + cacheTypeMetadata.getKeyType() + ']');
+                                        "specified its full name [clsName=" + entity.getKeyType() + ']');
                             }
                         }
                         catch (ClassNotFoundException e) {
@@ -443,8 +442,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private boolean isClassDefinedInConfig(CacheConfiguration configuration) {
         return (configuration.getIndexedTypes() != null && configuration.getIndexedTypes().length > 0)
-            || !CollectionUtils.isEmpty(configuration.getQueryEntities())
-            || !CollectionUtils.isEmpty(configuration.getTypeMetadata());
+            || !CollectionUtils.isEmpty(configuration.getQueryEntities());
     }
 
     /**
@@ -978,7 +976,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     }
 
     /**
-     * @return SQL string.
+     * @param sql Base SQL.
+     * @return Randomized SQL string.
      */
     private String randomizeSql(String sql) {
         int cnt = StringUtils.countOccurrencesOf(sql, "%s");
