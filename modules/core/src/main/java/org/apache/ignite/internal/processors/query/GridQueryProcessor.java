@@ -154,7 +154,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final LinkedHashMap<UUID, SchemaOperationDescriptor> activeOpsInit = new LinkedHashMap<>();
 
     /** General state mutex. */
-    // TODO: Can we have more relaxed mode?
     private final Object stateMux = new Object();
 
     /** Coordinator flag (initialized lazily). */
@@ -447,6 +446,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             futs = new ArrayList<>(schemaCliFuts.values());
 
             schemaCliFuts.clear();
+
+            // TODO: Clear "activeOps", "activeOpsInit", "schemaOps".
         }
 
         // Complete client futures outside of synchonized block because they may have listeners/chains.
