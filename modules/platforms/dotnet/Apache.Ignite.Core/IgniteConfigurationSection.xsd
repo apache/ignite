@@ -1240,6 +1240,11 @@
                     <xs:documentation>Local Ignite instance name to be used with Ignition.GetIgnite.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="autoGenerateIgniteInstanceName" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Generate unique igniteInstanceName automatically.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="jvmDllPath" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Path jvm.dll file. If not set, it's location will be determined using JAVA_HOME environment variable. If path is neither set nor determined automatically, an exception will be thrown.</xs:documentation>
