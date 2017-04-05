@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Node leave exchange worker task.
  */
-public class SchemaIndexNodeLeaveExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+public class SchemaNodeLeaveExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
     /** Node. */
     @GridToStringInclude
     private final ClusterNode node;
@@ -35,7 +35,7 @@ public class SchemaIndexNodeLeaveExchangeWorkerTask implements CachePartitionExc
      *
      * @param node Node.
      */
-    public SchemaIndexNodeLeaveExchangeWorkerTask(ClusterNode node) {
+    public SchemaNodeLeaveExchangeWorkerTask(ClusterNode node) {
         this.node = node;
     }
 
@@ -53,6 +53,6 @@ public class SchemaIndexNodeLeaveExchangeWorkerTask implements CachePartitionExc
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SchemaIndexNodeLeaveExchangeWorkerTask.class, this);
+        return S.toString(SchemaNodeLeaveExchangeWorkerTask.class, this);
     }
 }

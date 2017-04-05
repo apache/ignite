@@ -71,7 +71,7 @@ import org.apache.ignite.internal.processors.query.index.message.SchemaAbstractD
 import org.apache.ignite.internal.processors.query.index.message.SchemaAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.SchemaExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.index.message.SchemaFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.SchemaIndexNodeLeaveExchangeWorkerTask;
+import org.apache.ignite.internal.processors.query.index.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.index.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -414,8 +414,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else
                 U.warn(log, "Unsupported schema discovery message: " + msg);
         }
-        else if (task instanceof SchemaIndexNodeLeaveExchangeWorkerTask) {
-            SchemaIndexNodeLeaveExchangeWorkerTask task0 = (SchemaIndexNodeLeaveExchangeWorkerTask)task;
+        else if (task instanceof SchemaNodeLeaveExchangeWorkerTask) {
+            SchemaNodeLeaveExchangeWorkerTask task0 = (SchemaNodeLeaveExchangeWorkerTask)task;
 
             ctx.query().onNodeLeave(task0.node());
         }

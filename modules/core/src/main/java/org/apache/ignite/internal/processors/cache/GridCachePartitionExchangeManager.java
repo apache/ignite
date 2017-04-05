@@ -76,7 +76,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.index.SchemaIndexNodeLeaveExchangeWorkerTask;
+import org.apache.ignite.internal.processors.query.index.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -299,7 +299,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
-                    exchWorker.addCustomTask(new SchemaIndexNodeLeaveExchangeWorkerTask(evt.eventNode()));
+                    exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
             }
             finally {
                 leaveBusy();
