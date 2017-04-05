@@ -238,6 +238,9 @@ public class QueryEntity implements Serializable {
 
     /**
      * Utility method for building query entities programmatically.
+     * @param fullName Full name of the field.
+     * @param type Type of the field.
+     * @param alias Field alias.
      * @return {@code this} for chaining.
      */
     public QueryEntity addQueryField(String fullName, String type, String alias) {

@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.binary;
+package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -24,12 +25,12 @@ import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObject;
@@ -64,19 +65,16 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
 
         ccfg.setCopyOnRead(false);
 
-        CacheTypeMetadata meta = new CacheTypeMetadata();
+        QueryEntity queryEntity = new QueryEntity(Integer.class.getName(), TestBinary.class.getName());
 
-        meta.setKeyType(Integer.class);
-        meta.setValueType(TestBinary.class.getName());
+        queryEntity.addQueryField("fieldOne", String.class.getName(), null);
+        queryEntity.addQueryField("fieldTwo", Integer.class.getName(), null);
 
-        Map<String, Class<?>> idx = new HashMap<>();
+        queryEntity.setIndexes(Arrays.asList(
+            new QueryIndex("fieldOne", true),
+            new QueryIndex("fieldTwo", true)));
 
-        idx.put("fieldOne", String.class);
-        idx.put("fieldTwo", Integer.class);
-
-        meta.setAscendingFields(idx);
-
-        ccfg.setTypeMetadata(Collections.singletonList(meta));
+        ccfg.setQueryEntities(Collections.singletonList(queryEntity));
 
         return ccfg;
     }
