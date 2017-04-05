@@ -58,9 +58,6 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private static final Long FAIL_L = Long.MAX_VALUE;
 
     /** */
-    private static final Boolean FAIL_B = null;
-
-    /** */
     private static final int MIN_PAGE_FREE_SPACE = 8;
 
     /** */
@@ -437,7 +434,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             boolean allocated = pageId == 0L;
 
-            if(allocated)
+            if (allocated)
                 pageId = allocateDataPage(row.partition());
 
             DataPageIO init = reuseBucket || allocated ? DataPageIO.VERSIONS.latest() : null;
@@ -456,9 +453,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         long pageId = PageIdUtils.pageId(link);
         int itemId = PageIdUtils.itemId(link);
 
-        Boolean updated = write(pageId, updateRow, row, itemId, FAIL_B);
+        Boolean updated = write(pageId, updateRow, row, itemId, null);
 
-        assert updated != FAIL_B; // Can't fail here.
+        assert updated != null; // Can't fail here.
 
         return updated;
     }

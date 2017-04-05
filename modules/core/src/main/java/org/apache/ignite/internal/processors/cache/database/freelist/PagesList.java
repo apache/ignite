@@ -272,13 +272,13 @@ public abstract class PagesList extends DataStructure {
                     int tailIdx = 0;
 
                     while (tailIdx < tails.length) {
-                        int written = curAddr != 0L ? curIo.addTails(pageMem.pageSize(), curAddr, bucket, tails, tailIdx) : 0;
+                        int written = curPage != 0L ? curIo.addTails(pageMem.pageSize(), curAddr, bucket, tails, tailIdx) : 0;
 
                         if (written == 0) {
                             if (nextPageId == 0L) {
                                 nextPageId = allocatePageNoReuse();
 
-                                if (curAddr != 0L) {
+                                if (curPage != 0L) {
                                     curIo.setNextMetaPageId(curAddr, nextPageId);
 
                                     releaseAndClose(curId, curPage, curAddr);
@@ -350,7 +350,7 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     private void releaseAndClose(long pageId, long page, long pageAddr) throws IgniteCheckedException {
-        if (pageAddr != 0L && page != 0L) {
+        if (page != 0L) {
             try {
                 // No special WAL record because we most likely changed the whole page.
                 writeUnlock(pageId, page, pageAddr, TRUE, true);
@@ -821,7 +821,7 @@ public abstract class PagesList extends DataStructure {
 
         Boolean walPlc = null;
 
-        List<long[]> locked = null; // TODO may be unlock right away and do not keep all these pages locked?
+        GridLongList locked = null; // TODO may be unlock right away and do not keep all these pages locked?
 
         try {
             while ((nextId = bag.pollFreePage()) != 0L) {
@@ -837,10 +837,12 @@ public abstract class PagesList extends DataStructure {
                         assert nextPageAddr != 0L;
 
                         if (locked == null) {
-                            locked = new ArrayList<>(2);
+                            locked = new GridLongList(6);
                         }
 
-                        locked.add(new long[]{nextId, nextPage, nextPageAddr});
+                        locked.add(nextId);
+                        locked.add(nextPage);
+                        locked.add(nextPageAddr);
 
                         setupNextPage(io, prevId, prevAddr, nextId, nextPageAddr);
 
@@ -848,7 +850,7 @@ public abstract class PagesList extends DataStructure {
                             wal.log(new PagesListSetNextRecord(cacheId, prevId, nextId));
 
                         // Here we should never write full page, because it is known to be new.
-                        if (needWalDeltaRecord(nextId, nextPage, walPlc = FALSE))
+                        if (needWalDeltaRecord(nextId, nextPage, FALSE))
                             wal.log(new PagesListInitNewPageRecord(
                                 cacheId,
                                 nextId,
@@ -868,6 +870,9 @@ public abstract class PagesList extends DataStructure {
                         prevAddr = nextPageAddr;
                         prevId = nextId;
                         prevPage = nextPage;
+                        // Starting from tis point all wal records are written for reused pages from the bag.
+                        // This mean that we use delta records only.
+                        walPlc = FALSE;
                     }
                     finally {
                         releasePage(nextId, nextPage);
@@ -888,9 +893,8 @@ public abstract class PagesList extends DataStructure {
                 updateTail(bucket, pageId, prevId);
 
                 // Release write.
-                for (int i = 0; i < locked.size(); i++) {
-                    long[] vals = locked.get(i);
-                    writeUnlock(vals[0], vals[1], vals[2], FALSE, true);
+                for (int i = 0; i < locked.size(); i+=3) {
+                    writeUnlock(locked.get(i), locked.get(i + 1), locked.get(i + 2), FALSE, true);
                 }
             }
         }
@@ -1008,7 +1012,7 @@ public abstract class PagesList extends DataStructure {
                 assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE;
 
                 boolean dirty = false;
-                long ret;
+                long dataPageId;
                 long recycleId = 0L;
 
                 try {
@@ -1029,7 +1033,7 @@ public abstract class PagesList extends DataStructure {
 
                         dirty = true;
 
-                        ret = pageId;
+                        dataPageId = pageId;
 
                         if (io.isEmpty(tailAddr)) {
                             long prevId = io.getPreviousId(tailAddr);
@@ -1068,19 +1072,19 @@ public abstract class PagesList extends DataStructure {
                         bucketsSize[bucket].decrementAndGet();
 
                         if (initIoVers != null) {
-                            ret = PageIdUtils.changeType(tailId, FLAG_DATA);
+                            dataPageId = PageIdUtils.changeType(tailId, FLAG_DATA);
 
                             PageIO initIo = initIoVers.latest();
 
-                            initIo.initNewPage(tailAddr, ret, pageSize());
+                            initIo.initNewPage(tailAddr, dataPageId, pageSize());
 
                             if (needWalDeltaRecord(tailId, tailPage, null)) {
                                 wal.log(new InitNewPageRecord(cacheId, tailId, initIo.getType(),
-                                    initIo.getVersion(), ret));
+                                    initIo.getVersion(), dataPageId));
                             }
                         }
                         else
-                            ret = recyclePage(tailId, tailPage, tailAddr, null);
+                            dataPageId = recyclePage(tailId, tailPage, tailAddr, null);
 
                         dirty = true;
                     }
@@ -1101,7 +1105,7 @@ public abstract class PagesList extends DataStructure {
                     reuseList.addForRecycle(new SingletonReuseBag(recycleId));
                 }
 
-                return ret;
+                return dataPageId;
             }
             finally {
                 releasePage(tailId, tailPage);
@@ -1196,6 +1200,43 @@ public abstract class PagesList extends DataStructure {
     /**
      * @param pageId Page ID.
      * @param page Page pointer.
+     * @param pageAddr Page address.
+     * @param prevId Previous page ID.
+     * @param bucket Bucket index.
+     * @return Page ID to recycle.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long mergeNoNext(
+        long pageId,
+        long page,
+        long pageAddr,
+        long prevId,
+        int bucket)
+        throws IgniteCheckedException {
+        // If we do not have a next page (we are tail) and we are on reuse bucket,
+        // then we can leave as is as well, because it is normal to have an empty tail page here.
+        if (isReuseBucket(bucket))
+            return 0L;
+
+        if (prevId != 0L) { // Cut tail if we have a previous page.
+            Boolean ok = write(prevId, cutTail, null, bucket, FALSE);
+
+            assert ok == TRUE: ok;
+        }
+        else {
+            // If we don't have a previous, then we are tail page of free list, just drop the stripe.
+            boolean rmvd = updateTail(bucket, pageId, 0L);
+
+            if (!rmvd)
+                return 0L;
+        }
+
+        return recyclePage(pageId, page, pageAddr, null);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page pointer.
      * @param nextId Next page ID.
      * @param bucket Bucket index.
      * @return Page ID to recycle.
@@ -1252,47 +1293,10 @@ public abstract class PagesList extends DataStructure {
                 }
             }
             finally {
-                if(curPage != 0L)
+                if (curPage != 0L)
                     releasePage(curId, curPage);
             }
         }
-    }
-
-    /**
-     * @param pageId Page ID.
-     * @param page Page pointer.
-     * @param pageAddr Page address.
-     * @param prevId Previous page ID.
-     * @param bucket Bucket index.
-     * @return Page ID to recycle.
-     * @throws IgniteCheckedException If failed.
-     */
-    private long mergeNoNext(
-        long pageId,
-        long page,
-        long pageAddr,
-        long prevId,
-        int bucket)
-        throws IgniteCheckedException {
-        // If we do not have a next page (we are tail) and we are on reuse bucket,
-        // then we can leave as is as well, because it is normal to have an empty tail page here.
-        if (isReuseBucket(bucket))
-            return 0L;
-
-        if (prevId != 0L) { // Cut tail if we have a previous page.
-            Boolean ok = write(prevId, cutTail, null, bucket, FALSE);
-
-            assert ok == TRUE: ok;
-        }
-        else {
-            // If we don't have a previous, then we are tail page of free list, just drop the stripe.
-            boolean rmvd = updateTail(bucket, pageId, 0L);
-
-            if (!rmvd)
-                return 0L;
-        }
-
-        return recyclePage(pageId, page, pageAddr, null);
     }
 
     /**
