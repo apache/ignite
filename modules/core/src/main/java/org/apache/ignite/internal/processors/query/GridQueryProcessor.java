@@ -2087,8 +2087,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (op != null && F.eq(op.id(), opId))
                 op.onStatusRequest(req.senderNodeId());
             else {
-                // TODO: Log
-                System.out.println("MISSING STATE [opNull=" + (op == null) + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Local node doesn't have information about schema operation (already completed, " +
+                        "will ignore) [opId=" + opId + ", sndNodeId=" + req.senderNodeId() + ']');
 
                 // Operation completed successfully and is not in local history any more.
                 sendStatusResponse(req.senderNodeId(), opId, null);
@@ -2141,8 +2142,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ctx.io().sendToGridTopic(destNodeId, TOPIC_DYNAMIC_SCHEMA, resp, QUERY_POOL);
         }
         catch (IgniteCheckedException e) {
-            // Node left, ignore.
-            // TODO: Better logging all over the state and handler to simplify debug!
+            if (log.isDebugEnabled())
+                log.debug("Failed to send schema status response [opId=" + opId + ", destNodeId=" + destNodeId +
+                    ", err=" + e + ']');
         }
     }
 
