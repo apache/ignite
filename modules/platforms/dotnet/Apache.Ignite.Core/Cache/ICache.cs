@@ -514,7 +514,7 @@ namespace Apache.Ignite.Core.Cache
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
         /// </summary>
         /// <param name="vals">Key-value pairs to store in cache.</param>
-        void PutAll(IDictionary<TK, TV> vals);
+        void PutAll(IEnumerable<KeyValuePair<TK, TV>> vals);
 
         /// <summary>
         /// Stores given key-value pairs in cache.
@@ -522,7 +522,7 @@ namespace Apache.Ignite.Core.Cache
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
         /// </summary>
         /// <param name="vals">Key-value pairs to store in cache.</param>
-        Task PutAllAsync(IDictionary<TK, TV> vals);
+        Task PutAllAsync(IEnumerable<KeyValuePair<TK, TV>> vals);
 
         /// <summary>
         /// Attempts to evict all entries associated with keys. Note, that entry will be evicted only

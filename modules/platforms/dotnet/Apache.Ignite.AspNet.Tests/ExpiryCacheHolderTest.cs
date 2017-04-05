@@ -299,12 +299,12 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public void PutAll(IDictionary<int, int> vals)
+            public void PutAll(IEnumerable<KeyValuePair<int, int>> vals)
             {
                 throw new NotImplementedException();
             }
 
-            public Task PutAllAsync(IDictionary<int, int> vals)
+            public Task PutAllAsync(IEnumerable<KeyValuePair<int, int>> vals)
             {
                 throw new NotImplementedException();
             }
