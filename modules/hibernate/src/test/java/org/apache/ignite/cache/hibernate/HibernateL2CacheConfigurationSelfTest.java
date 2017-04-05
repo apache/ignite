@@ -91,27 +91,23 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     private boolean dfltCache;
 
     /** {@inheritDoc} */
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void afterTest() throws Exception {
+    @Override protected void afterTest() throws Exception {
         for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal) grid(0)).caches())
             cache.clear();
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -126,6 +122,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         return cfg;
     }
+
     /**
      * @param cacheName Cache name.
      * @return Cache configuration.
