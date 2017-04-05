@@ -860,7 +860,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             tbl.promoteTempIndex(idx.getName());
         }
-        catch (Throwable e) {
+        catch (Exception e) {
             tbl.removeTempIndex(idx.getName());
 
             throw e;

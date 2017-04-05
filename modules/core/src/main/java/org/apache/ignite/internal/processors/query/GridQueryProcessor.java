@@ -1265,7 +1265,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void processIndexOperationLocal(SchemaAbstractOperation op, IgniteUuid depId,
         SchemaIndexOperationCancellationToken cancelTok) throws SchemaOperationException {
-        System.out.println("PROCESS INDEX OPERATION LOCAL: " + ctx.igniteInstanceName());
+        if (log.isDebugEnabled())
+            log.debug("Started local index operation [opId=" + op.id() + ']');
 
         String space = op.space();
 
@@ -1386,6 +1387,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (F.eq(space, idxKey.space()))
                     idxIt.remove();
+            }
+
+            // Notify in-progress index operations.
+            for (SchemaOperation op : schemaOps.values()) {
+                if (op.started())
+                    op.manager().worker().cancel();
             }
 
             // Notify indexing.

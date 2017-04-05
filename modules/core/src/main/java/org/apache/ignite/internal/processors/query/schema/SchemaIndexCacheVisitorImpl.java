@@ -65,8 +65,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @param tblName Table name.
      * @param cancel Cancellation token.
      */
-    public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String spaceName, String tblName,
-        SchemaIndexOperationCancellationToken cancel) {
+    public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String spaceName,
+        String tblName, SchemaIndexOperationCancellationToken cancel) {
         this.qryProc = qryProc;
         this.cctx = cctx;
         this.spaceName = spaceName;

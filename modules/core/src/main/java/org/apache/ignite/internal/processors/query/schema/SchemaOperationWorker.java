@@ -178,7 +178,7 @@ public class SchemaOperationWorker extends GridWorker {
      * Cancel operation.
      */
     public void cancel() {
-        if (!cancelToken.cancel())
+        if (cancelToken.cancel())
             super.cancel();
     }
 
