@@ -34,8 +34,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.PA;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.BackPressureTracker;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -342,14 +342,14 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
         }
 
         /** {@inheritDoc} */
-        @Override protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
+        @Override protected void notifyListener(UUID sndId, Message msg, BackPressureTracker tracker) {
             if (check || (periodicCheck && filterOn.get())) {
                 if (msg instanceof GridIoMessage &&
                     ((GridIoMessage)msg).message() instanceof CacheContinuousQueryBatchAck)
                     fail.set(true);
             }
 
-            super.notifyListener(sndId, msg, msgC);
+            super.notifyListener(sndId, msg, tracker);
         }
     }
 }
