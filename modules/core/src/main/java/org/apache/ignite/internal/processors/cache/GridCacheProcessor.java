@@ -65,14 +65,11 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -112,7 +109,6 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -214,10 +210,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** */
     private Map<UUID, DynamicCacheChangeBatch> clientReconnectReqs;
-
-    /** ID history for index create/drop discovery messages. */
-    private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> idxDiscoMsgIdHist =
-        new GridBoundedConcurrentLinkedHashSet<>(QueryUtils.discoveryHistorySize());
 
     /**
      * @param ctx Kernal context.
@@ -1019,8 +1011,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        // TODO Clean indexing data properly.
-
         cachesOnDisconnect = new HashMap<>(registeredCaches);
 
         IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(
@@ -1219,7 +1209,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 mgr.stop(cancel);
         }
 
-        // TODO: Make sure to notify query client futures.
         ctx.kernalContext().query().onCacheStop(ctx);
         ctx.kernalContext().continuous().onCacheStop(ctx);
 
@@ -1762,6 +1751,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param initiatingNodeId Initiating node ID.
      * @param deploymentId Deployment ID.
      * @param topVer Topology version.
+     * @param schema Query schema.
      * @throws IgniteCheckedException If failed.
      */
     private void prepareCacheStart(
@@ -1772,7 +1762,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         UUID initiatingNodeId,
         IgniteUuid deploymentId,
         AffinityTopologyVersion topVer,
-        @Nullable QuerySchema idxStates
+        @Nullable QuerySchema schema
     ) throws IgniteCheckedException {
         CacheConfiguration ccfg = new CacheConfiguration(cfg);
 
@@ -1806,7 +1796,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             caches.put(maskNull(cacheCtx.name()), cacheCtx.cache());
 
-            startCache(cacheCtx.cache(), idxStates != null ? idxStates : new QuerySchema());
+            startCache(cacheCtx.cache(), schema != null ? schema : new QuerySchema());
             onKernalStart(cacheCtx.cache());
         }
     }
@@ -2722,28 +2712,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer) {
         if (msg instanceof SchemaAbstractDiscoveryMessage) {
-            SchemaAbstractDiscoveryMessage msg0 = (SchemaAbstractDiscoveryMessage)msg;
-
-            if (log.isDebugEnabled())
-                log.debug("Received index discovery message [opId=" + msg0.operation().id() +
-                    ", msg=" + msg + ']');
-
-            IgniteUuid id = msg0.id();
-
-            if (!idxDiscoMsgIdHist.add(id)) {
-                U.warn(log, "Received duplicate index change discovery message (will ignore): " + msg);
-
-                return false;
-            }
-
-            if (msg instanceof SchemaProposeDiscoveryMessage)
-                onSchemaProposeDiscovery((SchemaProposeDiscoveryMessage)msg);
-            else if (msg instanceof SchemaAcceptDiscoveryMessage)
-                onSchemaAcceptDiscovery((SchemaAcceptDiscoveryMessage)msg);
-            else if (msg instanceof SchemaFinishDiscoveryMessage)
-                onSchemaFinishDiscovery((SchemaFinishDiscoveryMessage)msg);
-            else
-                U.warn(log, "Unsupported index discovery message type (will ignore): " + msg);
+            ctx.query().onDiscovery((SchemaAbstractDiscoveryMessage)msg);
 
             return false;
         }
@@ -2752,88 +2721,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
-    }
-
-    /**
-     * Handle cache index init discovery message.
-     *
-     * @param msg Message.
-     */
-    private void onSchemaProposeDiscovery(SchemaProposeDiscoveryMessage msg) {
-        SchemaAbstractOperation op = msg.operation();
-
-        // Ignore in case error was reported by another node earlier.
-        if (msg.hasError()) {
-            if (log.isDebugEnabled())
-                log.debug("Received schema propose discovery message with reported error (will ignore) [opId=" +
-                    msg.operation().id() + ", msg=" + msg + ']');
-
-            return;
-        }
-
-        // Ensure cache exists.
-        DynamicCacheDescriptor desc = cacheDescriptor(op.space());
-
-        if (desc == null) {
-            if (log.isDebugEnabled())
-                log.debug("Received schema propose discovery message, but cache doesn't exist [opId=" +
-                    msg.operation().id() + ", msg=" + msg + ']');
-
-            msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space()));
-
-            return;
-        }
-
-        // Preserve deployment ID so that we can distinguish between different caches with the same name.
-        if (msg.deploymentId() == null)
-            msg.deploymentId(desc.deploymentId());
-
-        assert F.eq(desc.deploymentId(), msg.deploymentId());
-
-        ctx.query().onSchemaProposeDiscovery(msg);
-    }
-
-    /**
-     * Handle cache index accept discovery message.
-     *
-     * @param msg Message.
-     */
-    private void onSchemaAcceptDiscovery(SchemaAcceptDiscoveryMessage msg) {
-        SchemaAbstractOperation op = msg.operation();
-
-        DynamicCacheDescriptor desc = cacheDescriptor(op.space());
-
-        if (desc == null || !F.eq(desc.deploymentId(), msg.deploymentId())) {
-            if (log.isDebugEnabled())
-                log.debug("Received schema accept discovery message, but cache doesn't exist [opId=" + op.id() +
-                    ", msg=" + msg + ']');
-        }
-
-        ctx.query().onSchemaAcceptDiscovery(msg);
-    }
-
-    /**
-     * Handle cache index ack discovery message.
-     *
-     * @param msg Message.
-     */
-    private void onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
-        SchemaAbstractOperation op = msg.operation();
-
-        DynamicCacheDescriptor desc = cacheDescriptor(op.space());
-
-        if (desc == null || !F.eq(desc.deploymentId(), msg.deploymentId())) {
-            if (log.isDebugEnabled())
-                log.debug("Received schema finish discovery message, but cache doesn't exist [opId=" + op.id() +
-                    ", msg=" + msg + ']');
-        }
-        else {
-            // Update public schema in case of success.
-            if (!msg.hasError())
-                desc.schemaChangeFinish(msg);
-        }
-
-        ctx.query().onSchemaFinishDiscovery(msg);
     }
 
     /**

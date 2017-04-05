@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationWorker;
 import org.apache.ignite.internal.processors.query.schema.SchemaKey;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationDescriptor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusRequest;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstra
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -176,6 +178,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Registered spaces. */
     private final Collection<String> spaces = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
+    /** ID history for index create/drop discovery messages. */
+    private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> idxDiscoMsgIdHist =
+        new GridBoundedConcurrentLinkedHashSet<>(QueryUtils.discoveryHistorySize());
+
     /**
      * @param ctx Kernal context.
      */
@@ -259,7 +265,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         // Process initial operations.
         synchronized (activeOpsMux) {
             for (SchemaOperationDescriptor activeOpDesc : activeOpsInit.values()) {
-                onSchemaProposeDiscovery(activeOpDesc.messagePropose());
+                onSchemaProposeDiscovery0(activeOpDesc.messagePropose());
 
                 if (activeOpDesc.messageAccept() != null)
                     onSchemaAccept(activeOpDesc.messageAccept());
@@ -521,15 +527,81 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Handle custom discovery message.
+     *
+     * @param msg Message.
+     */
+    public void onDiscovery(SchemaAbstractDiscoveryMessage msg) {
+        IgniteUuid id = msg.id();
+
+        if (!idxDiscoMsgIdHist.add(id)) {
+            U.warn(log, "Received duplicate schema custom discovery message (will ignore) [opId=" +
+                msg.operation().id() + ", msg=" + msg  +']');
+
+            return;
+        }
+
+        if (msg instanceof SchemaProposeDiscoveryMessage)
+            onSchemaProposeDiscovery((SchemaProposeDiscoveryMessage)msg);
+        else if (msg instanceof SchemaAcceptDiscoveryMessage)
+            onSchemaAcceptDiscovery((SchemaAcceptDiscoveryMessage)msg);
+        else if (msg instanceof SchemaFinishDiscoveryMessage)
+            onSchemaFinishDiscovery((SchemaFinishDiscoveryMessage)msg);
+        else
+            U.warn(log, "Received unsupported schema custom discovery message (will ignore) [opId=" +
+                msg.operation().id() + ", msg=" + msg  +']');
+    }
+
+    /**
      * Process schema propose message from discovery thread.
      *
      * @param msg Message.
      */
-    public void onSchemaProposeDiscovery(SchemaProposeDiscoveryMessage msg) {
+    private void onSchemaProposeDiscovery(SchemaProposeDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
+        String space = msg.operation().space();
+
+        // Ignore in case error was reported by another node earlier.
+        if (msg.hasError()) {
+            if (log.isDebugEnabled())
+                log.debug("Received schema propose discovery message with reported error (will ignore) [opId=" +
+                    opId + ", msg=" + msg + ']');
+
+            return;
+        }
+
+        // Ensure cache exists.
+        DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(space);
+
+        if (cacheDesc == null) {
+            if (log.isDebugEnabled())
+                log.debug("Received schema propose discovery message, but cache doesn't exist (will report error) " +
+                    "[opId=" + opId + ", msg=" + msg + ']');
+
+            msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, space));
+
+            return;
+        }
+
+        // Preserve deployment ID so that we can distinguish between different caches with the same name.
+        if (msg.deploymentId() == null)
+            msg.deploymentId(cacheDesc.deploymentId());
+
+        assert F.eq(cacheDesc.deploymentId(), msg.deploymentId());
 
         if (log.isDebugEnabled())
             log.debug("Received schema propose message (discovery) [opId=" + opId + ", msg=" + msg + ']');
+
+        onSchemaProposeDiscovery0(msg);
+    }
+
+    /**
+     * Process schema propose message from discovery thread (or from cache start routine).
+     *
+     * @param msg Message.
+     */
+    private void onSchemaProposeDiscovery0(SchemaProposeDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
 
         synchronized (activeOpsMux) {
             SchemaOperationDescriptor desc = new SchemaOperationDescriptor(msg);
@@ -562,7 +634,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    public void onSchemaAcceptDiscovery(SchemaAcceptDiscoveryMessage msg) {
+    private void onSchemaAcceptDiscovery(SchemaAcceptDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
         if (log.isDebugEnabled())
@@ -1032,14 +1104,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
+    private void onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
         if (log.isDebugEnabled())
             log.debug("Received schema finish message (discovery) [opId=" + opId + ", msg=" + msg + ']');
 
+        // Apply changes to public cache schema.
+        DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(msg.operation().space());
+
+        if (cacheDesc != null && F.eq(cacheDesc.deploymentId(), msg.deploymentId()) && !msg.hasError())
+            cacheDesc.schemaChangeFinish(msg);
+
+        // Process message.
         synchronized (activeOpsMux) {
-            SchemaOperationDescriptor desc = activeOps.get(msg.operation().id());
+            SchemaOperationDescriptor desc = activeOps.get(opId);
 
             if (desc != null) {
                 assert desc.messageFinish() == null;
