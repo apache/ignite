@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -118,104 +117,145 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
         boolean done = false;
 
-        while (!done) {
-            GridCacheMapEntry entry = map.get(key);
-            created = null;
-            doomed = null;
+        boolean reserved = false;
 
-            if (entry == null) {
-                if (create) {
-                    if (created0 == null)
-                        created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+        try {
+            while (!done) {
+                GridCacheMapEntry entry = map.get(key);
+                created = null;
+                doomed = null;
 
-                    cur = created = created0;
-
-                    done = map.putIfAbsent(created.key(), created) == null;
-                }
-                else
-                    done = true;
-            }
-            else {
-                if (entry.obsolete()) {
-                    doomed = entry;
-
+                if (entry == null) {
                     if (create) {
-                        if (created0 == null)
+                        if (created0 == null) {
+                            if (!reserved) {
+                                if (!reserve())
+                                    return null;
+
+                                reserved = true;
+                            }
+
                             created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                        }
 
                         cur = created = created0;
 
-                        done = map.replace(entry.key(), doomed, created);
+                        done = map.putIfAbsent(created.key(), created) == null;
                     }
                     else
-                        done = map.remove(entry.key(), doomed);
+                        done = true;
                 }
                 else {
-                    cur = entry;
+                    if (entry.obsolete()) {
+                        doomed = entry;
 
-                    done = true;
+                        if (create) {
+                            if (created0 == null) {
+                                if (!reserved) {
+                                    if (!reserve())
+                                        return null;
+
+                                    reserved = true;
+                                }
+
+                                created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                            }
+
+                            cur = created = created0;
+
+                            done = map.replace(entry.key(), doomed, created);
+                        }
+                        else
+                            done = map.remove(entry.key(), doomed);
+                    }
+                    else {
+                        cur = entry;
+
+                        done = true;
+                    }
                 }
             }
-        }
 
-        int sizeChange = 0;
+            int sizeChange = 0;
 
-        if (doomed != null) {
-            synchronized (doomed) {
-                if (!doomed.deleted())
-                    sizeChange--;
+            if (doomed != null) {
+                synchronized (doomed) {
+                    if (!doomed.deleted())
+                        sizeChange--;
+                }
+
+                if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
+                    ctx.events().addEvent(doomed.partition(),
+                        doomed.key(),
+                        ctx.localNodeId(),
+                        (IgniteUuid)null,
+                        null,
+                        EVT_CACHE_ENTRY_DESTROYED,
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        null,
+                        null,
+                        true);
             }
 
-            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
-                ctx.events().addEvent(doomed.partition(),
-                    doomed.key(),
-                    ctx.localNodeId(),
-                    (IgniteUuid)null,
-                    null,
-                    EVT_CACHE_ENTRY_DESTROYED,
-                    null,
-                    false,
-                    null,
-                    false,
-                    null,
-                    null,
-                    null,
-                    true);
+            if (created != null) {
+                sizeChange++;
+
+                if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
+                    ctx.events().addEvent(created.partition(),
+                        created.key(),
+                        ctx.localNodeId(),
+                        (IgniteUuid)null,
+                        null,
+                        EVT_CACHE_ENTRY_CREATED,
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        null,
+                        null,
+                        true);
+
+                if (touch)
+                    ctx.evicts().touch(
+                        cur,
+                        topVer);
+            }
+
+            assert Math.abs(sizeChange) <= 1;
+
+            if (sizeChange == -1)
+                decrementPublicSize(cur);
+            else if (sizeChange == 1) {
+                assert reserved;
+
+                incrementPublicSize(cur);
+            }
+
+            return cur;
         }
-
-        if (created != null) {
-            sizeChange++;
-
-            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
-                ctx.events().addEvent(created.partition(),
-                    created.key(),
-                    ctx.localNodeId(),
-                    (IgniteUuid)null,
-                    null,
-                    EVT_CACHE_ENTRY_CREATED,
-                    null,
-                    false,
-                    null,
-                    false,
-                    null,
-                    null,
-                    null,
-                    true);
-
-            if (touch)
-                ctx.evicts().touch(
-                    cur,
-                    topVer);
+        finally {
+            if (reserved)
+                release();
         }
+    }
 
-        assert Math.abs(sizeChange) <= 1;
+    /**
+     *
+     */
+    protected boolean reserve() {
+        return true;
+    }
 
-        if (sizeChange == -1)
-            decrementPublicSize(cur);
-        else if (sizeChange == 1)
-            incrementPublicSize(cur);
-
-        return cur;
+    /**
+     *
+     */
+    protected void release() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

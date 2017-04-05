@@ -40,8 +40,9 @@ public interface GridCacheConcurrentMap {
      * @param key Key.
      * @param val Value.
      * @param create Create flag.
-     * @return Triple where the first element is current entry associated with the key,
-     *      the second is created entry and the third is doomed (all may be null).
+     * @return Existing or new GridCacheMapEntry. Will return {@code null} if entry is obsolete or absent and create
+     * flag is set to {@code false}. Will also return {@code null} if create flag is set to {@code true}, but entry
+     * couldn't be created.
      */
     @Nullable public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         AffinityTopologyVersion topVer,
