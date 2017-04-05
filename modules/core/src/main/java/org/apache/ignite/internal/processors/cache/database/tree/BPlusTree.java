@@ -187,9 +187,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                         return printPage(io, pageAddr, keys);
                     }
-                    catch (IgniteCheckedException e) {
-                        throw new IllegalStateException(e);
-                    }
                     finally {
                         readUnlock(pageId, page, pageAddr);
                     }
@@ -198,8 +195,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     releasePage(pageId, page);
                 }
             }
-            catch (IgniteCheckedException ignored) {
-                throw new AssertionError("Can not acquire page.");
+            catch (IgniteCheckedException e) {
+                throw new IllegalStateException(e);
             }
         }
     };
@@ -2499,7 +2496,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert (tailId == 0L) == (tailPage == 0L);
             assert (tailPage == 0L) == (tailPageAddr == 0L);
 
-            if (this.tailAddr != 0L)
+            if (this.tailPage != 0L)
                 writeUnlockAndClose(this.tailId, this.tailPage, this.tailAddr, null);
 
             this.tailId = tailId;
@@ -3346,7 +3343,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel() == tail.lvl) {
                         // Free root if it became empty after merge.
                         cutRoot(tail.lvl);
-                        freePage(tail.id, tail.page, tail.buf, tail.walPlc, false);
+                        freePage(tail.pageId, tail.page, tail.buf, tail.walPlc, false);
 
                         // Exit: we are done.
                     }
@@ -3381,7 +3378,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             Tail<L> leaf = getTail(t, 0);
 
-            removeDataRowFromLeaf(leaf.id, leaf.page, leaf.buf, leaf.walPlc, leaf.io, leaf.getCount(), insertionPoint(leaf));
+            removeDataRowFromLeaf(leaf.pageId, leaf.page, leaf.buf, leaf.walPlc, leaf.io, leaf.getCount(), insertionPoint(leaf));
         }
 
         /**
@@ -3577,7 +3574,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             Tail<L> left = t.getLeftChild();
             Tail<L> right = t.getRightChild();
 
-            assert left.id != right.id;
+            assert left.pageId != right.pageId;
 
             int cnt = t.getCount();
 
@@ -3628,7 +3625,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (right && cnt != 0)
                 idx++;
 
-            return inner(prnt.io).getLeft(prnt.buf, idx) == child.id;
+            return inner(prnt.io).getLeft(prnt.buf, idx) == child.pageId;
         }
 
         /**
@@ -3641,8 +3638,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private boolean checkChildren(Tail<L> prnt, Tail<L> left, Tail<L> right, int idx) {
             assert idx >= 0 && idx < prnt.getCount(): idx;
 
-            return inner(prnt.io).getLeft(prnt.buf, idx) == left.id &&
-                inner(prnt.io).getRight(prnt.buf, idx) == right.id;
+            return inner(prnt.io).getLeft(prnt.buf, idx) == left.pageId &&
+                inner(prnt.io).getRight(prnt.buf, idx) == right.pageId;
         }
 
         /**
@@ -3655,7 +3652,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private boolean doMerge(Tail<L> prnt, Tail<L> left, Tail<L> right)
             throws IgniteCheckedException {
             assert right.io == left.io; // Otherwise incompatible.
-            assert left.io.getForward(left.buf) == right.id;
+            assert left.io.getForward(left.buf) == right.pageId;
 
             int prntCnt = prnt.getCount();
             int prntIdx = fix(insertionPoint(prnt));
@@ -3687,10 +3684,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             // Remove split key from parent. If we are merging empty branch then remove only on the top iteration.
             if (needMergeEmptyBranch != READY)
-                doRemove(prnt.id, prnt.page, prnt.buf, prnt.walPlc, prnt.io, prntCnt, prntIdx);
+                doRemove(prnt.pageId, prnt.page, prnt.buf, prnt.walPlc, prnt.io, prntCnt, prntIdx);
 
             // Forward page is now empty and has no links, can free and release it right away.
-            freePage(right.id, right.page, right.buf, right.walPlc, true);
+            freePage(right.pageId, right.page, right.buf, right.walPlc, true);
 
             return true;
         }
@@ -3724,9 +3721,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         private void cutRoot(int lvl) throws IgniteCheckedException {
-                Bool res = write(metaPageId, cutRoot, lvl, FALSE);
+            Bool res = write(metaPageId, cutRoot, lvl, FALSE);
 
-                assert res == TRUE : res;
+            assert res == TRUE : res;
         }
 
         /**
@@ -3789,8 +3786,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             // Update remove ID for the leaf page.
             leaf.io.setRemoveId(leaf.buf, rmvId);
 
-            if (needWalDeltaRecord(leaf.id, leaf.page, leaf.walPlc))
-                wal.log(new FixRemoveId(cacheId, leaf.id, rmvId));
+            if (needWalDeltaRecord(leaf.pageId, leaf.page, leaf.walPlc))
+                wal.log(new FixRemoveId(cacheId, leaf.pageId, rmvId));
         }
 
         /**
@@ -3848,12 +3845,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         private void doReleaseTail(Tail<L> t) {
             while (t != null) {
-                writeUnlockAndClose(t.id, t.page, t.buf, t.walPlc);
+                writeUnlockAndClose(t.pageId, t.page, t.buf, t.walPlc);
 
                 Tail<L> s = t.sibling;
 
                 if (s != null)
-                    writeUnlockAndClose(s.id, s.page, s.buf, s.walPlc);
+                    writeUnlockAndClose(s.pageId, s.page, s.buf, s.walPlc);
 
                 t = t.down;
             }
@@ -3877,12 +3874,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     return false;
 
                 if (t.lvl == lvl) {
-                    if (t.id == pageId)
+                    if (t.pageId == pageId)
                         return true;
 
                     t = t.sibling;
 
-                    return t != null && t.id == pageId;
+                    return t != null && t.pageId == pageId;
                 }
 
                 t = t.down;
@@ -4054,7 +4051,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         static final byte FORWARD = 2;
 
         /** */
-        private final long id;
+        private final long pageId;
 
         /** */
         private final long page;
@@ -4098,7 +4095,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert page != 0L;
             assert buf != 0L;
 
-            this.id = pageId;
+            this.pageId = pageId;
             this.page = page;
             this.buf = buf;
             this.io = io;
@@ -4115,7 +4112,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return new SB("Tail[").a("pageId=").appendHex(id).a(", cnt= ").a(getCount())
+            return new SB("Tail[").a("pageId=").appendHex(pageId).a(", cnt= ").a(getCount())
                 .a(", lvl=" + lvl).a(", sibling=").a(sibling).a("]").toString();
         }
 
