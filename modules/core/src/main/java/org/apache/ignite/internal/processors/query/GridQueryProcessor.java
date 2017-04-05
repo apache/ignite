@@ -369,6 +369,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         // Apply pending operation which could have been completed as no-op at this point. There could be only one
         // in-flight operation for a cache.
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             for (SchemaOperationDescriptor desc : activeOps.values()) {
                 if (F.eq(desc.cacheDeploymentId(), cctx.dynamicDeploymentId())) {
                     SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
@@ -443,11 +446,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         synchronized (stateMux) {
             disconnected = true;
 
+            // Clear client futures.
             futs = new ArrayList<>(schemaCliFuts.values());
 
             schemaCliFuts.clear();
 
-            // TODO: Clear "activeOps", "activeOpsInit", "schemaOps".
+            // Clear operations data.
+            activeOps.clear();
+            activeOpsInit.clear();
+            schemaOps.clear();
         }
 
         // Complete client futures outside of synchonized block because they may have listeners/chains.
@@ -465,6 +472,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         ioMgr.onStartOrReconnect();
+
+        onCacheKernalStart();
 
         return super.onReconnected(clusterRestarted);
     }
@@ -589,6 +598,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         UUID opId = msg.operation().id();
 
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             SchemaOperationDescriptor desc = new SchemaOperationDescriptor(msg);
 
             SchemaOperationDescriptor oldDesc = activeOps.put(desc.id(), desc);
@@ -626,6 +638,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             log.debug("Received schema accept message (discovery) [opId=" + opId + ", msg=" + msg + ']');
 
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
             assert desc != null;
@@ -648,6 +663,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             log.debug("Received schema accept message (exchange) [opId=" + opId + ", msg=" + msg + ']');
 
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
             assert desc != null;
@@ -1103,6 +1121,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         // Process message.
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
             if (desc != null) {
@@ -1129,6 +1150,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         // Complete distributed operations.
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             SchemaOperationDescriptor desc = activeOps.remove(opId);
 
             if (desc != null) {
@@ -1185,6 +1209,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onLocalOperationFinished(UUID opId, @Nullable QueryTypeDescriptorImpl type) {
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
             SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
@@ -1207,8 +1234,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (log.isDebugEnabled())
                 log.debug("Local operation finished sucessfully [opId=" + op.id() + ']');
-
-
 
             try {
                 if (op instanceof SchemaIndexCreateOperation) {
@@ -1249,6 +1274,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         refreshCoordinator();
 
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             for (SchemaOperation op : schemaOps.values()) {
                 if (op.started())
                     op.manager().onNodeLeave(node.id());
@@ -1363,6 +1391,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert idx != null;
 
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             // Clear types.
             Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
 
@@ -2138,6 +2169,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private void processStatusRequest(SchemaOperationStatusRequest req) {
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             UUID opId = req.operationId();
 
             SchemaOperationDescriptor desc = activeOps.get(opId);
@@ -2173,6 +2207,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private void processStatusResponse(SchemaOperationStatusResponse resp) {
         synchronized (stateMux) {
+            if (disconnected)
+                return;
+
             UUID opId = resp.operationId();
 
             SchemaOperationDescriptor desc = activeOps.get(opId);
