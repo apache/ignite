@@ -52,9 +52,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /** */
     private static final short DIRECT_TYPE_OVER_BYTE = 1000;
 
-    /** */
-    private int bufSize;
-
     static {
         GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {
             @Override public Message apply() {
@@ -79,8 +76,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         c.setDiscoverySpi(discoSpi);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setConnectionBufferSize(bufSize);
 
         c.setCommunicationSpi(commSpi);
 
@@ -119,8 +114,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testSendMessageWithBuffer() throws Exception {
-        bufSize = 8192;
-
         try {
             startGridsMultiThreaded(2);
 
