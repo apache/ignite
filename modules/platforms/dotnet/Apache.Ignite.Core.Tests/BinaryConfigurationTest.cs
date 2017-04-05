@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -110,6 +111,22 @@ namespace Apache.Ignite.Core.Tests
             StartGrid(null);
 
             CheckBinarizableTypes(TestTypesXml);
+        }
+
+        /// <summary>
+        /// Tests that invalid configuration produces meaningful error message.
+        /// </summary>
+        [Test]
+        public void TestInvalidConfiguration()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                // Open generics are not allowed
+                BinaryConfiguration = new BinaryConfiguration(typeof(List<>))
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("", ex.Message);
         }
 
         /// <summary>
