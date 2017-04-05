@@ -27,6 +27,7 @@ public class CholeskyDecompositionExample {
 
     /** */
     public static void main(String[] args) {
+        System.out.println(">>> Cholesky decomposition example started.");
         // Let's compute a Cholesky decomposition of Hermitian matrix m:
         // m = l l^{*}, where
         // l is a lower triangular matrix
@@ -37,6 +38,8 @@ public class CholeskyDecompositionExample {
             {-1.0d, 2.0d,  -1.0d},
             {0.0d, -1.0d, 2.0d}
         });
+        System.out.println(">>>Matrix m for decomposition: ");
+        Tracer.showAscii(m);
 
         // This decomposition is useful when dealing with systems of linear equations of the form
         // m x = b where m is a Hermitian matrix.
@@ -49,12 +52,19 @@ public class CholeskyDecompositionExample {
         // to the method Cholesky::solve which returns solutions in the form
         // (sol1, sol2, ..., solm)
         CholeskyDecomposition dec = new CholeskyDecomposition(m);
+        System.out.println(">>> Made decomposition m = l * l^{*}.");
+        System.out.println(">>> Matrix l is ");
+        Tracer.showAscii(dec.getL());
+        System.out.println(">>> Matrix l^{*} is ");
+        Tracer.showAscii(dec.getLT());
 
         Matrix bs = new DenseLocalOnHeapMatrix(new double[][]{
             {4.0, -6.0, 7.0},
             {1.0, 1.0, 1.0}
-        });
-        Matrix sol = dec.solve(bs.transpose());
+        }).transpose();
+        System.out.println(">>> Solving systems of linear equations of the form m x = b for various bs represented by columns of matrix");
+        Tracer.showAscii(bs);
+        Matrix sol = dec.solve(bs);
 
         System.out.println("List of solutions: ");
         for (int i = 0; i < sol.columnSize(); i++)

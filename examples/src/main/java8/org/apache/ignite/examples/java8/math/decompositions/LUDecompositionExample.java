@@ -27,6 +27,7 @@ public class LUDecompositionExample {
 
     /** */
     public static void main(String[] args) {
+        System.out.println(">>> LU decomposition example started.");
         // Let's compute a LU decomposition for some (n x n) matrix m:
         // m = p l u, where
         // p is an (n x n) is a row-permutation matrix

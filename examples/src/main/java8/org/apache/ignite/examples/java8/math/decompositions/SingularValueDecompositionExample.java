@@ -17,11 +17,47 @@
 
 package org.apache.ignite.examples.java8.math.decompositions;
 
+import org.apache.ignite.math.Tracer;
+import org.apache.ignite.math.decompositions.SingularValueDecomposition;
+import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+
 /** */
 public class SingularValueDecompositionExample {
 
     /** */
     public static void main(String[] args) {
-        //WIP
+        System.out.println(">>> Singular value decomposition (SVD) example started.");
+
+        // Let's compute a SVD of (l x k) matrix m. This decomposition can be thought as extension of EigenDecomposition to
+        // rectangular matrices. The factorization we get is following:
+        // m = u * s * v^{*}, where
+        // u is a real or complex unitary matrix
+        // s is a rectangular diagonal matrix with non-negative real numbers on diagonal (this numbers are singular values of m)
+        // v is a real or complex unitary matrix
+        // If m is real then u and v are also real.
+        // Complex case is not supported for the moment.
+        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][]{
+            {1.0d,  0.0d,  0.0d, 0.0d, 2.0d},
+            {0.0d,  0.0d,  3.0d, 0.0d, 0.0d},
+            {0.0d,  0.0d,  0.0d, 0.0d, 0.0d},
+            {0.0d,  2.0d,  0.0d, 0.0d, 0.0d}
+        });
+
+        System.out.println(">>>Matrix m for decomposition: ");
+        Tracer.showAscii(m);
+        SingularValueDecomposition dec = new SingularValueDecomposition(m);
+        System.out.println(">>> Made decomposition m = u * s * v^{*}.");
+        System.out.println(">>> Matrix u is ");
+        Tracer.showAscii(dec.getU());
+        System.out.println(">>> Matrix s is ");
+        Tracer.showAscii(dec.getS());
+        System.out.println(">>> Matrix v is ");
+        Tracer.showAscii(dec.getV());
+
+        // This decomposition can in particular help with solving problem of finding x minimizing 2-norm of m x such
+        // that 2-norm of x is 1. It appears that it is the right singular vector corresponding to minimal singular
+        // value, which is always last.
+        System.out.println(">>> Vector x minimizing 2-norm of m x such that 2 norm of x is 1: ");
+        Tracer.showAscii(dec.getV().viewColumn(dec.getSingularValues().length - 1));
     }
 }
