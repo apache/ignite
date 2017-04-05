@@ -1284,8 +1284,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         QueryIndexDescriptorImpl oldIdx = idxs.putIfAbsent(idxKey, idx);
 
                         if (oldIdx != null) {
-                            throw new IgniteException("Duplicate index name [space=" + space + ", idxName=" + idx.name() +
-                                ", existingTable=" + oldIdx.typeDescriptor().tableName() +
+                            throw new IgniteException("Duplicate index name [space=" + space +
+                                ", idxName=" + idx.name() + ", existingTable=" + oldIdx.typeDescriptor().tableName() +
                                 ", table=" + desc.tableName() + ']');
                         }
                     }
