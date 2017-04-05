@@ -74,7 +74,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -173,6 +172,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** Coordinator flag (initialized lazily). */
     private Boolean crd;
+
+    /** Registered spaces. */
+    private final Collection<String> spaces = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     /**
      * @param ctx Kernal context.
@@ -633,7 +635,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         boolean cacheExists = cacheDesc != null && F.eq(desc.cacheDeploymentId(), cacheDesc.deploymentId());
 
-        boolean cacheStarted = cacheExists && localAffinityNode(cacheDesc);
+        boolean cacheStarted = cacheExists && spaces.contains(desc.space());
 
         // Validate schema state and decide whether we should proceed or not.
         SchemaAbstractOperation op = schemaOp.descriptor().operation();
@@ -704,8 +706,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             type = type(space, tblName);
 
-            if (type == null)
+            if (type == null) {
                 err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+
+                System.out.println("ERR NODE: " + ctx.igniteInstanceName());
+            }
             else {
                 // Make sure that index can be applied to the given table.
                 for (String idxField : idx.getFieldNames()) {
@@ -856,22 +861,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             err = new SchemaOperationException("Unsupported operation: " + op);
 
         return new T2<>(nop, err);
-    }
-
-    /**
-     * Check if local node is affinity node for cache.
-     *
-     * @param desc Descriptor.
-     * @return {@code True) if affinity node.
-     */
-    @SuppressWarnings("unchecked")
-    private boolean localAffinityNode(DynamicCacheDescriptor desc) {
-        if (ctx.clientNode())
-            return false;
-
-        IgnitePredicate<ClusterNode> nodeFilter = desc.cacheConfiguration().getNodeFilter();
-
-        return nodeFilter == null || nodeFilter.apply(ctx.discovery().localNode());
     }
 
     /**
@@ -1292,6 +1281,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     idx.registerType(space, desc);
                 }
+
+                spaces.add(space);
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 unregisterCache0(space);
@@ -1346,6 +1337,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             catch (Exception e) {
                 U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + space, e);
             }
+
+            // TODO: Unregister space.
+
+            spaces.remove(space);
         }
     }
 
