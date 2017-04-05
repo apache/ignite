@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -119,7 +120,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestInvalidConfiguration()
         {
-            // Pass type.
+            // Pass open generic type.
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 // Open generics are not allowed
@@ -127,13 +128,31 @@ namespace Apache.Ignite.Core.Tests
             };
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
-            Assert.AreEqual("", ex.Message);
+            Assert.AreEqual("Failed to start Ignite.NET, check inner exception for details", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.IsTrue(ex.InnerException.Message.StartsWith(
+                "Open generic types (Type.IsGenericTypeDefinition == true) are not allowed in BinaryConfiguration: " +
+                "System.Collections.Generic.List`1, mscorlib"));
 
-            // Pass type name.
+            // Pass open generic type name.
             cfg.BinaryConfiguration = new BinaryConfiguration {Types = new[] {typeof(IList<>).AssemblyQualifiedName}};
             
             ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
-            Assert.AreEqual("", ex.Message);
+            Assert.AreEqual("Failed to start Ignite.NET, check inner exception for details", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.IsTrue(ex.InnerException.Message.StartsWith(
+                "Open generic types (Type.IsGenericTypeDefinition == true) are not allowed in BinaryConfiguration: " +
+                "System.Collections.Generic.IList`1, mscorlib"));
+
+            // Pass interface.
+            cfg.BinaryConfiguration = new BinaryConfiguration(typeof(ICollection));
+            
+            ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("Failed to start Ignite.NET, check inner exception for details", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.IsTrue(ex.InnerException.Message.StartsWith(
+                "Abstract types and interfaces are not allowed in BinaryConfiguration: " +
+                "System.Collections.ICollection, mscorlib"));
         }
 
         /// <summary>

@@ -758,7 +758,15 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type.IsGenericTypeDefinition)
             {
                 throw new BinaryObjectException(
-                    "Open generic types (Type.IsGenericTypeDefinition == true) are not allowed.");
+                    "Open generic types (Type.IsGenericTypeDefinition == true) are not allowed " +
+                    "in BinaryConfiguration: " + type.AssemblyQualifiedName);
+            }
+
+            if (type.IsAbstract)
+            {
+                throw new BinaryObjectException(
+                    "Abstract types and interfaces are not allowed in BinaryConfiguration: " +
+                    type.AssemblyQualifiedName);
             }
         }
     }
