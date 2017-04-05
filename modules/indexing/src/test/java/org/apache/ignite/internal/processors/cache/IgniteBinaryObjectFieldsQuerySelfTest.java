@@ -46,13 +46,13 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     public static final String PERSON_KEY_CLS_NAME = "org.apache.ignite.tests.p2p.cache.PersonKey";
 
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Grid count. */
     public static final int GRID_CNT = 4;
 
     /** */
-    private static ClassLoader extClassLoader;
+    protected static ClassLoader extClassLoader;
 
     /**
      * Gets Person class name.

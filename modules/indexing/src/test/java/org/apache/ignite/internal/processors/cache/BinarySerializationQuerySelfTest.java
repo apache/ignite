@@ -61,7 +61,7 @@ import java.util.List;
  */
 public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
     /** Ignite instance. */
-    private Ignite ignite;
+    protected Ignite ignite;
 
     /** Cache. */
     private IgniteCache<Integer, Object> cache;

@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Arrays;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.binary.compression.Compressor;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -193,6 +198,9 @@ public class GridBinaryMarshaller {
     public static final int OBJECT = -1;
 
     /** */
+    public static final byte COMPRESSED = 40;
+
+    /** */
     public static final int UNREGISTERED_TYPE_ID = 0;
 
     /** Protocol version. */
@@ -225,11 +233,23 @@ public class GridBinaryMarshaller {
     /** */
     private final BinaryContext ctx;
 
+    /** */
+    private final Compressor compressor;
+
+    /**
+     * Indicates whether full compression mode is switched on.
+     * Full compression means all data (metadata+value) will be compress when serializing.
+     */
+    private final boolean fullCompressionMode;
+
     /**
      * @param ctx Context.
      */
     public GridBinaryMarshaller(BinaryContext ctx) {
         this.ctx = ctx;
+        IgniteConfiguration conf = ctx.configuration();
+        this.fullCompressionMode = conf.isFullCompressionMode();
+        this.compressor = conf.getCompressor();
     }
 
     /**
@@ -243,6 +263,22 @@ public class GridBinaryMarshaller {
 
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
             writer.marshal(obj);
+
+            if (fullCompressionMode) {
+                byte[] arr = writer.array();
+
+                assert arr[0] != COMPRESSED : "Compressed byte array not allowed here, mode: " + arr[0];
+
+                byte[] buf = U.compress(compressor, arr);
+
+                byte[] compressed = new byte[buf.length + 1];
+
+                compressed[0] = COMPRESSED;
+
+                System.arraycopy(buf, 0, compressed, 1, buf.length);
+
+                return compressed;
+            }
 
             return writer.array();
         }
@@ -258,6 +294,9 @@ public class GridBinaryMarshaller {
         assert bytes != null;
 
         BinaryContext oldCtx = pushContext(ctx);
+
+        if (bytes[0] == COMPRESSED)
+            bytes = decompress(bytes);
 
         try {
             return (T) BinaryUtils.unmarshal(BinaryHeapInputStream.create(bytes, 0), ctx, clsLdr);
@@ -299,6 +338,9 @@ public class GridBinaryMarshaller {
             return null;
 
         BinaryContext oldCtx = pushContext(ctx);
+
+        if (arr[0] == COMPRESSED)
+            arr = decompress(arr);
 
         try {
             return (T)new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, 0), ldr, true).deserialize();
@@ -398,5 +440,15 @@ public class GridBinaryMarshaller {
         }
 
         return ctx;
+    }
+
+    /**
+     * @param bytes Compressed bytes.
+     * @return Decompressed bytes.
+     */
+    private byte[] decompress(@NotNull byte[] bytes) {
+        assert bytes[0] == COMPRESSED;
+
+        return U.decompress(compressor, Arrays.copyOfRange(bytes, 1, bytes.length));
     }
 }

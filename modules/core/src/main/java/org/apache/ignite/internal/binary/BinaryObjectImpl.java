@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -90,6 +91,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     public BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start) {
         assert ctx != null;
         assert arr != null;
+
+        if (arr[0] == GridBinaryMarshaller.COMPRESSED)
+            arr = U.decompress(ctx.configuration().getCompressor(), Arrays.copyOfRange(arr, 1, arr.length));
 
         this.ctx = ctx;
         this.arr = arr;
@@ -469,6 +473,20 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 val = null;
 
                 break;
+
+            case GridBinaryMarshaller.COMPRESSED: {
+                assert BinaryPrimitives.readByte(arr, fieldPos + 1) == GridBinaryMarshaller.BYTE_ARR;
+
+                int len = BinaryPrimitives.readInt(arr, fieldPos + 1 + 1);
+
+                byte[] compressed = BinaryPrimitives.readByteArray(arr, fieldPos + 1 + 1 + 4, len);
+
+                byte[] decompressed = U.decompress(ctx.configuration().getCompressor(), compressed);
+
+                val = BinaryUtils.unmarshal(BinaryHeapInputStream.create(decompressed, 0), ctx, null);
+
+                break;
+            }
 
             default:
                 val = BinaryUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null);

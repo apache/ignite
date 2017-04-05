@@ -3535,7 +3535,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @param marsh Marshaller.
      * @return Result object.
      */
-    private <T> T marshalUnmarshal(Object obj, BinaryMarshaller marsh) throws IgniteCheckedException {
+    protected <T> T marshalUnmarshal(Object obj, BinaryMarshaller marsh) throws IgniteCheckedException {
         byte[] bytes = marsh.marshal(obj);
 
         return marsh.unmarshal(bytes, null);

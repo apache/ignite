@@ -155,6 +155,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
@@ -178,6 +179,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.compression.Compressor;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -9968,6 +9970,41 @@ public abstract class IgniteUtils {
         }
         catch (Exception e) {
             throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * Compresses given bytes, using given {@link Compressor}.
+     *
+     * @param compressor Compressor for compressing.
+     * @param bytes Non compressed bytes.
+     * @return Compressed bytes.
+     * @throws BinaryObjectException if failed to compress bytes.
+     */
+    public static byte[] compress(@NotNull Compressor compressor, @NotNull byte[] bytes) throws BinaryObjectException {
+        try {
+            return compressor.compress(bytes);
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException("Failed to compress bytes", e);
+        }
+    }
+
+    /**
+     * Decompresses given bytes, using given {@link Compressor}.
+     *
+     * @param compressor Compressor for decompressing.
+     * @param bytes Compressed bytes.
+     * @return Decompressed bytes.
+     * @throws BinaryObjectException if failed to decompress bytes.
+     */
+    public static byte[] decompress(@NotNull Compressor compressor,
+        @NotNull byte[] bytes) throws BinaryObjectException {
+        try {
+            return compressor.decompress(bytes);
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException("Failed to decompress bytes", e);
         }
     }
 }

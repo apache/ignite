@@ -41,6 +41,8 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.binary.compression.Compressor;
+import org.apache.ignite.internal.binary.compression.GZipCompressor;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
@@ -479,6 +481,19 @@ public class IgniteConfiguration {
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
     /**
+     * Indicates whether full compression mode is switched on.
+     * Full compression means all data (metadata+value) will be compress when serializing.
+     */
+    private boolean fullCompressionMode;
+
+    /**
+     * Defines the {@link Compressor} implementation, which will be used to compress objects
+     * when {@link #fullCompressionMode} switched on
+     * or with {@link org.apache.ignite.internal.binary.compression.BinaryCompression} to compress annotated fields.
+     */
+    private Compressor compressor = new GZipCompressor();
+
+    /**
      * Creates valid grid configuration with all default values.
      */
     public IgniteConfiguration() {
@@ -581,6 +596,8 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        fullCompressionMode = cfg.isFullCompressionMode();
+        compressor = cfg.getCompressor();
     }
 
     /**
@@ -2714,6 +2731,38 @@ public class IgniteConfiguration {
         this.lateAffAssignment = lateAffAssignment;
 
         return this;
+    }
+
+    /**
+     * Indicates whether full compression mode is switched on.
+     *
+     * @return - 'true' if full compression mode is enabled, otherwise 'false'.
+     */
+    public boolean isFullCompressionMode() {
+        return fullCompressionMode;
+    }
+
+    /**
+     * Switches full compression mode.
+     *
+     * @param mode - flag, 'true' - switch on full compression mode, otherwise - switch off.
+     */
+    public void setFullCompressionMode(boolean mode) {
+        this.fullCompressionMode = mode;
+    }
+
+    /**
+     * @return {@link Compressor} implementation.
+     */
+    public Compressor getCompressor() {
+        return compressor;
+    }
+
+    /**
+     * @param compressor {@link Compressor} implementation.
+     */
+    public void setCompressor(Compressor compressor) {
+        this.compressor = compressor;
     }
 
     /** {@inheritDoc} */

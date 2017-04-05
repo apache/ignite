@@ -37,6 +37,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSe
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexingDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryInternalKeysSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQuerySerializationSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteBinaryCompressionObjectLocalQueryArgumentsTest;
+import org.apache.ignite.internal.processors.cache.IgniteBinaryCompressionObjectQueryArgumentsOffheapLocalTest;
+import org.apache.ignite.internal.processors.cache.IgniteBinaryCompressionObjectQueryArgumentsOffheapTest;
+import org.apache.ignite.internal.processors.cache.IgniteBinaryCompressionObjectQueryArgumentsTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectLocalQueryArgumentsTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectQueryArgumentsOffheapLocalTest;
@@ -192,6 +196,12 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteBinaryObjectQueryArgumentsOffheapTest.class);
         suite.addTestSuite(IgniteBinaryObjectQueryArgumentsOffheapLocalTest.class);
         suite.addTestSuite(IgniteBinaryObjectLocalQueryArgumentsTest.class);
+
+        // Full compressed mode switched on
+        suite.addTestSuite(IgniteBinaryCompressionObjectQueryArgumentsTest.class);
+        suite.addTestSuite(IgniteBinaryCompressionObjectQueryArgumentsOffheapTest.class);
+        suite.addTestSuite(IgniteBinaryCompressionObjectQueryArgumentsOffheapLocalTest.class);
+        suite.addTestSuite(IgniteBinaryCompressionObjectLocalQueryArgumentsTest.class);
 
         suite.addTestSuite(IndexingSpiQuerySelfTest.class);
         suite.addTestSuite(IndexingSpiQueryTxSelfTest.class);
