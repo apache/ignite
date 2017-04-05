@@ -17,12 +17,15 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+import java.util.Arrays;
 import javax.cache.Cache;
 import javax.persistence.Cacheable;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -42,8 +45,6 @@ import org.hibernate.stat.SecondLevelCacheStatistics;
 import org.springframework.cglib.core.EmitUtils;
 import org.hamcrest.core.Is;
 
-import static org.junit.Assert.assertThat;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.DFLT_ACCESS_TYPE_PROPERTY;
@@ -57,14 +58,11 @@ import static org.hibernate.cfg.AvailableSettings.RELEASE_CONNECTIONS;
 import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 
-
 /**
  * Tests Hibernate L2 cache configuration.
  */
 public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTest {
-    /**
-     * Entity names for stats output
-     */
+    /** Entity names for stats output */
     private static final List<String> ENTITY_NAMES =
         Arrays.asList(Entity1.class.getName(), Entity2.class.getName());
 
@@ -89,39 +87,29 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /** */
     public static final String CONNECTION_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
-    /**
-     * If {@code true} then sets default cache in configuration.
-     */
+    /** If {@code true} then sets default cache in configuration. */
     private boolean dfltCache;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected void beforeTestsStarted() throws Exception {
         startGrid(0);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected void afterTest() throws Exception {
         for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal) grid(0)).caches())
             cache.clear();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -138,7 +126,6 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         return cfg;
     }
-
     /**
      * @param cacheName Cache name.
      * @return Cache configuration.
@@ -211,9 +198,9 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * @param expCache1  Expected size of cache with name 'cache1'.
-     * @param expCache2  Expected size of cache with name 'cache2'.
-     * @param expCache3  Expected size of cache with name 'cache3'.
+     * @param expCache1 Expected size of cache with name 'cache1'.
+     * @param expCache2 Expected size of cache with name 'cache2'.
+     * @param expCache3 Expected size of cache with name 'cache3'.
      * @param expCacheE3 Expected size of cache with name {@link #ENTITY3_NAME}.
      * @param expCacheE4 Expected size of cache with name {@link #ENTITY4_NAME}.
      */
@@ -319,7 +306,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
                 List<Entity1> list1 = session
                     .createCriteria(ENTITY1_NAME).list();
 
-                assertThat(list1.size(), Is.is(1));
+                assertEquals(list1.size(), Is.is(1));
 
                 for (Entity1 e1 : list1) {
                     session.load(ENTITY1_NAME, e1.getId());
@@ -356,7 +343,6 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
                 session.close();
             }
 
-
             // Updtaing
             session = sessionFactory.openSession();
 
@@ -381,7 +367,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
             session = sessionFactory.openSession();
 
-            assertEquals(1, sessionFactory.getStatistics()
+            assertEquals(2, sessionFactory.getStatistics()
                 .getSecondLevelCacheStatistics(ENTITY1_NAME).getPutCount());
             assertEquals(2, sessionFactory.getStatistics()
                 .getSecondLevelCacheStatistics(ENTITY2_NAME).getPutCount());
@@ -456,7 +442,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /**
      *
      */
-    private <K, V> Set<Cache.Entry<K, V>> toSet(Iterator<Cache.Entry<K, V>> iter) {
+    private <K, V> Set<Cache.Entry<K, V>> toSet(Iterator<Cache.Entry<K, V>> iter){
         Set<Cache.Entry<K, V>> set = new HashSet<>();
 
         while (iter.hasNext())
@@ -629,6 +615,20 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         public void setId(int id) {
             this.id = id;
         }
+
+        /**
+         * @return Name.
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * @param name Name.
+         */
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 
     /**
@@ -668,6 +668,20 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
          */
         public void setId(int id) {
             this.id = id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * @param name Name.
+         */
+        public void setName(String name) {
+            this.name = name;
         }
     }
 }
