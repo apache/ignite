@@ -168,7 +168,7 @@ public final class IgniteNodeAttributes {
     /** Ignite services compatibility mode (can be {@code null}). */
     public static final String ATTR_SERVICES_COMPATIBILITY_MODE = ATTR_PREFIX + ".services.compatibility.enabled";
 
-    /** Ignite services compatibility mode (can be {@code null}). */
+    /** Set of names of custom named executors (can be {@code null} when custom executors are not configured). */
     public static final String ATTR_CUSTOM_EXECUTORS_NAMES_SET = ATTR_PREFIX + ".executor.custom.names";
 
     /**

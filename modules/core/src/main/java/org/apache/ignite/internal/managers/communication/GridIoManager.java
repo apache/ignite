@@ -708,7 +708,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
                     else
-                        processRegularMessage(nodeId, msg, plc, msgC, msg.execName());
+                        processRegularMessage(nodeId, msg, plc, msgC, msg.executorName());
 
                     break;
                 }
@@ -1265,6 +1265,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param skipOnTimeout Whether message can be skipped on timeout.
      * @param ackC Ack closure.
      * @param async If {@code true} message for local node will be processed in pool, otherwise in current thread.
+     * @param execName Custom executor name.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     private void send(

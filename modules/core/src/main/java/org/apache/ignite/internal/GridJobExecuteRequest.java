@@ -185,6 +185,7 @@ public class GridJobExecuteRequest implements Message {
      * @param cacheIds Caches' identifiers to reserve partition.
      * @param part Partition to lock.
      * @param topVer Affinity topology version of job mapping.
+     * @param execName The name of the custom named executor.
      */
     public GridJobExecuteRequest(
             IgniteUuid sesId,
@@ -515,7 +516,7 @@ public class GridJobExecuteRequest implements Message {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeString("execName", execName))
+                if (!writer.writeString("executorName", execName))
                     return false;
 
                 writer.incrementState();
@@ -690,7 +691,7 @@ public class GridJobExecuteRequest implements Message {
                 reader.incrementState();
 
             case 4:
-                execName = reader.readString("execName");
+                execName = reader.readString("executorName");
 
                 if (!reader.isLastRead())
                     return false;

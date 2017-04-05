@@ -39,7 +39,7 @@ public class GridIoMessage implements Message {
     /** Policy. */
     private byte plc;
 
-    /** Custom executor name. The policy myst be GridIoPolicy.CUSTOM_NAMED_POOL to use custom executors */
+    /** Custom executor name. The policy must be GridIoPolicy.CUSTOM_NAMED_POOL to use custom executors. */
     private String execName;
 
     /** Message topic. */
@@ -210,7 +210,7 @@ public class GridIoMessage implements Message {
     /**
      * @return Custom executor name.
      */
-    @Nullable public String execName() {
+    @Nullable public String executorName() {
         return execName;
     }
 
@@ -242,7 +242,7 @@ public class GridIoMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("execName", execName))
+                if (!writer.writeString("executorName", execName))
                     return false;
 
                 writer.incrementState();
@@ -303,7 +303,7 @@ public class GridIoMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                execName = reader.readString("execName");
+                execName = reader.readString("executorName");
 
                 if (!reader.isLastRead())
                     return false;

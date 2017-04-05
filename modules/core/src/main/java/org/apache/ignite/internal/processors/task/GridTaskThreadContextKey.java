@@ -37,8 +37,5 @@ public enum GridTaskThreadContextKey {
     TC_SUBJ_ID,
 
     /** IO manager policy. */
-    TC_IO_POLICY,
-
-    /** Name of the custom executor service. */
-    TC_EXEC_NAME
+    TC_IO_POLICY
 }

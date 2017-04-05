@@ -185,6 +185,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param holdLsnr Hold listener.
      * @param partsReservation Reserved partitions (must be released at the job finish).
      * @param reqTopVer Affinity topology version of the job request.
+     * @param execName Custom executor name.
      */
     GridJobWorker(
         GridKernalContext ctx,
