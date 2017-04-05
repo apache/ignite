@@ -21,6 +21,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -50,6 +51,9 @@ public class IndexOperationWorker extends GridWorker {
     /** Whether cache started. */
     private final boolean cacheStarted;
 
+    /** Type descriptor. */
+    private final QueryTypeDescriptorImpl type;
+
     /** Operation future. */
     private final GridFutureAdapter fut;
 
@@ -72,9 +76,11 @@ public class IndexOperationWorker extends GridWorker {
      * @param nop No-op flag.
      * @param err Predefined error.
      * @param cacheStarted Whether cache started.
+     * @param type Type descriptor (if available).
      */
     public IndexOperationWorker(GridKernalContext ctx, GridQueryProcessor qryProc, IgniteUuid depId,
-        IndexAbstractOperation op, boolean nop, @Nullable SchemaOperationException err, boolean cacheStarted) {
+        IndexAbstractOperation op, boolean nop, @Nullable SchemaOperationException err, boolean cacheStarted,
+        @Nullable QueryTypeDescriptorImpl type) {
         super(ctx.igniteInstanceName(), workerName(op), ctx.log(IndexOperationWorker.class));
 
         this.qryProc = qryProc;
@@ -82,6 +88,7 @@ public class IndexOperationWorker extends GridWorker {
         this.op = op;
         this.nop = nop;
         this.cacheStarted = cacheStarted;
+        this.type = type;
 
         fut = new GridFutureAdapter();
 
@@ -144,7 +151,7 @@ public class IndexOperationWorker extends GridWorker {
                 }
 
                 if (cacheStarted && !nop && err == null)
-                    qryProc.onLocalOperationFinished(op.id());
+                    qryProc.onLocalOperationFinished(op.id(), type);
 
                 chainedFut.onDone(null, err);
             }

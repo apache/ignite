@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -635,179 +636,221 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         IndexAbstractOperation op = schemaOp.descriptor().operation();
 
         QueryTypeDescriptorImpl type = null;
-        SchemaOperationException err = null;
+        SchemaOperationException err;
 
         boolean nop = false;
 
         if (cacheExists) {
-            String space = op.space();
-
             if (cacheStarted) {
                 // If cache is started, we perform validation against real schema.
-                if (op instanceof IndexCreateOperation) {
-                    IndexCreateOperation op0 = (IndexCreateOperation) op;
+                T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> res = prepareChangeOnStartedCache(op);
 
-                    QueryIndex idx = op0.index();
+                assert res.get2() != null;
 
-                    // Make sure table exists.
-                    String tblName = op0.tableName();
-
-                    type = type(space, tblName);
-
-                    if (type == null)
-                        err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
-                    else {
-                        // Make sure that index can be applied to the given table.
-                        for (String idxField : idx.getFieldNames()) {
-                            if (!type.fields().containsKey(idxField)) {
-                                err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
-                                    idxField);
-
-                                break;
-                            }
-                        }
-                    }
-
-                    // Check conflict with other indexes.
-                    if (err == null) {
-                        String idxName = op0.index().getName();
-
-                        QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
-
-                        if (idxs.get(idxKey) != null) {
-                            if (op0.ifNotExists())
-                                nop = true;
-                            else
-                                err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxName);
-                        }
-                    }
-                }
-                else if (op instanceof IndexDropOperation) {
-                    IndexDropOperation op0 = (IndexDropOperation) op;
-
-                    String idxName = op0.indexName();
-
-                    QueryIndexDescriptorImpl oldIdx = idxs.get(new QueryIndexKey(space, idxName));
-
-                    if (oldIdx == null) {
-                        if (op0.ifExists())
-                            nop = true;
-                        else
-                            err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
-                    }
-                    else
-                        type = oldIdx.typeDescriptor();
-                }
-                else
-                    err = new SchemaOperationException("Unsupported operation: " + op);
+                type = res.get1();
+                nop = res.get2();
+                err = res.get3();
             }
             else {
                 // If cache is not started yet, there is no schema. Take schema from cache descriptor and validate.
                 QuerySchema schema = cacheDesc.schema();
 
-                // Build table and index maps.
-                Map<String, QueryEntity> tblMap = new HashMap<>();
-                Map<String, T2<QueryEntity, QueryIndex>> idxMap = new HashMap<>();
+                T2<Boolean, SchemaOperationException> res = prepareChangeOnNotStartedCache(op, schema);
 
-                for (QueryEntity entity : schema.entities()) {
-                    String tblName = QueryUtils.tableName(entity);
+                assert res.get1() != null;
 
-                    QueryEntity oldEntity = tblMap.put(tblName, entity);
-
-                    if (oldEntity != null) {
-                        err = new SchemaOperationException("Invalid schema state (duplicate table found): " + tblName);
-
-                        break;
-                    }
-
-                    for (QueryIndex entityIdx : entity.getIndexes()) {
-                        String idxName = QueryUtils.indexName(entityIdx);
-
-                        T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.put(idxName, new T2<>(entity, entityIdx));
-
-                        if (oldIdxEntity != null) {
-                            err = new SchemaOperationException("Invalid schema state (duplicate index found): " +
-                                idxName);
-
-                            break;
-                        }
-                    }
-
-                    if (err != null)
-                        break;
-                }
-
-                // Now check whether operation can be applied to schema.
-                String idxName = op.indexName();
-
-                if (op instanceof IndexCreateOperation) {
-                    IndexCreateOperation op0 = (IndexCreateOperation)op;
-
-                    T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.get(idxName);
-
-                    if (oldIdxEntity == null) {
-                        String tblName = op0.tableName();
-
-                        QueryEntity oldEntity = tblMap.get(tblName);
-
-                        if (oldEntity == null)
-                            err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
-                        else {
-                            for (String fieldName : op0.index().getFields().keySet()) {
-                                Set<String> oldEntityFields = new HashSet<>(oldEntity.getFields().keySet());
-
-                                for (Map.Entry<String, String> alias : oldEntity.getAliases().entrySet()) {
-                                    oldEntityFields.remove(alias.getKey());
-                                    oldEntityFields.add(alias.getValue());
-                                }
-
-                                if (!oldEntityFields.contains(fieldName)) {
-                                    err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
-                                        fieldName);
-
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        if (op0.ifNotExists())
-                            nop = true;
-                        else
-                            err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxName);
-                    }
-                }
-                else if (op instanceof IndexDropOperation) {
-                    IndexDropOperation op0 = (IndexDropOperation)op;
-
-                    T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.get(idxName);
-
-                    if (oldIdxEntity == null) {
-                        if (op0.ifExists())
-                            nop = true;
-                        else
-                            err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
-                    }
-                }
-                else
-                    err = new SchemaOperationException("Unsupported operation: " + op);
+                nop = res.get1();
+                err = res.get2();
             }
         }
         else
             err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
 
         // Start operation.
-        if (cacheStarted && !nop && err == null)
-            schemaOp.type(type);
-
         IndexOperationWorker worker =
-            new IndexOperationWorker(ctx, this, desc.cacheDeploymentId(), op, nop, err, cacheStarted);
+            new IndexOperationWorker(ctx, this, desc.cacheDeploymentId(), op, nop, err, cacheStarted, type);
 
         IndexOperationManager mgr = new IndexOperationManager(ctx, this, worker);
 
         schemaOp.manager(mgr);
 
         mgr.map();
+    }
+
+    /**
+     * Prepare change on started cache.
+     *
+     * @param op Operation.
+     * @return Result: affected type, nop flag, error.
+     */
+    private T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> prepareChangeOnStartedCache(
+        IndexAbstractOperation op) {
+        QueryTypeDescriptorImpl type = null;
+        boolean nop = false;
+        SchemaOperationException err = null;
+
+        String space = op.space();
+
+        if (op instanceof IndexCreateOperation) {
+            IndexCreateOperation op0 = (IndexCreateOperation) op;
+
+            QueryIndex idx = op0.index();
+
+            // Make sure table exists.
+            String tblName = op0.tableName();
+
+            type = type(space, tblName);
+
+            if (type == null)
+                err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+            else {
+                // Make sure that index can be applied to the given table.
+                for (String idxField : idx.getFieldNames()) {
+                    if (!type.fields().containsKey(idxField)) {
+                        err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
+                            idxField);
+
+                        break;
+                    }
+                }
+            }
+
+            // Check conflict with other indexes.
+            if (err == null) {
+                String idxName = op0.index().getName();
+
+                QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+
+                if (idxs.get(idxKey) != null) {
+                    if (op0.ifNotExists())
+                        nop = true;
+                    else
+                        err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxName);
+                }
+            }
+        }
+        else if (op instanceof IndexDropOperation) {
+            IndexDropOperation op0 = (IndexDropOperation) op;
+
+            String idxName = op0.indexName();
+
+            QueryIndexDescriptorImpl oldIdx = idxs.get(new QueryIndexKey(space, idxName));
+
+            if (oldIdx == null) {
+                if (op0.ifExists())
+                    nop = true;
+                else
+                    err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
+            }
+            else
+                type = oldIdx.typeDescriptor();
+        }
+        else
+            err = new SchemaOperationException("Unsupported operation: " + op);
+
+        return new T3<>(type, nop, err);
+    }
+
+    /**
+     * Prepare operation on non-started cache.
+     *
+     * @param op Operation.
+     * @param schema Known cache schema.
+     * @return Result: nop flag, error.
+     */
+    private T2<Boolean, SchemaOperationException> prepareChangeOnNotStartedCache(IndexAbstractOperation op,
+        QuerySchema schema) {
+        boolean nop = false;
+        SchemaOperationException err = null;
+
+        // Build table and index maps.
+        Map<String, QueryEntity> tblMap = new HashMap<>();
+        Map<String, T2<QueryEntity, QueryIndex>> idxMap = new HashMap<>();
+
+        for (QueryEntity entity : schema.entities()) {
+            String tblName = QueryUtils.tableName(entity);
+
+            QueryEntity oldEntity = tblMap.put(tblName, entity);
+
+            if (oldEntity != null) {
+                err = new SchemaOperationException("Invalid schema state (duplicate table found): " + tblName);
+
+                break;
+            }
+
+            for (QueryIndex entityIdx : entity.getIndexes()) {
+                String idxName = QueryUtils.indexName(entityIdx);
+
+                T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.put(idxName, new T2<>(entity, entityIdx));
+
+                if (oldIdxEntity != null) {
+                    err = new SchemaOperationException("Invalid schema state (duplicate index found): " +
+                        idxName);
+
+                    break;
+                }
+            }
+
+            if (err != null)
+                break;
+        }
+
+        // Now check whether operation can be applied to schema.
+        String idxName = op.indexName();
+
+        if (op instanceof IndexCreateOperation) {
+            IndexCreateOperation op0 = (IndexCreateOperation)op;
+
+            T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.get(idxName);
+
+            if (oldIdxEntity == null) {
+                String tblName = op0.tableName();
+
+                QueryEntity oldEntity = tblMap.get(tblName);
+
+                if (oldEntity == null)
+                    err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+                else {
+                    for (String fieldName : op0.index().getFields().keySet()) {
+                        Set<String> oldEntityFields = new HashSet<>(oldEntity.getFields().keySet());
+
+                        for (Map.Entry<String, String> alias : oldEntity.getAliases().entrySet()) {
+                            oldEntityFields.remove(alias.getKey());
+                            oldEntityFields.add(alias.getValue());
+                        }
+
+                        if (!oldEntityFields.contains(fieldName)) {
+                            err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
+                                fieldName);
+
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                if (op0.ifNotExists())
+                    nop = true;
+                else
+                    err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxName);
+            }
+        }
+        else if (op instanceof IndexDropOperation) {
+            IndexDropOperation op0 = (IndexDropOperation)op;
+
+            T2<QueryEntity, QueryIndex> oldIdxEntity = idxMap.get(idxName);
+
+            if (oldIdxEntity == null) {
+                if (op0.ifExists())
+                    nop = true;
+                else
+                    err = new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
+            }
+        }
+        else
+            err = new SchemaOperationException("Unsupported operation: " + op);
+
+        return new T2<>(nop, err);
     }
 
     /**
@@ -896,9 +939,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Next schema operation. */
         private SchemaOperation next;
 
-        /** Type descriptor. */
-        private QueryTypeDescriptorImpl type;
-
         /** Operation manager. */
         private IndexOperationManager mgr;
 
@@ -952,20 +992,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return this;
             else
                 return next.unwind();
-        }
-
-        /**
-         * @return Type descriptor.
-         */
-        public QueryTypeDescriptorImpl type() {
-            return type;
-        }
-
-        /**
-         * @param type Type descriptor.
-         */
-        public void type(QueryTypeDescriptorImpl type) {
-            this.type = type;
         }
 
         /**
@@ -1100,8 +1126,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Apply positive index operation result.
      *
      * @param opId Operation ID.
+     * @param type Type descriptor (if available),
      */
-    public void onLocalOperationFinished(UUID opId) {
+    public void onLocalOperationFinished(UUID opId, @Nullable QueryTypeDescriptorImpl type) {
         synchronized (activeOpsMux) {
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
@@ -1115,8 +1142,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             IndexAbstractOperation op = schemaOp.descriptor().operation();
 
             // No need to apply anything to obsolete type.
-            QueryTypeDescriptorImpl type = schemaOp.type();
-
             if (type == null || type.obsolete()) {
                 if (log.isDebugEnabled())
                     log.debug("Local operation finished, but type descriptor is either missing or obsolete " +
