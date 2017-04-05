@@ -1388,8 +1388,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     idxIt.remove();
             }
 
-            // TODO Clear pending index operations.
-
             // Notify indexing.
             try {
                 idx.unregisterCache(space);
@@ -1397,8 +1395,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             catch (Exception e) {
                 U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + space, e);
             }
-
-            // TODO: Unregister space.
 
             spaces.remove(space);
         }
