@@ -706,11 +706,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             type = type(space, tblName);
 
-            if (type == null) {
+            if (type == null)
                 err = new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
-
-                System.out.println("ERR NODE: " + ctx.igniteInstanceName());
-            }
             else {
                 // Make sure that index can be applied to the given table.
                 for (String idxField : idx.getFieldNames()) {
