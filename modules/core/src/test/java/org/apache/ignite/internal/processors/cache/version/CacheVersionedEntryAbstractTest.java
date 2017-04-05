@@ -109,16 +109,6 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
-    public void testRandomEntry() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
-
-        for (int i = 0; i < 5; i++)
-            checkVersionedEntry(cache.randomEntry().unwrap(CacheEntry.class));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testLocalPeek() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).cache(null);
 

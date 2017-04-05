@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Random;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -65,6 +66,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
      */
     public void testIteration()  throws Exception {
         try {
+            Random rnd = new Random(System.currentTimeMillis());
+
             final IgniteCache<String, Integer> cache = jcache();
 
             final int entryCnt = 1000;
@@ -75,7 +78,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
             Collection<Cache.Entry<String, Integer>> entries = new ArrayList<>(10_000);
 
             for (int i = 0; i < 10_000; i++)
-                entries.add(cache.randomEntry());
+                entries.add(cache.getEntry(String.valueOf(rnd.nextInt(entryCnt))));
 
             startGrid(1);
             startGrid(2);

@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteCache;
  * <li>{@link javax.cache.Cache#invoke(Object, EntryProcessor, Object...)}</li>
  * <li>{@link javax.cache.Cache#invokeAll(Set, EntryProcessor, Object...)}</li>
  * <li>invoke and invokeAll methods of {@link IgniteCache}</li>
- * <li>{@link IgniteCache#randomEntry()}</li>
  * </ul>
  * <p>
  * To get an instance of {@code CacheEntry} directly use {@link IgniteCache#getEntry(Object)} or

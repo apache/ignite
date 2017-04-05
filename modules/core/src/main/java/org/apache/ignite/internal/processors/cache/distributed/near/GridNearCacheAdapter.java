@@ -417,11 +417,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Cache.Entry<K, V> randomEntry() {
-        return ctx.affinityNode() && ctx.isNear() ? dht().randomEntry() : super.randomEntry();
-    }
-
-    /** {@inheritDoc} */
     @Override public long offHeapEntriesCount() {
         return dht().offHeapEntriesCount();
     }

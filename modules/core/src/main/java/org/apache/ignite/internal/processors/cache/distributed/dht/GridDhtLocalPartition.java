@@ -274,11 +274,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridCacheMapEntry randomEntry() {
-        return map.randomEntry();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {

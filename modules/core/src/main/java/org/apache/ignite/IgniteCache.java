@@ -102,19 +102,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz);
 
     /**
-     * Gets a random entry out of cache. In the worst cache scenario this method
-     * has complexity of <pre>O(S * N/64)</pre> where {@code N} is the size of internal hash
-     * table and {@code S} is the number of hash table buckets to sample, which is {@code 5}
-     * by default. However, if the table is pretty dense, with density factor of {@code N/64},
-     * which is true for near fully populated caches, this method will generally perform significantly
-     * faster with complexity of O(S) where {@code S = 5}.
-     *
-     * @return Random entry, or {@code null} if cache is empty.
-     */
-    @Deprecated
-    public Entry<K, V> randomEntry();
-
-    /**
      * Returns cache with the specified expired policy set. This policy will be used for each operation
      * invoked on the returned cache.
      * <p>

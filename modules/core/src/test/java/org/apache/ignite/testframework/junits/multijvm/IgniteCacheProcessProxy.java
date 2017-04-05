@@ -117,11 +117,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Entry<K, V> randomEntry() {
-        throw new UnsupportedOperationException("Method should be supported.");
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc) {
         return new IgniteCacheProcessProxy<>(cacheName, isAsync, plc, igniteProxy);
     }
