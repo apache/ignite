@@ -119,6 +119,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestInvalidConfiguration()
         {
+            // Pass type.
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 // Open generics are not allowed
@@ -126,6 +127,12 @@ namespace Apache.Ignite.Core.Tests
             };
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("", ex.Message);
+
+            // Pass type name.
+            cfg.BinaryConfiguration = new BinaryConfiguration {Types = new[] {typeof(IList<>).AssemblyQualifiedName}};
+            
+            ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
             Assert.AreEqual("", ex.Message);
         }
 
