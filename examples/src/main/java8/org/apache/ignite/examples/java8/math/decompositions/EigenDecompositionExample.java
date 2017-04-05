@@ -22,7 +22,7 @@ import org.apache.ignite.math.functions.Functions;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 
 /** */
-public class EigenDecompositionExapmle {
+public class EigenDecompositionExample {
 
     /** */
     public static void main(String[] args) {
