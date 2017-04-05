@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -761,5 +762,15 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param name Custom executor name.
      * @return Instance of this component associated with named executor.
      */
-    public IgniteCompute withExecutor(String name);
+    public IgniteCompute withExecutor(@NotNull String name);
+
+    /**
+     * Gets instance of the local thread pool executor compute associated with custom named executor.
+     *
+     * @param name Custom executor name.
+     * @return Local thread pool executor.
+     * @see ExecutorConfiguration
+     * @throws IgniteCheckedException If there is not appropriate executor for name.
+     */
+    public Executor localExecutor(@NotNull String name) throws IgniteCheckedException;
 }
