@@ -182,13 +182,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
             LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
             MaxConcurrentAsyncOperations = DefaultMaxConcurrentAsyncOperations;
             MaxEvictionOverflowRatio = DefaultMaxEvictionOverflowRatio;
-            OffHeapMaxMemory = DefaultOffHeapMaxMemory;
             ReadFromBackup = DefaultReadFromBackup;
             RebalanceBatchSize = DefaultRebalanceBatchSize;
             RebalanceMode = DefaultRebalanceMode;
             RebalanceThrottle = DefaultRebalanceThrottle;
             RebalanceTimeout = DefaultRebalanceTimeout;
-            SqlOnheapRowCacheSize = DefaultSqlOnheapRowCacheSize;
             StartSize = DefaultStartSize;
             WriteBehindBatchSize = DefaultWriteBehindBatchSize;
             WriteBehindEnabled = DefaultWriteBehindEnabled;
@@ -248,7 +246,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             MaxConcurrentAsyncOperations = reader.ReadInt();
             MaxEvictionOverflowRatio = reader.ReadFloat();
             Name = reader.ReadString();
-            OffHeapMaxMemory = reader.ReadLong();
             ReadFromBackup = reader.ReadBoolean();
             RebalanceBatchSize = reader.ReadInt();
             RebalanceDelay = reader.ReadLongAsTimespan();
@@ -256,7 +253,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             RebalanceThrottle = reader.ReadLongAsTimespan();
             RebalanceTimeout = reader.ReadLongAsTimespan();
             SqlEscapeAll = reader.ReadBoolean();
-            SqlOnheapRowCacheSize = reader.ReadInt();
             StartSize = reader.ReadInt();
             WriteBehindBatchSize = reader.ReadInt();
             WriteBehindEnabled = reader.ReadBoolean();
@@ -311,7 +307,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt(MaxConcurrentAsyncOperations);
             writer.WriteFloat(MaxEvictionOverflowRatio);
             writer.WriteString(Name);
-            writer.WriteLong(OffHeapMaxMemory);
             writer.WriteBoolean(ReadFromBackup);
             writer.WriteInt(RebalanceBatchSize);
             writer.WriteLong((long) RebalanceDelay.TotalMilliseconds);
@@ -319,7 +314,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteLong((long) RebalanceThrottle.TotalMilliseconds);
             writer.WriteLong((long) RebalanceTimeout.TotalMilliseconds);
             writer.WriteBoolean(SqlEscapeAll);
-            writer.WriteInt(SqlOnheapRowCacheSize);
             writer.WriteInt(StartSize);
             writer.WriteInt(WriteBehindBatchSize);
             writer.WriteBoolean(WriteBehindEnabled);
@@ -621,16 +615,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public TimeSpan RebalanceThrottle { get; set; }
 
         /// <summary>
-        /// Gets or sets maximum amount of memory available to off-heap storage. Possible values are
-        /// -1 means that off-heap storage is disabled. 0 means that Ignite will not limit off-heap storage 
-        /// (it's up to user to properly add and remove entries from cache to ensure that off-heap storage 
-        /// does not grow indefinitely.
-        /// Any positive value specifies the limit of off-heap storage in bytes.
-        /// </summary>
-        [DefaultValue(DefaultOffHeapMaxMemory)]
-        public long OffHeapMaxMemory { get; set; }
-
-        /// <summary>
         /// Gets or sets flag indicating whether data can be read from backup.
         /// </summary>
         [DefaultValue(DefaultReadFromBackup)]
@@ -655,13 +639,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// also allows having special characters in table and field names.
         /// </summary>
         public bool SqlEscapeAll { get; set; }
-
-        /// <summary>
-        /// Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
-        /// This setting only makes sense when offheap is enabled for this cache.
-        /// </summary>
-        [DefaultValue(DefaultSqlOnheapRowCacheSize)]
-        public int SqlOnheapRowCacheSize { get; set; }
 
         /// <summary>
         /// Gets or sets the factory for underlying persistent storage for read-through and write-through operations.
