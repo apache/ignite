@@ -98,15 +98,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFut(GridCacheSharedContext cctx) {
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = (int)activeCacheIds.get(i);
-
-            cctx.cacheContext(cacheId).cache().awaitLastFut();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteCheckedException validateTopology(GridCacheSharedContext cctx,
         GridDhtTopologyFuture topFut) {
         StringBuilder invalidCaches = null;

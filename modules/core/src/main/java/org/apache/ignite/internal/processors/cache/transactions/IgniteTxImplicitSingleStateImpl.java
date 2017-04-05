@@ -86,14 +86,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFut(GridCacheSharedContext ctx) {
-        if (cacheCtx == null)
-            return;
-
-        cacheCtx.cache().awaitLastFut();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return true;
     }

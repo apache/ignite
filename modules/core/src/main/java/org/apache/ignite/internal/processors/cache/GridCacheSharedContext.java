@@ -733,8 +733,6 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void endTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFut(this);
-
         tx.close();
     }
 
@@ -746,11 +744,8 @@ public class GridCacheSharedContext<K, V> {
     public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(GridNearTxLocal tx) {
         GridCacheContext ctx = tx.txState().singleCacheContext(this);
 
-        if (ctx == null) {
-            tx.txState().awaitLastFut(this);
-
+        if (ctx == null)
             return tx.commitNearTxLocalAsync();
-        }
         else
             return ctx.cache().commitTxAsync(tx);
     }
@@ -761,8 +756,6 @@ public class GridCacheSharedContext<K, V> {
      * @return Rollback future.
      */
     public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFut(this);
-
         return tx.rollbackNearTxLocalAsync();
     }
 

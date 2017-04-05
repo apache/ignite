@@ -126,7 +126,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -213,13 +212,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** */
     protected boolean keyCheck = !Boolean.getBoolean(IGNITE_CACHE_KEY_VALIDATION_DISABLED);
-
-    /** Last asynchronous future. */
-    protected ThreadLocal<FutureHolder> lastFut = new ThreadLocal<FutureHolder>() {
-        @Override protected FutureHolder initialValue() {
-            return new FutureHolder();
-        }
-    };
 
     /** Cache configuration. */
     @GridToStringExclude
@@ -378,6 +370,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * Increments map public size.
+     *
      * @param e Map entry.
      */
     public void incrementSize(GridCacheMapEntry e) {
@@ -386,6 +379,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * Decrements map public size.
+     *
      * @param e Map entry.
      */
     public void decrementSize(GridCacheMapEntry e) {
@@ -576,9 +570,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * to provide custom stop behavior.
      */
     public void stop() {
-        // Nulling thread local reference to ensure values will be eventually GCed
-        // no matter what references these futures are holding.
-        lastFut = null;
+        // No-op.
     }
 
     /**
@@ -685,7 +677,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public final Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException {
+    @Override public final Iterable<Cache.Entry<K, V>> localEntries(
+        CachePeekMode[] peekModes) throws IgniteCheckedException {
         assert peekModes != null;
 
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
@@ -889,7 +882,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     *
      * @param key Entry key.
      * @return Entry or <tt>null</tt>.
      */
@@ -898,7 +890,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     *
      * @param key Entry key.
      * @return Entry or <tt>null</tt>.
      */
@@ -1045,7 +1036,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     }
 
                     @Override public V next() {
-                        return (V) it.next().wrap().getValue();
+                        return (V)it.next().wrap().getValue();
                     }
 
                     @Override public void remove() {
@@ -1057,7 +1048,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     *
      * @param key Entry key.
      */
     public final void removeIfObsolete(KeyCacheObject key) {
@@ -1378,7 +1368,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         V val = get(key, !keepBinary, false);
 
         if (ctx.config().getInterceptor() != null) {
-            key = keepBinary ? (K) ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key;
 
             val = (V)ctx.config().getInterceptor().onGet(key, val);
         }
@@ -1412,7 +1402,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             : null;
 
         if (ctx.config().getInterceptor() != null) {
-            key = keepBinary ? (K) ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key;
 
             V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
@@ -1477,23 +1467,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     throws IgniteCheckedException {
                     EntryGetResult t = f.get();
 
-                K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
 
-                CacheEntry val = t != null ? new CacheEntryImplEx<>(
-                    key,
-                    t.value(),
-                    t.version())
-                    : null;
+                    CacheEntry val = t != null ? new CacheEntryImplEx<>(
+                        key,
+                        t.value(),
+                        t.version())
+                        : null;
 
-                if (intercept) {
-                    V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
+                    if (intercept) {
+                        V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
-                    return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.version() : null) : null;
+                        return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.version() : null) : null;
+                    }
+                    else
+                        return val;
                 }
-                else
-                    return val;
-            }
-        });
+            });
 
         if (statsEnabled)
             fut.listen(new UpdateGetTimeStatClosure<EntryGetResult>(metrics0(), start));
@@ -2122,7 +2112,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
         else {
             return asyncOp(tx, new AsyncOp<Map<K1, V1>>(keys) {
-                @Override public IgniteInternalFuture<Map<K1, V1>> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
+                @Override
+                public IgniteInternalFuture<Map<K1, V1>> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
                     return tx.getAllAsync(ctx,
                         readyTopVer,
                         keys,
@@ -2224,8 +2215,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public IgniteInternalFuture<V> getAndPutAsync0(final K key,
         final V val,
-        @Nullable final CacheEntryPredicate filter)
-    {
+        @Nullable final CacheEntryPredicate filter) {
         return asyncOp(new AsyncOp<V>() {
             @Override public IgniteInternalFuture<V> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
                 return tx.putAsync(ctx, readyTopVer, key, val, true, filter)
@@ -2247,9 +2237,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param key Key.
      * @param val Value.
      * @param filter Filter.
-     * @return {@code True} if optional filter passed and value was stored in cache,
-     *      {@code false} otherwise. Note that this method will return {@code true} if filter is not
-     *      specified.
+     * @return {@code True} if optional filter passed and value was stored in cache, {@code false} otherwise. Note that
+     * this method will return {@code true} if filter is not specified.
      * @throws IgniteCheckedException If put operation failed.
      */
     public boolean put(final K key, final V val, final CacheEntryPredicate filter)
@@ -2275,9 +2264,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param key Key.
      * @param val Value.
      * @param filter Filter.
-     * @return {@code True} if optional filter passed and value was stored in cache,
-     *      {@code false} otherwise. Note that this method will return {@code true} if filter is not
-     *      specified.
+     * @return {@code True} if optional filter passed and value was stored in cache, {@code false} otherwise. Note that
+     * this method will return {@code true} if filter is not specified.
      * @throws IgniteCheckedException If put operation failed.
      */
     protected boolean put0(final K key, final V val, final CacheEntryPredicate filter)
@@ -2522,7 +2510,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKeys(map.keySet());
 
         IgniteInternalFuture<?> fut = asyncOp(new AsyncOp(map.keySet()) {
-            @Override public IgniteInternalFuture<GridCacheReturn> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
+            @Override
+            public IgniteInternalFuture<GridCacheReturn> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
                 return tx.invokeAsync(ctx,
                     readyTopVer,
                     (Map<? extends K, ? extends EntryProcessor<K, V, Object>>)map,
@@ -2780,7 +2769,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return syncOp(new SyncOp<V>(true) {
             @Override public V op(GridNearTxLocal tx) throws IgniteCheckedException {
-                K key0 = keepBinary ? (K) ctx.toCacheKeyObject(key) : key;
+                K key0 = keepBinary ? (K)ctx.toCacheKeyObject(key) : key;
 
                 V ret = tx.removeAllAsync(ctx,
                     null,
@@ -2790,9 +2779,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     /*singleRmv*/false).get().value();
 
                 if (ctx.config().getInterceptor() != null) {
-                    K key = keepBinary ? (K) ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
 
-                    return (V) ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, ret)).get2();
+                    return (V)ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, ret)).get2();
                 }
 
                 return ret;
@@ -3487,11 +3476,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (nodes.isEmpty())
             return new GridFinishedFuture<>();
 
-            return ctx.closures().callAsyncNoFailover(BROADCAST,
-                new LoadKeysCallable<>(ctx.name(), keys, update, plc, keepBinary),
-                nodes,
-                true,
-                0);
+        return ctx.closures().callAsyncNoFailover(BROADCAST,
+            new LoadKeysCallable<>(ctx.name(), keys, update, plc, keepBinary),
+            nodes,
+            true,
+            0);
     }
 
     /**
@@ -3588,8 +3577,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @param p Predicate.
      * @param args Arguments.
-     * @throws IgniteCheckedException If failed.
      * @return Load cache future.
+     * @throws IgniteCheckedException If failed.
      */
     IgniteInternalFuture<?> globalLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws IgniteCheckedException {
@@ -3610,7 +3599,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             Collections.singletonList(
                 new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc, keepBinary)),
             nodes);
-
 
         return fut;
     }
@@ -3722,7 +3710,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /** {@inheritDoc} */
             @Override public boolean apply(ClusterNode clusterNode) {
                 return ((modes.primary && aff.primaryByPartition(clusterNode, part, topVer)) ||
-                        (modes.backup && aff.backupByPartition(clusterNode, part, topVer)));
+                    (modes.backup && aff.backupByPartition(clusterNode, part, topVer)));
             }
         }).nodes();
 
@@ -3732,7 +3720,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
 
         return ctx.kernalContext().task().execute(
-                new PartitionSizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes, part), null);
+            new PartitionSizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes, part), null);
     }
 
     /** {@inheritDoc} */
@@ -3799,7 +3787,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         // Swap and offheap are disabled for near cache.
         GridCacheSwapManager swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
 
-        if (ctx.isLocal()){
+        if (ctx.isLocal()) {
             modes.primary = true;
             modes.backup = true;
 
@@ -4074,46 +4062,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     @SuppressWarnings("unchecked")
     IgniteInternalFuture<IgniteInternalTx> commitTxAsync(final GridNearTxLocal tx) {
-        FutureHolder holder = lastFut.get();
+        IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
 
-        holder.lock();
+        ctx.tm().resetContext();
 
-        try {
-            IgniteInternalFuture fut = holder.future();
-
-            if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
-                    new C2<Object, Exception, IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public IgniteInternalFuture<IgniteInternalTx> apply(Object o, Exception e) {
-                            return tx.commitNearTxLocalAsync();
-                        }
-                    });
-
-                saveFuture(holder, f);
-
-                return f;
-            }
-
-            IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
-
-            saveFuture(holder, f);
-
-            ctx.tm().resetContext();
-
-            return f;
-        }
-        finally {
-            holder.unlock();
-        }
-    }
-
-    /**
-     * Awaits for previous async operation to be completed.
-     */
-    @SuppressWarnings("unchecked")
-    public void awaitLastFut() {
-        // fixme: remove method execution if all tests pass
-        // No-op.
+        return f;
     }
 
     /**
@@ -4276,78 +4229,31 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (fail != null)
             return fail;
 
-        FutureHolder holder = lastFut.get();
+        final GridNearTxLocal tx0 = tx;
 
-        holder.lock();
-
-        try {
-            IgniteInternalFuture fut = holder.future();
-
-            final GridNearTxLocal tx0 = tx;
-
-            if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<T> f = new GridEmbeddedFuture(fut,
-                    new IgniteOutClosure<IgniteInternalFuture>() {
-                        @Override public IgniteInternalFuture<T> apply() {
-                            if (ctx.kernalContext().isStopping())
-                                return new GridFinishedFuture<>(
-                                    new IgniteCheckedException("Operation has been cancelled (node is stopping)."));
-
-                            return op.op(tx0, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                                @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
-                                    try {
-                                        return tFut.get();
-                                    }
-                                    catch (IgniteTxRollbackCheckedException e) {
-                                        throw e;
-                                    }
-                                    catch (IgniteCheckedException e1) {
-                                        tx0.rollbackNearTxLocalAsync();
-
-                                        throw e1;
-                                    }
-                                    finally {
-                                        ctx.shared().txContextReset();
-                                    }
-                                }
-                            });
-                        }
-                    });
-
-                saveFuture(holder, f);
-
-                return f;
-            }
-
-            final IgniteInternalFuture<T> f = op.op(tx, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
-                    try {
-                        return tFut.get();
-                    }
-                    catch (IgniteTxRollbackCheckedException e) {
-                        throw e;
-                    }
-                    catch (IgniteCheckedException e1) {
-                        tx0.rollbackNearTxLocalAsync();
-
-                        throw e1;
-                    }
-                    finally {
-                        ctx.shared().txContextReset();
-                    }
+        final IgniteInternalFuture<T> f = op.op(tx, opCtx).chain(new CX1<IgniteInternalFuture<T>, T>() {
+            @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                try {
+                    return tFut.get();
                 }
-            });
+                catch (IgniteTxRollbackCheckedException e) {
+                    throw e;
+                }
+                catch (IgniteCheckedException e1) {
+                    tx0.rollbackNearTxLocalAsync();
 
-            saveFuture(holder, f);
+                    throw e1;
+                }
+                finally {
+                    ctx.shared().txContextReset();
+                }
+            }
+        });
 
-            if (tx.implicit())
-                ctx.tm().resetContext();
+        if (tx.implicit())
+            ctx.tm().resetContext();
 
-            return f;
-        }
-        finally {
-            holder.unlock();
-        }
+        return f;
     }
 
     /**
@@ -4576,7 +4482,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Cached value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public final V get(K key, boolean deserializeBinary, final boolean needVer) throws IgniteCheckedException {
+    @Nullable public final V get(K key, boolean deserializeBinary,
+        final boolean needVer) throws IgniteCheckedException {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return get0(key, taskName, deserializeBinary, needVer);
@@ -5403,7 +5310,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @param peekModes Cache peek modes.
          * @param partition partition.
          */
-        private PartitionSizeLongJob(String cacheName, AffinityTopologyVersion topVer, CachePeekMode[] peekModes, int partition) {
+        private PartitionSizeLongJob(String cacheName, AffinityTopologyVersion topVer, CachePeekMode[] peekModes,
+            int partition) {
             super(cacheName, topVer);
 
             this.peekModes = peekModes;
@@ -5823,8 +5731,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /**
          * @param cacheName Cache name.
          * @param keys Keys.
-         * @param update If {@code true} calls {@link #localLoadAndUpdate(Collection)}
-         *        otherwise {@link #localLoad(Collection, ExpiryPolicy, boolean)}.
+         * @param update If {@code true} calls {@link #localLoadAndUpdate(Collection)} otherwise {@link
+         * #localLoad(Collection, ExpiryPolicy, boolean)}.
          * @param plc Expiry policy.
          * @param keepBinary Keep binary flag.
          */
@@ -6065,7 +5973,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * @param metrics Metrics.
-         * @param start   Start time.
+         * @param start Start time.
          */
         public UpdateTimeStatClosure(CacheMetricsImpl metrics, long start) {
             this.metrics = metrics;
@@ -6101,7 +6009,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * @param metrics Metrics.
-         * @param start   Start time.
+         * @param start Start time.
          */
         public UpdateGetTimeStatClosure(CacheMetricsImpl metrics, long start) {
             super(metrics, start);
@@ -6122,7 +6030,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * @param metrics Metrics.
-         * @param start   Start time.
+         * @param start Start time.
          */
         public UpdateRemoveTimeStatClosure(CacheMetricsImpl metrics, long start) {
             super(metrics, start);
@@ -6143,7 +6051,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * @param metrics Metrics.
-         * @param start   Start time.
+         * @param start Start time.
          */
         public UpdatePutTimeStatClosure(CacheMetricsImpl metrics, long start) {
             super(metrics, start);
@@ -6164,7 +6072,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * @param metrics Metrics.
-         * @param start   Start time.
+         * @param start Start time.
          */
         public UpdatePutAndGetTimeStatClosure(CacheMetricsImpl metrics, long start) {
             super(metrics, start);
@@ -6563,6 +6471,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * Constructor.
+         *
          * @param internalIterator Internal iterator.
          * @param keepBinary Keep binary flag.
          */
@@ -6611,6 +6520,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * Constructor
+         *
          * @param internalSet Internal set.
          */
         private KeySet(Set<GridCacheMapEntry> internalSet) {
@@ -6655,6 +6565,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * Constructor.
+         *
          * @param internalIterator Internal iterator.
          * @param keepBinary Keep binary.
          */
@@ -6702,7 +6613,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** Keep binary flag. */
         private final boolean keepBinary;
 
-        /** Constructor.
+        /**
+         * Constructor.
+         *
          * @param internalSet Internal set.
          * @param keepBinary Keep binary flag.
          */
