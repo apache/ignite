@@ -406,7 +406,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
+        public ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
@@ -417,7 +417,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
+        public Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
@@ -618,7 +618,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public void PutAll(IDictionary<TK, TV> vals)
+        public void PutAll(IEnumerable<KeyValuePair<TK, TV>> vals)
         {
             IgniteArgumentCheck.NotNull(vals, "vals");
 
@@ -628,7 +628,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public Task PutAllAsync(IDictionary<TK, TV> vals)
+        public Task PutAllAsync(IEnumerable<KeyValuePair<TK, TV>> vals)
         {
             IgniteArgumentCheck.NotNull(vals, "vals");
 
@@ -878,7 +878,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
+        public ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
@@ -899,7 +899,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys,
+        public Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys,
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
@@ -1170,14 +1170,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <typeparam name="T">The type of the result.</typeparam>
         /// <param name="reader">Stream.</param>
         /// <returns>Results of InvokeAll operation.</returns>
-        private IDictionary<TK, ICacheEntryProcessorResult<T>> ReadInvokeAllResults<T>(BinaryReader reader)
+        private ICollection<ICacheEntryProcessorResult<TK, T>> ReadInvokeAllResults<T>(BinaryReader reader)
         {
             var count = reader.ReadInt();
 
             if (count == -1)
                 return null;
 
-            var results = new Dictionary<TK, ICacheEntryProcessorResult<T>>(count);
+            var results = new List<ICacheEntryProcessorResult<TK, T>>(count);
 
             for (var i = 0; i < count; i++)
             {
@@ -1185,9 +1185,9 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 var hasError = reader.ReadBoolean();
 
-                results[key] = hasError
-                    ? new CacheEntryProcessorResult<T>(ReadException(reader))
-                    : new CacheEntryProcessorResult<T>(reader.ReadObject<T>());
+                results.Add(hasError
+                    ? new CacheEntryProcessorResult<TK, T>(key, ReadException(reader))
+                    : new CacheEntryProcessorResult<TK, T>(key, reader.ReadObject<T>()));
             }
 
             return results;
@@ -1227,7 +1227,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Dictionary.</returns>
-        private static IDictionary<TK, TV> ReadGetAllDictionary(BinaryReader reader)
+        private static ICollection<ICacheEntry<TK, TV>> ReadGetAllDictionary(BinaryReader reader)
         {
             if (reader == null)
                 return null;
@@ -1238,14 +1238,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 int size = stream.ReadInt();
 
-                IDictionary<TK, TV> res = new Dictionary<TK, TV>(size);
+                var res = new List<ICacheEntry<TK, TV>>(size);
 
                 for (int i = 0; i < size; i++)
                 {
                     TK key = reader.ReadObject<TK>();
                     TV val = reader.ReadObject<TV>();
 
-                    res[key] = val;
+                    res.Add(new CacheEntry<TK, TV>(key, val));
                 }
 
                 return res;
