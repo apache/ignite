@@ -64,7 +64,6 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestObject)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestObject)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(TestObject)
             IGNITE_BINARY_IS_NULL_FALSE(TestObject)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(TestObject)
 
@@ -93,7 +92,6 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(ComplexType)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(ComplexType)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(ComplexType)
             IGNITE_BINARY_IS_NULL_FALSE(ComplexType)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(ComplexType)
 

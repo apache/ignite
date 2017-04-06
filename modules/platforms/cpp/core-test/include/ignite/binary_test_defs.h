@@ -156,11 +156,6 @@ namespace ignite
                 return GetBinaryStringHashCode(name);
             }
 
-            int32_t GetHashCode(const gt::BinaryInner& obj)
-            {
-                return obj.GetValue();
-            }
-
             bool IsNull(const gt::BinaryInner& obj)
             {
                 return obj.GetValue() == 0;
@@ -198,11 +193,6 @@ namespace ignite
             int32_t GetFieldId(const char* name) 
             { 
                 return GetBinaryStringHashCode(name); 
-            }
-
-            int32_t GetHashCode(const gt::BinaryInner& obj)
-            {
-                return obj.GetValue();
             }
 
             bool IsNull(const gt::BinaryInner& obj)
@@ -246,11 +236,6 @@ namespace ignite
                 return GetBinaryStringHashCode(name);
             }
 
-            int32_t GetHashCode(const gt::BinaryOuter& obj)
-            {
-                return obj.GetValue() + obj.GetInner().GetValue();
-            }
-
             bool IsNull(const gt::BinaryOuter& obj)
             {
                 return obj.GetValue() == 0 && obj.GetInner().GetValue();
@@ -292,11 +277,6 @@ namespace ignite
             int32_t GetFieldId(const char* name)
             {
                 return GetBinaryStringHashCode(name);
-            }
-
-            int32_t GetHashCode(const gt::BinaryFields& obj)
-            {
-                return obj.val1 + obj.val2 + obj.rawVal1 + obj.rawVal2;
             }
 
             bool IsNull(const gt::BinaryFields& obj)
@@ -350,11 +330,6 @@ namespace ignite
             int32_t GetFieldId(const char* name)
             {
                 return GetBinaryStringHashCode(name);
-            }
-
-            int32_t GetHashCode(const gt::PureRaw& obj)
-            {
-                return GetBinaryStringHashCode(obj.val1.c_str()) ^ obj.val2;
             }
 
             bool IsNull(const gt::PureRaw& obj)
