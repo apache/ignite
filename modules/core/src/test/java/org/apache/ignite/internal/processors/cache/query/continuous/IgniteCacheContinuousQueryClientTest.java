@@ -22,6 +22,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -246,7 +247,27 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
                 stopGrid(srv);
         }
 
-        cur.close();
+        tryClose(cur);
+    }
+
+    /**
+     * @param cur Cur.
+     */
+    private void tryClose(QueryCursor<?> cur) {
+        try {
+            cur.close();
+        }
+        catch (Throwable e) {
+            if (e instanceof IgniteClientDisconnectedException) {
+                IgniteClientDisconnectedException ex = (IgniteClientDisconnectedException)e;
+
+                ex.reconnectFuture().get();
+
+                cur.close();
+            }
+            else
+                throw e;
+        }
     }
 
     /**
