@@ -1614,39 +1614,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String cacheName = maskNull(req.cacheName());
 
-        try {
-            prepareCacheStart(
-                req.startCacheConfiguration(),
-                req.nearCacheConfiguration(),
-                req.cacheType(),
-                req.clientStartOnly(),
-                req.initiatingNodeId(),
-                req.deploymentId(),
-                topVer
-            );
-        }
-        catch (IgniteCheckedException | RuntimeException e) {
-            U.error(log, "Failed to initialize cache. Will try to rollback cache start routine.", e);
-
-            IgniteInternalFuture fut = pendingFuts.get(cacheName);
-
-            caches.remove(maskNull(cacheName));
-
-            GridCacheContext<?, ?> cctx = sharedCtx.cacheContext(CU.cacheId(cacheName));
-
-            GridCacheAdapter<?, ?> cache;
-
-            if (cctx != null && (cache = cctx.cache()) != null)
-                stopCache(cache, true);
-
-            if (fut != null) {
-                ((GridFutureAdapter)fut).onDone(e);
-
-                pendingFuts.remove(cacheName, fut);
-            }
-
-            throw e;
-        }
+        prepareCacheStart(
+            req.startCacheConfiguration(),
+            req.nearCacheConfiguration(),
+            req.cacheType(),
+            req.clientStartOnly(),
+            req.initiatingNodeId(),
+            req.deploymentId(),
+            topVer
+        );
 
         DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
@@ -1787,8 +1763,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param req Stop request.
      */
-    private void prepareCacheStop(DynamicCacheChangeRequest req) {
-        assert req.stop() || req.close() : req;
+    private void prepareCacheStop(DynamicCacheChangeRequest req, boolean forceClose) {
+        assert req.stop() || req.close() || forceClose : req;
 
         GridCacheAdapter<?, ?> cache = caches.remove(maskNull(req.cacheName()));
 
@@ -1806,17 +1782,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Closes cache even if it's not fully initialized (e.g. fail on cache init stage).
+     *
+     * @param topVer Completed topology version.
+     * @param req Change request.
+     * @param err Error.
+     */
+    void forceCloseCache(
+        AffinityTopologyVersion topVer,
+        DynamicCacheChangeRequest req,
+        Throwable err
+    ) {
+        onExchangeDone(topVer, Collections.singleton(req), err, true);
+    }
+
+    /**
      * Callback invoked when first exchange future for dynamic cache is completed.
      *
      * @param topVer Completed topology version.
      * @param reqs Change requests.
      * @param err Error.
+     * @param forceClose Close cache despite flags in requests.
      */
     @SuppressWarnings("unchecked")
     public void onExchangeDone(
         AffinityTopologyVersion topVer,
         Collection<DynamicCacheChangeRequest> reqs,
-        Throwable err
+        Throwable err,
+        boolean forceClose
     ) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheContext<?, ?> cacheCtx = cache.context();
@@ -1831,16 +1824,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!F.isEmpty(reqs) && err == null) {
+        if (!F.isEmpty(reqs) && (err == null || forceClose)) {
             for (DynamicCacheChangeRequest req : reqs) {
                 String masked = maskNull(req.cacheName());
 
                 if (req.stop()) {
                     stopGateway(req);
 
-                    prepareCacheStop(req);
+                    prepareCacheStop(req, forceClose);
                 }
-                else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId())) {
+                else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId()) || forceClose) {
                     IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
 
                     if (proxy != null) {
@@ -1853,20 +1846,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         else {
                             proxy.context().gate().onStopped();
 
-                            prepareCacheStop(req);
+                            prepareCacheStop(req, forceClose);
                         }
                     }
                 }
 
-                completeStartFuture(req);
+                completeStartFuture(req, err);
             }
         }
     }
 
     /**
      * @param req Request to complete future for.
+     * @param err Error to be passed to futures.
      */
-    public void completeStartFuture(DynamicCacheChangeRequest req) {
+    public void completeStartFuture(DynamicCacheChangeRequest req, @Nullable Throwable err) {
         DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
 
         assert req.deploymentId() != null;
@@ -1874,7 +1868,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (fut != null && fut.deploymentId().equals(req.deploymentId()) &&
             F.eq(req.initiatingNodeId(), ctx.localNodeId()))
-            fut.onDone();
+            fut.onDone(err);
     }
 
     /**
