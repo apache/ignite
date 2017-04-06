@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             for (int i = 0; i < 10; i++)
                 keys.Add(i);
 
-            IDictionary<int, string> loaded = cache.GetAll(keys);
+            IDictionary<int, string> loaded = cache.GetAll(keys).ToDictionary(x => x.Key, x => x.Value);
 
             Assert.AreEqual(10, loaded.Count);
 
