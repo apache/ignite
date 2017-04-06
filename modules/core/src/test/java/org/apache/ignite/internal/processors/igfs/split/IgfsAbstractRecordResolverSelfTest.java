@@ -103,7 +103,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        igfs.format();
+        igfs.clear();
     }
 
     /**

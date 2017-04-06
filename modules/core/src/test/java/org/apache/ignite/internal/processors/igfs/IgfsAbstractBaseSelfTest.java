@@ -990,7 +990,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Clear igfs.
-        igfs.format();
+        igfs.clear();
 
         int prevDifferentSize = Integer.MAX_VALUE; // Previous different size.
         int constCnt = 0, totalCnt = 0;

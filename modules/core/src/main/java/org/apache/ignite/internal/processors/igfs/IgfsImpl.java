@@ -1404,7 +1404,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void format() {
+    @Override public void clear() {
         try {
             IgniteUuid id = meta.format();
 
@@ -1432,8 +1432,8 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> formatAsync() throws IgniteException {
-        return (IgniteFuture<Void>)createFuture(formatAsync0());
+    @Override public IgniteFuture<Void> clearAsync() throws IgniteException {
+        return (IgniteFuture<Void>)createFuture(clearAsync0());
     }
 
     /**
@@ -1441,7 +1441,7 @@ public final class IgfsImpl implements IgfsEx {
      *
      * @return Future.
      */
-    IgniteInternalFuture<?> formatAsync0() {
+    IgniteInternalFuture<?> clearAsync0() {
         GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
         Thread t = new Thread(new FormatRunnable(fut), "igfs-format-" + cfg.getName() + "-" +
@@ -1871,7 +1871,7 @@ public final class IgfsImpl implements IgfsEx {
             IgfsException err = null;
 
             try {
-                format();
+                clear();
             }
             catch (Throwable err0) {
                 err = IgfsUtils.toIgfsException(err0);
