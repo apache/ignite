@@ -38,6 +38,9 @@ public class IgniteFramework {
     /** Framework name. */
     private static final String IGNITE_FRAMEWORK_NAME = "Ignite";
 
+    /** MESOS system environment name */
+    public static final String MESOS_USER_NAME = "MESOS_USER";
+
     /**
      * Main methods has only one optional parameter - path to properties files.
      *
@@ -121,5 +124,9 @@ public class IgniteFramework {
         driver.stop();
 
         System.exit(status);
+    }
+
+    public String getUser() {
+        return System.getenv(MESOS_USER_NAME);
     }
 }
