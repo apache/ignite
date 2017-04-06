@@ -335,7 +335,8 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * @param varName MESOS system environment name.
      * @param varValue MESOS system environment value.
-     * @return Value.
+     * The method {@link #setEnv(String, String)} } sets environment variables from  Java.
+     * Given from <a href="https://gist.github.com/zhaopengme/53719298b6edf1a99a41">https://gist.github.com/zhaopengme/53719298b6edf1a99a41</a>
      */
     protected static void setEnv(String varName,String varValue)
     {
