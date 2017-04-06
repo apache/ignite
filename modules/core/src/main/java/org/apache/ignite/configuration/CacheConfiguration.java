@@ -148,9 +148,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default maximum eviction queue ratio. */
     public static final float DFLT_MAX_EVICTION_OVERFLOW_RATIO = 10;
 
-    /** Default eviction synchronized flag. */
-    public static final boolean DFLT_EVICT_SYNCHRONIZED = false;
-
     /** Default eviction key buffer size for batching synchronized evicts. */
     public static final int DFLT_EVICT_KEY_BUFFER_SIZE = 1024;
 
@@ -234,8 +231,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache expiration policy. */
     private EvictionPolicy evictPlc;
 
-    /** Flag indicating whether eviction is synchronized. */
-    private boolean evictSync = DFLT_EVICT_SYNCHRONIZED;
+    /** */
+    private boolean onheapCache;
 
     /** Eviction key buffer size. */
     private int evictKeyBufSize = DFLT_EVICT_KEY_BUFFER_SIZE;
@@ -443,7 +440,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         evictKeyBufSize = cc.getEvictSynchronizedKeyBufferSize();
         evictMaxOverflowRatio = cc.getEvictMaxOverflowRatio();
         evictPlc = cc.getEvictionPolicy();
-        evictSync = cc.isEvictSynchronized();
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
         evictSyncTimeout = cc.getEvictSynchronizedTimeout();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
@@ -562,6 +558,16 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return this;
     }
 
+    public boolean isOnheapCacheEnabled() {
+        return onheapCache;
+    }
+
+    public CacheConfiguration<K, V> setOnheapCacheEnabled(boolean value) {
+        this.onheapCache = value;
+
+        return this;
+    }
+
     /**
      * @return Near enabled flag.
      */
@@ -626,23 +632,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return this;
     }
 
-    /**
-     * Gets flag indicating whether eviction is synchronized between primary, backup and near nodes.
-     * If this parameter is {@code true} and swap is disabled then {@link IgniteCache#localEvict(Collection)}
-     * will involve all nodes where an entry is kept.  If this property is set to {@code false} then
-     * eviction is done independently on different cache nodes.
-     * <p>
-     * Default value is defined by {@link #DFLT_EVICT_SYNCHRONIZED}.
-     * <p>
-     * Note that it's not recommended to set this value to {@code true} if cache
-     * store is configured since it will allow to significantly improve cache
-     * performance.
-     *
-     * @return {@code true} If eviction is synchronized with backup nodes (or the
-     *      rest of the nodes in case of replicated cache), {@code false} if not.
-     */
     public boolean isEvictSynchronized() {
-        return evictSync;
+        return false;
     }
 
     /**
@@ -653,7 +644,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setEvictSynchronized(boolean evictSync) {
-        this.evictSync = evictSync;
+//        this.evictSync = evictSync;
 
         return this;
     }
@@ -2046,7 +2037,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see #getQueryParallelism()
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K,V> setQueryParallelism(int qryParallelism) {
+    public CacheConfiguration<K, V> setQueryParallelism(int qryParallelism) {
         this.qryParallelism = qryParallelism;
 
         return this;
@@ -2456,7 +2447,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      *  Filter that accepts all nodes.
      */
-    public static class IgniteAllNodesPredicate  implements IgnitePredicate<ClusterNode> {
+    public static class IgniteAllNodesPredicate implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2713,7 +2704,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             if (descending) {
                 if (descendings == null)
-                    descendings  = new HashSet<>();
+                    descendings = new HashSet<>();
 
                 descendings.add(field);
             }

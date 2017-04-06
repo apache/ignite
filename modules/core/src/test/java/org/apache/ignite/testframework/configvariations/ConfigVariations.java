@@ -105,6 +105,7 @@ public class ConfigVariations {
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
         Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
         Parameters.objectParameters("setStartSize", 1024),
+        Parameters.booleanParameters("setOnheapCacheEnabled")
     };
 
     /** */
@@ -133,6 +134,7 @@ public class ConfigVariations {
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
         Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
         Parameters.objectParameters("setStartSize", 1024),
+        Parameters.booleanParameters("setOnheapCacheEnabled")
     };
 
     /**

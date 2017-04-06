@@ -78,7 +78,6 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
 
         cc.setEvictionPolicy(plc);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setEvictSynchronized(false);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
