@@ -35,8 +35,9 @@ public class GridLog4jInitializationTest extends TestCase {
     /** */
     private static final boolean VERBOSE = true;
 
-    @Override public void tearDown() throws Exception {
-        super.tearDown();
+    /** */
+    @Override public void setUp() throws Exception {
+        super.setUp();
 
         Log4JLogger.reset();
 
