@@ -79,9 +79,10 @@ namespace Apache.Ignite.Core.Tests.Binary
                     }
                 }));
 
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Unsupported IEqualityComparer<IBinaryObject> implementation: " +
                             "Apache.Ignite.Core.Tests.Binary.BinaryEqualityComparerTest+MyComparer. " +
-                            "Only predefined implementations are supported.", ex.Message);
+                            "Only predefined implementations are supported.", ex.InnerException.Message);
         }
 
         /// <summary>
@@ -216,7 +217,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                     }
                 }));
 
-            Assert.AreEqual("BinaryFieldEqualityComparer.FieldNames can not be null or empty.", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("BinaryFieldEqualityComparer.FieldNames can not be null or empty.", 
+                ex.InnerException.Message);
         }
 
         /// <summary>

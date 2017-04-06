@@ -323,8 +323,9 @@ namespace Apache.Ignite.Core.Tests
             checkError("assembly=", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
                                  "'assembly'. See 'Apache.Ignite.exe /help'");
 
-            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
-                                         "Failed to load assembly: x.dll");
+            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: Failed to start " +
+                                         "Ignite.NET, check inner exception for details ---> Apache.Ignite.Core." +
+                                         "Common.IgniteException: Failed to load assembly: x.dll");
 
             checkError("configFileName=wrong.config", "ERROR: System.Configuration.ConfigurationErrorsException: " +
                                                       "Specified config file does not exist: wrong.config");

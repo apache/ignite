@@ -27,6 +27,9 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ * A test for {@link QueryEntity} initialization with incorrect query field name
+ */
 public class IncorrectQueryEntityTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

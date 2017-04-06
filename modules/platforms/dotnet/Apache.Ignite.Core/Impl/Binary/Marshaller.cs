@@ -557,12 +557,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (type != null)
             {
+                ValidateUserType(type);
+
                 if (typeCfg.IsEnum != type.IsEnum)
+                {
                     throw new BinaryObjectException(
                         string.Format(
                             "Invalid IsEnum flag in binary type configuration. " +
                             "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
                             typeCfg.IsEnum, type.IsEnum));
+                }
 
                 // Type is found.
                 var typeName = BinaryUtils.GetTypeName(type);
@@ -739,6 +743,29 @@ namespace Apache.Ignite.Core.Impl.Binary
                       "the following limitations apply: " +
                       "DateTime fields would not work in SQL; " +
                       "sbyte, ushort, uint, ulong fields would not work in DML.", type, typeof(ISerializable));
+        }
+
+        /// <summary>
+        /// Validates binary type.
+        /// </summary>
+        // ReSharper disable once UnusedParameter.Local
+        private static void ValidateUserType(Type type)
+        {
+            Debug.Assert(type != null);
+
+            if (type.IsGenericTypeDefinition)
+            {
+                throw new BinaryObjectException(
+                    "Open generic types (Type.IsGenericTypeDefinition == true) are not allowed " +
+                    "in BinaryConfiguration: " + type.AssemblyQualifiedName);
+            }
+
+            if (type.IsAbstract)
+            {
+                throw new BinaryObjectException(
+                    "Abstract types and interfaces are not allowed in BinaryConfiguration: " +
+                    type.AssemblyQualifiedName);
+            }
         }
     }
 }
