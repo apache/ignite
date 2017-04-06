@@ -540,12 +540,21 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return this;
     }
 
+    /**
+     * @return On-heap cache enabled flag.
+     */
     public boolean isOnheapCacheEnabled() {
         return onheapCache;
     }
 
-    public CacheConfiguration<K, V> setOnheapCacheEnabled(boolean value) {
-        this.onheapCache = value;
+    /**
+     * Configures on-heap cache.
+     *
+     * @param onheapCache {@code True} if on-heap cache should be enabled.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setOnheapCacheEnabled(boolean onheapCache) {
+        this.onheapCache = onheapCache;
 
         return this;
     }
