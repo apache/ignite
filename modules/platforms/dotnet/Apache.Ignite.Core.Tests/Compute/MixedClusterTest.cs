@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 try
                 {
-                    Assert.AreEqual(0, res.Value.Result);
+                    Assert.AreEqual(0, res.Result);
                 }
                 catch (CacheEntryProcessorException ex)
                 {

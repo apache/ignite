@@ -96,7 +96,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid(0).fileSystem(igfsName).format();
+        grid(0).fileSystem(igfsName).clear();
     }
 
     /** {@inheritDoc} */
