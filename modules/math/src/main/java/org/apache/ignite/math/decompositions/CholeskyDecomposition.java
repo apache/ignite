@@ -31,7 +31,7 @@ import org.apache.ignite.math.exceptions.NonSymmetricMatrixException;
  * @see <a href="http://mathworld.wolfram.com/CholeskyDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/Cholesky_decomposition">Wikipedia</a>
  */
-public class CholeskyDecomposition {
+public class CholeskyDecomposition extends DecompositionSupport {
     /**
      * Default threshold above which off-diagonal elements are considered too different
      * and matrix not symmetric.
@@ -131,6 +131,14 @@ public class CholeskyDecomposition {
                     ltQ[p] -= ltI[q] * ltI[p];
             }
         }
+    }
+
+    /** */
+    @Override public void destroy() {
+        if (cachedL != null)
+            cachedL.destroy();
+        if (cachedLT != null)
+            cachedLT.destroy();
     }
 
     /**

@@ -108,6 +108,15 @@ public class EigenDecomposition extends DecompositionSupport {
         return res;
     }
 
+    /**
+     * Destroys decomposition components and other internal components of decomposition.
+     */
+    @Override public void destroy() {
+        e.destroy();
+        v.destroy();
+        d.destroy();
+    }
+
     /** */
     private void tred2() {
         //  This is derived from the Algol procedures tred2 by

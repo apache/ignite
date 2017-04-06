@@ -15,8 +15,34 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Core algebra examples.
- */
 package org.apache.ignite.examples.java8.math;
+
+import java.awt.Color;
+import java.io.IOException;
+import org.apache.ignite.math.Tracer;
+import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+
+/** */
+public class TracerExample {
+    /** */
+    private static final Tracer.ColorMapper COLOR_MAPPER = d -> {
+        if (d <= 0.33)
+            return Color.RED;
+        else if (d <= 0.66)
+            return Color.GREEN;
+        else
+            return Color.BLUE;
+    };
+
+    /** */
+    public static void main(String[] args) throws IOException {
+        // Tracer is a simple utility class that allows pretty-printing of matrices/vectors
+        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][] {
+            {1.12345, 2.12345},
+            {3.12345, 4.12345}
+        });
+
+        Tracer.showAscii(m, "%.3g");
+        Tracer.showHtml(m, COLOR_MAPPER);
+    }
+}

@@ -22,6 +22,7 @@ import java.util.function.Function;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
 import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -30,6 +31,7 @@ import static org.junit.Assert.*;
 public class VectorBenchmarkTest {
     // todo add benchmarks for other methods in Vector and for other types of Vector and Matrix
     /** */ @Test
+    @Ignore("Benchmark tests are intended only for manual execution")
     public void testDenseLocalOnHeapVector() throws Exception {
         benchmark("DenseLocalOnHeapVector basic mix", DenseLocalOnHeapVector::new, this::basicMix);
 
@@ -37,6 +39,7 @@ public class VectorBenchmarkTest {
     }
 
     /** */ @Test
+    @Ignore("Benchmark tests are intended only for manual execution")
     public void testDenseLocalOffHeapVector() throws Exception {
         benchmark("DenseLocalOffHeapVector basic mix", DenseLocalOffHeapVector::new, this::basicMix);
 

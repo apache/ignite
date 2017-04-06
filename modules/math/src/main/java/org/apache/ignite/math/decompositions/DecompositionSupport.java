@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.decompositions;
 
+import org.apache.ignite.math.Destroyable;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
@@ -24,7 +25,7 @@ import org.apache.ignite.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 
-public abstract class DecompositionSupport {
+public abstract class DecompositionSupport implements Destroyable {
     /**
      * Create the like matrix with read-only matrices support.
      *
@@ -36,6 +37,19 @@ public abstract class DecompositionSupport {
             return new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
         else
             return matrix.like(matrix.rowSize(), matrix.columnSize());
+    }
+
+    /**
+     * Create the like matrix with specified size with read-only matrices support.
+     *
+     * @param matrix Matrix for like.
+     * @return Like matrix.
+     */
+    protected Matrix like(Matrix matrix, int rows, int cols){
+        if (matrix instanceof RandomMatrix || matrix instanceof PivotedMatrixView)
+            return new DenseLocalOnHeapMatrix(rows, cols);
+        else
+            return matrix.like(rows, cols);
     }
 
     /**

@@ -161,6 +161,19 @@ public class LUDecomposition extends DecompositionSupport {
     }
 
     /**
+     * Destroys decomposition components and other internal components of decomposition.
+     */
+    @Override public void destroy() {
+        if (cachedL != null)
+            cachedL.destroy();
+        if (cachedU != null)
+            cachedU.destroy();
+        if (cachedP != null)
+            cachedP.destroy();
+        lu.destroy();
+    }
+
+    /**
      * Returns the matrix L of the decomposition.
      * <p>L is a lower-triangular matrix</p>
      * @return the L matrix (or null if decomposed matrix is singular).

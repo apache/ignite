@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.benchmark;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -24,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 /** */
 public class MathBenchmarkSelfTest {
     /** */ @Test
+    @Ignore("Benchmark tests are intended only for manual execution")
     public void demoTest() throws Exception {
         for (int i = 0; i < 2; i++)
             new MathBenchmark("demo test")
@@ -42,6 +44,7 @@ public class MathBenchmarkSelfTest {
     }
 
     /** */ @Test
+    @Ignore("Benchmark tests are intended only for manual execution")
     public void configTest() throws Exception {
         new MathBenchmark("demo config test")
             .outputToConsole()
@@ -53,6 +56,7 @@ public class MathBenchmarkSelfTest {
     }
 
     /** */ @Test(expected = IllegalArgumentException.class)
+    @Ignore("Benchmark tests are intended only for manual execution")
     public void emptyNameTest() throws Exception {
         new MathBenchmark("")
             .outputToConsole()
@@ -64,21 +68,25 @@ public class MathBenchmarkSelfTest {
     }
 
     /** */ @Test(expected = IllegalArgumentException.class)
+    @Ignore("Benchmark tests are intended only for manual execution")
     public void nullDropboxPathTest() throws Exception {
         new ResultsWriter(null, "whatever", "whatever");
     }
 
     /** */ @Test(expected = IllegalArgumentException.class)
+    @Ignore("Benchmark tests are intended only for manual execution")
     public void nullDropboxUrlTest() throws Exception {
         new ResultsWriter("whatever", null, "whatever");
     }
 
     /** */ @Test(expected = IllegalArgumentException.class)
+    @Ignore("Benchmark tests are intended only for manual execution")
     public void nullDropboxTokenTest() throws Exception {
         new ResultsWriter("whatever", "whatever", null);
     }
 
     /** */ @Test(expected = IllegalArgumentException.class)
+    @Ignore("Benchmark tests are intended only for manual execution")
     public void nullResultsTest() throws Exception {
         new ResultsWriter("whatever", "whatever", "whatever").append(null);
     }
