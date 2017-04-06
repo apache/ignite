@@ -40,6 +40,8 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
     /** */
     private final String mesosUserValue = "userAAAAA";
+
+    /** */
     private final String mesosRoleValue = "role1";
 
     /** {@inheritDoc} */

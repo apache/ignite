@@ -52,7 +52,7 @@ public class IgniteFramework {
     }
 
     /**
-     * @return Mesos user name value.
+     * @return Mesos role value.
      */
     public String getRole() {
         return System.getenv(MESOS_ROLE);
