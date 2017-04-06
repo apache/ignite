@@ -34,8 +34,8 @@ import java.util.Map;
 import java.util.Properties;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.demo.AgentMetadataDemo;
-import org.apache.ignite.schema.parser.DbMetadataReader;
-import org.apache.ignite.schema.parser.DbTable;
+import org.apache.ignite.console.agent.db.DbMetadataReader;
+import org.apache.ignite.console.agent.db.DbTable;
 import org.apache.log4j.Logger;
 
 import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
@@ -79,6 +79,7 @@ public class DatabaseListener {
         }
     };
 
+    /** */
     private final AbstractListener metadataLsnr = new AbstractListener() {
         @SuppressWarnings("unchecked")
         @Override public Object execute(Map<String, Object> args) throws Exception {
@@ -118,6 +119,7 @@ public class DatabaseListener {
         }
     };
 
+    /** */
     private final AbstractListener availableDriversLsnr = new AbstractListener() {
         @Override public Object execute(Map<String, Object> args) throws Exception {
             if (driversFolder == null) {
@@ -184,7 +186,7 @@ public class DatabaseListener {
      * @param jdbcUrl JDBC URL.
      * @param jdbcInfo Properties to connect to database.
      * @return Connection to database.
-     * @throws SQLException
+     * @throws SQLException If failed to connect.
      */
     private Connection connect(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo) throws SQLException {
@@ -203,7 +205,7 @@ public class DatabaseListener {
      * @param jdbcUrl JDBC URL.
      * @param jdbcInfo Properties to connect to database.
      * @return Collection of schema names.
-     * @throws SQLException
+     * @throws SQLException If failed to load schemas.
      */
     protected Collection<String> schemas(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo) throws SQLException {
