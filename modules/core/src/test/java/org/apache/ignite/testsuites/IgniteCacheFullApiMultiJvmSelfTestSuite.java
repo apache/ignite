@@ -71,6 +71,8 @@ public class IgniteCacheFullApiMultiJvmSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Full API Multi Jvm Test Suite");
 
+        System.setProperty("H2_JDBC_CONNECTIONS", "500");
+
         // Multi-node.
         suite.addTestSuite(GridCacheReplicatedMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedMultiJvmP2PDisabledFullApiSelfTest.class);
