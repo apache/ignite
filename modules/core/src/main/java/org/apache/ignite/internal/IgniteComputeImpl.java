@@ -108,13 +108,16 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /**
+     * Constructor.
+     *
      * @param ctx Kernal context.
      * @param prj Projection.
      * @param subjId Subject ID.
      * @param async Async support flag.
      * @param execName Custom executor name.
      */
-    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async, String execName) {
+    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async,
+        String execName) {
         super(async);
 
         this.ctx = ctx;
@@ -1060,11 +1063,13 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(prj);
+        // TODO: Serialize name
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         prj = (ClusterGroupAdapter)in.readObject();
+        // TODO: Serialize name
     }
 
     /**
@@ -1091,6 +1096,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public IgniteCompute withExecutor(@NotNull String name) {
+        // TODO: Pass current async state
         return new IgniteComputeImpl(ctx, prj, subjId, false, name);
     }
 

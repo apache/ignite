@@ -772,5 +772,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @see ExecutorConfiguration
      * @throws IgniteCheckedException If there is not appropriate executor for name.
      */
+    // TODO: REmove IgniteCheckedException
+    // TODO: Move to Ignite interface
     public Executor localExecutor(@NotNull String name) throws IgniteCheckedException;
 }

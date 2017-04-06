@@ -26,13 +26,41 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_TH
  * Configuration for custom thread pool that is used for user compute tasks.
  */
 public class ExecutorConfiguration {
-    /** Executor name. */
-    private String name ;
+    /** Thread pool name. */
+    private String name;
 
     /** Thread pool size. */
     private int size = DFLT_PUBLIC_THREAD_CNT;
 
     /**
+     * Default constructor.
+     */
+    public ExecutorConfiguration() {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param name Thread pool name.
+     */
+    public ExecutorConfiguration(String name) {
+        this.name = name;
+    }
+
+    /**
+     * Copying constructor.
+     *
+     * @param other Instance to copy.
+     */
+    public ExecutorConfiguration(ExecutorConfiguration other) {
+        this.name = name;
+        this.size = size;
+    }
+
+    /**
+     * Get thread pool name.
+     *
      * @return Executor name.
      */
     @NotNull public String getName() {
@@ -40,13 +68,20 @@ public class ExecutorConfiguration {
     }
 
     /**
+     * Set thread pool name.
+     *
      * @param name Executor name.
+     * @deprecated {@code this} for chaining.
      */
-    public void setName(@NotNull String name) {
+    public ExecutorConfiguration setName(@NotNull String name) {
         this.name = name;
+
+        return this;
     }
 
     /**
+     * Get thread pool size.
+     *
      * @return Thread pool size.
      */
     public int getSize() {
@@ -54,10 +89,15 @@ public class ExecutorConfiguration {
     }
 
     /**
+     * Set thread pool size.
+     *
      * @param size Thread pool size.
+     * @return {@code this} for chaining.
      */
-    public void setSize(int size) {
+    public ExecutorConfiguration setSize(int size) {
         this.size = size;
+
+        return this;
     }
 
     /** {@inheritDoc} */

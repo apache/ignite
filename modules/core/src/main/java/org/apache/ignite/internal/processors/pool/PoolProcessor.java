@@ -92,9 +92,6 @@ public class PoolProcessor extends GridProcessorAdapter {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         // Avoid external thread pools GC retention.
         Arrays.fill(extPools, null);
-
-        if (customNamedPools != null)
-            customNamedPools.clear();
     }
 
     /**
@@ -158,6 +155,7 @@ public class PoolProcessor extends GridProcessorAdapter {
                 if (plc < 0)
                     throw new IgniteCheckedException("Policy cannot be negative: " + plc);
 
+                // TODO: Change to assert
                 if (plc == GridIoPolicy.CUSTOM_NAMED_POOL)
                     throw new IgniteCheckedException("Custom policy must be handled by its name");
 

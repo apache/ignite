@@ -1268,6 +1268,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param execName Custom executor name.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
+    // TODO: Revert
     private void send(
         ClusterNode node,
         Object topic,

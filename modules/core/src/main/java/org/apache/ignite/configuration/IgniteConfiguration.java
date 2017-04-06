@@ -494,6 +494,7 @@ public class IgniteConfiguration {
      *
      * @param cfg Grid configuration to copy from.
      */
+    // TODO: Copy
     public IgniteConfiguration(IgniteConfiguration cfg) {
         assert cfg != null;
 
@@ -2733,6 +2734,7 @@ public class IgniteConfiguration {
      *
      * @param execCfgs Executor configurations.
      */
+    // TODO: Return this.
     public void setExecutorConfiguration(ExecutorConfiguration... execCfgs) {
         this.execCfgs = execCfgs;
     }

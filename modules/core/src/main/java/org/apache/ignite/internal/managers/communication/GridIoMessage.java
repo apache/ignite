@@ -39,6 +39,7 @@ public class GridIoMessage implements Message {
     /** Policy. */
     private byte plc;
 
+    // TODO: Remove
     /** Custom executor name. The policy must be GridIoPolicy.CUSTOM_NAMED_POOL to use custom executors. */
     private String execName;
 
