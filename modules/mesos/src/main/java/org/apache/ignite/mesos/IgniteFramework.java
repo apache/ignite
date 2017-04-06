@@ -45,20 +45,6 @@ public class IgniteFramework {
     public static final String MESOS_ROLE = "MESOS_ROLE";
 
     /**
-     * @return Mesos user name value.
-     */
-    public String getUser() {
-        return System.getenv(MESOS_USER_NAME);
-    }
-
-    /**
-     * @return Mesos role value.
-     */
-    public String getRole() {
-        return System.getenv(MESOS_ROLE);
-    }
-
-    /**
      * Main methods has only one optional parameter - path to properties files.
      *
      * @param args Args.
@@ -141,5 +127,19 @@ public class IgniteFramework {
         driver.stop();
 
         System.exit(status);
+    }
+
+    /**
+     * @return Mesos user name value.
+     */
+    public String getUser() {
+        return System.getenv(MESOS_USER_NAME);
+    }
+
+    /**
+     * @return Mesos role value.
+     */
+    public String getRole() {
+        return System.getenv(MESOS_ROLE);
     }
 }
