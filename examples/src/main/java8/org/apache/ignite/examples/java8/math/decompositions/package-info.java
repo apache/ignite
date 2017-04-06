@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Core algebra example.
+ * Core algebra decomposition examples.
  */
 package org.apache.ignite.examples.java8.math.decompositions;

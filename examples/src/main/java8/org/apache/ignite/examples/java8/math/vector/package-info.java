@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Core algebra examples.
+ * Core algebra vector examples.
  */
-package org.apache.ignite.examples.java8.math;
+package org.apache.ignite.examples.java8.math.vector;
