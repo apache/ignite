@@ -84,10 +84,6 @@ public class ConfigVariations {
     );
 
     /** */
-    private static final ConfigParameter<Object> OFFHEAP_ENABLED =
-        Parameters.parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L);
-
-    /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigParameter[][] {
         Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), optimizedMarshallerFactory()),

@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadDelayedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadOnheapSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadPutGetSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadStartStopSelfTest;
@@ -203,6 +204,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedTxMultiThreadedSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedNearDisabledTxMultiThreadedSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheDhtPreloadOnheapSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadBigDataSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadPutGetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadDisabledSelfTest.class));

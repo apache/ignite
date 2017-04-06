@@ -102,11 +102,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         return ccfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean swapEnabled() {
-        return true;
-    }
-
     /**
      * @throws Exception If failed.
      */

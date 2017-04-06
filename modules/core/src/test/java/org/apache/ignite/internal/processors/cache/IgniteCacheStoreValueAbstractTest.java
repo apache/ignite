@@ -101,11 +101,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean swapEnabled() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 3 * 60_000;
     }
