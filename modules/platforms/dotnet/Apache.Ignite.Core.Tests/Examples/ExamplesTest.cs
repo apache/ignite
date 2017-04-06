@@ -43,11 +43,15 @@ namespace Apache.Ignite.Core.Tests.Examples
         /** */
         private static readonly string[] NoDllExamples = { "BinaryModeExample", "NearCacheExample" };
 
+        /** Config file path. */
+        private string _configPath;
+
         /** */
         private IDisposable _changedConfig;
 
         /** */
         private bool _remoteNodeStarted;
+
         /// <summary>
         /// Tests the example in a single node mode.
         /// </summary>
@@ -121,12 +125,12 @@ namespace Apache.Ignite.Core.Tests.Examples
             Ignition.ClientMode = false;
 
             using (var ignite = Ignition.StartFromApplicationConfiguration(
-                "igniteConfiguration", PathUtil.ExamplesAppConfigPath))
+                "igniteConfiguration", _configPath))
             {
                 var args = new List<string>
                 {
-                    "-configFileName=" + PathUtil.ExamplesAppConfigPath,
-                    " -assembly=" + typeof(AverageSalaryJob).Assembly.Location
+                    "-configFileName=" + _configPath,
+                    "-assembly=" + typeof(AverageSalaryJob).Assembly.Location
                 };
 
                 var proc = new IgniteProcess(args.ToArray());
@@ -163,7 +167,15 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             Directory.SetCurrentDirectory(PathUtil.IgniteHome);
 
-            _changedConfig = TestAppConfig.Change(PathUtil.ExamplesAppConfigPath);
+            // Copy file to a temp location and replace multicast IP finder with static.
+            _configPath = Path.GetTempFileName();
+            
+            var configText = File.ReadAllText(PathUtil.ExamplesAppConfigPath)
+                .Replace("TcpDiscoveryMulticastIpFinder", "TcpDiscoveryStaticIpFinder");
+
+            File.WriteAllText(_configPath, configText);
+
+            _changedConfig = TestAppConfig.Change(_configPath);
         }
 
         /// <summary>
@@ -177,6 +189,8 @@ namespace Apache.Ignite.Core.Tests.Examples
             Ignition.StopAll(true);
 
             IgniteProcess.KillAll();
+
+            File.Delete(_configPath);
         }
 
         /// <summary>

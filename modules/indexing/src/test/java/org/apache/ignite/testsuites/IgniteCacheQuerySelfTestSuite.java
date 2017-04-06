@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheQueryIndexSelfTest
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCrossCachesJoinsQueryTest;
-import org.apache.ignite.internal.processors.cache.IncorrectCacheTypeMetadataTest;
 import org.apache.ignite.internal.processors.cache.IncorrectQueryEntityTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityCaseMismatchTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
@@ -128,7 +127,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Config.
         suite.addTestSuite(IgniteCacheDuplicateEntityConfigurationSelfTest.class);
-        suite.addTestSuite(IncorrectCacheTypeMetadataTest.class);
         suite.addTestSuite(IncorrectQueryEntityTest.class);
 
         // Queries tests.

@@ -97,6 +97,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGF
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SERVICE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
@@ -699,6 +700,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case IGFS_POOL:
                 case DATA_STREAMER_POOL:
                 case QUERY_POOL:
+                case SERVICE_POOL:
                 {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);

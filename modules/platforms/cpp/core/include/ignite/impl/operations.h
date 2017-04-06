@@ -28,6 +28,7 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
 #include "ignite/impl/binary/binary_utils.h"
+#include "ignite/impl/helpers.h"
 #include "ignite/binary/binary.h"
 
 namespace ignite
@@ -250,6 +251,50 @@ namespace ignite
             int32_t peekModes; 
 
             IGNITE_NO_COPY_ASSIGNMENT(InCacheLocalPeekOperation)
+        };
+
+        /**
+         * Input iterator operation.
+         */
+        template<typename K, typename V, typename Iter>
+        class InIterOperation : public InputOperation
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param begin Iterator pointing to the beggining of the sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            InIterOperation(Iter begin, Iter end) :
+                begin(begin),
+                end(end)
+            {
+                // No-op.
+            }
+
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
+            {
+                interop::InteropOutputStream& stream = *writer.GetStream();
+                int32_t sizePos = stream.Reserve(4);
+
+                int32_t size = 0;
+                for (Iter it = begin; it != end; ++it)
+                {
+                    ContainerEntryWriteHelper<K, V>::Write(writer, *it);
+                    ++size;
+                }
+
+                stream.WriteInt32(sizePos, size);
+            }
+        private:
+            /** Sequence begining. */
+            Iter begin;
+
+            /** Sequence end. */
+            Iter end;
+
+            IGNITE_NO_COPY_ASSIGNMENT(InIterOperation)
         };
 
         /**
@@ -496,7 +541,7 @@ namespace ignite
                         val0[t1] = t2;
                     }
 
-                    val = val0;
+                    std::swap(val, val0);
                 }
             }
 
@@ -508,7 +553,7 @@ namespace ignite
             /**
              * Get value.
              *
-             * @param Value.
+             * @return Value.
              */
             std::map<T1, T2> GetResult()
             {
@@ -540,6 +585,8 @@ namespace ignite
             {
                 int32_t cnt = reader.ReadInt32();
 
+                res.reserve(res.size() + cnt);
+
                 for (int i = 0; i < cnt; i++) 
                 {
                     K key = reader.ReadTopObject<K>();
@@ -559,6 +606,91 @@ namespace ignite
             std::vector<ignite::cache::CacheEntry<K, V> >& res;
             
             IGNITE_NO_COPY_ASSIGNMENT(OutQueryGetAllOperation)
+        };
+
+        /**
+         * Output query GET ALL operation.
+         */
+        template<typename K, typename V, typename Iter, typename Pair = ignite::cache::CacheEntry<K,V> >
+        class OutQueryGetAllOperationIter : public OutputOperation
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            OutQueryGetAllOperationIter(Iter iter) : iter(iter)
+            {
+                // No-op.
+            }
+
+            virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
+            {
+                int32_t cnt = reader.ReadInt32();
+
+                for (int32_t i = 0; i < cnt; i++)
+                {
+                    K key = reader.ReadTopObject<K>();
+                    V val = reader.ReadTopObject<V>();
+
+                    *iter = Pair(key, val);
+                    ++iter;
+                }
+            }
+
+            virtual void SetNull()
+            {
+                // No-op.
+            }
+
+        private:
+            /** Out iter. */
+            Iter iter;
+            
+            IGNITE_NO_COPY_ASSIGNMENT(OutQueryGetAllOperationIter)
+        };
+
+        /**
+         * Output iter operation.
+         */
+        template<typename K, typename V, typename Iter>
+        class OutMapIterOperation :public OutputOperation
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            OutMapIterOperation(Iter iter) : iter(iter)
+            {
+                // No-op.
+            }
+
+            virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
+            {
+                bool exists = reader.GetStream()->ReadBool();
+
+                if (exists)
+                {
+                    int32_t cnt = reader.GetStream()->ReadInt32();
+
+                    for (int32_t i = 0; i < cnt; i++) {
+                        K key = reader.ReadTopObject<K>();
+                        V val = reader.ReadTopObject<V>();
+
+                        *iter = std::pair<K, V>(key, val);
+                        ++iter;
+                    }
+                }
+            }
+
+            virtual void SetNull()
+            {
+                // No-op.
+            }
+        private:
+            /** Out iter. */
+            Iter iter;
+
+            IGNITE_NO_COPY_ASSIGNMENT(OutMapIterOperation)
         };
     }
 }

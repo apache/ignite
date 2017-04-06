@@ -34,7 +34,8 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestRead()
         {
-            var section = (IgniteConfigurationSection) ConfigurationManager.GetSection("igniteConfiguration");
+            var section = (IgniteConfigurationSection) ConfigurationManager.GetSection(
+                Ignition.ConfigurationSectionName);
 
             Assert.AreEqual("myGrid1", section.IgniteConfiguration.IgniteInstanceName);
             Assert.AreEqual("cacheName", section.IgniteConfiguration.CacheConfiguration.Single().Name);
@@ -48,7 +49,7 @@ namespace Apache.Ignite.Core.Tests
         {
             Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
 
-            using (var ignite = Ignition.StartFromApplicationConfiguration("igniteConfiguration"))
+            using (var ignite = Ignition.StartFromApplicationConfiguration(Ignition.ConfigurationSectionName))
             {
                 Assert.AreEqual("myGrid1", ignite.Name);
                 Assert.IsNotNull(ignite.GetCache<int, int>("cacheName"));
@@ -62,7 +63,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
-                Assert.IsTrue(ignite.Name.StartsWith("myGrid"));
+                Assert.AreEqual("myGrid1", ignite.Name);
             }
 
             using (var ignite = Ignition.StartFromApplicationConfiguration(

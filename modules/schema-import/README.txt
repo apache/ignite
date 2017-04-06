@@ -28,12 +28,12 @@ insert into PERSON(id, first_name, last_name, salary) values(6, 'Isaac', 'Newton
 
 The Ignite Schema Import utility generates the following artifacts:
  # Java POJO key and value classes (enter "org.apache.ignite.schema" package name before generation).
- # XML CacheTypeMetadata configuration.
+ # XML QueryEntities configuration.
  # Java configuration snippet (alternative to XML).
 
 After you exit from the wizard, you should:
  # Copy generated POJO java classes to you project source folder.
- # Copy XML declaration of CacheTypeMetadata to your Ignite XML configuration file under appropriate
+ # Copy XML declaration of QueryEntitres to your Ignite XML configuration file under appropriate
   CacheConfiguration root.
  # Setup your Ignite XML configuration file DataSource to your RDBMS system for CacheJdbcPojoStore.
  # Or paste Java snippet with cache configuration into your Ignite initialization logic.

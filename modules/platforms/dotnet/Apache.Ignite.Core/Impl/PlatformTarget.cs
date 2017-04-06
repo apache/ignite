@@ -215,19 +215,22 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
-        /// <returns>The same writer.</returns>
-        protected static BinaryWriter WriteDictionary<T1, T2>(BinaryWriter writer, 
-            IDictionary<T1, T2> vals)
+        protected static void WriteDictionary<T1, T2>(BinaryWriter writer, IEnumerable<KeyValuePair<T1, T2>> vals)
         {
-            writer.WriteInt(vals.Count);
+            var pos = writer.Stream.Position;
+            writer.WriteInt(0);  // Reserve count.
 
-            foreach (KeyValuePair<T1, T2> pair in vals)
+            int cnt = 0;
+
+            foreach (var pair in vals)
             {
                 writer.Write(pair.Key);
                 writer.Write(pair.Value);
+
+                cnt++;
             }
 
-            return writer;
+            writer.Stream.WriteInt(pos, cnt);
         }
 
         /// <summary>
@@ -237,7 +240,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="item">Item.</param>
         /// <param name="writeItem">Write action to perform on item when it is not null.</param>
         /// <returns>The same writer for chaining.</returns>
-        protected static BinaryWriter WriteNullable<T>(BinaryWriter writer, T item,
+        private static BinaryWriter WriteNullable<T>(BinaryWriter writer, T item,
             Func<BinaryWriter, T, BinaryWriter> writeItem) where T : class
         {
             if (item == null)

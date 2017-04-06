@@ -46,8 +46,10 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /**
      * @param name Unique name of MemoryPolicy.
      */
-    public void setName(String name) {
+    public MemoryPolicyConfiguration setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /**
@@ -60,8 +62,10 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /**
      * Size in bytes of {@link PageMemory} in bytes that will be created for this configuration.
      */
-    public void setSize(long size) {
+    public MemoryPolicyConfiguration setSize(long size) {
         this.size = size;
+
+        return this;
     }
 
     /**
@@ -74,7 +78,9 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /**
      * @param swapFilePath Path for memory mapped file (won't be created if not configured)..
      */
-    public void setSwapFilePath(String swapFilePath) {
+    public MemoryPolicyConfiguration setSwapFilePath(String swapFilePath) {
         this.swapFilePath = swapFilePath;
+
+        return this;
     }
 }
