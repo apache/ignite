@@ -41,6 +41,11 @@ public interface Page extends AutoCloseable {
     public long getForReadPointer();
 
     /**
+     * @return Pointer for reading the page. Lock is acquired regardless of tag.
+     */
+    public long getForReadPointerForce();
+
+    /**
      * Releases reserved page. Released page can be evicted from RAM after flushing modifications to disk.
      */
     public void releaseRead();

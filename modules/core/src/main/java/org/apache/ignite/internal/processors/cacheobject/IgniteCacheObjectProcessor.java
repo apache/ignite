@@ -180,13 +180,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public CacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf);
 
     /**
-     * @param ctx Cache context.
-     * @param buf Buffer to read from.
-     * @return Cache object.
-     */
-    public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException;
-
-    /**
      * @param ctx Cache object context.
      * @param buf Buffer.
      * @param incompleteObj Incomplete cache object or {@code null} if it's a first read.
@@ -194,16 +187,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @throws IgniteCheckedException If fail.
      */
     public IncompleteCacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf,
-        @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
-
-    /**
-     * @param ctx Cache object context.
-     * @param buf Buffer.
-     * @param incompleteObj Incomplete cache object or {@code null} if it's a first read.
-     * @return Incomplete cache object.
-     * @throws IgniteCheckedException If fail.
-     */
-    public IncompleteCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf,
         @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
 
     /**

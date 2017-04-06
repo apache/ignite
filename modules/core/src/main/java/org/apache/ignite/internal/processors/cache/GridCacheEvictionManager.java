@@ -727,7 +727,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
         boolean hasVal = recordable && entry.hasValue();
 
-        boolean evicted = entry.evictInternal(obsoleteVer, filter);
+        boolean evicted = entry.evictInternal(obsoleteVer, filter, false);
 
         if (evicted) {
             // Remove manually evicted entry from policy.
