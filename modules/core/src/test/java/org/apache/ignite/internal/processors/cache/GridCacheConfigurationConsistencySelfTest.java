@@ -362,6 +362,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionPolicy(new FifoEvictionPolicy());
+                    cfg.setOnheapCacheEnabled(true);
                     return null;
                 }
             },
@@ -383,6 +384,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionPolicy(new SortedEvictionPolicy());
+                    cfg.setOnheapCacheEnabled(true);
                     return null;
                 }
             },
@@ -390,6 +392,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionPolicy(new FifoEvictionPolicy());
+                    cfg.setOnheapCacheEnabled(true);
                     return null;
                 }
             }
@@ -434,42 +437,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
-                    return null;
-                }
-            }
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDifferentEvictSynchronized() throws Exception {
-        cacheMode = PARTITIONED;
-
-        checkSecondGridStartFails(
-            new C1<CacheConfiguration, Void>() {
-                /** {@inheritDoc} */
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictSynchronized(true);
-
-                    FifoEvictionPolicy plc = new FifoEvictionPolicy();
-
-                    plc.setMaxSize(100);
-
-                    cfg.setEvictionPolicy(plc);
-                    return null;
-                }
-            },
-            new C1<CacheConfiguration, Void>() {
-                /** {@inheritDoc} */
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictSynchronized(false);
-
-                    FifoEvictionPolicy plc = new FifoEvictionPolicy();
-
-                    plc.setMaxSize(100);
-
-                    cfg.setEvictionPolicy(plc);
                     return null;
                 }
             }
@@ -672,6 +639,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setAffinity(new TestRendezvousAffinityFunction());
 
                 cfg.setEvictionPolicy(new FifoEvictionPolicy());
+                cfg.setOnheapCacheEnabled(true);
 
                 cfg.setCacheStoreFactory(new IgniteCacheAbstractTest.TestStoreFactory());
                 cfg.setReadThrough(true);
@@ -690,6 +658,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setAffinity(new RendezvousAffinityFunction());
 
                 cfg.setEvictionPolicy(new LruEvictionPolicy());
+                cfg.setOnheapCacheEnabled(true);
 
                 cfg.setCacheStoreFactory(null);
 

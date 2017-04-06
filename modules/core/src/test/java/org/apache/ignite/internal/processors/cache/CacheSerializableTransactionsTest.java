@@ -4345,6 +4345,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                 ccfg.setEvictionPolicy(plc);
 
+                ccfg.setOnheapCacheEnabled(true);
+
                 srv.createCache(ccfg);
 
                 cacheNames.add(ccfg.getName());

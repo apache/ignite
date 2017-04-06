@@ -71,6 +71,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
         cc.setCacheMode(cacheMode());
         cc.setAtomicityMode(atomicityMode());
         cc.setEvictionPolicy(new FifoEvictionPolicy());
+        cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 

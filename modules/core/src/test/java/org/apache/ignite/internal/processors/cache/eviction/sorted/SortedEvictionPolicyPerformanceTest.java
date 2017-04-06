@@ -80,6 +80,7 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
         plc.setMaxSize(MAX_SIZE);
 
         ccfg.setEvictionPolicy(plc);
+        ccfg.setOnheapCacheEnabled(true);
         ccfg.setEvictSynchronized(false);
 
         cfg.setPeerClassLoadingEnabled(false);

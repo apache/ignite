@@ -80,6 +80,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
         cacheCfg.setBackups(1);
         cacheCfg.setReadFromBackup(true);
         cacheCfg.setEvictionPolicy(evictionPolicy);
+        cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setStatisticsEnabled(true);
 
         cacheCfg.setWriteThrough(false);

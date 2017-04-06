@@ -106,6 +106,8 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             plc.setMaxSize(100);
 
             cfg.setEvictionPolicy(plc);
+
+            cfg.setOnheapCacheEnabled(true);
         }
 
         if (store) {

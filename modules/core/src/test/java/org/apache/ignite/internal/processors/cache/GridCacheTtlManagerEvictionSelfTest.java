@@ -63,6 +63,7 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
         ccfg.setCacheMode(cacheMode);
         ccfg.setEagerTtl(true);
         ccfg.setEvictionPolicy(new FifoEvictionPolicy(ENTRIES_LIMIT, 100));
+        ccfg.setOnheapCacheEnabled(true);
         ccfg.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.HOURS, 12)));
 
         cfg.setCacheConfiguration(ccfg);

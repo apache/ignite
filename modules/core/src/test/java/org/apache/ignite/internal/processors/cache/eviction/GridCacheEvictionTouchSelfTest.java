@@ -75,6 +75,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
 
         CacheStore store = new GridCacheGenericTestStore<Object, Object>() {
             @Override public Object load(Object key) {

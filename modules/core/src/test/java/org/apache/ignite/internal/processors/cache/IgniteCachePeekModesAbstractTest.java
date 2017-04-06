@@ -98,6 +98,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         plc.setMaxSize(HEAP_ENTRIES);
 
         ccfg.setEvictionPolicy(plc);
+        ccfg.setOnheapCacheEnabled(true);
 
         return ccfg;
     }

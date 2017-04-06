@@ -74,7 +74,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(mode);
         cc.setEvictionPolicy(notSerializableProxy(plc, EvictionPolicy.class));
-        cc.setEvictSynchronized(false);
+        cc.setOnheapCacheEnabled(true);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setEvictionFilter(notSerializableProxy(filter, org.apache.ignite.cache.eviction.EvictionFilter.class));
         cc.setRebalanceMode(SYNC);

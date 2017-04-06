@@ -146,6 +146,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             plc.setMaxSize(100);
 
             ccfg.setEvictionPolicy(plc);
+            ccfg.setOnheapCacheEnabled(true);
         }
 
         c.setCacheConfiguration(ccfg);

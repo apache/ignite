@@ -89,6 +89,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         plc.setMaxSize(10);
 
         cacheCfg.setEvictionPolicy(plc);
+        cacheCfg.setOnheapCacheEnabled(true);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 

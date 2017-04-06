@@ -97,6 +97,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         plc.setMaxSize(10000);
 
         cacheCfg.setEvictionPolicy(plc);
+        cacheCfg.setOnheapCacheEnabled(true);
 
         cfg.setCacheConfiguration(cacheCfg);
 

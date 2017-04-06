@@ -33,14 +33,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class CacheQueryOffheapEvictDataLostTest extends GridCommonAbstractTest {
+public class CacheQueryEvictDataLostTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS = 100_000;
 
     /**
      *
      */
-    public CacheQueryOffheapEvictDataLostTest() {
+    public CacheQueryEvictDataLostTest() {
         super(true);
     }
 
@@ -52,6 +52,7 @@ public class CacheQueryOffheapEvictDataLostTest extends GridCommonAbstractTest {
 
         ccfg.setName("cache-1");
         ccfg.setEvictionPolicy(new LruEvictionPolicy(10));
+        ccfg.setOnheapCacheEnabled(true);
         ccfg.setIndexedTypes(Integer.class, TestData.class);
 
         cfg.setCacheConfiguration(ccfg);

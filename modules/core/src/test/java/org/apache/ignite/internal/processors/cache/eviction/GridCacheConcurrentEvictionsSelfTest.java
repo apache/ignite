@@ -75,6 +75,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
         cc.setNearConfiguration(null);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 
