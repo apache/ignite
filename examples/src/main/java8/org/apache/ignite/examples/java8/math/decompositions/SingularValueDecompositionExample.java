@@ -23,7 +23,6 @@ import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 
 /** */
 public class SingularValueDecompositionExample {
-
     /** */
     public static void main(String[] args) {
         System.out.println(">>> Singular value decomposition (SVD) example started.");

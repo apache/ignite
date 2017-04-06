@@ -24,7 +24,6 @@ import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 
 /** */
 public class CholeskyDecompositionExample {
-
     /** */
     public static void main(String[] args) {
         System.out.println(">>> Cholesky decomposition example started.");
