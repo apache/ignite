@@ -234,7 +234,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     while (!stop.get()) {
-                        final Class<?> clazz = root.loadClass("org.apache.ignite.p2p.GridP2PLocalDeploymentSelfTest$CallFunction");
+                        final Class<?> clazz = root.loadClass("org.apache.ignite.p2p.GridP2PLocalDeploymentSelfTest$TestClosure");
 
                         ignite.compute().
                                 call((IgniteCallable) clazz.getDeclaredConstructor(ClassLoader.class).newInstance(root));
@@ -258,40 +258,56 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public static class CallFunction implements IgniteCallable, GridPeerDeployAware {
-        transient ClassLoader classLoader;
+    /** */
+    private static class TestClosure implements IgniteCallable, GridPeerDeployAware {
+        /** */
+        transient ClassLoader clsLdr;
 
-        public CallFunction(ClassLoader cls) {
-            this.classLoader = cls;
+        /**
+         * @param cls Class.
+         */
+        public TestClosure(ClassLoader cls) {
+            this.clsLdr = cls;
         }
 
+        /** {@inheritDoc} */
         public Object call() throws Exception {
             return null;
         }
 
+        /** {@inheritDoc} */
         public Class<?> deployClass() {
             return this.getClass();
         }
 
+        /** {@inheritDoc} */
         public ClassLoader classLoader() {
-            return classLoader;
+            return clsLdr;
         }
     }
 
-    public static class DelegateClassLoader extends ClassLoader {
-        private ClassLoader delegateCL;
+    /** */
+    private static class DelegateClassLoader extends ClassLoader {
+        /** Delegate class loader. */
+        private ClassLoader delegateClsLdr;
 
-        public DelegateClassLoader(ClassLoader parent, ClassLoader delegateCL) {
+        /**
+         * @param parent Parent.
+         * @param delegateClsLdr Delegate class loader.
+         */
+        public DelegateClassLoader(ClassLoader parent, ClassLoader delegateClsLdr) {
             super(parent); // Parent doesn't matter.
-            this.delegateCL = delegateCL;
+            this.delegateClsLdr = delegateClsLdr;
         }
 
+        /** {@inheritDoc} */
         @Override public URL getResource(String name) {
-            return delegateCL.getResource(name);
+            return delegateClsLdr.getResource(name);
         }
 
+        /** {@inheritDoc} */
         @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
-            return delegateCL.loadClass(name);
+            return delegateClsLdr.loadClass(name);
         }
     }
 
