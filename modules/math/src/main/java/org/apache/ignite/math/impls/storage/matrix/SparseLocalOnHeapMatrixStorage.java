@@ -115,6 +115,23 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
 
                 col.put(x, v);
             }
+        } else {
+            if (stoMode == ROW_STORAGE_MODE) {
+                if (sto.containsKey(x)) {
+                    Map<Integer, Double> row = sto.get(x);
+
+                    if (row.containsKey(y))
+                        row.remove(y);
+                }
+
+            } else {
+                if (sto.containsKey(y)) {
+                    Map<Integer, Double> col = sto.get(y);
+
+                    if (col.containsKey(x))
+                        col.remove(x);
+                }
+            }
         }
     }
 

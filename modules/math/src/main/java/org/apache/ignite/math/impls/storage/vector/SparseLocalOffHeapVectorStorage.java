@@ -64,7 +64,10 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void set(int i, double v) {
-        gridOffHeapMap.put(hash(i), intToByteArray(i), doubleToByteArray(v));
+        if (v != 0.0)
+            gridOffHeapMap.put(hash(i), intToByteArray(i), doubleToByteArray(v));
+        else if (gridOffHeapMap.contains(hash(i), intToByteArray(i)))
+            gridOffHeapMap.remove(hash(i), intToByteArray(i));
     }
 
     /** {@inheritDoc} */

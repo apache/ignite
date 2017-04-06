@@ -40,6 +40,8 @@ import org.apache.ignite.math.impls.storage.matrix.*;
  *
  * You also need to call {@link #destroy()} to remove the underlying cache when you no longer need this
  * matrix.
+ *
+ * <b>Currently fold supports only commutative operations.<b/>
  */
 public class SparseDistributedMatrix extends AbstractMatrix implements StorageConstants {
     /**

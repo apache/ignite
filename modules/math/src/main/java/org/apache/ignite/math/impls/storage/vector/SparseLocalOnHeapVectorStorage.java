@@ -78,7 +78,11 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
 
     /** {@inheritDoc} */
     @Override public void set(int i, double v) {
-        sto.put(i, v);
+        if (v != 0.0)
+            sto.put(i, v);
+        else if (sto.containsKey(i))
+            sto.remove(i);
+
     }
 
     /** {@inheritDoc} */

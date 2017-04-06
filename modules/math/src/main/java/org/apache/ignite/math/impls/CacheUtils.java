@@ -300,7 +300,7 @@ public class CacheUtils {
     }
 
     /**
-     *
+     * <b>Currently fold supports only commutative operations.<b/>
      * @param cacheName
      * @param folder
      * @param <K>

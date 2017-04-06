@@ -146,17 +146,17 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
         initMtx(cacheMatrix);
 
-        cacheMatrix.assign(1.0);
-        for (int i = 0; i < cacheMatrix.rowSize(); i++)
-            for (int j = 0; j < cacheMatrix.columnSize(); j++)
-                assertEquals(UNEXPECTED_VALUE, 1.0, cacheMatrix.get(i, j), PRESITION);
-
-        cacheMatrix.plus(1.0);
+        cacheMatrix.assign(2.0);
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
                 assertEquals(UNEXPECTED_VALUE, 2.0, cacheMatrix.get(i, j), PRESITION);
 
-        cacheMatrix.times(5.0);
+        cacheMatrix.plus(3.0);
+        for (int i = 0; i < cacheMatrix.rowSize(); i++)
+            for (int j = 0; j < cacheMatrix.columnSize(); j++)
+                assertEquals(UNEXPECTED_VALUE, 5.0, cacheMatrix.get(i, j), PRESITION);
+
+        cacheMatrix.times(2.0);
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
                 assertEquals(UNEXPECTED_VALUE, 10.0, cacheMatrix.get(i, j), PRESITION);
@@ -177,9 +177,23 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
+                cacheMatrix.set(i, j, i * cols + j + 1);
+
+        assertEquals(UNEXPECTED_VALUE, 1.0, cacheMatrix.minValue(), PRESITION);
+        assertEquals(UNEXPECTED_VALUE, rows * cols, cacheMatrix.maxValue(), PRESITION);
+
+        for (int i = 0; i < cacheMatrix.rowSize(); i++)
+            for (int j = 0; j < cacheMatrix.columnSize(); j++)
+                cacheMatrix.set(i, j, -1.0 * (i * cols + j + 1));
+
+        assertEquals(UNEXPECTED_VALUE, - rows * cols, cacheMatrix.minValue(), PRESITION);
+        assertEquals(UNEXPECTED_VALUE, - 1.0, cacheMatrix.maxValue(), PRESITION);
+
+        for (int i = 0; i < cacheMatrix.rowSize(); i++)
+            for (int j = 0; j < cacheMatrix.columnSize(); j++)
                 cacheMatrix.set(i, j, i * cols + j);
 
-        assertEquals(UNEXPECTED_VALUE, 0d, cacheMatrix.minValue(), PRESITION);
+        assertEquals(UNEXPECTED_VALUE, 1.0, cacheMatrix.minValue(), PRESITION);
         assertEquals(UNEXPECTED_VALUE, rows * cols - 1.0, cacheMatrix.maxValue(), PRESITION);
     }
 
@@ -245,6 +259,6 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     private void initMtx(Matrix m){
         for (int i = 0; i < m.rowSize(); i++)
             for (int j = 0; j < m.columnSize(); j++)
-                m.set(i, j, 0.0);
+                m.set(i, j, 1.0);
     }
 }

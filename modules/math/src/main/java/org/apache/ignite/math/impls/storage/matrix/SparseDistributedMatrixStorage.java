@@ -171,7 +171,10 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
             if (map == null)
                 map = acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap();
 
-            map.put(b, v);
+            if (v != 0.0)
+                map.put(b, v);
+            else if (map.containsKey(b))
+                map.remove(b);
 
             // Local put.
             cache.put(a, map);
