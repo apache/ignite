@@ -61,7 +61,7 @@ public class GridNioBackPressureControl {
      */
     private static class Holder {
         /** Process message. */
-        private Boolean procMsg = Boolean.FALSE;
+        private boolean procMsg;
 
         /** Tracker. */
         private IgniteRunnable tracker;
