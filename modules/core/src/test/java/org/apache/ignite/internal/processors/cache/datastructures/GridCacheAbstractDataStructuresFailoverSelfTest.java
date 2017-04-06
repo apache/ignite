@@ -530,7 +530,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     private void doTestSemaphore(ConstantTopologyChangeWorker topWorker, final boolean failoverSafe) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1977");
 
         final int permits = topWorker instanceof MultipleTopologyChangeWorker ||
             topWorker instanceof PartitionedMultipleTopologyChangeWorker ? TOP_CHANGE_THREAD_CNT * 3 :
@@ -548,9 +547,17 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             break;
                         }
                         catch (IgniteInterruptedException e) {
-                            // Exception may happen in non failover safe mode.
-                            if (failoverSafe)
+
+                           // Exception may happen in non failover safe mode.
+                            if (failoverSafe) {
                                 throw e;
+
+                            } else {
+                                // In non-failoverSafe mode semaphore is not safe to be reused,
+                                // and should always be discarded after exception is caught.
+                                break;
+                            }
+
                         }
                     }
 
@@ -566,9 +573,15 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                         break;
                     }
                     catch (IgniteInterruptedException e) {
+
                         // Exception may happen in non failover safe mode.
-                        if (failoverSafe)
+                        if (failoverSafe) {
                             throw e;
+                        } else {
+                            // In non-failoverSafe mode semaphore is not safe to be reused,
+                            // and should always be discarded after exception is caught.
+                            break;
+                        }
                     }
                 }
 
@@ -581,8 +594,11 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             fut.get();
 
-            for (Ignite g : G.allGrids())
-                assertEquals(permits, g.semaphore(STRUCTURE_NAME, permits, false, false).availablePermits());
+            // Semaphore is left in proper state only if failoverSafe mode is used.
+            if(failoverSafe) {
+                for (Ignite g : G.allGrids())
+                    assertEquals(permits, g.semaphore(STRUCTURE_NAME, permits, false, false).availablePermits());
+            }
         }
     }
 
