@@ -365,7 +365,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
                 if (logLevel != null && !logLevel.isGreaterOrEqual(impl.getEffectiveLevel())) {
                     impl.setLevel(logLevel);
 
-                    impl.info("RootLogger log level has been dropped for auto-created console appender.");
+                    impl.warn("RootLogger log level has been dropped for auto-created console appender.\n"+
+                    "Set lower log level or configure ConsoleAppender manually or disable ConsoleAppender automatic creation.");
                 }
             }
             else if (!isConfigured() && !hasOtherLoggers()) {
