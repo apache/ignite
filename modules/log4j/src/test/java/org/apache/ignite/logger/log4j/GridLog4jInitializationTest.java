@@ -31,7 +31,7 @@ import org.apache.log4j.varia.NullAppender;
  * Log4j not initialized test.
  */
 @GridCommonTest(group = "Logger")
-public class GridLog4jNotInitializationTest extends TestCase {
+public class GridLog4jInitializationTest extends TestCase {
     /** */
     private static final boolean VERBOSE = true;
 
@@ -47,7 +47,7 @@ public class GridLog4jNotInitializationTest extends TestCase {
 
     /** */
     public void testLogNotInitialized() {
-        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jNotInitializationTest.class);
+        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jInitializationTest.class);
 
         if (VERBOSE)
             printLoggerResults(log);
@@ -61,7 +61,7 @@ public class GridLog4jNotInitializationTest extends TestCase {
     public void testLogInitialized() {
         BasicConfigurator.configure();
 
-        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jNotInitializationTest.class);
+        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jInitializationTest.class);
 
         if (VERBOSE)
             printLoggerResults(log);
@@ -75,11 +75,11 @@ public class GridLog4jNotInitializationTest extends TestCase {
     public void testNoAppendersConfigured() {
         LogManager.getRootLogger().setLevel(Level.WARN);
 
-        final Logger logger = LogManager.getLogger(GridLog4jNotInitializationTest.class);
+        final Logger logger = LogManager.getLogger(GridLog4jInitializationTest.class);
 
         assertEquals(Level.WARN, logger.getEffectiveLevel());
 
-        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jNotInitializationTest.class);
+        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jInitializationTest.class);
 
         if (VERBOSE)
             printLoggerResults(log);
@@ -93,11 +93,11 @@ public class GridLog4jNotInitializationTest extends TestCase {
 
         LogManager.getRootLogger().setLevel(Level.WARN);
 
-        final Logger logger = LogManager.getLogger(GridLog4jNotInitializationTest.class);
+        final Logger logger = LogManager.getLogger(GridLog4jInitializationTest.class);
 
         assertEquals(Level.WARN, logger.getEffectiveLevel());
 
-        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jNotInitializationTest.class);
+        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jInitializationTest.class);
 
         if (VERBOSE)
             printLoggerResults(log);
@@ -111,11 +111,11 @@ public class GridLog4jNotInitializationTest extends TestCase {
 
         LogManager.getRootLogger().setLevel(Level.DEBUG);
 
-        final Logger logger = LogManager.getLogger(GridLog4jNotInitializationTest.class);
+        final Logger logger = LogManager.getLogger(GridLog4jInitializationTest.class);
 
         assertEquals(Level.DEBUG, logger.getEffectiveLevel());
 
-        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jNotInitializationTest.class);
+        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jInitializationTest.class);
 
         if (VERBOSE)
             printLoggerResults(log);
@@ -127,13 +127,13 @@ public class GridLog4jNotInitializationTest extends TestCase {
     public void testOtherLoggerConfigured() {
         LogManager.getRootLogger().setLevel(Level.DEBUG);
 
-        final Logger logger = LogManager.getLogger(GridLog4jNotInitializationTest.class);
+        final Logger logger = LogManager.getLogger(GridLog4jInitializationTest.class);
 
         logger.addAppender(new NullAppender());
 
         assertEquals(Level.DEBUG, logger.getEffectiveLevel());
 
-        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jNotInitializationTest.class);
+        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jInitializationTest.class);
 
         if (VERBOSE)
             printLoggerResults(log);
@@ -147,13 +147,13 @@ public class GridLog4jNotInitializationTest extends TestCase {
 
         LogManager.getRootLogger().setLevel(Level.DEBUG);
 
-        final Logger logger = LogManager.getLogger(GridLog4jNotInitializationTest.class);
+        final Logger logger = LogManager.getLogger(GridLog4jInitializationTest.class);
 
         logger.addAppender(new NullAppender());
 
         assertEquals(Level.DEBUG, logger.getEffectiveLevel());
 
-        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jNotInitializationTest.class);
+        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jInitializationTest.class);
 
         if (VERBOSE)
             printLoggerResults(log);
@@ -167,13 +167,13 @@ public class GridLog4jNotInitializationTest extends TestCase {
 
         LogManager.getRootLogger().setLevel(Level.WARN);
 
-        final Logger logger = LogManager.getLogger(GridLog4jNotInitializationTest.class);
+        final Logger logger = LogManager.getLogger(GridLog4jInitializationTest.class);
 
         logger.addAppender(new NullAppender());
 
         assertEquals(Level.WARN, logger.getEffectiveLevel());
 
-        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jNotInitializationTest.class);
+        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jInitializationTest.class);
 
         if (VERBOSE)
             printLoggerResults(log);
