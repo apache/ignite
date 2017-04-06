@@ -149,10 +149,13 @@ public class GridH2Table extends TableBase {
         idxs = idxsFactory.createIndexes(this);
 
         assert idxs != null;
-        assert idxs.size() >= 2;
 
         // Add scan index at 0 which is required by H2.
-        idxs.add(0, new ScanIndex(index(1), index(0)));
+        if (idxs.size() >= 2
+                && index(0).getIndexType().isHash())
+            idxs.add(0, new ScanIndex(index(1), index(0)));
+        else
+            idxs.add(0, new ScanIndex(index(0), null));
 
         snapshotEnabled = desc == null || desc.snapshotableIndex();
 
@@ -927,7 +930,13 @@ public class GridH2Table extends TableBase {
          *
          */
         @Override protected GridH2IndexBase delegate() {
-            return rebuildFromHashInProgress ? hashIdx : super.delegate();
+            if (hashIdx != null)
+                return rebuildFromHashInProgress ? hashIdx : super.delegate();
+            else {
+                assert !rebuildFromHashInProgress;
+
+                return super.delegate();
+            }
         }
 
         /** {@inheritDoc} */
