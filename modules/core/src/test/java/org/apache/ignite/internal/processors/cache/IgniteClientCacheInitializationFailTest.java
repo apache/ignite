@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -57,18 +60,42 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractTest {
     /** Failed cache name. */
-    public static final String CACHE_NAME = "cache";
+    private static final String CACHE_NAME = "cache";
 
-    /** Near flag. */
-    private boolean near;
+    /** Atomic cache name. */
+    private static final String ATOMIC_CACHE_NAME = "atomic-cache";
 
-    /** Atomicity mode. */
-    private CacheAtomicityMode atomicityMode;
+    /** Tx cache name. */
+    private static final String TX_CACHE_NAME = "tx-cache";
+
+    /** Near atomic cache name. */
+    private static final String NEAR_ATOMIC_CACHE_NAME = "near-atomic-cache";
+
+    /** Near tx cache name. */
+    private static final String NEAR_TX_CACHE_NAME = "near-tx-cache";
+
+    /** Failed caches. */
+    private static final Set<String> FAILED_CACHES;
+
+    static {
+        Set<String> set = new HashSet<>();
+
+        set.add(ATOMIC_CACHE_NAME);
+        set.add(TX_CACHE_NAME);
+        set.add(NEAR_ATOMIC_CACHE_NAME);
+        set.add(NEAR_TX_CACHE_NAME);
+
+        FAILED_CACHES = Collections.unmodifiableSet(set);
+    }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrid("server");
+        startGrid("client");
+    }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
@@ -77,17 +104,19 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (gridName.contains("server")) {
-            CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, String> ccfg1 = new CacheConfiguration<>();
 
-            ccfg.setIndexedTypes(Integer.class, String.class);
+            ccfg1.setIndexedTypes(Integer.class, String.class);
+            ccfg1.setName(ATOMIC_CACHE_NAME);
+            ccfg1.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
-            ccfg.setName(CACHE_NAME);
-            ccfg.setAtomicityMode(atomicityMode);
+            CacheConfiguration<Integer, String> ccfg2 = new CacheConfiguration<>();
 
-            if (near)
-                ccfg.setNearConfiguration(new NearCacheConfiguration<Integer, String>());
+            ccfg2.setIndexedTypes(Integer.class, String.class);
+            ccfg2.setName(TX_CACHE_NAME);
+            ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-            cfg.setCacheConfiguration(ccfg);
+            cfg.setCacheConfiguration(ccfg1, ccfg2);
         }
         else {
             GridQueryProcessor.idxCls = FailedIndexing.class;
@@ -102,56 +131,42 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testAtomicCacheInitialization() throws Exception {
-        atomicityMode = CacheAtomicityMode.ATOMIC;
-        near = false;
-
-        checkCacheInitialization();
+        checkCacheInitialization(ATOMIC_CACHE_NAME);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTransactionalCacheInitialization() throws Exception {
-        atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
-        near = false;
-
-        checkCacheInitialization();
+        checkCacheInitialization(TX_CACHE_NAME);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomicNearCacheInitialization() throws Exception {
-        atomicityMode = CacheAtomicityMode.ATOMIC;
-        near = true;
-
-        checkCacheInitialization();
+        checkCacheInitialization(NEAR_ATOMIC_CACHE_NAME);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTransactionalNearCacheInitialization() throws Exception {
-        atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
-        near = true;
-
-        checkCacheInitialization();
+        checkCacheInitialization(NEAR_TX_CACHE_NAME);
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void checkCacheInitialization() throws Exception {
-        startGrid("server");
+    private void checkCacheInitialization(final String cacheName) throws Exception {
+        Ignite client = grid("client");
 
-        final Ignite client = startGrid("client");
-
-        checkFailedCache(client);
+        checkFailedCache(client, cacheName);
 
         checkFineCache(client, CACHE_NAME + 1);
 
-        assertNull(client.cache(CACHE_NAME));
-        assertNull(client.getOrCreateCache(CACHE_NAME));
+        assertNull(client.cache(cacheName));
+        assertNull(client.getOrCreateCache(cacheName));
 
         checkFineCache(client, CACHE_NAME + 2);
     }
@@ -172,10 +187,24 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      * @param client Client.
      */
     @SuppressWarnings("ThrowableNotThrown")
-    private void checkFailedCache(final Ignite client) {
+    private void checkFailedCache(final Ignite client, final String cacheName) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, String> cache = client.cache(CACHE_NAME);
+                IgniteCache<Integer, String> cache;
+
+                // Start cache with near enabled.
+                if (NEAR_ATOMIC_CACHE_NAME.equals(cacheName) || NEAR_TX_CACHE_NAME.equals(cacheName)) {
+                    CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<Integer, String>(cacheName)
+                        .setNearConfiguration(new NearCacheConfiguration<Integer, String>());
+
+                    if (NEAR_TX_CACHE_NAME.equals(cacheName))
+                        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+                    cache = client.getOrCreateCache(ccfg);
+                }
+                else
+                    cache = client.cache(cacheName);
+
 
                 cache.put(1, "1");
 
@@ -235,8 +264,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void registerCache(GridCacheContext<?, ?> cctx,
             CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
-            if (CACHE_NAME.equals(cctx.name()) && cctx.kernalContext().clientNode())
-                throw new IgniteCheckedException("Test query exception");
+            if (FAILED_CACHES.contains(cctx.name()) && cctx.kernalContext().clientNode())
+                throw new IgniteCheckedException("Test query exception " + cctx.name());
         }
 
         /** {@inheritDoc} */
