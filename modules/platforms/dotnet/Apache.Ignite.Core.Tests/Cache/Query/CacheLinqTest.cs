@@ -276,12 +276,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             CheckFunc(x => x.Trim(), strings);
             CheckFunc(x => x.Trim('P'), strings);
+            var toTrim = new[] {'P'};
+            CheckFunc(x => x.Trim(toTrim), strings);
+            CheckFunc(x => x.Trim(new List<char> {'P'}.ToArray()), strings);
             CheckFunc(x => x.Trim('3'), strings);
             CheckFunc(x => x.TrimStart('P'), strings);
+            CheckFunc(x => x.TrimStart(toTrim), strings);
             CheckFunc(x => x.TrimStart('3'), strings);
             Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimStart('P', 'e'), strings));
             CheckFunc(x => x.TrimEnd('P'), strings);
+            CheckFunc(x => x.TrimEnd(toTrim), strings);
             CheckFunc(x => x.TrimEnd('3'), strings);
+            var toTrimFails = new[] {'P', 'c'};
+            Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.Trim(toTrimFails), strings));
+            Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimStart(toTrimFails), strings));
+            Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimEnd(toTrimFails), strings));
 
             CheckFunc(x => Regex.Replace(x, @"son.\d", "kele!"), strings);
             CheckFunc(x => x.Replace("son", ""), strings);
@@ -816,6 +825,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var ex = Assert.Throws<NotSupportedException>(() =>
                 CompiledQuery.Compile((int[] k) => cache.Where(x => k.Contains(x.Key))));
             Assert.AreEqual("'Contains' clause coming from compiled query parameter is not supported.", ex.Message);
+
+            // check subquery from another cache put in separate variable
+            var orgIds = orgCache
+                .Where(o => o.Value.Name == "Org_1")
+                .Select(o => o.Key);
+
+            var subQueryFromVar = cache
+                .Where(x => orgIds.Contains(x.Value.OrganizationId))
+                .ToArray();
+
+            var subQueryInline = cache
+                .Where(x => orgCache.Where(o => o.Value.Name == "Org_1").Select(o => o.Key).Contains(x.Value.OrganizationId))
+                .ToArray();
+
+            Assert.AreEqual(subQueryInline.Length, subQueryFromVar.Length);
         }
 
         /// <summary>
@@ -1047,7 +1071,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var qry6 = CompiledQuery.Compile((int minAge) => persons
                 .Select(x => x.Value)
                 .Where(x => x.Age >= minAge)
-                .Select(x => new {x.Name, x.Age})
+                .Select(x => new { x.Name, x.Age })
                 .OrderBy(x => x.Name));
 
             var res = qry6(PersonCount - 3).GetAll();

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System.Threading;
     using Remotion.Linq.Parsing.ExpressionVisitors.Transformation;
+    using Remotion.Linq.Parsing.ExpressionVisitors.TreeEvaluation;
     using Remotion.Linq.Parsing.Structure;
     using Remotion.Linq.Parsing.Structure.ExpressionTreeProcessors;
 
@@ -46,11 +47,33 @@ namespace Apache.Ignite.Linq.Impl
         {
             var transformerRegistry = ExpressionTransformerRegistry.CreateDefault();
 
-            var proc = new TransformingExpressionTreeProcessor(transformerRegistry);
+            var proc = CreateCompoundProcessor(transformerRegistry);
 
             var parser = new ExpressionTreeParser(ExpressionTreeParser.CreateDefaultNodeTypeProvider(), proc);
 
             return new QueryParser(parser);
+        }
+
+        /// <summary>
+        /// Creates CompoundExpressionTreeProcessor
+        /// </summary>
+        public static CompoundExpressionTreeProcessor CreateCompoundProcessor(
+            IExpressionTranformationProvider tranformationProvider,
+            IEvaluatableExpressionFilter evaluatableExpressionFilter = null)
+        {
+            return new CompoundExpressionTreeProcessor(
+                new IExpressionTreeProcessor[]
+                {
+                    new PartialEvaluatingExpressionTreeProcessor(evaluatableExpressionFilter ?? new NullEvaluatableExpressionFilter()),
+                    new TransformingExpressionTreeProcessor(tranformationProvider)
+                });
+        }
+
+        /// <summary>
+        /// Empty implementation of IEvaluatableExpressionFilter
+        /// </summary>
+        internal sealed class NullEvaluatableExpressionFilter : EvaluatableExpressionFilterBase
+        {
         }
     }
 }
