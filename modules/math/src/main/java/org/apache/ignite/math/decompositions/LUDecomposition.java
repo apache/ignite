@@ -164,9 +164,12 @@ public class LUDecomposition extends DecompositionSupport {
      * Destroys decomposition components and other internal components of decomposition.
      */
     @Override public void destroy() {
-        cachedL.destroy();
-        cachedU.destroy();
-        cachedP.destroy();
+        if (cachedL != null)
+            cachedL.destroy();
+        if (cachedU != null)
+            cachedU.destroy();
+        if (cachedP != null)
+            cachedP.destroy();
         lu.destroy();
     }
 

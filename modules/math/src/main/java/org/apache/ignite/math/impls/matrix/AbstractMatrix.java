@@ -488,7 +488,31 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public double determinant() {
-        return new LUDecomposition(this).determinant();
+        //TODO: This decomposition should be cached
+        LUDecomposition dec = new LUDecomposition(this);
+        double res = dec.determinant();
+        dec.destroy();
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix inverse() {
+        if (rowSize() != columnSize())
+            throw new CardinalityException(rowSize(), columnSize());
+        //TODO: This decomposition should be cached
+        LUDecomposition dec = new LUDecomposition(this);
+        Matrix res = dec.solve(likeIdentity());
+        dec.destroy();
+        return res;
+    }
+
+    /** */
+    private Matrix likeIdentity() {
+        int n = rowSize();
+        Matrix res = like(n, n);
+        for (int i = 0; i < n; i++)
+            res.setX(i, i, 1.0);
+        return res;
     }
 
     /** {@inheritDoc} */
