@@ -38,6 +38,9 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
  * caches.
  */
 public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
+    /** */
+    public static final GridCacheVersion EVICT_VER = new GridCacheVersion(Integer.MAX_VALUE, 0, 0, 0);
+
     /** Timestamp used as base time for cache topology version (January 1, 2014). */
     public static final long TOP_VER_BASE_TIME = 1388520000000L;
 
