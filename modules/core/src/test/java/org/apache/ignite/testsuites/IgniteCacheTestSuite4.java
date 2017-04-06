@@ -94,7 +94,7 @@ import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransaction
 import org.apache.ignite.internal.processors.cache.IgniteSystemCacheOnClientTest;
 import org.apache.ignite.internal.processors.cache.MarshallerCacheJobRunNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarlyTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheBackPressureTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGetFutureHangsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheCreatePutMultiNodeSelfTest;
@@ -332,7 +332,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(MarshallerCacheJobRunNodeRestartTest.class);
 
-        suite.addTestSuite(CacheBackPressureTest.class);
+        suite.addTestSuite(CacheAtomicPrimarySyncBackPressureTest.class);
 
         return suite;
     }
