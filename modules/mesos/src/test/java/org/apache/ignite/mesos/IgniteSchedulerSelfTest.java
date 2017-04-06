@@ -28,6 +28,7 @@ import org.apache.ignite.mesos.resource.ResourceProvider;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
 
+import static org.apache.ignite.mesos.IgniteFramework.MESOS_ROLE;
 import static org.apache.ignite.mesos.IgniteFramework.MESOS_USER_NAME;
 
 /**
@@ -39,6 +40,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
     /** */
     private final String mesosUserValue = "userAAAAA";
+    private final String mesosRoleValue = "role1";
 
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -314,6 +316,8 @@ public class IgniteSchedulerSelfTest extends TestCase {
     public void testIgniteFramework() throws Exception {
         setEnv(MESOS_USER_NAME, mesosUserValue);
 
+        setEnv(MESOS_ROLE, mesosRoleValue);
+
         Thread.sleep(5000);
 
         IgniteFrameworkThread igniteFWThread = new IgniteFrameworkThread();
@@ -323,6 +327,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
         igniteFWThread.sleep(5000);
 
         assertEquals(mesosUserValue, igniteFWThread.getIgniteFramework().getUser());
+        assertEquals(mesosRoleValue, igniteFWThread.getIgniteFramework().getRole());
     }
 
     /**
