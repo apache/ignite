@@ -59,7 +59,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(LOCAL);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setEvictSynchronized(false);
 
         c.setCacheConfiguration(ccfg);
 

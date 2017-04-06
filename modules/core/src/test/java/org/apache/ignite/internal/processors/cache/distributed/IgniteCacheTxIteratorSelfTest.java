@@ -75,6 +75,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
         if (useEvictPlc) {
             ccfg.setEvictionPolicy(new FifoEvictionPolicy(50));
+            ccfg.setOnheapCacheEnabled(true);
         }
 
         return ccfg;

@@ -112,7 +112,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(1, true);
 
         final IgniteCache<Object, Object> cache = ignite(0).createCache(cacheConfig("org", true, Integer.class, Organization.class)
-            .setEvictionPolicy(new FifoEvictionPolicy(10)));
+            .setEvictionPolicy(new FifoEvictionPolicy(10)).setOnheapCacheEnabled(true));
 
         for (int i = 0; i < 20; i++)
             cache.put(i, new Organization("org-" + i));

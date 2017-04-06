@@ -90,6 +90,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxSize(EVICT_CACHE_SIZE);
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
 
         FifoEvictionPolicy nearPlc = new FifoEvictionPolicy();
         nearPlc.setMaxSize(EVICT_CACHE_SIZE);

@@ -71,7 +71,6 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Near eviction policy.
      * @see CacheConfiguration#getEvictionPolicy()
-     * @see CacheConfiguration#isEvictSynchronized()
      */
     public EvictionPolicy<K, V> getNearEvictionPolicy() {
         return nearEvictPlc;

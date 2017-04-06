@@ -145,17 +145,12 @@ public class PlatformConfigurationUtils {
         ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
         ccfg.setCopyOnRead(in.readBoolean());
         ccfg.setEagerTtl(in.readBoolean());
-        ccfg.setEvictSynchronized(in.readBoolean());
-        ccfg.setEvictSynchronizedConcurrencyLevel(in.readInt());
-        ccfg.setEvictSynchronizedKeyBufferSize(in.readInt());
-        ccfg.setEvictSynchronizedTimeout(in.readLong());
         ccfg.setInvalidate(in.readBoolean());
         ccfg.setStoreKeepBinary(in.readBoolean());
         ccfg.setLoadPreviousValue(in.readBoolean());
         ccfg.setDefaultLockTimeout(in.readLong());
         ccfg.setLongQueryWarningTimeout(in.readLong());
         ccfg.setMaxConcurrentAsyncOperations(in.readInt());
-        ccfg.setEvictMaxOverflowRatio(in.readFloat());
         ccfg.setName(in.readString());
         ccfg.setReadFromBackup(in.readBoolean());
         ccfg.setRebalanceBatchSize(in.readInt());
@@ -196,6 +191,9 @@ public class PlatformConfigurationUtils {
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
+        if (ccfg.getEvictionPolicy() != null)
+            ccfg.setOnheapCacheEnabled(true);
+
         ccfg.setAffinity(readAffinityFunction(in));
         ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
 
@@ -771,17 +769,12 @@ public class PlatformConfigurationUtils {
         writeEnumInt(writer, ccfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
         writer.writeBoolean(ccfg.isCopyOnRead());
         writer.writeBoolean(ccfg.isEagerTtl());
-        writer.writeBoolean(ccfg.isEvictSynchronized());
-        writer.writeInt(ccfg.getEvictSynchronizedConcurrencyLevel());
-        writer.writeInt(ccfg.getEvictSynchronizedKeyBufferSize());
-        writer.writeLong(ccfg.getEvictSynchronizedTimeout());
         writer.writeBoolean(ccfg.isInvalidate());
         writer.writeBoolean(ccfg.isStoreKeepBinary());
         writer.writeBoolean(ccfg.isLoadPreviousValue());
         writer.writeLong(ccfg.getDefaultLockTimeout());
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
-        writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
         writer.writeString(ccfg.getName());
         writer.writeBoolean(ccfg.isReadFromBackup());
         writer.writeInt(ccfg.getRebalanceBatchSize());

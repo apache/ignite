@@ -67,6 +67,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         plc.setMaxSize(1000);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setIndexedTypes(

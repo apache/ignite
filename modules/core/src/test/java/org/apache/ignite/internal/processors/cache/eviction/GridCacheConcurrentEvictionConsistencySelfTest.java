@@ -84,6 +84,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
         cc.setNearConfiguration(null);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 

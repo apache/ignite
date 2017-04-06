@@ -96,6 +96,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         plc.setMaxSize(0);
 
         ccfg.setEvictionPolicy(plc);
+        ccfg.setOnheapCacheEnabled(true);
 
         return cfg.setCacheConfiguration(ccfg);
     }

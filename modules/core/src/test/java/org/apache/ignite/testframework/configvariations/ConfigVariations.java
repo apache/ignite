@@ -84,10 +84,6 @@ public class ConfigVariations {
     );
 
     /** */
-    private static final ConfigParameter<Object> OFFHEAP_ENABLED =
-        Parameters.parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L);
-
-    /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigParameter[][] {
         Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), optimizedMarshallerFactory()),
@@ -105,6 +101,7 @@ public class ConfigVariations {
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
         Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
         Parameters.objectParameters("setStartSize", 1024),
+        Parameters.booleanParameters("setOnheapCacheEnabled")
     };
 
     /** */
@@ -133,6 +130,7 @@ public class ConfigVariations {
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
         Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
         Parameters.objectParameters("setStartSize", 1024),
+        Parameters.booleanParameters("setOnheapCacheEnabled")
     };
 
     /**

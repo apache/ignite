@@ -155,6 +155,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
         CacheConfiguration<Object, Object> cc = variationConfig("eviction");
 
         cc.setEvictionPolicy(new FifoEvictionPolicy(1));
+        cc.setOnheapCacheEnabled(true);
 
         final IgniteCache<Object, Object> cache = ig.createCache(cc);
 

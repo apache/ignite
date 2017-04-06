@@ -82,6 +82,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
         plc.setMaxSize(MAX_CACHE_SIZE);
 
         ccfg.setEvictionPolicy(plc);
+        ccfg.setOnheapCacheEnabled(true);
         ccfg.setIndexedTypes(Integer.class, Integer.class);
         ccfg.setBackups(2);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);

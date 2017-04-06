@@ -69,6 +69,7 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
                     CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
                     ccfg.setName("cache-" + idx + "-" + i);
                     ccfg.setEvictionPolicy(new LruEvictionPolicy(1000));
+                    ccfg.setOnheapCacheEnabled(true);
 
                     IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
 

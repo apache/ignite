@@ -189,6 +189,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
         cacheCfg.setBackups(1);
+        cacheCfg.setOnheapCacheEnabled(false);
 
         return cacheCfg;
     }
@@ -247,6 +248,13 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * @return Grid count.
      */
     protected abstract int gridCount();
+
+    /**
+     * @return {@code True} if on-heap cache is enabled.
+     */
+    protected boolean onheapCacheEnabled() {
+        return false;
+    }
 
     /**
      * @throws Exception If failed.

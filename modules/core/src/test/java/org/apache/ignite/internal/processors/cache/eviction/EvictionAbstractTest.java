@@ -75,12 +75,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /** Near enabled flag. */
     protected boolean nearEnabled;
 
-    /** Evict backup sync. */
-    protected boolean evictSync;
-
-    /** Evict near sync. */
-    protected boolean evictNearSync = true;
-
     /** Policy max. */
     protected int plcMax = 10;
 
@@ -110,7 +104,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
         cc.setCacheMode(mode);
         cc.setEvictionPolicy(createPolicy(plcMax));
-        cc.setEvictSynchronized(evictSync);
+        cc.setOnheapCacheEnabled(true);
         cc.setWriteSynchronizationMode(syncCommit ? FULL_SYNC : FULL_ASYNC);
         cc.setStartSize(plcMax);
         cc.setAtomicityMode(TRANSACTIONAL);
@@ -705,7 +699,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         nearEnabled = true;
         nearMax = 3;
         plcMax = 10;
-        evictNearSync = true;
         syncCommit = true;
 
         gridCnt = 2;
@@ -718,19 +711,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         mode = PARTITIONED;
         nearEnabled = false;
         plcMax = 100;
-        evictSync = false;
-
-        gridCnt = 2;
-
-        checkPartitionedMultiThreaded();
-    }
-
-    /** @throws Exception If failed. */
-    public void testPartitionedNearDisabledBackupSyncMultiThreaded() throws Exception {
-        mode = PARTITIONED;
-        nearEnabled = false;
-        plcMax = 100;
-        evictSync = true;
 
         gridCnt = 2;
 
@@ -742,19 +722,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         mode = PARTITIONED;
         nearEnabled = true;
         plcMax = 10;
-        evictSync = false;
-
-        gridCnt = 2;
-
-        checkPartitionedMultiThreaded();
-    }
-
-    /** @throws Exception If failed. */
-    public void testPartitionedNearEnabledBackupSyncMultiThreaded() throws Exception {
-        mode = PARTITIONED;
-        nearEnabled = true;
-        plcMax = 10;
-        evictSync = true;
 
         gridCnt = 2;
 

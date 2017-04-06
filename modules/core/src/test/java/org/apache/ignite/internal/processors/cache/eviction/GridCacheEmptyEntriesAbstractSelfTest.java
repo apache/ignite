@@ -83,9 +83,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cc.setEvictionPolicy(plc);
-        cc.setEvictSynchronizedKeyBufferSize(1);
-
-        cc.setEvictSynchronized(true);
+        cc.setOnheapCacheEnabled(true);
 
         if (testStore != null) {
             cc.setCacheStoreFactory(singletonFactory(testStore));

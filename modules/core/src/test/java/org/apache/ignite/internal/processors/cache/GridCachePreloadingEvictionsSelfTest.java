@@ -81,10 +81,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(1, 1));
         partCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         partCacheCfg.setNearConfiguration(null);
-        partCacheCfg.setEvictSynchronized(true);
         partCacheCfg.setEvictionPolicy(null);
-        partCacheCfg.setEvictSynchronizedKeyBufferSize(25);
-        partCacheCfg.setEvictMaxOverflowRatio(0.99f);
         partCacheCfg.setRebalanceMode(ASYNC);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
 

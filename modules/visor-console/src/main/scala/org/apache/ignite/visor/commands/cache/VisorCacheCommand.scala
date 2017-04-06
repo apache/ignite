@@ -869,11 +869,6 @@ object VisorCacheCommand {
         cacheT += ("Eviction Policy", safe(evictCfg.policy()))
         cacheT += ("Eviction Policy Max Size", safe(evictCfg.policyMaxSize()))
         cacheT += ("Eviction Filter", safe(evictCfg.filter()))
-        cacheT += ("Eviction Key Buffer Size", evictCfg.synchronizedKeyBufferSize())
-        cacheT += ("Eviction Synchronized", bool2Str(evictCfg.evictSynchronized()))
-        cacheT += ("Eviction Overflow Ratio", evictCfg.maxOverflowRatio())
-        cacheT += ("Synchronous Eviction Timeout", evictCfg.synchronizedTimeout())
-        cacheT += ("Synchronous Eviction Concurrency Level", evictCfg.synchronizedConcurrencyLevel())
 
         cacheT += ("Near Cache Enabled", bool2Str(nearCfg.nearEnabled()))
         cacheT += ("Near Start Size", nearCfg.nearStartSize())

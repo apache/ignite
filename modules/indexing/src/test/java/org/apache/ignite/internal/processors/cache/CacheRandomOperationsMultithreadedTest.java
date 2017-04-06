@@ -348,6 +348,7 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setEvictionPolicy(evictionPlc);
+        ccfg.setOnheapCacheEnabled(evictionPlc != null);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(1);

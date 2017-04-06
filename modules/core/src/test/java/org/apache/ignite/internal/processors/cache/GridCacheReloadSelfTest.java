@@ -82,6 +82,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         plc.setMaxSize(MAX_CACHE_ENTRIES);
 
         cacheCfg.setEvictionPolicy(plc);
+        cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
         final CacheStore store = new CacheStoreAdapter<Integer, Integer>() {

@@ -132,12 +132,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
         filter = cfg.getEvictionFilter();
 
-        if (cfg.getEvictMaxOverflowRatio() < 0)
-            throw new IgniteCheckedException("Configuration parameter 'maxEvictOverflowRatio' cannot be negative.");
-
-        if (cfg.getEvictSynchronizedKeyBufferSize() < 0)
-            throw new IgniteCheckedException("Configuration parameter 'evictSynchronizedKeyBufferSize' cannot be negative.");
-
         if (log.isDebugEnabled())
             log.debug("Eviction manager started on node: " + cctx.nodeId());
     }
@@ -556,18 +550,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                 }
             }
         }
-    }
-
-    /**
-     * @return Max queue size.
-     */
-    private int maxQueueSize() {
-        int size = (int)(cctx.cache().size() * cctx.config().getEvictMaxOverflowRatio()) / 100;
-
-        if (size <= 0)
-            size = 500;
-
-        return Math.min(size, cctx.config().getEvictSynchronizedKeyBufferSize());
     }
 
     /**

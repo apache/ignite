@@ -25,6 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
@@ -69,6 +70,8 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
         cc.setCacheMode(cacheMode());
         cc.setAtomicityMode(atomicityMode());
+        cc.setEvictionPolicy(new FifoEvictionPolicy());
+        cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 
