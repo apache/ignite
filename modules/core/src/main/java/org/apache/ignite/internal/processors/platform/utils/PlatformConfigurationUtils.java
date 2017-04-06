@@ -587,22 +587,6 @@ public class PlatformConfigurationUtils {
 
             if (in.readBoolean())  // compact footer is set
                 cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
-
-            int typeCnt = in.readInt();
-
-            if (typeCnt > 0) {
-                Collection<BinaryTypeConfiguration> types = new ArrayList<>(typeCnt);
-
-                for (int i = 0; i < typeCnt; i++) {
-                    BinaryTypeConfiguration type = new BinaryTypeConfiguration(in.readString());
-
-                    type.setEnum(in.readBoolean());
-
-                    types.add(type);
-                }
-
-                cfg.getBinaryConfiguration().setTypeConfigurations(types);
-            }
         }
 
         int attrCnt = in.readInt();
@@ -1005,20 +989,6 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(true);  // binary config exists
             w.writeBoolean(true);  // compact footer is set
             w.writeBoolean(bc.isCompactFooter());
-
-            Collection<BinaryTypeConfiguration> types = bc.getTypeConfigurations();
-
-            if (types != null) {
-                w.writeInt(types.size());
-
-                for (BinaryTypeConfiguration type : types) {
-                    w.writeString(type.getTypeName());
-                    w.writeBoolean(type.isEnum());
-                    writeBinaryIdentityResolver(w, BinaryArrayIdentityResolver.instance());
-                }
-            }
-            else
-                w.writeInt(0);
         }
         else
             w.writeBoolean(false);
