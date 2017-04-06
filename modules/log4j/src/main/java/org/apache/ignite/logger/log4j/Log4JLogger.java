@@ -352,8 +352,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
                     if (errAppender.getThreshold() == Level.ERROR)
                         errAppender.setThreshold(Level.WARN);
                 }
-                else
-                {
+                else {
                     // No error console appender => create console appender with.
                     final AppenderSkeleton consoleAppender = createConsoleAppender(Level.OFF);
 
@@ -363,16 +362,16 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
                 }
 
                 // Won't raise LogLevel if there is other loggers configured. As LogLevel can be inherited.
-                if (logLevel != null && (!logLevel.isGreaterOrEqual(impl.getEffectiveLevel()))) {
+                if (logLevel != null && !logLevel.isGreaterOrEqual(impl.getEffectiveLevel())) {
                     impl.setLevel(logLevel);
 
                     impl.info("RootLogger log level has been dropped for auto-created console appender.");
                 }
             }
-
-            // If still don't have appenders and other loggers configured, disable logging.
-            if (!isConfigured() && !hasOtherLoggers())
+            else if (!isConfigured() && !hasOtherLoggers()) {
+                // If still don't have appenders and other loggers configured, disable logging.
                 impl.setLevel(Level.OFF);
+            }
 
             quiet0 = quiet;
             inited = true;
