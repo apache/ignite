@@ -266,7 +266,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dbCfg Memory configuration.
      * @throws IgniteCheckedException If config is invalid.
      */
-    private static void checkPolicyEvictionProperties(MemoryPolicyConfiguration plcCfg, MemoryConfiguration dbCfg)
+    protected void checkPolicyEvictionProperties(MemoryPolicyConfiguration plcCfg, MemoryConfiguration dbCfg)
         throws IgniteCheckedException {
         if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
             return;
