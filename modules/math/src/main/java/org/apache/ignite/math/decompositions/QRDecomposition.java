@@ -20,13 +20,14 @@ package org.apache.ignite.math.decompositions;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.functions.Functions;
+import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 
 /**
  * For an <tt>m x n</tt> matrix <tt>A</tt> with {@code m >= n}, the QR decomposition
  * is an <tt>m x n</tt> orthogonal matrix <tt>Q</tt> and an <tt>n x n</tt> upper
  * triangular matrix <tt>R</tt> so that <tt>A = Q*R</tt>.
  */
-public class QRDecomposition {
+public class QRDecomposition extends DecompositionSupport {
     private final Matrix q;
     private final Matrix r;
     private final Matrix mType;
@@ -56,13 +57,13 @@ public class QRDecomposition {
 
         cols = mtx.columnSize();
 
-        mType = mtx.like(1, 1);
+        mType = like(mtx, 1, 1);
 
         Matrix qTmp = mtx.copy();
 
         boolean fullRank = true;
 
-        r = mtx.like(min, cols);
+        r = like(mtx, min, cols);
 
         for (int i = 0; i < min; i++) {
             Vector qi = qTmp.viewColumn(i);
@@ -105,6 +106,12 @@ public class QRDecomposition {
         this.fullRank = fullRank;
     }
 
+    @Override public void destroy() {
+        q.destroy();
+        r.destroy();
+        mType.destroy();
+    }
+
     /**
      * Gets orthogonal factor <tt>Q</tt>.
      */
@@ -141,7 +148,7 @@ public class QRDecomposition {
 
         int cols = mtx.columnSize();
 
-        Matrix x = mType.like(this.cols, cols);
+        Matrix x = like(mType, this.cols, cols);
 
         Matrix qt = getQ().transpose();
         Matrix y = qt.times(mtx);

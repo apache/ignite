@@ -23,7 +23,7 @@ import org.apache.ignite.math.Matrix;
 /**
  * TODO: add description.
  */
-public class SingularValueDecomposition {
+public class SingularValueDecomposition extends DecompositionSupport {
     // U and V.
     private final double[][] u;
     private final double[][] v;
@@ -201,7 +201,7 @@ public class SingularValueDecomposition {
         }
 
         for (int k = nct - 1; k >= 0; k--) {
-            if (s[k] != 0.0) {
+           if (s[k] != 0.0) {
                 for (int j = k + 1; j < nu; j++) {
                     double t = 0;
 
@@ -507,7 +507,7 @@ public class SingularValueDecomposition {
             s[i][i] = this.s[i];
         }
 
-        return arg.like(n, n).assign(s);
+        return like(arg, n, n).assign(s);
     }
 
     /**
@@ -527,11 +527,11 @@ public class SingularValueDecomposition {
      */
     public Matrix getU() {
         if (transpositionNeeded)
-            return arg.like(v.length, v.length).assign(v);
+            return like(arg, v.length, v.length).assign(v);
         else {
             int numCols = Math.min(m + 1, n);
 
-            Matrix r = arg.like(m, numCols);
+            Matrix r = like(arg, m, numCols);
 
             for (int i = 0; i < m; i++)
                 for (int j = 0; j < numCols; j++)
@@ -550,7 +550,7 @@ public class SingularValueDecomposition {
         if (transpositionNeeded) {
             int numCols = Math.min(m + 1, n);
 
-            Matrix r = arg.like(m, numCols);
+            Matrix r = like(arg, m, numCols);
 
             for (int i = 0; i < m; i++)
                 for (int j = 0; j < numCols; j++)
@@ -559,7 +559,7 @@ public class SingularValueDecomposition {
             return r;
         }
         else
-            return arg.like(v.length, v.length).assign(v);
+            return like(arg, v.length, v.length).assign(v);
     }
 
     /**
@@ -590,8 +590,8 @@ public class SingularValueDecomposition {
      * @param minSingularValue value below which singular values are ignored.
      */
     Matrix getCovariance(double minSingularValue) {
-        Matrix j = arg.like(s.length,s.length);
-        Matrix vMat = arg.like(v.length, v.length).assign(v);
+        Matrix j = like(arg, s.length,s.length);
+        Matrix vMat = like(arg, v.length, v.length).assign(v);
 
         for (int i = 0; i < s.length; i++)
             j.set(i, i, s[i] >= minSingularValue ? 1 / (s[i] * s[i]) : 0.0);
