@@ -17,27 +17,21 @@
 
 package org.apache.ignite.stream.akka;
 
-import akka.Done;
-import akka.stream.javadsl.Sink;
-import java.util.concurrent.CompletionStage;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.stream.StreamAdapter;
+import junit.framework.TestSuite;
 
-public class IgniteAkkaStreamer<K, V> extends StreamAdapter<Object, K, V> {
-    /** Logger. */
-    protected IgniteLogger log;
-
-    public IgniteAkkaStreamer() {
-    }
-
+/**
+ * Akka streamer tests.
+ */
+public class IgniteAkkaStreamerTestSuite extends TestSuite {
     /**
-     * Create Sink Akka streamer.
+     * @return Akka streamer tests suite.
+     * @throws Exception If failed.
      */
-    public Sink sink() {
-        final Sink<Integer, CompletionStage<Done>> sink = Sink.foreach(e -> {
-            addMessage(e);
-        });
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Akka streamed Test Suite");
 
-        return sink;
+        suite.addTestSuite(IgniteAkkaStreamerTest.class);
+
+        return suite;
     }
 }
