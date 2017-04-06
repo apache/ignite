@@ -745,7 +745,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     invokeListener(msg.policy(), lsnr, nodeId, obj);
                 }
                 finally {
-                    threadProcessingMessage(false, msgC);
+                    threadProcessingMessage(false, null);
 
                     msgC.run();
                 }
@@ -785,7 +785,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     processRegularMessage0(msg, nodeId);
                 }
                 finally {
-                    threadProcessingMessage(false, msgC);
+                    threadProcessingMessage(false, null);
 
                     msgC.run();
                 }
@@ -1146,7 +1146,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     unwindMessageSet(msgSet0, lsnr);
                 }
                 finally {
-                    threadProcessingMessage(false, msgC);
+                    threadProcessingMessage(false, null);
                 }
             }
         };
