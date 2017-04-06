@@ -17,7 +17,6 @@
 
 package org.apache.ignite.logger.log4j;
 
-import java.util.Enumeration;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -26,7 +25,6 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-import org.apache.log4j.spi.RootLogger;
 import org.apache.log4j.varia.NullAppender;
 
 /**
@@ -135,7 +133,7 @@ public class GridLog4jInitializationTest extends TestCase {
         if (VERBOSE)
             printLoggerResults(log);
 
-        assertEquals(Level.INFO, logger.getEffectiveLevel()); // LogLevel is raised as there is no other loggers.
+        assertEquals(Level.DEBUG, logger.getEffectiveLevel()); // LogLevel should not change.
     }
 
     /** */
