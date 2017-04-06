@@ -33,7 +33,7 @@ public class Tracer {
     /**
      * Double to color mapper.
      */
-    interface ColorMapper extends Function<Double, Color> {}
+    public interface ColorMapper extends Function<Double, Color> {}
 
     // Continues red-to-blue color mapping.
     static private ColorMapper defaultColorMapper(double min, double max) {
