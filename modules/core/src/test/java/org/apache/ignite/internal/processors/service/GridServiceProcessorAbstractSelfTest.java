@@ -129,6 +129,17 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
             startGrid(nodeCount() + i);
     }
 
+    /** */
+    protected void startExtraNodes(int servers, int clients) throws Exception {
+        startExtraNodes(servers);
+
+        for (int i = 0; i < clients; i++) {
+            final String nodeName = getTestGridName(nodeCount() + servers + i);
+
+            startGrid(nodeName, getConfiguration(nodeName).setClientMode(true));
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */

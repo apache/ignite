@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -90,7 +91,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -294,8 +294,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (cfgs != null) {
             Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-            for (ServiceConfiguration c : ctx.config().getServiceConfiguration())
+            for (ServiceConfiguration c : cfgs) {
+                // Deploy only on server nodes by default.
+                if (c.getNodeFilter() == null)
+                    c.setNodeFilter(ctx.cluster().get().forServers().predicate());
+
                 futs.add(deploy(c));
+            }
 
             // Await for services to deploy.
             for (IgniteInternalFuture<?> f : futs)
