@@ -68,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -76,7 +77,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.BackPressureTracker;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -101,7 +101,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
-import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadTracker;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
 
 /**
@@ -245,9 +244,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         startSpi();
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
-            @Override public void onMessage(UUID nodeId, Serializable msg, BackPressureTracker tracker) {
+            @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
                 try {
-                    onMessage0(nodeId, (GridIoMessage)msg, tracker);
+                    onMessage0(nodeId, (GridIoMessage)msg, msgC);
                 }
                 catch (ClassCastException ignored) {
                     U.error(log, "Communication manager received message of unknown type (will ignore): " +
@@ -523,10 +522,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         // After write lock released.
         if (!delayedMsgs.isEmpty()) {
-            for (Collection<DelayedMessage> col : delayedMsgs) {
+            for (Collection<DelayedMessage> col : delayedMsgs)
                 for (DelayedMessage msg : col)
-                    commLsnr.onMessage(msg.nodeId(), msg.message(), msg.tracker());
-            }
+                    commLsnr.onMessage(msg.nodeId(), msg.message(), msg.callback());
         }
 
         // 2. Process messages sets.
@@ -619,10 +617,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @param nodeId Node ID.
      * @param msg Message bytes.
-     * @param tracker Back pressure tracker.
+     * @param msgC Closure to call when message processing finished.
      */
     @SuppressWarnings("fallthrough")
-    private void onMessage0(UUID nodeId, GridIoMessage msg, BackPressureTracker tracker) {
+    private void onMessage0(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
         assert nodeId != null;
         assert msg != null;
 
@@ -659,7 +657,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                         assert list != null;
 
-                        list.add(new DelayedMessage(nodeId, msg, tracker));
+                        list.add(new DelayedMessage(nodeId, msg, msgC));
 
                         return;
                     }
@@ -676,7 +674,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             switch (plc) {
                 case P2P_POOL: {
-                    processP2PMessage(nodeId, msg, tracker);
+                    processP2PMessage(nodeId, msg, msgC);
 
                     break;
                 }
@@ -692,9 +690,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case SERVICE_POOL:
                 {
                     if (msg.isOrdered())
-                        processOrderedMessage(nodeId, msg, plc, tracker);
+                        processOrderedMessage(nodeId, msg, plc, msgC);
                     else
-                        processRegularMessage(nodeId, msg, plc, tracker);
+                        processRegularMessage(nodeId, msg, plc, msgC);
 
                     break;
                 }
@@ -707,9 +705,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                             "[policy=" + plc + ']');
 
                     if (msg.isOrdered())
-                        processOrderedMessage(nodeId, msg, plc, tracker);
+                        processOrderedMessage(nodeId, msg, plc, msgC);
                     else
-                        processRegularMessage(nodeId, msg, plc, tracker);
+                        processRegularMessage(nodeId, msg, plc, msgC);
             }
         }
         catch (IgniteCheckedException e) {
@@ -723,17 +721,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @param nodeId Node ID.
      * @param msg Message.
-     * @param tracker Back pressure tracker.
+     * @param msgC Closure to call when message processing finished.
      */
     private void processP2PMessage(
         final UUID nodeId,
         final GridIoMessage msg,
-        final BackPressureTracker tracker
+        final IgniteRunnable msgC
     ) {
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
-                    threadProcessingMessage(true);
+                    threadProcessingMessage(true, msgC);
 
                     GridMessageListener lsnr = listenerGet0(msg.topic());
 
@@ -747,9 +745,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     invokeListener(msg.policy(), lsnr, nodeId, obj);
                 }
                 finally {
-                    threadProcessingMessage(false);
+                    threadProcessingMessage(false, msgC);
 
-                    tracker.deregisterMessage();
+                    msgC.run();
                 }
             }
         };
@@ -770,28 +768,26 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param nodeId Node ID.
      * @param msg Message.
      * @param plc Execution policy.
-     * @param tracker Back pressure tracker.
+     * @param msgC Closure to call when message processing finished.
      * @throws IgniteCheckedException If failed.
      */
     private void processRegularMessage(
         final UUID nodeId,
         final GridIoMessage msg,
         final byte plc,
-        final BackPressureTracker tracker
+        final IgniteRunnable msgC
     ) throws IgniteCheckedException {
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
-                    threadTracker(tracker);
-                    threadProcessingMessage(true);
+                    threadProcessingMessage(true, msgC);
 
                     processRegularMessage0(msg, nodeId);
                 }
                 finally {
-                    threadProcessingMessage(false);
-                    threadTracker(null);
+                    threadProcessingMessage(false, msgC);
 
-                    tracker.deregisterMessage();
+                    msgC.run();
                 }
             }
 
@@ -1003,7 +999,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param nodeId Node ID.
      * @param msg Ordered message.
      * @param plc Execution policy.
-     * @param tracker Back pressure tracker. ({@code null} for sync processing).
+     * @param msgC Closure to call when message processing finished ({@code null} for sync processing).
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
@@ -1011,7 +1007,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final UUID nodeId,
         final GridIoMessage msg,
         final byte plc,
-        @Nullable final BackPressureTracker tracker
+        @Nullable final IgniteRunnable msgC
     ) throws IgniteCheckedException {
         assert msg != null;
 
@@ -1028,7 +1024,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             map = msgSetMap.get(msg.topic());
 
             if (map == null) {
-                set = new GridCommunicationMessageSet(plc, msg.topic(), nodeId, timeout, skipOnTimeout, msg, tracker);
+                set = new GridCommunicationMessageSet(plc, msg.topic(), nodeId, timeout, skipOnTimeout, msg, msgC);
 
                 map = new ConcurrentHashMap0<>();
 
@@ -1058,7 +1054,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     if (set == null) {
                         GridCommunicationMessageSet old = map.putIfAbsent(nodeId,
                             set = new GridCommunicationMessageSet(plc, msg.topic(),
-                                nodeId, timeout, skipOnTimeout, msg, tracker));
+                                nodeId, timeout, skipOnTimeout, msg, msgC));
 
                         assert old == null;
 
@@ -1076,7 +1072,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 assert set != null;
                 assert !isNew;
 
-                set.add(msg, tracker);
+                set.add(msg, msgC);
 
                 break;
             }
@@ -1125,13 +1121,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             // Mark the message as processed, otherwise reading from the connection
             // may stop.
-            if (tracker != null)
-                tracker.deregisterMessage();
+            if (msgC != null)
+                msgC.run();
 
             return;
         }
 
-        if (tracker == null) {
+        if (msgC == null) {
             // Message from local node can be processed in sync manner.
             assert locNodeId.equals(nodeId);
 
@@ -1145,14 +1141,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
-                    threadTracker(tracker);
-                    threadProcessingMessage(true);
+                    threadProcessingMessage(true, msgC);
 
                     unwindMessageSet(msgSet0, lsnr);
                 }
                 finally {
-                    threadProcessingMessage(false);
-                    threadTracker(null);
+                    threadProcessingMessage(false, msgC);
                 }
             }
         };
@@ -2302,7 +2296,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         /** */
         @GridToStringInclude
-        private final Queue<GridTuple3<GridIoMessage, Long, BackPressureTracker>> msgs = new ConcurrentLinkedDeque<>();
+        private final Queue<GridTuple3<GridIoMessage, Long, IgniteRunnable>> msgs = new ConcurrentLinkedDeque<>();
 
         /** */
         private final AtomicBoolean reserved = new AtomicBoolean();
@@ -2323,7 +2317,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @param timeout Timeout.
          * @param skipOnTimeout Whether message can be skipped on timeout.
          * @param msg Message to add immediately.
-         * @param tracker Back pressure tracker (may be {@code null}).
+         * @param msgC Message closure (may be {@code null}).
          */
         GridCommunicationMessageSet(
             byte plc,
@@ -2332,7 +2326,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             long timeout,
             boolean skipOnTimeout,
             GridIoMessage msg,
-            @Nullable BackPressureTracker tracker
+            @Nullable IgniteRunnable msgC
         ) {
             assert nodeId != null;
             assert topic != null;
@@ -2350,7 +2344,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             lastTs = U.currentTimeMillis();
 
-            msgs.add(F.t(msg, lastTs, tracker));
+            msgs.add(F.t(msg, lastTs, msgC));
         }
 
         /** {@inheritDoc} */
@@ -2468,26 +2462,26 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         void unwind(GridMessageListener lsnr) {
             assert reserved.get();
 
-            for (GridTuple3<GridIoMessage, Long, BackPressureTracker> t = msgs.poll(); t != null; t = msgs.poll()) {
+            for (GridTuple3<GridIoMessage, Long, IgniteRunnable> t = msgs.poll(); t != null; t = msgs.poll()) {
                 try {
                     invokeListener(plc, lsnr, nodeId, t.get1().message());
                 }
                 finally {
                     if (t.get3() != null)
-                        t.get3().deregisterMessage();
+                        t.get3().run();
                 }
             }
         }
 
         /**
          * @param msg Message to add.
-         * @param tracker Back pressure tracker (may be {@code null}).
+         * @param msgC Message closure (may be {@code null}).
          */
         void add(
             GridIoMessage msg,
-            @Nullable BackPressureTracker tracker
+            @Nullable IgniteRunnable msgC
         ) {
-            msgs.add(F.t(msg, U.currentTimeMillis(), tracker));
+            msgs.add(F.t(msg, U.currentTimeMillis(), msgC));
         }
 
         /**
@@ -2562,24 +2556,24 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private final GridIoMessage msg;
 
         /** */
-        private final BackPressureTracker tracker;
+        private final IgniteRunnable msgC;
 
         /**
          * @param nodeId Node ID.
          * @param msg Message.
-         * @param tracker Back pressure tracker.
+         * @param msgC Callback.
          */
-        private DelayedMessage(UUID nodeId, GridIoMessage msg, BackPressureTracker tracker) {
+        private DelayedMessage(UUID nodeId, GridIoMessage msg, IgniteRunnable msgC) {
             this.nodeId = nodeId;
             this.msg = msg;
-            this.tracker = tracker;
+            this.msgC = msgC;
         }
 
         /**
-         * @return Back pressure tracker.
+         * @return Message char.
          */
-        public BackPressureTracker tracker() {
-            return tracker;
+        public IgniteRunnable callback() {
+            return msgC;
         }
 
         /**

@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.lang.IgniteRunnable;
 
 /**
  * Listener SPI notifies IO manager with.
@@ -33,9 +34,9 @@ public interface CommunicationListener<T extends Serializable> {
      *
      * @param nodeId Node ID.
      * @param msg Message.
-     * @param tracker Back pressure tracker.
+     * @param msgC Runnable to call when message processing finished.
      */
-    public void onMessage(UUID nodeId, T msg, BackPressureTracker tracker);
+    public void onMessage(UUID nodeId, T msg, IgniteRunnable msgC);
 
     /**
      * Callback invoked when connection with remote node is lost.

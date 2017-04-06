@@ -37,10 +37,10 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.BackPressureTracker;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
@@ -114,7 +114,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
         private AtomicInteger rcvCnt = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Message msg, BackPressureTracker tracker) {
+        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
             // info("Test listener received message: " + msg);
 
             assertTrue("Unexpected message: " + msg, msg instanceof GridTestMessage);
@@ -125,7 +125,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
             rcvCnt.incrementAndGet();
 
-            tracker.deregisterMessage();
+            msgC.run();
 
             try {
                 synchronized (this) {

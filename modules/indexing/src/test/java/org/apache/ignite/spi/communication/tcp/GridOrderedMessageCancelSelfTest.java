@@ -39,8 +39,8 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.communication.BackPressureTracker;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -173,7 +173,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     private static class CommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override protected void notifyListener(UUID sndId, Message msg,
-            BackPressureTracker tracker) {
+            IgniteRunnable msgC) {
             try {
                 GridIoMessage ioMsg = (GridIoMessage)msg;
 
@@ -186,7 +186,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
                     assertTrue(U.await(resLatch, 5000, MILLISECONDS));
                 }
 
-                super.notifyListener(sndId, msg, tracker);
+                super.notifyListener(sndId, msg, msgC);
 
                 if (wait)
                     finishLatch.countDown();

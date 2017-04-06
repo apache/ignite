@@ -73,7 +73,6 @@ import org.apache.ignite.internal.util.ipc.IpcToNioAdapter;
 import org.apache.ignite.internal.util.ipc.shmem.IpcOutOfSystemResourcesException;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
-import org.apache.ignite.internal.util.nio.BackPressureNioTracker;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridConnectionBytesVerifyFilter;
 import org.apache.ignite.internal.util.nio.GridDirectParser;
@@ -108,6 +107,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -127,7 +127,6 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
-import org.apache.ignite.spi.communication.BackPressureTracker;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.thread.IgniteThread;
@@ -323,11 +322,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Default connections per node. */
     public static final int DFLT_CONN_PER_NODE = 1;
 
-    /** No-op back pressure tracker. */
-    private static final BackPressureTracker NOOP = new BackPressureTracker() {
-        @Override public void registerMessage() {}
-
-        @Override public void deregisterMessage() {}
+    /** No-op runnable. */
+    private static final IgniteRunnable NOOP = new IgniteRunnable() {
+        @Override public void run() {
+            // No-op.
+        }
     };
 
     /** Node ID message type. */
@@ -663,24 +662,26 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         }
                     }
 
-                    BackPressureTracker tracker;
+                    IgniteRunnable c;
 
                     if (msgQueueLimit > 0) {
-                        tracker = ses.meta(TRACKER_META);
+                        GridNioMessageTracker tracker = ses.meta(TRACKER_META);
 
                         if (tracker == null) {
-                            BackPressureTracker old = ses.addMeta(TRACKER_META, tracker =
-                                new BackPressureNioTracker(new GridNioMessageTracker(ses, msgQueueLimit)));
+                            GridNioMessageTracker old = ses.addMeta(TRACKER_META, tracker =
+                                new GridNioMessageTracker(ses, msgQueueLimit));
 
                             assert old == null;
                         }
 
-                        tracker.registerMessage();
+                        tracker.onMessageReceived();
+
+                        c = tracker;
                     }
                     else
-                        tracker = NOOP;
+                        c = NOOP;
 
-                    notifyListener(connKey.nodeId(), msg, tracker);
+                    notifyListener(connKey.nodeId(), msg, c);
                 }
             }
 
@@ -3291,14 +3292,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /**
      * @param sndId Sender ID.
      * @param msg Communication message.
-     * @param tracker Back pressure tracker.
+     * @param msgC Closure to call when message processing finished.
      */
-    protected void notifyListener(UUID sndId, Message msg, BackPressureTracker tracker) {
+    protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
         CommunicationListener<Message> lsnr = this.lsnr;
 
         if (lsnr != null)
             // Notify listener of a new message.
-            lsnr.onMessage(sndId, msg, tracker);
+            lsnr.onMessage(sndId, msg, msgC);
         else if (log.isDebugEnabled())
             log.debug("Received communication message without any registered listeners (will ignore, " +
                 "is node stopping?) [senderNodeId=" + sndId + ", msg=" + msg + ']');

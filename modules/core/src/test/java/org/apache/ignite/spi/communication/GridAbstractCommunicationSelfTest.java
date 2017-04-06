@@ -33,6 +33,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.testframework.GridSpiTestContext;
@@ -98,11 +99,11 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Message msg, BackPressureTracker tracker) {
+        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
             info("Received message [locNodeId=" + locNodeId + ", nodeId=" + nodeId +
                 ", msg=" + msg + ']');
 
-            tracker.deregisterMessage();
+            msgC.run();
 
             if (msg instanceof GridTestMessage) {
                 GridTestMessage testMsg = (GridTestMessage)msg;
