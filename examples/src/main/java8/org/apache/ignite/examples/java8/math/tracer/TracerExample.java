@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.math;
+package org.apache.ignite.examples.java8.math.tracer;
 
 import java.awt.Color;
 import java.io.IOException;
