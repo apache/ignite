@@ -17,6 +17,7 @@
 
 package org.apache.ignite.logger.log4j;
 
+import java.util.Enumeration;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -25,6 +26,7 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.log4j.spi.RootLogger;
 import org.apache.log4j.varia.NullAppender;
 
 /**
@@ -35,10 +37,22 @@ public class GridLog4jInitializationTest extends TestCase {
     /** */
     private static final boolean VERBOSE = true;
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
         super.setUp();
 
+        resetLogger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        super.tearDown();
+
+        resetLogger();
+    }
+
+    /** */
+    private void resetLogger() {
         Log4JLogger.reset();
 
         LogManager.resetConfiguration();
