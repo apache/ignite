@@ -903,7 +903,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         // Now let's build an identical key for get
         BinaryObjectBuilder bldr = grid(0).binary().builder(ComplexBinaryFieldsListHashedKey.class.getName());
 
-        bldr.setField("firstField", 365);
+        bldr.setField("firstField", 1);
         bldr.setField("secondField", "value");
         bldr.setField("thirdField", 0x1020304050607080L);
 
