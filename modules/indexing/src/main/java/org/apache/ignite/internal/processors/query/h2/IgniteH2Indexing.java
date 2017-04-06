@@ -3470,10 +3470,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             try {
                 if (val == null) // Only can happen for remove operation, can create simple search row.
                     row = GridH2RowFactory.create(wrap(key, keyType));
-
-                row = schema.offheap == null ?
-                    new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :
-                    new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, expirationTime);
+                else
+                    row = schema.offheap == null ?
+                        new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :
+                        new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, expirationTime);
             }
             catch (ClassCastException e) {
                 throw new IgniteCheckedException("Failed to convert key to SQL type. " +

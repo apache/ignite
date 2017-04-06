@@ -434,7 +434,7 @@ class VisorCacheCommand {
                     // Print footnote.
                     println("'Hi' - Number of cache hits.")
                     println("'Mi' - Number of cache misses.")
-                    println("'Rd' - number of cache reads.")
+                    println("'Rd' - Number of cache reads.")
                     println("'Wr' - Number of cache writes.")
 
                     // Print metrics.

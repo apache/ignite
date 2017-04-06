@@ -76,7 +76,6 @@
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="memoryMode" value="ONHEAP_TIERED"/>
                     <property name="offHeapMaxMemory" value="-1"/>
-                    <property name="swapEnabled" value="false"/>
                 </bean>
             </list>
         </property>

@@ -18,31 +18,33 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
-    using Apache.Ignite.Core.Impl.Common;
+    using System.Collections.Generic;
+    using System.Reflection;
 
     /// <summary>
-    /// DateTime serializer.
+    /// Reflection utils.
     /// </summary>
-    internal class DateTimeSerializer : IBinarySerializerInternal
+    internal static class ReflectionUtils
     {
-        /** <inheritdoc /> */
-        public void WriteBinary<T>(T obj, BinaryWriter writer)
+        /// <summary>
+        /// Gets all fields, including base classes.
+        /// </summary>
+        public static IEnumerable<FieldInfo> GetAllFields(Type type)
         {
-            TypeCaster<DateTimeHolder>.Cast(obj).WriteBinary(writer);
-        }
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public |
+                                       BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
-        /** <inheritdoc /> */
-        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
-        {
-            var holder = new DateTimeHolder(reader);
+            var curType = type;
 
-            return TypeCaster<T>.Cast(holder.Item);
-        }
+            while (curType != null)
+            {
+                foreach (var field in curType.GetFields(flags))
+                {
+                    yield return field;
+                }
 
-        /** <inheritdoc /> */
-        public bool SupportsHandles
-        {
-            get { return false; }
+                curType = curType.BaseType;
+            }
         }
     }
 }

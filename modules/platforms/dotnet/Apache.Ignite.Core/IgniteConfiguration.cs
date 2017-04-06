@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var marsh = new Marshaller(configuration.BinaryConfiguration);
+                var marsh = BinaryUtils.Marshaller;
 
                 configuration.Write(marsh.StartMarshal(stream));
 
@@ -274,15 +274,26 @@ namespace Apache.Ignite.Core
 
                 // Send only descriptors with non-null EqualityComparer to preserve old behavior where
                 // remote nodes can have no BinaryConfiguration.
-                var types = writer.Marshaller.GetUserTypeDescriptors().Where(x => x.EqualityComparer != null).ToList();
 
-                writer.WriteInt(types.Count);
-
-                foreach (var type in types)
+                if (BinaryConfiguration.TypeConfigurations != null &&
+                    BinaryConfiguration.TypeConfigurations.Any(x => x.EqualityComparer != null))
                 {
-                    writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
-                    writer.WriteBoolean(type.IsEnum);
-                    BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
+                    // Create a new marshaller to reuse type name resolver mechanism.
+                    var types = new Marshaller(BinaryConfiguration).GetUserTypeDescriptors()
+                        .Where(x => x.EqualityComparer != null).ToList();
+
+                    writer.WriteInt(types.Count);
+
+                    foreach (var type in types)
+                    {
+                        writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
+                        writer.WriteBoolean(type.IsEnum);
+                        BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
+                    }
+                }
+                else
+                {
+                    writer.WriteInt(0);
                 }
             }
             else

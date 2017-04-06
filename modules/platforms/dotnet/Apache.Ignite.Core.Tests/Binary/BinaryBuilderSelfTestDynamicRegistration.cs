@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.binary.distributed.dht;
+namespace Apache.Ignite.Core.Tests.Binary
+{
+    using System.Collections.Generic;
+    using Apache.Ignite.Core.Binary;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.binary.GridBinaryDuplicateIndexObjectsAbstractSelfTest;
+    /// <summary>
+    /// Binary builder self test with dynamic type registration.
+    /// </summary>
+    public class BinaryBuilderSelfTestDynamicRegistration : BinaryBuilderSelfTest
+    {
+        /** <inheritdoc /> */
+        protected override ICollection<BinaryTypeConfiguration> GetTypeConfigurations()
+        {
+            // The only type to be registered is TestEnumRegistered,
+            // because unregistered enums are handled differently.
 
-/**
- * Test PARTITIONED ATOMIC.
- */
-public class GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest extends
-    GridBinaryDuplicateIndexObjectsAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override public CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
+            return new []
+            {
+                new BinaryTypeConfiguration(typeof(TestEnumRegistered))
+            };
+        }
     }
 }

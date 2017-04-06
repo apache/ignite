@@ -79,7 +79,7 @@ namespace ignite
             }
         private:
             /** Value. */
-            const T val;
+            const T& val;
 
             IGNITE_NO_COPY_ASSIGNMENT(In1Operation)
         };
