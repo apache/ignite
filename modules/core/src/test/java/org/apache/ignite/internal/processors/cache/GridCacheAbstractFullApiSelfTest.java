@@ -111,6 +111,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
+import static org.apache.ignite.cache.CachePeekMode.OFFHEAP;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;

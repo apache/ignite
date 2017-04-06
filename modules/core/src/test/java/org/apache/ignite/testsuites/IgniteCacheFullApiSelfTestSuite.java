@@ -22,6 +22,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheClearSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicNearEnabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicNearEnabledPrimaryWriteOrderFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicOnheapFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicOnheapMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicPrimaryWriteOrderFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicPrimaryWriteOrderReloadAllSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicReloadAllSelfTest;
@@ -111,6 +113,7 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedAtomicFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicNearEnabledFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicNearEnabledPrimaryWriteOrderFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicOnheapFullApiSelfTest.class);;
 
         suite.addTestSuite(GridCachePartitionedOnheapFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedAtomicOnheapFullApiSelfTest.class);
@@ -176,6 +179,7 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedAtomicOnheapMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledOnheapMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledAtomicOnheapMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicOnheapMultiNodeFullApiSelfTest.class);;
 
         // Old affinity assignment mode.
         suite.addTestSuite(GridCachePartitionedLateAffDisabledMultiNodeFullApiSelfTest.class);
