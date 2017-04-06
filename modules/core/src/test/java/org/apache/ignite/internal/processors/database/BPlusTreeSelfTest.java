@@ -121,7 +121,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     protected void assertNoLocks() {
         assertTrue(TestTree.checkNoLocks());
     }
-    
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         long seed = System.nanoTime();
@@ -1192,6 +1192,32 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         CNT = 70;
 
         doTestRandomPutRemoveMultithreaded(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testFindFirstAndLast() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+        TestTree tree = createTestTree(true);
+
+        Long first = tree.findFirst();
+        assertNull(first);
+
+        Long last = tree.findLast();
+        assertNull(last);
+
+        for (long idx = 1L; idx <= 10L; ++idx)
+            tree.put(idx);
+
+        first = tree.findFirst();
+        assertEquals((Long)1L, first);
+
+        last = tree.findLast();
+        assertEquals((Long)10L, last);
+
+        assertNoLocks();
     }
 
     /**
