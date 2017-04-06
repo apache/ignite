@@ -119,8 +119,6 @@
 
                     <property name="atomicityMode" value="ATOMIC"/>
 
-                    <property name="swapEnabled" value="false"/>
-
                     <property name="memoryMode" value="OFFHEAP_TIERED"/>
 
                     <property name="indexedTypes">
