@@ -320,13 +320,13 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         setEnv(MESOS_ROLE, mesosRoleValue);
 
-        Thread.sleep(5000);
+        Thread.sleep(500);
 
         IgniteFrameworkThread igniteFWThread = new IgniteFrameworkThread();
 
         igniteFWThread.start();
 
-        igniteFWThread.sleep(5000);
+        igniteFWThread.sleep(500);
 
         assertEquals(mesosUserValue, igniteFWThread.getIgniteFramework().getUser());
         assertEquals(mesosRoleValue, igniteFWThread.getIgniteFramework().getRole());
