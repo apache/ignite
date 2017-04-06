@@ -862,7 +862,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     caches.put(maskNull(name), cache);
 
-                    startCache(cache, desc.schemaForStart());
+                    startCache(cache, desc.schema());
 
                     jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
                 }
@@ -1118,14 +1118,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cache Cache to start.
+     * @param schema Cache schema.
      * @throws IgniteCheckedException If failed to start cache.
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
-    private void startCache(GridCacheAdapter<?, ?> cache, QuerySchema idxStates)
+    private void startCache(GridCacheAdapter<?, ?> cache, QuerySchema schema)
         throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
-        ctx.query().onCacheStart(cacheCtx, idxStates);
+        ctx.query().onCacheStart(cacheCtx, schema);
         ctx.continuous().onCacheStart(cacheCtx);
 
         CacheConfiguration cfg = cacheCtx.config();
@@ -1696,7 +1697,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.initiatingNodeId(),
             req.deploymentId(),
             topVer,
-            desc != null ? desc.schemaForStart() : null
+            desc != null ? desc.schema() : null
         );
     }
 
@@ -1734,7 +1735,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         null,
                         desc.deploymentId(),
                         topVer,
-                        desc.schemaForStart()
+                        desc.schema()
                     );
                 }
             }

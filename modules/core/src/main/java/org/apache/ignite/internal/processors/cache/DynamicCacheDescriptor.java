@@ -90,9 +90,6 @@ public class DynamicCacheDescriptor {
     /** Current schema. */
     private QuerySchema schema;
 
-    /** Initial schema which is used to start cache. */
-    private QuerySchema schemaForStart;
-
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -319,20 +316,6 @@ public class DynamicCacheDescriptor {
      */
     @Nullable public UUID receivedFrom() {
         return rcvdFrom;
-    }
-
-    /**
-     * Get schema for cache start. Once requested it never changes afterwards.
-     *
-     * @return Schema for cache start.
-     */
-    public QuerySchema schemaForStart() {
-        synchronized (schemaMux) {
-            if (schemaForStart == null)
-                schemaForStart = schema.copy();
-
-            return schemaForStart;
-        }
     }
 
     /**

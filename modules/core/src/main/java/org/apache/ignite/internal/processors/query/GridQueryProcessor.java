@@ -472,8 +472,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             disconnected = false;
         }
 
-        ioMgr.onStartOrReconnect();
-
         onCacheKernalStart();
 
         return super.onReconnected(clusterRestarted);
@@ -489,6 +487,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onCacheStart(GridCacheContext cctx, QuerySchema schema) throws IgniteCheckedException {
+        System.out.println("ON CACHE START: " + cctx.name() + " " + cctx.kernalContext().igniteInstanceName());
+
         if (idx == null)
             return;
 
@@ -507,6 +507,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     public void onCacheStop(GridCacheContext cctx) {
+        System.out.println("ON CACHE STOP: " + cctx.name() + " " + cctx.kernalContext().igniteInstanceName());
+
         if (idx == null)
             return;
 
@@ -1392,9 +1394,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert idx != null;
 
         synchronized (stateMux) {
-            if (disconnected)
-                return;
-
             // Clear types.
             Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
 

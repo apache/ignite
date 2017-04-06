@@ -558,7 +558,7 @@ public final class IgniteSystemProperties {
      * <p>
      * Defaults to {@code 1000}.
      */
-    public static final String IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
+    public static final String IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE = "IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE";
 
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
