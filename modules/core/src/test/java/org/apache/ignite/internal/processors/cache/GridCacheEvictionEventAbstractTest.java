@@ -119,7 +119,5 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
         c.localEvict(Collections.singleton("1"));
 
         assertTrue("Failed to wait for eviction event", latch.await(10, TimeUnit.SECONDS));
-
-        assertNotNull(oldVal.get());
     }
 }
