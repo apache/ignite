@@ -76,14 +76,9 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setEvictSynchronized(true);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setBackups(1);
-
-        // Set eviction queue size explicitly.
-        cacheCfg.setEvictSynchronizedKeyBufferSize(1);
-        cacheCfg.setEvictMaxOverflowRatio(0);
 
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxSize(10);

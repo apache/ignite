@@ -81,7 +81,6 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
 
         ccfg.setEvictionPolicy(plc);
         ccfg.setOnheapCacheEnabled(true);
-        ccfg.setEvictSynchronized(false);
 
         cfg.setPeerClassLoadingEnabled(false);
 

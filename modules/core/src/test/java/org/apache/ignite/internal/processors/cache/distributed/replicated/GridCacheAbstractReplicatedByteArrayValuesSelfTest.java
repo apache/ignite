@@ -46,7 +46,6 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setEvictSynchronized(false);
 
         return cfg;
     }

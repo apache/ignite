@@ -53,7 +53,6 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
         cfg.setNearConfiguration(nearConfiguration());
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setEvictSynchronized(false);
 
         return cfg;
     }

@@ -82,7 +82,6 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         cacheCfg.setRebalanceMode(NONE);
 
         cacheCfg.setAffinity(aff);
-        cacheCfg.setEvictSynchronized(true);
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setBackups(aff.backups());
 

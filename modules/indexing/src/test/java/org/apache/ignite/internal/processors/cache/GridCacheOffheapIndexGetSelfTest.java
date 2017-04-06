@@ -75,8 +75,6 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setEvictSynchronized(true);
-        cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setEvictionPolicy(null);
 
