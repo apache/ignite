@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDeploymentException;
@@ -1096,12 +1095,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public IgniteCompute withExecutor(@NotNull String name) {
-        // TODO: Pass current async state
-        return new IgniteComputeImpl(ctx, prj, subjId, false, name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Executor localExecutor(@NotNull String name) throws IgniteCheckedException {
-        return ctx.pools().customPoolByName(name);
+        return new IgniteComputeImpl(ctx, prj, subjId, isAsync(), name);
     }
 }

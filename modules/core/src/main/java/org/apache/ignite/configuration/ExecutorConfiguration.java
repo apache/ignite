@@ -54,8 +54,10 @@ public class ExecutorConfiguration {
      * @param other Instance to copy.
      */
     public ExecutorConfiguration(ExecutorConfiguration other) {
-        this.name = name;
-        this.size = size;
+        assert other != null;
+
+        name = other.name;
+        size = other.size;
     }
 
     /**

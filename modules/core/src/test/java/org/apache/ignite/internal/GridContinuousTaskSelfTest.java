@@ -202,7 +202,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
                 @Override public String call() throws Exception {
                     return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
                 }
-            }, ignite.cluster().nodes(), null);
+            }, ignite.cluster().nodes());
 
             assertEquals("DONE", fut.get(3000));
         }

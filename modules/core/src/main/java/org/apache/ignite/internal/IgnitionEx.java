@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -1852,8 +1853,8 @@ public class IgnitionEx {
             qryExecSvc.allowCoreThreadTimeOut(true);
 
             if (!F.isEmpty(cfg.getExecutorConfiguration())) {
-                // TODO: Validate unique names
-                // TODO: Validate positive size
+                validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
+
                 customNamedExecSvcs = new HashMap<>();
 
                 for(ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
@@ -1969,6 +1970,28 @@ public class IgnitionEx {
             if (poolSize <= 0) {
                 throw new IgniteCheckedException("Invalid " + poolName + " thread pool size" +
                     " (must be greater than 0), actual value: " + poolSize);
+            }
+        }
+
+        /**
+         * @param cfgs Array of the executors configurations.
+         * @throws IgniteCheckedException If configuration is wrong.
+         */
+        private static void validateCustomExecutorsConfiguration(ExecutorConfiguration[] cfgs)
+            throws IgniteCheckedException {
+            if (cfgs == null)
+                return;
+
+            Set<String> names = new HashSet<>(cfgs.length);
+
+            for (ExecutorConfiguration cfg : cfgs) {
+                if (F.isEmpty(cfg.getName()))
+                    throw new IgniteCheckedException("Executor name must not be empty");
+
+                if (!names.add(cfg.getName()))
+                    throw new IgniteCheckedException("Executor name '" + cfg.getName() + "' is duplicated");
+
+                validateThreadPoolSize(cfg.getSize(), cfg.getName());
             }
         }
 
@@ -2126,6 +2149,17 @@ public class IgnitionEx {
             initializeDefaultSpi(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
+
+            ExecutorConfiguration[] execCfgs = myCfg.getExecutorConfiguration();
+
+            if (execCfgs != null) {
+                ExecutorConfiguration[] clone = execCfgs.clone();
+
+                for (int i = 0; i < execCfgs.length; i++)
+                    clone[i] = new ExecutorConfiguration(execCfgs[i]);
+
+                myCfg.setExecutorConfiguration(clone);
+            }
 
             return myCfg;
         }

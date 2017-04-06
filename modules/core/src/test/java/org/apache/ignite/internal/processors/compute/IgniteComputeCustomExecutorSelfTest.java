@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * https://issues.apache.org/jira/browse/IGNITE-4699
  */
-public class IgniteComputeCustomExecutorTest extends GridCommonAbstractTest {
+public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -117,8 +117,8 @@ public class IgniteComputeCustomExecutorTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testAllComputeApiByCustomExecutor() throws Exception {
-        assertNotNull(grid(0).compute().localExecutor(EXEC_NAME0));
-        assertNotNull(grid(0).compute().localExecutor(EXEC_NAME1));
+        assertNotNull(grid(0).localExecutor(EXEC_NAME0));
+        assertNotNull(grid(0).localExecutor(EXEC_NAME1));
 
         IgniteCompute comp = grid(0).compute().withExecutor(EXEC_NAME0);
 
@@ -335,6 +335,4 @@ public class IgniteComputeCustomExecutorTest extends GridCommonAbstractTest {
             return null;
         }
     }
-
-
 }

@@ -22,12 +22,10 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Wrapper for all grid messages.
@@ -38,10 +36,6 @@ public class GridIoMessage implements Message {
 
     /** Policy. */
     private byte plc;
-
-    // TODO: Remove
-    /** Custom executor name. The policy must be GridIoPolicy.CUSTOM_NAMED_POOL to use custom executors. */
-    private String execName;
 
     /** Message topic. */
     @GridToStringInclude
@@ -97,39 +91,6 @@ public class GridIoMessage implements Message {
         assert msg != null;
 
         this.plc = plc;
-        this.msg = msg;
-        this.topic = topic;
-        this.topicOrd = topicOrd;
-        this.ordered = ordered;
-        this.timeout = timeout;
-        this.skipOnTimeout = skipOnTimeout;
-    }
-
-    /**
-     * @param execName Custom executor name.
-     * @param topic Communication topic.
-     * @param topicOrd Topic ordinal value.
-     * @param msg Message.
-     * @param ordered Message ordered flag.
-     * @param timeout Timeout.
-     * @param skipOnTimeout Whether message can be skipped on timeout.
-     */
-    public GridIoMessage(
-        String execName,
-        Object topic,
-        int topicOrd,
-        Message msg,
-        boolean ordered,
-        long timeout,
-        boolean skipOnTimeout
-    ) {
-        assert topic != null;
-        assert topicOrd <= Byte.MAX_VALUE;
-        assert msg != null;
-        assert !F.isEmpty(execName);
-
-        this.plc = GridIoPolicy.CUSTOM_NAMED_POOL;
-        this.execName = execName;
         this.msg = msg;
         this.topic = topic;
         this.topicOrd = topicOrd;
@@ -208,13 +169,6 @@ public class GridIoMessage implements Message {
         return ordered;
     }
 
-    /**
-     * @return Custom executor name.
-     */
-    @Nullable public String executorName() {
-        return execName;
-    }
-
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         msg.onAckReceived();
@@ -243,48 +197,42 @@ public class GridIoMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("executorName", execName))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeMessage("msg", msg))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeBoolean("ordered", ordered))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 2:
                 if (!writer.writeByte("plc", plc))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 3:
                 if (!writer.writeBoolean("skipOnTimeout", skipOnTimeout))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 4:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeInt("topicOrd", topicOrd))
                     return false;
 
@@ -304,14 +252,6 @@ public class GridIoMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                execName = reader.readString("executorName");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 msg = reader.readMessage("msg");
 
                 if (!reader.isLastRead())
@@ -319,7 +259,7 @@ public class GridIoMessage implements Message {
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 ordered = reader.readBoolean("ordered");
 
                 if (!reader.isLastRead())
@@ -327,7 +267,7 @@ public class GridIoMessage implements Message {
 
                 reader.incrementState();
 
-            case 3:
+            case 2:
                 plc = reader.readByte("plc");
 
                 if (!reader.isLastRead())
@@ -335,7 +275,7 @@ public class GridIoMessage implements Message {
 
                 reader.incrementState();
 
-            case 4:
+            case 3:
                 skipOnTimeout = reader.readBoolean("skipOnTimeout");
 
                 if (!reader.isLastRead())
@@ -343,7 +283,7 @@ public class GridIoMessage implements Message {
 
                 reader.incrementState();
 
-            case 5:
+            case 4:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -351,7 +291,7 @@ public class GridIoMessage implements Message {
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 topicBytes = reader.readByteArray("topicBytes");
 
                 if (!reader.isLastRead())
@@ -359,7 +299,7 @@ public class GridIoMessage implements Message {
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 topicOrd = reader.readInt("topicOrd");
 
                 if (!reader.isLastRead())
@@ -379,7 +319,7 @@ public class GridIoMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 7;
     }
 
     /**

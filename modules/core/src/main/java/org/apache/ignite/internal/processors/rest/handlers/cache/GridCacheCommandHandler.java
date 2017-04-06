@@ -685,7 +685,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             return ctx.closure().callAsync(BALANCE,
                 new FlaggedCacheOperationCallable(clientId, cacheName, skipStore, op, key),
-                prj.nodes(), null);
+                prj.nodes());
         }
     }
 
@@ -722,7 +722,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             return ctx.closure().callAsync(BALANCE,
                 new CacheOperationCallable(clientId, cacheName, op, key),
-                prj.nodes(), null);
+                prj.nodes());
         }
     }
 

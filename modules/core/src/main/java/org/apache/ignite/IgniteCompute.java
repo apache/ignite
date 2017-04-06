@@ -763,16 +763,4 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return Instance of this component associated with named executor.
      */
     public IgniteCompute withExecutor(@NotNull String name);
-
-    /**
-     * Gets instance of the local thread pool executor compute associated with custom named executor.
-     *
-     * @param name Custom executor name.
-     * @return Local thread pool executor.
-     * @see ExecutorConfiguration
-     * @throws IgniteCheckedException If there is not appropriate executor for name.
-     */
-    // TODO: REmove IgniteCheckedException
-    // TODO: Move to Ignite interface
-    public Executor localExecutor(@NotNull String name) throws IgniteCheckedException;
 }

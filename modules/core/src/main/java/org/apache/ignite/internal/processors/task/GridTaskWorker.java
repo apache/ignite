@@ -1393,19 +1393,16 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                                 plc = PUBLIC_POOL;
                         }
 
-                        // Send job execution request.
-                        if (ses.getExecutorName() == null)
-                            ctx.io().sendToGridTopic(node, TOPIC_JOB, req, internal ? MANAGEMENT_POOL : PUBLIC_POOL);
-                        else {
+                        if (ses.getExecutorName() != null) {
                             Set<String> execs = node.attribute(ATTR_CUSTOM_EXECUTORS_NAMES_SET);
 
                             if (execs == null || !execs.contains(ses.getExecutorName())) {
                                 throw new IgniteCheckedException("Target node doesn't contain executor [node=" + node +
                                     ", executorName=" + ses.getExecutorName() + ']');
                             }
-
-                            ctx.io().sendToGridTopic(node, TOPIC_JOB, req, ses.getExecutorName());
                         }
+                        // Send job execution request.
+                        ctx.io().sendToGridTopic(node, TOPIC_JOB, req, plc);
 
                         if (log.isDebugEnabled())
                             log.debug("Sent job request [req=" + req + ", node=" + node + ']');

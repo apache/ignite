@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheMode;
@@ -26,12 +27,14 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -192,6 +195,16 @@ public interface Ignite extends AutoCloseable {
      * @return {@link ExecutorService} which will execute jobs on nodes in given cluster group.
      */
     public ExecutorService executorService(ClusterGroup grp);
+
+    /**
+     * Gets instance of the local thread pool executor compute associated with custom named executor.
+     *
+     * @param name Custom executor name.
+     * @return Local thread pool executor.
+     * @see ExecutorConfiguration
+     * @throws IgniteException If there is not appropriate executor for name.
+     */
+    public Executor localExecutor(@NotNull String name) throws IgniteException;
 
     /**
      * Gets Ignite version.

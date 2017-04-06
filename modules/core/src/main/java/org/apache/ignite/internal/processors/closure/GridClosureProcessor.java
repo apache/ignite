@@ -195,6 +195,17 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param mode Distribution mode.
      * @param job Closure to execute.
      * @param nodes Grid nodes.
+     * @return Task execution future.
+     */
+    public ComputeTaskInternalFuture<?> runAsync(GridClosureCallMode mode, Runnable job,
+        @Nullable Collection<ClusterNode> nodes) {
+        return runAsync(mode, job, nodes, null);
+    }
+
+    /**
+     * @param mode Distribution mode.
+     * @param job Closure to execute.
+     * @param nodes Grid nodes.
      * @param execName Custom executor name.
      * @return Task execution future.
      */
@@ -381,6 +392,20 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param mode Distribution mode.
      * @param jobs Closures to execute.
      * @param nodes Grid nodes.
+     * @param <R> Type.
+     * @return Grid future for collection of closure results.
+     */
+    public <R> ComputeTaskInternalFuture<Collection<R>> callAsync(
+        GridClosureCallMode mode,
+        @Nullable Collection<? extends Callable<R>> jobs,
+        @Nullable Collection<ClusterNode> nodes) {
+        return callAsync(mode, jobs, nodes, null);
+    }
+
+    /**
+     * @param mode Distribution mode.
+     * @param jobs Closures to execute.
+     * @param nodes Grid nodes.
      * @param execName Custom executor name.
      * @param <R> Type.
      * @return Grid future for collection of closure results.
@@ -424,6 +449,18 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         finally {
             busyLock.readUnlock();
         }
+    }
+
+    /**
+     * @param mode Distribution mode.
+     * @param job Closure to execute.
+     * @param nodes Grid nodes.
+     * @param <R> Type.
+     * @return Grid future for collection of closure results.
+     */
+    public <R> ComputeTaskInternalFuture<R> callAsync(GridClosureCallMode mode,
+        @Nullable Callable<R> job, @Nullable Collection<ClusterNode> nodes) {
+        return callAsync(mode, job, nodes, null);
     }
 
     /**

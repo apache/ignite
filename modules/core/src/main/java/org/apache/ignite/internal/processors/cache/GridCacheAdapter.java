@@ -3609,7 +3609,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         ComputeTaskInternalFuture fut = ctx.kernalContext().closure().callAsync(BROADCAST,
             Collections.singletonList(
                 new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc, keepBinary)),
-            nodes, null);
+            nodes);
 
 
         return fut;

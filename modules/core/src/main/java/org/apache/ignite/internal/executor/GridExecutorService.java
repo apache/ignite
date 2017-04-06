@@ -260,8 +260,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         ctx.gateway().readLock();
 
         try {
-            // TODO: Add override
-            return addFuture(ctx.closure().callAsync(BALANCE, task, prj.nodes(), null));
+            return addFuture(ctx.closure().callAsync(BALANCE, task, prj.nodes()));
         }
         finally {
             ctx.gateway().readUnlock();
@@ -277,7 +276,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         ctx.gateway().readLock();
 
         try {
-            IgniteInternalFuture<T> fut = ctx.closure().runAsync(BALANCE, task, prj.nodes(), null).chain(
+            IgniteInternalFuture<T> fut = ctx.closure().runAsync(BALANCE, task, prj.nodes()).chain(
                 new CX1<IgniteInternalFuture<?>, T>() {
                 @Override public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
                     fut.get();
@@ -302,7 +301,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         ctx.gateway().readLock();
 
         try {
-            return addFuture(ctx.closure().runAsync(BALANCE, task, prj.nodes(), null));
+            return addFuture(ctx.closure().runAsync(BALANCE, task, prj.nodes()));
         }
         finally {
             ctx.gateway().readUnlock();
@@ -367,7 +366,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
             ctx.gateway().readLock();
 
             try {
-                fut = ctx.closure().callAsync(BALANCE, task, prj.nodes(), null);
+                fut = ctx.closure().callAsync(BALANCE, task, prj.nodes());
             }
             finally {
                 ctx.gateway().readUnlock();
@@ -503,7 +502,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
             ctx.gateway().readLock();
 
             try {
-                fut = ctx.closure().callAsync(BALANCE, cmd, prj.nodes(), null);
+                fut = ctx.closure().callAsync(BALANCE, cmd, prj.nodes());
             }
             finally {
                 ctx.gateway().readUnlock();
@@ -580,7 +579,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         ctx.gateway().readLock();
 
         try {
-            addFuture(ctx.closure().runAsync(BALANCE, cmd, prj.nodes(), null));
+            addFuture(ctx.closure().runAsync(BALANCE, cmd, prj.nodes()));
         }
         finally {
             ctx.gateway().readUnlock();

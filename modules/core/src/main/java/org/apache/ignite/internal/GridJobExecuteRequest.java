@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -41,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Job execution request.
  */
-public class GridJobExecuteRequest implements Message {
+public class GridJobExecuteRequest implements CustomExecutorAwareMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -460,10 +459,8 @@ public class GridJobExecuteRequest implements Message {
         return part;
     }
 
-    /**
-     * @return Custom executor name.
-     */
-    public String getExecutorName() {
+    /** {@inheritDoc} */
+    @Override public String getExecutorName() {
         return execName;
     }
 

@@ -585,6 +585,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        execCfgs = cfg.getExecutorConfiguration();
     }
 
     /**
@@ -2733,10 +2734,12 @@ public class IgniteConfiguration {
      * Sets custom executors (named thread pools) for user compute tasks.
      *
      * @param execCfgs Executor configurations.
+     * @return {@code this} for chaining.
      */
-    // TODO: Return this.
-    public void setExecutorConfiguration(ExecutorConfiguration... execCfgs) {
+    public IgniteConfiguration setExecutorConfiguration(ExecutorConfiguration... execCfgs) {
         this.execCfgs = execCfgs;
+
+        return this;
     }
 
     /** {@inheritDoc} */

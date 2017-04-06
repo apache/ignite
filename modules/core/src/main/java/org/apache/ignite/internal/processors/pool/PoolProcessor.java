@@ -155,10 +155,6 @@ public class PoolProcessor extends GridProcessorAdapter {
                 if (plc < 0)
                     throw new IgniteCheckedException("Policy cannot be negative: " + plc);
 
-                // TODO: Change to assert
-                if (plc == GridIoPolicy.CUSTOM_NAMED_POOL)
-                    throw new IgniteCheckedException("Custom policy must be handled by its name");
-
                 if (GridIoPolicy.isReservedGridIoPolicy(plc))
                     throw new IgniteCheckedException("Policy is reserved for internal usage (range 0-31): " + plc);
 
@@ -180,7 +176,7 @@ public class PoolProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Get executor service for custom policy by executor name.
+     * Gets executor service for custom policy by executor name.
      *
      * @param name Executor name.
      * @return Executor service.

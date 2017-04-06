@@ -55,9 +55,6 @@ public class GridIoPolicy {
     /** Pool for service proxy executions. */
     public static final byte SERVICE_POOL = 11;
 
-    /** Custom named pool. IO message must contain not empty name of the custom pool. */
-    public static final byte CUSTOM_NAMED_POOL = 12;
-
     /**
      * Defines the range of reserved pools that are not available for plugins.
      * @param key The key.

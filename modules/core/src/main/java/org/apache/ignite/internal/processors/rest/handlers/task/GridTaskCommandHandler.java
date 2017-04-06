@@ -235,7 +235,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                     taskFut = ctx.closure().callAsync(
                         BALANCE,
-                        new ExeCallable(name, params, timeout, clientId), prj.nodes(), null);
+                        new ExeCallable(name, params, timeout, clientId), prj.nodes());
                 }
 
                 if (async) {
