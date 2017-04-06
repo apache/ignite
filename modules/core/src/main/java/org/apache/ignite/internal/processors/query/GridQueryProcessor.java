@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
@@ -710,7 +711,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         boolean cacheExists = cacheDesc != null && F.eq(desc.cacheDeploymentId(), cacheDesc.deploymentId());
 
-        boolean cacheStarted = cacheExists && spaces.contains(desc.space());
+        boolean cacheStarted = cacheExists && spaces.contains(CU.mask(desc.space()));
 
         // Validate schema state and decide whether we should proceed or not.
         SchemaAbstractOperation op = schemaOp.descriptor().operation();
@@ -1372,7 +1373,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     idx.registerType(space, desc);
                 }
 
-                spaces.add(space);
+                spaces.add(CU.mask(space));
             }
             catch (IgniteCheckedException | RuntimeException e) {
                 unregisterCache0(space);
@@ -1435,7 +1436,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + space, e);
             }
 
-            spaces.remove(space);
+            spaces.remove(CU.mask(space));
         }
     }
 
