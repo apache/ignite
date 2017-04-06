@@ -17,11 +17,22 @@
 package org.apache.ignite.internal.processors.cache.database.evict;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 
 /**
  *
  */
 public class NoOpPageEvictionTracker implements PageEvictionTracker {
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public void touchPage(long pageId) throws IgniteCheckedException {
         // No-op.

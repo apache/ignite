@@ -28,15 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
  *
  */
 public abstract class PageEvictionWithRebalanceTest extends PageEvictionAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        super.afterTest();
-    }
-
     /**
      *
+     * @throws Exception If failed.
      */
     public void testEvictionWithRebalance() throws Exception {
         startGridsMultiThreaded(4);
@@ -80,5 +74,10 @@ public abstract class PageEvictionWithRebalanceTest extends PageEvictionAbstract
 
             size = rebalanceSize;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 }

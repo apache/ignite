@@ -99,7 +99,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             initPageMemoryPolicies(dbCfg);
 
-            startPageMemoryPools();
+            startMemoryPolicies();
 
             initPageMemoryDataStructures(dbCfg);
         }
@@ -140,9 +140,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      *
      */
-    private void startPageMemoryPools() {
-        for (MemoryPolicy memPlc : memPlcMap.values())
+    private void startMemoryPolicies() {
+        for (MemoryPolicy memPlc : memPlcMap.values()) {
             memPlc.pageMemory().start();
+
+            memPlc.evictionTracker().start();
+        }
     }
 
     /**
@@ -227,6 +230,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 checkPolicyName(plcCfg.getName(), plcNames);
 
                 checkPolicySize(plcCfg);
+
+                checkPolicyEvictionProperties(plcCfg, dbCfg);
             }
         }
 
@@ -249,6 +254,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * @param plcCfg MemoryPolicyConfiguration to validate.
+     * @throws IgniteCheckedException If config is invalid.
      */
     private static void checkPolicySize(MemoryPolicyConfiguration plcCfg) throws IgniteCheckedException {
         if (plcCfg.getSize() < MIN_PAGE_MEMORY_SIZE)
@@ -256,8 +262,35 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param plcCfg MemoryPolicyConfiguration to validate.
+     * @param dbCfg Memory configuration.
+     * @throws IgniteCheckedException If config is invalid.
+     */
+    private static void checkPolicyEvictionProperties(MemoryPolicyConfiguration plcCfg, MemoryConfiguration dbCfg)
+        throws IgniteCheckedException {
+        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+            return;
+
+        if (plcCfg.getEvictionThreshold() < 0.5 || plcCfg.getEvictionThreshold() > 0.999) {
+            throw new IgniteCheckedException("Page eviction threshold must be between 0.5 and 0.999: " +
+                plcCfg.getName());
+        }
+
+        if (plcCfg.getEmptyPagesPoolSize() <= 10)
+            throw new IgniteCheckedException("Evicted pages pool size should be greater than 10: " + plcCfg.getName());
+
+        long maxPoolSize = plcCfg.getSize() / dbCfg.getPageSize() / 10;
+
+        if (plcCfg.getEmptyPagesPoolSize() >= maxPoolSize) {
+            throw new IgniteCheckedException("Evicted pages pool size should be lesser than " + maxPoolSize +
+                ": " + plcCfg.getName());
+        }
+    }
+
+    /**
      * @param plcName MemoryPolicy name to validate.
      * @param observedNames Names of MemoryPolicies observed before.
+     * @throws IgniteCheckedException If config is invalid.
      */
     private static void checkPolicyName(String plcName, Set<String> observedNames) throws IgniteCheckedException {
         if (plcName == null || plcName.isEmpty())
@@ -341,8 +374,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         if (memPlcMap != null) {
-            for (MemoryPolicy memPlc : memPlcMap.values())
+            for (MemoryPolicy memPlc : memPlcMap.values()) {
                 memPlc.pageMemory().stop();
+
+                memPlc.evictionTracker().stop();
+            }
         }
     }
 

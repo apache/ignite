@@ -451,46 +451,30 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @param freeSpace Free space.
      * @param bucket Bucket.
      * @return Page ID if the page has enough free space, 0L otherwise (page is returned to the bucket in such case).
+     * @throws IgniteCheckedException If failed.
      */
     private long tryTakeEmptyPageWithFreeSpace(int freeSpace, int bucket) throws IgniteCheckedException {
         long pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
 
-        // TODO: get rid of 2 readlocks.
         if (pageId != 0L) {
             Page page = pageMem.page(cacheId, pageId);
 
-            if (!checkPageFreeSpace(page, freeSpace)) {
-                pageId = 0L;
+            long pageAddr = page.getForReadPointer();
 
-                long pageAddr = page.getForReadPointer();
+            try {
+                DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                try {
+                if (io.getFreeSpace(pageAddr) < freeSpace) {
+                    pageId = 0L;
+
                     put(null, page, pageAddr, bucket);
                 }
-                finally {
-                    page.releaseRead();
-                }
+            } finally {
+                page.releaseRead();
             }
         }
 
         return pageId;
-    }
-
-    /**
-     * @param page Page.
-     * @param freeSpace Needed size.
-     */
-    private boolean checkPageFreeSpace(Page page, int freeSpace) throws IgniteCheckedException {
-        long pageAddr = page.getForReadPointer();
-
-        try {
-            DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
-
-            return io.getFreeSpace(pageAddr) >= freeSpace;
-        }
-        finally {
-            page.releaseRead();
-        }
     }
 
     /** {@inheritDoc} */

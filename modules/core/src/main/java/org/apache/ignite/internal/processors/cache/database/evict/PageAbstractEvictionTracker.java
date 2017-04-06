@@ -55,8 +55,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /** Shared context. */
     private final GridCacheSharedContext sharedCtx;
 
-    // TODO: create JIRA about refactoring and put JIRA number here.
-    /* Will be removed after segments refactoring >>>> */
+    /* TODO: IGNITE-4921: Will be removed after segments refactoring >>>> */
     protected final int segBits;
     protected final int idxBits;
     protected final int segMask;
@@ -65,7 +64,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /* <<<< */
 
     /**
-     * @param pageMem Page mem.
+     * @param pageMem Page memory.
+     * @param plcCfg Memory policy configuration.
      * @param sharedCtx Shared context.
      */
     PageAbstractEvictionTracker(
@@ -79,7 +79,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         MemoryConfiguration memCfg = sharedCtx.kernalContext().config().getMemoryConfiguration();
 
-        /* Will be removed after segments refactoring >>>> */
+        /* TODO: IGNITE-4921: Will be removed after segments refactoring >>>> */
         int concurrencyLevel = memCfg.getConcurrencyLevel();
 
         if (concurrencyLevel < 1)
@@ -111,6 +111,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
     /**
      * @param pageIdx Page index.
+     * @return true if at least one data row has been evicted
+     * @throws IgniteCheckedException If failed.
      */
     final boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
         long fakePageId = PageIdUtils.pageId(0, (byte)0, pageIdx);
@@ -122,13 +124,15 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             long pageAddr = page.getForReadPointerForce();
 
             try {
-                // TODO IGNITE-4534: check ts in read-lock.
                 if (PageIO.getType(pageAddr) != PageIO.T_DATA)
                     return false; // Can't evict: page has been recycled into non-data page
 
                 DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
                 long realPageId = PageIO.getPageId(pageAddr);
+
+                if (!checkTouch(realPageId))
+                    return false; // Can't evict: another thread concurrently invoked forgetPage()
 
                 int dataItemsCnt = io.getDirectCount(pageAddr);
 
@@ -167,7 +171,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
             GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(cacheId);
 
-            assert !cacheCtx.userCache() : cacheCtx.name();
+            assert cacheCtx.userCache() : cacheCtx.name();
 
             // TODO IGNITE-4534: collect only keys.
             dataRow.initCacheObjects(CacheDataRowAdapter.RowData.KEY_ONLY, cacheCtx.cacheObjectContext());
@@ -181,7 +185,14 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     }
 
     /**
+     * @param pageId Page ID.
+     * @return true if page was touched at least once.
+     */
+    protected abstract boolean checkTouch(long pageId);
+
+    /**
      * @param epochMilli Time millis.
+     * @return Compact timestamp. Comparable and fits in 4 bytes.
      */
     final long compactTimestamp(long epochMilli) {
         return (epochMilli >> COMPACT_TS_SHIFT) - baseCompactTs;
@@ -191,6 +202,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
      * Resolves position in tracking array by page index.
      *
      * @param pageIdx Page index.
+     * @return Position of page in tracking array.
      */
     int trackingIdx(int pageIdx) {
         int inSegmentPageIdx = inSegmentPageIdx(pageIdx);
@@ -208,6 +220,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
      * Reverse of {@link #trackingIdx(int)}.
      *
      * @param trackingIdx Tracking index.
+     * @return Page index.
      */
     int pageIdx(int trackingIdx) {
         assert trackingIdx < trackingSize;
@@ -225,9 +238,10 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         return (int)res;
     }
 
-    /* Will be removed after segments refactoring >>>> */
+    /* TODO: IGNITE-4921: Will be removed after segments refactoring >>>> */
     /**
      * @param pageIdx Page index.
+     * @return Number of segment.
      */
     private int segmentIdx(int pageIdx) {
         return (pageIdx >> idxBits) & segMask;
@@ -235,6 +249,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
     /**
      * @param pageIdx Page index.
+     * @return Number of page inside segment.
      */
     private int inSegmentPageIdx(int pageIdx) {
         return pageIdx & idxMask;

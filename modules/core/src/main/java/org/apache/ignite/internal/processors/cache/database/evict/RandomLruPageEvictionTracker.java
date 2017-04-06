@@ -18,12 +18,15 @@ package org.apache.ignite.internal.processors.cache.database.evict;
 
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -39,8 +42,11 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     /** Maximum sample search spin count */
     private static final int SAMPLE_SPIN_LIMIT = SAMPLE_SIZE * 1000;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Tracking array ptr. */
-    private final long trackingArrPtr;
+    private long trackingArrPtr;
 
     /**
      * @param pageMem Page memory.
@@ -50,7 +56,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     public RandomLruPageEvictionTracker(
         PageMemory pageMem,
         MemoryPolicyConfiguration plcCfg,
-        GridCacheSharedContext sharedCtx
+        GridCacheSharedContext<?, ?> sharedCtx
     ) {
         super(pageMem, plcCfg, sharedCtx);
 
@@ -58,10 +64,19 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         assert plcCfg.getSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
 
-        // TODO IGNITE-4534: free memory.
+        log = sharedCtx.logger(getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
         trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 4);
 
         GridUnsafe.setMemory(trackingArrPtr, trackingSize * 4, (byte)0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        GridUnsafe.freeMemory(trackingArrPtr);
     }
 
     /** {@inheritDoc} */
@@ -108,9 +123,11 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                 sampleSpinCnt++;
 
-                // TODO: change to warning (LT.warn).
-                if (sampleSpinCnt > SAMPLE_SPIN_LIMIT)
-                    throw new IgniteCheckedException("Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
+                if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
+                    LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
+
+                    return;
+                }
             }
 
             if (evictDataPage(pageIdx(lruTrackingIdx)))
@@ -119,8 +136,16 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
             evictAttemptsCnt++;
         }
 
-        // TODO: change to warning (LT.warn).
-        throw new IgniteCheckedException("Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
+        LT.warn(log, "Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkTouch(long pageId) {
+        int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
+
+        int ts = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4);
+
+        return ts != 0;
     }
 
     /** {@inheritDoc} */

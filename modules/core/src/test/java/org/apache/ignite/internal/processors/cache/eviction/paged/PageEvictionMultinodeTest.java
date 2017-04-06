@@ -55,7 +55,7 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testPageEviction() throws Exception {
         for (int i = 0; i < CACHE_MODES.length; i++) {
@@ -74,6 +74,7 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
 
     /**
      * @param cfg Config.
+     * @throws Exception If failed.
      */
     private void createCacheAndTestEvcition(CacheConfiguration<Object, Object> cfg) throws Exception {
         IgniteCache<Object, Object> cache = ignite(0).getOrCreateCache(cfg);

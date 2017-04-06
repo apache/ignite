@@ -58,6 +58,7 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     /**
      * @param mode Eviction mode.
      * @param configuration Configuration.
+     * @return Configuration with given eviction mode set.
      */
     static IgniteConfiguration setEvictionMode(DataPageEvictionMode mode, IgniteConfiguration configuration) {
         MemoryPolicyConfiguration[] policies = configuration.getMemoryConfiguration().getMemoryPolicies();
@@ -98,6 +99,7 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
      * @param atomicityMode Atomicity mode.
      * @param writeSynchronizationMode Write synchronization mode.
      * @param memoryPlcName Memory policy name.
+     * @return Cache configuration.
      */
     protected static CacheConfiguration<Object, Object> cacheConfig(
         String name,

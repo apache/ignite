@@ -17,16 +17,18 @@
 package org.apache.ignite.internal.processors.cache.database.evict;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
  * Entry point for per-page eviction. Accepts information about touching data pages,
  * capable of evicting "the least needed" page (according to implemented eviction algorithm).
  */
-public interface PageEvictionTracker {
+public interface PageEvictionTracker extends LifecycleAware {
     /**
      * Call this method when data page is accessed.
      *
      * @param pageId Page id.
+     * @throws IgniteCheckedException In case of page memory error.
      */
     public void touchPage(long pageId) throws IgniteCheckedException;
 
@@ -35,6 +37,8 @@ public interface PageEvictionTracker {
      * In most cases, all entries will be removed from the page.
      * Method guarantees removing at least one entry from "evicted" data page. Removing all entries may be
      * not possible, as some of them can be used by active transactions.
+     *
+     * @throws IgniteCheckedException In case of page memory error.
      */
     public void evictDataPage() throws IgniteCheckedException;
 
@@ -42,6 +46,7 @@ public interface PageEvictionTracker {
      * Call this method when last entry is removed from data page.
      *
      * @param pageId Page id.
+     * @throws IgniteCheckedException In case of page memory error.
      */
     public void forgetPage(long pageId) throws IgniteCheckedException;
 }
