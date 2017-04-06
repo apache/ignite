@@ -2868,11 +2868,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             int cacheId = CU.cacheId(schema.ccfg.getName());
 
-            idxs.add(createHashIndex(
-                cacheId,
-                "_key_PK_hash",
-                tbl,
-                treeIndexColumns(new ArrayList<IndexColumn>(2), keyCol, affCol)));
+            Index hashIdx = createHashIndex(
+                    cacheId,
+                    "_key_PK_hash",
+                    tbl,
+                    treeIndexColumns(new ArrayList<IndexColumn>(2), keyCol, affCol));
+
+            if (hashIdx != null)
+                idxs.add(hashIdx);
 
             // Add primary key index.
             idxs.add(createSortedIndex(
@@ -3002,7 +3005,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return pkHashIdx;
             }
 
-            return new GridH2TreeIndex(name, tbl, true, cols);
+            return null;
         }
 
         /**
