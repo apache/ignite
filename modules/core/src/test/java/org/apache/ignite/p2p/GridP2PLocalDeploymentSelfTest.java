@@ -17,13 +17,6 @@
 
 package org.apache.ignite.p2p;
 
-import java.io.Serializable;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -33,10 +26,26 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+
+import java.io.Serializable;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 
 /**
  * Test to make sure that if job executes on the same node, it reuses the same class loader as task.
@@ -202,6 +211,88 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      */
     public void testSharedMode() throws Exception {
         processSharedModeTest(DeploymentMode.SHARED);
+    }
+
+    /**
+     * Tests concurrent deployment using delegating classloader for the task.
+     */
+    public void testConcurrentDeploymentWithDelegatingClassloader() throws Exception {
+        depMode = DeploymentMode.SHARED;
+
+        // Force rmvQueue removal task to run very often.
+        System.setProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1");
+
+        try {
+            final Ignite ignite = startGrid();
+
+            final ClassLoader delegate = ignite.getClass().getClassLoader();
+
+            final ClassLoader root = new DelegateClassLoader(null, delegate);
+
+            final AtomicBoolean stop = new AtomicBoolean();
+
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    while (!stop.get()) {
+                        final Class<?> clazz = root.loadClass("org.apache.ignite.p2p.GridP2PLocalDeploymentSelfTest$CallFunction");
+
+                        ignite.compute().
+                                call((IgniteCallable) clazz.getDeclaredConstructor(ClassLoader.class).newInstance(root));
+                    }
+
+                    return null;
+                }
+            }, 1);
+
+            ignite.scheduler().runLocal(new Runnable() {
+                @Override public void run() {
+                    stop.set(true);
+                }
+            }, 10, TimeUnit.SECONDS);
+
+            fut.get();
+        } finally {
+            stopAllGrids();
+
+            System.clearProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL);
+        }
+    }
+
+    public static class CallFunction implements IgniteCallable, GridPeerDeployAware {
+        transient ClassLoader classLoader;
+
+        public CallFunction(ClassLoader cls) {
+            this.classLoader = cls;
+        }
+
+        public Object call() throws Exception {
+            return null;
+        }
+
+        public Class<?> deployClass() {
+            return this.getClass();
+        }
+
+        public ClassLoader classLoader() {
+            return classLoader;
+        }
+    }
+
+    public static class DelegateClassLoader extends ClassLoader {
+        private ClassLoader delegateCL;
+
+        public DelegateClassLoader(ClassLoader parent, ClassLoader delegateCL) {
+            super(parent); // Parent doesn't matter.
+            this.delegateCL = delegateCL;
+        }
+
+        @Override public URL getResource(String name) {
+            return delegateCL.getResource(name);
+        }
+
+        @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
+            return delegateCL.loadClass(name);
+        }
     }
 
     /**

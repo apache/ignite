@@ -334,7 +334,8 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
                     // Check classes with class loader only when classes points to classes to avoid redundant check.
                     // Resources map contains two entries for class with task name(alias).
                     if (entry.getKey().equals(entry.getValue()) && isResourceExist(ldr, entry.getKey()) &&
-                        !U.hasParent(clsLdrToIgnore, ldr) && ldrRsrcs.remove(ldr, clsLdrRsrcs)) {
+                            !U.hasParent(clsLdrToIgnore, ldr) && clsLdrRsrcs.containsKey(entry.getKey()) &&
+                            ldrRsrcs.remove(ldr, clsLdrRsrcs)) {
                         // Add class loaders in collection to notify listener outside synchronization block.
                         rmvClsLdrs.add(ldr);
 
