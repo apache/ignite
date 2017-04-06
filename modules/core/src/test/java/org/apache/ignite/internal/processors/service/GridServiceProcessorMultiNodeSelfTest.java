@@ -21,7 +21,10 @@ import java.util.concurrent.CountDownLatch;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
 
 /**
  * Single node services test.
@@ -117,48 +120,140 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
-    public void testDeployOnEachNodeUpdateTopology() throws Exception {
-        String name = "serviceOnEachNodeUpdateTopology";
+    public void testDeployOnEachNodeButClientUpdateTopology() throws Exception {
+        // Prestart client node.
+        Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
 
-        Ignite g = randomGrid();
+        try {
+            final int prestartedNodes = nodeCount() + 1;
 
-        CountDownLatch latch = new CountDownLatch(nodeCount());
+            String name = "serviceOnEachNodeButClientUpdateTopology";
 
-        DummyService.exeLatch(name, latch);
+            Ignite g = randomGrid();
+
+            CountDownLatch latch = new CountDownLatch(nodeCount());
+
+            DummyService.exeLatch(name, latch);
 
         IgniteServices svcs = g.services();
 
         IgniteFuture<?> fut = svcs.deployNodeSingletonAsync(name, new DummyService());
 
-        info("Deployed service: " + name);
+            info("Deployed service: " + name);
 
-        fut.get();
+            fut.get();
 
-        info("Finished waiting for service future: " + name);
+            info("Finished waiting for service future: " + name);
 
-        latch.await();
-
-        TestCase.assertEquals(name, nodeCount(), DummyService.started(name));
-        TestCase.assertEquals(name, 0, DummyService.cancelled(name));
-
-        int newNodes = 2;
-
-        latch = new CountDownLatch(newNodes);
-
-        DummyService.exeLatch(name, latch);
-
-        startExtraNodes(newNodes);
-
-        try {
             latch.await();
 
-            TestCase.assertEquals(name, nodeCount() + newNodes, DummyService.started(name));
+            // Ensure service is deployed
+            assertNotNull(client.services().serviceProxy(name, Service.class, false, 2000));
+
+            TestCase.assertEquals(name, nodeCount(), DummyService.started(name));
             TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
-            checkCount(name, g.services().serviceDescriptors(), nodeCount() + newNodes);
+            int servers = 2;
+            int clients = 2;
+
+            latch = new CountDownLatch(servers);
+
+            DummyService.exeLatch(name, latch);
+
+            startExtraNodes(servers, clients);
+
+            try {
+                latch.await();
+
+                // Ensure service is deployed
+                assertNotNull(grid(prestartedNodes + servers - 1)
+                    .services().serviceProxy(name, Service.class, false, 2000));
+
+                TestCase.assertEquals(name, nodeCount() + servers, DummyService.started(name));
+                TestCase.assertEquals(name, 0, DummyService.cancelled(name));
+
+                checkCount(name, g.services().serviceDescriptors(), nodeCount() + servers);
+            }
+            finally {
+                stopExtraNodes(servers + clients);
+            }
         }
         finally {
-            stopExtraNodes(newNodes);
+            stopGrid("client");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployOnEachNodeUpdateTopology() throws Exception {
+        // Prestart client node.
+        Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
+
+        try {
+            String name = "serviceOnEachNodeUpdateTopology";
+
+            Ignite g = randomGrid();
+
+            final int prestartedNodes = nodeCount() + 1;
+
+            CountDownLatch latch = new CountDownLatch(prestartedNodes);
+
+            DummyService.exeLatch(name, latch);
+
+            ServiceConfiguration srvcCfg = new ServiceConfiguration();
+
+            srvcCfg.setNodeFilter(new CacheConfiguration.IgniteAllNodesPredicate());
+            srvcCfg.setName(name);
+            srvcCfg.setMaxPerNodeCount(1);
+            srvcCfg.setService(new DummyService());
+
+            IgniteServices svcs = g.services();
+
+            IgniteFuture<?> fut = svcs.deployAsync(name, new DummyService());
+
+            info("Deployed service: " + name);
+
+            fut.get();
+
+            info("Finished waiting for service future: " + name);
+
+            latch.await();
+
+            // Ensure service is deployed
+            assertNotNull(client.services().serviceProxy(name, Service.class, false, 2000));
+
+            TestCase.assertEquals(name, prestartedNodes, DummyService.started(name));
+            TestCase.assertEquals(name, 0, DummyService.cancelled(name));
+
+            int servers = 2;
+            int clients = 2;
+
+            int extraNodes = servers + clients;
+
+            latch = new CountDownLatch(extraNodes);
+
+            DummyService.exeLatch(name, latch);
+
+            startExtraNodes(servers, clients);
+
+            try {
+                latch.await();
+
+                // Ensure service is deployed
+                assertNotNull(client.services().serviceProxy(name, Service.class, false, 2000));
+
+                TestCase.assertEquals(name, prestartedNodes + extraNodes, DummyService.started(name));
+                TestCase.assertEquals(name, 0, DummyService.cancelled(name));
+
+                checkCount(name, g.services().serviceDescriptors(), prestartedNodes + extraNodes);
+            }
+            finally {
+                stopExtraNodes(extraNodes);
+            }
+        }
+        finally {
+            stopGrid("client");
         }
     }
 }
