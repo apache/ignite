@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,6 +40,9 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     /** Node singleton name. */
     private static final String NODE_SINGLE_BUT_CLIENT = "serviceConfigEachNodeButClient";
 
+    /** Node singleton name. */
+    private static final String NODE_SINGLE_WITH_LIMIT = "serviceConfigWithLimit";
+
     /** Affinity service name. */
     private static final String AFFINITY = "serviceConfigAffinity";
 
@@ -51,7 +56,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
     /** {@inheritDoc} */
     @Override protected ServiceConfiguration[] services() {
-        ServiceConfiguration[] arr = new ServiceConfiguration[4];
+        List<ServiceConfiguration> cfgs = new ArrayList<>();
 
         ServiceConfiguration cfg = new ServiceConfiguration();
 
@@ -60,7 +65,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         cfg.setTotalCount(1);
         cfg.setService(new DummyService());
 
-        arr[0] = cfg;
+        cfgs.add(cfg);
 
         cfg = new ServiceConfiguration();
 
@@ -68,7 +73,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         cfg.setMaxPerNodeCount(1);
         cfg.setService(new DummyService());
 
-        arr[1] = cfg;
+        cfgs.add(cfg);
 
         cfg = new ServiceConfiguration();
 
@@ -79,7 +84,7 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         cfg.setTotalCount(1);
         cfg.setService(new AffinityService(AFFINITY_KEY));
 
-        arr[2] = cfg;
+        cfgs.add(cfg);
 
         cfg = new ServiceConfiguration();
 
@@ -88,9 +93,18 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         cfg.setNodeFilter(new CacheConfiguration.IgniteAllNodesPredicate());
         cfg.setService(new DummyService());
 
-        arr[3] = cfg;
+        cfgs.add(cfg);
 
-        return arr;
+        cfg = new ServiceConfiguration();
+
+        cfg.setName(NODE_SINGLE_WITH_LIMIT);
+        cfg.setMaxPerNodeCount(1);
+        cfg.setTotalCount(nodeCount() + 1);
+        cfg.setService(new DummyService());
+
+        cfgs.add(cfg);
+
+        return cfgs.toArray(new ServiceConfiguration[cfgs.size()]);
     }
 
     /** {@inheritDoc} */
@@ -107,6 +121,8 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
                         DummyService.cancelled(NODE_SINGLE) == 0 &&
                         DummyService.started(NODE_SINGLE_BUT_CLIENT) == nodeCount() &&
                         DummyService.cancelled(NODE_SINGLE_BUT_CLIENT) == 0 &&
+                        DummyService.started(NODE_SINGLE_WITH_LIMIT) >= nodeCount() &&
+                        DummyService.cancelled(NODE_SINGLE_WITH_LIMIT) == 0 &&
                         actualCount(AFFINITY, randomGrid().services().serviceDescriptors()) == 1;
                 }
             },
@@ -170,6 +186,34 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         finally {
             stopExtraNodes(nodeCnt);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployLimits() throws Exception {
+        final Ignite g = randomGrid();
+
+        checkCount(NODE_SINGLE_WITH_LIMIT, g.services().serviceDescriptors(), nodeCount());
+
+        int extraNodes = 2;
+
+        startExtraNodes(extraNodes);
+
+        try {
+            checkCount(NODE_SINGLE_WITH_LIMIT, g.services().serviceDescriptors(), nodeCount() + 1);
+        }
+        finally {
+            stopExtraNodes(extraNodes);
+        }
+
+        GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @Override public boolean applyx() {
+                return actualCount(NODE_SINGLE_WITH_LIMIT, g.services().serviceDescriptors())  == nodeCount();
+            }
+        }, 1000);
+
+        checkCount(NODE_SINGLE_WITH_LIMIT, g.services().serviceDescriptors(), nodeCount());
     }
 
     /**
