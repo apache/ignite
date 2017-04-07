@@ -17,13 +17,23 @@
 
 package org.apache.ignite.console.agent.db;
 
-import org.apache.ignite.console.agent.db.dialect.*;
-
-import java.io.*;
-import java.net.*;
-import java.sql.*;
-import java.util.*;
-import java.util.logging.*;
+import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import org.apache.ignite.console.agent.db.dialect.DB2MetadataDialect;
+import org.apache.ignite.console.agent.db.dialect.DatabaseMetadataDialect;
+import org.apache.ignite.console.agent.db.dialect.JdbcMetadataDialect;
+import org.apache.ignite.console.agent.db.dialect.MySQLMetadataDialect;
+import org.apache.ignite.console.agent.db.dialect.OracleMetadataDialect;
+import org.apache.log4j.Logger;
 
 /**
  * Singleton to extract database metadata.
@@ -33,24 +43,7 @@ public class DbMetadataReader {
     private static final Logger log = Logger.getLogger(DbMetadataReader.class.getName());
 
     /** */
-    private static final DbMetadataReader INSTANCE = new DbMetadataReader();
-
-    /** */
     private final Map<String, Driver> drivers = new HashMap<>();
-
-    /**
-     * Default constructor.
-     */
-    private DbMetadataReader() {
-        // No-op.
-    }
-
-    /**
-     * @return Instance.
-     */
-    public static DbMetadataReader getInstance() {
-        return INSTANCE;
-    }
 
     /**
      * Get specified dialect object for selected database.
@@ -64,15 +57,17 @@ public class DbMetadataReader {
 
             if ("Oracle".equals(dbProductName))
                 return new OracleMetadataDialect();
-            else if (dbProductName.startsWith("DB2/"))
+
+            if (dbProductName.startsWith("DB2/"))
                 return new DB2MetadataDialect();
-            else if (dbProductName.equals("MySQL"))
+
+            if ("MySQL".equals(dbProductName))
                 return new MySQLMetadataDialect();
-            else
-                return new JdbcMetadataDialect();
+
+            return new JdbcMetadataDialect();
         }
         catch (SQLException e) {
-            log.log(Level.SEVERE, "Failed to resolve dialect (JdbcMetaDataDialect will be used.", e);
+            log.error("Failed to resolve dialect (JdbcMetaDataDialect will be used.", e);
 
             return new JdbcMetadataDialect();
         }

@@ -51,6 +51,9 @@ public class DatabaseListener {
     private final File driversFolder;
 
     /** */
+    private final DbMetadataReader dbMetaReader;
+
+    /** */
     private final AbstractListener schemasLsnr = new AbstractListener() {
         @Override public Object execute(Map<String, Object> args) throws Exception {
             String driverPath = null;
@@ -178,6 +181,7 @@ public class DatabaseListener {
      */
     public DatabaseListener(AgentConfiguration cfg) {
         driversFolder = resolvePath(cfg.driversFolder() == null ? "jdbc-drivers" : cfg.driversFolder());
+        dbMetaReader = new DbMetadataReader();
     }
 
     /**
@@ -196,7 +200,7 @@ public class DatabaseListener {
         if (!new File(jdbcDriverJarPath).isAbsolute() && driversFolder != null)
             jdbcDriverJarPath = new File(driversFolder, jdbcDriverJarPath).getPath();
 
-        return DbMetadataReader.getInstance().connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo);
+        return dbMetaReader.connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo);
     }
 
     /**
@@ -214,7 +218,7 @@ public class DatabaseListener {
                 ", drvCls=" + jdbcDriverCls + ", jdbcUrl=" + jdbcUrl + "]");
 
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
-            Collection<String> schemas = DbMetadataReader.getInstance().schemas(conn);
+            Collection<String> schemas = dbMetaReader.schemas(conn);
 
             if (log.isDebugEnabled())
                 log.debug("Finished collection of schemas [jdbcUrl=" + jdbcUrl + ", count=" + schemas.size() + "]");
@@ -263,7 +267,7 @@ public class DatabaseListener {
                 ", drvCls=" + jdbcDriverCls + ", jdbcUrl=" + jdbcUrl + "]");
 
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
-            Collection<DbTable> metadata = DbMetadataReader.getInstance().metadata(conn, schemas, tblsOnly);
+            Collection<DbTable> metadata = dbMetaReader.metadata(conn, schemas, tblsOnly);
 
             if (log.isDebugEnabled())
                 log.debug("Finished collection of metadata [jdbcUrl=" + jdbcUrl + ", count=" + metadata.size() + "]");
