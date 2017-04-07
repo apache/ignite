@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheConditionalDeploymen
 import org.apache.ignite.internal.processors.cache.GridCacheEntryVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReferenceCleanupSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheReloadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedSynchronousCommitTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTransactionalEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheValueBytesPreloadingSelfTest;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedBasicOpSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedEventSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedEvictionEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedLockSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeLockSelfTest;
@@ -131,8 +133,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         suite.addTestSuite(GridCachePutArrayValueSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedUnswapAdvancedSelfTest.class);
-        // TODO TODO GG-11140.
-        // suite.addTestSuite(GridCacheReplicatedEvictionEventSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedEvictionEventSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadEventsSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadStartStopEventsSelfTest.class);
@@ -177,8 +178,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         // Memory leak tests.
         suite.addTestSuite(GridCacheReferenceCleanupSelfTest.class);
-        // TODO GG-11140.
-        // suite.addTestSuite(GridCacheReloadSelfTest.class);
+        suite.addTestSuite(GridCacheReloadSelfTest.class);
 
         suite.addTestSuite(GridCacheMixedModeSelfTest.class);
 

@@ -44,7 +44,6 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);
 
-        // TODO GG-11140.
         suite.addTestSuite(IgniteCacheQueryEvictsMultiThreadedSelfTest.class);
 
         suite.addTestSuite(IgniteCacheCrossCacheJoinRandomTest.class);

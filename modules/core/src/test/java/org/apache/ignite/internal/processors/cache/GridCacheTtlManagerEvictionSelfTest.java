@@ -23,6 +23,7 @@ import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -117,12 +118,12 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
             if (log.isTraceEnabled())
                 cctx.ttl().printMemoryStats();
 
-            final String firstKey = "Some test entry key#0";
+            final String firstKey = "Some test entry key#1";
             final String lastKey = "Some test entry key#" + ENTRIES_TO_PUT;
 
-            assertFalse("first key should be evicted", cache.containsKey(firstKey));
+            assertNull("first key should be evicted", cache.localPeek(firstKey, CachePeekMode.ONHEAP));
 
-            assertTrue("last key should NOT be evicted", cache.containsKey(lastKey));
+            assertNotNull("last key should NOT be evicted", cache.localPeek(lastKey, CachePeekMode.ONHEAP));
 
             assertEquals("Ttl Manager should NOT track evicted entries", ENTRIES_LIMIT, cctx.ttl().pendingSize());
         }

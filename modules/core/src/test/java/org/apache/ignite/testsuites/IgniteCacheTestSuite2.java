@@ -121,6 +121,7 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGet
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalBasicApiSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalEventSelfTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalEvictionEventSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalIsolatedNodesSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalLoadAllSelfTest;
@@ -154,8 +155,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTestSuite(GridCacheLocalTxSingleThreadedSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxTimeoutSelfTest.class);
         suite.addTestSuite(GridCacheLocalEventSelfTest.class);
-        // TODO TODO GG-11140.
-        // suite.addTestSuite(GridCacheLocalEvictionEventSelfTest.class);
+        suite.addTestSuite(GridCacheLocalEvictionEventSelfTest.class);
         suite.addTestSuite(GridCacheVariableTopologySelfTest.class);
         suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheTransformEventSelfTest.class);
@@ -222,7 +222,6 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedLoadCacheSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionNotLoadedEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtEvictionsDisabledSelfTest.class));
-        // TODO GG-11140.
         suite.addTest(new TestSuite(GridCacheNearEvictionEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionEventSelfTest.class));
 
