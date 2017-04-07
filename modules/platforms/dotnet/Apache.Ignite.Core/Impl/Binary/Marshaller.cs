@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             foreach (BinaryTypeConfiguration typeCfg in _cfg.TypeConfigurations)
             {
-                if (string.IsNullOrEmpty(typeCfg.TypeName))
+                if (String.IsNullOrEmpty(typeCfg.TypeName))
                     throw new BinaryObjectException("Type name cannot be null or empty: " + typeCfg);
             }
 
@@ -444,7 +444,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var type = _ignite == null ? null : _ignite.BinaryProcessor.GetType(typeId);
 
                 if (type != null)
-                    return AddUserType(type, typeId, BinaryUtils.GetTypeName(type), true, desc);
+                    return AddUserType(type, typeId, GetTypeName(type), true, desc);
             }
 
             var meta = GetBinaryType(typeId);
@@ -471,7 +471,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(type != null);
 
-            var typeName = BinaryUtils.GetTypeName(type);
+            var typeName = GetTypeName(type);
             var typeId = BinaryUtils.GetTypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
 
             var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, type);
@@ -532,7 +532,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static void ThrowConflictingTypeError(object type1, object type2, int typeId)
         {
-            throw new BinaryObjectException(string.Format("Conflicting type IDs [type1='{0}', " +
+            throw new BinaryObjectException(String.Format("Conflicting type IDs [type1='{0}', " +
                                                           "type2='{1}', typeId={2}]", type1, type2, typeId));
         }
 
@@ -562,14 +562,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (typeCfg.IsEnum != type.IsEnum)
                 {
                     throw new BinaryObjectException(
-                        string.Format(
+                        String.Format(
                             "Invalid IsEnum flag in binary type configuration. " +
                             "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
                             typeCfg.IsEnum, type.IsEnum));
                 }
 
                 // Type is found.
-                var typeName = BinaryUtils.GetTypeName(type);
+                var typeName = GetTypeName(type);
                 int typeId = BinaryUtils.GetTypeId(typeName, nameMapper, idMapper);
                 var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
                 var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper, _log);
@@ -632,7 +632,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (res.Length > 1)
             {
-                throw new BinaryObjectException(string.Format("Multiple '{0}' attributes found on type '{1}'. " +
+                throw new BinaryObjectException(String.Format("Multiple '{0}' attributes found on type '{1}'. " +
                     "There can be only one affinity field.", typeof (AffinityKeyMappedAttribute).Name, type));
             }
 
@@ -702,7 +702,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (typeId == 0)
                 typeId = BinaryUtils.GetTypeId(type.Name, null, null);
 
-            AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, affKeyFldName,
+            AddType(type, typeId, GetTypeName(type), false, false, null, null, serializer, affKeyFldName,
                 false, null);
         }
 
@@ -766,6 +766,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                     "Abstract types and interfaces are not allowed in BinaryConfiguration: " +
                     type.AssemblyQualifiedName);
             }
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        private static string GetTypeName(Type type)
+        {
+            return type.AssemblyQualifiedName;
         }
     }
 }

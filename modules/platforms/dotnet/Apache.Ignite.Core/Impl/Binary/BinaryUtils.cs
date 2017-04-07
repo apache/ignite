@@ -1728,18 +1728,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the name of the type.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns>
-        /// Assembly qualified type name.
-        /// </returns>
-        public static string GetTypeName(Type type)
-        {
-            return type.AssemblyQualifiedName;
-        }
-
-        /// <summary>
         /// Gets the SQL name of the type.
         /// </summary>
         public static string GetSqlTypeName(Type type)
