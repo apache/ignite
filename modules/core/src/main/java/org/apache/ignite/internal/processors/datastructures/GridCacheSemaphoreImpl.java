@@ -366,7 +366,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
          * @param broken Flag indicating that this semaphore is broken.
          * @return True if this is the call that succeeded to change the global state.
          */
-        protected boolean releaseFailedNode(final UUID nodeId, boolean broken) {
+        protected boolean releaseFailedNode(final UUID nodeId, final boolean broken) {
             try {
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
