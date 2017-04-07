@@ -249,6 +249,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             int idx;
             if (g.findLast)
                 idx = io.isLeaf()? cnt - 1: -cnt - 1; //(-cnt - 1) mimics not_found result of findInsertionPoint
+                //in case of cnt = 0 we end up in 'not found' branch below with idx being 0 after fix() adjustment
             else
                 idx = findInsertionPoint(io, pageAddr, 0, cnt, g.row, g.shift);
 
@@ -2286,8 +2287,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param findLast find last row.
          */
         Get(L row, boolean findLast) {
-            if (!findLast)
-                assert row != null;
+            assert findLast ^ row != null;
 
             this.row = row;
             this.findLast = findLast;
