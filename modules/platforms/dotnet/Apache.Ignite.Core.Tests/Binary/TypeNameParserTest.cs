@@ -95,8 +95,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var res = TypeNameParser.Parse(name);
 
-            Assert.AreEqual(type.Namespace, name.Substring(0, res.NameStart - 1));
-            Assert.AreEqual(type.Name, name.Substring(res.NameStart, res.NameEnd - res.NameStart + 1));
+            Assert.AreEqual(type.Name, res.GetName());
+            Assert.AreEqual(type.FullName, res.GetFullName());
             Assert.AreEqual(type.FullName.Length + 1, res.AssemblyIndex);
         }
     }

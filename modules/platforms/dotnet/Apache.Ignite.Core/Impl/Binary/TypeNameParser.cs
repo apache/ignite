@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Parses .NET-style type names and deconstructs them into parts.
     /// </summary>
-    internal class TypeNameParser
+    internal static class TypeNameParser
     {
         public static Result Parse(string typeName)
         {
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            var res = new Result();
+            var res = new Result(typeName, i);
 
             int bracket = 0;
 
@@ -135,8 +135,14 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         public class Result
         {
-            public Result()
+            private readonly string _typeName;
+            private readonly int _start;
+
+            public Result(string typeName, int start)
             {
+                _typeName = typeName;
+                _start = start;
+
                 NameStart = -1;
                 NameEnd = -1;
                 AssemblyIndex = -1;
@@ -149,6 +155,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             public int AssemblyIndex { get; set; }
 
             public ICollection<Result> Generics { get; set; }
+
+            public string GetName()
+            {
+                return _typeName.Substring(NameStart, NameEnd - NameStart + 1);
+            }
+
+            public string GetFullName()
+            {
+                return _typeName.Substring(_start, NameEnd - _start + 1);
+            }
         }
     }
 }
