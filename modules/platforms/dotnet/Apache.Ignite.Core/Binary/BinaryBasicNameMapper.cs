@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Binary
                 return typeName;
             }
 
-            return typeName.Substring(nsPos + 1, asmPos - nsPos);
+            return typeName.Substring(nsPos + 1, asmPos - nsPos - 1);
         }
 
         /// <summary>
