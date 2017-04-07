@@ -24,12 +24,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.math.IdentityValueMapper;
 import org.apache.ignite.math.MatrixKeyMapper;
 import org.apache.ignite.math.ValueMapper;
-import org.apache.ignite.math.VectorKeyMapper;
 import org.apache.ignite.math.functions.Functions;
-import org.apache.ignite.math.functions.IgniteBiFunction;
-import org.apache.ignite.math.impls.CacheUtils;
 import org.apache.ignite.math.impls.matrix.CacheMatrix;
-import org.apache.ignite.math.impls.vector.CacheVector;
 
 /** */
 public class CacheMatrixExample {
