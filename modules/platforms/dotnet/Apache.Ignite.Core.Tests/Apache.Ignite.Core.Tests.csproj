@@ -70,6 +70,7 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestDynamicRegistration.cs" />
+    <Compile Include="Binary\BinaryNameMapperTest.cs" />
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
     <Compile Include="Binary\JavaBinaryInteropTest.cs" />
