@@ -377,7 +377,7 @@ namespace ignite
              * @param val Object.
              */
             template<typename T>
-            void WriteObject(T val)
+            void WriteObject(const T& val)
             {
                 impl->WriteObject<T>(val);
             }

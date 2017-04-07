@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -152,27 +151,30 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         rnd = null;
 
-        if (reuseList != null) {
-            long size = reuseList.recycledPagesCount();
+        try {
+            if (reuseList != null) {
+                long size = reuseList.recycledPagesCount();
 
-            assertTrue("Reuse size: " + size, size < 7000);
-        }
-
-        for (int i = 0; i < 10; i++) {
-            if (acquiredPages() != 0) {
-                System.out.println("!!!");
-                U.sleep(10);
+                assertTrue("Reuse size: " + size, size < 7000);
             }
+
+            for (int i = 0; i < 10; i++) {
+                if (acquiredPages() != 0) {
+                    System.out.println("!!!");
+                    U.sleep(10);
+                }
+            }
+
+            assertEquals(0, acquiredPages());
         }
+        finally {
+            pageMem.stop();
 
-        assertEquals(0, acquiredPages());
-
-        pageMem.stop();
-
-        MAX_PER_PAGE = 0;
-        PUT_INC = 1;
-        RMV_INC = -1;
-        CNT = 10;
+            MAX_PER_PAGE = 0;
+            PUT_INC = 1;
+            RMV_INC = -1;
+            CNT = 10;
+        }
     }
 
     /**
@@ -1407,15 +1409,15 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param page Page.
+     * @param pageId Page ID.
      * @param pageAddr Page address.
      */
-    public static void checkPageId(Page page, long pageAddr) {
-        long pageId = PageIO.getPageId(pageAddr);
+    public static void checkPageId(long pageId, long pageAddr) {
+        long actual = PageIO.getPageId(pageAddr);
 
         // Page ID must be 0L for newly allocated page, for reused page effective ID must remain the same.
-        if (pageId != 0L && page.id() != pageId)
-            throw new IllegalStateException("Page ID: " + U.hexLong(pageId));
+        if (actual != 0L && pageId != actual)
+            throw new IllegalStateException("Page ID: " + U.hexLong(actual));
     }
 
     /**
@@ -1519,74 +1521,74 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onBeforeReadLock(Page page) {
+        @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
 //            X.println("  onBeforeReadLock: " + U.hexLong(page.id()));
 //
 //            U.dumpStack();
 
-            assertNull(beforeReadLock.put(threadId(), page.id()));
+            assertNull(beforeReadLock.put(threadId(), pageId));
         }
 
         /** {@inheritDoc} */
-        @Override public void onReadLock(Page page, long pageAddr) {
+        @Override public void onReadLock(int cacheId, long pageId, long page, long pageAddr) {
 //            X.println("  onReadLock: " + U.hexLong(page.id()));
 
             if (pageAddr != 0L) {
-                long pageId = PageIO.getPageId(pageAddr);
+                long actual = PageIO.getPageId(pageAddr);
 
-                checkPageId(page, pageAddr);
+                checkPageId(pageId, pageAddr);
 
-                assertNull(locks(true).put(page.id(), pageId));
+                assertNull(locks(true).put(pageId, actual));
             }
 
-            assertEquals(Long.valueOf(page.id()), beforeReadLock.remove(threadId()));
+            assertEquals(Long.valueOf(pageId), beforeReadLock.remove(threadId()));
         }
 
         /** {@inheritDoc} */
-        @Override public void onReadUnlock(Page page, long pageAddr) {
+        @Override public void onReadUnlock(int cacheId, long pageId, long page, long pageAddr) {
 //            X.println("  onReadUnlock: " + U.hexLong(page.id()));
 
-            checkPageId(page, pageAddr);
+            checkPageId(pageId, pageAddr);
 
-            long pageId = PageIO.getPageId(pageAddr);
+            long actual = PageIO.getPageId(pageAddr);
 
-            assertEquals(Long.valueOf(pageId), locks(true).remove(page.id()));
+            assertEquals(Long.valueOf(actual), locks(true).remove(pageId));
         }
 
         /** {@inheritDoc} */
-        @Override public void onBeforeWriteLock(Page page) {
+        @Override public void onBeforeWriteLock(int cacheId, long pageId, long page) {
 //            X.println("  onBeforeWriteLock: " + U.hexLong(page.id()));
 
-            assertNull(beforeWriteLock.put(threadId(), page.id()));
+            assertNull(beforeWriteLock.put(threadId(), pageId));
         }
 
         /** {@inheritDoc} */
-        @Override public void onWriteLock(Page page, long pageAddr) {
+        @Override public void onWriteLock(int cacheId, long pageId, long page, long pageAddr) {
 //            X.println("  onWriteLock: " + U.hexLong(page.id()));
 //
 //            U.dumpStack();
 
             if (pageAddr != 0L) {
-                checkPageId(page, pageAddr);
+                checkPageId(pageId, pageAddr);
 
-                long pageId = PageIO.getPageId(pageAddr);
+                long actual = PageIO.getPageId(pageAddr);
 
-                if (pageId == 0L)
-                    pageId = page.id(); // It is a newly allocated page.
+                if (actual == 0L)
+                    actual = pageId; // It is a newly allocated page.
 
-                assertNull(locks(false).put(page.id(), pageId));
+                assertNull(locks(false).put(pageId, actual));
             }
 
-            assertEquals(Long.valueOf(page.id()), beforeWriteLock.remove(threadId()));
+            assertEquals(Long.valueOf(pageId), beforeWriteLock.remove(threadId()));
         }
 
         /** {@inheritDoc} */
-        @Override public void onWriteUnlock(Page page, long pageAddr) {
+        @Override public void onWriteUnlock(int cacheId, long pageId, long page, long pageAddr) {
 //            X.println("  onWriteUnlock: " + U.hexLong(page.id()));
 
-            assertEquals(effectivePageId(page.id()), effectivePageId(PageIO.getPageId(pageAddr)));
+            assertEquals(effectivePageId(pageId), effectivePageId(PageIO.getPageId(pageAddr)));
 
-            assertEquals(Long.valueOf(page.id()), locks(false).remove(page.id()));
+            assertEquals(Long.valueOf(pageId), locks(false).remove(pageId));
         }
 
         /**

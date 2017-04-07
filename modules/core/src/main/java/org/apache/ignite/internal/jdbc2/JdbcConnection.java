@@ -77,6 +77,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_COLLOCATED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
@@ -127,6 +128,12 @@ public class JdbcConnection implements Connection {
     /** Distributed joins flag. */
     private boolean distributedJoins;
 
+    /** Transactions allowed flag. */
+    private boolean txAllowed;
+
+    /** Current transaction isolation. */
+    private int txIsolation;
+
     /** Make this connection streaming oriented, and prepared statements - data streamer aware. */
     private final boolean stream;
 
@@ -158,10 +165,11 @@ public class JdbcConnection implements Connection {
 
         this.url = url;
 
-        this.cacheName = props.getProperty(PROP_CACHE);
-        this.locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
-        this.collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
-        this.distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
+        cacheName = props.getProperty(PROP_CACHE);
+        locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
+        collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
+        distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
+        txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
         streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
@@ -174,7 +182,7 @@ public class JdbcConnection implements Connection {
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
         if (nodeIdProp != null)
-            this.nodeId = UUID.fromString(nodeIdProp);
+            nodeId = UUID.fromString(nodeIdProp);
 
         try {
             String cfgUrl = props.getProperty(PROP_CFG);
@@ -296,7 +304,7 @@ public class JdbcConnection implements Connection {
     @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
         ensureNotClosed();
 
-        if (!autoCommit)
+        if (!txAllowed && !autoCommit)
             throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
@@ -311,14 +319,16 @@ public class JdbcConnection implements Connection {
     @Override public void commit() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        if (!txAllowed)
+            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        if (!txAllowed)
+            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -391,14 +401,20 @@ public class JdbcConnection implements Connection {
     @Override public void setTransactionIsolation(int level) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        if (txAllowed)
+            txIsolation = level;
+        else
+            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int getTransactionIsolation() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        if (txAllowed)
+            return txIsolation;
+        else
+            throw new SQLFeatureNotSupportedException("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -450,7 +466,7 @@ public class JdbcConnection implements Connection {
     @Override public void setHoldability(int holdability) throws SQLException {
         ensureNotClosed();
 
-        if (holdability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAllowed && holdability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
     }
 
@@ -465,28 +481,28 @@ public class JdbcConnection implements Connection {
     @Override public Savepoint setSavepoint() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Savepoint setSavepoint(String name) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback(Savepoint savepoint) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void releaseSavepoint(Savepoint savepoint) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Transactions are not supported.");
+        throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -500,7 +516,7 @@ public class JdbcConnection implements Connection {
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
-        if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
         JdbcStatement stmt = new JdbcStatement(this);
@@ -521,7 +537,7 @@ public class JdbcConnection implements Connection {
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
 
-        if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
+        if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
         JdbcPreparedStatement stmt;
