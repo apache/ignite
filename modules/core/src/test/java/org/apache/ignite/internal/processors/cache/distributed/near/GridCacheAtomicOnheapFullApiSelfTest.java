@@ -16,23 +16,13 @@
  *
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicFullApiSelfTest;
 
-public class GridCachePartitionedNearDisabledAtomicOnheapFullApiSelfTest extends GridCachePartitionedNearDisabledOnheapFullApiSelfTest {
+public class GridCacheAtomicOnheapFullApiSelfTest extends GridCacheAtomicFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean txEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean lockingEnabled() {
-        return false;
+    @Override protected boolean onheapCacheEnabled() {
+        return true;
     }
 }

@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicOnhea
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicPrimaryWriteOrderFairAffinityMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicPrimaryWriteOrderMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicPrimaryWriteOrderMultiJvmP2PDisabledFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicPrimaryWriteOrderOnheapMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheNearOnlyFairAffinityMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheNearOnlyMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheNearOnlyMultiJvmP2PDisabledFullApiSelfTest;
@@ -108,6 +109,7 @@ public class IgniteCacheFullApiMultiJvmSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedNearDisabledOnheapMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedOnheapMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedOnheapMultiJvmFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderOnheapMultiJvmFullApiSelfTest.class);
 
         return suite;
     }

@@ -224,10 +224,6 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
-        cache.localPromote(Collections.singleton(key));
-
-        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
-
         assertTrue(cache.localSize() == 0);
 
         // Force reload on primary node.

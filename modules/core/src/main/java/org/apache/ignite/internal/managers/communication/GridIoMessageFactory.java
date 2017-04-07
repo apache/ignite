@@ -45,8 +45,6 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheEvictionRequest;
-import org.apache.ignite.internal.processors.cache.GridCacheEvictionResponse;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
@@ -368,16 +366,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 13:
                 msg = new GridEventStorageMessage();
-
-                break;
-
-            case 14:
-                msg = new GridCacheEvictionRequest();
-
-                break;
-
-            case 15:
-                msg = new GridCacheEvictionResponse();
 
                 break;
 
