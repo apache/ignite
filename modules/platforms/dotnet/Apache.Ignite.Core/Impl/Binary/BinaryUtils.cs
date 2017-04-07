@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -1736,6 +1737,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static string GetTypeName(Type type)
         {
             return type.AssemblyQualifiedName;
+        }
+
+        /// <summary>
+        /// Gets the SQL name of the type.
+        /// </summary>
+        public static string GetSqlTypeName(Type type)
+        {
+            // SQL always uses simple type name without namespace, parent class, etc.
+            return type.Name.Split('`').First();
         }
 
         /**
