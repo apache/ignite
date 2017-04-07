@@ -950,6 +950,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         catch (AssertionError e) {
             throw new AssertionError("Assertion error on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
+        finally {
+            checkDestroyed();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1047,6 +1050,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
         catch (AssertionError e) {
             throw new AssertionError("Assertion error on lookup row: " + row, e);
+        }
+        finally {
+            checkDestroyed();
         }
     }
 
@@ -1606,6 +1612,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
         finally {
             x.releaseAll();
+            checkDestroyed();
         }
     }
 
@@ -1760,6 +1767,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
         finally {
             r.releaseAll();
+            checkDestroyed();
         }
     }
 
@@ -1933,6 +1941,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             }
         }
 
+        checkDestroyed();
+
         return cnt;
     }
 
@@ -2006,6 +2016,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
         catch (AssertionError e) {
             throw new AssertionError("Assertion error on row: " + row, e);
+        }
+        finally {
+            checkDestroyed();
         }
     }
 
@@ -2330,9 +2343,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /**
          * @param g Other operation to copy from.
-         * @return {@code this}.
          */
-        final Get copyFrom(Get g) {
+        final void copyFrom(Get g) {
             rmvId = g.rmvId;
             rootLvl = g.rootLvl;
             pageId = g.pageId;
@@ -2340,8 +2352,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             backId = g.backId;
             shift = g.shift;
             findLast = g.findLast;
-
-            return this;
         }
 
         /**
