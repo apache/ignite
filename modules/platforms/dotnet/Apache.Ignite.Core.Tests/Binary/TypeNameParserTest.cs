@@ -25,6 +25,9 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// </summary>
     public class TypeNameParserTest
     {
+        /// <summary>
+        /// Tests simple types.
+        /// </summary>
         [Test]
         public void TestSimpleTypes()
         {
@@ -37,12 +40,20 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(-1, res.AssemblyIndex);
 
             // With assembly.
-            res = TypeNameParser.Parse("System.Int, myasm");
+            res = TypeNameParser.Parse("System.Int, myasm, Ver=1");
 
             Assert.AreEqual(7, res.NameStart);
             Assert.AreEqual(9, res.NameEnd);
             Assert.IsNull(res.Generics);
-            Assert.AreEqual(-1, res.AssemblyIndex);
+            Assert.AreEqual(11, res.AssemblyIndex);
+
+            // Real type.
+            var type = GetType();
+            res = TypeNameParser.Parse(type.AssemblyQualifiedName);
+
+            Assert.IsNotNull(type.Namespace);
+            Assert.AreEqual(type.Namespace.Length + 1, res.NameStart);
+            Assert.AreEqual(type.FullName.Length - 1, res.NameEnd);
         }
 
         [Test]

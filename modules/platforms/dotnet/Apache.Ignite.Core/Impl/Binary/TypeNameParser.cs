@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         break;
 
                     case ',':
-                        res.AssemblyIndex = i;
+                        res.AssemblyIndex = i + 1;
                         if (res.NameEnd < 0)
                         {
                             res.NameEnd = i - 1;
