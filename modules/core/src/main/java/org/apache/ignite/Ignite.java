@@ -615,4 +615,12 @@ public interface Ignite extends AutoCloseable {
      * Clears partition's lost state and moves caches to a normal mode.
      */
     public void resetLostPartitions(Collection<String> cacheNames);
+
+
+    /**
+     * Returns collection {@link MemoryMetrics} objects providing information about memory usage in current Ignite instance.
+     *
+     * @return Collection of {@link MemoryMetrics}
+     */
+    public Collection<MemoryMetrics> memoryMetrics();
 }

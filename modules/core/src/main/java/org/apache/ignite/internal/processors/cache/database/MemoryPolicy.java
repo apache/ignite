@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.database;
 
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 
@@ -27,13 +28,19 @@ public class MemoryPolicy {
     private final PageMemory pageMem;
 
     /** */
+    private final MemoryMetrics memMetrics;
+
+    /** */
     private final MemoryPolicyConfiguration cfg;
 
     /**
-     * @param pageMem Page mem.
+     * @param pageMem PageMemory instance.
+     * @param memMetrics MemoryMetrics instance.
+     * @param cfg Configuration of given MemoryPolicy.
      */
-    public MemoryPolicy(PageMemory pageMem, MemoryPolicyConfiguration cfg) {
+    public MemoryPolicy(PageMemory pageMem, MemoryMetrics memMetrics, MemoryPolicyConfiguration cfg) {
         this.pageMem = pageMem;
+        this.memMetrics = memMetrics;
         this.cfg = cfg;
     }
 
@@ -49,5 +56,12 @@ public class MemoryPolicy {
      */
     public MemoryPolicyConfiguration config() {
         return cfg;
+    }
+
+    /**
+     * @return Memory Metrics.
+     */
+    public MemoryMetrics memoryMetrics() {
+        return memMetrics;
     }
 }

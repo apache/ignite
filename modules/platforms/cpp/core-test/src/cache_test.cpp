@@ -225,7 +225,7 @@ BOOST_AUTO_TEST_CASE(TestPutAllIterMap)
 
     for (int i = 0; i < 100; i++)
         map[i] = i + 1;
-    
+
     cache::Cache<int, int> cache = Cache();
 
     cache.PutAll(map.begin(), map.end());
