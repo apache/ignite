@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -98,16 +97,20 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert key == null : "key";
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
+        final PageMemory pageMem = cctx.memoryPolicy().pageMemory();
+
+        final int cacheId = cctx.cacheId();
 
         long nextLink = link;
         IncompleteObject<?> incomplete = null;
         boolean first = true;
 
         do {
-            PageMemory pageMem = cctx.memoryPolicy().pageMemory();
+            final long pageId = pageId(nextLink);
+            final long page = pageMem.acquirePage(cacheId, pageId);
 
-            try (Page page = page(pageId(nextLink), cctx)) {
-                long pageAddr = page.getForReadPointer(); // Non-empty data page must not be recycled.
+            try {
+                long pageAddr = pageMem.readLock(cacheId, pageId, page); // Non-empty data page must not be recycled.
 
                 assert pageAddr != 0L : nextLink;
 
@@ -144,8 +147,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         return;
                 }
                 finally {
-                    page.releaseRead();
+                    pageMem.readUnlock(cacheId, pageId, page);
                 }
+            }
+            finally {
+                pageMem.releasePage(cacheId, pageId, page);
             }
         }
         while(nextLink != 0);
@@ -451,16 +457,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /** {@inheritDoc} */
     @Override public int hash() {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param pageId Page ID.
-     * @param cctx Cache context.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Page page(final long pageId, final GridCacheContext cctx) throws IgniteCheckedException {
-        return cctx.memoryPolicy().pageMemory().page(cctx.cacheId(), pageId);
     }
 
     /**
