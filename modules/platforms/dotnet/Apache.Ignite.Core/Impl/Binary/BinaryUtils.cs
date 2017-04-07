@@ -1776,31 +1776,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Compare contents of two byte array chunks.
-        /// </summary>
-        /// <param name="arr1">Array 1.</param>
-        /// <param name="offset1">Offset 1.</param>
-        /// <param name="len1">Length 1.</param>
-        /// <param name="arr2">Array 2.</param>
-        /// <param name="offset2">Offset 2.</param>
-        /// <param name="len2">Length 2.</param>
-        /// <returns>True if array chunks are equal.</returns>
-        public static bool CompareArrays(byte[] arr1, int offset1, int len1, byte[] arr2, int offset2, int len2)
-        {
-            if (len1 == len2)
-            {
-                for (int i = 0; i < len1; i++)
-                {
-                    if (arr1[offset1 + i] != arr2[offset2 + i])
-                        return false;
-                }
-
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
         /// Writes invocation result.
         /// </summary>
         /// <param name="writer">Writer.</param>

@@ -771,9 +771,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the name of the type.
         /// </summary>
-        private static string GetTypeName(Type type)
+        private string GetTypeName(Type type, IBinaryNameMapper mapper = null)
         {
-            return type.AssemblyQualifiedName;
+            mapper = mapper ?? _cfg.DefaultNameMapper ?? BinaryUtils.GetDefaultNameMapper();
+
+            return mapper.GetTypeName(type.AssemblyQualifiedName);
         }
     }
 }
