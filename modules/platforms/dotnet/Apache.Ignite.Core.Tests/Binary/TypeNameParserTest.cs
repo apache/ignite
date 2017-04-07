@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using System;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -49,8 +50,18 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // Real type.
             var type = GetType();
+
+            Assert.IsNotNull(type.AssemblyQualifiedName);
+            
             res = TypeNameParser.Parse(type.AssemblyQualifiedName);
 
+            CheckTypeName(type, res);
+
+            Assert.AreEqual(type.AssemblyQualifiedName.IndexOf(',') + 1, res.AssemblyIndex);
+        }
+
+        private static void CheckTypeName(Type type, TypeNameParser.Result res)
+        {
             Assert.IsNotNull(type.Namespace);
             Assert.AreEqual(type.Namespace.Length + 1, res.NameStart);
             Assert.AreEqual(type.FullName.Length - 1, res.NameEnd);
@@ -59,7 +70,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestGenericTypes()
         {
-            
+            // One arg.
+
+            // Two args.
+
+            // Nested args.
         }
 
         [Test]
