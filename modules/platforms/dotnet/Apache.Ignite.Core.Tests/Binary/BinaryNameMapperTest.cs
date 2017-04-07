@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
 
@@ -53,12 +54,17 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.IsTrue(mapper.IsSimpleName);
 
-            foreach (var type in new[] {GetType(), typeof(Foo)})
+            foreach (var type in new[] {GetType(), typeof(Foo), typeof(int)})
             {
                 Assert.AreEqual(type.Name, mapper.GetTypeName(type.AssemblyQualifiedName));
                 Assert.AreEqual(type.Name, mapper.GetTypeName(type.FullName));
                 Assert.AreEqual(type.Name, mapper.GetTypeName(type.Name));
             }
+
+            // Generics
+            Assert.AreEqual("List[String]", mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
+            Assert.AreEqual("Dictionary[Int32,String]", 
+                mapper.GetTypeName(typeof(Dictionary<int, string>).AssemblyQualifiedName));
         }
 
         /// <summary>
