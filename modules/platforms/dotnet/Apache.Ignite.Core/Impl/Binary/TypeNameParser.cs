@@ -117,6 +117,11 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     res.Add(Parse(typeName, ref i));
 
+                    while (typeName[i] != ']')
+                    {
+                        i++;
+                    }
+
                     i++;
                 }
 
