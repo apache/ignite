@@ -1087,7 +1087,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
-                    "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
+                    ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
             initFut.onDone(err == null);
 
