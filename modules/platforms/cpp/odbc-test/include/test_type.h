@@ -107,7 +107,6 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestType)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestType)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(TestType)
             IGNITE_BINARY_IS_NULL_FALSE(TestType)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(TestType)
 

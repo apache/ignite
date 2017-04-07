@@ -271,30 +271,6 @@ namespace Apache.Ignite.Core
                 {
                     writer.WriteBoolean(false);
                 }
-
-                // Send only descriptors with non-null EqualityComparer to preserve old behavior where
-                // remote nodes can have no BinaryConfiguration.
-
-                if (BinaryConfiguration.TypeConfigurations != null &&
-                    BinaryConfiguration.TypeConfigurations.Any(x => x.EqualityComparer != null))
-                {
-                    // Create a new marshaller to reuse type name resolver mechanism.
-                    var types = new Marshaller(BinaryConfiguration).GetUserTypeDescriptors()
-                        .Where(x => x.EqualityComparer != null).ToList();
-
-                    writer.WriteInt(types.Count);
-
-                    foreach (var type in types)
-                    {
-                        writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
-                        writer.WriteBoolean(type.IsEnum);
-                        BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
-                    }
-                }
-                else
-                {
-                    writer.WriteInt(0);
-                }
             }
             else
             {
@@ -428,25 +404,6 @@ namespace Apache.Ignite.Core
 
                 if (r.ReadBoolean())
                     BinaryConfiguration.CompactFooter = r.ReadBoolean();
-
-                var typeCount = r.ReadInt();
-
-                if (typeCount > 0)
-                {
-                    var types = new List<BinaryTypeConfiguration>(typeCount);
-
-                    for (var i = 0; i < typeCount; i++)
-                    {
-                        types.Add(new BinaryTypeConfiguration
-                        {
-                            TypeName = r.ReadString(),
-                            IsEnum = r.ReadBoolean(),
-                            EqualityComparer = BinaryEqualityComparerSerializer.Read(r)
-                        });
-                    }
-
-                    BinaryConfiguration.TypeConfigurations = types;
-                }
             }
 
             // User attributes
