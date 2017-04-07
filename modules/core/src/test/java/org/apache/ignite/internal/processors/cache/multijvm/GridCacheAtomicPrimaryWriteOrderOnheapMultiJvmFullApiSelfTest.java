@@ -18,11 +18,12 @@
 
 package org.apache.ignite.internal.processors.cache.multijvm;
 
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicOnheapMultiNodeFullApiSelfTest;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWriteOrderOnheapMultiNodeFullApiSelfTest;
 
-public class GridCacheAtomicOnheapMultiJvmFullApiSelfTest extends GridCacheAtomicOnheapMultiNodeFullApiSelfTest {
+public class GridCacheAtomicPrimaryWriteOrderOnheapMultiJvmFullApiSelfTest extends GridCacheAtomicPrimaryWriteOrderOnheapMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return CacheAtomicWriteOrderMode.PRIMARY;
     }
 }

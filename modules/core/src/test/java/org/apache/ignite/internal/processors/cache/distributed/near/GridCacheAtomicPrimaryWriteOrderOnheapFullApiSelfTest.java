@@ -16,11 +16,13 @@
  *
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-public class GridCacheAtomicOnheapMultiNodeFullApiSelfTest extends GridCacheAtomicOnheapFullApiSelfTest {
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+
+public class GridCacheAtomicPrimaryWriteOrderOnheapFullApiSelfTest extends GridCacheAtomicOnheapFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-            return 3;
-        }
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return CacheAtomicWriteOrderMode.PRIMARY;
+    }
 }

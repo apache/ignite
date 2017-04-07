@@ -22,8 +22,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheClearSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicNearEnabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicNearEnabledPrimaryWriteOrderFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicOnheapFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicOnheapMultiNodeFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicOnheapFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicOnheapMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicPrimaryWriteOrderFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicPrimaryWriteOrderReloadAllSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicReloadAllSelfTest;
@@ -54,6 +54,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAto
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWriteOrderFairAffinityMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWriteOrderMultiNodeP2PDisabledFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWriteOrderOnheapFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWriteOrderOnheapMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyFairAffinityMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyMultiNodeP2PDisabledFullApiSelfTest;
@@ -114,6 +116,7 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicNearEnabledFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicNearEnabledPrimaryWriteOrderFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicOnheapFullApiSelfTest.class);;
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderOnheapFullApiSelfTest.class);;
 
         suite.addTestSuite(GridCachePartitionedOnheapFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedAtomicOnheapFullApiSelfTest.class);
@@ -180,6 +183,7 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedNearDisabledOnheapMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledAtomicOnheapMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicOnheapMultiNodeFullApiSelfTest.class);;
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderOnheapMultiNodeFullApiSelfTest.class);;
 
         // Old affinity assignment mode.
         suite.addTestSuite(GridCachePartitionedLateAffDisabledMultiNodeFullApiSelfTest.class);
