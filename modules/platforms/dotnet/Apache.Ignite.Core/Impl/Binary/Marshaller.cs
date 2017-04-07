@@ -408,7 +408,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             return _typeNameToDesc.TryGetValue(typeName, out desc)
                 ? (IBinaryTypeDescriptor) desc
                 : new BinarySurrogateTypeDescriptor(_cfg,
-                    GetTypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper), typeName);
+                    GetTypeId(typeName, _cfg.DefaultIdMapper), typeName);
         }
 
         /// <summary>
@@ -473,7 +473,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
 
             var typeName = GetTypeName(type);
-            var typeId = GetTypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
+            var typeId = GetTypeId(typeName, _cfg.DefaultIdMapper);
 
             var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, type);
 
@@ -547,7 +547,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private void AddUserType(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
         {
             // Get converter/mapper/serializer.
-            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.DefaultNameMapper;
+            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.DefaultNameMapper ?? GetDefaultNameMapper();
 
             IBinaryIdMapper idMapper = typeCfg.IdMapper ?? _cfg.DefaultIdMapper;
 
@@ -570,8 +570,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 // Type is found.
-                var typeName = GetTypeName(type, typeCfg.NameMapper);
-                int typeId = GetTypeId(typeName, nameMapper, idMapper);
+                var typeName = GetTypeName(type, nameMapper);
+                int typeId = GetTypeId(typeName, idMapper);
                 var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
                 var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper, _log);
 
@@ -581,9 +581,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 // Type is not found.
-                string typeName = typeCfg.TypeName;  // TODO: Map??
+                string typeName = GetTypeName(typeCfg.TypeName, nameMapper);
 
-                int typeId = GetTypeId(typeName, nameMapper, idMapper);
+                int typeId = GetTypeId(typeName, idMapper);
 
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName, typeCfg.IsEnum, typeCfg.EqualityComparer);
@@ -701,7 +701,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             serializer = serializer ?? new BinarySystemTypeSerializer<T>(ctor);
 
             if (typeId == 0)
-                typeId = GetTypeId(type.Name, null, null);
+                typeId = GetTypeId(type.Name, null);
 
             AddType(type, typeId, GetTypeName(type), false, false, null, null, serializer, affKeyFldName,
                 false, null);
@@ -774,9 +774,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private string GetTypeName(Type type, IBinaryNameMapper mapper = null)
         {
-            mapper = mapper ?? _cfg.DefaultNameMapper ?? GetDefaultNameMapper();
+            return GetTypeName(type.AssemblyQualifiedName, mapper);
+        }
 
-            var fullTypeName = type.AssemblyQualifiedName;
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        private string GetTypeName(string fullTypeName, IBinaryNameMapper mapper = null)
+        {
+            mapper = mapper ?? _cfg.DefaultNameMapper ?? GetDefaultNameMapper();
 
             var typeName = mapper.GetTypeName(fullTypeName);
 
@@ -793,9 +799,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Resolve type ID.
         /// </summary>
         /// <param name="typeName">Type name.</param>
-        /// <param name="nameMapper">Name mapper.</param>
         /// <param name="idMapper">ID mapper.</param>
-        private static int GetTypeId(string typeName, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper)
+        private static int GetTypeId(string typeName, IBinaryIdMapper idMapper)
         {
             Debug.Assert(typeName != null);
 
