@@ -32,7 +32,6 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.store.jdbc.model.Gender;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
@@ -65,7 +64,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends CacheAbstractJdbcStore>
     extends GridCommonAbstractTest {
     /** Default config with mapping. */
-    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/ignite-type-metadata.xml";
+    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/ignite-jdbc-type.xml";
 
     /** Database connection URL. */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
@@ -85,6 +84,40 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         store = store();
+
+        URL cfgUrl;
+
+        try {
+            cfgUrl = new URL(DFLT_MAPPING_CONFIG);
+        }
+        catch (MalformedURLException ignore) {
+            cfgUrl = U.resolveIgniteUrl(DFLT_MAPPING_CONFIG);
+        }
+
+        if (cfgUrl == null)
+            throw new Exception("Failed to resolve metadata path: " + DFLT_MAPPING_CONFIG);
+
+        try {
+            GenericApplicationContext springCtx = new GenericApplicationContext();
+
+            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
+
+            springCtx.refresh();
+
+            Collection<JdbcType> types = new ArrayList<>(springCtx.getBeansOfType(JdbcType.class).values());
+
+            store.setTypes(types.toArray(new JdbcType[types.size()]));
+        }
+        catch (BeansException e) {
+            if (X.hasCause(e, ClassNotFoundException.class))
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
+                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
+                    "[springUrl=" + cfgUrl + ']', e);
+            else
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
+                    cfgUrl + ", err=" + e.getMessage() + ']', e);
+        }
+
     }
 
     /** {@inheritDoc} */
@@ -150,40 +183,8 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         cc.setAtomicityMode(ATOMIC);
         cc.setWriteBehindEnabled(false);
 
-        URL cfgUrl;
-
-        try {
-            cfgUrl = new URL(DFLT_MAPPING_CONFIG);
-        }
-        catch (MalformedURLException ignore) {
-            cfgUrl = U.resolveIgniteUrl(DFLT_MAPPING_CONFIG);
-        }
-
-        if (cfgUrl == null)
-            throw new Exception("Failed to resolve metadata path: " + DFLT_MAPPING_CONFIG);
-
-        try {
-            GenericApplicationContext springCtx = new GenericApplicationContext();
-
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
-
-            springCtx.refresh();
-
-            Collection<CacheTypeMetadata> tp = new ArrayList<>(springCtx.getBeansOfType(CacheTypeMetadata.class).values());
-
-            cc.setTypeMetadata(tp);
-        }
-        catch (BeansException e) {
-            if (X.hasCause(e, ClassNotFoundException.class))
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
-                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
-                    "[springUrl=" + cfgUrl + ']', e);
-            else
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
-                    cfgUrl + ", err=" + e.getMessage() + ']', e);
-        }
-
         cc.setCacheStoreFactory(singletonFactory(store));
+
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

@@ -26,7 +26,7 @@ namespace Apache.Ignite.Examples.Datagrid
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
 
     /// <summary>
     /// This example demonstrates on how to configure a multi-tiered Ignite cache that will store data in different 

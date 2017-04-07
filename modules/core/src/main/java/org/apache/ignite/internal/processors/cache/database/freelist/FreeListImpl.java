@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -40,8 +39,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
 /**
  */
@@ -85,9 +82,17 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /**
      *
      */
-    private class UpdateRowHandler extends PageHandler<CacheDataRow, Boolean> {
-        /** {@inheritDoc} */
-        @Override public Boolean run(Page page, PageIO iox, long pageAddr, CacheDataRow row, int itemId)
+    private final class UpdateRowHandler extends PageHandler<CacheDataRow, Boolean> {
+        @Override
+        public Boolean run(
+            int cacheId,
+            long pageId,
+            long page,
+            long pageAddr,
+            PageIO iox,
+            Boolean walPlc,
+            CacheDataRow row,
+            int itemId)
             throws IgniteCheckedException {
             DataPageIO io = (DataPageIO)iox;
 
@@ -95,7 +100,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
 
-            if (updated && isWalDeltaRecordNeeded(wal, page)) {
+            if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
                 // TODO This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[rowSize];
 
@@ -107,14 +112,14 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                 wal.log(new DataPageUpdateRecord(
                     cacheId,
-                    page.id(),
+                    pageId,
                     itemId,
                     payload));
             }
 
             return updated;
         }
-    };
+    }
 
     /** */
     private final PageHandler<CacheDataRow, Integer> writeRow = new WriteRowHandler();
@@ -122,9 +127,17 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /**
      *
      */
-    private class WriteRowHandler extends PageHandler<CacheDataRow, Integer> {
-        /** {@inheritDoc} */
-        @Override public Integer run(Page page, PageIO iox, long pageAddr, CacheDataRow row, int written)
+    private final class WriteRowHandler extends PageHandler<CacheDataRow, Integer> {
+        @Override
+        public Integer run(
+            int cacheId,
+            long pageId,
+            long page,
+            long pageAddr,
+            PageIO iox,
+            Boolean walPlc,
+            CacheDataRow row,
+            int written)
             throws IgniteCheckedException {
             DataPageIO io = (DataPageIO)iox;
 
@@ -134,8 +147,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             assert oldFreeSpace > 0 : oldFreeSpace;
 
             // If the full row does not fit into this page write only a fragment.
-            written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(page, pageAddr, io, row, rowSize):
-                addRowFragment(page, pageAddr, io, row, written, rowSize);
+            written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(pageId, page, pageAddr, io, row, rowSize):
+                addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
 
             // Reread free space after update.
             int newFreeSpace = io.getFreeSpace(pageAddr);
@@ -143,7 +156,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
                 int bucket = bucket(newFreeSpace, false);
 
-                put(null, page, pageAddr, bucket);
+                put(null, pageId, page, pageAddr, bucket);
             }
 
             if (written == rowSize)
@@ -154,7 +167,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         }
 
         /**
-         * @param page Page.
+         * @param pageId Page ID.
+         * @param page Page pointer.
          * @param pageAddr Page address.
          * @param io IO.
          * @param row Row.
@@ -163,7 +177,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
          * @throws IgniteCheckedException If failed.
          */
         private int addRow(
-            Page page,
+            long pageId,
+            long page,
             long pageAddr,
             DataPageIO io,
             CacheDataRow row,
@@ -171,7 +186,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         ) throws IgniteCheckedException {
             io.addRow(pageAddr, row, rowSize, pageSize());
 
-            if (isWalDeltaRecordNeeded(wal, page)) {
+            if (needWalDeltaRecord(pageId, page, null)) {
                 // TODO This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[rowSize];
 
@@ -183,7 +198,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                 wal.log(new DataPageInsertRecord(
                     cacheId,
-                    page.id(),
+                    pageId,
                     payload));
             }
 
@@ -191,7 +206,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         }
 
         /**
-         * @param page Page.
+         * @param pageId Page ID.
+         * @param page Page pointer.
          * @param pageAddr Page address.
          * @param io IO.
          * @param row Row.
@@ -201,7 +217,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
          * @throws IgniteCheckedException If failed.
          */
         private int addRowFragment(
-            Page page,
+            long pageId,
+            long page,
             long pageAddr,
             DataPageIO io,
             CacheDataRow row,
@@ -215,7 +232,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             assert payloadSize > 0 : payloadSize;
 
-            if (isWalDeltaRecordNeeded(wal, page)) {
+            if (needWalDeltaRecord(pageId, page, null)) {
                 // TODO This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[payloadSize];
 
@@ -223,12 +240,12 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                 PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
 
-                wal.log(new DataPageInsertFragmentRecord(cacheId, page.id(), payload, lastLink));
+                wal.log(new DataPageInsertFragmentRecord(cacheId, pageId, payload, lastLink));
             }
 
             return written + payloadSize;
         }
-    };
+    }
 
 
     /** */
@@ -237,9 +254,17 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /**
      *
      */
-    private class RemoveRowHandler extends PageHandler<Void, Long> {
-        /** {@inheritDoc} */
-        @Override public Long run(Page page, PageIO iox, long pageAddr, Void arg, int itemId)
+    private final class RemoveRowHandler extends PageHandler<Void, Long> {
+        @Override
+        public Long run(
+            int cacheId,
+            long pageId,
+            long page,
+            long pageAddr,
+            PageIO iox,
+            Boolean walPlc,
+            Void ignored,
+            int itemId)
             throws IgniteCheckedException {
             DataPageIO io = (DataPageIO)iox;
 
@@ -249,16 +274,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             long nextLink = io.removeRow(pageAddr, itemId, pageSize());
 
-            if (isWalDeltaRecordNeeded(wal, page))
-                wal.log(new DataPageRemoveRecord(cacheId, page.id(), itemId));
-
-            // TODO: properly handle reuse bucket.
-//            if (io.isEmpty(buf)) {
-//                int oldBucket = oldFreeSpace > MIN_PAGE_FREE_SPACE ? bucket(oldFreeSpace, false) : -1;
-//
-//                if (oldBucket == -1 || removeDataPage(page, buf, io, oldBucket))
-//                    put(null, page, buf, REUSE_BUCKET);
-//            }
+            if (needWalDeltaRecord(pageId, page, walPlc))
+                wal.log(new DataPageRemoveRecord(cacheId, pageId, itemId));
 
             int newFreeSpace = io.getFreeSpace(pageAddr);
 
@@ -270,12 +287,12 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
-                        if (removeDataPage(page, pageAddr, io, oldBucket))
-                            put(null, page, pageAddr, newBucket);
+                        if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
+                            put(null, pageId, page, pageAddr, newBucket);
                     }
                 }
                 else
-                    put(null, page, pageAddr, newBucket);
+                    put(null, pageId, page, pageAddr, newBucket);
 
                 if (io.isEmpty(pageAddr))
                     evictionTracker.forgetPage(page.id());
@@ -284,7 +301,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
         }
-    };
+    }
 
     /**
      * @param cacheId Cache ID.
@@ -393,16 +410,14 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /**
      * @param part Partition.
-     * @return Page.
+     * @return Page ID.
      * @throws IgniteCheckedException If failed.
      */
-    private Page allocateDataPage(int part) throws IgniteCheckedException {
+    private long allocateDataPage(int part) throws IgniteCheckedException {
         assert part <= PageIdAllocator.MAX_PARTITION_ID;
         assert part != PageIdAllocator.INDEX_PARTITION;
 
-        long pageId = pageMem.allocatePage(cacheId, part, PageIdAllocator.FLAG_DATA);
-
-        return pageMem.page(cacheId, pageId);
+        return pageMem.allocatePage(cacheId, part, PageIdAllocator.FLAG_DATA);
     }
 
     /** {@inheritDoc} */
@@ -433,14 +448,16 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             if (pageId == 0L)
                 pageId = tryTakeEmptyPageWithFreeSpace(freeSpace, bucket);
 
-            try (Page page = pageId == 0 ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
-                // If it is an existing page, we do not need to initialize it.
-                DataPageIO init = reuseBucket || pageId == 0L ? DataPageIO.VERSIONS.latest() : null;
+            boolean allocated = pageId == 0L;
 
-                written = writePage(pageMem, page, this, writeRow, init, wal, row, written, FAIL_I);
+            if (allocated)
+                pageId = allocateDataPage(row.partition());
 
-                assert written != FAIL_I; // We can't fail here.
-            }
+            DataPageIO init = reuseBucket || allocated ? DataPageIO.VERSIONS.latest() : null;
+
+            written = write(pageId, writeRow, init, row, written, FAIL_I);
+
+            assert written != FAIL_I; // We can't fail here.
         }
         while (written != COMPLETE);
     }
@@ -484,13 +501,11 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         long pageId = PageIdUtils.pageId(link);
         int itemId = PageIdUtils.itemId(link);
 
-        try (Page page = pageMem.page(cacheId, pageId)) {
-            Boolean updated = writePage(pageMem, page, this, updateRow, row, itemId, null);
+        Boolean updated = write(pageId, updateRow, row, itemId, null);
 
-            assert updated != null; // Can't fail here.
+        assert updated != null; // Can't fail here.
 
-            return updated != null ? updated : false;
-        }
+        return updated;
     }
 
     /** {@inheritDoc} */
@@ -500,23 +515,17 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         long pageId = PageIdUtils.pageId(link);
         int itemId = PageIdUtils.itemId(link);
 
-        long nextLink;
+        long nextLink = write(pageId, rmvRow, itemId, FAIL_L);
 
-        try (Page page = pageMem.page(cacheId, pageId)) {
-            nextLink = writePage(pageMem, page, this, rmvRow, null, itemId, FAIL_L);
-
-            assert nextLink != FAIL_L; // Can't fail here.
-        }
+        assert nextLink != FAIL_L; // Can't fail here.
 
         while (nextLink != 0L) {
             itemId = PageIdUtils.itemId(nextLink);
             pageId = PageIdUtils.pageId(nextLink);
 
-            try (Page page = pageMem.page(cacheId, pageId)) {
-                nextLink = writePage(pageMem, page, this, rmvRow, null, itemId, FAIL_L);
+            nextLink = write(pageId, rmvRow, itemId, FAIL_L);
 
-                assert nextLink != FAIL_L; // Can't fail here.
-            }
+            assert nextLink != FAIL_L; // Can't fail here.
         }
     }
 
@@ -546,7 +555,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this: "not allowed to be a reuse list";
 
-        put(bag, null, 0L, REUSE_BUCKET);
+        put(bag, 0, 0, 0L, REUSE_BUCKET);
     }
 
     /** {@inheritDoc} */

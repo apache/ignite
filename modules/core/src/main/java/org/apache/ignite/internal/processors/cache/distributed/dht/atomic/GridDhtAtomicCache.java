@@ -2884,7 +2884,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param locked Locked entries.
      * @param topVer Topology version.
      */
-    private void unlockEntries(Collection<GridDhtCacheEntry> locked, AffinityTopologyVersion topVer) {
+    private void unlockEntries(List<GridDhtCacheEntry> locked, AffinityTopologyVersion topVer) {
         // Process deleted entries before locks release.
         assert ctx.deferredDelete() : this;
 
@@ -2892,8 +2892,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Enqueue entries while holding locks.
         Collection<KeyCacheObject> skip = null;
 
+        int size = locked.size();
+
         try {
-            for (GridCacheMapEntry entry : locked) {
+            for (int i = 0; i < size; i++) {
+                GridCacheMapEntry entry = locked.get(i);
                 if (entry != null && entry.deleted()) {
                     if (skip == null)
                         skip = U.newHashSet(locked.size());
@@ -2906,27 +2909,30 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
             // an attempt to use cleaned resources.
             // That's why releasing locks in the finally block..
-            for (GridCacheMapEntry entry : locked) {
+            for (int i = 0; i < size; i++) {
+                GridCacheMapEntry entry = locked.get(i);
                 if (entry != null)
                     GridUnsafe.monitorExit(entry);
             }
         }
 
         // Try evict partitions.
-        for (GridDhtCacheEntry entry : locked) {
+        for (int i = 0; i < size; i++) {
+            GridDhtCacheEntry entry = locked.get(i);
             if (entry != null)
                 entry.onUnlock();
         }
 
         ctx.shared().database().checkpointReadUnlock();
 
-        if (skip != null && skip.size() == locked.size())
+        if (skip != null && skip.size() == size)
             // Optimization.
             return;
 
         // Must touch all entries since update may have deleted entries.
         // Eviction manager will remove empty entries.
-        for (GridCacheMapEntry entry : locked) {
+        for (int i = 0; i < size; i++) {
+            GridCacheMapEntry entry = locked.get(i);
             if (entry != null && (skip == null || !skip.contains(entry.key())))
                 ctx.evicts().touch(entry, topVer);
         }

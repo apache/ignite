@@ -49,8 +49,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheTypeFieldMetadata;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.jdbc.dialect.BasicJdbcDialect;
@@ -60,7 +58,6 @@ import org.apache.ignite.cache.store.jdbc.dialect.JdbcDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.OracleDialect;
 import org.apache.ignite.cache.store.jdbc.dialect.SQLServerDialect;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -539,28 +536,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     }
 
     /**
-     * For backward compatibility translate old field type descriptors to new format.
-     *
-     * @param oldFlds Fields in old format.
-     * @return Fields in new format.
-     */
-    @Deprecated
-    private JdbcTypeField[] translateFields(Collection<CacheTypeFieldMetadata> oldFlds) {
-        JdbcTypeField[] newFlds = new JdbcTypeField[oldFlds.size()];
-
-        int idx = 0;
-
-        for (CacheTypeFieldMetadata oldField : oldFlds) {
-            newFlds[idx] = new JdbcTypeField(oldField.getDatabaseType(), oldField.getDatabaseName(),
-                oldField.getJavaType(), oldField.getJavaName());
-
-            idx++;
-        }
-
-        return newFlds;
-    }
-
-    /**
      * @param type Type name to check.
      * @return {@code True} if class not found.
      */
@@ -595,36 +570,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
             if (entryMappings != null)
                 return entryMappings;
-
-            // If no types configured, check CacheTypeMetadata for backward compatibility.
-            if (types == null) {
-                CacheConfiguration ccfg = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class);
-
-                Collection<CacheTypeMetadata> oldTypes = ccfg.getTypeMetadata();
-
-                types = new JdbcType[oldTypes.size()];
-
-                int idx = 0;
-
-                for (CacheTypeMetadata oldType : oldTypes) {
-                    JdbcType newType = new JdbcType();
-
-                    newType.setCacheName(cacheName);
-
-                    newType.setDatabaseSchema(oldType.getDatabaseSchema());
-                    newType.setDatabaseTable(oldType.getDatabaseTable());
-
-                    newType.setKeyType(oldType.getKeyType());
-                    newType.setKeyFields(translateFields(oldType.getKeyFields()));
-
-                    newType.setValueType(oldType.getValueType());
-                    newType.setValueFields(translateFields(oldType.getValueFields()));
-
-                    types[idx] = newType;
-
-                    idx++;
-                }
-            }
 
             List<JdbcType> cacheTypes = new ArrayList<>(types.length);
 

@@ -545,7 +545,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> entry : data.clientInfos.entrySet()) {
                 UUID clientNodeId = entry.getKey();
 
-                if (!ctx.localNodeId().equals(clientNodeId)) {
+                if (!ctx.clientNode()) {
                     Map<UUID, LocalRoutineInfo> clientRoutineMap = entry.getValue();
 
                     for (Map.Entry<UUID, LocalRoutineInfo> e : clientRoutineMap.entrySet()) {
@@ -633,6 +633,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @return Routine ID.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     public UUID registerStaticRoutine(
         String cacheName,
         CacheEntryUpdatedListener<?, ?> locLsnr,

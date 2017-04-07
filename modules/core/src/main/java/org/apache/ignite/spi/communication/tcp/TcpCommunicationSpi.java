@@ -3394,10 +3394,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             assert sslHnd != null;
 
                             buf = ByteBuffer.allocate(1000);
+                            buf.order(ByteOrder.nativeOrder());
 
                             ByteBuffer decode = ByteBuffer.allocate(2 * buf.capacity());
-
-                            buf.order(ByteOrder.nativeOrder());
+                            decode.order(ByteOrder.nativeOrder());
 
                             for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                                 int read = ch.read(buf);

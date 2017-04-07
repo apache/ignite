@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -135,8 +134,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean first = true;
 
         do {
-            try (Page page = page(pageId(nextLink), cctx, pageMem)) {
-                long pageAddr = page.getForReadPointer(); // Non-empty data page must not be recycled.
+            final long pageId = pageId(nextLink);
+            final long page = pageMem.acquirePage(cacheId, pageId);
+
+            try {
+                long pageAddr = pageMem.readLock(cacheId, pageId, page); // Non-empty data page must not be recycled.
 
                 assert pageAddr != 0L : nextLink;
 
@@ -173,8 +175,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
                         return;
                 }
                 finally {
-                    page.releaseRead();
+                    pageMem.readUnlock(cacheId, pageId, page);
                 }
+            }
+            finally {
+                pageMem.releasePage(cacheId, pageId, page);
             }
         }
         while(nextLink != 0);
@@ -550,19 +555,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /** {@inheritDoc} */
     @Override public int hash() {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param pageId Page ID.
-     * @param cctx Cache context.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Page page(final long pageId, final GridCacheContext cctx, final PageMemory pageMem)
-        throws IgniteCheckedException {
-        int cacheId = cctx == null ? 0 : cctx.cacheId();
-
-        return pageMem.page(cacheId, pageId);
     }
 
     /**

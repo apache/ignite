@@ -276,12 +276,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             CheckFunc(x => x.Trim(), strings);
             CheckFunc(x => x.Trim('P'), strings);
+            var toTrim = new[] {'P'};
+            CheckFunc(x => x.Trim(toTrim), strings);
+            CheckFunc(x => x.Trim(new List<char> {'P'}.ToArray()), strings);
             CheckFunc(x => x.Trim('3'), strings);
             CheckFunc(x => x.TrimStart('P'), strings);
+            CheckFunc(x => x.TrimStart(toTrim), strings);
             CheckFunc(x => x.TrimStart('3'), strings);
             Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimStart('P', 'e'), strings));
             CheckFunc(x => x.TrimEnd('P'), strings);
+            CheckFunc(x => x.TrimEnd(toTrim), strings);
             CheckFunc(x => x.TrimEnd('3'), strings);
+            var toTrimFails = new[] {'P', 'c'};
+            Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.Trim(toTrimFails), strings));
+            Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimStart(toTrimFails), strings));
+            Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimEnd(toTrimFails), strings));
 
             CheckFunc(x => Regex.Replace(x, @"son.\d", "kele!"), strings);
             CheckFunc(x => x.Replace("son", ""), strings);
@@ -726,7 +735,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ThenBy(x => x.Value.Age)
                 .ToArray();
 
-            Assert.AreEqual(Enumerable.Range(0, PersonCount).Reverse().ToArray(), persons.Select(x => x.Key).ToArray());
+            Assert.AreEqual(Enumerable.Range(0, PersonCount).Reverse().ToArray(), 
+                persons.Select(x => x.Key).ToArray());
 
             var personsByOrg = GetPersonCache().AsCacheQueryable()
                 .Join(GetOrgCache().AsCacheQueryable(), p => p.Value.OrganizationId, o => o.Value.Id,
@@ -816,6 +826,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var ex = Assert.Throws<NotSupportedException>(() =>
                 CompiledQuery.Compile((int[] k) => cache.Where(x => k.Contains(x.Key))));
             Assert.AreEqual("'Contains' clause coming from compiled query parameter is not supported.", ex.Message);
+
+            // check subquery from another cache put in separate variable
+            var orgIds = orgCache
+                .Where(o => o.Value.Name == "Org_1")
+                .Select(o => o.Key);
+
+            var subQueryFromVar = cache
+                .Where(x => orgIds.Contains(x.Value.OrganizationId))
+                .ToArray();
+
+            var subQueryInline = cache
+                .Where(x => orgCache.Where(o => o.Value.Name == "Org_1")
+                    .Select(o => o.Key).Contains(x.Value.OrganizationId))
+                .ToArray();
+
+            Assert.AreEqual(subQueryInline.Length, subQueryFromVar.Length);
         }
 
         /// <summary>
@@ -1047,7 +1073,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var qry6 = CompiledQuery.Compile((int minAge) => persons
                 .Select(x => x.Value)
                 .Where(x => x.Age >= minAge)
-                .Select(x => new {x.Name, x.Age})
+                .Select(x => new { x.Name, x.Age })
                 .OrderBy(x => x.Name));
 
             var res = qry6(PersonCount - 3).GetAll();
@@ -1116,7 +1142,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // 8 arg
             var qry8 = CompiledQuery.Compile((int a, int b, int c, int d, int e, int f, int g, int h) =>
-                cache.Select(x => x.Key).Where(k => k > a && k > b && k > c && k < d && k < e && k < f && k < g && k < h));
+                cache.Select(x => x.Key)
+                    .Where(k => k > a && k > b && k > c && k < d && k < e && k < f && k < g && k < h));
             Assert.AreEqual(new[] {3, 4}, qry8(0, 1, 2, 5, 6, 7, 8, 9).ToArray());
         }
 
@@ -1432,7 +1459,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Checks that function used in Where Clause maps to SQL function properly
         /// </summary>
-        private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query, Expression<Func<ICacheEntry<TKey, TEntry>,bool>> whereExpression)
+        private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query, 
+            Expression<Func<ICacheEntry<TKey, TEntry>,bool>> whereExpression)
         {
             // Calculate result locally, using real method invocation
             var expected = query

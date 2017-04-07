@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -145,9 +146,11 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** */
     public ArrayList<Map<Integer, MappedName>> getCachedMappings() {
-        ArrayList<Map<Integer, MappedName>> result = new ArrayList<>(allCaches.size());
+        int size = allCaches.size();
 
-        for (int i = 0; i < allCaches.size(); i++) {
+        ArrayList<Map<Integer, MappedName>> result = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++) {
             Map res;
 
             if (i == JAVA_ID)
@@ -155,8 +158,10 @@ public class MarshallerContextImpl implements MarshallerContext {
             else
                 res = allCaches.get(i);
 
-            if (!res.isEmpty())
+            if (res != null && !res.isEmpty())
                 result.add(res);
+            else
+                result.add(Collections.<Integer, MappedName>emptyMap());
         }
 
         return result;
@@ -164,12 +169,12 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /**
      * @param platformId Platform id.
-     * @param marshallerMapping Marshaller mapping.
+     * @param marshallerMappings All marshaller mappings for given platformId.
      */
-    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMapping) {
+    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings) {
         ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
 
-        for (Map.Entry<Integer, MappedName> e : marshallerMapping.entrySet())
+        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet())
             platformCache.put(e.getKey(), new MappedName(e.getValue().className(), true));
     }
 
@@ -299,7 +304,8 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      *
      * @param item type mapping to propose
-     * @return false if there is a conflict with another mapping in local cache, true otherwise.
+     * @return null if cache doesn't contain any mappings for given (platformId, typeId) pair,
+     * previous class name otherwise.
      */
     public String onMappingProposed(MarshallerMappingItem item) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
