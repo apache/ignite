@@ -20,11 +20,15 @@ package org.apache.ignite.math.decompositions;
 import org.apache.ignite.math.Destroyable;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.matrix.CacheMatrix;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 
+/**
+ * TODO: add description.
+ */
 public abstract class DecompositionSupport implements Destroyable {
     /**
      * Create the like matrix with read-only matrices support.
@@ -33,7 +37,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @return Like matrix.
      */
     protected Matrix like(Matrix matrix){
-        if (matrix instanceof RandomMatrix || matrix instanceof PivotedMatrixView)
+        if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
         else
             return matrix.like(matrix.rowSize(), matrix.columnSize());
@@ -46,7 +50,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @return Like matrix.
      */
     protected Matrix like(Matrix matrix, int rows, int cols){
-        if (matrix instanceof RandomMatrix || matrix instanceof PivotedMatrixView)
+        if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapMatrix(rows, cols);
         else
             return matrix.like(rows, cols);
@@ -59,7 +63,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @return Like vector.
      */
     protected Vector likeVector(Matrix matrix){
-        if (matrix instanceof RandomMatrix || matrix instanceof PivotedMatrixView)
+        if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapVector(matrix.rowSize());
         else
             return matrix.likeVector(matrix.rowSize());
@@ -72,7 +76,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @return Copy.
      */
     protected Matrix copy(Matrix matrix){
-        if (matrix instanceof RandomMatrix){
+        if (isCopyLikeSupport(matrix)){
             DenseLocalOnHeapMatrix cp = new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
 
             cp.assign(matrix);
@@ -80,5 +84,10 @@ public abstract class DecompositionSupport implements Destroyable {
             return cp;
         } else
             return matrix.copy();
+    }
+
+    /** */
+    private boolean isCopyLikeSupport(Matrix matrix) {
+        return matrix instanceof RandomMatrix || matrix instanceof PivotedMatrixView || matrix instanceof CacheMatrix;
     }
 }
