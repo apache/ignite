@@ -101,9 +101,6 @@ import static org.jsr166.ConcurrentLinkedDeque8.Node;
  * TODO GG-11140 (old evictions implementation, now created for near cache, evictions to be reconsidered as part of GG-11140).
  */
 public class GridCacheEvictionManager extends GridCacheManagerAdapter implements CacheEvictionManager {
-    /** Attribute name used to queue node in entry metadata. */
-    private static final int META_KEY = GridMetadataAwareAdapter.EntryKey.CACHE_EVICTION_MANAGER_KEY.key();
-
     /** Eviction policy. */
     private EvictionPolicy plc;
 
@@ -167,144 +164,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         }
 
         return true;
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param res Response.
-     */
-    private void sendEvictionResponse(UUID nodeId, GridCacheEvictionResponse res) {
-        try {
-            cctx.io().send(nodeId, res, cctx.ioPolicy());
-
-            if (log.isDebugEnabled())
-                log.debug("Sent eviction response [node=" + nodeId + ", localNode=" + cctx.nodeId() +
-                    ", res" + res + ']');
-        }
-        catch (ClusterTopologyCheckedException ignored) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send eviction response since initiating node left grid " +
-                    "[node=" + nodeId + ", localNode=" + cctx.nodeId() + ']');
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send eviction response to node [node=" + nodeId +
-                ", localNode=" + cctx.nodeId() + ", res" + res + ']', e);
-        }
-    }
-
-    /**
-     * @param key Key.
-     * @param ver Version.
-     * @param p Partition ID.
-     */
-    private void saveEvictionInfo(KeyCacheObject key, GridCacheVersion ver, int p) {
-        assert cctx.rebalanceEnabled();
-
-        if (!cctx.isNear()) {
-            try {
-                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p,
-                    AffinityTopologyVersion.NONE, false);
-
-                assert part != null;
-
-                part.onEntryEvicted(key, ver);
-            }
-            catch (GridDhtInvalidPartitionException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Partition does not belong to local node [part=" + p +
-                        ", nodeId" + cctx.localNode().id() + ']');
-            }
-        }
-        else
-            assert false : "Failed to save eviction info: " + cctx.namexx();
-    }
-
-    /**
-     * @param p Partition ID.
-     * @return {@code True} if partition has been actually locked,
-     *      {@code false} if preloading is finished or disabled and no lock is needed.
-     */
-    private boolean lockPartition(int p) {
-        if (!cctx.rebalanceEnabled())
-            return false;
-
-        if (!cctx.isNear()) {
-            try {
-                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p, AffinityTopologyVersion.NONE,
-                    false);
-
-                if (part != null && part.reserve()) {
-                    part.lock();
-
-                    if (part.state() != MOVING) {
-                        part.unlock();
-
-                        part.release();
-
-                        return false;
-                    }
-
-                    return true;
-                }
-            }
-            catch (GridDhtInvalidPartitionException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Partition does not belong to local node [part=" + p +
-                        ", nodeId" + cctx.localNode().id() + ']');
-            }
-        }
-
-        // No lock is needed.
-        return false;
-    }
-
-    /**
-     * @param p Partition ID.
-     */
-    private void unlockPartition(int p) {
-        if (!cctx.rebalanceEnabled())
-            return;
-
-        if (!cctx.isNear()) {
-            try {
-                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p, AffinityTopologyVersion.NONE,
-                    false);
-
-                if (part != null) {
-                    part.unlock();
-
-                    part.release();
-                }
-            }
-            catch (GridDhtInvalidPartitionException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Partition does not belong to local node [part=" + p +
-                        ", nodeId" + cctx.localNode().id() + ']');
-            }
-        }
-    }
-
-    /**
-     * Locks topology (for DHT cache only) and returns its version.
-     *
-     * @return Topology version after lock.
-     */
-    private AffinityTopologyVersion lockTopology() {
-        if (!cctx.isNear()) {
-            cctx.dht().topology().readLock();
-
-            return cctx.dht().topology().topologyVersion();
-        }
-
-        return AffinityTopologyVersion.ZERO;
-    }
-
-    /**
-     * Unlocks topology.
-     */
-    private void unlockTopology() {
-        if (!cctx.isNear())
-            cctx.dht().topology().readUnlock();
     }
 
     /**
@@ -553,28 +412,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     }
 
     /**
-     * @param info Eviction info.
-     * @return Version aware filter.
-     */
-    private CacheEntryPredicate[] versionFilter(final EvictionInfo info) {
-        // If version has changed since we started the whole process
-        // then we should not evict entry.
-        return new CacheEntryPredicate[] {
-            new CacheEntryPredicateAdapter() {
-                @Override public boolean apply(GridCacheEntryEx e) {
-                    try {
-                        GridCacheVersion ver = e.version();
-
-                        return info.version().equals(ver) && F.isAll(info.filter());
-                    }
-                    catch (GridCacheEntryRemovedException ignored) {
-                        return false;
-                    }
-                }
-            }};
-    }
-
-    /**
      * @param e Entry to notify eviction policy.
      */
     @SuppressWarnings({"IfMayBeConditional", "RedundantIfStatement"})
@@ -590,73 +427,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
             plc.onEntryAccessed(e.obsoleteOrDeleted(), e.wrapEviction());
     }
 
-    /**
-     * Prints out eviction stats.
-     */
-    public void printStats() {
-        X.println("Eviction stats [igniteInstanceName=" + cctx.igniteInstanceName() +
-            ", cache=" + cctx.cache().name() + ']');
-    }
-
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
         X.println(">>> Eviction manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() +
             ", cache=" + cctx.name() + ']');
-    }
-
-    /**
-     * Wrapper around an entry to be put into queue.
-     */
-    private class EvictionInfo {
-        /** Cache entry. */
-        private GridCacheEntryEx entry;
-
-        /** Start version. */
-        private GridCacheVersion ver;
-
-        /** Filter to pass before entry will be evicted. */
-        private CacheEntryPredicate[] filter;
-
-        /**
-         * @param entry Entry.
-         * @param ver Version.
-         * @param filter Filter.
-         */
-        EvictionInfo(GridCacheEntryEx entry, GridCacheVersion ver,
-            CacheEntryPredicate[] filter) {
-            assert entry != null;
-            assert ver != null;
-
-            this.entry = entry;
-            this.ver = ver;
-            this.filter = filter;
-        }
-
-        /**
-         * @return Entry.
-         */
-        GridCacheEntryEx entry() {
-            return entry;
-        }
-
-        /**
-         * @return Version.
-         */
-        GridCacheVersion version() {
-            return ver;
-        }
-
-        /**
-         * @return Filter.
-         */
-        CacheEntryPredicate[] filter() {
-            return filter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(EvictionInfo.class, this);
-        }
     }
 }
