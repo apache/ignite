@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Binary
 {
+    using Apache.Ignite.Core.Impl.Common;
+
     /// <summary>
     /// Base binary name mapper implementation.
     /// </summary>
@@ -48,8 +50,33 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         public static string GetSimpleTypeName(string typeName)
         {
-            // TODO
-            return typeName;
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
+
+            // Example of assembly-qualified name:
+            // System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+            const char asmSeparator = ',';
+            const char nsSeparator = '.';
+
+            var asmPos = typeName.IndexOf(asmSeparator);
+
+            if (asmPos < 0)
+            {
+                asmPos = typeName.Length;
+            }
+
+            var nsPos = typeName.LastIndexOf(nsSeparator, asmPos - 1);
+
+            if (nsPos < 0)
+            {
+                nsPos = 0;
+            }
+
+            if (nsPos == 0 && asmPos == typeName.Length)
+            {
+                return typeName;
+            }
+
+            return typeName.Substring(nsPos + 1, asmPos - nsPos);
         }
 
         /// <summary>
@@ -57,6 +84,8 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         public static string GetFullTypeName(string typeName)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
+
             // TODO: 
             return typeName;
         }
