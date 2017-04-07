@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -27,19 +26,19 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- *
+ * Checks that back-pressure control restricts uncontrolled growing
+ * of backup message queue. This means, if queue too big - any reads
+ * will be stopped until received acks from backup nodes.
  */
 public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -70,59 +69,83 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
         stopAllGrids();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testClientPut() throws Exception {
-        startGrid("server1");
-        startGrid("server2");
+        Ignite srv1 = startGrid("server1");
+        Ignite srv2 = startGrid("server2");
 
         final Ignite client = startGrid("client");
 
-        checkBackPressure(client);
+        checkBackPressure(client, srv1, srv2);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testServerPut() throws Exception {
-        startGrid("server1");
-        startGrid("server2");
+        Ignite srv1 = startGrid("server1");
+        Ignite srv2 = startGrid("server2");
+
         final Ignite client = startGrid("server3");
 
-        checkBackPressure(client);
+        checkBackPressure(client, srv1, srv2);
     }
 
-    private void checkBackPressure(Ignite client) throws InterruptedException {
+    /**
+     * @param client Producer node.
+     * @throws InterruptedException If failed.
+     */
+    private void checkBackPressure(Ignite client, final Ignite srv1, final Ignite srv2) throws Exception {
         final IgniteCache<Integer, String> cache = client.cache("cache");
 
         awaitPartitionMapExchange();
 
-        final IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                for (int i = 0; i < 300; i++)
-                    cache.put(i, String.valueOf(i));
+        for (int i = 0; i < 10000; i++) {
+            cache.put(i, String.valueOf(i));
 
-                return null;
+            if (i % 100 == 0) {
+                int size1 = futuresNum(srv1);
+                int size2 = futuresNum(srv2);
+
+                assert size1 < 150 : size1;
+                assert size2 < 150 : size2;
             }
-        });
-
-        // Because no acks received from backups, puts
-        // will hang on back-pressure control.
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                fut.get(2_000);
-
-                return null;
-            }
-        }, IgniteFutureTimeoutCheckedException.class, null);
+        }
     }
 
     /**
-     * Drops backup update acks.
+     * @param ignite Ignite.
+     * @return Size of the backup queue.
+     */
+    private int futuresNum(Ignite ignite) {
+        return ((IgniteKernal)ignite).context().cache().context().mvcc().atomicFutures().size();
+    }
+
+    /**
+     * Delays backup update acks.
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg,
             IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             if (((GridIoMessage)msg).message() instanceof GridDhtAtomicDeferredUpdateResponse)
-                return;
+                sleep(100);
 
             super.sendMessage(node, msg, ackC);
+        }
+    }
+
+    /**
+     * @param millis Millis.
+     */
+    private static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        }
+        catch (InterruptedException e) {
+            throw new IgniteSpiException(e);
         }
     }
 }
