@@ -89,11 +89,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void CheckType(Type type)
         {
-            var res = TypeNameParser.Parse(type.AssemblyQualifiedName);
+            var name = type.AssemblyQualifiedName;
 
-            Assert.IsNotNull(type.Namespace);
-            Assert.AreEqual(type.Namespace.Length + 1, res.NameStart);
-            Assert.AreEqual(type.Namespace.Length + type.Name.Length, res.NameEnd);
+            Assert.IsNotNull(name);
+
+            var res = TypeNameParser.Parse(name);
+
+            Assert.AreEqual(type.Namespace, name.Substring(0, res.NameStart - 1));
+            Assert.AreEqual(type.Name, name.Substring(res.NameStart, res.NameEnd - res.NameStart + 1));
             Assert.AreEqual(type.FullName.Length + 1, res.AssemblyIndex);
         }
     }
