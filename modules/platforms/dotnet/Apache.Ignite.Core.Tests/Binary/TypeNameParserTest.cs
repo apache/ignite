@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
+    using System.Collections;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -48,25 +49,15 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsNull(res.Generics);
             Assert.AreEqual(11, res.AssemblyIndex);
 
-            // Real type.
-            var type = GetType();
-
-            Assert.IsNotNull(type.AssemblyQualifiedName);
-            
-            res = TypeNameParser.Parse(type.AssemblyQualifiedName);
-
-            CheckTypeName(type, res);
-
-            Assert.AreEqual(type.AssemblyQualifiedName.IndexOf(',') + 1, res.AssemblyIndex);
+            // Real types.
+            CheckType(GetType());
+            CheckType(typeof(string));
+            CheckType(typeof(IDictionary));
         }
 
-        private static void CheckTypeName(Type type, TypeNameParser.Result res)
-        {
-            Assert.IsNotNull(type.Namespace);
-            Assert.AreEqual(type.Namespace.Length + 1, res.NameStart);
-            Assert.AreEqual(type.FullName.Length - 1, res.NameEnd);
-        }
-
+        /// <summary>
+        /// Tests generic types.
+        /// </summary>
         [Test]
         public void TestGenericTypes()
         {
@@ -77,10 +68,26 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Nested args.
         }
 
+        /// <summary>
+        /// Tests arrays.
+        /// </summary>
         [Test]
         public void TestArrays()
         {
-            
+            // TODO
+        }
+
+        /// <summary>
+        /// Checks the type.
+        /// </summary>
+        private static void CheckType(Type type)
+        {
+            var res = TypeNameParser.Parse(type.AssemblyQualifiedName);
+
+            Assert.IsNotNull(type.Namespace);
+            Assert.AreEqual(type.Namespace.Length + 1, res.NameStart);
+            Assert.AreEqual(type.Namespace.Length + type.Name.Length, res.NameEnd);
+            Assert.AreEqual(type.FullName.Length + 1, res.AssemblyIndex);
         }
     }
 }
