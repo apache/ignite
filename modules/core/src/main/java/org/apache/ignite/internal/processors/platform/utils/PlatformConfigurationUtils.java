@@ -34,11 +34,8 @@ import java.util.ServiceLoader;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.binary.BinaryArrayIdentityResolver;
-import org.apache.ignite.internal.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -1144,40 +1141,6 @@ public class PlatformConfigurationUtils {
         assert def != null;
 
         w.writeInt(e == null ? def.ordinal() : e.ordinal());
-    }
-
-    /**
-     * Reads resolver
-     *
-     * @param r Reader.
-     * @return Resolver.
-     */
-    private static BinaryIdentityResolver readBinaryIdentityResolver(BinaryRawReader r) {
-        int type = r.readByte();
-
-        switch (type) {
-            case 0:
-                return null;
-
-            case 1:
-                return new BinaryArrayIdentityResolver();
-            default:
-                assert false;
-                return null;
-        }
-    }
-
-    /**
-     * Writes the resolver.
-     *
-     * @param w Writer.
-     * @param resolver Resolver.
-     */
-    private static void writeBinaryIdentityResolver(BinaryRawWriter w, BinaryIdentityResolver resolver) {
-        if (resolver instanceof BinaryArrayIdentityResolver)
-            w.writeByte((byte)1);
-        else
-            w.writeByte((byte)0);
     }
 
     /**
