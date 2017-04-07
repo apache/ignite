@@ -26,7 +26,14 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class TypeNameParser
     {
-        public static Result Parse(string typeName, int start = 0)
+        public static Result Parse(string typeName)
+        {
+            int i = 0;
+
+            return Parse(typeName, ref i);
+        }
+
+        private static Result Parse(string typeName, ref int i)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
@@ -34,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             int bracket = 0;
 
-            for (int i = start; i < typeName.Length; i++)
+            for (; i < typeName.Length; i++)
             {
                 var ch = typeName[i];
 
@@ -50,6 +57,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                         break;
 
                     case ',':
+                        if (bracket > 0)
+                            break;
+
                         res.AssemblyIndex = i + 1;
                         if (res.NameEnd < 0)
                         {
@@ -105,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     i++;
 
-                    res.Add(Parse(typeName, i));
+                    res.Add(Parse(typeName, ref i));
 
                     i++;
                 }
