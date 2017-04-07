@@ -959,12 +959,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         try {
             long firstPageId;
 
-            try (Page meta = page(metaPageId)) {
-                firstPageId = getFirstPageId(meta, 0);
+            long metaPage = acquirePage(metaPageId);
+            try {
+                firstPageId = getFirstPageId(metaPageId, metaPage, 0);
+            }
+            finally {
+                releasePage(metaPageId, metaPage);
             }
 
-            try (Page first = page(firstPageId)) {
-                long pageAddr = readLock(first);
+            long page = acquirePage(firstPageId);
+            try {
+                long pageAddr = readLock(firstPageId, page);
 
                 try {
                     BPlusIO<L> io = io(pageAddr);
@@ -975,9 +980,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         return null;
 
                     return getRow(io, pageAddr, 0);
-                } finally {
-                    readUnlock(first, pageAddr);
                 }
+                finally {
+                    readUnlock(firstPageId, page, pageAddr);
+                }
+            }
+            finally {
+                releasePage(firstPageId, page);
             }
         }
         catch (IgniteCheckedException e) {
