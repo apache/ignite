@@ -40,6 +40,7 @@ import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.database.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.evict.Random2LruPageEvictionTracker;
@@ -546,6 +547,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param pageMem Page memory.
      */
     private PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
+        if (Boolean.getBoolean("override.fair.fifo.page.eviction.tracker"))
+            return new FairFifoPageEvictionTracker(pageMem, plc, cctx);
+
         switch (plc.getPageEvictionMode()) {
             case RANDOM_LRU:
                 return new RandomLruPageEvictionTracker(pageMem, plc, cctx);

@@ -1488,6 +1488,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                     if (data.nextLink() == 0) {
                         long addr = pageAddr + data.offset();
 
+                        if (cctx.memoryPolicy().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED)
+                            addr += 4; // Skip cache id.
+
                         final int len = PageUtils.getInt(addr, 0);
 
                         int lenCmp = Integer.compare(len, bytes.length);

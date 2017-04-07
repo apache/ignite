@@ -190,6 +190,16 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
         @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
 
     /**
+     * @param ctx Cache object context.
+     * @param buf Buffer.
+     * @param incompleteObj Incomplete cache object or {@code null} if it's a first read.
+     * @return Incomplete cache object.
+     * @throws IgniteCheckedException If fail.
+     */
+    public IncompleteCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
+
+    /**
      * @param obj Value.
      * @return {@code True} if object is of known immutable type.
      */

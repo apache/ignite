@@ -141,18 +141,9 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
                     CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-                    row.readRowData(pageMem, CacheDataRowAdapter.RowData.FULL, 0);
+                    row.initFromLink(null, sharedCtx, pageMem, CacheDataRowAdapter.RowData.KEY_ONLY);
 
-                    int cacheId = row.cacheId();
-
-                    assert cacheId != 0 : "Cache ID should be stored in rows of evictable page";
-
-                    GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(cacheId);
-
-                    if (!cacheCtx.userCache())
-                        continue;
-
-                    row.initCacheObjects(CacheDataRowAdapter.RowData.KEY_ONLY, cacheCtx.cacheObjectContext());
+                    assert row.cacheId() != 0 : "Cache ID should be stored in rows of evictable cache";
 
                     rowsToEvict.add(row);
                 }
@@ -165,16 +156,10 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         boolean evictionDone = false;
 
         for (CacheDataRowAdapter dataRow : rowsToEvict) {
-            int cacheId = dataRow.cacheId();
+            GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(dataRow.cacheId());
 
-            assert cacheId != 0 : "Cache ID should be stored in rows of evictable page";
-
-            GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(cacheId);
-
-            assert cacheCtx.userCache() : cacheCtx.name();
-
-            // TODO IGNITE-4534: collect only keys.
-            dataRow.initCacheObjects(CacheDataRowAdapter.RowData.KEY_ONLY, cacheCtx.cacheObjectContext());
+            if (!cacheCtx.userCache())
+                continue;
 
             GridCacheEntryEx entryEx = cacheCtx.cache().entryEx(dataRow.key());
 

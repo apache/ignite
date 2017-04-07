@@ -1007,9 +1007,9 @@ public class DataPageIO extends PageIO {
         final int keySize = row.key().valueBytesLength(null);
         final int valSize = row.value().valueBytesLength(null);
 
-        int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.KEY, keySize, valSize);
+        int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.CACHE_ID, keySize, valSize);
+        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.KEY, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize);
-        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.CACHE_ID, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VERSION, keySize, valSize);
 
@@ -1043,33 +1043,33 @@ public class DataPageIO extends PageIO {
         int cacheIdSize = row.cacheId() == 0 ? 0 : 4;
 
         switch (type) {
-            case KEY:
+            case CACHE_ID:
                 prevLen = 0;
-                curLen = keySize;
+                curLen = cacheIdSize;
+
+                break;
+
+            case KEY:
+                prevLen = cacheIdSize;
+                curLen = cacheIdSize + keySize;
 
                 break;
 
             case EXPIRE_TIME:
-                prevLen = keySize;
-                curLen = keySize + 8;
-
-                break;
-
-            case CACHE_ID:
-                prevLen = keySize + 8;
-                curLen = keySize + 8 + cacheIdSize;
+                prevLen = cacheIdSize + keySize;
+                curLen = cacheIdSize + keySize + 8;
 
                 break;
 
             case VALUE:
-                prevLen = keySize + 8 + cacheIdSize;
-                curLen = keySize + valSize + 8 + cacheIdSize;
+                prevLen = cacheIdSize + keySize + 8;
+                curLen = cacheIdSize + keySize + valSize + 8;
 
                 break;
 
             case VERSION:
-                prevLen = keySize + valSize + 8 + cacheIdSize;
-                curLen = keySize + valSize + CacheVersionIO.size(row.version(), false) + 8 + cacheIdSize;
+                prevLen = cacheIdSize + keySize + valSize + 8;
+                curLen = cacheIdSize + keySize + valSize + CacheVersionIO.size(row.version(), false) + 8;
 
                 break;
 
@@ -1366,14 +1366,21 @@ public class DataPageIO extends PageIO {
     ) throws IgniteCheckedException {
         long addr = pageAddr + dataOff;
 
+        int cacheIdSize = row.cacheId() != 0 ? 4 : 0;
+
         if (newRow) {
             PageUtils.putShort(addr, 0, (short)payloadSize);
             addr += 2;
 
+            if (cacheIdSize != 0)
+                PageUtils.putInt(addr, 0, row.cacheId());
+
+            addr += cacheIdSize;
+
             addr += row.key().putValue(addr);
         }
         else
-            addr += (2 + row.key().valueBytesLength(null));
+            addr += (2 + cacheIdSize + row.key().valueBytesLength(null));
 
         addr += row.value().putValue(addr);
 
@@ -1381,10 +1388,6 @@ public class DataPageIO extends PageIO {
         addr += CacheVersionIO.size(row.version(), false);
 
         PageUtils.putLong(addr, 0, row.expireTime());
-        addr += 8;
-
-        if (row.cacheId() != 0)
-            PageUtils.putInt(addr, 0, row.cacheId());
     }
 
     /**
