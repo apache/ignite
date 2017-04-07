@@ -699,12 +699,15 @@ namespace Apache.Ignite.Core.Impl.Binary
             var type = typeof(T);
 
             serializer = serializer ?? new BinarySystemTypeSerializer<T>(ctor);
+                            
+            var typeName = type.FullName;
 
             if (typeId == 0)
-                typeId = GetTypeId(type.Name, null);
+            {
+                typeId = BinaryUtils.GetStringHashCode(typeName);
+            }
 
-            AddType(type, typeId, GetTypeName(type), false, false, null, null, serializer, affKeyFldName,
-                false, null);
+            AddType(type, typeId, typeName, false, false, null, null, serializer, affKeyFldName, false, null);
         }
 
         /// <summary>
