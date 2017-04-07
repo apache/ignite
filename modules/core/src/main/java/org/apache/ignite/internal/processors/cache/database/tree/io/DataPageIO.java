@@ -51,7 +51,10 @@ public class DataPageIO extends PageIO {
     private static final int SHOW_LINK = 0b0100;
 
     /** */
-    private static final int FREE_LIST_PAGE_ID_OFF = COMMON_HEADER_END;
+    private static final int CACHE_ID_OFF = COMMON_HEADER_END;
+
+    /** */
+    private static final int FREE_LIST_PAGE_ID_OFF = CACHE_ID_OFF + 1;
 
     /** */
     private static final int FREE_SPACE_OFF = FREE_LIST_PAGE_ID_OFF + 8;
@@ -96,6 +99,8 @@ public class DataPageIO extends PageIO {
 
         setEmptyPage(pageAddr, pageSize);
         setFreeListPageId(pageAddr, 0L);
+
+        setCacheId(pageAddr, -1);
     }
 
     /**
@@ -107,6 +112,22 @@ public class DataPageIO extends PageIO {
         setIndirectCount(pageAddr, 0);
         setFirstEntryOffset(pageAddr, pageSize, pageSize);
         setRealFreeSpace(pageAddr, pageSize - ITEMS_OFF, pageSize);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param cacheId Cache ID.
+     */
+    public void setCacheId(long pageAddr, int cacheId) {
+        PageUtils.putByte(pageAddr, CACHE_ID_OFF, (byte)(cacheId & 0xFF));
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Cache ID.
+     */
+    public int getCacheId(long pageAddr) {
+        return PageUtils.getByte(pageAddr, CACHE_ID_OFF);
     }
 
     /**

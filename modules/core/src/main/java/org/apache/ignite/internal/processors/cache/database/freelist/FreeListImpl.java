@@ -37,7 +37,9 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  */
@@ -68,6 +70,36 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /** */
     private final int MIN_SIZE_FOR_DATA_PAGE;
+
+    /** */
+    private static final int LOCAL_CACHE_SIZE = 512;
+
+    /** */
+    private final Cache[] stripeCache;
+
+    private Cache cache(){
+        if(Thread.currentThread().getClass() == IgniteThread.class) {
+            int stripe = ((IgniteThread)Thread.currentThread()).stripe();
+
+            return stripe != -1 ? stripeCache[stripe] : null;
+        }
+
+        return null;
+    }
+
+    private static final class Cache {
+        final GridLongList[] buckets;
+        final int id;
+
+        Cache(int id) {
+            this.id = id;
+
+            buckets = new GridLongList[BUCKETS];
+
+            for (int i = 0; i < BUCKETS; i++)
+                buckets[i] = new GridLongList(LOCAL_CACHE_SIZE);
+        }
+    }
 
     /** */
     private final PageHandler<CacheDataRow, Boolean> updateRow = new UpdateRowHandler();
@@ -149,8 +181,10 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
                 int bucket = bucket(newFreeSpace, false);
 
-                put(null, pageId, page, pageAddr, bucket);
+                put0(cache(), pageId, page, pageAddr, io, bucket);
             }
+            else
+                io.setCacheId(pageAddr, -1);
 
             // Avoid boxing with garbage generation for usual case.
             return written == rowSize ? COMPLETE : written;
@@ -272,17 +306,19 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
                 int newBucket = bucket(newFreeSpace, false);
 
+                Cache cache = cache();
+
                 if (oldFreeSpace > MIN_PAGE_FREE_SPACE) {
                     int oldBucket = bucket(oldFreeSpace, false);
 
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
-                        if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
-                            put(null, pageId, page, pageAddr, newBucket);
+                        if (removeDataPage0(cache, pageId, page, pageAddr, io, oldBucket))
+                            put0(cache, pageId, page, pageAddr, io, newBucket);
                     }
                 }
                 else
-                    put(null, pageId, page, pageAddr, newBucket);
+                    put0(cache, pageId, page, pageAddr, io, newBucket);
             }
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
@@ -297,8 +333,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
-     * @param initNew {@code True} if new metadata should be initialized.
-     * @throws IgniteCheckedException If failed.
+     * @param stripePoolSize
+     *@param initNew {@code True} if new metadata should be initialized.  @throws IgniteCheckedException If failed.
      */
     public FreeListImpl(
         int cacheId,
@@ -307,10 +343,16 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
+        int stripePoolSize,
         boolean initNew) throws IgniteCheckedException {
         super(cacheId, name, pageMem, BUCKETS, wal, metaPageId);
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
+
+        stripeCache = new Cache[stripePoolSize];
+
+        for (int i = 0; i < stripePoolSize; i++)
+            stripeCache[i] = new Cache(i);
 
         assert U.isPow2(pageSize) : "Page size must be a power of 2: " + pageSize;
         assert U.isPow2(BUCKETS);
@@ -410,34 +452,50 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
         int written = 0;
 
+        Cache cache = cache();
+
         do {
             int freeSpace = Math.min(MIN_SIZE_FOR_DATA_PAGE, rowSize - written);
 
             int bucket = bucket(freeSpace, false);
 
             long pageId = 0;
-            boolean reuseBucket = false;
 
-            // TODO: properly handle reuse bucket.
-            for (int b = bucket + 1; b < BUCKETS - 1; b++) {
-                pageId = takeEmptyPage(b, DataPageIO.VERSIONS);
+            if (cache != null) {
+                GridLongList[] buckets = cache.buckets;
 
-                if (pageId != 0L) {
-                    reuseBucket = isReuseBucket(b);
+                for (int b = bucket + 1; b < BUCKETS - 1; b++) {
+                    if(buckets[b].isEmpty())
+                        continue;
 
+                    pageId = buckets[b].remove();
                     break;
                 }
+
+                if (pageId == 0L && !buckets[bucket].isEmpty())
+                    pageId = buckets[bucket].remove();
             }
 
-            if (pageId == 0L)
-                pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
+            if (pageId == 0L) {
+                // TODO: properly handle reuse bucket.
+                for (int b = bucket + 1; b < BUCKETS - 1; b++) {
+                    pageId = takeEmptyPage(b, DataPageIO.VERSIONS);
+
+                    if (pageId != 0L)
+                        break;
+
+                }
+
+                if (pageId == 0L)
+                    pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
+            }
 
             boolean allocated = pageId == 0L;
 
             if (allocated)
                 pageId = allocateDataPage(row.partition());
 
-            DataPageIO init = reuseBucket || allocated ? DataPageIO.VERSIONS.latest() : null;
+            DataPageIO init = allocated ? DataPageIO.VERSIONS.latest() : null;
 
             written = write(pageId, writeRow, init, row, written, FAIL_I);
 
@@ -527,6 +585,68 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         int valLen = row.value().valueBytesLength(null);
 
         return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8;
+    }
+
+    /**
+     * @param cache Free list local cache.
+     * @param page Data page.
+     * @param pageAddr Data page address.
+     * @param dataIO Data page IO.
+     * @param bucket Bucket index.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void put0(Cache cache, long pageId, long page, long pageAddr, DataPageIO dataIO, int bucket) throws IgniteCheckedException {
+        if (cache != null) {
+            GridLongList cacheBucket = cache.buckets[bucket];
+            int cacheBucketSize = cacheBucket.size();
+            int pageCacheId = dataIO.getCacheId(pageAddr);
+            int cacheId = cache.id;
+
+            if(pageCacheId == -1 && cacheBucketSize < LOCAL_CACHE_SIZE)
+                dataIO.setCacheId(pageAddr, pageCacheId = cacheId);
+
+            if(pageCacheId == cacheId){
+                if (cacheBucketSize < LOCAL_CACHE_SIZE) {
+                    cacheBucket.add(pageId);
+                    return;
+                }
+                else
+                    dataIO.setCacheId(pageAddr, pageCacheId = -1);
+            }
+
+            if(pageCacheId == -1)
+                put(null, pageId, page, pageAddr, bucket);
+
+            // do nothing if the item is held by another cache;
+            return;
+        }
+
+        put(null, pageId, page, pageAddr, bucket);
+    }
+
+    /**
+     * @param cache Free list local cache.
+     * @param page Data page.
+     * @param pageAddr Data page address.
+     * @param dataIO Data page IO.
+     * @param bucket Bucket index.
+     * @throws IgniteCheckedException If failed.
+     * @return {@code True} if page was removed.
+     */
+    private boolean removeDataPage0(Cache cache, long pageId, long page, long pageAddr, DataPageIO dataIO, int bucket) throws IgniteCheckedException {
+        if (cache != null) {
+            int pageCacheId = dataIO.getCacheId(pageAddr);
+
+            if(pageCacheId == cache.id)
+                return cache.buckets[bucket].removeValue(0, pageId) != -1;
+            else if(pageCacheId == -1)
+                return removeDataPage(pageId, page, pageAddr, dataIO, bucket);
+
+            // do nothing if the item is held by another cache;
+            return false;
+        }
+
+        return removeDataPage(pageId, page, pageAddr, dataIO, bucket);
     }
 
     /** {@inheritDoc} */
