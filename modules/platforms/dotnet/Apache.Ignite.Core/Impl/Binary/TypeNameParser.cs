@@ -104,9 +104,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             i++;
 
-            while (true)
+            while (true)  // TODO: Invalid char detection.
             {
-                if (typeName[i] == ',')
+                if (typeName[i] == ',' || typeName[i] == ' ')
                 {
                     i++;
                 }
