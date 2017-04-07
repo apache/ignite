@@ -1637,36 +1637,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /**
-         * <summary>Convert type name.</summary>
-         * <param name="typeName">Type name.</param>
-         * <param name="converter">Converter.</param>
-         * <returns>Converted name.</returns>
-         */
-        public static string ConvertTypeName(string typeName, IBinaryNameMapper converter)
-        {
-            var typeName0 = typeName;
-
-            converter = converter ?? GetDefaultNameMapper();
-
-            try
-            {
-                if (converter != null)
-                    typeName = converter.GetTypeName(typeName);
-            }
-            catch (Exception e)
-            {
-                throw new BinaryObjectException("Failed to convert type name due to converter exception " +
-                    "[typeName=" + typeName + ", converter=" + converter + ']', e);
-            }
-
-            if (typeName == null)
-                throw new BinaryObjectException("Name converter returned null name for type [typeName=" +
-                    typeName0 + ", converter=" + converter + "]");
-
-            return typeName;
-        }
-
-        /**
          * <summary>Convert field name.</summary>
          * <param name="fieldName">Field name.</param>
          * <param name="converter">Converter.</param>
@@ -1692,39 +1662,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     fieldName0 + ", converter=" + converter + "]");
 
             return fieldName;
-        }
-
-        /// <summary>
-        /// Resolve type ID.
-        /// </summary>
-        /// <param name="typeName">Type name.</param>
-        /// <param name="nameMapper">Name mapper.</param>
-        /// <param name="idMapper">ID mapper.</param>
-        public static int GetTypeId(string typeName, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper)
-        {
-            Debug.Assert(typeName != null);
-
-            typeName = ConvertTypeName(typeName, nameMapper);
-
-            int id = 0;
-
-            if (idMapper != null)
-            {
-                try
-                {
-                    id = idMapper.GetTypeId(typeName);
-                }
-                catch (Exception e)
-                {
-                    throw new BinaryObjectException("Failed to resolve type ID due to ID mapper exception " +
-                        "[typeName=" + typeName + ", idMapper=" + idMapper + ']', e);
-                }
-            }
-
-            if (id == 0)
-                id = GetStringHashCode(typeName);
-
-            return id;
         }
 
         /// <summary>
@@ -1972,15 +1909,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             var res = descriptor != null ? descriptor.EqualityComparer : null;
 
             return res ?? BinaryArrayEqualityComparer.Instance;
-        }
-
-        /// <summary>
-        /// Gets the default name mapper.
-        /// </summary>
-        public static IBinaryNameMapper GetDefaultNameMapper()
-        {
-            // TODO: Switch to full mapper.
-            return BinaryBasicNameMapper.SimpleNameInstance;
         }
 
         /// <summary>
