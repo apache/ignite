@@ -61,16 +61,25 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(type.Name, mapper.GetTypeName(type.Name));
             }
 
-            // Generics
+            // Generics.
             Assert.AreEqual("List[String]", mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
             Assert.AreEqual("Dictionary[Int32,String]", 
                 mapper.GetTypeName(typeof(Dictionary<int, string>).AssemblyQualifiedName));
+            Assert.AreEqual("Bar[Foo]", mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
         }
 
         /// <summary>
-        /// Testing nested class.
+        /// Nested class.
         /// </summary>
         private class Foo
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Nested generic class.
+        /// </summary>
+        private class Bar<T>
         {
             // No-op.
         }
