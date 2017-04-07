@@ -32,6 +32,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var res = new Result();
 
+            int bracket = 0;
+
             for (int i = start; i < typeName.Length; i++)
             {
                 var ch = typeName[i];
@@ -55,8 +57,17 @@ namespace Apache.Ignite.Core.Impl.Binary
                         }
                         return res;
 
+                    case '[':
+                        bracket++;
+                        break;
+
                     case ']':
-                        return res;
+                        bracket--;
+
+                        if (bracket < 0)
+                            return res;
+
+                        break;
                 }
             }
 
