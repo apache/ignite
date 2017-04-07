@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -25,34 +26,37 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class TypeNameParser
     {
-        public static Result Parse(string typeName)
+        public static Result Parse(string typeName, int start = 0)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
             var res = new Result();
 
-            for (int i = 0; i < typeName.Length; i++)
+            for (int i = start; i < typeName.Length; i++)
             {
                 var ch = typeName[i];
 
                 switch (ch)
                 {
                     case '.':
-                        res.NameStart = i;
+                        res.NameStart = i + 1;
                         break;
 
                     case '`':
-                        res.NameEnd = i;
-                        ParseGeneric(typeName, i);
+                        res.NameEnd = i - 1;
+                        res.Generics = ParseGenerics(typeName, ref i);
                         break;
 
                     case ',':
                         res.AssemblyIndex = i;
                         if (res.NameEnd < 0)
                         {
-                            res.NameEnd = i;
+                            res.NameEnd = i - 1;
                         }
                         break;
+
+                    case ']':
+                        return res;
                 }
 
                 i++;
@@ -61,13 +65,45 @@ namespace Apache.Ignite.Core.Impl.Binary
             return res;
         }
 
-        private static void ParseGeneric(string typeName, int i)
+        private static List<Result> ParseGenerics(string typeName, ref int i)
         {
+            // TODO: Out of bounds checks
             Debug.Assert(typeName[i] == '`');
+
+            int start = i + 1;
 
             // Skip to types
             while (typeName[i] != '[')
                 i++;
+
+            int count = int.Parse(typeName.Substring(start, i - start));
+
+            var res = new List<Result>(count);
+
+            i++;
+
+            while (true)
+            {
+                if (typeName[i] == ',')
+                {
+                    i++;
+                }
+
+                if (typeName[i] == '[')
+                {
+                    i++;
+
+                    res.Add(Parse(typeName, i));
+
+                    i++;
+                }
+
+                if (typeName[i] == ']')
+                {
+                    i++;
+                    return res;
+                }
+            }
         }
 
         public class Result
@@ -84,6 +120,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             public int NameEnd { get; set; }
 
             public int AssemblyIndex { get; set; }
+
+            public ICollection<Result> Generics { get; set; }
         }
     }
 }
