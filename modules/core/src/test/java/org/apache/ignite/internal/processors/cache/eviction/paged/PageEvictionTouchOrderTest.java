@@ -52,7 +52,7 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
 
         for (int i = 1; i <= ENTRIES; i++) {
             cache.put(i, new TestObject(PAGE_SIZE / 6));
-            // Row size is between PAGE_SIZE / 2 and PAGE_SIZE. Guarantees "one row - one page" rule.
+            // Row size is between PAGE_SIZE / 2 and PAGE_SIZE. Enforces "one row - one page".
 
             if (i % (ENTRIES / 10) == 0)
                 System.out.println(">>> Entries put: " + i);

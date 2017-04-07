@@ -21,9 +21,9 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -44,7 +44,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     private final static int DAY = 24 * 60 * 60 * 1000;
 
     /** Page memory. */
-    protected final PageMemory pageMem;
+    protected final PageMemoryNoStoreImpl pageMem;
 
     /** Tracking array size. */
     final int trackingSize;
@@ -73,7 +73,10 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         MemoryPolicyConfiguration plcCfg,
         GridCacheSharedContext sharedCtx
     ) {
-        this.pageMem = pageMem;
+        if (pageMem instanceof PageMemoryNoStoreImpl)
+            this.pageMem = (PageMemoryNoStoreImpl)pageMem;
+        else
+            throw new IllegalStateException("Page eviction is not compatible with persistence");
 
         this.sharedCtx = sharedCtx;
 
@@ -117,11 +120,12 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     final boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
         long fakePageId = PageIdUtils.pageId(0, (byte)0, pageIdx);
 
-        // TODO IGNITE-4534: collect only keys.
         List<CacheDataRowAdapter> rowsToEvict = new ArrayList<>();
 
-        try (Page page = pageMem.page(0, fakePageId)) {
-            long pageAddr = page.getForReadPointerForce();
+        long page = pageMem.acquirePage(0, fakePageId);
+
+        try {
+            long pageAddr = pageMem.readLockForce(page);
 
             try {
                 if (PageIO.getType(pageAddr) != PageIO.T_DATA)
@@ -149,8 +153,10 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
                 }
             }
             finally {
-                page.releaseRead();
+                pageMem.readUnlock(0, fakePageId, page);
             }
+        } finally {
+            pageMem.releasePage(0, fakePageId, page);
         }
 
         boolean evictionDone = false;

@@ -160,7 +160,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             }
 
             if (written == rowSize)
-                evictionTracker.touchPage(page.id());
+                evictionTracker.touchPage(pageId);
 
             // Avoid boxing with garbage generation for usual case.
             return written == rowSize ? COMPLETE : written;
@@ -295,7 +295,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     put(null, pageId, page, pageAddr, newBucket);
 
                 if (io.isEmpty(pageAddr))
-                    evictionTracker.forgetPage(page.id());
+                    evictionTracker.forgetPage(pageId);
             }
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
@@ -429,24 +429,25 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         do {
             int freeSpace = Math.min(MIN_SIZE_FOR_DATA_PAGE, rowSize - written);
 
-            int bucket = bucket(freeSpace, false);
+            long pageId = 0L;
 
-            long pageId = 0;
+            if (freeSpace == MIN_SIZE_FOR_DATA_PAGE)
+                pageId = takeEmptyPage(emptyDataPagesBucket, DataPageIO.VERSIONS);
+
             boolean reuseBucket = false;
 
             // TODO: properly handle reuse bucket.
-            for (int b = bucket + 1; b < BUCKETS - 1; b++) {
-                pageId = takeEmptyPage(b, DataPageIO.VERSIONS);
+            if (pageId == 0L) {
+                for (int b = bucket(freeSpace, false) + 1; b < BUCKETS - 1; b++) {
+                    pageId = takeEmptyPage(b, DataPageIO.VERSIONS);
 
-                if (pageId != 0L) {
-                    reuseBucket = isReuseBucket(b);
+                    if (pageId != 0L) {
+                        reuseBucket = isReuseBucket(b);
 
-                    break;
+                        break;
+                    }
                 }
             }
-
-            if (pageId == 0L)
-                pageId = tryTakeEmptyPageWithFreeSpace(freeSpace, bucket);
 
             boolean allocated = pageId == 0L;
 
@@ -460,38 +461,6 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             assert written != FAIL_I; // We can't fail here.
         }
         while (written != COMPLETE);
-    }
-
-    /**
-     * Takes one page from the bucket.
-     *
-     * @param freeSpace Free space.
-     * @param bucket Bucket.
-     * @return Page ID if the page has enough free space, 0L otherwise (page is returned to the bucket in such case).
-     * @throws IgniteCheckedException If failed.
-     */
-    private long tryTakeEmptyPageWithFreeSpace(int freeSpace, int bucket) throws IgniteCheckedException {
-        long pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
-
-        if (pageId != 0L) {
-            Page page = pageMem.page(cacheId, pageId);
-
-            long pageAddr = page.getForReadPointer();
-
-            try {
-                DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
-
-                if (io.getFreeSpace(pageAddr) < freeSpace) {
-                    pageId = 0L;
-
-                    put(null, page, pageAddr, bucket);
-                }
-            } finally {
-                page.releaseRead();
-            }
-        }
-
-        return pageId;
     }
 
     /** {@inheritDoc} */
