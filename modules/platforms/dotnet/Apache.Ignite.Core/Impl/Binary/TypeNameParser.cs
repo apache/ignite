@@ -58,9 +58,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     case ']':
                         return res;
                 }
-
-                i++;
             }
+
+            if (res.NameEnd < 0)
+                res.NameEnd = typeName.Length - 1;
 
             return res;
         }

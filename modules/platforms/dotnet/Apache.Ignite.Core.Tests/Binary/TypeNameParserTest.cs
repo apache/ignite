@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -27,7 +28,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestSimpleTypes()
         {
-            
+            var res = TypeNameParser.Parse("System.Int");
+
+            Assert.AreEqual(-1, res.AssemblyIndex);
+            Assert.AreEqual(7, res.NameStart);
+            Assert.AreEqual(9, res.NameEnd);
         }
 
         [Test]
