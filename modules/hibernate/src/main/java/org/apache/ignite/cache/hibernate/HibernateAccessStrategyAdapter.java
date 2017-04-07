@@ -92,7 +92,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class HibernateAccessStrategyAdapter {
     /** */
-    protected final IgniteInternalCache<Object, Object> cache;
+    protected final HibernateCacheProxy cache;
 
     /** Grid. */
     protected final Ignite ignite;
@@ -104,7 +104,7 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param ignite Grid.
      * @param cache Cache.
      */
-    protected HibernateAccessStrategyAdapter(Ignite ignite, IgniteInternalCache<Object, Object> cache) {
+    protected HibernateAccessStrategyAdapter(Ignite ignite, HibernateCacheProxy cache) {
         this.cache = cache;
         this.ignite = ignite;
 
@@ -292,8 +292,10 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param key Key.
      * @throws CacheException If failed.
      */
-    static void evict(Ignite ignite, IgniteInternalCache<Object,Object> cache, Object key) throws CacheException {
+    static void evict(Ignite ignite, HibernateCacheProxy cache, Object key) throws CacheException {
         try {
+            key = cache.keyTransformer().transform(key);
+
             ignite.compute(ignite.cluster()).call(new ClearKeyCallable(key, cache.name()));
         }
         catch (IgniteException e) {
