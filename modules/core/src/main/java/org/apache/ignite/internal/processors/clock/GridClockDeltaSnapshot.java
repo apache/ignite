@@ -91,7 +91,7 @@ public class GridClockDeltaSnapshot {
      * @return Map of collected deltas.
      */
     public Map<UUID, Long> deltas() {
-        return Collections.unmodifiableMap(deltas);
+        return deltas;
     }
 
     /**

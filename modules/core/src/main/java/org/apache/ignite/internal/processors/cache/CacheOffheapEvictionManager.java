@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +51,7 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
                 return;
             }
 
-            boolean evicted = e.evictInternal(cctx.versions().next(), null);
+            boolean evicted = e.evictInternal(GridCacheVersionManager.EVICT_VER, null);
 
             if (evicted)
                 cctx.cache().removeEntry(e);
