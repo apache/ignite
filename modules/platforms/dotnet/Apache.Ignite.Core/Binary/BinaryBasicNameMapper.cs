@@ -26,6 +26,14 @@ namespace Apache.Ignite.Core.Binary
     public class BinaryBasicNameMapper : IBinaryNameMapper
     {
         /// <summary>
+        /// The simple name instance.
+        /// </summary>
+        internal static readonly BinaryBasicNameMapper SimpleNameInstance = new BinaryBasicNameMapper
+        {
+            IsSimpleName = true
+        };
+
+        /// <summary>
         /// The assembly name separator.
         /// </summary>
         private const char AssemblyNameSeparator = ',';

@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
 
             var typeName = BinaryUtils.GetTypeName(type);
-            var typeId = BinaryUtils.TypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
+            var typeId = BinaryUtils.GetTypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
 
             var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, type);
 
@@ -570,7 +570,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 // Type is found.
                 var typeName = BinaryUtils.GetTypeName(type);
-                int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
+                int typeId = BinaryUtils.GetTypeId(typeName, nameMapper, idMapper);
                 var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
                 var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper, _log);
 
@@ -580,9 +580,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 // Type is not found.
-                string typeName = BinaryUtils.SimpleTypeName(typeCfg.TypeName);
+                string typeName = typeCfg.TypeName;
 
-                int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
+                int typeId = BinaryUtils.GetTypeId(typeName, nameMapper, idMapper);
 
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName, typeCfg.IsEnum, typeCfg.EqualityComparer);
@@ -700,7 +700,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             serializer = serializer ?? new BinarySystemTypeSerializer<T>(ctor);
 
             if (typeId == 0)
-                typeId = BinaryUtils.TypeId(type.Name, null, null);
+                typeId = BinaryUtils.GetTypeId(type.Name, null, null);
 
             AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, affKeyFldName,
                 false, null);

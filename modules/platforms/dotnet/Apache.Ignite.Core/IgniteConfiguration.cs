@@ -288,7 +288,7 @@
 
                     foreach (var type in types)
                     {
-                        writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
+                        writer.WriteString(type.TypeName);
                         writer.WriteBoolean(type.IsEnum);
                         BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
                     }

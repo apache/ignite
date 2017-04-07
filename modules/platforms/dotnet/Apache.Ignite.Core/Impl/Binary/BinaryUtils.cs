@@ -22,9 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.IO;
-    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -1647,6 +1645,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var typeName0 = typeName;
 
+            converter = converter ?? GetDefaultNameMapper();
+
             try
             {
                 if (converter != null)
@@ -1693,26 +1693,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             return fieldName;
         }
 
-        /**
-         * <summary>Extract simple type name.</summary>
-         * <param name="typeName">Type name.</param>
-         * <returns>Simple type name.</returns>
-         */
-        public static string SimpleTypeName(string typeName)
-        {
-            int idx = typeName.LastIndexOf('.');
-
-            return idx < 0 ? typeName : typeName.Substring(idx + 1);
-        }
-
-        /**
-         * <summary>Resolve type ID.</summary>
-         * <param name="typeName">Type name.</param>
-         * <param name="nameMapper">Name mapper.</param>
-         * <param name="idMapper">ID mapper.</param>
-         */
-        public static int TypeId(string typeName, IBinaryNameMapper nameMapper,
-            IBinaryIdMapper idMapper)
+        /// <summary>
+        /// Resolve type ID.
+        /// </summary>
+        /// <param name="typeName">Type name.</param>
+        /// <param name="nameMapper">Name mapper.</param>
+        /// <param name="idMapper">ID mapper.</param>
+        public static int GetTypeId(string typeName, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper)
         {
             Debug.Assert(typeName != null);
 
@@ -1744,16 +1731,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="type">The type.</param>
         /// <returns>
-        /// Simple type name for non-generic types; simple type name with appended generic arguments for generic types.
+        /// Assembly qualified type name.
         /// </returns>
         public static string GetTypeName(Type type)
         {
-            if (!type.IsGenericType)
-                return type.Name;
-
-            var args = type.GetGenericArguments().Select(GetTypeName).Aggregate((x, y) => x + "," + y);
-
-            return string.Format(CultureInfo.InvariantCulture, "{0}[{1}]", type.Name, args);
+            return type.AssemblyQualifiedName;
         }
 
         /**
@@ -2017,6 +1999,15 @@ namespace Apache.Ignite.Core.Impl.Binary
             var res = descriptor != null ? descriptor.EqualityComparer : null;
 
             return res ?? BinaryArrayEqualityComparer.Instance;
+        }
+
+        /// <summary>
+        /// Gets the default name mapper.
+        /// </summary>
+        public static IBinaryNameMapper GetDefaultNameMapper()
+        {
+            // TODO: Switch to full mapper.
+            return BinaryBasicNameMapper.SimpleNameInstance;
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _cfg = cfg;
             _name = name;
 
-            _id = BinaryUtils.TypeId(name, cfg.DefaultNameMapper, cfg.DefaultIdMapper);
+            _id = BinaryUtils.GetTypeId(name, cfg.DefaultNameMapper, cfg.DefaultIdMapper);
         }
 
         /** <inheritDoc /> */
