@@ -29,6 +29,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -212,6 +213,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            new MemoryMetricsImpl(null),
             false);
 
         pageMem.start();
