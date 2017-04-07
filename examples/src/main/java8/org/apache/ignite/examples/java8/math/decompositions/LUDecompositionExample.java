@@ -22,10 +22,15 @@ import org.apache.ignite.math.Tracer;
 import org.apache.ignite.math.decompositions.LUDecomposition;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 
-/** */
+/**
+ * Example of using {@link LUDecomposition}.
+ */
 public class LUDecompositionExample {
-
-    /** */
+    /**
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     */
     public static void main(String[] args) {
         System.out.println(">>> LU decomposition example started.");
         // Let's compute a LU decomposition for some (n x n) matrix m:
@@ -39,6 +44,8 @@ public class LUDecompositionExample {
             {1.0d, -2.0d, 3.0d},
             {2.0d, 3.0d, 1.0d}
         });
+        System.out.println("\n>>> Matrix m for decomposition: ");
+        Tracer.showAscii(m);
 
         // This decomposition is useful when dealing with systems of linear equations.
         // (see https://en.wikipedia.org/wiki/LU_decomposition)
@@ -50,15 +57,27 @@ public class LUDecompositionExample {
         // (sol1, sol2, ..., solm)
 
         LUDecomposition dec = new LUDecomposition(m);
+        System.out.println("\n>>> Made decomposition.");
+        System.out.println(">>> Matrix getL is ");
+        Tracer.showAscii(dec.getL());
+        System.out.println(">>> Matrix getU is ");
+        Tracer.showAscii(dec.getU());
+        System.out.println(">>> Matrix getP is ");
+        Tracer.showAscii(dec.getP());
 
         Matrix bs = new DenseLocalOnHeapMatrix(new double[][] {
             {4.0, -6.0, 7.0},
             {1.0, 1.0, 1.0}
         });
+        System.out.println("\n>>> Matrix to solve: ");
+        Tracer.showAscii(bs);
+
         Matrix sol = dec.solve(bs.transpose());
 
-        System.out.println("List of solutions: ");
+        System.out.println("\n>>> List of solutions: ");
         for (int i = 0; i < sol.columnSize(); i++)
             Tracer.showAscii(sol.viewColumn(i));
+
+        System.out.println(">>> LU decomposition example completed.");
     }
 }
