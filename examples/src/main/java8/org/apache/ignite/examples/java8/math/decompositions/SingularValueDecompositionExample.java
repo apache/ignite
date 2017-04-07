@@ -65,6 +65,6 @@ public class SingularValueDecompositionExample {
         System.out.println("\n>>> Vector x minimizing 2-norm of m x such that 2 norm of x is 1: ");
         Tracer.showAscii(dec.getV().viewColumn(dec.getSingularValues().length - 1));
 
-        System.out.println(">>> Singular value decomposition (SVD) example completed.");
+        System.out.println("\n>>> Singular value decomposition (SVD) example completed.");
     }
 }

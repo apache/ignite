@@ -75,6 +75,6 @@ public class CholeskyDecompositionExample {
         for (int i = 0; i < sol.columnSize(); i++)
             Tracer.showAscii(sol.viewColumn(i));
 
-        System.out.println(">>> Cholesky decomposition example completed.");
+        System.out.println("\n>>> Cholesky decomposition example completed.");
     }
 }

@@ -63,7 +63,7 @@ public class EigenDecompositionExample {
         double det = dec.getRealEigenValues().foldMap(Functions.MULT, Functions.IDENTITY, 1.0);
         System.out.println("\n>>> Determinant is " + det);
 
-        System.out.println(">>> Eigen decomposition example completed.");
+        System.out.println("\n>>> Eigen decomposition example completed.");
     }
 
 }

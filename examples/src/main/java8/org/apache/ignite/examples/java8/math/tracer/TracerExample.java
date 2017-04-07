@@ -22,9 +22,13 @@ import java.io.IOException;
 import org.apache.ignite.math.Tracer;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 
-/** */
+/**
+ * Example of using {@link Tracer} utility API.
+ */
 public class TracerExample {
-    /** */
+    /**
+     * Double to color mapper example.
+     */
     private static final Tracer.ColorMapper COLOR_MAPPER = d -> {
         if (d <= 0.33)
             return Color.RED;
@@ -34,15 +38,26 @@ public class TracerExample {
             return Color.BLUE;
     };
 
-    /** */
+    /**
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     */
     public static void main(String[] args) throws IOException {
+        System.out.println(">>> Tracer utility example started.");
+
         // Tracer is a simple utility class that allows pretty-printing of matrices/vectors
         DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][] {
             {1.12345, 2.12345},
             {3.12345, 4.12345}
         });
 
+        System.out.println("\n>>> Tracer output to console in ASCII.");
         Tracer.showAscii(m, "%.3g");
+
+        System.out.println("\n>>> Tracer output to browser in HTML.");
         Tracer.showHtml(m, COLOR_MAPPER);
+
+        System.out.println("\n>>> Tracer utility example completed.");
     }
 }

@@ -18,9 +18,7 @@
 package org.apache.ignite.examples.java8.math.matrix;
 
 import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.impls.matrix.SparseLocalOnHeapMatrix;
-
-import java.util.Arrays;
+import org.apache.ignite.math.Tracer;
 
 /**
  * Utility functions for {@link Matrix} API examples.
@@ -48,13 +46,6 @@ class MatrixExampleUtil {
      * @param m Matrix to print.
      */
     static void print(Matrix m) {
-        for (int row = 0; row < m.rowSize(); row++) {
-            double[] values = new double[m.columnSize()];
-
-            for (int col = 0; col < m.columnSize(); col++)
-                values[col] = m.get(row, col);
-
-            System.out.println("  " + Arrays.toString(values));
-        }
+        Tracer.showAscii(m);
     }
 }

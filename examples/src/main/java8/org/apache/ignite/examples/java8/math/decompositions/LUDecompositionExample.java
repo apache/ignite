@@ -78,6 +78,6 @@ public class LUDecompositionExample {
         for (int i = 0; i < sol.columnSize(); i++)
             Tracer.showAscii(sol.viewColumn(i));
 
-        System.out.println(">>> LU decomposition example completed.");
+        System.out.println("\n>>> LU decomposition example completed.");
     }
 }
