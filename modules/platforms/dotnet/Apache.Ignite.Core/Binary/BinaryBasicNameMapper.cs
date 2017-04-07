@@ -41,6 +41,11 @@ namespace Apache.Ignite.Core.Binary
         private const char NestedTypeSeparator = '+';
 
         /// <summary>
+        /// The generic separator.
+        /// </summary>
+        private const char GenericSeparator = ']';
+
+        /// <summary>
         /// Gets or sets a value indicating whether this instance maps to simple type names.
         /// </summary>
         public bool IsSimpleName { get; set; }
