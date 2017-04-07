@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -74,7 +75,13 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestArrays()
         {
-            // TODO
+            CheckType(typeof(int[]));
+            CheckType(typeof(int[,]));
+            CheckType(typeof(int[][]));
+            
+            CheckType(typeof(List<int>[]));
+            CheckType(typeof(List<int>[,]));
+            CheckType(typeof(List<int>[][]));
         }
 
         /// <summary>
