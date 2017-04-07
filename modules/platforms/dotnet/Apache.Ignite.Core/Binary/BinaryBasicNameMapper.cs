@@ -102,8 +102,9 @@ namespace Apache.Ignite.Core.Binary
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            // TODO: 
-            return typeName;
+            var asmPos = typeName.IndexOf(AssemblyNameSeparator);
+
+            return asmPos < 0 ? typeName : typeName.Substring(0, asmPos - 1);
         }
     }
 }
