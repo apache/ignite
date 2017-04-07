@@ -417,6 +417,50 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
+    public void testInverse() {
+        consumeSampleMatrix((m, desc) -> {
+            if (m.rowSize() != m.columnSize())
+                return;
+
+            if (ignore(m.getClass()) || m instanceof DenseLocalOffHeapMatrix)
+                return; // todo find why DenseLocalOffHeapMatrix fails this test by "Unexpected determinant"
+
+            if (m.rowSize() > 128)
+                return; // IMPL NOTE this is for quicker test run.
+
+            fillNonSingularMatrix(m);
+
+            assertTrue("Unexpected zero determinant " + desc, Math.abs(m.determinant()) > 0d);
+
+            Matrix inverse = m.inverse();
+
+            Matrix mult = m.times(inverse);
+
+            final double delta = 0.001d;
+
+            assertEquals("Unexpected determinant " + desc, 1d, mult.determinant(), delta);
+
+            assertEquals("Unexpected top left value " + desc, 1d, mult.get(0, 0), delta);
+
+            if (m.rowSize() == 1)
+                return;
+
+            assertEquals("Unexpected center value " + desc,
+                1d, mult.get(m.rowSize() / 2, m.rowSize() / 2), delta);
+
+            assertEquals("Unexpected bottom right value " + desc,
+                1d, mult.get(m.rowSize() - 1, m.rowSize() - 1), delta);
+
+            assertEquals("Unexpected top right value " + desc,
+                0d, mult.get(0, m.rowSize() - 1), delta);
+
+            assertEquals("Unexpected bottom left value " + desc,
+                0d, mult.get(m.rowSize() - 1, 0), delta);
+        });
+    }
+
+    /** */
+    @Test
     public void testMap() {
         consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
@@ -977,6 +1021,17 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             m.assign(data);
         }
         return data;
+    }
+
+    /** */
+    private void fillNonSingularMatrix(Matrix m) {
+        for (int i = 0; i < m.rowSize(); i++) {
+            m.set(i, i, 10);
+
+            for (int j = 0; j < m.columnSize(); j++)
+                if (j != i)
+                    m.set(i, j, 0.01d);
+        }
     }
 
     /** */
