@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             res.NameEnd = i - 1;
                         }
-                        break;
+                        return res;
 
                     case ']':
                         return res;

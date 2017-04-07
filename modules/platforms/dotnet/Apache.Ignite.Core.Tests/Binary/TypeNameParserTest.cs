@@ -28,11 +28,21 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestSimpleTypes()
         {
+            // Without assembly.
             var res = TypeNameParser.Parse("System.Int");
 
-            Assert.AreEqual(-1, res.AssemblyIndex);
             Assert.AreEqual(7, res.NameStart);
             Assert.AreEqual(9, res.NameEnd);
+            Assert.IsNull(res.Generics);
+            Assert.AreEqual(-1, res.AssemblyIndex);
+
+            // With assembly.
+            res = TypeNameParser.Parse("System.Int, myasm");
+
+            Assert.AreEqual(7, res.NameStart);
+            Assert.AreEqual(9, res.NameEnd);
+            Assert.IsNull(res.Generics);
+            Assert.AreEqual(-1, res.AssemblyIndex);
         }
 
         [Test]
