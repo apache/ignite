@@ -21,9 +21,15 @@ import org.apache.ignite.math.Tracer;
 import org.apache.ignite.math.decompositions.SingularValueDecomposition;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 
-/** */
+/**
+ * Example of using {@link SingularValueDecomposition}.
+ */
 public class SingularValueDecompositionExample {
-    /** */
+    /**
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     */
     public static void main(String[] args) {
         System.out.println(">>> Singular value decomposition (SVD) example started.");
 
@@ -41,11 +47,11 @@ public class SingularValueDecompositionExample {
             {0.0d,  0.0d,  0.0d, 0.0d, 0.0d},
             {0.0d,  2.0d,  0.0d, 0.0d, 0.0d}
         });
-
-        System.out.println(">>>Matrix m for decomposition: ");
+        System.out.println("\n>>> Matrix m for decomposition: ");
         Tracer.showAscii(m);
+
         SingularValueDecomposition dec = new SingularValueDecomposition(m);
-        System.out.println(">>> Made decomposition m = u * s * v^{*}.");
+        System.out.println("\n>>> Made decomposition m = u * s * v^{*}.");
         System.out.println(">>> Matrix u is ");
         Tracer.showAscii(dec.getU());
         System.out.println(">>> Matrix s is ");
@@ -56,7 +62,9 @@ public class SingularValueDecompositionExample {
         // This decomposition can in particular help with solving problem of finding x minimizing 2-norm of m x such
         // that 2-norm of x is 1. It appears that it is the right singular vector corresponding to minimal singular
         // value, which is always last.
-        System.out.println(">>> Vector x minimizing 2-norm of m x such that 2 norm of x is 1: ");
+        System.out.println("\n>>> Vector x minimizing 2-norm of m x such that 2 norm of x is 1: ");
         Tracer.showAscii(dec.getV().viewColumn(dec.getSingularValues().length - 1));
+
+        System.out.println("\n>>> Singular value decomposition (SVD) example completed.");
     }
 }

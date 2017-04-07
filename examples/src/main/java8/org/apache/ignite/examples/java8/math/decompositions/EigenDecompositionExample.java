@@ -17,15 +17,23 @@
 
 package org.apache.ignite.examples.java8.math.decompositions;
 
+import org.apache.ignite.math.Tracer;
 import org.apache.ignite.math.decompositions.EigenDecomposition;
 import org.apache.ignite.math.functions.Functions;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 
-/** */
+/**
+ * Example of using {@link EigenDecomposition}.
+ */
 public class EigenDecompositionExample {
-
-    /** */
+    /**
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     */
     public static void main(String[] args) {
+        System.out.println(">>> Eigen decomposition example started.");
+
         // Let's compute EigenDecomposition for some square (n x n) matrix m with real eigenvalues:
         // m = v d v^{-1}, where d is diagonal matrix having eigenvalues of m on diagonal
         // and v is matrix where i-th column is eigenvector for i-th eigenvalue (i from 0 to n - 1)
@@ -35,8 +43,15 @@ public class EigenDecompositionExample {
             {0.0d, 0.0d, 2.0d, 0.0d},
             {1.0d, 1.0d, 0.0d, 2.0d}
         });
+        System.out.println("\n>>> Matrix m for decomposition: ");
+        Tracer.showAscii(m);
 
         EigenDecomposition dec = new EigenDecomposition(m);
+        System.out.println("\n>>> Made decomposition.");
+        System.out.println(">>> Matrix getV is ");
+        Tracer.showAscii(dec.getV());
+        System.out.println(">>> Matrix getD is ");
+        Tracer.showAscii(dec.getD());
 
         // From this decomposition we, for example, can easily compute determinant of matrix m
         // det (m) = det (v d v^{-1}) =
@@ -46,7 +61,9 @@ public class EigenDecompositionExample {
         // product of diagonal elements of d =
         // product of eigenvalues
         double det = dec.getRealEigenValues().foldMap(Functions.MULT, Functions.IDENTITY, 1.0);
-        System.out.println("Determinant is " + det);
+        System.out.println("\n>>> Determinant is " + det);
+
+        System.out.println("\n>>> Eigen decomposition example completed.");
     }
 
 }
