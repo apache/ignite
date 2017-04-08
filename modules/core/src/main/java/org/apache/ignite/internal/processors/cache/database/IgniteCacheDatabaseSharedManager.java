@@ -128,8 +128,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             FreeListImpl freeList = new FreeListImpl(0,
                     cctx.igniteInstanceName(),
-                    memPlc,
                     memMetrics,
+                    memPlc,
                     null,
                     cctx.wal(),
                     0L,
@@ -211,7 +211,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             }
 
             for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
-                MemoryPolicy memPlc = initMemory(dbCfg, memPlcCfg);
                 MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg);
 
                 MemoryPolicy memPlc = initMemory(dbCfg, memPlcCfg, memMetrics);

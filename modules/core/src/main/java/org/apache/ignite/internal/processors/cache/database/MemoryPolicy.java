@@ -43,7 +43,11 @@ public class MemoryPolicy {
      * @param cfg Configuration of given MemoryPolicy.
      * @param evictionTracker Eviction tracker.
      */
-    public MemoryPolicy(PageMemory pageMem, MemoryPolicyConfiguration cfg, MemoryMetrics memMetrics, PageEvictionTracker evictionTracker) {
+    public MemoryPolicy(
+        PageMemory pageMem,
+        MemoryPolicyConfiguration cfg,
+        MemoryMetrics memMetrics,
+        PageEvictionTracker evictionTracker) {
         this.pageMem = pageMem;
         this.memMetrics = memMetrics;
         this.cfg = cfg;

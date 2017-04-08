@@ -336,9 +336,11 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-        MemoryPolicy memPlc = new MemoryPolicy(pageMem, null, new NoOpPageEvictionTracker());
+        MemoryMetricsImpl metrics = new MemoryMetricsImpl(null);
 
-        return new FreeListImpl(1, "freelist", memPlc, new MemoryMetricsImpl(null), null, null, metaPageId, true);
+        MemoryPolicy memPlc = new MemoryPolicy(pageMem, null, metrics, new NoOpPageEvictionTracker());
+
+        return new FreeListImpl(1, "freelist", metrics, memPlc, null, null, metaPageId, true);
     }
 
     /**
