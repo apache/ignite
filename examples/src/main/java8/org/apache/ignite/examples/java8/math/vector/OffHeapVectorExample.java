@@ -18,14 +18,14 @@
 package org.apache.ignite.examples.java8.math.vector;
 
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
 
 import java.util.Arrays;
 
 /**
- * This example shows how to use {@link Vector} API.
+ * This example shows how to use off-heap {@link Vector} API.
  */
-public final class VectorExample {
+public final class OffHeapVectorExample {
     /**
      * Executes example.
      *
@@ -33,14 +33,17 @@ public final class VectorExample {
      */
     public static void main(String[] args) {
         System.out.println();
-        System.out.println(">>> Basic Vector API usage example started.");
+        System.out.println(">>> Off-heap vector API usage example started.");
 
-        System.out.println("\n>>> Creating perpendicular vectors.");
+        System.out.println("\n>>> Creating perpendicular off-heap vectors.");
         double[] data1 = new double[]{1, 0, 3, 0, 5, 0};
         double[] data2 = new double[]{0, 2, 0, 4, 0, 6};
 
-        Vector v1 = new DenseLocalOnHeapVector(data1);
-        Vector v2 = new DenseLocalOnHeapVector(data2);
+        Vector v1 = new DenseLocalOffHeapVector(data1.length);
+        Vector v2 = new DenseLocalOffHeapVector(data2.length);
+
+        v1.assign(data1);
+        v2.assign(data2);
 
         System.out.println(">>> First vector: " + Arrays.toString(data1));
         System.out.println(">>> Second vector: " + Arrays.toString(data2));
@@ -71,6 +74,6 @@ public final class VectorExample {
 
         assert lenSquaredHypotenuseIsAsExp : "Expect squared length of hypotenuse to be as per Pythagorean theorem.";
 
-        System.out.println("\n>>> Basic Vector API usage example completed.");
+        System.out.println("\n>>> Off-heap vector API usage example completed.");
     }
 }

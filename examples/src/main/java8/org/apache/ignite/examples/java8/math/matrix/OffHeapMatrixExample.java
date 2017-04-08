@@ -18,12 +18,12 @@
 package org.apache.ignite.examples.java8.math.matrix;
 
 import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
 
 /**
- * This example shows how to use {@link Matrix} API.
+ * This example shows how to use off-heap {@link Matrix} API.
  */
-public final class MatrixExample {
+public final class OffHeapMatrixExample {
     /**
      * Executes example.
      *
@@ -31,11 +31,12 @@ public final class MatrixExample {
      */
     public static void main(String[] args) {
         System.out.println();
-        System.out.println(">>> Basic Matrix API usage example started.");
+        System.out.println(">>> Off-heap matrix API usage example started.");
 
         System.out.println("\n>>> Creating a matrix to be transposed.");
         double[][] data = new double[][]{{1, 2, 3}, {4, 5, 6}};
-        Matrix m = new DenseLocalOnHeapMatrix(data);
+        Matrix m = new DenseLocalOffHeapMatrix(data.length, data[0].length);
+        m.assign(data);
         Matrix transposed = m.transpose();
 
         System.out.println(">>> Matrix: ");
@@ -49,8 +50,12 @@ public final class MatrixExample {
         double[][] data1 = new double[][]{{1, 2}, {3, 4}};
         double[][] data2 = new double[][]{{5, 6}, {7, 8}};
 
-        Matrix m1 = new DenseLocalOnHeapMatrix(data1);
-        Matrix m2 = new DenseLocalOnHeapMatrix(data2);
+        Matrix m1 = new DenseLocalOffHeapMatrix(data1.length, data1[0].length);
+        Matrix m2 = new DenseLocalOffHeapMatrix(data2.length, data2[0].length);
+
+        m1.assign(data1);
+        m2.assign(data2);
+
         Matrix mult = m1.times(m2);
 
         System.out.println(">>> First matrix: ");
@@ -74,6 +79,6 @@ public final class MatrixExample {
         assert detMultIsAsExp : "Determinant of product matrix [" + detMult
             + "] should be equal to product of determinants [" + (det1 * det2) + "].";
 
-        System.out.println("\n>>> Basic Matrix API usage example completed.");
+        System.out.println("\n>>> Off-heap matrix API usage example completed.");
     }
 }
