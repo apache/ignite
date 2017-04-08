@@ -68,7 +68,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** */
     private boolean registeredType = true;
 
-    /** */
+    /**
+     * Field values.<p>
+     * Entries order of this map is important as if affects binary representation of resulting object,
+     * therefore this map must be of type defined by {@link BinaryUtils#FIELDS_SORTED_ORDER}.
+     * @see #ensureAssignedValsNotNull()
+     */
     private Map<String, Object> assignedVals;
 
     /** */
@@ -500,6 +505,19 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         }
     }
 
+    /**
+     * If value of {@link #assignedVals} is null, set it according to
+     * {@link BinaryUtils#FIELDS_SORTED_ORDER}.
+     */
+    private void ensureAssignedValsNotNull() {
+        if (assignedVals == null) {
+            if (BinaryUtils.FIELDS_SORTED_ORDER)
+                assignedVals = new TreeMap<>();
+            else
+                assignedVals = new LinkedHashMap<>();
+        }
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T getField(String name) {
@@ -526,12 +544,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
         Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
 
-        if (assignedVals == null) {
-            if (BinaryUtils.FIELDS_SORTED_ORDER)
-                assignedVals = new TreeMap<>();
-            else
-                assignedVals = new LinkedHashMap<>();
-        }
+        ensureAssignedValsNotNull();
 
         Object oldVal = assignedVals.put(name, val);
 
@@ -555,8 +568,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         else
             typeId = BinaryUtils.typeByClass(type);
 
-        if (assignedVals == null)
-            assignedVals = new LinkedHashMap<>();
+        ensureAssignedValsNotNull();
 
         assignedVals.put(name, new BinaryValueWithType(typeId, val));
 
@@ -578,8 +590,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @return {@code this} instance for chaining.
      */
     @Override public BinaryObjectBuilderImpl removeField(String name) {
-        if (assignedVals == null)
-            assignedVals = new LinkedHashMap<>();
+        ensureAssignedValsNotNull();
 
         assignedVals.put(name, REMOVED_FIELD_MARKER);
 
