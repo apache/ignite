@@ -258,7 +258,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var desc = _marsh.GetDescriptor(true, TypeId);
 
-            return BinaryUtils.GetEqualityComparer(desc).Equals(this, that);
+            return BinaryArrayEqualityComparer.Equals(this, that);
         }
 
         /** <inheritdoc /> */

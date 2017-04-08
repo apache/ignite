@@ -15,28 +15,29 @@
  * limitations under the License.
  */
 
-#include <ignite/binary/binary_object.h>
-#include <ignite/impl/binary/binary_utils.h>
+package org.apache.ignite.internal.binary;
 
-#include <ignite/binary/binary_array_identity_resolver.h>
+import org.apache.ignite.binary.BinaryObject;
+import org.jetbrains.annotations.Nullable;
 
-namespace ignite
-{
-    namespace binary
-    {
-        BinaryArrayIdentityResolver::BinaryArrayIdentityResolver()
-        {
-            // No-op.
-        }
+/**
+ * Interface to compute hash codes for new binary objects and compare them for equality.
+ */
+public interface BinaryIdentityResolver {
+    /**
+     * Compute hash code for binary object.
+     *
+     * @param obj Binary object.
+     * @return Hash code value.
+     */
+    public int hashCode(BinaryObject obj);
 
-        BinaryArrayIdentityResolver::~BinaryArrayIdentityResolver()
-        {
-            // No-op.
-        }
-
-        int32_t BinaryArrayIdentityResolver::GetHashCode(const BinaryObject& obj)
-        {
-            return impl::binary::BinaryUtils::GetDataHashCode(obj.impl.GetData(), obj.impl.GetLength());
-        }
-    }
+    /**
+     * Compare two binary objects for equality.
+     *
+     * @param o1 First object.
+     * @param o2 Second object.
+     * @return {@code True} if both objects are equal.
+     */
+    public boolean equals(@Nullable BinaryObject o1, @Nullable BinaryObject o2);
 }

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.mem.OutOfMemoryException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
@@ -104,6 +105,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Direct memory allocator. */
     private final DirectMemoryProvider directMemoryProvider;
 
+    /** Object to collect memory usage metrics. */
+    private final MemoryMetricsImpl memMetrics;
+
     /** Segments array. */
     private Segment[] segments;
 
@@ -133,6 +137,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      * @param directMemoryProvider Memory allocator to use.
      * @param sharedCtx Cache shared context.
      * @param pageSize Page size.
+     * @param memMetrics Memory Metrics.
      * @param trackAcquiredPages If {@code true} tracks number of allocated pages (for tests purpose only).
      */
     public PageMemoryNoStoreImpl(
@@ -140,6 +145,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         DirectMemoryProvider directMemoryProvider,
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
+        MemoryMetricsImpl memMetrics,
         boolean trackAcquiredPages
     ) {
         assert log != null || sharedCtx != null;
@@ -148,6 +154,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.log = sharedCtx != null ? sharedCtx.logger(PageMemoryNoStoreImpl.class) : log;
         this.directMemoryProvider = directMemoryProvider;
         this.trackAcquiredPages = trackAcquiredPages;
+        this.memMetrics = memMetrics;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
@@ -210,6 +217,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int cacheId, int partId, byte flags) {
+        memMetrics.incrementTotalAllocatedPages();
+
         long relPtr = INVALID_REL_PTR;
         long absPtr = 0;
 
@@ -615,9 +624,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         /**
+         * @param tag Tag to initialize RW lock.
          * @return Relative pointer of the allocated page.
          * @throws GridOffHeapOutOfMemoryException If failed to allocate.
-         * @param tag Tag to initialize RW lock.
          */
         private long allocateFreePage(int tag) throws GridOffHeapOutOfMemoryException {
             long limit = region.address() + region.size();

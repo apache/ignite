@@ -29,6 +29,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 import org.apache.ignite.internal.processors.cache.database.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
@@ -75,6 +76,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /** */
     private final PageHandler<CacheDataRow, Boolean> updateRow = new UpdateRowHandler();
+
+    /** */
+    private final MemoryMetricsImpl memMetrics;
 
     /** */
     private final PageEvictionTracker evictionTracker;
@@ -306,6 +310,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /**
      * @param cacheId Cache ID.
      * @param name Name (for debug purpose).
+     * @param memMetrics Memory metrics.
      * @param memPlc Memory policy.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
      * @param wal Write ahead log manager.
@@ -316,6 +321,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     public FreeListImpl(
         int cacheId,
         String name,
+        MemoryMetricsImpl memMetrics,
         MemoryPolicy memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
@@ -343,9 +349,33 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
         this.shift = shift;
 
+        this.memMetrics = memMetrics;
+
         emptyDataPagesBucket = bucket(MIN_SIZE_FOR_DATA_PAGE, false);
 
         init(metaPageId, initNew);
+    }
+
+    /**
+     * Calculates average fill factor over FreeListImpl instance.
+     */
+    public float fillFactor() {
+        long pageSize = pageSize();
+
+        long totalSize = 0;
+        long loadSize = 0;
+
+        for (int b = BUCKETS - 2; b > 0; b--) {
+            long bsize = pageSize - ((REUSE_BUCKET - b) << shift);
+
+            long pages = bucketsSize[b].longValue();
+
+            loadSize += pages * (pageSize - bsize);
+
+            totalSize += pages * pageSize;
+        }
+
+        return totalSize == 0 ? -1L : ((float) loadSize / totalSize);
     }
 
     /** {@inheritDoc} */
@@ -427,6 +457,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         int written = 0;
 
         do {
+            if (written != 0)
+                memMetrics.incrementLargeEntriesPages();
+
             int freeSpace = Math.min(MIN_SIZE_FOR_DATA_PAGE, rowSize - written);
 
             long pageId = 0L;
@@ -489,6 +522,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         assert nextLink != FAIL_L; // Can't fail here.
 
         while (nextLink != 0L) {
+            memMetrics.decrementLargeEntriesPages();
+
             itemId = PageIdUtils.itemId(nextLink);
             pageId = PageIdUtils.pageId(nextLink);
 

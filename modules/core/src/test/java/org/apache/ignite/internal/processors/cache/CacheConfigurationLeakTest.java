@@ -47,9 +47,10 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
 
         MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
 
-        plc.setName("dfltMemPlc");
+        plc.setName("dfltPlc");
         plc.setSize(MemoryConfiguration.DFLT_MEMORY_POLICY_SIZE * 10);
 
+        memCfg.setDefaultMemoryPolicyName("dfltPlc");
         memCfg.setMemoryPolicies(plc);
 
         cfg.setMemoryConfiguration(memCfg);
