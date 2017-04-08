@@ -44,7 +44,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     private final static int DAY = 24 * 60 * 60 * 1000;
 
     /** Page memory. */
-    protected final PageMemoryNoStoreImpl pageMem;
+    protected final PageMemory pageMem;
 
     /** Tracking array size. */
     final int trackingSize;
@@ -73,10 +73,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         MemoryPolicyConfiguration plcCfg,
         GridCacheSharedContext sharedCtx
     ) {
-        if (pageMem instanceof PageMemoryNoStoreImpl)
-            this.pageMem = (PageMemoryNoStoreImpl)pageMem;
-        else
-            throw new IllegalStateException("Page eviction is not compatible with persistence");
+        this.pageMem = pageMem;
 
         this.sharedCtx = sharedCtx;
 
@@ -125,7 +122,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         long page = pageMem.acquirePage(0, fakePageId);
 
         try {
-            long pageAddr = pageMem.readLockForce(page);
+            long pageAddr = pageMem.readLockForce(0, fakePageId, page);
 
             try {
                 if (PageIO.getType(pageAddr) != PageIO.T_DATA)

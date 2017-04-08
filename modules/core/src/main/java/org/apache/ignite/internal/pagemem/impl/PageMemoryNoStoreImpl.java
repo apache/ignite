@@ -406,13 +406,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return 0L;
     }
 
-    /**
-     * Obtains read lock without checking page tag.
-     *
-     * @param page Page pointer.
-     * @return Pointer for reading the page.
-     */
-    public long readLockForce(long page) {
+    /** {@inheritDoc} */
+    public long readLockForce(int cacheId, long pageId, long page) {
         if (rwLock.readLock(page + LOCK_OFFSET, -1))
             return page + PAGE_OVERHEAD;
 
