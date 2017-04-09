@@ -76,4 +76,17 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
     @Override public void destroy() {
         getStorage().destroy();
     }
+
+    /** {@inheritDoc} */
+    @Override protected Matrix likeIdentity() {
+        int n = rowSize();
+        Matrix res = like(n, n);
+
+        // IMPL NOTE as opposed to on-heap matrices this one isn't initialized with zeroes
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                res.setX(i, j, i == j ? 1.0 : 0.0);
+
+        return res;
+    }
 }

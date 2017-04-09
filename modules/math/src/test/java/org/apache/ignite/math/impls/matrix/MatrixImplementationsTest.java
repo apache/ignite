@@ -422,10 +422,10 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (m.rowSize() != m.columnSize())
                 return;
 
-            if (ignore(m.getClass()) || m instanceof DenseLocalOffHeapMatrix)
-                return; // todo find why DenseLocalOffHeapMatrix fails this test by "Unexpected determinant"
+            if (ignore(m.getClass()))
+                return;
 
-            if (m.rowSize() > 128)
+            if (m.rowSize() > 256)
                 return; // IMPL NOTE this is for quicker test run.
 
             fillNonSingularMatrix(m);
