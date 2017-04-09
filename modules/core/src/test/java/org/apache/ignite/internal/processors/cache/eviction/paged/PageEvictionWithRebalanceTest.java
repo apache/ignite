@@ -56,7 +56,6 @@ public abstract class PageEvictionWithRebalanceTest extends PageEvictionAbstract
 
         System.out.println(">>> Resulting size: " + size);
 
-        // More than half of entries evicted, no OutOfMemory occurred, success.
         assertTrue(size < ENTRIES);
 
         for (int i = 3; i >= 1; i--) {

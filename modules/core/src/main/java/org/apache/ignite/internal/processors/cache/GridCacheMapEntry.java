@@ -717,8 +717,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (ret == null && !evt)
             return null;
 
-        ensureFreeSpace();
-
         synchronized (this) {
             long ttl = ttlExtras();
 

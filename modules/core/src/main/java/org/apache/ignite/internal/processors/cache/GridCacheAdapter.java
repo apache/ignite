@@ -2085,6 +2085,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             GridCacheEntryEx entry = null;
 
                                             try {
+                                                ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
+
                                                 entry = entryEx(key);
 
                                                 entry.unswap();
