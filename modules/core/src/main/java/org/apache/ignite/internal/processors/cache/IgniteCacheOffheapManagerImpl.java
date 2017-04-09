@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -971,9 +972,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException
-        {
-            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime);
+            @Nullable CacheDataRow oldRow,
+            @Nullable IgniteUuid keyClsLdrId,
+            @Nullable IgniteUuid valClsLdrId) throws IgniteCheckedException {
+            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, keyClsLdrId, valClsLdrId);
+
+            dataRow.p2pEnabled(cctx.deploymentEnabled());
 
             if (canUpdateOldRow(oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow))
                 dataRow.link(oldRow.link());
@@ -1004,7 +1008,20 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                DataRow dataRow = new DataRow(key, val, ver, p, expireTime);
+                IgniteUuid keyClsLdrId = null;
+                IgniteUuid valClsLdrId = null;
+
+                if (cctx.deploymentEnabled()) {
+                    if (val != null) {
+                        valClsLdrId = cctx.deploy().getClassLoaderId(
+                            U.detectObjectClassLoader(val.value(cctx.cacheObjectContext(), false)));
+                    }
+
+                    keyClsLdrId = cctx.deploy().getClassLoaderId(
+                        U.detectObjectClassLoader(key.value(cctx.cacheObjectContext(), false)));
+                }
+
+                DataRow dataRow = new DataRow(key, val, ver, p, expireTime, keyClsLdrId, valClsLdrId);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -1348,8 +1365,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param ver Version.
          * @param part Partition.
          * @param expireTime Expire time.
+         * @param keyClsLdrId Class loader ID for entry key.
+         * @param valClsLdrId Class loader ID for entry value.
          */
-        DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime) {
+        DataRow(KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            int part,
+            long expireTime,
+            @Nullable IgniteUuid keyClsLdrId,
+            @Nullable IgniteUuid valClsLdrId) {
             super(0);
 
             this.hash = key.hashCode();
@@ -1358,6 +1383,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             this.ver = ver;
             this.part = part;
             this.expireTime = expireTime;
+            this.keyClsLdrId = keyClsLdrId;
+            this.valClsLdrId = valClsLdrId;
         }
 
         /** {@inheritDoc} */

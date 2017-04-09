@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  *
@@ -66,9 +67,13 @@ public class LazyDataEntry extends DataEntry {
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt
+        long partCnt,
+        boolean p2pEnabled,
+        IgniteUuid keyClsLdrId,
+        IgniteUuid valClsLdrId
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, p2pEnabled, keyClsLdrId,
+            valClsLdrId);
 
         this.cctx = cctx;
         this.keyType = keyType;
@@ -88,7 +93,7 @@ public class LazyDataEntry extends DataEntry {
 
                 IgniteCacheObjectProcessor co = cctx.kernalContext().cacheObjects();
 
-                key = co.toKeyCacheObject(cacheCtx.cacheObjectContext(), keyType, keyBytes);
+                key = co.toKeyCacheObject(cacheCtx.cacheObjectContext(), keyType, keyBytes, keyClsLdrId);
             }
 
             return key;
@@ -100,17 +105,22 @@ public class LazyDataEntry extends DataEntry {
 
     /** {@inheritDoc} */
     @Override public CacheObject value() {
-        if (val == null && valBytes != null) {
-            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+        try {
+            if (val == null && valBytes != null) {
+                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-            if (cacheCtx == null)
-                throw new IgniteException("Failed to find cache context for the given cache ID: " + cacheId);
+                if (cacheCtx == null)
+                    throw new IgniteException("Failed to find cache context for the given cache ID: " + cacheId);
 
-            IgniteCacheObjectProcessor co = cctx.kernalContext().cacheObjects();
+                IgniteCacheObjectProcessor co = cctx.kernalContext().cacheObjects();
 
-            val = co.toCacheObject(cacheCtx.cacheObjectContext(), valType, valBytes);
+                val = co.toCacheObject(cacheCtx.cacheObjectContext(), valType, valBytes, valClsLdrId);
+            }
+
+            return val;
         }
-
-        return val;
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

@@ -143,6 +143,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             assert oldFreeSpace > 0 : oldFreeSpace;
 
+            // TODO: 4551
             // If the full row does not fit into this page write only a fragment.
             written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(pageId, page, pageAddr, io, row, rowSize):
                 addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
@@ -561,7 +562,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         int keyLen = row.key().valueBytesLength(null);
         int valLen = row.value().valueBytesLength(null);
 
-        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8;
+        return keyLen + valLen + CacheVersionIO.size(row.version(), false)
+            + 8                                                                                                // expireTime
+            + (row.p2pEnabled() ? PageUtils.sizeIgniteUUID(row.keyClassLoader(), row.valueClassLoader()) : 0); // UUID class loaders for key and value
     }
 
     /** {@inheritDoc} */

@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -557,6 +558,17 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             if (!near() && cctx.wal() != null && op != NOOP && op != RELOAD && op != READ) {
                                                 if (dataEntries == null)
                                                     dataEntries = new ArrayList<>(entries.size());
+                                                IgniteUuid valClsLdrId = null;
+                                                IgniteUuid keyClsLdrId = null;
+
+                                                if (cctx.deploymentEnabled()) {
+                                                    if (val != null)
+                                                        valClsLdrId = cctx.deploy().getClassLoaderId(
+                                                            U.detectObjectClassLoader(val.value(cacheCtx.cacheObjectContext(), false)));
+
+                                                    keyClsLdrId = cctx.deploy().getClassLoaderId(
+                                                        U.detectObjectClassLoader(cached.key().value(cacheCtx.cacheObjectContext(), false)));
+                                                }
 
                                                 dataEntries.add(
                                                     new DataEntry(
@@ -568,7 +580,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         writeVersion(),
                                                         0,
                                                         txEntry.key().partition(),
-                                                        txEntry.updateCounter()
+                                                        txEntry.updateCounter(),
+                                                        cctx.deploymentEnabled(),
+                                                        keyClsLdrId,
+                                                        valClsLdrId
                                                     )
                                                 );
                                             }

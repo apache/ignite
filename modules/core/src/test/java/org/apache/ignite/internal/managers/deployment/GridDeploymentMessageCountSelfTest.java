@@ -134,8 +134,6 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheValueDeploymentOnPut() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4551");
-
         ClassLoader ldr = getExternalClassLoader();
 
         Class valCls = ldr.loadClass(TEST_VALUE);
@@ -148,7 +146,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
             cache.put("key", valCls.newInstance());
 
             for (int i = 0; i < 2; i++)
-                assertNotNull("For grid: " + i, grid(i).cache(null).localPeek("key", CachePeekMode.ONHEAP));
+                assertNotNull("For grid: " + i, grid(i).cache(null).localPeek("key", CachePeekMode.OFFHEAP));
 
             for (MessageCountingCommunicationSpi spi : commSpis.values()) {
                 assertTrue(spi.deploymentMessageCount() > 0);
@@ -162,7 +160,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
                 cache.put(key, valCls.newInstance());
 
                 for (int k = 0; k < 2; k++)
-                    assertNotNull(grid(k).cache(null).localPeek(key, CachePeekMode.ONHEAP));
+                    assertNotNull(grid(k).cache(null).localPeek(key, CachePeekMode.OFFHEAP));
             }
 
             for (MessageCountingCommunicationSpi spi : commSpis.values())

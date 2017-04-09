@@ -2621,6 +2621,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updateCntr = nextPartCounter(topVer);
 
                 if (walEnabled) {
+                    IgniteUuid keyClsLdrId = null;
+                    IgniteUuid valClsLdrId = null;
+
+                    if (deploymentEnabled()) {
+                        keyClsLdrId = classLoaderId(key);
+
+                        valClsLdrId = classLoaderId(extractValue(val));
+                    }
+                    
                     cctx.shared().wal().log(new DataRecord(new DataEntry(
                         cctx.cacheId(),
                         key,
@@ -2630,7 +2639,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         ver,
                         expireTime,
                         partition(),
-                        updateCntr
+                        updateCntr,
+                        deploymentEnabled(),
+                        keyClsLdrId,
+                        valClsLdrId
                     )));
                 }
 
@@ -3265,8 +3277,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param writeVer Write version.
      * @param expireTime Expire time.
      * @param updCntr Update counter.
+     * @param p2pEnabled P2P enabled flag.
+     * @param keyClsLdrId Key class loader ID.
+     * @param valClsLdrId Value class loader ID.
      */
-    protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long expireTime, long updCntr)
+    protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long expireTime,
+        long updCntr, boolean p2pEnabled, IgniteUuid keyClsLdrId, IgniteUuid valClsLdrId)
         throws IgniteCheckedException {
         // We log individual updates only in ATOMIC cache.
         assert cctx.atomic();
@@ -3282,7 +3298,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     writeVer,
                     expireTime,
                     partition(),
-                    updCntr)));
+                    updCntr,
+                    p2pEnabled,
+                    keyClsLdrId,
+                    valClsLdrId)));
         }
         catch (StorageException e) {
             throw new IgniteCheckedException("Failed to log ATOMIC cache update [key=" + key + ", op=" + op +
@@ -3777,6 +3796,37 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
+     * @return {@code True} if deployment is enabled.
+     */
+    protected boolean deploymentEnabled() {
+        return cctx.deploymentEnabled();
+    }
+
+    /**
+     * @param obj Cache object.
+     * @return Original value.
+     */
+    protected Object extractValue(@Nullable CacheObject obj) {
+        if (obj == null)
+            return null;
+
+        return obj.value(cctx.cacheObjectContext(), false);
+    }
+
+    /**
+     * @param obj Cache object.
+     * @return Class loader ID for this object.
+     */
+    @Nullable protected IgniteUuid classLoaderId(@Nullable Object obj) {
+        assert cctx.deploymentEnabled();
+
+        if (obj == null)
+            return null;
+
+        return cctx.deploy().getClassLoaderId(U.detectObjectClassLoader(obj));
+    }
+
+    /**
      * @param owner Starting candidate in the chain.
      */
     protected abstract void checkThreadChain(GridCacheMvccCandidate owner);
@@ -3954,11 +4004,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (oldRow != null)
                 oldRow.key(entry.key);
 
+            IgniteUuid keyClsLdrId = null;
+            IgniteUuid valClsLdrId = null;
+
+            if (entry.deploymentEnabled()) {
+                keyClsLdrId = entry.classLoaderId(entry.keyValue(false));
+
+                valClsLdrId = entry.classLoaderId(entry.extractValue(val));
+            }
+
             newRow = entry.cctx.offheap().dataStore(entry.localPartition()).createRow(entry.key,
                 val,
                 ver,
                 expireTime,
-                oldRow);
+                oldRow,
+                keyClsLdrId,
+                valClsLdrId);
 
             treeOp = oldRow != null && oldRow.link() == newRow.link() ?
                 IgniteTree.OperationType.NOOP : IgniteTree.OperationType.PUT;
@@ -4307,11 +4368,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (needUpdate) {
+                IgniteUuid keyClsLdrId = null;
+                IgniteUuid valClsLdrId = null;
+
+                if (entry.deploymentEnabled()) {
+                    keyClsLdrId = entry.classLoaderId(entry.keyValue(false));
+
+                    valClsLdrId = entry.classLoaderId(entry.extractValue(storeLoadedVal));
+                }
+
                 newRow = entry.localPartition().dataStore().createRow(entry.key,
                     storeLoadedVal,
                     newVer,
                     entry.expireTimeExtras(),
-                    oldRow);
+                    oldRow,
+                    keyClsLdrId,
+                    valClsLdrId);
 
                 treeOp = IgniteTree.OperationType.PUT;
             }
@@ -4443,14 +4515,30 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (updateCntr != null)
                 updateCntr0 = updateCntr;
 
-            entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0);
+            IgniteUuid valClsLdrId = null;
+            IgniteUuid keyClsLdrId = null;
+
+            if (cctx.deploymentEnabled()) {
+                if (updated != null) {
+                    valClsLdrId = cctx.deploy().getClassLoaderId(
+                        U.detectObjectClassLoader(updated.value(cctx.cacheObjectContext(), false)));
+                }
+
+                keyClsLdrId = cctx.deploy().getClassLoaderId(
+                    U.detectObjectClassLoader(entry.keyValue(false)));
+            }
+
+            entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, cctx.deploymentEnabled(),
+                keyClsLdrId, valClsLdrId);
 
             if (!entry.isNear()) {
                 newRow = entry.localPartition().dataStore().createRow(entry.key,
                     updated,
                     newVer,
                     newExpireTime,
-                    oldRow);
+                    oldRow,
+                    keyClsLdrId,
+                    valClsLdrId);
 
                 treeOp = oldRow != null && oldRow.link() == newRow.link() ?
                     IgniteTree.OperationType.NOOP : IgniteTree.OperationType.PUT;

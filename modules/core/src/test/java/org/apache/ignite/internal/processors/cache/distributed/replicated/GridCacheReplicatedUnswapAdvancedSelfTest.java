@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -69,12 +68,10 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testUnswapAdvanced() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4551");
-
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        assert g1.cluster().nodes().size() > 1 : "This test needs at least two grid nodes started.";
+        assertTrue("This test needs at least two grid nodes started.", g1.cluster().nodes().size() > 1);
 
         IgniteCache<Object, Object> cache1 = g1.cache(null);
         IgniteCache<Object, Object> cache2 = g2.cache(null);
@@ -115,33 +112,28 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
             // Put value into cache of the first grid.
             cache1.put(key, v);
 
-            assert putLatch.await(10, SECONDS);
+            assertTrue(putLatch.await(10, SECONDS));
 
-            assert cache2.containsKey(key);
+            assertTrue(cache2.containsKey(key));
 
             Object v2 = cache2.get(key);
 
             info("v2 loader: " + v2.getClass().getClassLoader());
 
-            assert v2 != null;
-            assert v2.toString().equals(v.toString());
-            assert !v2.getClass().getClassLoader().equals(getClass().getClassLoader());
-            assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader")||
-                grid(2).configuration().getMarshaller() instanceof BinaryMarshaller;
+            assertNotNull(v2);
+            assertEquals(v.toString(), v2.toString());
+            assertFalse(v2.getClass().getClassLoader().equals(getClass().getClassLoader()));
+            assertTrue(v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader") ||
+                grid(2).configuration().getMarshaller() instanceof BinaryMarshaller);
 
-            // To swap storage.
-            cache2.localEvict(Collections.<Object>singleton(key));
-
-            cache2.localPromote(Collections.singleton(key));
-
-            v2 = cache2.localPeek(key, CachePeekMode.ONHEAP);
+            v2 = cache2.localPeek(key, CachePeekMode.OFFHEAP);
 
             log.info("Unswapped entry value: " + v2);
 
-            assert v2 != null;
+            assertNotNull(v2);
 
-            assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader")|
-                grid(2).configuration().getMarshaller() instanceof BinaryMarshaller;
+            assertTrue(v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader") |
+                grid(2).configuration().getMarshaller() instanceof BinaryMarshaller);
         }
         finally {
             stopGrid(1);

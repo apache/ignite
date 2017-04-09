@@ -800,7 +800,7 @@ public abstract class GridUnsafe {
     }
 
     /**
-     * Stores given integer value. Alignment aware.
+     * Stores given long value. Alignment aware.
      *
      * @param addr Address.
      * @param val Value.

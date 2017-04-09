@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -164,6 +165,17 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      */
     public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes);
 
+
+    /**
+     * @param ctx Cache context.
+     * @param type Object type.
+     * @param bytes Object bytes.
+     * @param valClsLdrId Value class loader ID.
+     * @return Cache object.
+     */
+    public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes, IgniteUuid valClsLdrId)
+        throws IgniteCheckedException;
+
     /**
      * @param ctx Cache context.
      * @param type Object type.
@@ -171,6 +183,16 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Cache object.
      */
     public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache context.
+     * @param type Object type.
+     * @param bytes Object bytes.
+     * @param keyClsLdrId Key class loader ID.
+     * @return Cache object.
+     */
+    public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes, IgniteUuid keyClsLdrId)
+        throws IgniteCheckedException;
 
     /**
      * @param ctx Cache context.
@@ -190,11 +212,12 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param ctx Cache object context.
      * @param buf Buffer.
      * @param incompleteObj Incomplete cache object or {@code null} if it's a first read.
+     * @param valClsLdrId Value class loader ID.
      * @return Incomplete cache object.
      * @throws IgniteCheckedException If fail.
      */
     public IncompleteCacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf,
-        @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
+        @Nullable IncompleteCacheObject incompleteObj, @Nullable IgniteUuid valClsLdrId) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache object context.
