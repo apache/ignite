@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.lang.IgniteUuid;
 import org.h2.store.Data;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -105,6 +106,21 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
         }
 
         return expirationTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean p2pEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid keyClassLoader() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid valueClassLoader() {
+        return null;
     }
 
     /** {@inheritDoc} */

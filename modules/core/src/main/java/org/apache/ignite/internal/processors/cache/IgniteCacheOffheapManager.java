@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -334,7 +335,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+            @Nullable CacheDataRow oldRow,
+            @Nullable IgniteUuid keyClsLdrId,
+            @Nullable IgniteUuid valClsLdrId) throws IgniteCheckedException;
 
         /**
          * @param key Key.

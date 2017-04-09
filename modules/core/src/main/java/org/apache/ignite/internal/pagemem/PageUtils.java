@@ -17,13 +17,22 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import java.util.UUID;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-@SuppressWarnings("deprecation")
 public class PageUtils {
+    /** */
+    private final static int IGNITE_UUID_NULL_SIZE = 1;
+
+    /** */
+    public final static int IGNITE_UUID_SIZE = 1 /* Null indicator */ + 8 /* MostSignificantBits */
+        + 8 /* LeastSignificantBits */ + 8 /* Local ID */;
+
     /**
      * @param addr Start address. 
      * @param off Offset.
@@ -181,5 +190,83 @@ public class PageUtils {
         assert off >= 0;
 
         GridUnsafe.putLong(addr + off, v);
+    }
+
+    /**
+     * @param addr Address.
+     * @param v Value.
+     */
+    public static int putIgniteUUID(long addr, @Nullable IgniteUuid v) {
+        assert addr > 0 : addr;
+
+        GridUnsafe.putByte(addr, (v == null ? (byte)0 : (byte)1));
+        addr += 1;
+
+        if (v != null) {
+            GridUnsafe.putLong(addr, v.globalId().getMostSignificantBits());
+            addr+=8;
+
+            GridUnsafe.putLong(addr, v.globalId().getLeastSignificantBits());
+            addr+=8;
+
+            GridUnsafe.putLong(addr, v.localId());
+        }
+        else
+            return IGNITE_UUID_NULL_SIZE;
+
+        return IGNITE_UUID_SIZE;
+    }
+
+    /**
+     * @param addr Address.
+     * @param off Offset.
+     * @return Value.
+     */
+    public static IgniteUuid getIgniteUUID(long addr, int off) {
+        assert addr > 0 : addr;
+        assert off >= 0;
+
+        byte isNull = GridUnsafe.getByte(addr + off);
+
+        if (isNull == 0)
+            return null;
+
+        addr+=1;
+
+        long mostSignBits = GridUnsafe.getLong(addr + off);
+        addr+=8;
+
+        long lestSignBits = GridUnsafe.getLong(addr + off);
+        addr+=8;
+
+        long locId = GridUnsafe.getLong(addr + off);
+
+        return new IgniteUuid(new UUID(mostSignBits, lestSignBits), locId);
+    }
+
+    /**
+     * @param v Ignite UUID.
+     * @return Size.
+     */
+    public static int sizeIgniteUUID(IgniteUuid v) {
+        return (v == null ? IGNITE_UUID_NULL_SIZE : IGNITE_UUID_SIZE);
+    }
+
+    /**
+     * @param b Ignite UUID null flag.
+     * @return Size.
+     */
+    public static int sizeIgniteUUID(Byte b) {
+        return (b == 0 ? IGNITE_UUID_NULL_SIZE : IGNITE_UUID_SIZE);
+    }
+
+    /**
+     * @param v Ignite UUIDs.
+     * @param v1 Ignite UUIDs.
+     * @return Size.
+     */
+    public static int sizeIgniteUUID(IgniteUuid v, IgniteUuid v1) {
+        return (v == null ? IGNITE_UUID_NULL_SIZE : IGNITE_UUID_SIZE)
+            + (v1 == null ? IGNITE_UUID_NULL_SIZE : IGNITE_UUID_SIZE);
     }
 }

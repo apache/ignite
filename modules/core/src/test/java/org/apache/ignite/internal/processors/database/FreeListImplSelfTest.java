@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -406,6 +407,21 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hash() {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean p2pEnabled() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid keyClassLoader() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid valueClassLoader() {
+            return null;
         }
     }
 

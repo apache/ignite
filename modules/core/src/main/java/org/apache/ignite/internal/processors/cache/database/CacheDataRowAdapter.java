@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
@@ -58,6 +60,18 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** */
     protected long expireTime = -1;
+
+    /** Class loader for the key. If peer-classloading disabled then {@code null}, otherwise classloader UUID. */
+    protected IgniteUuid keyClsLdrId;
+
+    /** Class loader for the val. If peer-classloading disabled then {@code null}, otherwise classloader UUID. */
+    protected IgniteUuid valClsLdrId;
+
+    /** P2P flag. */
+    private transient boolean p2pEnabled;
+
+    /** Null object. */
+    private static IgniteUuid NULL_OBJECT = new IgniteUuid(new UUID(-1L, -1L), -1L);
 
     /** */
     @GridToStringInclude
@@ -173,11 +187,24 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean keyOnly,
         IncompleteObject<?> incomplete
     ) throws IgniteCheckedException {
+        IncompleteCacheObject keyIncomplete = null;
+
         // Read key.
         if (key == null) {
-            incomplete = readIncompleteKey(coctx, buf, (IncompleteCacheObject)incomplete);
+            keyIncomplete = readIncompleteKey(coctx, buf, (IncompleteCacheObject)incomplete);
+            incomplete = keyIncomplete;
 
-            if (key == null || keyOnly)
+            if (!incomplete.isReady() || (keyOnly && !coctx.p2pEnabled()))
+                return incomplete;
+
+            incomplete = null;
+        }
+
+        // Read key classloader id.
+        if (coctx.p2pEnabled() && keyClsLdrId == null) {
+            incomplete = readIncompleteClassLoaderUUID(coctx, buf, incomplete, keyIncomplete);
+
+            if (keyClsLdrId == null || keyOnly)
                 return incomplete;
 
             incomplete = null;
@@ -187,6 +214,16 @@ public class CacheDataRowAdapter implements CacheDataRow {
             incomplete = readIncompleteExpireTime(buf, incomplete);
 
             if (expireTime == -1)
+                return incomplete;
+
+            incomplete = null;
+        }
+
+        // Read val classloader id.
+        if (coctx.p2pEnabled() && valClsLdrId == null) {
+            incomplete = readIncompleteClassLoaderUUID(coctx, buf, incomplete, null);
+
+            if (valClsLdrId == null)
                 return incomplete;
 
             incomplete = null;
@@ -228,13 +265,24 @@ public class CacheDataRowAdapter implements CacheDataRow {
             byte[] bytes = PageUtils.getBytes(addr, off, len);
             off += len;
 
-            key = coctx.processor().toKeyCacheObject(coctx, type, bytes);
+            if (coctx.p2pEnabled()) {
+                keyClsLdrId = PageUtils.getIgniteUUID(addr, off);
+                off += PageUtils.sizeIgniteUUID(keyClsLdrId);
+
+                key = coctx.processor().toKeyCacheObject(coctx, type, bytes, keyClsLdrId);
+            }
+            else
+                key = coctx.processor().toKeyCacheObject(coctx, type, bytes);
 
             if (rowData == RowData.KEY_ONLY)
                 return;
         }
-        else
+        else {
             off += len + 1;
+
+            if (coctx.p2pEnabled())
+                off += PageUtils.sizeIgniteUUID(PageUtils.getByte(addr, off));
+        }
 
         len = PageUtils.getInt(addr, off);
         off += 4;
@@ -245,7 +293,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
         byte[] bytes = PageUtils.getBytes(addr, off, len);
         off += len;
 
-        val = coctx.processor().toCacheObject(coctx, type, bytes);
+        if (!coctx.p2pEnabled())
+            val = coctx.processor().toCacheObject(coctx, type, bytes);
+        else {
+            valClsLdrId = PageUtils.getIgniteUUID(addr, off);
+
+            off += PageUtils.sizeIgniteUUID(valClsLdrId);
+
+            val = coctx.processor().toCacheObject(coctx, type, bytes, valClsLdrId);
+        }
 
         ver = CacheVersionIO.read(addr + off, false);
 
@@ -269,9 +325,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
         incomplete = coctx.processor().toKeyCacheObject(coctx, buf, incomplete);
 
         if (incomplete.isReady()) {
-            key = (KeyCacheObject)incomplete.object();
+            // If p2p enabled then convert data to key cache object when class loader id will be read.
+            if (!coctx.p2pEnabled()) {
+                key = (KeyCacheObject)incomplete.object();
 
-            assert key != null;
+                assert key != null;
+            }
         }
         else
             assert !buf.hasRemaining();
@@ -291,7 +350,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         ByteBuffer buf,
         IncompleteCacheObject incomplete
     ) throws IgniteCheckedException {
-        incomplete = coctx.processor().toCacheObject(coctx, buf, incomplete);
+        incomplete = coctx.processor().toCacheObject(coctx, buf, incomplete, valueClassLoader());
 
         if (incomplete.isReady()) {
             val = incomplete.object();
@@ -398,6 +457,101 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
+     * @param buf Buffer.
+     * @param incomplete Incomplete object.
+     * @param keyIncomplete Key incomplete object
+     * @return Incomplete object.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IncompleteObject<?> readIncompleteClassLoaderUUID(
+        CacheObjectContext coctx,
+        ByteBuffer buf,
+        IncompleteObject<?> incomplete,
+        IncompleteCacheObject keyIncomplete
+    ) throws IgniteCheckedException {
+        if (incomplete == null) {
+            int remaining = buf.remaining();
+
+            if (remaining == 0)
+                return null;
+
+            byte isNull = buf.get();
+
+            if (isNull == 0) {
+                if (keyIncomplete != null) {
+                    assert keyIncomplete.isReady();
+
+                    key = coctx.processor().toKeyCacheObject(coctx, keyIncomplete.type(), keyIncomplete.data());
+
+                    keyClsLdrId = NULL_OBJECT;
+                }
+                else
+                    valClsLdrId = NULL_OBJECT;
+
+                return null;
+            }
+
+            int size = PageUtils.IGNITE_UUID_SIZE;
+
+            if (remaining >= size) {
+                // If the whole version is on a single page, just read it.
+                long mostSigBits = buf.getLong();
+                long leastSigBits = buf.getLong();
+                long locId = buf.getLong();
+
+                IgniteUuid uuid = new IgniteUuid(new UUID(mostSigBits, leastSigBits), locId);
+
+                if (keyIncomplete != null) {
+                    assert keyIncomplete.isReady();
+
+                    keyClsLdrId = uuid;
+
+                    key = coctx.processor().toKeyCacheObject(coctx, keyIncomplete.type(), keyIncomplete.data(),
+                        keyClsLdrId);
+                }
+                else
+                    valClsLdrId = uuid;
+
+                assert !buf.hasRemaining(): buf.remaining();
+
+                return null;
+            }
+
+            // We have to read multipart version.
+            incomplete = new IncompleteObject<>(new byte[size]);
+        }
+
+        incomplete.readData(buf);
+
+        if (incomplete.isReady()) {
+            final ByteBuffer uuidBuf = ByteBuffer.wrap(incomplete.data());
+
+            uuidBuf.order(buf.order());
+
+            long mostSigBits = buf.getLong();
+            long leastSigBits = buf.getLong();
+            long locId = buf.getLong();
+
+            IgniteUuid uuid = new IgniteUuid(new UUID(mostSigBits, leastSigBits), locId);
+
+            if (keyIncomplete != null) {
+                assert keyIncomplete.isReady();
+
+                keyClsLdrId = uuid;
+
+                key = coctx.processor().toKeyCacheObject(coctx, keyIncomplete.type(), keyIncomplete.data(),
+                    keyClsLdrId);
+            }
+            else
+                valClsLdrId = uuid;
+        }
+
+        assert !buf.hasRemaining();
+
+        return incomplete;
+    }
+
+    /**
      * @return {@code True} if entry is ready.
      */
     public boolean isReady() {
@@ -425,6 +579,28 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert val != null : "Value is not ready: " + this;
 
         return val;
+    }
+
+    /**
+     * @param peer2p2Enabled Peer 2P2 enabled.
+     */
+    public void p2pEnabled(boolean peer2p2Enabled) {
+        this.p2pEnabled = peer2p2Enabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid keyClassLoader() {
+        return keyClsLdrId == NULL_OBJECT ? null : keyClsLdrId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid valueClassLoader() {
+        return valClsLdrId == NULL_OBJECT ? null : valClsLdrId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean p2pEnabled() {
+        return p2pEnabled;
     }
 
     /** {@inheritDoc} */

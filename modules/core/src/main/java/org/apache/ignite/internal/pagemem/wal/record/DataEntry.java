@@ -20,11 +20,10 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  *
@@ -61,6 +60,15 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
+    /** Class loader for the key. If peer-classloading disabled then {@code null}, otherwise classloader UUID. */
+    protected IgniteUuid keyClsLdrId;
+
+    /** Class loader for the val. If peer-classloading disabled then {@code null}, otherwise classloader UUID. */
+    protected IgniteUuid valClsLdrId;
+
+    /** P2P flag. */
+    private transient boolean p2pEnabled;
+
     private DataEntry() {
         // No-op, used from factory methods.
     }
@@ -85,7 +93,10 @@ public class DataEntry {
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt
+        long partCnt,
+        boolean p2pEnabled,
+        IgniteUuid keyClsLdrId,
+        IgniteUuid valClsLdrId
     ) {
         this.cacheId = cacheId;
         this.key = key;
@@ -96,6 +107,9 @@ public class DataEntry {
         this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
+        this.p2pEnabled = p2pEnabled;
+        this.keyClsLdrId = keyClsLdrId;
+        this.valClsLdrId = valClsLdrId;
 
         // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
         assert op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
@@ -162,6 +176,27 @@ public class DataEntry {
      */
     public long expireTime() {
         return expireTime;
+    }
+
+    /**
+     * @return Key class loader ID.
+     */
+    public IgniteUuid keyClassLoaderId() {
+        return keyClsLdrId;
+    }
+
+    /**
+     * @return Value class loader ID.
+     */
+    public IgniteUuid valueClassLoaderId() {
+        return valClsLdrId;
+    }
+
+    /**
+     * @return P2P enabled flag.
+     */
+    public boolean p2pEnabled() {
+        return p2pEnabled;
     }
 
     /** {@inheritDoc} */

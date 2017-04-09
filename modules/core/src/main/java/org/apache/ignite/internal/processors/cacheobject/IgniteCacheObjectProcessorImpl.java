@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -160,16 +162,61 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException {
+    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes)
+        throws IgniteCheckedException {
+        return toKeyCacheObject0(ctx, type, bytes, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes,
+        IgniteUuid keyClsLdrId) throws IgniteCheckedException {
+        if (ctx.p2pEnabled() && type != CacheObject.TYPE_BYTE_ARR) {
+            GridCacheDeploymentManager<Object, Object> deploy = ctx.kernalContext().cache().context().deploy();
+
+            ClassLoader ldr = keyClsLdrId != null ? deploy.getClassLoader(keyClsLdrId) : deploy.localLoader();
+
+            if (ldr != null)
+                return toKeyCacheObject0(ctx, type, bytes, ldr);
+        }
+
+        return toKeyCacheObject(ctx, type, bytes);
+    }
+
+    /**
+     * @param ctx Cache object context.
+     * @param type Type.
+     * @param bytes Bytes.
+     * @return Key cache object.
+     * @throws IgniteCheckedException If failed.
+     */
+    private KeyCacheObject toKeyCacheObject0(CacheObjectContext ctx, byte type, byte[] bytes, @Nullable ClassLoader clsLdr)
+        throws IgniteCheckedException {
         switch (type) {
             case CacheObject.TYPE_BYTE_ARR:
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
 
             case CacheObject.TYPE_REGULAR:
-                return new KeyCacheObjectImpl(ctx.processor().unmarshal(ctx, bytes, null), bytes, -1);
+                return new KeyCacheObjectImpl(ctx.processor().unmarshal(ctx, bytes, clsLdr), bytes, -1);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes,
+        IgniteUuid valClsLdrId) throws IgniteCheckedException {
+        if (ctx.p2pEnabled() && type != CacheObject.TYPE_BYTE_ARR) {
+            GridCacheDeploymentManager<Object, Object> deploy = ctx.kernalContext().cache().context().deploy();
+
+            ClassLoader ldr = valClsLdrId != null ? deploy.getClassLoader(valClsLdrId) : deploy.localLoader();
+
+            if (ldr == null)
+                return null;
+
+            return toCacheObject(ctx, unmarshal(ctx, bytes, ldr), false);
+        }
+
+        return toCacheObject(ctx, type, bytes);
     }
 
     /** {@inheritDoc} */
@@ -207,7 +254,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public IncompleteCacheObject toCacheObject(
         final CacheObjectContext ctx,
         final ByteBuffer buf,
-        @Nullable IncompleteCacheObject incompleteObj
+        @Nullable IncompleteCacheObject incompleteObj,
+        @Nullable IgniteUuid valClsLdrId
     ) throws IgniteCheckedException {
         if (incompleteObj == null)
             incompleteObj = new IncompleteCacheObject(buf);
@@ -218,7 +266,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         incompleteObj.readData(buf);
 
         if (incompleteObj.isReady())
-            incompleteObj.object(toCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+            incompleteObj.object(toCacheObject(ctx, incompleteObj.type(), incompleteObj.data(), valClsLdrId));
 
         return incompleteObj;
     }
@@ -237,7 +285,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         incompleteObj.readData(buf);
 
-        if (incompleteObj.isReady())
+        // If p2p enabled then convert data to key cache object when class loader id will be read.
+        if (incompleteObj.isReady() && !ctx.p2pEnabled())
             incompleteObj.object(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
 
         return incompleteObj;

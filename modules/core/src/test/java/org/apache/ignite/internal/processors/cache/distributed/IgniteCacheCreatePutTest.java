@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -60,12 +63,16 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        cfg.setPeerClassLoadingEnabled(false);
-
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(discoSpi);
+
+        MemoryConfiguration mCfg = new MemoryConfiguration();
+
+        mCfg.setPageSize(1024 /* 1Kb */);
+
+        cfg.setMemoryConfiguration(mCfg);
 
         OptimizedMarshaller marsh = new OptimizedMarshaller();
         marsh.setRequireSerializable(false);
@@ -78,10 +85,12 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setAffinity(new RendezvousAffinityFunction(32, null));
 
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setClientMode(client);
+        cfg.setPeerClassLoadingEnabled(true);
 
         return cfg;
     }
@@ -102,42 +111,26 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartNodes() throws Exception {
-        long stopTime = System.currentTimeMillis() + 2 * 60_000;
+        Ignite ignite = startGrid(0);
 
-        try {
-            int iter = 0;
+        IgniteCache<Integer, TestObject> cache = ignite.getOrCreateCache("cache1");
 
-            while (System.currentTimeMillis() < stopTime && iter < 5) {
-                log.info("Iteration: " + iter++);
+        cache.put(1, new TestObject(1024));
 
-                try {
-                    final AtomicInteger idx = new AtomicInteger();
+        TestObject actual = cache.get(1);
 
-                    GridTestUtils.runMultiThreaded(new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            int node = idx.getAndIncrement();
+        assertEquals(new TestObject(1024), actual);
 
-                            Ignite ignite = startGrid(node);
-
-                            IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache1");
-
-                            assertNotNull(cache);
-
-                            for (int i = 0; i < 100; i++)
-                                cache.put(i, i);
-
-                            return null;
-                        }
-                    }, GRID_CNT, "start");
-                }
-                finally {
-                    stopAllGrids();
-                }
-            }
-        }
-        finally {
-            stopAllGrids();
-        }
+//        for (int iter = 0; iter < 5; iter++) {
+//            for (int i = 0; i < 100_000; i++)
+//                cache.put(i, new TestObject(i % 1000));
+//
+//            for (int i = 0; i < 100_000; i++) {
+//                TestObject actual = cache.get(i);
+//
+//                assertEquals(new TestObject(i % 1000), actual);
+//            }
+//        }
     }
 
     /**
@@ -248,5 +241,38 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;
+    }
+
+    /**
+     *
+     */
+    private static class TestObject {
+        /** */
+        byte[] val;
+
+        /**
+         * @param val Value.
+         */
+        public TestObject(int val) {
+            this.val = new byte[val];
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestObject object = (TestObject)o;
+
+            return Arrays.equals(val, object.val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Arrays.hashCode(val);
+        }
     }
 }
