@@ -554,6 +554,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memPlc Memory policy.
      */
     public void ensureFreeSpace(MemoryPolicy memPlc) throws IgniteCheckedException {
+        if (memPlc == null)
+            return;
+
         MemoryPolicyConfiguration plcCfg = memPlc.config();
 
         if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
