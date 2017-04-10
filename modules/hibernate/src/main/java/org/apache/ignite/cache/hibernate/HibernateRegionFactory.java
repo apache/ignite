@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -111,7 +114,7 @@ public class HibernateRegionFactory implements RegionFactory {
     private final ThreadLocal threadLoc = new ThreadLocal();
 
     /** */
-    private Map<String, ThreadLocal> threadLocalMap = new HashMap<String, ThreadLocal>() ;
+    private ConcurrentMap<String, ThreadLocal> threadLocalMap = new ConcurrentHashMap<String, ThreadLocal>() ;
 
     /** {@inheritDoc} */
     @Override public void start(Settings settings, Properties props) throws CacheException {
@@ -228,7 +231,6 @@ public class HibernateRegionFactory implements RegionFactory {
                 threadLocalMap.put(cacheName, new ThreadLocal());
             }
             return threadLocalMap.get(cacheName);
-
         } else {
             return threadLoc;
         }
