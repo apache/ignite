@@ -30,6 +30,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -52,6 +53,8 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
         ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+
+        ccfg.setNodeFilter(new NodeFilter());
 
         TestCommunicationSpi spi = new TestCommunicationSpi();
 
@@ -146,6 +149,19 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
         }
         catch (InterruptedException e) {
             throw new IgniteSpiException(e);
+        }
+    }
+
+    /**
+     * Filters out server node producer.
+     */
+    private static class NodeFilter implements IgnitePredicate<ClusterNode> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return !("server3".equals(node.attribute("org.apache.ignite.ignite.name")));
         }
     }
 }
