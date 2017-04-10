@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -45,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             NameEnd = -1;
             NameStart = -1;
-            AssemblyIndex = -1;
+            AssemblyStart = -1;
 
             Parse();
         }
@@ -71,9 +72,24 @@ namespace Apache.Ignite.Core.Impl.Binary
         public int NameEnd { get; private set; }
 
         /// <summary>
-        /// Gets the index of the assembly.
+        /// Gets the start of the assembly name.
         /// </summary>
-        public int AssemblyIndex { get; private set; }
+        public int AssemblyStart { get; private set; }
+
+        /// <summary>
+        /// Gets the start of the assembly name.
+        /// </summary>
+        public int AssemblyEnd { get; private set; }
+
+        /// <summary>
+        /// Gets the start of the array definition.
+        /// </summary>
+        public int ArrayStart { get; private set; }
+
+        /// <summary>
+        /// Gets the start of the array definition.
+        /// </summary>
+        public int ArrayEnd { get; private set; }
 
         /// <summary>
         /// Gets the generics.
@@ -112,55 +128,102 @@ namespace Apache.Ignite.Core.Impl.Binary
             // 3) Array, starts with '['
             // 4) Assembly, starts with ',', ends with EOL or `]`
 
-            int bracket = 0;
-
-            for (; _pos < _typeName.Length; _pos++)
-            {
-                var ch = Char;
-
-                switch (ch)
-                {
-                    case '.':
-                        NameStart = _pos + 1;
-                        break;
-
-                    case '`':
-                        NameEnd = _pos - 1;
-                        ParseGenerics();
-                        break;
-
-                    case ',':
-                        if (bracket > 0)
-                            break;
-
-                        AssemblyIndex = _pos + 1;
-                        if (NameEnd < 0)
-                        {
-                            NameEnd = _pos - 1;
-                        }
-                        return;
-
-                    case '[':
-                        bracket++;
-                        break;
-
-                    case ']':
-                        bracket--;
-
-                        if (bracket < 0)
-                            return;
-
-                        break;
-                }
-            }
-
-            if (NameEnd < 0)
-                NameEnd = _typeName.Length - 1;
+            ParseTypeName();
+            ParseGeneric();
+            ParseArrayDefinition();
+            ParseAssemblyName();
         }
 
         private void ParseTypeName()
         {
-            
+            while (Shift())
+            {
+                if (Char == '.')
+                {
+                    NameStart = _pos + 1;
+                }
+
+                if (Char == '`' || Char == '[' || Char == ',' || Char == ' ')
+                    break;
+            }
+
+            NameEnd = _pos - 1;
+        }
+
+        private void ParseGeneric()
+        {
+            SkipSpaces();
+
+            if (Char != '`')
+                return;
+
+            int start = _pos + 1;
+
+            RequireShift();
+
+            if (!Digit)
+            {
+                throw new IgniteException("Invalid generic type name, '`' must be followed by a number: " + _typeName);
+            }
+
+            while (Digit && Shift())
+            {
+                // No-op.
+            }
+
+            var count = int.Parse(_typeName.Substring(start, _pos - start));
+            Generics = new List<TypeNameParser>(count);
+
+            SkipSpaces();
+
+            if (Char != '[')
+            {
+                throw new IgniteException("Invalid generic type name, number must be followed by '[': " + _typeName);
+            }
+
+            while (true)
+            {
+                RequireShift();
+
+                if (Char != '[')
+                {
+                    throw new IgniteException("Invalid generic type name, '[' must be followed by '[': " + _typeName);
+                }
+
+                RequireShift();
+
+                Generics.Add(new TypeNameParser(_typeName, _pos));
+
+                if (Char != ']')
+                {
+                    throw new IgniteException("Invalid generic type name, no matching ']': " + _typeName);
+                }
+
+                RequireShift();
+
+                if (Char == ']')
+                {
+                    Shift();
+                    return;
+                }
+
+                if (Char != ',')
+                {
+                    throw new IgniteException("Invalid generic type name, expected ',': " + _typeName);
+                }
+            }
+        }
+
+        private void ParseArrayDefinition()
+        {
+            // TODO: Just skip it?
+            while (Char=='[' || Char==']' || Char == ',')
+            {
+                if (!Shift())
+                {
+                    return;
+                }
+            }
         }
 
         private void ParseAssemblyName()
@@ -168,55 +231,41 @@ namespace Apache.Ignite.Core.Impl.Binary
             
         }
 
-        private void ParseArrayDefinition()
+        private bool Shift()
         {
-            
+            if (_pos < _typeName.Length - 1)
+            {
+                _pos++;
+                return true;
+            }
+
+            return false;
         }
 
-        private void ParseGenerics()
+        private void RequireShift()
         {
-            // TODO: Out of bounds checks
-            Debug.Assert(Char == '`');
-
-            int start = _pos + 1;
-
-            // Skip to types
-            while (Char != '[')
-                _pos++;
-
-            int count = int.Parse(_typeName.Substring(start, _pos - start));
-
-            Generics = new List<TypeNameParser>(count);
-
-            _pos++;
-
-            while (true)  // TODO: Invalid char detection.
+            if (!Shift())
             {
-                if (Char == ',' || Char == ' ')
-                {
-                    _pos++;
-                }
-
-                if (Char == '[')
-                {
-                    _pos++;
-
-                    Generics.Add(new TypeNameParser(_typeName, _pos));
-
-                    while (Char != ']')
-                    {
-                        _pos++;
-                    }
-
-                    _pos++;
-                }
-
-                if (Char == ']')
-                {
-                    _pos++;
-                    return ;
-                }
+                throw new IgniteException("Invalid type name - not enough data: " + _typeName);
             }
+        }
+
+        private void SkipSpaces()
+        {
+            while (Char == ' ' && Shift())
+            {
+                // No-op.
+            }
+        }
+
+        private bool End
+        {
+            get { return _pos >= _typeName.Length - 1; }
+        }
+
+        private bool Digit
+        {
+            get { return Char >= '0' && Char <= '9'; }
         }
 
         /// <summary>

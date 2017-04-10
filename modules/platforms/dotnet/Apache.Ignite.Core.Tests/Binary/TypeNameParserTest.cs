@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(7, res.NameStart);
             Assert.AreEqual(9, res.NameEnd);
             Assert.IsNull(res.Generics);
-            Assert.AreEqual(-1, res.AssemblyIndex);
+            Assert.AreEqual(-1, res.AssemblyStart);
 
             // With assembly.
             res = TypeNameParser.Parse("System.Int, myasm, Ver=1");
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(7, res.NameStart);
             Assert.AreEqual(9, res.NameEnd);
             Assert.IsNull(res.Generics);
-            Assert.AreEqual(11, res.AssemblyIndex);
+            Assert.AreEqual(11, res.AssemblyStart);
 
             // Real types.
             CheckType(GetType());
@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(type.Name, res.GetName());
             Assert.AreEqual(type.FullName, res.GetFullName());
-            Assert.AreEqual(type.FullName.Length + 1, res.AssemblyIndex);
+            Assert.AreEqual(type.FullName.Length + 1, res.AssemblyStart);
         }
     }
 }
