@@ -18,7 +18,12 @@
 package org.apache.ignite.math.decompositions;
 
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.exceptions.NonPositiveDefiniteMatrixException;
+import org.apache.ignite.math.exceptions.NonSymmetricMatrixException;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -45,8 +50,19 @@ public class CholeskyDecompositionTest {
         // to the method Cholesky::solve which returns solutions in the form
         // (sol1, sol2, ..., solm)
         CholeskyDecomposition dec = new CholeskyDecomposition(m);
-        assertNotNull("Matrix l is expected to be not null.", dec.getL());
-        assertNotNull("Matrix lt is expected to be not null.", dec.getLT());
+        assertEquals("Unexpected value for decomposition determinant.",
+            4d, dec.getDeterminant(), 0d);
+
+        Matrix l = dec.getL();
+        Matrix lt = dec.getLT();
+
+        assertNotNull("Matrix l is expected to be not null.", l);
+        assertNotNull("Matrix lt is expected to be not null.", lt);
+
+        for (int row = 0; row < l.rowSize(); row++)
+            for (int col = 0; col < l.columnSize(); col++)
+                assertEquals("Unexpected value transposed matrix at (" + row + "," + col + ").",
+                    l.get(row, col), lt.get(col, row), 0d);
 
         Matrix bs = new DenseLocalOnHeapMatrix(new double[][]{
             {4.0, -6.0, 7.0},
@@ -55,8 +71,65 @@ public class CholeskyDecompositionTest {
         Matrix sol = dec.solve(bs);
 
         assertNotNull("Solution matrix is expected to be not null.", sol);
+        assertEquals("Solution rows are not as expected.", bs.rowSize(), sol.rowSize());
+        assertEquals("Solution columns are not as expected.", bs.columnSize(), sol.columnSize());
 
         for (int i = 0; i < sol.columnSize(); i++)
             assertNotNull("Solution matrix column is expected to be not null at index " + i, sol.viewColumn(i));
+
+        Vector b = new DenseLocalOnHeapVector(new double[] {4.0, -6.0, 7.0});
+        Vector solVec = dec.solve(b);
+
+        for (int idx = 0; idx < b.size(); idx++)
+            assertEquals("Unexpected value solution vector at " + idx,
+                b.get(idx), solVec.get(idx), 0d);
+
+        dec.destroy();
+    }
+
+    /** */
+    @Test(expected = CardinalityException.class)
+    public void wrongMatrixSizeTest() {
+        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(2, 3));
+    }
+
+    /** */
+    @Test(expected = NonSymmetricMatrixException.class)
+    public void nonSymmetricMatrixTest() {
+        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
+            {2.0d,  -1.0d,  10.0d},
+            {-1.0d, 2.0d,  -1.0d},
+            {-10.0d, -1.0d, 2.0d}
+        }));
+    }
+
+    /** */
+    @Test(expected = NonPositiveDefiniteMatrixException.class)
+    public void nonAbsPositiveMatrixTest() {
+        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
+            {2.0d,  -1.0d,  0.0d},
+            {-1.0d, 0.0d,  -1.0d},
+            {0.0d, -1.0d, 2.0d}
+        }));
+    }
+
+    /** */
+    @Test(expected = CardinalityException.class)
+    public void solveWrongVectorSizeTest() {
+        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
+            {2.0d,  -1.0d,  0.0d},
+            {-1.0d, 2.0d,  -1.0d},
+            {0.0d, -1.0d, 2.0d}
+        })).solve(new DenseLocalOnHeapVector(2));
+    }
+
+    /** */
+    @Test(expected = CardinalityException.class)
+    public void solveWrongMatrixSizeTest() {
+        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
+            {2.0d,  -1.0d,  0.0d},
+            {-1.0d, 2.0d,  -1.0d},
+            {0.0d, -1.0d, 2.0d}
+        })).solve(new DenseLocalOnHeapMatrix(2, 3));
     }
 }
