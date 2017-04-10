@@ -293,7 +293,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             off += len + 1;
 
             if (depEnabled)
-                off += PageUtils.sizeIgniteUUID(PageUtils.getByte(addr, off));
+                off += PageUtils.sizeIgniteUuid(PageUtils.getByte(addr, off));
         }
 
         len = PageUtils.getInt(addr, off);

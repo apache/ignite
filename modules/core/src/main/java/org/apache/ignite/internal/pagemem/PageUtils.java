@@ -256,7 +256,7 @@ public class PageUtils {
      * @param b Ignite UUID null flag.
      * @return Size.
      */
-    public static int sizeIgniteUUID(Byte b) {
+    public static int sizeIgniteUuid(Byte b) {
         return (b == 0 ? IGNITE_UUID_NULL_SIZE : IGNITE_UUID_SIZE);
     }
 
@@ -265,7 +265,7 @@ public class PageUtils {
      * @param v1 Ignite UUIDs.
      * @return Size.
      */
-    public static int sizeIgniteUUID(IgniteUuid v, IgniteUuid v1) {
+    public static int sizeIgniteUuids(IgniteUuid v, IgniteUuid v1) {
         return (v == null ? IGNITE_UUID_NULL_SIZE : IGNITE_UUID_SIZE)
             + (v1 == null ? IGNITE_UUID_NULL_SIZE : IGNITE_UUID_SIZE);
     }
