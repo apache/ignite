@@ -18,9 +18,13 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.hibernate.cache.internal.DefaultCacheKeysFactory;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.persister.collection.CollectionPersister;
+import org.hibernate.persister.entity.EntityPersister;
 
 /**
- * Hibernate cache key wrapper.
+ *
  */
 public class HibernateKeyWrapper {
     /** Key. */
@@ -42,6 +46,38 @@ public class HibernateKeyWrapper {
         this.entry = entry;
         this.tenantId = tenantId;
     }
+
+    /**
+     * @return ID.
+     */
+    Object id() {
+        return key;
+    }
+
+    /**
+     * @param id ID.
+     * @param persister Persister.
+     * @param tenantIdentifier Tenant ID.
+     * @return Cache key.
+     * @see DefaultCacheKeysFactory#staticCreateCollectionKey(Object, CollectionPersister, SessionFactoryImplementor, String)
+     */
+    static Object staticCreateCollectionKey(Object id,
+        CollectionPersister persister,
+        String tenantIdentifier) {
+        return new HibernateKeyWrapper(id, persister.getRole(), tenantIdentifier);
+    }
+
+    /**
+     * @param id ID.
+     * @param persister Persister.
+     * @param tenantIdentifier Tenant ID.
+     * @return Cache key.
+     * @see DefaultCacheKeysFactory#staticCreateEntityKey(Object, EntityPersister, SessionFactoryImplementor, String)
+     */
+    public static Object staticCreateEntityKey(Object id, EntityPersister persister, String tenantIdentifier) {
+        return new HibernateKeyWrapper(id, persister.getRootEntityName(), tenantIdentifier);
+    }
+
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {

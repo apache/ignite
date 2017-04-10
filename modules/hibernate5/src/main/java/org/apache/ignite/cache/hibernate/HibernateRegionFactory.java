@@ -27,9 +27,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.G;
+import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
-import org.hibernate.cache.spi.CacheKey;
 import org.hibernate.cache.spi.CollectionRegion;
 import org.hibernate.cache.spi.EntityRegion;
 import org.hibernate.cache.spi.NaturalIdRegion;
@@ -37,7 +37,6 @@ import org.hibernate.cache.spi.QueryResultsRegion;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.TimestampsRegion;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.Settings;
 
 import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
 
@@ -112,22 +111,12 @@ public class HibernateRegionFactory implements RegionFactory {
     /** Key transformer. */
     private final HibernateKeyTransformer hibernate4transformer = new HibernateKeyTransformer() {
         @Override public Object transform(Object key) {
-            if (key instanceof CacheKey) {
-                CacheKey cacheKey = (CacheKey)key;
-
-                return new HibernateKeyWrapper(
-                    cacheKey.getKey(),
-                    cacheKey.getEntityOrRoleName(),
-                    cacheKey.getTenantId()
-                );
-            }
-
             return key;
         }
     };
 
     /** {@inheritDoc} */
-    @Override public void start(Settings settings, Properties props) throws CacheException {
+    @Override public void start(SessionFactoryOptions settings, Properties props) throws CacheException {
         String gridCfg = props.getProperty(GRID_CONFIG_PROPERTY);
         String igniteInstanceName = props.getProperty(IGNITE_INSTANCE_NAME_PROPERTY);
 
