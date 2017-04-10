@@ -40,7 +40,6 @@ public class TcpDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTest<Tcp
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "ackTimeout", 0);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "maxAckTimeout", 0);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "reconnectCount", 0);
-        checkNegativeSpiProperty(new TcpDiscoverySpi(), "heartbeatFrequency", 0);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "threadPriority", -1);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "maxMissedHeartbeats", 0);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "statisticsPrintFrequency", 0);

@@ -1472,7 +1472,7 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         // Set heartbeat interval to 1 second to speed up tests.
-        discoSpi.setHeartbeatFrequency(1000);
+        cfg.setMetricsUpdateFrequency(1000);
 
         String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
 

@@ -134,7 +134,6 @@ import org.jetbrains.annotations.Nullable;
  * configuration parameters may be used. As an example, for stable low-latency networks the following more aggressive
  * settings are recommended (which allows failure detection time ~200ms):
  * <ul>
- * <li>Heartbeat frequency (see {@link #setHeartbeatFrequency(long)}) - 100ms</li>
  * <li>Socket timeout (see {@link #setSocketTimeout(long)}) - 200ms</li>
  * <li>Message acknowledgement timeout (see {@link #setAckTimeout(long)}) - 50ms</li>
  * </ul>
@@ -162,7 +161,6 @@ import org.jetbrains.annotations.Nullable;
  * <li>Local port to bind to (see {@link #setLocalPort(int)})</li>
  * <li>Local port range to try binding to if previous ports are in use
  *      (see {@link #setLocalPortRange(int)})</li>
- * <li>Heartbeat frequency (see {@link #setHeartbeatFrequency(long)})</li>
  * <li>Max missed heartbeats (see {@link #setMaxMissedHeartbeats(int)})</li>
  * <li>Number of times node tries to (re)establish connection to another node
  *      (see {@link #setReconnectCount(int)})</li>
@@ -237,8 +235,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** Default value for thread priority (value is <tt>10</tt>). */
     public static final int DFLT_THREAD_PRI = 10;
 
-    /** Default heartbeat messages issuing frequency (value is <tt>2000ms</tt>). */
-    public static final long DFLT_HEARTBEAT_FREQ = 2000;
+    /** Default heartbeat messages issuing frequency (value is {@link IgniteConfiguration#DFLT_METRICS_UPDATE_FREQ}). */
+    public static final long DFLT_HEARTBEAT_FREQ = IgniteConfiguration.DFLT_METRICS_UPDATE_FREQ;
 
     /** Default size of topology snapshots history. */
     public static final int DFLT_TOP_HISTORY_SIZE = 1000;
@@ -956,22 +954,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
-     * Sets delay between issuing of heartbeat messages. SPI sends heartbeat messages
-     * in configurable time interval to other nodes to notify them about its state.
-     * <p>
-     * If not provided, default value is {@link #DFLT_HEARTBEAT_FREQ}.
-     *
-     * @param hbFreq Heartbeat frequency in milliseconds.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpDiscoverySpi setHeartbeatFrequency(long hbFreq) {
-        this.hbFreq = hbFreq;
-
-        return this;
-    }
-
-    /**
      * @return Size of topology snapshots history.
      */
     public long getTopHistorySize() {
@@ -1158,19 +1140,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
-     * Gets delay between heartbeat messages sent by coordinator.
-     *
-     * @return Time period in milliseconds.
-     */
-    public long getHeartbeatFrequency() {
-        return hbFreq;
-    }
-
-    /**
      * Gets {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} (string representation).
      *
      * @return IPFinder (string representation).
-     */public String getIpFinderFormatted() {
+     */
+    public String getIpFinderFormatted() {
         return ipFinder.toString();
     }
 
@@ -1876,6 +1850,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
             impl = new ServerImpl(this);
         }
 
+        hbFreq = ignite.configuration().getMetricsUpdateFrequency();
+
         if (!failureDetectionTimeoutEnabled()) {
             assertParameter(sockTimeout > 0, "sockTimeout > 0");
             assertParameter(ackTimeout > 0, "ackTimeout > 0");
@@ -1885,7 +1861,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
         assertParameter(netTimeout > 0, "networkTimeout > 0");
         assertParameter(ipFinder != null, "ipFinder != null");
-        assertParameter(hbFreq > 0, "heartbeatFreq > 0");
+        assertParameter(hbFreq > 0, "heartbeatFreq > 0 (inited from igniteConfiguration.MetricsUpdateFrequency)");
 
         assertParameter(ipFinderCleanFreq > 0, "ipFinderCleanFreq > 0");
         assertParameter(locPort > 1023, "localPort > 1023");
@@ -2281,11 +2257,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         /** {@inheritDoc} */
         @Override public int getThreadPriority() {
             return TcpDiscoverySpi.this.getThreadPriority();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getHeartbeatFrequency() {
-            return TcpDiscoverySpi.this.getHeartbeatFrequency();
         }
 
         /** {@inheritDoc} */

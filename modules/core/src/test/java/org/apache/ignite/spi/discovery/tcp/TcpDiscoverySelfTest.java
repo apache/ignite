@@ -154,8 +154,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         spi.setNetworkTimeout(2500);
 
-        spi.setHeartbeatFrequency(1000);
-
         spi.setMaxMissedHeartbeats(3);
 
         spi.setIpFinderCleanFrequency(5000);
@@ -173,12 +171,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
+        cfg.setMetricsUpdateFrequency(1000);
+
         if (!igniteInstanceName.contains("LoopbackProblemTest"))
             cfg.setLocalHost("127.0.0.1");
 
         if (igniteInstanceName.contains("testFailureDetectionOnNodePing")) {
             spi.setReconnectCount(1); // To make test faster: on Windows 1 connect takes 1 second.
-            spi.setHeartbeatFrequency(40000);
+
+            cfg.setMetricsUpdateFrequency(40000);
         }
 
         cfg.setConnectorConfiguration(null);

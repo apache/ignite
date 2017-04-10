@@ -68,6 +68,8 @@
 
         <property name="peerClassLoadingThreadPoolSize" value="100"/>
 
+        <property name="metricsUpdateFrequency" value="10000"/>
+
         <!-- Discovery SPI configuration. -->
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -75,7 +77,6 @@
                 <property name="socketTimeout" value="5000"/>
                 <property name="ackTimeout" value="5000"/>
 
-                <property name="heartbeatFrequency" value="10000"/>
                 <property name="maxMissedHeartbeats" value="6"/>
 
                 <property name="statisticsPrintFrequency" value="60000"/>
