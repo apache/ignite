@@ -126,7 +126,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
             try {
                 if (PageIO.getType(pageAddr) != PageIO.T_DATA)
-                    return false; // Can't evict: page has been recycled into non-data page
+                    return false; // Can't evict: page has been recycled into non-data page.
 
                 DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
@@ -152,7 +152,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             finally {
                 pageMem.readUnlock(0, fakePageId, page);
             }
-        } finally {
+        }
+        finally {
             pageMem.releasePage(0, fakePageId, page);
         }
 

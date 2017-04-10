@@ -2673,6 +2673,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key, topVer);
 
                                 try {
+                                    cacheCtx.shared().database().ensureFreeSpace(cacheCtx.memoryPolicy());
+
                                     EntryGetResult verVal = entry.versionedValue(cacheVal,
                                         ver,
                                         null,
