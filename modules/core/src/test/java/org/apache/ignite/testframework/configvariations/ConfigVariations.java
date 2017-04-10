@@ -45,7 +45,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 
 import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
@@ -104,7 +103,7 @@ public class ConfigVariations {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigParameter[][] {
-        Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), optimizedMarshallerFactory()),
+        Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), binaryMarshallerFactory()),
         Parameters.booleanParameters("setPeerClassLoadingEnabled"),
         Parameters.objectParameters("setSwapSpaceSpi", Parameters.factory(GridTestSwapSpaceSpi.class)),
     };
@@ -215,14 +214,10 @@ public class ConfigVariations {
     /**
      * @return Marshaller.
      */
-    public static Factory<OptimizedMarshaller> optimizedMarshallerFactory() {
-        return new Factory<OptimizedMarshaller>() {
-            @Override public OptimizedMarshaller create() {
-                OptimizedMarshaller marsh = new OptimizedMarshaller(true);
-
-                marsh.setRequireSerializable(false);
-
-                return marsh;
+    public static Factory<BinaryMarshaller> binaryMarshallerFactory() {
+        return new Factory<BinaryMarshaller>() {
+            @Override public BinaryMarshaller create() {
+                return new BinaryMarshaller();
             }
         };
     }

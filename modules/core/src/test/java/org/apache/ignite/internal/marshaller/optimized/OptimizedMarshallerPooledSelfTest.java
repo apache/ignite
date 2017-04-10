@@ -15,8 +15,30 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.marshaller.optimized;
+
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
+
 /**
- * <!-- Package description. -->
- * Optimized marchalling test package.
+ * Optimized marshaller self test.
  */
-package org.apache.ignite.marshaller.optimized;
+@GridCommonTest(group = "Marshaller")
+public class OptimizedMarshallerPooledSelfTest extends OptimizedMarshallerSelfTest {
+    /** {@inheritDoc} */
+    @Override protected Marshaller marshaller() {
+        OptimizedMarshaller m = new OptimizedMarshaller(false);
+
+        m.setPoolSize(8);
+
+        return m;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        // Reset static registry.
+        new OptimizedMarshaller().setPoolSize(0);
+    }
+}

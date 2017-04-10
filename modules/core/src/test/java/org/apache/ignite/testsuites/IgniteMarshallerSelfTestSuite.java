@@ -20,17 +20,17 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2ByteOrderSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerPooledSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamSelfTest;
 import org.apache.ignite.internal.util.GridHandleTableSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInputOutputByteOrderSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerPooledSelfTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSelfTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshallerTest;
-import org.apache.ignite.marshaller.optimized.OptimizedObjectStreamSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**

@@ -15,36 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized;
-
 /**
- * Field type used to calculate {@code Unsafe} offsets into objects.
+ * <!-- Package description. -->
+ * Optimized marchalling test package.
  */
-enum OptimizedFieldType {
-    /** */
-    BYTE,
-
-    /** */
-    SHORT,
-
-    /** */
-    INT,
-
-    /** */
-    LONG,
-
-    /** */
-    FLOAT,
-
-    /** */
-    DOUBLE,
-
-    /** */
-    CHAR,
-
-    /** */
-    BOOLEAN,
-
-    /** */
-    OTHER
-}
+package org.apache.ignite.internal.marshaller.optimized;

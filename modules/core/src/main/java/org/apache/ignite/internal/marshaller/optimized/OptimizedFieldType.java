@@ -15,19 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized;
+package org.apache.ignite.internal.marshaller.optimized;
 
 /**
- * ID mapper.
+ * Field type used to calculate {@code Unsafe} offsets into objects.
  */
-public interface OptimizedMarshallerIdMapper {
-    /**
-     * Gets type ID for provided class name.
-     * <p>
-     * If {@code 0} is returned, hash code of class name will be used.
-     *
-     * @param clsName Class name.
-     * @return Type ID.
-     */
-    public int typeId(String clsName);
+enum OptimizedFieldType {
+    /** */
+    BYTE,
+
+    /** */
+    SHORT,
+
+    /** */
+    INT,
+
+    /** */
+    LONG,
+
+    /** */
+    FLOAT,
+
+    /** */
+    DOUBLE,
+
+    /** */
+    CHAR,
+
+    /** */
+    BOOLEAN,
+
+    /** */
+    OTHER
 }

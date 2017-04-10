@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized;
+package org.apache.ignite.internal.marshaller.optimized;
 
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteCheckedException;

@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc;
-
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+package org.apache.ignite.internal.marshaller.optimized;
 
 /**
- * Test for {@link CacheJdbcPojoStore} with optimized marshaller.
+ * ID mapper.
  */
-public class CacheJdbcPojoStoreOptimizedMarshallerSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected Marshaller marshaller(){
-        return new OptimizedMarshaller();
-    }
+public interface OptimizedMarshallerIdMapper {
+    /**
+     * Gets type ID for provided class name.
+     * <p>
+     * If {@code 0} is returned, hash code of class name will be used.
+     *
+     * @param clsName Class name.
+     * @return Type ID.
+     */
+    public int typeId(String clsName);
 }

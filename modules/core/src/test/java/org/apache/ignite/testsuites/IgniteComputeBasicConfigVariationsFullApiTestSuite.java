@@ -37,7 +37,7 @@ public class IgniteComputeBasicConfigVariationsFullApiTestSuite extends TestSuit
         Parameters.objectParameters("setMarshaller",
             Parameters.factory(JdkMarshaller.class),
             Parameters.factory(BinaryMarshaller.class),
-            ConfigVariations.optimizedMarshallerFactory()
+            ConfigVariations.binaryMarshallerFactory()
         ),
         Parameters.booleanParameters("setPeerClassLoadingEnabled"),
         Parameters.booleanParameters("setMarshalLocalJobs"),

@@ -15,14 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc;
+package org.apache.ignite.internal.marshaller.optimized;
+
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 
 /**
- * Test for {@link CacheJdbcPojoStore} with optimized marshaller and enabled SQL escaping.
+ * Test TCP discovery IP finder adapter.
  */
-public class CacheJdbcPojoStoreOptimizedMarshallerWithSqlEscapeSelfTest extends CacheJdbcPojoStoreOptimizedMarshallerSelfTest {
+public class TestTcpDiscoveryIpFinderAdapter extends TcpDiscoveryIpFinderAdapter {
     /** {@inheritDoc} */
-    @Override protected boolean sqlEscapeAll(){
-        return true;
+    @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
+        // No-op.
     }
 }
