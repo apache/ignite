@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -76,77 +77,148 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testInsertDeleteSingleThreaded_1024() throws Exception {
-        checkInsertDeleteSingleThreaded(1024);
+        checkInsertDeleteSingleThreaded(1024, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteSingleThreadedDeploymentEnabled_1024() throws Exception {
+        checkInsertDeleteSingleThreaded(1024, true);
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testInsertDeleteSingleThreaded_2048() throws Exception {
-        checkInsertDeleteSingleThreaded(2048);
+        checkInsertDeleteSingleThreaded(2048, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteSingleThreadedDeploymentEnabled_2048() throws Exception {
+        checkInsertDeleteSingleThreaded(2048, true);
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testInsertDeleteSingleThreaded_4096() throws Exception {
-        checkInsertDeleteSingleThreaded(4096);
+        checkInsertDeleteSingleThreaded(4096, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteSingleThreadedDeploymentEnabled_4096() throws Exception {
+        checkInsertDeleteSingleThreaded(4096, true);
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testInsertDeleteSingleThreaded_8192() throws Exception {
-        checkInsertDeleteSingleThreaded(8192);
+        checkInsertDeleteSingleThreaded(8192, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteSingleThreadedDeploymentEnabled_8192() throws Exception {
+        checkInsertDeleteSingleThreaded(8192, true);
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testInsertDeleteSingleThreaded_16384() throws Exception {
-        checkInsertDeleteSingleThreaded(16384);
+        checkInsertDeleteSingleThreaded(16384, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteSingleThreadedDeploymentEnabled_16384() throws Exception {
+        checkInsertDeleteSingleThreaded(16384, true);
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testInsertDeleteMultiThreaded_1024() throws Exception {
-        checkInsertDeleteMultiThreaded(1024);
+        checkInsertDeleteMultiThreaded(1024, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteMultiThreadedDeploymentEnabled_1024() throws Exception {
+        checkInsertDeleteMultiThreaded(1024, true);
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testInsertDeleteMultiThreaded_2048() throws Exception {
-        checkInsertDeleteMultiThreaded(2048);
+        checkInsertDeleteMultiThreaded(2048, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteMultiThreadedDeploymentEnabled_2048() throws Exception {
+        checkInsertDeleteMultiThreaded(2048, true);
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testInsertDeleteMultiThreaded_4096() throws Exception {
-        checkInsertDeleteMultiThreaded(4096);
+        checkInsertDeleteMultiThreaded(4096, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteMultiThreadedDeploymentEnabled_4096() throws Exception {
+        checkInsertDeleteMultiThreaded(4096, true);
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testInsertDeleteMultiThreaded_8192() throws Exception {
-        checkInsertDeleteMultiThreaded(8192);
+        checkInsertDeleteMultiThreaded(8192, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteMultiThreadedDeploymentEnabled_8192() throws Exception {
+        checkInsertDeleteMultiThreaded(8192, true);
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testInsertDeleteMultiThreaded_16384() throws Exception {
-        checkInsertDeleteMultiThreaded(16384);
+        checkInsertDeleteMultiThreaded(16384, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testInsertDeleteMultiThreadedDeploymentEnabled_16384() throws Exception {
+        checkInsertDeleteMultiThreaded(16384, true);
     }
 
     /**
      * @param pageSize Page size.
-     * @throws Exception
+     * @param depEnabled Deployment enabled.
+     * @throws Exception If failed.
      */
-    protected void checkInsertDeleteMultiThreaded(final int pageSize) throws Exception {
+    protected void checkInsertDeleteMultiThreaded(final int pageSize, final boolean depEnabled) throws Exception {
         final FreeList list = createFreeList(pageSize);
 
         Random rnd = new Random();
@@ -157,7 +229,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
             int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
             int valSize = rnd.nextInt(pageSize * 5 / 2) + 10;
 
-            TestDataRow row = new TestDataRow(keySize, valSize);
+            TestDataRow row = new TestDataRow(keySize, valSize, depEnabled);
 
             list.insertDataRow(row);
 
@@ -200,7 +272,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
                         int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
                         int valSize = rnd.nextInt(pageSize * 3 / 2) + 10;
 
-                        TestDataRow row = new TestDataRow(keySize, valSize);
+                        TestDataRow row = new TestDataRow(keySize, valSize, depEnabled);
 
                         list.insertDataRow(row);
 
@@ -237,7 +309,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    protected void checkInsertDeleteSingleThreaded(int pageSize) throws Exception {
+    protected void checkInsertDeleteSingleThreaded(int pageSize, boolean depEnabled) throws Exception {
         FreeList list = createFreeList(pageSize);
 
         Random rnd = new Random();
@@ -248,7 +320,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
             int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
             int valSize = rnd.nextInt(pageSize * 5 / 2) + 10;
 
-            TestDataRow row = new TestDataRow(keySize, valSize);
+            TestDataRow row = new TestDataRow(keySize, valSize, depEnabled);
 
             list.insertDataRow(row);
 
@@ -283,7 +355,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
                 int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
                 int valSize = rnd.nextInt(pageSize * 3 / 2) + 10;
 
-                TestDataRow row = new TestDataRow(keySize, valSize);
+                TestDataRow row = new TestDataRow(keySize, valSize, depEnabled);
 
                 list.insertDataRow(row);
 
@@ -354,14 +426,38 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         /** */
         private GridCacheVersion ver;
 
+        /** */
+        private boolean depEnabled;
+
+        /** */
+        private IgniteUuid keyClsLdr;
+
+        /** */
+        private IgniteUuid valClsLdr;
+
         /**
          * @param keySize Key size.
          * @param valSize Value size.
          */
         private TestDataRow(int keySize, int valSize) {
+            this(keySize, valSize, false);
+        }
+
+        /**
+         * @param keySize Key size.
+         * @param valSize Value size.
+         * @param depEnabled Deployment enabled.
+         */
+        private TestDataRow(int keySize, int valSize, boolean depEnabled) {
             key = new TestCacheObject(keySize);
             val = new TestCacheObject(valSize);
             ver = new GridCacheVersion(keySize, valSize, 0L, 1);
+
+            if (depEnabled) {
+                this.depEnabled = true;
+                keyClsLdr = new IgniteUuid(new UUID(keySize, valSize), 0L);
+                valClsLdr = new IgniteUuid(new UUID(keySize, valSize), 0L);
+            }
         }
 
         /** {@inheritDoc} */
@@ -411,17 +507,17 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean deploymentEnabled() {
-            return false;
+            return depEnabled;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteUuid keyClassLoader() {
-            return null;
+            return keyClsLdr;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteUuid valueClassLoader() {
-            return null;
+            return valClsLdr;
         }
     }
 

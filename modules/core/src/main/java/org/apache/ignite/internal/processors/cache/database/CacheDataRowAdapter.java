@@ -279,7 +279,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
             if (depEnabled) {
                 keyClsLdrId = PageUtils.getIgniteUuid(addr, off);
-                off += PageUtils.sizeIgniteUUID(keyClsLdrId);
+                off += PageUtils.sizeIgniteUuid(keyClsLdrId);
 
                 key = coctx.processor().toKeyCacheObject(coctx, type, bytes, keyClsLdrId);
             }
@@ -310,7 +310,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         else {
             valClsLdrId = PageUtils.getIgniteUuid(addr, off);
 
-            off += PageUtils.sizeIgniteUUID(valClsLdrId);
+            off += PageUtils.sizeIgniteUuid(valClsLdrId);
 
             val = coctx.processor().toCacheObject(coctx, type, bytes, valClsLdrId);
         }

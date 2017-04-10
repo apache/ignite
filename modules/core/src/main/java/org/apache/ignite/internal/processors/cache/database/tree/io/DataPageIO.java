@@ -1007,8 +1007,8 @@ public class DataPageIO extends PageIO {
     ) throws IgniteCheckedException {
         final int keySize = row.key().valueBytesLength(null);
         final int valSize = row.value().valueBytesLength(null);
-        final int keyClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUUID(row.keyClassLoader()) : 0;
-        final int valClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUUID(row.valueClassLoader()) : 0;
+        final int keyClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUuid(row.keyClassLoader()) : 0;
+        final int valClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUuid(row.valueClassLoader()) : 0;
 
         int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.KEY, keySize, valSize, keyClsLdrSize, valClsLdrSize);
 
@@ -1174,7 +1174,7 @@ public class DataPageIO extends PageIO {
      * @param prevLen previous length.
      */
     private void writeUuidFragment(ByteBuffer buf, IgniteUuid uuid, int rowOff, int len, int prevLen) {
-        int size = PageUtils.sizeIgniteUUID(uuid);
+        int size = PageUtils.sizeIgniteUuid(uuid);
 
         if (size <= len)
             writeUuidToBuffer(buf, uuid);
@@ -1412,7 +1412,7 @@ public class DataPageIO extends PageIO {
             addr += (2 + row.key().valueBytesLength(null));
 
             if (row.deploymentEnabled())
-                addr += PageUtils.sizeIgniteUUID(row.keyClassLoader());
+                addr += PageUtils.sizeIgniteUuid(row.keyClassLoader());
         }
 
         addr += row.value().putValue(addr);
