@@ -403,14 +403,16 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         calculateAffinity(5);
         calculateAffinity(6);
 
-        checkAffinity(2, topVer(6, 0), true);
+        checkAffinity(2, topVer(6, 0), false);
+
+        checkAffinity(2, topVer(6, 1), true);
 
         assertNull(((IgniteKernal)ignite(2)).context().cache().internalCache(CACHE_NAME1));
         assertNotNull(((IgniteKernal)ignite(3)).context().cache().internalCache(CACHE_NAME1));
 
         assertNotNull(ignite(2).cache(CACHE_NAME1));
 
-        checkAffinity(2, topVer(6, 0), true);
+        checkAffinity(2, topVer(6, 1), true);
 
         startServer(4, 7);
 
@@ -2257,11 +2259,13 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         if (!aff1.equals(aff2)) {
             for (int i = 0; i < aff1.size(); i++) {
-                assertEquals("Wrong affinity [node=" + node.name() +
-                    ", topVer=" + topVer +
-                    ", cache=" + cacheName +
-                    ", part=" + i + ']',
-                    F.nodeIds(aff1.get(i)), F.nodeIds(aff2.get(i)));
+                if (!aff1.get(i).equals(aff2.get(i))) {
+                    assertEquals("Wrong affinity [node=" + node.name() +
+                            ", topVer=" + topVer +
+                            ", cache=" + cacheName +
+                            ", part=" + i + ']',
+                        F.nodeIds(aff1.get(i)), F.nodeIds(aff2.get(i)));
+                }
             }
 
             fail();

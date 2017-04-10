@@ -552,6 +552,16 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
 
+    /**
+     * When set to {@code true} (default) then additional effort is taken to make partition distribution even
+     * across cache topology. However, this may lead to additional workload during cache rebalancing if
+     * topology changes (i.e. nodes join or leave the topology) in order to preserve even distribution.
+     * If set to {@code false} then partition distribution is governed by hash comparisons only,
+     * which may lead to uneven distribution, which in turn leads to uneven load between nodes
+     * and performance degradation. Therefore should be used only when balanced mode is proven to cause problems.
+     */
+    public static final String IGNITE_RENDEZVOUS_AFF_BALANCED = "IGNITE_RENDEZVOUS_AFF_BALANCED";
+
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
         @Override public boolean apply(final Map.Entry<String, String> entry) {
