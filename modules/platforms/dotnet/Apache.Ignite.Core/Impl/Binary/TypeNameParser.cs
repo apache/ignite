@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     using System.Collections.Generic;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -43,6 +42,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             _typeName = typeName;
             _start = start;
+            _pos = _start;
 
             NameEnd = -1;
             NameStart = -1;
