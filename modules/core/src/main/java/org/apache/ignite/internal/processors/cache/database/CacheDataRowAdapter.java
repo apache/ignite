@@ -187,7 +187,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean keyOnly,
         IncompleteObject<?> incomplete
     ) throws IgniteCheckedException {
-        boolean depEnabled = coctx.kernalContext().cache().context().deploymentEnabled();
+        boolean depEnabled = coctx.addDeploymentInfo();
         IncompleteCacheObject keyIncomplete = null;
 
         // Read key.

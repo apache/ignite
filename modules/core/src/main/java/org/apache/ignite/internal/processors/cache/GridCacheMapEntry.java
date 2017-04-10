@@ -3277,12 +3277,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param writeVer Write version.
      * @param expireTime Expire time.
      * @param updCntr Update counter.
-     * @param p2pEnabled P2P enabled flag.
+     * @param depEnabled P2P enabled flag.
      * @param keyClsLdrId Key class loader ID.
      * @param valClsLdrId Value class loader ID.
      */
     protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long expireTime,
-        long updCntr, boolean p2pEnabled, IgniteUuid keyClsLdrId, IgniteUuid valClsLdrId)
+        long updCntr, boolean depEnabled, IgniteUuid keyClsLdrId, IgniteUuid valClsLdrId)
         throws IgniteCheckedException {
         // We log individual updates only in ATOMIC cache.
         assert cctx.atomic();
@@ -3299,7 +3299,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     expireTime,
                     partition(),
                     updCntr,
-                    p2pEnabled,
+                    depEnabled,
                     keyClsLdrId,
                     valClsLdrId)));
         }

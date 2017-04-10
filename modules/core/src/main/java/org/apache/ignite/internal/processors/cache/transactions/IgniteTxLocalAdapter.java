@@ -651,12 +651,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         IgniteUuid valClsLdrId = null;
                                         IgniteUuid keyClsLdrId = null;
 
-                                        if (cctx.deploymentEnabled()) {
+                                        if (cacheCtx.deploymentEnabled()) {
                                             if (val != null)
-                                                valClsLdrId = cctx.deploy().getClassLoaderId(
+                                                valClsLdrId = cacheCtx.deploy().getClassLoaderId(
                                                     U.detectObjectClassLoader(val.value(cacheCtx.cacheObjectContext(), false)));
 
-                                            keyClsLdrId = cctx.deploy().getClassLoaderId(
+                                            keyClsLdrId = cacheCtx.deploy().getClassLoaderId(
                                                 U.detectObjectClassLoader(cached.key().value(cacheCtx.cacheObjectContext(), false)));
                                         }
 
@@ -670,7 +670,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             0,
                                             txEntry.key().partition(),
                                             txEntry.updateCounter(),
-                                            cctx.deploymentEnabled(),
+                                            cacheCtx.deploymentEnabled(),
                                             keyClsLdrId,
                                             valClsLdrId)));
                                     }
