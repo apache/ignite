@@ -22,6 +22,7 @@ import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.storage.vector.FunctionVectorStorage;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -37,17 +38,17 @@ import static org.junit.Assert.assertNotNull;
 class VectorImplementationsFixtures {
     /** */
     private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
-//        (Supplier<Iterable<Vector>>) DenseLocalOnHeapVectorFixture::new,
-//        (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
-//        (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
-//        (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
-//        (Supplier<Iterable<Vector>>) ConstantVectorFixture::new,
-//        (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new,
-//        (Supplier<Iterable<Vector>>) FunctionVectorFixture::new,
-//        (Supplier<Iterable<Vector>>) SingleElementVectorFixture::new,
-//        (Supplier<Iterable<Vector>>) PivotedVectorViewFixture::new,
-//        (Supplier<Iterable<Vector>>) SingleElementVectorViewFixture::new,
-//        (Supplier<Iterable<Vector>>) MatrixVectorViewFixture::new,
+        (Supplier<Iterable<Vector>>) DenseLocalOnHeapVectorFixture::new,
+        (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
+        (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
+        (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
+        (Supplier<Iterable<Vector>>) ConstantVectorFixture::new,
+        (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new,
+        (Supplier<Iterable<Vector>>) FunctionVectorFixture::new,
+        (Supplier<Iterable<Vector>>) SingleElementVectorFixture::new,
+        (Supplier<Iterable<Vector>>) PivotedVectorViewFixture::new,
+        (Supplier<Iterable<Vector>>) SingleElementVectorViewFixture::new,
+        (Supplier<Iterable<Vector>>) MatrixVectorViewFixture::new,
         (Supplier<Iterable<Vector>>) SparseLocalOffHeapVectorFixture::new
     );
 
@@ -150,6 +151,7 @@ class VectorImplementationsFixtures {
         }
 
         /** {@inheritDoc} */
+        @NotNull
         @Override public Iterator<Vector> iterator() {
             return iter.get();//(
         }
@@ -215,6 +217,7 @@ class VectorImplementationsFixtures {
         }
 
         /** {@inheritDoc} */
+        @NotNull
         @Override public Iterator<Vector> iterator() {
             return iter.get();
         }
@@ -257,6 +260,7 @@ class VectorImplementationsFixtures {
         }
 
         /** {@inheritDoc} */
+        @NotNull
         @Override public Iterator<Vector> iterator() {
             return iter.get();
         }
@@ -280,6 +284,7 @@ class VectorImplementationsFixtures {
         }
 
         /** {@inheritDoc} */
+        @NotNull
         @Override public Iterator<Vector> iterator() {
             return iter.get();
         }
@@ -527,6 +532,7 @@ class VectorImplementationsFixtures {
         }
 
         /** {@inheritDoc} */
+        @NotNull
         @Override public Iterator<Vector> iterator() {
             return iter.get();
         }
@@ -603,6 +609,7 @@ class VectorImplementationsFixtures {
         }
     }
 
+    /** */
     private static class SparseLocalOffHeapVectorFixture extends VectorSizesFixture{
 
         /** */
