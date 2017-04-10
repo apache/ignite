@@ -67,6 +67,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpiMBean;
@@ -674,6 +676,18 @@ public class PlatformConfigurationUtils {
         }
 
         readPluginConfiguration(cfg, in);
+
+        switch (in.readByte()) {
+            case 1:
+                cfg.setEventStorageSpi(new NoopEventStorageSpi());
+                break;
+
+            case 2:
+                cfg.setEventStorageSpi(new MemoryEventStorageSpi()
+                        .setExpireCount(in.readLong())
+                        .setExpireAgeMs(in.readLong()));
+                break;
+        }
     }
 
     /**
