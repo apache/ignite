@@ -53,6 +53,16 @@ public interface PageSupport {
     public long readLock(int cacheId, long pageId, long page);
 
     /**
+     * Obtains read lock without checking page tag.
+     *
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @return Pointer for reading the page.
+     */
+    public long readLockForce(int cacheId, long pageId, long page);
+
+    /**
      * Releases locked page.
      *
      * @param cacheId Cache ID.

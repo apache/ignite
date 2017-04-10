@@ -27,10 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO GG-11140.
- *
- * Temporary implementation, ignores configured EvictionPolicy, evictions to be reconsidered as
- * part of GG-11140.
  *
  */
 public class CacheOffheapEvictionManager extends GridCacheManagerAdapter implements CacheEvictionManager {
@@ -51,7 +47,7 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
                 return;
             }
 
-            boolean evicted = e.evictInternal(GridCacheVersionManager.EVICT_VER, null);
+            boolean evicted = e.evictInternal(GridCacheVersionManager.EVICT_VER, null, false);
 
             if (evicted)
                 cctx.cache().removeEntry(e);
