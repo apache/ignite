@@ -923,5 +923,10 @@
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<IPluginConfiguration> PluginConfigurations { get; set; }
+
+        /// <summary>
+        /// Gets or sets the event storage interface.
+        /// </summary>
+        public IEventStorageSpi EventStorageSpi { get; set; }
     }
 }
