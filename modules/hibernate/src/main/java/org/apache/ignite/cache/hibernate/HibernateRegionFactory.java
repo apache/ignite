@@ -228,8 +228,10 @@ public class HibernateRegionFactory implements RegionFactory {
                 threadLocalMap.put(cacheName, new ThreadLocal());
             }
             return threadLocalMap.get(cacheName);
+
         } else {
             return threadLoc;
+
         }
     }
 
