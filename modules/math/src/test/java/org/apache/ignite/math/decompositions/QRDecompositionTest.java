@@ -41,8 +41,8 @@ public class QRDecompositionTest {
         Matrix q = dec.getQ();
         Matrix r = dec.getR();
 
-        assertNotNull("Matrix l is expected to be not null.", q);
-        assertNotNull("Matrix lt is expected to be not null.", r);
+        assertNotNull("Matrix q is expected to be not null.", q);
+        assertNotNull("Matrix r is expected to be not null.", r);
 
         Matrix expIdentity = q.times(q.transpose());
 
