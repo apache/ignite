@@ -26,12 +26,18 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class TypeNameParser
     {
+        /** */
         private readonly int _start;
 
+        /** */
         private readonly string _typeName;
 
+        /** */
         private int _pos;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TypeNameParser" /> class.
+        /// </summary>
         private TypeNameParser(string typeName, int start = 0)
         {
             _typeName = typeName;
@@ -44,6 +50,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             Parse();
         }
 
+        /// <summary>
+        /// Parses the specified type name.
+        /// </summary>
         public static TypeNameParser Parse(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
@@ -51,25 +60,46 @@ namespace Apache.Ignite.Core.Impl.Binary
             return new TypeNameParser(typeName);
         }
 
+        /// <summary>
+        /// Gets the name start.
+        /// </summary>
         public int NameStart { get; private set; }
 
+        /// <summary>
+        /// Gets the name end.
+        /// </summary>
         public int NameEnd { get; private set; }
 
+        /// <summary>
+        /// Gets the index of the assembly.
+        /// </summary>
         public int AssemblyIndex { get; private set; }
 
+        /// <summary>
+        /// Gets the generics.
+        /// </summary>
         public ICollection<TypeNameParser> Generics { get; private set; }
 
+        /// <summary>
+        /// Gets the type name (without namespace).
+        /// </summary>
         public string GetName()
         {
             return _typeName.Substring(NameStart, NameEnd - NameStart + 1);
         }
 
+        /// <summary>
+        /// Gets the full type name (with namespace).
+        /// </summary>
         public string GetFullName()
         {
             return _typeName.Substring(_start, NameEnd - _start + 1);
         }
 
 
+        /// <summary>
+        /// Parses this instance.
+        /// </summary>
         private void Parse()
         {
             // Example:
@@ -189,6 +219,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
+        /// <summary>
+        /// Gets the current character.
+        /// </summary>
         private char Char
         {
             get { return _typeName[_pos]; }

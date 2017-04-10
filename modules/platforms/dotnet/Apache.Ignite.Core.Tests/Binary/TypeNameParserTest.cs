@@ -85,6 +85,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Tests invalid type names.
+        /// </summary>
+        [Test]
+        public void TestInvalidTypes()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Checks the type.
         /// </summary>
         private static void CheckType(Type type)
