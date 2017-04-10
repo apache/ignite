@@ -849,6 +849,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         SchemaIndexCacheVisitorClosure clo = new SchemaIndexCacheVisitorClosure() {
             @Override public void apply(KeyCacheObject key, CacheObject val, long expTime)
                 throws IgniteCheckedException {
+                if (expTime == 0L)
+                    expTime = Long.MAX_VALUE;
+
                 GridH2Row row = rowDesc.createRow(key, val, expTime);
 
                 idx0.put(row);
