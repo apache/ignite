@@ -17,13 +17,14 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /** */
 public class RandomVectorConstructorTest {
@@ -87,5 +88,45 @@ public class RandomVectorConstructorTest {
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new RandomVector(-1).size());
+    }
+
+    /** */ @Test
+    public void basicTest() {
+        final int basicSize = 3;
+
+        Vector v1 = new RandomVector(basicSize);
+
+        //noinspection EqualsWithItself
+        assertTrue("Expect vector to be equal to self", v1.equals(v1));
+
+        //noinspection ObjectEqualsNull
+        assertFalse("Expect vector to be not equal to null", v1.equals(null));
+
+        assertEquals("Size differs from expected", basicSize, v1.size());
+
+        verifyValues(v1);
+
+        Vector v2 = new RandomVector(basicSize, true);
+
+        assertEquals("Size differs from expected", basicSize, v2.size());
+
+        verifyValues(v2);
+
+        Vector v3 = new RandomVector(basicSize, false);
+
+        assertEquals("Size differs from expected", basicSize, v3.size());
+
+        verifyValues(v3);
+    }
+
+    /** */
+    private void verifyValues(Vector v) {
+        for (Vector.Element e : v.all()) {
+            double val = e.get();
+
+            assertTrue("Value too small: " + val + " at index " + e.index(), -1d <= val);
+
+            assertTrue("Value too large: " + val + " at index " + e.index(), val <= 1d);
+        }
     }
 }
