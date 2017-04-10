@@ -67,8 +67,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /** Class loader for the val. If peer-classloading disabled then {@code null}, otherwise classloader UUID. */
     protected IgniteUuid valClsLdrId;
 
-    /** P2P flag. */
-    private transient boolean p2pEnabled;
+    /** Deployment enabled flag. */
+    private transient boolean depEnabled;
 
     /** Null object. */
     private static IgniteUuid NULL_OBJECT = new IgniteUuid(new UUID(-1L, -1L), -1L);
@@ -187,6 +187,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean keyOnly,
         IncompleteObject<?> incomplete
     ) throws IgniteCheckedException {
+        boolean depEnabled = coctx.kernalContext().cache().context().deploymentEnabled();
         IncompleteCacheObject keyIncomplete = null;
 
         // Read key.
@@ -194,20 +195,22 @@ public class CacheDataRowAdapter implements CacheDataRow {
             keyIncomplete = readIncompleteKey(coctx, buf, (IncompleteCacheObject)incomplete);
             incomplete = keyIncomplete;
 
-            if (!incomplete.isReady() || (keyOnly && !coctx.p2pEnabled()))
+            if (!incomplete.isReady() || (keyOnly && !depEnabled))
                 return incomplete;
 
             incomplete = null;
         }
 
         // Read key classloader id.
-        if (coctx.p2pEnabled() && keyClsLdrId == null) {
+        if (depEnabled && keyClsLdrId == null) {
             incomplete = readIncompleteClassLoaderUUID(coctx, buf, incomplete, keyIncomplete);
 
             if (keyClsLdrId == null || keyOnly)
                 return incomplete;
 
             incomplete = null;
+
+            this.depEnabled = true;
         }
 
         if (expireTime == -1) {
@@ -220,7 +223,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
 
         // Read val classloader id.
-        if (coctx.p2pEnabled() && valClsLdrId == null) {
+        if (depEnabled && valClsLdrId == null) {
             incomplete = readIncompleteClassLoaderUUID(coctx, buf, incomplete, null);
 
             if (valClsLdrId == null)
@@ -582,10 +585,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
-     * @param peer2p2Enabled Peer 2P2 enabled.
+     * @param depEnabled Deployment enabled flag.
      */
-    public void p2pEnabled(boolean peer2p2Enabled) {
-        this.p2pEnabled = peer2p2Enabled;
+    public void deploymentEnabled(boolean depEnabled) {
+        this.depEnabled = depEnabled;
     }
 
     /** {@inheritDoc} */
@@ -599,8 +602,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean p2pEnabled() {
-        return p2pEnabled;
+    @Override public boolean deploymentEnabled() {
+        return depEnabled;
     }
 
     /** {@inheritDoc} */

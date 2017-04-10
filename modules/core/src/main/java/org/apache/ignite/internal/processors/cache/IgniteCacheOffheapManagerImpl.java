@@ -971,7 +971,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             @Nullable IgniteUuid valClsLdrId) throws IgniteCheckedException {
             DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, keyClsLdrId, valClsLdrId);
 
-            dataRow.p2pEnabled(cctx.deploymentEnabled());
+            dataRow.deploymentEnabled(cctx.deploymentEnabled());
 
             if (canUpdateOldRow(oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow))
                 dataRow.link(oldRow.link());

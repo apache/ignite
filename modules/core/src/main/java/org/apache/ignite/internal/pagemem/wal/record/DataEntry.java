@@ -66,8 +66,8 @@ public class DataEntry {
     /** Class loader for the val. If peer-classloading disabled then {@code null}, otherwise classloader UUID. */
     protected IgniteUuid valClsLdrId;
 
-    /** P2P flag. */
-    private transient boolean p2pEnabled;
+    /** Deployment enabled flag. */
+    private transient boolean depEnabled;
 
     private DataEntry() {
         // No-op, used from factory methods.
@@ -83,6 +83,9 @@ public class DataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
+     * @param depEnabled Deploy enabled.
+     * @param keyClsLdrId Key class loader ID.
+     * @param valClsLdrId Value class loader ID.
      */
     public DataEntry(
         int cacheId,
@@ -94,7 +97,7 @@ public class DataEntry {
         long expireTime,
         int partId,
         long partCnt,
-        boolean p2pEnabled,
+        boolean depEnabled,
         IgniteUuid keyClsLdrId,
         IgniteUuid valClsLdrId
     ) {
@@ -107,7 +110,7 @@ public class DataEntry {
         this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
-        this.p2pEnabled = p2pEnabled;
+        this.depEnabled = depEnabled;
         this.keyClsLdrId = keyClsLdrId;
         this.valClsLdrId = valClsLdrId;
 
@@ -193,10 +196,10 @@ public class DataEntry {
     }
 
     /**
-     * @return P2P enabled flag.
+     * @return {@code True} if deployment is enabled.
      */
-    public boolean p2pEnabled() {
-        return p2pEnabled;
+    public boolean deploymentEnabled() {
+        return depEnabled;
     }
 
     /** {@inheritDoc} */

@@ -410,7 +410,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean p2pEnabled() {
+        @Override public boolean deploymentEnabled() {
             return false;
         }
 

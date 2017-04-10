@@ -44,7 +44,7 @@ public interface CacheDataRow extends CacheSearchRow {
     /**
      * @return P2p enabled flag.
      */
-    public boolean p2pEnabled();
+    public boolean deploymentEnabled();
 
     /**
      * @return Key class loader ID.

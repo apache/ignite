@@ -1007,17 +1007,17 @@ public class DataPageIO extends PageIO {
     ) throws IgniteCheckedException {
         final int keySize = row.key().valueBytesLength(null);
         final int valSize = row.value().valueBytesLength(null);
-        final int keyClsLdrSize = row.p2pEnabled() ? PageUtils.sizeIgniteUUID(row.keyClassLoader()) : 0;
-        final int valClsLdrSize = row.p2pEnabled() ? PageUtils.sizeIgniteUUID(row.valueClassLoader()) : 0;
+        final int keyClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUUID(row.keyClassLoader()) : 0;
+        final int valClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUUID(row.valueClassLoader()) : 0;
 
         int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.KEY, keySize, valSize, keyClsLdrSize, valClsLdrSize);
 
-        if (row.p2pEnabled())
+        if (row.deploymentEnabled())
             written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.KEY_CLS_LDR_ID, keySize, valSize, keyClsLdrSize, valClsLdrSize);
 
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize, keyClsLdrSize, valClsLdrSize);
 
-        if (row.p2pEnabled())
+        if (row.deploymentEnabled())
             written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VAL_CLS_LDR_ID, keySize, valSize, keyClsLdrSize, valClsLdrSize);
 
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize, keyClsLdrSize, valClsLdrSize);
@@ -1405,19 +1405,19 @@ public class DataPageIO extends PageIO {
 
             addr += row.key().putValue(addr);
 
-            if (row.p2pEnabled())
+            if (row.deploymentEnabled())
                 addr += PageUtils.putIgniteUUID(addr, row.keyClassLoader());
         }
         else {
             addr += (2 + row.key().valueBytesLength(null));
 
-            if (row.p2pEnabled())
+            if (row.deploymentEnabled())
                 addr += PageUtils.sizeIgniteUUID(row.keyClassLoader());
         }
 
         addr += row.value().putValue(addr);
 
-        if (row.p2pEnabled())
+        if (row.deploymentEnabled())
             addr += PageUtils.putIgniteUUID(addr, row.valueClassLoader());
 
         CacheVersionIO.write(addr, row.version(), false);

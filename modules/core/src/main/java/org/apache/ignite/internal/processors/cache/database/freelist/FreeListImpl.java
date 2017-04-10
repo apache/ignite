@@ -563,8 +563,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         int valLen = row.value().valueBytesLength(null);
 
         return keyLen + valLen + CacheVersionIO.size(row.version(), false)
-            + 8                                                                                                // expireTime
-            + (row.p2pEnabled() ? PageUtils.sizeIgniteUUID(row.keyClassLoader(), row.valueClassLoader()) : 0); // UUID class loaders for key and value
+            + 8                                                                                                       // expireTime
+            + (row.deploymentEnabled() ? PageUtils.sizeIgniteUUID(row.keyClassLoader(), row.valueClassLoader()) : 0); // UUID class loaders for key and value
     }
 
     /** {@inheritDoc} */

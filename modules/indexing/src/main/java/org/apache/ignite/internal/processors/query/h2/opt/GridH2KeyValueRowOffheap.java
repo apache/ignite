@@ -109,7 +109,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean p2pEnabled() {
+    @Override public boolean deploymentEnabled() {
         return false;
     }
 

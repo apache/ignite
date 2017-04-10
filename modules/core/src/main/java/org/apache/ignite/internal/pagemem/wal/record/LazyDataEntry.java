@@ -72,8 +72,8 @@ public class LazyDataEntry extends DataEntry {
         IgniteUuid keyClsLdrId,
         IgniteUuid valClsLdrId
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, p2pEnabled, keyClsLdrId,
-            valClsLdrId);
+        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, p2pEnabled,
+            keyClsLdrId, valClsLdrId);
 
         this.cctx = cctx;
         this.keyType = keyType;
