@@ -42,13 +42,18 @@ namespace Apache.Ignite.Core.Impl.Binary
             return new TypeNameParser(typeName).Parse();
         }
 
-        private char Char
-        {
-            get { return _typeName[_pos]; }
-        }
-
         private Result Parse()
         {
+            // Example:
+            // System.Collections.Generic.List`1[[System.Int32[], mscorlib, Version=4.0.0.0, Culture=neutral,
+            // PublicKeyToken =b77a5c561934e089]][], mscorlib, Version=4.0.0.0, Culture=neutral,
+            // PublicKeyToken =b77a5c561934e089
+
+            // 1) Namespace+name, ends with '`' or '[' or ','
+            // 2) Generic, starts with '`'
+            // 3) Array, starts with '['
+            // 4) Assembly, starts with ',', ends with EOL or `]`
+
             var res = new Result(_typeName, _pos);
 
             int bracket = 0;
@@ -99,6 +104,21 @@ namespace Apache.Ignite.Core.Impl.Binary
             return res;
         }
 
+        private void ParseTypeName()
+        {
+            
+        }
+
+        private void ParseAssemblyName()
+        {
+            
+        }
+
+        private void ParseArrayDefinition()
+        {
+            
+        }
+
         private List<Result> ParseGenerics()
         {
             // TODO: Out of bounds checks
@@ -143,6 +163,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return res;
                 }
             }
+        }
+
+        private char Char
+        {
+            get { return _typeName[_pos]; }
         }
 
         public class Result
