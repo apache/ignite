@@ -1914,7 +1914,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.cleanup(!node.isLocal());
 
                         if (dhtFut != null) {
-                            if (req.writeSynchronizationMode() == PRIMARY_SYNC && !dhtFut.isDone()) {
+                            if (req.writeSynchronizationMode() == PRIMARY_SYNC
+                                // To avoid deadlock disable back-pressure for sender data node.
+                                && !ctx.discovery().cacheAffinityNode(ctx.discovery().node(nodeId), ctx.name())
+                                && !dhtFut.isDone()) {
                                 final IgniteRunnable tracker = GridNioBackPressureControl.threadTracker();
 
                                 if (tracker != null && tracker instanceof GridNioMessageTracker) {
