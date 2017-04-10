@@ -926,6 +926,9 @@
 
         /// <summary>
         /// Gets or sets the event storage interface.
+        /// <para />
+        /// Only predefined implementations are supported: 
+        /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
         /// </summary>
         public IEventStorageSpi EventStorageSpi { get; set; }
     }

@@ -17,16 +17,10 @@
 
 namespace Apache.Ignite.Core.Events
 {
-    using System.Diagnostics.CodeAnalysis;
-
     /// <summary>
-    /// Manages local event storage.
-    /// <para />
-    /// Only predefined implementations are supported: 
-    /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
+    /// No-op event storage interface, does not store anything.
     /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
-    public interface IEventStorageSpi
+    public class NoopEventStorageSpi : IEventStorageSpi
     {
         // No-op.
     }
