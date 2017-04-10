@@ -53,7 +53,6 @@ namespace ignite
         IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
         IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
         IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-        IGNITE_BINARY_GET_HASH_CODE_ZERO(Person)
         IGNITE_BINARY_IS_NULL_FALSE(Person)
         IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
 
@@ -225,7 +224,7 @@ BOOST_AUTO_TEST_CASE(TestPutAllIterMap)
 
     for (int i = 0; i < 100; i++)
         map[i] = i + 1;
-    
+
     cache::Cache<int, int> cache = Cache();
 
     cache.PutAll(map.begin(), map.end());

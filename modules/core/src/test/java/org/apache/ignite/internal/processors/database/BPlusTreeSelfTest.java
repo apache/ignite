@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -120,7 +121,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     protected void assertNoLocks() {
         assertTrue(TestTree.checkNoLocks());
     }
-    
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         long seed = System.nanoTime();
@@ -1197,6 +1198,32 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testFindFirstAndLast() throws IgniteCheckedException {
+        MAX_PER_PAGE = 5;
+
+        TestTree tree = createTestTree(true);
+
+        Long first = tree.findFirst();
+        assertNull(first);
+
+        Long last = tree.findLast();
+        assertNull(last);
+
+        for (long idx = 1L; idx <= 10L; ++idx)
+            tree.put(idx);
+
+        first = tree.findFirst();
+        assertEquals((Long)1L, first);
+
+        last = tree.findLast();
+        assertEquals((Long)10L, last);
+
+        assertNoLocks();
+    }
+
+    /**
      * @param canGetRow Can get row from inner page.
      * @throws Exception If failed.
      */
@@ -1677,7 +1704,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE, true);
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE, new MemoryMetricsImpl(null), true);
 
         pageMem.start();
 

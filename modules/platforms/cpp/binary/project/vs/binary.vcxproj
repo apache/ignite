@@ -181,8 +181,6 @@
     <ClInclude Include="..\..\include\ignite\binary\binary_consts.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_containers.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_object.h" />
-    <ClInclude Include="..\..\include\ignite\binary\binary_identity_resolver.h" />
-    <ClInclude Include="..\..\include\ignite\binary\binary_array_identity_resolver.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_raw_reader.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_raw_writer.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_reader.h" />
@@ -196,7 +194,6 @@
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_reader_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_schema.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_handler.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_manager.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_snapshot.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater.h" />
@@ -209,7 +206,6 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\binary\binary_array_identity_resolver.cpp" />
     <ClCompile Include="..\..\src\binary\binary_containers.cpp" />
     <ClCompile Include="..\..\src\binary\binary_raw_reader.cpp" />
     <ClCompile Include="..\..\src\binary\binary_raw_writer.cpp" />

@@ -112,7 +112,7 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
-     * @return Array of MemoryPolicyConfiguration objects.
+     * @return array of MemoryPolicyConfiguration objects.
      */
     public MemoryPolicyConfiguration[] getMemoryPolicies() {
         return memPlcs;
@@ -151,7 +151,7 @@ public class MemoryConfiguration implements Serializable {
      */
     public MemoryConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
-        
+
         return this;
     }
 

@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.binary;
+package org.apache.ignite.internal.binary;
 
 import java.util.Arrays;
 
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryObjectExImpl;
-import org.apache.ignite.internal.binary.BinaryPrimitives;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
