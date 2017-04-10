@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 /**
- *
+ * Hibernate cache key wrapper.
  */
 public class HibernateKeyWrapper {
     /** Key. */
