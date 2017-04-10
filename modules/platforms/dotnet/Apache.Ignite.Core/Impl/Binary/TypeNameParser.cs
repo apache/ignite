@@ -216,19 +216,37 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         private void ParseArrayDefinition()
         {
-            // TODO: Just skip it?
+            if (Char != '[')
+                return;
+
+            ArrayStart = _pos;
+
+            RequireShift();
+            
             while (Char=='[' || Char==']' || Char == ',')
             {
                 if (!Shift())
                 {
-                    return;
+                    break;
                 }
             }
+
+            ArrayEnd = Char == ']' ? _pos : _pos - 1;
         }
 
         private void ParseAssemblyName()
         {
-            
+            if (Char != ',')
+                return;
+
+            RequireShift();
+
+            AssemblyStart = _pos;
+
+            while (Char != ']' && Shift())
+            {
+                // No-op.
+            }
         }
 
         private bool Shift()
