@@ -26,23 +26,47 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class TypeNameParser
     {
-        private int _pos;
+        private readonly int _start;
 
         private readonly string _typeName;
 
-        private TypeNameParser(string typeName)
+        private int _pos;
+
+        private TypeNameParser(string typeName, int start = 0)
         {
             _typeName = typeName;
+            _start = start;
+
+            Parse();
         }
 
-        public static Result Parse(string typeName)
+        public static TypeNameParser Parse(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            return new TypeNameParser(typeName).Parse();
+            return new TypeNameParser(typeName);
         }
 
-        private Result Parse()
+        public int NameStart { get; private set; }
+
+        public int NameEnd { get; private set; }
+
+        public int AssemblyIndex { get; private set; }
+
+        public ICollection<TypeNameParser> Generics { get; private set; }
+
+        public string GetName()
+        {
+            return _typeName.Substring(NameStart, NameEnd - NameStart + 1);
+        }
+
+        public string GetFullName()
+        {
+            return _typeName.Substring(_start, NameEnd - _start + 1);
+        }
+
+
+        private void Parse()
         {
             // Example:
             // System.Collections.Generic.List`1[[System.Int32[], mscorlib, Version=4.0.0.0, Culture=neutral,
@@ -54,8 +78,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             // 3) Array, starts with '['
             // 4) Assembly, starts with ',', ends with EOL or `]`
 
-            var res = new Result(_typeName, _pos);
-
             int bracket = 0;
 
             for (; _pos < _typeName.Length; _pos++)
@@ -65,24 +87,24 @@ namespace Apache.Ignite.Core.Impl.Binary
                 switch (ch)
                 {
                     case '.':
-                        res.NameStart = _pos + 1;
+                        NameStart = _pos + 1;
                         break;
 
                     case '`':
-                        res.NameEnd = _pos - 1;
-                        res.Generics = ParseGenerics();
+                        NameEnd = _pos - 1;
+                        ParseGenerics();
                         break;
 
                     case ',':
                         if (bracket > 0)
                             break;
 
-                        res.AssemblyIndex = _pos + 1;
-                        if (res.NameEnd < 0)
+                        AssemblyIndex = _pos + 1;
+                        if (NameEnd < 0)
                         {
-                            res.NameEnd = _pos - 1;
+                            NameEnd = _pos - 1;
                         }
-                        return res;
+                        return;
 
                     case '[':
                         bracket++;
@@ -92,16 +114,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                         bracket--;
 
                         if (bracket < 0)
-                            return res;
+                            return;
 
                         break;
                 }
             }
 
-            if (res.NameEnd < 0)
-                res.NameEnd = _typeName.Length - 1;
-
-            return res;
+            if (NameEnd < 0)
+                NameEnd = _typeName.Length - 1;
         }
 
         private void ParseTypeName()
@@ -119,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             
         }
 
-        private List<Result> ParseGenerics()
+        private void ParseGenerics()
         {
             // TODO: Out of bounds checks
             Debug.Assert(Char == '`');
@@ -132,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             int count = int.Parse(_typeName.Substring(start, _pos - start));
 
-            var res = new List<Result>(count);
+            Generics = new List<TypeNameParser>(count);
 
             _pos++;
 
@@ -147,7 +167,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     _pos++;
 
-                    res.Add(Parse());
+                    Generics.Add(new TypeNameParser(_typeName, _pos));
 
                     while (Char != ']')
                     {
@@ -160,7 +180,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (Char == ']')
                 {
                     _pos++;
-                    return res;
+                    return ;
                 }
             }
         }
@@ -168,40 +188,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         private char Char
         {
             get { return _typeName[_pos]; }
-        }
-
-        public class Result
-        {
-            private readonly string _typeName;
-            private readonly int _start;
-
-            public Result(string typeName, int start)
-            {
-                _typeName = typeName;
-                _start = start;
-
-                NameStart = -1;
-                NameEnd = -1;
-                AssemblyIndex = -1;
-            }
-
-            public int NameStart { get; set; }
-            
-            public int NameEnd { get; set; }
-
-            public int AssemblyIndex { get; set; }
-
-            public ICollection<Result> Generics { get; set; }
-
-            public string GetName()
-            {
-                return _typeName.Substring(NameStart, NameEnd - NameStart + 1);
-            }
-
-            public string GetFullName()
-            {
-                return _typeName.Substring(_start, NameEnd - _start + 1);
-            }
         }
     }
 }
