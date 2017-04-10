@@ -264,6 +264,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
                 else
                 {
+                    if (bracket)
+                    {
+                        throw new IgniteException("Invalid array specification: " + _typeName);
+                    }
+
                     break;
                 }
 
