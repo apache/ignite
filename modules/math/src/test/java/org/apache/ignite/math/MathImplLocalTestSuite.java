@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math;
 
+import org.apache.ignite.math.decompositions.CholeskyDecompositionTest;
 import org.apache.ignite.math.decompositions.EigenDecompositionTest;
 import org.apache.ignite.math.impls.matrix.*;
 import org.apache.ignite.math.impls.storage.matrix.MatrixArrayStorageTest;
@@ -97,7 +98,8 @@ import org.junit.runners.Suite;
     TransposedMatrixViewTest.class,
     // Decomposes
     LUDecompositionTest.class,
-    EigenDecompositionTest.class
+    EigenDecompositionTest.class,
+    CholeskyDecompositionTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.
