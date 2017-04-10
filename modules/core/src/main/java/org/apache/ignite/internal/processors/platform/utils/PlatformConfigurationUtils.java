@@ -676,8 +676,6 @@ public class PlatformConfigurationUtils {
                 assert swapType == SWAP_TYP_NONE;
         }
 
-        readPluginConfiguration(cfg, in);
-
         switch (in.readByte()) {
             case 1:
                 cfg.setEventStorageSpi(new NoopEventStorageSpi());
@@ -689,6 +687,8 @@ public class PlatformConfigurationUtils {
                         .setExpireAgeMs(in.readLong()));
                 break;
         }
+
+        readPluginConfiguration(cfg, in);
     }
 
     /**
@@ -1131,11 +1131,6 @@ public class PlatformConfigurationUtils {
             w.writeByte(SWAP_TYP_NONE);
         }
 
-        w.writeString(cfg.getIgniteHome());
-
-        w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
-        w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax());
-
         EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
 
         if (eventStorageSpi == null) {
@@ -1148,6 +1143,11 @@ public class PlatformConfigurationUtils {
             w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
             w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireAgeMs());
         }
+
+        w.writeString(cfg.getIgniteHome());
+
+        w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
+        w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax());
     }
 
     /**

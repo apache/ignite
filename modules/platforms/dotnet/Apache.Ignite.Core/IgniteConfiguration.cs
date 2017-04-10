@@ -349,7 +349,33 @@
             // Swap space
             SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
 
-            // Plugins
+            // Event storage
+            if (EventStorageSpi == null)
+            {
+                writer.WriteByte(0);
+            }
+            else if (EventStorageSpi is NoopEventStorageSpi)
+            {
+                writer.WriteByte(1);
+            }
+            else
+            {
+                var memEventStorage = EventStorageSpi as MemoryEventStorageSpi;
+
+                if (memEventStorage == null)
+                {
+                    throw new IgniteException(string.Format(
+                        "Unsupported IgniteConfiguration.EventStorageSpi: '{0}'. " +
+                        "Supported implementations: '{1}', '{2}'.",
+                        EventStorageSpi.GetType(), typeof(NoopEventStorageSpi), typeof(MemoryEventStorageSpi)));
+                }
+
+                writer.WriteByte(2);
+
+                memEventStorage.Write(writer);
+            }
+
+            // Plugins (should be last)
             if (PluginConfigurations != null)
             {
                 var pos = writer.Stream.Position;
@@ -375,29 +401,6 @@
             else
             {
                 writer.WriteInt(0);
-            }
-
-            if (EventStorageSpi == null)
-            {
-                writer.WriteByte(0);
-            }
-            else if (EventStorageSpi is NoopEventStorageSpi)
-            {
-                writer.WriteByte(1);
-            }
-            else
-            {
-                var memEventStorage = EventStorageSpi as MemoryEventStorageSpi;
-
-                if (memEventStorage == null)
-                {
-                    throw new IgniteException(string.Format(
-                        "Unsupported IgniteConfiguration.EventStorageSpi: '{0}'. " +
-                        "Supported implementations: '{1}', '{2}'.",
-                        EventStorageSpi.GetType(), typeof(NoopEventStorageSpi), typeof(MemoryEventStorageSpi)));
-                }
-
-                memEventStorage.Write(writer);
             }
         }
 
