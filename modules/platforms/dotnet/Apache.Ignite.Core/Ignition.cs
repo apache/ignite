@@ -53,6 +53,11 @@ namespace Apache.Ignite.Core
     /// </summary>
     public static class Ignition
     {
+        /// <summary>
+        /// Default configuration section name.
+        /// </summary>
+        public const string ConfigurationSectionName = "igniteConfiguration";
+
         /** */
         private static readonly object SyncRoot = new object();
 
@@ -118,22 +123,15 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Reads <see cref="IgniteConfiguration"/> from first <see cref="IgniteConfigurationSection"/> in the 
-        /// application configuration and starts Ignite.
+        /// Reads <see cref="IgniteConfiguration"/> from application configuration 
+        /// <see cref="IgniteConfigurationSection"/> with <see cref="ConfigurationSectionName"/>
+        /// name and starts Ignite.
         /// </summary>
         /// <returns>Started Ignite.</returns>
         public static IIgnite StartFromApplicationConfiguration()
         {
-            var cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-
-            var section = cfg.Sections.OfType<IgniteConfigurationSection>().FirstOrDefault();
-
-            if (section == null)
-                throw new ConfigurationErrorsException(
-                    string.Format("Could not find {0} in current application configuration",
-                        typeof(IgniteConfigurationSection).Name));
-
-            return Start(section.IgniteConfiguration);
+            // ReSharper disable once IntroduceOptionalParameters.Global
+            return StartFromApplicationConfiguration(ConfigurationSectionName);
         }
 
         /// <summary>
@@ -278,7 +276,11 @@ namespace Apache.Ignite.Core
 
                     // 3. Throw error further (use startup error if exists because it is more precise).
                     if (_startup.Error != null)
-                        throw _startup.Error;
+                    {
+                        // Wrap in a new exception to preserve original stack trace.
+                        throw new IgniteException("Failed to start Ignite.NET, check inner exception for details", 
+                            _startup.Error);
+                    }
 
                     throw;
                 }
@@ -359,11 +361,11 @@ namespace Apache.Ignite.Core
             if (cfg.BinaryConfiguration == null)
                 cfg.BinaryConfiguration = binaryCfg;
 
-            _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
+            _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration, log);
 
             // 3. Send configuration details to Java
             cfg.Validate(log);
-            cfg.Write(_startup.Marshaller.StartMarshal(outStream));
+            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream));  // Use system marshaller.
         }
 
         /// <summary>

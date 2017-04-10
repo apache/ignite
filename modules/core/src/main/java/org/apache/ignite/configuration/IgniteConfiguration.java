@@ -17,54 +17,66 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.events.*;
+import java.io.Serializable;
+import java.lang.management.ManagementFactory;
+import java.util.Map;
+import java.util.UUID;
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryListener;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoader;
+import javax.cache.processor.EntryProcessor;
+import javax.management.MBeanServer;
+import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.plugin.*;
-import org.apache.ignite.plugin.segmentation.*;
-import org.apache.ignite.services.*;
-import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.spi.checkpoint.noop.*;
-import org.apache.ignite.spi.collision.*;
-import org.apache.ignite.spi.collision.noop.*;
-import org.apache.ignite.spi.communication.*;
-import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.spi.deployment.*;
-import org.apache.ignite.spi.deployment.local.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.eventstorage.*;
-import org.apache.ignite.spi.eventstorage.memory.*;
-import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.spi.loadbalancing.*;
-import org.apache.ignite.spi.loadbalancing.roundrobin.*;
-import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.ssl.*;
-import javax.cache.configuration.*;
-import javax.cache.event.*;
-import javax.cache.expiry.*;
-import javax.cache.integration.*;
-import javax.cache.processor.*;
-import javax.management.*;
-import javax.net.ssl.*;
-import java.io.*;
-import java.lang.management.*;
-import java.util.*;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteAsyncCallback;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.PluginConfiguration;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
+import org.apache.ignite.plugin.segmentation.SegmentationResolver;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.checkpoint.CheckpointSpi;
+import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
+import org.apache.ignite.spi.collision.CollisionSpi;
+import org.apache.ignite.spi.collision.noop.NoopCollisionSpi;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.eventstorage.EventStorageSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.failover.FailoverSpi;
+import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
+import org.apache.ignite.spi.indexing.IndexingSpi;
+import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
+import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.ssl.SslContextFactory;
 
-import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.*;
+import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
 /**
  * This class defines grid runtime configuration. This configuration is passed to
@@ -227,6 +239,9 @@ public class IgniteConfiguration {
 
     /** Public pool size. */
     private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
+
+    /** Service pool size. */
+    private Integer svcPoolSize;
 
     /** Async Callback pool size. */
     private int callbackPoolSize = DFLT_PUBLIC_THREAD_CNT;
@@ -411,9 +426,6 @@ public class IgniteConfiguration {
     /** Property names to include into node attributes. */
     private String[] includeProps;
 
-    /** Optional list of math provider FQCNs. */
-    private String[] mathProviderClasses;
-
     /** Frequency of metrics log print out. */
     @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
@@ -524,7 +536,6 @@ public class IgniteConfiguration {
         igniteWorkDir = cfg.getWorkDirectory();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
-        mathProviderClasses = cfg.getMathProviderClasses();
         lateAffAssignment = cfg.isLateAffinityAssignment();
         lifecycleBeans = cfg.getLifecycleBeans();
         locHost = cfg.getLocalHost();
@@ -560,6 +571,7 @@ public class IgniteConfiguration {
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
         svcCfgs = cfg.getServiceConfiguration();
+        svcPoolSize = cfg.getServiceThreadPoolSize();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
@@ -801,6 +813,18 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Should return a thread pool size to be used in grid.
+     * This executor service will be in charge of processing {@link Service} proxy invocations.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
+     *
+     * @return Thread pool size to be used in grid to process service proxy invocations.
+     */
+    public int getServiceThreadPoolSize() {
+        return svcPoolSize != null ? svcPoolSize : getPublicThreadPoolSize();
+    }
+
+    /**
      * Size of thread pool that is in charge of processing internal system messages.
      * <p>
      * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
@@ -916,6 +940,19 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setPublicThreadPoolSize(int poolSize) {
         pubPoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
+     * Sets thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getServiceThreadPoolSize()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setServiceThreadPoolSize(int poolSize) {
+        svcPoolSize = poolSize;
 
         return this;
     }
@@ -1554,7 +1591,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured event SPI implementation. If not provided,
-     * {@link MemoryEventStorageSpi} will be used.
+     * {@link NoopEventStorageSpi} will be used.
      *
      * @return Grid event SPI implementation or {@code null} to use default implementation.
      */
@@ -2327,27 +2364,6 @@ public class IgniteConfiguration {
         this.includeProps = includeProps;
 
         return this;
-    }
-
-    /**
-     * Sets the optional list of math providers.
-     *
-     * @param mathProviderClasses List of math providers FQCNs.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setMathProviders(String... mathProviderClasses) {
-        this.mathProviderClasses = mathProviderClasses;
-
-        return this;
-    }
-
-    /**
-     * Gets the list of the optional math providers (it does not include the default built-in one).
-     *
-     * @return Optional list of math provider FQCNs.
-     */
-    public String[] getMathProviderClasses() {
-        return mathProviderClasses;
     }
 
     /**

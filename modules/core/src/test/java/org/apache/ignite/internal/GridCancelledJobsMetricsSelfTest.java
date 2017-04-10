@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
@@ -54,7 +53,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
-
     /** */
     private static GridCancelCollisionSpi colSpi = new GridCancelCollisionSpi();
 
@@ -87,13 +85,8 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
 
         Collection<ComputeTaskFuture<?>> futs = new ArrayList<>();
 
-        IgniteCompute comp = ignite.compute().withAsync();
-
-        for (int i = 1; i <= 10; i++) {
-            comp.execute(CancelledTask.class, null);
-
-            futs.add(comp.future());
-        }
+        for (int i = 1; i <= 10; i++)
+            futs.add(ignite.compute().executeAsync(CancelledTask.class, null));
 
         // Wait to be sure that metrics were updated.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {

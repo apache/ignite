@@ -40,6 +40,8 @@ import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.MutableConfiguration;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
@@ -49,7 +51,6 @@ import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -370,9 +371,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     private boolean readFromBackup = DFLT_READ_FROM_BACKUP;
 
-    /** Collection of type metadata. */
-    private Collection<CacheTypeMetadata> typeMeta;
-
     /** Node filter specifying nodes on which this cache should be deployed. */
     private IgnitePredicate<ClusterNode> nodeFilter;
 
@@ -496,7 +494,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
-        typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
@@ -940,9 +937,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets keep binary in store flag.
      *
      * @param storeKeepBinary Keep binary in store flag.
+     * @return {@code this} for chaining.
      */
-    public void setStoreKeepBinary(boolean storeKeepBinary) {
+    public CacheConfiguration<K, V> setStoreKeepBinary(boolean storeKeepBinary) {
         this.storeKeepBinary = storeKeepBinary;
+
+        return this;
     }
 
     /**
@@ -1719,28 +1719,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets collection of type metadata objects.
-     *
-     * @return Collection of type metadata.
-     */
-    public Collection<CacheTypeMetadata> getTypeMetadata() {
-        return typeMeta;
-    }
-
-    /**
-     * Sets collection of type metadata objects.
-     *
-     * @param typeMeta Collection of type metadata.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link #setQueryEntities(java.util.Collection)} instead.
-     */
-    public CacheConfiguration<K, V> setTypeMetadata(Collection<CacheTypeMetadata> typeMeta) {
-        this.typeMeta = new ArrayList<>(typeMeta);
-
-        return this;
-    }
-
-    /**
      * Gets flag indicating whether data can be read from backup.
      * If {@code false} always get data from primary node (never from backup).
      * <p>
@@ -2471,6 +2449,70 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         if (txtAnn != null)
             desc.addFieldToTextIndex(prop.fullName());
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setStatisticsEnabled(boolean enabled) {
+        super.setStatisticsEnabled(enabled);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setManagementEnabled(boolean enabled) {
+        super.setManagementEnabled(enabled);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setCacheLoaderFactory(Factory<? extends CacheLoader<K, V>> factory) {
+        super.setCacheLoaderFactory(factory);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setCacheWriterFactory(
+        Factory<? extends CacheWriter<? super K, ? super V>> factory) {
+        super.setCacheWriterFactory(factory);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setExpiryPolicyFactory(Factory<? extends ExpiryPolicy> factory) {
+        super.setExpiryPolicyFactory(factory);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setTypes(Class<K> keyType, Class<V> valueType) {
+        super.setTypes(keyType, valueType);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setReadThrough(boolean isReadThrough) {
+        super.setReadThrough(isReadThrough);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setWriteThrough(boolean isWriteThrough) {
+        super.setWriteThrough(isWriteThrough);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration<K, V> setStoreByValue(boolean isStoreByValue) {
+        super.setStoreByValue(isStoreByValue);
+
+        return this;
     }
 
     /** {@inheritDoc} */

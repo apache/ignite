@@ -53,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -69,9 +68,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
-    /** */
-    public static final IgniteProductVersion LATE_AFF_ASSIGN_SINCE = IgniteProductVersion.fromString("1.6.0");
-
     /** Late affinity assignment flag. */
     private boolean lateAffAssign;
 

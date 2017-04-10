@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests
                             <cacheConfiguration>
                                 <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true'>
                                     <queryEntities>    
-                                        <queryEntity keyType='System.Int32' valueType='System.String'>    
+                                        <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>    
                                             <fields>
                                                 <queryField name='length' fieldType='System.Int32' isKeyField='true' />
                                             </fields>
@@ -137,6 +137,7 @@ namespace Apache.Ignite.Core.Tests
                             <pluginConfigurations>
                                 <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
                             </pluginConfigurations>
+                            <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -175,6 +176,7 @@ namespace Apache.Ignite.Core.Tests
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
             Assert.AreEqual(typeof(string), queryEntity.ValueType);
+            Assert.AreEqual("myTable", queryEntity.TableName);
             Assert.AreEqual("length", queryEntity.Fields.Single().Name);
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
             Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
@@ -254,6 +256,11 @@ namespace Apache.Ignite.Core.Tests
 
             var cachePlugCfg = cacheCfg.PluginConfigurations.Cast<CachePluginConfiguration>().Single();
             Assert.AreEqual("baz", cachePlugCfg.TestProperty);
+
+            var eventStorage = cfg.EventStorageSpi as MemoryEventStorageSpi;
+            Assert.IsNotNull(eventStorage);
+            Assert.AreEqual(23.45, eventStorage.ExpirationTimeout.TotalSeconds);
+            Assert.AreEqual(129, eventStorage.MaxEventCount);
         }
 
         /// <summary>
@@ -655,7 +662,8 @@ namespace Apache.Ignite.Core.Tests
                                     new QueryAlias("field.field", "fld")
                                 },
                                 KeyType = typeof (string),
-                                ValueType = typeof (long)
+                                ValueType = typeof (long),
+                                TableName = "table-1"
                             },
                         },
                         ReadFromBackup = false,
@@ -794,7 +802,12 @@ namespace Apache.Ignite.Core.Tests
                     ReadStripesNumber = 77,
                     BaseDirectory = "test"
                 },
-                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() }
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
+                EventStorageSpi = new MemoryEventStorageSpi
+                {
+                    ExpirationTimeout = TimeSpan.FromMilliseconds(12345),
+                    MaxEventCount = 257
+                }
             };
         }
 

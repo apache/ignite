@@ -233,21 +233,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         /// <summary>
-        /// Tests the error on non-serializable function.
-        /// </summary>
-        [Test]
-        public void TestNonSerializableFunction()
-        {
-            var ex = Assert.Throws<IgniteException>(() =>
-                _ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
-                {
-                    AffinityFunction = new NonSerializableAffinityFunction()
-                }));
-
-            Assert.AreEqual(ex.Message, "AffinityFunction should be serializable.");
-        }
-
-        /// <summary>
         /// Tests the exception propagation.
         /// </summary>
         [Test]
@@ -388,12 +373,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
         }
 
-        private class NonSerializableAffinityFunction : SimpleAffinityFunction
-        {
-            // No-op.
-        }
-
-        [Serializable]
         private class FailInGetPartitionAffinityFunction : IAffinityFunction
         {
             public int Partitions

@@ -117,9 +117,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Threads started by this processor. */
     private final Map<UUID, IgniteThread> bufCheckThreads = new ConcurrentHashMap8<>();
 
-    /**  */
-    public static final IgniteProductVersion QUERY_MSG_VER_2_SINCE = IgniteProductVersion.fromString("1.5.9");
-
     /** */
     private final ConcurrentMap<IgniteUuid, SyncMessageAckFuture> syncMsgFuts = new ConcurrentHashMap8<>();
 
@@ -547,7 +544,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> entry : data.clientInfos.entrySet()) {
                 UUID clientNodeId = entry.getKey();
 
-                if (!ctx.localNodeId().equals(clientNodeId)) {
+                if (!ctx.clientNode()) {
                     Map<UUID, LocalRoutineInfo> clientRoutineMap = entry.getValue();
 
                     for (Map.Entry<UUID, LocalRoutineInfo> e : clientRoutineMap.entrySet()) {
@@ -635,6 +632,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @return Routine ID.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     public UUID registerStaticRoutine(
         String cacheName,
         CacheEntryUpdatedListener<?, ?> locLsnr,

@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
@@ -107,11 +106,7 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
     private void checkTask(int num) {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
-        IgniteCompute comp = ignite.compute().withAsync();
-
-        comp.execute(GridTaskSessionTestTask.class.getName(), num);
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTaskSessionTestTask.class.getName(), num);
 
         Object res = fut.get();
 
