@@ -18,6 +18,9 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
+    using System.ComponentModel;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// In-memory event storage.
@@ -30,15 +33,23 @@ namespace Apache.Ignite.Core.Events
         public const long DefaultMaxEventCount = 10000;
 
         /// <summary>
-        /// Gets or sets the expiration timeout for stored events.
-        /// Defaults to <see cref="TimeSpan.MaxValue"/>, which means no expiration.
+        /// The default expiration timeout.
         /// </summary>
+        public static readonly TimeSpan DefaultExpirationTimeout = TimeSpan.FromSeconds(-1);
+
+        /// <summary>
+        /// Gets or sets the expiration timeout for stored events.
+        /// Negative value means no expiration.
+        /// Defaults to -1 second.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "-0:0:1")]
         public TimeSpan ExpirationTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum event count to store. When this limit is reached, older events are removed.
         /// Defaults to <see cref="DefaultMaxEventCount"/>.
         /// </summary>
+        [DefaultValue(DefaultMaxEventCount)]
         public long MaxEventCount { get; set; }
 
         /// <summary>
@@ -46,8 +57,44 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public MemoryEventStorageSpi()
         {
-            ExpirationTimeout = TimeSpan.MaxValue;
+            ExpirationTimeout = DefaultExpirationTimeout;
             MaxEventCount = DefaultMaxEventCount;
+        }
+
+        /// <summary>
+        /// Reads instance.
+        /// </summary>
+        internal static MemoryEventStorageSpi Read(IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            var eventCount = reader.ReadLong();
+            var timeout = reader.ReadLong();
+
+            return new MemoryEventStorageSpi
+            {
+                MaxEventCount = eventCount,
+                ExpirationTimeout = timeout < 0 || timeout > TimeSpan.MaxValue.TotalMilliseconds
+                    ? DefaultExpirationTimeout
+                    : TimeSpan.FromMilliseconds(timeout)
+            };
+        }
+
+        /// <summary>
+        /// Writes this instance.
+        /// </summary>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            writer.WriteLong(MaxEventCount);
+
+            if (ExpirationTimeout == TimeSpan.MaxValue || ExpirationTimeout < TimeSpan.Zero)
+            {
+                writer.WriteLong(long.MaxValue);
+            }
+            else
+            {
+                writer.WriteLong((long) ExpirationTimeout.TotalMilliseconds);
+            }
         }
     }
 }
