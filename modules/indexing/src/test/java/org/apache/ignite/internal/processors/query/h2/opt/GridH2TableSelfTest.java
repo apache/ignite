@@ -290,6 +290,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIndexesMultiThreadedConsistency() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-3484");
+
         final int threads = 19;
         final int iterations = 1500;
 
