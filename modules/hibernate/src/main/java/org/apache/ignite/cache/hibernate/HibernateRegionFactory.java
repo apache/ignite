@@ -231,7 +231,6 @@ public class HibernateRegionFactory implements RegionFactory {
 
         } else {
             return threadLoc;
-
         }
     }
 
