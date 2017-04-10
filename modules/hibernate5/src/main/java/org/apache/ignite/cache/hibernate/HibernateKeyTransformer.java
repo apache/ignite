@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 /**
- * An interface for transforming hibernate keys to Ignite keys.
+ *
  */
 public interface HibernateKeyTransformer {
     /**

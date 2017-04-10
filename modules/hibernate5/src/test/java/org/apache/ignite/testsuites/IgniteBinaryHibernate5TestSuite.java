@@ -15,14 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.hibernate;
+package org.apache.ignite.testsuites;
+
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * An interface for transforming hibernate keys to Ignite keys.
+ *
  */
-public interface HibernateKeyTransformer {
+public class IgniteBinaryHibernate5TestSuite extends TestSuite {
     /**
-     * @param key Hibernate key.
+     * @return Test suite.
+     * @throws Exception If failed.
      */
-    public Object transform(Object key);
+    public static TestSuite suite() throws Exception {
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+
+        return IgniteHibernate5TestSuite.suite();
+    }
 }
