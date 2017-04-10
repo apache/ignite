@@ -61,6 +61,8 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -954,8 +956,16 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Collection of grid events.
      */
     @SuppressWarnings("unchecked")
-    public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
+    public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) throws IgniteCheckedException {
         assert p != null;
+
+        if (getSpi() instanceof NoopEventStorageSpi) {
+            throw new IgniteCheckedException(
+                "Failed to query events because default no-op event storage SPI is used. " +
+                "Consider configuring " + MemoryEventStorageSpi.class.getSimpleName() + " or another " +
+                EventStorageSpi.class.getSimpleName() + " implementation via " +
+                "IgniteConfiguration.setEventStorageSpi() configuration property.");
+        }
 
         if (p instanceof PlatformEventFilterListener) {
             PlatformEventFilterListener p0 = (PlatformEventFilterListener)p;

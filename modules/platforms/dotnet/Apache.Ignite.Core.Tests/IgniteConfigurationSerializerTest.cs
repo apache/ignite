@@ -137,6 +137,7 @@ namespace Apache.Ignite.Core.Tests
                             <pluginConfigurations>
                                 <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
                             </pluginConfigurations>
+                            <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -255,6 +256,11 @@ namespace Apache.Ignite.Core.Tests
 
             var cachePlugCfg = cacheCfg.PluginConfigurations.Cast<CachePluginConfiguration>().Single();
             Assert.AreEqual("baz", cachePlugCfg.TestProperty);
+
+            var eventStorage = cfg.EventStorageSpi as MemoryEventStorageSpi;
+            Assert.IsNotNull(eventStorage);
+            Assert.AreEqual(23.45, eventStorage.ExpirationTimeout.TotalSeconds);
+            Assert.AreEqual(129, eventStorage.MaxEventCount);
         }
 
         /// <summary>
@@ -796,7 +802,12 @@ namespace Apache.Ignite.Core.Tests
                     ReadStripesNumber = 77,
                     BaseDirectory = "test"
                 },
-                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() }
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
+                EventStorageSpi = new MemoryEventStorageSpi
+                {
+                    ExpirationTimeout = TimeSpan.FromMilliseconds(12345),
+                    MaxEventCount = 257
+                }
             };
         }
 
