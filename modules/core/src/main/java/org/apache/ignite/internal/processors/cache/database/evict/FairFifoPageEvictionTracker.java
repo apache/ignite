@@ -31,9 +31,6 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
     /** Page usage deque. */
     private final LinkedList<Integer> pageUsageList = new LinkedList<>();
 
-//    /** Forgotten pages. */
-//    private final Set<Integer> forgottenPages = new HashSet<>();
-
     /**
      * @param pageMem Page memory.
      * @param plcCfg Memory policy configuration.

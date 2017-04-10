@@ -87,8 +87,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      *
      */
     private final class UpdateRowHandler extends PageHandler<CacheDataRow, Boolean> {
-        @Override
-        public Boolean run(
+        @Override public Boolean run(
             int cacheId,
             long pageId,
             long page,
@@ -103,6 +102,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             int rowSize = getRowSize(row);
 
             boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
+
+            evictionTracker.touchPage(pageId);
 
             if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
                 // TODO This record must contain only a reference to a logical WAL record with the actual data.
@@ -132,8 +133,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      *
      */
     private final class WriteRowHandler extends PageHandler<CacheDataRow, Integer> {
-        @Override
-        public Integer run(
+        @Override public Integer run(
             int cacheId,
             long pageId,
             long page,
