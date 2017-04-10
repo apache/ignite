@@ -37,11 +37,11 @@ import org.apache.ignite.internal.processors.cache.GridCachePartitionedGetSelfTe
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedProjectionAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVariableTopologySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteAtomicCacheEntryProcessorNodeJoinTest;
-import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryProcessorNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheIncrementTxTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionMapUpdateTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop;
+import org.apache.ignite.internal.processors.cache.MemoryPolicyConfigValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLoadingConcurrentGridStartSelfTestAllowOverwrite;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLockReleaseNodeLeaveTest;
@@ -51,14 +51,12 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTransfor
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodeChangingTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodePartitionsExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheServerNodeConcurrentStart;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicExpiredEntriesPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedOptimisticTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedPreloadRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedPrimarySyncSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtEntrySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtEvictionsDisabledSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtExpiredEntriesPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtMappingSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadBigDataSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadDelayedSelfTest;
@@ -78,7 +76,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAto
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearReadersSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearEvictionEventSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearExpiredEntriesPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearJobExecutionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearMultiGetSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearMultiNodeSelfTest;
@@ -121,6 +118,7 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGet
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalBasicApiSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalBasicStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalEventSelfTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalEvictionEventSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalIsolatedNodesSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalLoadAllSelfTest;
@@ -154,8 +152,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTestSuite(GridCacheLocalTxSingleThreadedSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxTimeoutSelfTest.class);
         suite.addTestSuite(GridCacheLocalEventSelfTest.class);
-        // TODO TODO GG-11140.
-        // suite.addTestSuite(GridCacheLocalEvictionEventSelfTest.class);
+        suite.addTestSuite(GridCacheLocalEvictionEventSelfTest.class);
         suite.addTestSuite(GridCacheVariableTopologySelfTest.class);
         suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheTransformEventSelfTest.class);
@@ -222,7 +219,6 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedLoadCacheSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionNotLoadedEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtEvictionsDisabledSelfTest.class));
-        // TODO GG-11140.
         suite.addTest(new TestSuite(GridCacheNearEvictionEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionEventSelfTest.class));
 
@@ -233,10 +229,6 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCacheColocatedOptimisticTransactionSelfTest.class));
         suite.addTestSuite(GridCacheAtomicMessageCountSelfTest.class);
         suite.addTest(new TestSuite(GridCacheNearPartitionedClearSelfTest.class));
-
-        suite.addTest(new TestSuite(GridCacheDhtExpiredEntriesPreloadSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheNearExpiredEntriesPreloadSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheAtomicExpiredEntriesPreloadSelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheOffheapUpdateSelfTest.class));
 

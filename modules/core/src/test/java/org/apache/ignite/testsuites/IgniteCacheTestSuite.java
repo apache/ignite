@@ -258,8 +258,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAsyncOperationsLimitSelfTest.class);
         suite.addTestSuite(IgniteCacheManyAsyncOperationsTest.class);
         suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
-        // TODO GG-11140.
-        // suite.addTestSuite(GridCacheTtlManagerEvictionSelfTest.class);
+        // TODO: ignite-4534
+//        suite.addTestSuite(GridCacheTtlManagerEvictionSelfTest.class);
         suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicStopBusySelfTest.class);
         suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class);

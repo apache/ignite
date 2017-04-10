@@ -416,7 +416,7 @@ void CheckRawMapEmpty(MapType* mapType)
 
     int8_t key;
     BinaryInner val;
-    BOOST_CHECK_EXCEPTION(mapReader.GetNext(&key, &val), IgniteError, IsBinaryError);
+    BOOST_CHECK_EXCEPTION(mapReader.GetNext(key, val), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -473,21 +473,21 @@ void CheckRawMap(MapType* mapType)
 
     BOOST_REQUIRE(mapReader.HasNext());
 
-    mapReader.GetNext(&key, &val);
+    mapReader.GetNext(key, val);
     BOOST_REQUIRE(key == 1);
     BOOST_REQUIRE(val.GetValue() == writeVal1.GetValue());
 
-    mapReader.GetNext(&key, &val);
+    mapReader.GetNext(key, val);
     BOOST_REQUIRE(key == 2);
     BOOST_REQUIRE(val.GetValue() == writeVal2.GetValue());
 
-    mapReader.GetNext(&key, &val);
+    mapReader.GetNext(key, val);
     BOOST_REQUIRE(key == 3);
     BOOST_REQUIRE(val.GetValue() == writeVal3.GetValue());
 
     BOOST_REQUIRE(!mapReader.HasNext());
 
-    BOOST_CHECK_EXCEPTION(mapReader.GetNext(&key, &val), IgniteError, IsBinaryError);
+    BOOST_CHECK_EXCEPTION(mapReader.GetNext(key, val), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1229,7 +1229,7 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
 
     int8_t key;
     BinaryInner val;
-    BOOST_CHECK_EXCEPTION(mapReader.GetNext(&key, &val), IgniteError, IsBinaryError);
+    BOOST_CHECK_EXCEPTION(mapReader.GetNext(key, val), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }

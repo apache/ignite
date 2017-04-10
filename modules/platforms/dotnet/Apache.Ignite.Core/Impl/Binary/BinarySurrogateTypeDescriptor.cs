@@ -135,12 +135,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return false; }
         }
 
-        /** <inheritdoc/> */
-        public IBinaryEqualityComparer EqualityComparer
-        {
-            get { return null; }
-        }
-
         /** <inheritDoc /> */
         public BinaryStructure WriterTypeStructure
         {

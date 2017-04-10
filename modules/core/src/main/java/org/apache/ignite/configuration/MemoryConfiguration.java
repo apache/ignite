@@ -86,8 +86,10 @@ public class MemoryConfiguration implements Serializable {
     /**
      * @param sysCacheMemSize Memory size for system cache.
      */
-    public void setSystemCacheMemorySize(long sysCacheMemSize) {
+    public MemoryConfiguration setSystemCacheMemorySize(long sysCacheMemSize) {
         this.sysCacheMemSize = sysCacheMemSize;
+
+        return this;
     }
 
     /**
@@ -100,15 +102,17 @@ public class MemoryConfiguration implements Serializable {
     /**
      * @param pageSize Page size.
      */
-    public void setPageSize(int pageSize) {
+    public MemoryConfiguration setPageSize(int pageSize) {
         A.ensure(pageSize >= 1024 && pageSize <= 16 * 1024, "Page size must be between 1kB and 16kB.");
         A.ensure(U.isPow2(pageSize), "Page size must be a power of 2.");
 
         this.pageSize = pageSize;
+
+        return this;
     }
 
     /**
-     * @return Array of MemoryPolicyConfiguration objects.
+     * @return array of MemoryPolicyConfiguration objects.
      */
     public MemoryPolicyConfiguration[] getMemoryPolicies() {
         return memPlcs;
@@ -117,8 +121,10 @@ public class MemoryConfiguration implements Serializable {
     /**
      * @param memPlcs MemoryPolicyConfiguration instances.
      */
-    public void setMemoryPolicies(MemoryPolicyConfiguration... memPlcs) {
+    public MemoryConfiguration setMemoryPolicies(MemoryPolicyConfiguration... memPlcs) {
         this.memPlcs = memPlcs;
+
+        return this;
     }
 
     /**
@@ -143,8 +149,10 @@ public class MemoryConfiguration implements Serializable {
     /**
      * @param concLvl Concurrency level.
      */
-    public void setConcurrencyLevel(int concLvl) {
+    public MemoryConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
+
+        return this;
     }
 
     /**
@@ -157,7 +165,9 @@ public class MemoryConfiguration implements Serializable {
     /**
      * @param dfltMemPlcName Name of MemoryPolicy to be used as default.
      */
-    public void setDefaultMemoryPolicyName(String dfltMemPlcName) {
+    public MemoryConfiguration setDefaultMemoryPolicyName(String dfltMemPlcName) {
         this.dfltMemPlcName = dfltMemPlcName;
+
+        return this;
     }
 }

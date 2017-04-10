@@ -15,25 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheExpiredEntriesPreloadAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import org.apache.ignite.binary.BinaryObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Tests preloading of expired entries.
+ * Interface to compute hash codes for new binary objects and compare them for equality.
  */
-public class GridCacheDhtExpiredEntriesPreloadSelfTest extends GridCacheExpiredEntriesPreloadAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
+public interface BinaryIdentityResolver {
+    /**
+     * Compute hash code for binary object.
+     *
+     * @param obj Binary object.
+     * @return Hash code value.
+     */
+    public int hashCode(BinaryObject obj);
 
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
-    }
+    /**
+     * Compare two binary objects for equality.
+     *
+     * @param o1 First object.
+     * @param o2 Second object.
+     * @return {@code True} if both objects are equal.
+     */
+    public boolean equals(@Nullable BinaryObject o1, @Nullable BinaryObject o2);
 }

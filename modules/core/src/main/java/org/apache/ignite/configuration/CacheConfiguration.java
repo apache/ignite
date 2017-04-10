@@ -50,7 +50,6 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
@@ -345,9 +344,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     private boolean readFromBackup = DFLT_READ_FROM_BACKUP;
 
-    /** Collection of type metadata. */
-    private Collection<CacheTypeMetadata> typeMeta;
-
     /** Node filter specifying nodes on which this cache should be deployed. */
     private IgnitePredicate<ClusterNode> nodeFilter;
 
@@ -462,7 +458,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
-        typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
@@ -1176,8 +1171,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param sqlIndexMaxInlineSize Maximum inline size for sql indexes.
      */
-    public void setSqlIndexMaxInlineSize(int sqlIndexMaxInlineSize) {
+    public CacheConfiguration<K, V> setSqlIndexMaxInlineSize(int sqlIndexMaxInlineSize) {
         this.sqlIndexMaxInlineSize = sqlIndexMaxInlineSize;
+
+        return this;
     }
 
     /**
@@ -1509,28 +1506,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets collection of type metadata objects.
-     *
-     * @return Collection of type metadata.
-     */
-    public Collection<CacheTypeMetadata> getTypeMetadata() {
-        return typeMeta;
-    }
-
-    /**
-     * Sets collection of type metadata objects.
-     *
-     * @param typeMeta Collection of type metadata.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link #setQueryEntities(java.util.Collection)} instead.
-     */
-    public CacheConfiguration<K, V> setTypeMetadata(Collection<CacheTypeMetadata> typeMeta) {
-        this.typeMeta = new ArrayList<>(typeMeta);
-
-        return this;
-    }
-
-    /**
      * Gets flag indicating whether data can be read from backup.
      * If {@code false} always get data from primary node (never from backup).
      * <p>
@@ -1836,8 +1811,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param partitionLossPolicy Partition loss policy.
      * @see PartitionLossPolicy
      */
-    public void setPartitionLossPolicy(PartitionLossPolicy partitionLossPolicy) {
+    public CacheConfiguration<K, V> setPartitionLossPolicy(PartitionLossPolicy partitionLossPolicy) {
         this.partitionLossPolicy = partitionLossPolicy;
+
+        return this;
     }
 
     /**

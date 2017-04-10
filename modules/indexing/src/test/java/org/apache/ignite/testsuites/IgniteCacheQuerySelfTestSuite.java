@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheQueryIndexSelfTest
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCrossCachesJoinsQueryTest;
-import org.apache.ignite.internal.processors.cache.IncorrectCacheTypeMetadataTest;
 import org.apache.ignite.internal.processors.cache.IncorrectQueryEntityTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityCaseMismatchTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
@@ -96,6 +95,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTe
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
+import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2TableSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
@@ -125,7 +125,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Config.
         suite.addTestSuite(IgniteCacheDuplicateEntityConfigurationSelfTest.class);
-        suite.addTestSuite(IncorrectCacheTypeMetadataTest.class);
         suite.addTestSuite(IncorrectQueryEntityTest.class);
 
         // Queries tests.
@@ -181,6 +180,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IndexingSpiQueryTxSelfTest.class);
 
         suite.addTestSuite(IgniteCacheMultipleIndexedTypesTest.class);
+        suite.addTestSuite(IgniteSqlQueryMinMaxTest.class);
 
         // Fields queries.
         suite.addTestSuite(SqlFieldsQuerySelfTest.class);

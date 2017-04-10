@@ -28,6 +28,10 @@
         <property name="clientMode" value="true"/>
 
         <property name="igniteInstanceName" value="client"/>
+
+        <property name="cacheConfiguration">
+            <list/>
+        </property>
     </bean>
 
 </beans>

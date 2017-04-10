@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -120,15 +119,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        updateValSizeThreshold = cctx.kernalContext().config().getMemoryConfiguration().getPageSize() / 2;
+        updateValSizeThreshold = cctx.shared().database().pageSize() / 2;
 
         if (cctx.affinityNode()) {
-            if (cctx.kernalContext().clientNode()) {
-                assert cctx.isLocal() : cctx.name();
-
-                cctx.shared().database().init();
-            }
-
             cctx.shared().database().checkpointReadLock();
 
             try {
@@ -1461,10 +1454,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         private int compareKeys(KeyCacheObject key, final long link) throws IgniteCheckedException {
             byte[] bytes = key.valueBytes(cctx.cacheObjectContext());
 
-            PageMemory pageMem = cctx.memoryPolicy().pageMemory();
-
-            try (Page page = page(pageId(link))) {
-                long pageAddr = page.getForReadPointer(); // Non-empty data page must not be recycled.
+            final long pageId = pageId(link);
+            final long page = acquirePage(pageId);
+            try {
+                long pageAddr = readLock(pageId, page); // Non-empty data page must not be recycled.
 
                 assert pageAddr != 0L : link;
 
@@ -1473,7 +1466,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                     DataPagePayload data = io.readPayload(pageAddr,
                         itemId(link),
-                        pageMem.pageSize());
+                        pageSize());
 
                     if (data.nextLink() == 0) {
                         long addr = pageAddr + data.offset();
@@ -1513,8 +1506,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                     }
                 }
                 finally {
-                    page.releaseRead();
+                    readUnlock(pageId, page, pageAddr);
                 }
+            }
+            finally {
+                releasePage(pageId, page);
             }
 
             // TODO GG-11768.

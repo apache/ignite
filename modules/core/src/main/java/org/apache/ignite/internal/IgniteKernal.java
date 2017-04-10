@@ -73,6 +73,7 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -99,7 +100,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -703,6 +703,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
         final ExecutorService execSvc,
+        final ExecutorService svcExecSvc,
         final ExecutorService sysExecSvc,
         final StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
@@ -816,6 +817,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw,
                 utilityCachePool,
                 execSvc,
+                svcExecSvc,
                 sysExecSvc,
                 stripedExecSvc,
                 p2pExecSvc,
@@ -2428,6 +2430,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackMemoryConfiguration() {
         MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
 
+        if (memCfg == null)
+            return;
+
         U.log(log, "System cache MemoryPolicy size is configured to " +
                 (memCfg.getSystemCacheMemorySize() / (1024 * 1024)) +
         "MB size. " +
@@ -3366,6 +3371,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        return ctx.cache().context().database().memoryMetrics();
     }
 
     /** {@inheritDoc} */

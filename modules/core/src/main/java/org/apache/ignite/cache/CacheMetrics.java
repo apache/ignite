@@ -146,13 +146,6 @@ public interface CacheMetrics {
     public String name();
 
     /**
-     * Gets number of entries that was swapped to disk.
-     *
-     * @return Number of entries that was swapped to disk.
-     */
-    public long getOverflowSize();
-
-    /**
      * The total number of get requests to the off-heap memory.
      *
      * @return The number of gets.
@@ -242,69 +235,6 @@ public interface CacheMetrics {
      * @return Off-heap memory maximum size.
      */
     public long getOffHeapMaxSize();
-
-    /**
-     * The total number of get requests to the swap.
-     *
-     * @return The number of gets.
-     */
-    public long getSwapGets();
-
-    /**
-     * The total number of put requests to the swap.
-     *
-     * @return The number of puts.
-     */
-    public long getSwapPuts();
-
-    /**
-     * The total number of removals from the swap.
-     *
-     * @return The number of removals.
-     */
-    public long getSwapRemovals();
-
-    /**
-     * The number of get requests that were satisfied by the swap.
-     *
-     * @return The swap hits number.
-     */
-    public long getSwapHits();
-
-    /**
-     * A miss is a get request that is not satisfied by swap.
-     *
-     * @return The swap misses number.
-     */
-    public long getSwapMisses();
-
-    /**
-     * Gets number of entries stored in swap.
-     *
-     * @return Number of entries stored in swap.
-     */
-    public long getSwapEntriesCount();
-
-    /**
-     * Gets size of swap.
-     *
-     * @return Size of swap.
-     */
-    public long getSwapSize();
-
-    /**
-     * Gets the percentage of hits on swap.
-     *
-     * @return The percentage of hits on swap.
-     */
-    public float getSwapHitPercentage();
-
-    /**
-     * Gets the percentage of misses on swap.
-     *
-     * @return The percentage of misses on swap.
-     */
-    public float getSwapMissPercentage();
 
     /**
      * Gets number of non-{@code null} values in the cache.

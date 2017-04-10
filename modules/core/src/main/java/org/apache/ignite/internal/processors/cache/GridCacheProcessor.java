@@ -387,6 +387,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param c Ignite Configuration.
+     * @param cc Cache Configuration.
+     * @return {@code true} if cache is starting on client node and this node is affinity node for the cache.
+     */
+    private boolean storesLocallyOnClient(IgniteConfiguration c,
+                                          CacheConfiguration cc) {
+        if (c.isClientMode()
+                && c.getMemoryConfiguration() == null) {
+            if (cc.getCacheMode() == LOCAL)
+                return true;
+
+            if (ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName()))
+                return true;
+
+            return false;
+        }
+        else
+            return false;
+    }
+
+    /**
      * @param c Ignite configuration.
      * @param cc Configuration to validate.
      * @param cacheType Cache type.
@@ -406,6 +427,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cc.setNearConfiguration(null);
             }
         }
+
+        if (storesLocallyOnClient(c, cc))
+            throw new IgniteCheckedException("MemoryPolicy for client caches must be explicitly configured " +
+                    "on client node startup. Use MemoryConfiguration to configure MemoryPolicy.");
 
         if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinityFunction.class))
             U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
@@ -713,6 +738,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cacheType = CacheType.INTERNAL;
             else
                 cacheType = CacheType.USER;
+
+        if (cacheType != CacheType.USER)
+            cfg.setMemoryPolicyName(sharedCtx.database().systemMemoryPolicyName());
 
         if (cacheType != CacheType.USER)
             cfg.setMemoryPolicyName(sharedCtx.database().systemMemoryPolicyName());

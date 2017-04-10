@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.binary;
+package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.GridBinaryDuplicateIndexObjectsAbstractSelfTest;
 
 /**
- * Interface to compute hash codes for new binary objects and compare them for equality.
+ * Test PARTITIONED ATOMIC.
  */
-public interface BinaryIdentityResolver {
-    /**
-     * Compute hash code for binary object.
-     *
-     * @param obj Binary object.
-     * @return Hash code value.
-     */
-    public int hashCode(BinaryObject obj);
+public class GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest extends
+    GridBinaryDuplicateIndexObjectsAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override public CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
+    }
 
-    /**
-     * Compare two binary objects for equality.
-     *
-     * @param o1 First object.
-     * @param o2 Second object.
-     * @return {@code True} if both objects are equal.
-     */
-    public boolean equals(@Nullable BinaryObject o1, @Nullable BinaryObject o2);
+    /** {@inheritDoc} */
+    @Override public CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
+    }
 }
