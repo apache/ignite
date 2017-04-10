@@ -280,8 +280,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testDeactivationWithPendingLock() throws Exception {
-        //TODO GG-11851
-        fail();
+        fail("https://issues.apache.org/jira/browse/IGNITE-4931");
 
         startGrids(GRID_CNT);
 
@@ -338,7 +337,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testDeactivationWithPendingTransaction() throws Exception {
-        fail("Safe way for deactivate cluster must be implemented.");
+        fail("https://issues.apache.org/jira/browse/IGNITE-4931");
 
         startGrids(GRID_CNT);
 
