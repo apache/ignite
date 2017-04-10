@@ -1143,7 +1143,7 @@ public class PlatformConfigurationUtils {
         } else if (eventStorageSpi instanceof NoopEventStorageSpi) {
             w.writeByte((byte) 1);
         } else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
-            w.writeByte((byte) 1);
+            w.writeByte((byte) 2);
 
             w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
             w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireAgeMs());
