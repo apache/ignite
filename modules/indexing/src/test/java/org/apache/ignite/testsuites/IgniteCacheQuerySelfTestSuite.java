@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQueryCancelOrTimeoutSelfTest;
@@ -181,6 +182,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheDistributedJoinCustomAffinityMapper.class);
 
+        // DML.
         suite.addTestSuite(IgniteCacheMergeSqlQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheInsertSqlQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheUpdateSqlQuerySelfTest.class);
@@ -193,6 +195,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         suite.addTestSuite(IndexingSpiQuerySelfTest.class);
         suite.addTestSuite(IndexingSpiQueryTxSelfTest.class);
+
+        // DDL.
+        suite.addTestSuite(H2DynamicIndexSelfTest.class);
 
         // Fields queries.
         suite.addTestSuite(SqlFieldsQuerySelfTest.class);

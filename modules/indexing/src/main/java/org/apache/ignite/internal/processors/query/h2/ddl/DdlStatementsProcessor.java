@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.DropIndex;
@@ -147,10 +148,61 @@ public class DdlStatementsProcessor {
 
             return resCur;
         }
+        catch (SchemaOperationException e) {
+            throw convert(e);
+        }
         catch (Exception e) {
-            // TODO: Proper error handling.
             throw new IgniteSQLException("DLL operation failed.", e);
         }
+    }
+
+    /**
+     * @return {@link IgniteSQLException} with the message same as of {@code this}'s and
+     */
+    private IgniteSQLException convert(SchemaOperationException e) {
+        int sqlCode;
+
+        switch (e.code()) {
+            case SchemaOperationException.CODE_CACHE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.CACHE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.TABLE_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_TABLE_EXISTS:
+                sqlCode = IgniteQueryErrorCode.TABLE_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.COLUMN_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_COLUMN_EXISTS:
+                sqlCode = IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_NOT_FOUND:
+                sqlCode = IgniteQueryErrorCode.INDEX_NOT_FOUND;
+
+                break;
+
+            case SchemaOperationException.CODE_INDEX_EXISTS:
+                sqlCode = IgniteQueryErrorCode.INDEX_ALREADY_EXISTS;
+
+                break;
+
+            default:
+                sqlCode = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        return new IgniteSQLException(e.getMessage(), sqlCode);
     }
 
     /**

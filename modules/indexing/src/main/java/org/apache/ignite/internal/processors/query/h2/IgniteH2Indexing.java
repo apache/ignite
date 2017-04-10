@@ -1602,8 +1602,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             return ddlProc.runDdlStatement(cctx.name(), stmt);
                         }
                         catch (IgniteCheckedException e) {
-                            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']',
-                                e);
+                            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
                         }
                     }
                 }

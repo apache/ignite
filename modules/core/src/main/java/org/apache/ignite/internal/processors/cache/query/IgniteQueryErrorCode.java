@@ -67,6 +67,15 @@ public final class IgniteQueryErrorCode {
     /** Index does not exist. */
     public final static int INDEX_NOT_FOUND = 3006;
 
+    /** Required table already exists. */
+    public final static int TABLE_ALREADY_EXISTS = 3007;
+
+    /** Required column not found. */
+    public final static int COLUMN_NOT_FOUND = 3008;
+
+    /** Required column already exists. */
+    public final static int COLUMN_ALREADY_EXISTS = 3009;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */
@@ -83,6 +92,14 @@ public final class IgniteQueryErrorCode {
 
     /** {@link EntryProcessor} has thrown an exception during {@link IgniteCache#invokeAll}. */
     public final static int ENTRY_PROCESSING = 4005;
+
+    /** Cache not found. */
+    public final static int CACHE_NOT_FOUND = 4006;
+
+    /** */
+    private IgniteQueryErrorCode() {
+        // No-op.
+    }
 
     /**
      * Create a {@link SQLException} for given code and message with null state.

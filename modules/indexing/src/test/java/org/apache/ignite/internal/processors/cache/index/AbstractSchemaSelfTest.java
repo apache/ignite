@@ -427,6 +427,22 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         public long id() {
             return id;
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            KeyClass keyClass = (KeyClass) o;
+
+            return id == keyClass.id;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return (int) (id ^ (id >>> 32));
+        }
     }
 
     /**
@@ -477,5 +493,17 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         public String field() {
             return field;
         }
+    }
+
+    /**
+     * Runnable which can throw checked exceptions.
+     */
+    protected interface RunnableX {
+        /**
+         * Do run.
+         *
+         * @throws Exception If failed.
+         */
+        public void run() throws Exception;
     }
 }

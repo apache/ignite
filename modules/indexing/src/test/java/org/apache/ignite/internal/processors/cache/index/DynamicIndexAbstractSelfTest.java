@@ -378,18 +378,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     }
 
     /**
-     * Runnable which can throw checked exceptions.
-     */
-    private interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        public void run() throws Exception;
-    }
-
-    /**
      * Node filter.
      */
     private static class NodeFilter implements IgnitePredicate<ClusterNode>, Serializable {
