@@ -23,7 +23,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -96,65 +95,36 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPartitionedAtomicOnHeap() throws Exception {
-        doTest(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, CacheMemoryMode.ONHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionedAtomicOffHeap() throws Exception {
-        doTest(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, CacheMemoryMode.OFFHEAP_TIERED);
+        doTest(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPartitionedTransactionalOnHeap() throws Exception {
-        doTest(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, CacheMemoryMode.ONHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionedTransactionalOffHeap() throws Exception {
-        doTest(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, CacheMemoryMode.OFFHEAP_TIERED);
+        doTest(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReplicatedAtomicOnHeap() throws Exception {
-        doTest(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, CacheMemoryMode.ONHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedAtomicOffHeap() throws Exception {
-        doTest(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, CacheMemoryMode.OFFHEAP_TIERED);
+        doTest(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReplicatedTransactionalOnHeap() throws Exception {
-        doTest(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, CacheMemoryMode.ONHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedTransactionalOffHeap() throws Exception {
-        doTest(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, CacheMemoryMode.OFFHEAP_TIERED);
+        doTest(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /**
      * @param cacheMode Cache mode.
      * @param atomicityMode Atomicity mode.
-     * @param memMode Memory mode.
      * @throws Exception If failed.
      */
-    private void doTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode, CacheMemoryMode memMode)
+    private void doTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode)
         throws Exception {
         Ignite ignite = grid("client");
 
@@ -164,7 +134,6 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
             cfg.setName("cache");
             cfg.setCacheMode(cacheMode);
             cfg.setAtomicityMode(atomicityMode);
-            cfg.setMemoryMode(memMode);
 
             IgniteCache<Integer, Integer> cache = ignite.createCache(cfg);
 

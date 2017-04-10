@@ -621,7 +621,6 @@ namespace Apache.Ignite.Core.Tests
                         LongQueryWarningTimeout = TimeSpan.FromSeconds(99),
                         MaxConcurrentAsyncOperations = 24,
                         MaxEvictionOverflowRatio = 5.6F,
-                        OffHeapMaxMemory = 567,
                         QueryEntities = new[]
                         {
                             new QueryEntity
@@ -650,7 +649,6 @@ namespace Apache.Ignite.Core.Tests
                         RebalanceThrottle = TimeSpan.FromHours(44),
                         RebalanceTimeout = TimeSpan.FromMinutes(8),
                         SqlEscapeAll = true,
-                        SqlOnheapRowCacheSize = 679,
                         StartSize = 1023,
                         WriteBehindBatchSize = 45,
                         WriteBehindEnabled = true,

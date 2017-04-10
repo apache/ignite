@@ -280,6 +280,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
             if (modes.offheap)
                 size += offheap.entriesCount(modes.primary, modes.backup, topVer);
+            else if (modes.heap) {
+                for (GridDhtLocalPartition locPart : ctx.topology().currentLocalPartitions()) {
+                    if ((modes.primary && locPart.primary(topVer)) || (modes.backup && locPart.backup(topVer)))
+                        size += locPart.publicSize();
+                }
+            }
         }
 
         return size;

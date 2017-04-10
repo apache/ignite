@@ -3656,14 +3656,24 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *  Increments public size of map.
      */
     protected void incrementMapPublicSize() {
-        cctx.incrementPublicSize(this);
+        GridDhtLocalPartition locPart = localPartition();
+
+        if (locPart != null)
+            locPart.incrementPublicSize(this);
+        else
+            cctx.incrementPublicSize(this);
     }
 
     /**
      * Decrements public size of map.
      */
     protected void decrementMapPublicSize() {
-        cctx.decrementPublicSize(this);
+        GridDhtLocalPartition locPart = localPartition();
+
+        if (locPart != null)
+            locPart.decrementPublicSize(this);
+        else
+            cctx.decrementPublicSize(this);
     }
 
     /**

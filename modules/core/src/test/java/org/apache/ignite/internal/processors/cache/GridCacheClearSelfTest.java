@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -80,177 +79,92 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClearPartitioned() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.ONHEAP_TIERED, false, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearPartitionedOffHeap() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.OFFHEAP_TIERED, false, null);
+        testClear(CacheMode.PARTITIONED, false, null);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearPartitionedNear() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.ONHEAP_TIERED, true, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearPartitionedOffHeapNear() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.OFFHEAP_TIERED, true, null);
+        testClear(CacheMode.PARTITIONED, true, null);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearReplicated() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.ONHEAP_TIERED, false, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearReplicatedOffHeap() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.OFFHEAP_TIERED, false, null);
+        testClear(CacheMode.REPLICATED, false, null);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearReplicatedNear() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.ONHEAP_TIERED, true, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearReplicatedOffHeapNear() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.OFFHEAP_TIERED, true, null);
+        testClear(CacheMode.REPLICATED, true, null);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearKeyPartitioned() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.ONHEAP_TIERED, false, Collections.singleton(3));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearKeyPartitionedOffHeap() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.OFFHEAP_TIERED, false, Collections.singleton(3));
+        testClear(CacheMode.PARTITIONED, false, Collections.singleton(3));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearKeyPartitionedNear() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.ONHEAP_TIERED, true, Collections.singleton(3));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearKeyPartitionedOffHeapNear() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.OFFHEAP_TIERED, true, Collections.singleton(3));
+        testClear(CacheMode.PARTITIONED, true, Collections.singleton(3));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearKeyReplicated() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.ONHEAP_TIERED, false, Collections.singleton(3));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearKeyReplicatedOffHeap() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.OFFHEAP_TIERED, false, Collections.singleton(3));
+        testClear(CacheMode.REPLICATED, false, Collections.singleton(3));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearKeyReplicatedNear() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.ONHEAP_TIERED, true, Collections.singleton(3));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearKeyReplicatedOffHeapNear() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.OFFHEAP_TIERED, true, Collections.singleton(3));
+        testClear(CacheMode.REPLICATED, true, Collections.singleton(3));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearKeysPartitioned() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.ONHEAP_TIERED, false, F.asSet(2, 6, 9));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearKeysPartitionedOffHeap() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.OFFHEAP_TIERED, false, F.asSet(2, 6, 9));
+        testClear(CacheMode.PARTITIONED, false, F.asSet(2, 6, 9));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearKeysPartitionedNear() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.ONHEAP_TIERED, true, F.asSet(2, 6, 9));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearKeysPartitionedOffHeapNear() throws Exception {
-        testClear(CacheMode.PARTITIONED, CacheMemoryMode.OFFHEAP_TIERED, true, F.asSet(2, 6, 9));
+        testClear(CacheMode.PARTITIONED, true, F.asSet(2, 6, 9));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearKeysReplicated() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.ONHEAP_TIERED, false, F.asSet(2, 6, 9));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearKeysReplicatedOffHeap() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.OFFHEAP_TIERED, false, F.asSet(2, 6, 9));
+        testClear(CacheMode.REPLICATED, false, F.asSet(2, 6, 9));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClearKeysReplicatedNear() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.ONHEAP_TIERED, true, F.asSet(2, 6, 9));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClearKeysReplicatedOffHeapNear() throws Exception {
-        testClear(CacheMode.REPLICATED, CacheMemoryMode.OFFHEAP_TIERED, true, F.asSet(2, 6, 9));
+        testClear(CacheMode.REPLICATED, true, F.asSet(2, 6, 9));
     }
 
     /**
      * @param cacheMode Cache mode.
-     * @param memMode Memory mode.
      * @param near Near cache flag.
      * @param keys Keys to clear.
      */
-    private void testClear(CacheMode cacheMode, CacheMemoryMode memMode, boolean near, @Nullable Set<Integer> keys) {
+    private void testClear(CacheMode cacheMode, boolean near, @Nullable Set<Integer> keys) {
         Ignite client1 = client1();
         Ignite client2 = client2();
 
@@ -261,7 +175,6 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
             CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(cacheName);
 
             cfg.setCacheMode(cacheMode);
-            cfg.setMemoryMode(memMode);
 
             IgniteCache<Integer, Integer> cache1 = near ?
                 client1.createCache(cfg, new NearCacheConfiguration<Integer, Integer>()) :

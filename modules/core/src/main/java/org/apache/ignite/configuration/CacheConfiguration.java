@@ -48,7 +48,6 @@ import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -148,12 +147,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default maximum eviction queue ratio. */
     public static final float DFLT_MAX_EVICTION_OVERFLOW_RATIO = 10;
 
-    /** Default eviction synchronized flag. */
-    public static final boolean DFLT_EVICT_SYNCHRONIZED = false;
-
-    /** Default eviction key buffer size for batching synchronized evicts. */
-    public static final int DFLT_EVICT_KEY_BUFFER_SIZE = 1024;
-
     /** Default synchronous eviction timeout in milliseconds. */
     public static final long DFLT_EVICT_SYNCHRONIZED_TIMEOUT = 10000;
 
@@ -162,9 +155,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default value for eager ttl flag. */
     public static final boolean DFLT_EAGER_TTL = true;
-
-    /** Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. */
-    public static final long DFLT_OFFHEAP_MEMORY = -1;
 
     /** Default value for 'maxConcurrentAsyncOps'. */
     public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
@@ -205,9 +195,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default number of queries detail metrics to collect. */
     public static final int DFLT_QRY_DETAIL_METRICS_SIZE = 0;
 
-    /** Default size for onheap SQL row cache size. */
-    public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
-
     /** Default value for keep binary in store behavior . */
     @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
     public static final Boolean DFLT_STORE_KEEP_BINARY = new Boolean(false);
@@ -240,23 +227,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache expiration policy. */
     private EvictionPolicy evictPlc;
 
-    /** Flag indicating whether eviction is synchronized. */
-    private boolean evictSync = DFLT_EVICT_SYNCHRONIZED;
-
-    /** Eviction key buffer size. */
-    private int evictKeyBufSize = DFLT_EVICT_KEY_BUFFER_SIZE;
-
-    /** Synchronous eviction concurrency level. */
-    private int evictSyncConcurrencyLvl = DFLT_EVICT_SYNCHRONIZED_CONCURRENCY_LEVEL;
-
-    /** Synchronous eviction timeout. */
-    private long evictSyncTimeout = DFLT_EVICT_SYNCHRONIZED_TIMEOUT;
+    /** */
+    private boolean onheapCache;
 
     /** Eviction filter. */
     private EvictionFilter<?, ?> evictFilter;
-
-    /** Maximum eviction overflow ratio. */
-    private float evictMaxOverflowRatio = DFLT_MAX_EVICTION_OVERFLOW_RATIO;
 
     /** Eager ttl flag. */
     private boolean eagerTtl = DFLT_EAGER_TTL;
@@ -318,9 +293,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Rebalance batches prefetch count. */
     private long rebalanceBatchesPrefetchCount = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
-    /** Off-heap memory size. */
-    private long offHeapMaxMem = DFLT_OFFHEAP_MEMORY;
-
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
 
@@ -380,9 +352,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** */
     private boolean sqlEscapeAll;
-
-    /** */
-    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
 
     /** */
     private transient Class<?>[] indexedTypes;
@@ -449,12 +418,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         dfltLockTimeout = cc.getDefaultLockTimeout();
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
-        evictKeyBufSize = cc.getEvictSynchronizedKeyBufferSize();
-        evictMaxOverflowRatio = cc.getEvictMaxOverflowRatio();
         evictPlc = cc.getEvictionPolicy();
-        evictSync = cc.isEvictSynchronized();
-        evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
-        evictSyncTimeout = cc.getEvictSynchronizedTimeout();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
         indexedTypes = cc.getIndexedTypes();
         interceptor = cc.getInterceptor();
@@ -466,13 +430,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
-        offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         memPlcName = cc.getMemoryPolicyName();
         sqlIndexMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
+        onheapCache = cc.isOnheapCacheEnabled();
         partitionLossPolicy = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
         qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
@@ -489,7 +453,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
-        sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
@@ -573,6 +536,25 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * @return On-heap cache enabled flag.
+     */
+    public boolean isOnheapCacheEnabled() {
+        return onheapCache;
+    }
+
+    /**
+     * Configures on-heap cache.
+     *
+     * @param onheapCache {@code True} if on-heap cache should be enabled.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setOnheapCacheEnabled(boolean onheapCache) {
+        this.onheapCache = onheapCache;
+
+        return this;
+    }
+
+    /**
      * @return Near enabled flag.
      */
     public NearCacheConfiguration<K, V> getNearConfiguration() {
@@ -632,153 +614,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
-
-        return this;
-    }
-
-    /**
-     * Gets flag indicating whether eviction is synchronized between primary, backup and near nodes.
-     * If this parameter is {@code true} and swap is disabled then {@link IgniteCache#localEvict(Collection)}
-     * will involve all nodes where an entry is kept.  If this property is set to {@code false} then
-     * eviction is done independently on different cache nodes.
-     * <p>
-     * Default value is defined by {@link #DFLT_EVICT_SYNCHRONIZED}.
-     * <p>
-     * Note that it's not recommended to set this value to {@code true} if cache
-     * store is configured since it will allow to significantly improve cache
-     * performance.
-     *
-     * @return {@code true} If eviction is synchronized with backup nodes (or the
-     *      rest of the nodes in case of replicated cache), {@code false} if not.
-     */
-    public boolean isEvictSynchronized() {
-        return evictSync;
-    }
-
-    /**
-     * Sets flag indicating whether eviction is synchronized with backup nodes or near caches
-     * (or the rest of the nodes for replicated cache).
-     *
-     * @param evictSync {@code true} if synchronized, {@code false} if not.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictSynchronized(boolean evictSync) {
-        this.evictSync = evictSync;
-
-        return this;
-    }
-
-    /**
-     * Gets size of the key buffer for synchronized evictions.
-     * <p>
-     * Default value is defined by {@link #DFLT_EVICT_KEY_BUFFER_SIZE}.
-     *
-     * @return Eviction key buffer size.
-     */
-    public int getEvictSynchronizedKeyBufferSize() {
-        return evictKeyBufSize;
-    }
-
-    /**
-     * Sets eviction key buffer size.
-     *
-     * @param evictKeyBufSize Eviction key buffer size.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictSynchronizedKeyBufferSize(int evictKeyBufSize) {
-        this.evictKeyBufSize = evictKeyBufSize;
-
-        return this;
-    }
-
-    /**
-     * Gets concurrency level for synchronized evictions. This flag only makes sense
-     * with {@link #isEvictSynchronized()} set
-     * to {@code true}. When synchronized evictions are enabled, it is possible that
-     * local eviction policy will try to evict entries faster than evictions can be
-     * synchronized with backup or near nodes. This value specifies how many concurrent
-     * synchronous eviction sessions should be allowed before the system is forced to
-     * wait and let synchronous evictions catch up with the eviction policy.
-     * <p>
-     * Note that if synchronous evictions start lagging, it is possible that you have either
-     * too big or too small eviction key buffer size or small eviction timeout. In that case
-     * you will need to adjust {@link #getEvictSynchronizedKeyBufferSize} or
-     * {@link #getEvictSynchronizedTimeout()} values as well.
-     * <p>
-     * Default value is defined by {@link #DFLT_EVICT_SYNCHRONIZED_CONCURRENCY_LEVEL}.
-     *
-     * @return Synchronous eviction concurrency level.
-     */
-    public int getEvictSynchronizedConcurrencyLevel() {
-        return evictSyncConcurrencyLvl;
-    }
-
-    /**
-     * Sets concurrency level for synchronized evictions.
-     *
-     * @param evictSyncConcurrencyLvl Concurrency level for synchronized evictions.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictSynchronizedConcurrencyLevel(int evictSyncConcurrencyLvl) {
-        this.evictSyncConcurrencyLvl = evictSyncConcurrencyLvl;
-
-        return this;
-    }
-
-    /**
-     * Gets timeout for synchronized evictions.
-     * <p>
-     * Node that initiates eviction waits for responses
-     * from remote nodes within this timeout.
-     * <p>
-     * Default value is defined by {@link #DFLT_EVICT_SYNCHRONIZED_TIMEOUT}.
-     *
-     * @return Synchronous eviction timeout.
-     */
-    public long getEvictSynchronizedTimeout() {
-        return evictSyncTimeout;
-    }
-
-    /**
-     * Sets timeout for synchronized evictions.
-     *
-     * @param evictSyncTimeout Timeout for synchronized evictions.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictSynchronizedTimeout(long evictSyncTimeout) {
-        this.evictSyncTimeout = evictSyncTimeout;
-
-        return this;
-    }
-
-    /**
-     * This value denotes the maximum size of eviction queue in percents of cache
-     * size in case of distributed cache (replicated and partitioned) and using
-     * synchronized eviction (that is if {@link #isEvictSynchronized()} returns
-     * {@code true}).
-     * <p>
-     * That queue is used internally as a buffer to decrease network costs for
-     * synchronized eviction. Once queue size reaches specified value all required
-     * requests for all entries in the queue are sent to remote nodes and the queue
-     * is cleared.
-     * <p>
-     * Default value is defined by {@link #DFLT_MAX_EVICTION_OVERFLOW_RATIO} and
-     * equals to {@code 10%}.
-     *
-     * @return Maximum size of eviction queue in percents of cache size.
-     */
-    public float getEvictMaxOverflowRatio() {
-        return evictMaxOverflowRatio;
-    }
-
-    /**
-     * Sets maximum eviction overflow ratio.
-     *
-     * @param evictMaxOverflowRatio Maximum eviction overflow ratio.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setEvictMaxOverflowRatio(float evictMaxOverflowRatio) {
-        this.evictMaxOverflowRatio = evictMaxOverflowRatio;
 
         return this;
     }
@@ -1624,53 +1459,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets maximum amount of memory available to off-heap storage. Possible values are
-     * <ul>
-     * <li>{@code -1} - Means that off-heap storage is disabled.</li>
-     * <li>
-     *     {@code 0} - Ignite will not limit off-heap storage (it's up to user to properly
-     *     add and remove entries from cache to ensure that off-heap storage does not grow
-     *     indefinitely.
-     * </li>
-     * <li>Any positive value specifies the limit of off-heap storage in bytes.</li>
-     * </ul>
-     * Default value is {@code -1}, specified by {@link #DFLT_OFFHEAP_MEMORY} constant
-     * which means that off-heap storage is disabled by default.
-     * <p>
-     * Use off-heap storage to load gigabytes of data in memory without slowing down
-     * Garbage Collection. Essentially in this case you should allocate very small amount
-     * of memory to JVM and Ignite will cache most of the data in off-heap space
-     * without affecting JVM performance at all.
-     * <p>
-     * Note that Ignite will throw an exception if max memory is set to {@code -1} and
-     * {@code offHeapValuesOnly} flag is set to {@code true}.
-     *
-     * @return Maximum memory in bytes available to off-heap memory space.
-     */
-    public long getOffHeapMaxMemory() {
-        return offHeapMaxMem;
-    }
-
-    /**
-     * Sets maximum amount of memory available to off-heap storage. Possible values are <ul> <li>{@code -1} - Means that
-     * off-heap storage is disabled.</li> <li> {@code 0} - Ignite will not limit off-heap storage (it's up to user to
-     * properly add and remove entries from cache to ensure that off-heap storage does not grow infinitely. </li>
-     * <li>Any positive value specifies the limit of off-heap storage in bytes.</li> </ul> Default value is {@code -1},
-     * specified by {@link #DFLT_OFFHEAP_MEMORY} constant which means that off-heap storage is disabled by default. <p>
-     * Use off-heap storage to load gigabytes of data in memory without slowing down Garbage Collection. Essentially in
-     * this case you should allocate very small amount of memory to JVM and Ignite will cache most of the data in
-     * off-heap space without affecting JVM performance at all.
-     *
-     * @param offHeapMaxMem Maximum memory in bytes available to off-heap memory space.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setOffHeapMaxMemory(long offHeapMaxMem) {
-        this.offHeapMaxMem = offHeapMaxMem;
-
-        return this;
-    }
-
-    /**
      * Gets maximum number of query iterators that can be stored. Iterators are stored to
      * support query pagination when each page of data is sent to user's node only on demand.
      * Increase this property if you are running and processing lots of queries in parallel.
@@ -1691,28 +1479,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setMaxQueryIteratorsCount(int maxQryIterCnt) {
         this.maxQryIterCnt = maxQryIterCnt;
-
-        return this;
-    }
-
-    /**
-     * Gets memory mode for cache. Memory mode helps control whether value is stored in on-heap memory,
-     * off-heap memory, or swap space. Refer to {@link CacheMemoryMode} for more info.
-     *
-     * @return Memory mode.
-     */
-    public CacheMemoryMode getMemoryMode() {
-        return null;
-    }
-
-    /**
-     * Sets memory mode for cache.
-     *
-     * @param memMode Memory mode.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setMemoryMode(CacheMemoryMode memMode) {
-        //this.memMode = memMode;
 
         return this;
     }
@@ -1998,31 +1764,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
-     * This setting only makes sense when offheap is enabled for this cache.
-     *
-     * @return Cache size.
-     * @see #setOffHeapMaxMemory(long)
-     */
-    public int getSqlOnheapRowCacheSize() {
-        return sqlOnheapRowCacheSize;
-    }
-
-    /**
-     * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
-     * This setting only makes sense when offheap is enabled for this cache.
-     *
-     * @param size Cache size.
-     * @see #setOffHeapMaxMemory(long)
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setSqlOnheapRowCacheSize(int size) {
-        this.sqlOnheapRowCacheSize = size;
-
-        return this;
-    }
-
-    /**
      * Gets array of cache plugin configurations.
      *
      * @return Cache plugin configurations.
@@ -2132,7 +1873,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see #getQueryParallelism()
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K,V> setQueryParallelism(int qryParallelism) {
+    public CacheConfiguration<K, V> setQueryParallelism(int qryParallelism) {
         this.qryParallelism = qryParallelism;
 
         return this;
@@ -2542,7 +2283,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      *  Filter that accepts all nodes.
      */
-    public static class IgniteAllNodesPredicate  implements IgnitePredicate<ClusterNode> {
+    public static class IgniteAllNodesPredicate implements IgnitePredicate<ClusterNode> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2799,7 +2540,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             if (descending) {
                 if (descendings == null)
-                    descendings  = new HashSet<>();
+                    descendings = new HashSet<>();
 
                 descendings.add(field);
             }

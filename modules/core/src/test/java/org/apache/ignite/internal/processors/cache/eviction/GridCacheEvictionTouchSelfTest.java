@@ -28,6 +28,7 @@ import java.util.TreeSet;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStore;
@@ -74,6 +75,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
 
         CacheStore store = new GridCacheGenericTestStore<Object, Object>() {
             @Override public Object load(Object key) {
@@ -191,7 +193,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
                 cache.localEvict(Collections.singleton(i));
 
             assertEquals(0, ((FifoEvictionPolicy)plc).queue().size());
-            assertEquals(0, cache.size());
+            assertEquals(0, cache.size(CachePeekMode.ONHEAP));
         }
         finally {
             stopAllGrids();
@@ -226,7 +228,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
                 cache.localEvict(Collections.singleton(key));
 
             assertEquals(0, ((FifoEvictionPolicy)plc).queue().size());
-            assertEquals(0, cache.size());
+            assertEquals(0, cache.size(CachePeekMode.ONHEAP));
         }
         finally {
             stopAllGrids();
@@ -250,8 +252,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 10000; i++)
                 load(cache, i, true);
 
-            assertEquals(100, cache.size());
-            assertEquals(100, cache.size());
+            assertEquals(100, cache.size(CachePeekMode.ONHEAP));
             assertEquals(100, ((FifoEvictionPolicy)plc).queue().size());
 
             Set<Integer> keys = new TreeSet<>();
@@ -261,8 +262,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
             loadAll(cache, keys, true);
 
-            assertEquals(100, cache.size());
-            assertEquals(100, cache.size());
+            assertEquals(100, cache.size(CachePeekMode.ONHEAP));
             assertEquals(100, ((FifoEvictionPolicy)plc).queue().size());
         }
         finally {
