@@ -286,7 +286,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         incompleteObj.readData(buf);
 
         // If p2p enabled then convert data to key cache object when class loader id will be read.
-        if (incompleteObj.isReady() && !ctx.p2pEnabled())
+        if (incompleteObj.isReady() && !ctx.addDeploymentInfo())
             incompleteObj.object(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
 
         return incompleteObj;

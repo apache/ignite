@@ -261,6 +261,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int len = PageUtils.getInt(addr, off);
         off += 4;
 
+        boolean depEnabled = coctx.addDeploymentInfo();
+        this.depEnabled = depEnabled;
+
         if (rowData != RowData.NO_KEY) {
             byte type = PageUtils.getByte(addr, off);
             off++;
@@ -268,7 +271,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             byte[] bytes = PageUtils.getBytes(addr, off, len);
             off += len;
 
-            if (coctx.p2pEnabled()) {
+            if (depEnabled) {
                 keyClsLdrId = PageUtils.getIgniteUUID(addr, off);
                 off += PageUtils.sizeIgniteUUID(keyClsLdrId);
 
@@ -283,7 +286,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         else {
             off += len + 1;
 
-            if (coctx.p2pEnabled())
+            if (depEnabled)
                 off += PageUtils.sizeIgniteUUID(PageUtils.getByte(addr, off));
         }
 
@@ -296,7 +299,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         byte[] bytes = PageUtils.getBytes(addr, off, len);
         off += len;
 
-        if (!coctx.p2pEnabled())
+        if (!depEnabled)
             val = coctx.processor().toCacheObject(coctx, type, bytes);
         else {
             valClsLdrId = PageUtils.getIgniteUUID(addr, off);
