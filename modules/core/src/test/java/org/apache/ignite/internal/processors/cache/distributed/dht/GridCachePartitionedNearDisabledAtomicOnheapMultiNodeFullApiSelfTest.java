@@ -25,4 +25,14 @@ public class GridCachePartitionedNearDisabledAtomicOnheapMultiNodeFullApiSelfTes
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.ATOMIC;
     }
+
+    /** {@inheritDoc} */
+    @Override protected boolean lockingEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean txShouldBeUsed() {
+        return false;
+    }
 }
