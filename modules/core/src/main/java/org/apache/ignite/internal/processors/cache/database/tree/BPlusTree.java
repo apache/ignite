@@ -971,6 +971,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             }
 
             long page = acquirePage(firstPageId);
+
             try {
                 long pageAddr = readLock(firstPageId, page);
 
@@ -1001,6 +1002,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         catch (AssertionError e) {
             throw new AssertionError("Assertion error on first row lookup", e);
         }
+        finally {
+            checkDestroyed();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1022,6 +1026,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
         catch (AssertionError e) {
             throw new AssertionError("Assertion error on last row lookup", e);
+        }
+        finally {
+            checkDestroyed();
         }
     }
 
