@@ -24,46 +24,58 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Parses .NET-style type names and deconstructs them into parts.
     /// </summary>
-    internal static class TypeNameParser
+    internal class TypeNameParser
     {
-        public static Result Parse(string typeName)
-        {
-            int i = 0;
+        private int _pos;
 
-            return Parse(typeName, ref i);
+        private readonly string _typeName;
+
+        private TypeNameParser(string typeName)
+        {
+            _typeName = typeName;
         }
 
-        private static Result Parse(string typeName, ref int i)
+        public static Result Parse(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            var res = new Result(typeName, i);
+            return new TypeNameParser(typeName).Parse();
+        }
+
+        private char Char
+        {
+            get { return _typeName[_pos]; }
+        }
+
+        private Result Parse()
+        {
+            var res = new Result(_typeName, _pos);
 
             int bracket = 0;
 
-            for (; i < typeName.Length; i++)
+            for (; _pos < _typeName.Length; _pos++)
             {
-                var ch = typeName[i];
+                var ch = Char;
 
                 switch (ch)
                 {
                     case '.':
-                        res.NameStart = i + 1;
+                        res.NameStart = _pos + 1;
                         break;
 
                     case '`':
-                        res.NameEnd = i - 1;
-                        res.Generics = ParseGenerics(typeName, ref i);
+                        res.NameEnd = _pos - 1;
+                        res.Generics = ParseGenerics();
                         break;
 
                     case ',':
                         if (bracket > 0)
                             break;
 
-                        res.AssemblyIndex = i + 1;
+                        res.AssemblyIndex = _pos + 1;
                         if (res.NameEnd < 0)
                         {
-                            res.NameEnd = i - 1;
+                            res.NameEnd = _pos - 1;
                         }
                         return res;
 
@@ -82,52 +94,52 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (res.NameEnd < 0)
-                res.NameEnd = typeName.Length - 1;
+                res.NameEnd = _typeName.Length - 1;
 
             return res;
         }
 
-        private static List<Result> ParseGenerics(string typeName, ref int i)
+        private List<Result> ParseGenerics()
         {
             // TODO: Out of bounds checks
-            Debug.Assert(typeName[i] == '`');
+            Debug.Assert(Char == '`');
 
-            int start = i + 1;
+            int start = _pos + 1;
 
             // Skip to types
-            while (typeName[i] != '[')
-                i++;
+            while (Char != '[')
+                _pos++;
 
-            int count = int.Parse(typeName.Substring(start, i - start));
+            int count = int.Parse(_typeName.Substring(start, _pos - start));
 
             var res = new List<Result>(count);
 
-            i++;
+            _pos++;
 
             while (true)  // TODO: Invalid char detection.
             {
-                if (typeName[i] == ',' || typeName[i] == ' ')
+                if (Char == ',' || Char == ' ')
                 {
-                    i++;
+                    _pos++;
                 }
 
-                if (typeName[i] == '[')
+                if (Char == '[')
                 {
-                    i++;
+                    _pos++;
 
-                    res.Add(Parse(typeName, ref i));
+                    res.Add(Parse());
 
-                    while (typeName[i] != ']')
+                    while (Char != ']')
                     {
-                        i++;
+                        _pos++;
                     }
 
-                    i++;
+                    _pos++;
                 }
 
-                if (typeName[i] == ']')
+                if (Char == ']')
                 {
-                    i++;
+                    _pos++;
                     return res;
                 }
             }
