@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
@@ -34,11 +32,11 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -859,7 +857,7 @@ public class GridH2Table extends TableBase {
          * @throws SQLException If failed.
          * @return Created table.
          */
-        public static synchronized GridH2Table createTable(Connection conn, String sql,
+        public static synchronized GridH2Table createTable(H2Connection conn, String sql,
             @Nullable GridH2RowDescriptor desc, IndexesFactory factory, String space)
             throws SQLException {
             rowDesc = desc;
@@ -867,9 +865,7 @@ public class GridH2Table extends TableBase {
             spaceName = space;
 
             try {
-                try (Statement s = conn.createStatement()) {
-                    s.execute(sql + " engine \"" + Engine.class.getName() + "\"");
-                }
+                conn.executeUpdate(sql + " engine \"" + Engine.class.getName() + "\"");
 
                 return resTbl;
             }

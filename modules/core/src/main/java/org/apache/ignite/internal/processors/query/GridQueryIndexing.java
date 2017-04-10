@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
@@ -33,8 +31,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -264,15 +260,6 @@ public interface GridQueryIndexing {
     public void onDisconnected(IgniteFuture<?> reconnectFut);
 
     /**
-     * Prepare native statement to retrieve JDBC metadata from.
-     *
-     * @param schema Schema.
-     * @param sql Query.
-     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
-     */
-    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException;
-
-    /**
      * Gets space name from database schema.
      *
      * @param schemaName Schema name. Could not be null. Could be empty.
@@ -302,7 +289,6 @@ public interface GridQueryIndexing {
 
     /**
      * @param spaceName Space name.
-     * @param nativeStmt Native statement.
      * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
      * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
      * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
@@ -310,6 +296,6 @@ public interface GridQueryIndexing {
      * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata;
      * {@code null} if given statement is a query.
      */
-    public IgniteDataStreamer<?,?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
+    public IgniteDataStreamer<?,?> createStreamer(String spaceName, long autoFlushFreq,
         int nodeBufSize, int nodeParOps, boolean allowOverwrite);
 }

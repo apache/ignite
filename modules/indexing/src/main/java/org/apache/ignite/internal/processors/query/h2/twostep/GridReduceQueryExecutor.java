@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.lang.reflect.Constructor;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,11 +60,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
+import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -102,7 +100,6 @@ import org.jsr166.ConcurrentHashMap8;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
@@ -716,7 +713,7 @@ public class GridReduceQueryExecutor {
 
                         UUID locNodeId = ctx.localNodeId();
 
-                        setupConnection(r.conn, false, enforceJoinOrder);
+                        r.conn.setupConnection(false, enforceJoinOrder);
 
                         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
                             .pageSize(r.pageSize).distributedJoinMode(OFF));
@@ -855,7 +852,7 @@ public class GridReduceQueryExecutor {
      * @param idx Index of table.
      * @return Table.
      */
-    private GridThreadLocalTable fakeTable(Connection c, int idx) {
+    private GridThreadLocalTable fakeTable(H2Connection c, int idx) {
         List<GridThreadLocalTable> tbls = fakeTbls;
 
         assert tbls.size() >= idx;
@@ -865,8 +862,8 @@ public class GridReduceQueryExecutor {
 
             try {
                 if ((tbls = fakeTbls).size() == idx) { // Double check inside of lock.
-                    try (Statement stmt = c.createStatement()) {
-                        stmt.executeUpdate("CREATE TABLE " + mergeTableIdentifier(idx) +
+                    try {
+                        c.executeUpdate("CREATE TABLE " + mergeTableIdentifier(idx) +
                             "(fake BOOL) ENGINE \"" + GridThreadLocalTable.Engine.class.getName() + '"');
                     }
                     catch (SQLException e) {
@@ -1118,7 +1115,7 @@ public class GridReduceQueryExecutor {
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry)
+    private Iterator<List<?>> explainPlan(H2Connection c, String space, GridCacheTwoStepQuery qry)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 
@@ -1231,10 +1228,10 @@ public class GridReduceQueryExecutor {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private GridMergeTable createMergeTable(JdbcConnection conn, GridCacheSqlQuery qry, boolean explain)
+    private GridMergeTable createMergeTable(H2Connection conn, GridCacheSqlQuery qry, boolean explain)
         throws IgniteCheckedException {
         try {
-            Session ses = (Session)conn.getSession();
+            Session ses = conn.session();
 
             CreateTableData data  = new CreateTableData();
 
@@ -1354,6 +1351,14 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * Cancel all queries.
+     */
+    public void cancelAllQueries() {
+        for (QueryRun run : runs.values())
+            run.qry.cancel();
+    }
+
+    /**
      * Query run.
      */
     private static class QueryRun {
@@ -1367,7 +1372,7 @@ public class GridReduceQueryExecutor {
         private CountDownLatch latch;
 
         /** */
-        private final JdbcConnection conn;
+        private final H2Connection conn;
 
         /** */
         private final int pageSize;
@@ -1385,9 +1390,9 @@ public class GridReduceQueryExecutor {
          * @param startTime Start time.
          * @param cancel Query cancel handler.
          */
-        private QueryRun(Long id, String qry, String cache, Connection conn, int idxsCnt, int pageSize, long startTime, GridQueryCancel cancel) {
-            this.qry = new GridRunningQueryInfo(id, qry, SQL_FIELDS, cache, startTime, cancel, false);
-            this.conn = (JdbcConnection)conn;
+        private QueryRun(Long id, String qry, String cache, H2Connection conn, int idxsCnt, int pageSize, long startTime, GridQueryCancel cancel) {
+            this.qry = new GridRunningQueryInfo(id, qry, SQL_FIELDS, cache, startTime, cancel, false, conn);
+            this.conn = conn;
             this.idxs = new ArrayList<>(idxsCnt);
             this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;
         }

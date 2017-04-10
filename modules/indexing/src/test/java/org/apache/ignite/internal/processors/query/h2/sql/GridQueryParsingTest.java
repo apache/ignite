@@ -460,7 +460,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         IgniteH2Indexing idx = U.field(qryProcessor, "idx");
 
-        return (JdbcConnection)idx.connectionForSpace(null);
+        return (JdbcConnection)idx.connectionForSpace(null).connection();
     }
 
     /**

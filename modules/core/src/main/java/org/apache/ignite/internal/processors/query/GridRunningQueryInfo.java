@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Query descriptor.
@@ -44,6 +45,9 @@ public class GridRunningQueryInfo {
     /** */
     private final boolean loc;
 
+    /** */
+    private final AutoCloseable conn;
+
     /**
      * @param id Query ID.
      * @param qry Query text.
@@ -52,9 +56,10 @@ public class GridRunningQueryInfo {
      * @param startTime Query start time.
      * @param cancel Query cancel.
      * @param loc Local query flag.
+     * @param conn Connection.
      */
     public GridRunningQueryInfo(Long id, String qry, GridCacheQueryType qryType, String cache, long startTime,
-        GridQueryCancel cancel, boolean loc) {
+        GridQueryCancel cancel, boolean loc, AutoCloseable conn) {
         this.id = id;
         this.qry = qry;
         this.qryType = qryType;
@@ -62,6 +67,7 @@ public class GridRunningQueryInfo {
         this.startTime = startTime;
         this.cancel = cancel;
         this.loc = loc;
+        this.conn = conn;
     }
 
     /**
@@ -114,6 +120,8 @@ public class GridRunningQueryInfo {
     public void cancel() {
         if (cancel != null)
             cancel.cancel();
+
+        U.closeQuiet(conn);
     }
 
     /**

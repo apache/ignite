@@ -415,7 +415,7 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse getParamsMeta(long reqId, OdbcQueryGetParamsMetaRequest req) {
         try {
-            PreparedStatement stmt = ctx.query().prepareNativeStatement(req.cacheName(), req.query());
+            PreparedStatement stmt = null; // TODO ctx.query().prepareNativeStatement(req.cacheName(), req.query());
 
             ParameterMetaData pmd = stmt.getParameterMetaData();
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -35,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -46,7 +46,6 @@ import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.util.IntArray;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
@@ -153,6 +152,7 @@ public class GridSqlQuerySplitter {
     }
 
     /**
+     * @param conn Connection.
      * @param stmt Prepared statement.
      * @param params Parameters.
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
@@ -164,6 +164,7 @@ public class GridSqlQuerySplitter {
      * @throws IgniteCheckedException If failed.
      */
     public static GridCacheTwoStepQuery split(
+        H2Connection conn,
         JdbcPreparedStatement stmt,
         Object[] params,
         boolean collocatedGrpBy,
@@ -189,8 +190,6 @@ public class GridSqlQuerySplitter {
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
         splitter.normalizeQuery(qry);
-
-        Connection conn = stmt.getConnection();
 
         // Here we will have correct normalized AST with optimized join order.
         // The distributedJoins parameter is ignored because it is not relevant for
@@ -1403,15 +1402,15 @@ public class GridSqlQuerySplitter {
      */
     private static Prepared optimize(
         IgniteH2Indexing h2,
-        Connection c,
+        H2Connection c,
         String qry,
         Object[] params,
         boolean distributedJoins,
         boolean enforceJoinOrder
     ) throws SQLException, IgniteCheckedException {
-        setupConnection(c, distributedJoins, enforceJoinOrder);
+        c.setupConnection(distributedJoins, enforceJoinOrder);
 
-        try (PreparedStatement s = c.prepareStatement(qry)) {
+        try (PreparedStatement s = c.prepare(qry, false)) {
             h2.bindParameters(s, F.asList(params));
 
             return prepared(s);

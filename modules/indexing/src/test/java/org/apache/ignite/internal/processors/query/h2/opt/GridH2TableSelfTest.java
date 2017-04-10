@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -81,7 +79,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     private static final String SCAN_IDX_NAME = GridH2Table.ScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
     /** */
-    private Connection conn;
+    private H2Connection conn;
 
     /** */
     private GridH2Table tbl;
@@ -90,7 +88,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         Driver.load();
 
-        conn = DriverManager.getConnection(DB_URL);
+        conn = new H2Connection(DB_URL);
 
         tbl = GridH2Table.Engine.createTable(conn, CREATE_TABLE_SQL, null, new GridH2Table.IndexesFactory() {
             @Override public H2RowFactory createRowFactory(GridH2Table tbl) {
@@ -238,9 +236,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         // Simple queries.
 
-        Statement s = conn.createStatement();
-
-        ResultSet rs = s.executeQuery("select id from t where x between 0 and 100");
+        ResultSet rs = conn.executeQuery("select id from t where x between 0 and 100");
 
         int i = 0;
         while (rs.next())
@@ -250,7 +246,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         // -----
 
-        rs = s.executeQuery("select id from t where t is not null");
+        rs = conn.executeQuery("select id from t where t is not null");
 
         i = 0;
         while (rs.next())
@@ -270,7 +266,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             assertTrue(tbl.doUpdate(row(id, t, id.toString(), 51), false));
         }
 
-        rs = s.executeQuery("select x, id from t where x = 51 limit " + cnt);
+        rs = conn.executeQuery("select x, id from t where x = 51 limit " + cnt);
 
         i = 0;
 
@@ -332,7 +328,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                         }
 
                         // Row count is valid.
-                        ResultSet rs = conn.createStatement().executeQuery("select count(*) from t");
+                        ResultSet rs = conn.executeQuery("select count(*) from t");
 
                         assertTrue(rs.next());
 
@@ -344,7 +340,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                         assertTrue(cnt2 <= threads * iterations);
 
                         // Search by ID.
-                        rs = conn.createStatement().executeQuery("select * from t where id = '" + id.toString() + "'");
+                        rs = conn.executeQuery("select * from t where id = '" + id.toString() + "'");
 
                         assertTrue(rs.next());
                         assertFalse(rs.next());
@@ -353,7 +349,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
                         // Scan search.
                         if (ps1 == null)
-                            ps1 = conn.prepareStatement("select id from t where x = ? order by t desc");
+                            ps1 = conn.prepare("select id from t where x = ? order by t desc", false);
 
                         ps1.setInt(1, x);
 
@@ -414,7 +410,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             assertTrue(tbl.doUpdate(row, false));
         }
 
-        PreparedStatement ps = conn.prepareStatement("select count(*) from t where x = ?");
+        PreparedStatement ps = conn.prepare("select count(*) from t where x = ?", false);
 
         int cnt = 0;
 
@@ -488,7 +484,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         assertTrue(deleted.get() > 0);
 
-        PreparedStatement p = conn.prepareStatement("select count(*) from t where id = ?");
+        PreparedStatement p = conn.prepare("select count(*) from t where id = ?", false);
 
         for (int i = 1; i < ids.length; i += 2) {
             p.setObject(1, ids[i]);
@@ -500,9 +496,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             assertEquals(1, rs.getInt(1));
         }
 
-        Statement s = conn.createStatement();
-
-        ResultSet rs = s.executeQuery("select count(*) from t");
+        ResultSet rs = conn.executeQuery("select count(*) from t");
 
         assertTrue(rs.next());
 
@@ -517,17 +511,14 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @param search Search token in result.
      * @throws SQLException If failed.
      */
-    private void checkQueryPlan(Connection conn, String sql, String search) throws SQLException {
+    private void checkQueryPlan(H2Connection conn, String sql, String search) throws SQLException {
+        try (ResultSet r = conn.executeQuery("EXPLAIN ANALYZE " + sql)) {
+            assertTrue(r.next());
 
-        try (Statement s = conn.createStatement()) {
-            try (ResultSet r = s.executeQuery("EXPLAIN ANALYZE " + sql)) {
-                assertTrue(r.next());
+            String plan = r.getString(1);
 
-                String plan = r.getString(1);
-
-                assertTrue("Execution plan for '" + sql + "' query should contain '" + search + "'",
-                        plan.contains(search));
-            }
+            assertTrue("Execution plan for '" + sql + "' query should contain '" + search + "'",
+                    plan.contains(search));
         }
     }
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -704,17 +703,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param schema Schema.
-     * @param sql Query.
-     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
-     */
-    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
-        checkxEnabled();
-
-        return idx.prepareNativeStatement(schema, sql);
-    }
-
-    /**
      * @param schema Schema name.
      * @return space (cache) name from schema name.
      */
@@ -726,7 +714,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param spaceName Space name.
-     * @param nativeStmt Native statement.
      * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
      * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
      * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
@@ -734,9 +721,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @see IgniteDataStreamer#allowOverwrite
      * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata.
      */
-    public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
+    public IgniteDataStreamer<?, ?> createStreamer(String spaceName, long autoFlushFreq,
         int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
-        return idx.createStreamer(spaceName, nativeStmt, autoFlushFreq, nodeBufSize, nodeParOps, allowOverwrite);
+        return idx.createStreamer(spaceName, autoFlushFreq, nodeBufSize, nodeParOps, allowOverwrite);
     }
 
     /**
