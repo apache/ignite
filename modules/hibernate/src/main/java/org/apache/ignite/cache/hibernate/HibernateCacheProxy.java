@@ -50,7 +50,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Hibernate cache proxy.
  */
 public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> {
     /** Delegate. */

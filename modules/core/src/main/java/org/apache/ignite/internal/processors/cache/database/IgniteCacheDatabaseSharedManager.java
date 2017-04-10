@@ -87,8 +87,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode())
-            init();
+        if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getMemoryConfiguration() == null)
+            return;
+
+        init();
     }
 
     /**
