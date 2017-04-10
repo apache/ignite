@@ -611,6 +611,20 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the event store configuration.
+        /// </summary>
+        [Test]
+        public void TestConfiguration()
+        {
+            var cfg = _grid1.GetConfiguration().EventStorageSpi as MemoryEventStorageSpi;
+
+            Assert.IsNotNull(cfg);
+
+            Assert.AreEqual(MemoryEventStorageSpi.DefaultExpirationTimeout, cfg.ExpirationTimeout);
+            Assert.AreEqual(MemoryEventStorageSpi.DefaultMaxEventCount, cfg.MaxEventCount);
+        }
+
+        /// <summary>
         /// Checks base event fields serialization.
         /// </summary>
         /// <param name="evt">The evt.</param>
@@ -679,7 +693,8 @@ namespace Apache.Ignite.Core.Tests
                     {
                         new BinaryTypeConfiguration(typeof (RemoteEventBinarizableFilter))
                     }
-                }
+                },
+                EventStorageSpi = new MemoryEventStorageSpi()
             };
         }
 
