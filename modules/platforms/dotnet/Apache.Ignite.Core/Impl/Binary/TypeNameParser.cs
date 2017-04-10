@@ -47,6 +47,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             NameEnd = -1;
             NameStart = -1;
             AssemblyStart = -1;
+            AssemblyEnd = -1;
+            ArrayStart = -1;
 
             Parse();
         }
@@ -101,6 +103,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public string GetName()
         {
+            if (NameEnd < 0)
+                return null;
+
             return _typeName.Substring(NameStart, NameEnd - NameStart + 1);
         }
 
@@ -112,6 +117,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             return _typeName.Substring(_start, NameEnd - _start + 1);
         }
 
+        public string GetArray()
+        {
+            if (ArrayStart < 0)
+                return null;
+
+            return _typeName.Substring(ArrayStart, ArrayEnd - ArrayStart + 1);
+        }
 
         /// <summary>
         /// Parses this instance.
@@ -147,7 +159,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     break;
             }
 
-            NameEnd = _pos - 1;
+            NameEnd = End ? _pos : _pos - 1;
         }
 
         private void ParseGeneric()
@@ -221,14 +233,42 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             ArrayStart = _pos;
 
+            bool bracket = true;
+
             RequireShift();
             
-            while (Char=='[' || Char==']' || Char == ',')
+            while (true)
             {
-                if (!Shift())
+                if (Char == '[')
+                {
+                    if (bracket)
+                    {
+                        throw new IgniteException("Invalid array specification: " + _typeName);
+                    }
+
+                    bracket = true;
+                }
+                else if (Char == ']')
+                {
+                    if (!bracket)
+                    {
+                        throw new IgniteException("Invalid array specification: " + _typeName);
+                    }
+
+                    bracket = false;
+                }
+                else if (Char == ',')
+                {
+                    if (!bracket)
+                        break;
+                }
+                else
                 {
                     break;
                 }
+
+                if (!Shift())
+                    break;
             }
 
             ArrayEnd = Char == ']' ? _pos : _pos - 1;
