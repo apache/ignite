@@ -1532,13 +1532,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void processMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
         boolean allReceived = false;
+        boolean updateSingleMap = false;
 
         synchronized (mux) {
             assert crd != null;
 
             if (crd.isLocal()) {
                 if (remaining.remove(node.id())) {
-                    updatePartitionSingleMap(node, msg);
+                    updateSingleMap = true;
 
                     if (exchangeOnChangeGlobalState && msg.getException() != null)
                         changeGlobalStateExceptions.put(node.id(), msg.getException());
@@ -1549,6 +1550,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             else
                 singleMsgs.put(node, msg);
         }
+
+        if (updateSingleMap)
+            updatePartitionSingleMap(node, msg);
 
         if (allReceived)
             onAllReceived();
