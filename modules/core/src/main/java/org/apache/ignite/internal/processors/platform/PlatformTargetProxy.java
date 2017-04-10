@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -104,27 +103,6 @@ public interface PlatformTargetProxy {
      * @throws Exception If case of failure.
      */
     void inStreamAsync(int type, long memPtr) throws Exception;
-
-    /**
-     * Start listening for the future.
-     *
-     * @param futId Future ID.
-     * @param typ Result type.
-     * @throws IgniteCheckedException In case of failure.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    void listenFuture(final long futId, int typ) throws Exception;
-
-    /**
-     * Start listening for the future for specific operation type.
-     *
-     * @param futId Future ID.
-     * @param typ Result type.
-     * @param opId Operation ID required to pick correct result writer.
-     * @throws IgniteCheckedException In case of failure.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    void listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
 
     /**
      * Returns the underlying target.

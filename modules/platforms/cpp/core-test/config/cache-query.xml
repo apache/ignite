@@ -46,16 +46,11 @@
                         </bean>
                     </property>
                     
-                    <property name="typeMetadata">
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="valueType" value="QueryPerson"/>
-                                <property name="ascendingFields">
-                                    <map>
-                                        <entry key="age" value="java.lang.Integer"/>
-                                    </map>
-                                </property>
-                                <property name="queryFields">
+                                <property name="fields">
                                     <map>
                                         <entry key="name" value="java.lang.String"/>
                                         <entry key="age" value="java.lang.Integer"/>
@@ -63,9 +58,23 @@
                                         <entry key="recordCreated" value="java.sql.Timestamp"/>
                                     </map>
                                 </property>
-                                <property name="textFields">
+                                <property name="indexes">
                                     <list>
-                                        <value>name</value>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="age" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="indexType" value="FULLTEXT"/>
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="name" value="false"/>
+                                                </map>
+                                            </property>
+                                        </bean>
                                     </list>
                                 </property>
                             </bean>
@@ -84,12 +93,12 @@
                             <property name="partitions" value="256"/>
                         </bean>
                     </property>
-                    
-                    <property name="typeMetadata">
+
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="valueType" value="QueryRelation"/>
-                                <property name="queryFields">
+                                <property name="fields">
                                     <map>
                                         <entry key="personId" value="java.lang.Integer"/>
                                         <entry key="someVal" value="java.lang.Integer"/>

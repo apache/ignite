@@ -58,9 +58,12 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
      * Sets whether to use simple name of class or not.
      *
      * @param isSimpleName Whether to use simple name of class or not.
+     * @return {@code this} for chaining.
      */
-    public void setSimpleName(boolean isSimpleName) {
+    public BinaryBasicNameMapper setSimpleName(boolean isSimpleName) {
         this.isSimpleName = isSimpleName;
+
+        return this;
     }
 
     /** {@inheritDoc} */

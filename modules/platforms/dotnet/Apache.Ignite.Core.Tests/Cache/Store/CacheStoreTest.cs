@@ -23,7 +23,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
@@ -106,9 +108,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             for (int i = 105; i < 110; i++)
                 Assert.AreEqual("val_" + i, cache.Get(i));
-
-            // Test invalid filter
-            Assert.Throws<BinaryObjectException>(() => cache.LoadCache(new InvalidCacheEntryFilter(), 100, 10));
 
             // Test exception in filter
             Assert.Throws<CacheStoreException>(() => cache.LoadCache(new ExceptionalEntryFilter(), 100, 10));
@@ -328,7 +327,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             for (int i = 0; i < 10; i++)
                 keys.Add(i);
 
-            IDictionary<int, string> loaded = cache.GetAll(keys);
+            IDictionary<int, string> loaded = cache.GetAll(keys).ToDictionary(x => x.Key, x => x.Value);
 
             Assert.AreEqual(10, loaded.Count);
 

@@ -249,6 +249,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (fieldIds == null)
             {
+                Debug.Assert(hdr.TypeId != BinaryUtils.TypeUnregistered);
+
                 if (marsh.Ignite != null)
                     fieldIds = marsh.Ignite.BinaryProcessor.GetSchema(hdr.TypeId, hdr.SchemaId);
 

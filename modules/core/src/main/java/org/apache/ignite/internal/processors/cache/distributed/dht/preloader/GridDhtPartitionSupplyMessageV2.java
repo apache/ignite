@@ -365,7 +365,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridCacheMessage implements
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 114;
     }
 

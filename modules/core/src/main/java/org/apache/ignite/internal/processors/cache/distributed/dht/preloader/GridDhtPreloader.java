@@ -36,7 +36,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -62,7 +61,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -80,13 +78,6 @@ import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
  * DHT cache preloader.
  */
 public class GridDhtPreloader extends GridCachePreloaderAdapter {
-    /**
-     * Rebalancing was refactored at version 1.5.0, but backward compatibility to previous implementation was saved.
-     * Node automatically chose communication protocol depends on remote node's version.
-     * Backward compatibility may be removed at Ignite 2.x.
-     */
-    public static final IgniteProductVersion REBALANCING_VER_2_SINCE = IgniteProductVersion.fromString("1.5.0");
-
     /** Default preload resend timeout. */
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
 
@@ -194,7 +185,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         cctx.shared().affinity().onCacheCreated(cctx);
 
         supplier = new GridDhtPartitionSupplier(cctx);
-        demander = new GridDhtPartitionDemander(cctx, demandLock);
+        demander = new GridDhtPartitionDemander(cctx);
 
         supplier.start();
         demander.start();
@@ -619,14 +610,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 AffinityAssignment assignment = cctx.affinity().assignment(topVer);
 
-                boolean newAffMode = node.version().compareTo(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0;
-
                 GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
                     topVer,
-                    assignment.assignment(),
-                    newAffMode);
+                    assignment.assignment());
 
-                if (newAffMode && cctx.affinity().affinityCache().centralizedAffinityFunction()) {
+                if (cctx.affinity().affinityCache().centralizedAffinityFunction()) {
                     assert assignment.idealAssignment() != null;
 
                     res.idealAffinityAssignment(assignment.idealAssignment());

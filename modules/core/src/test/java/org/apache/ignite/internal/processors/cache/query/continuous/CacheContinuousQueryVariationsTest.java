@@ -713,6 +713,11 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                         cache.remove(key);
                         cache.remove(key);
 
+                        //Wait when remove event will be added to evts
+                        while (evts.size() != 10) {
+                            Thread.sleep(100);
+                        }
+                        
                         evts.clear();
 
                         log.info("Finish iteration: " + i);
