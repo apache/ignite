@@ -139,8 +139,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsSyncMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusRequest;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusResponse;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -876,12 +875,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case -49:
-                msg = new SchemaOperationStatusRequest();
-
-                break;
-
-            case -50:
-                msg = new SchemaOperationStatusResponse();
+                msg = new SchemaOperationStatusMessage();
 
                 break;
 

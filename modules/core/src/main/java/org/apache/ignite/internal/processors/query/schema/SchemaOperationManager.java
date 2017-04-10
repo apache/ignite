@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
@@ -34,9 +32,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
-
-import static org.apache.ignite.internal.GridTopic.TOPIC_DYNAMIC_SCHEMA;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 
 /**
  * Schema operation manager.
@@ -64,72 +59,81 @@ public class SchemaOperationManager {
     /** Node results. */
     private Map<UUID, SchemaOperationException> nodeRess;
 
+    /** Current coordinator node. */
+    private ClusterNode crd;
+
+    /** Whether coordinator state is mapped. */
+    private boolean crdMapped;
+
     /**
      * Constructor.
      *
      * @param ctx Context.
      * @param qryProc Query processor.
      * @param worker Operation handler.
+     * @param crd Coordinator node.
      */
-    public SchemaOperationManager(GridKernalContext ctx, GridQueryProcessor qryProc, SchemaOperationWorker worker) {
+    public SchemaOperationManager(GridKernalContext ctx, GridQueryProcessor qryProc, SchemaOperationWorker worker,
+        @Nullable ClusterNode crd) {
+        assert !ctx.clientNode() || crd == null;
+
         this.ctx = ctx;
 
         log = ctx.log(SchemaOperationManager.class);
 
         this.qryProc = qryProc;
         this.worker = worker;
+
+        synchronized (mux) {
+            this.crd = crd;
+
+            prepareCoordinator();
+        }
     }
 
     /**
      * Map operation handling.
      */
     @SuppressWarnings("unchecked")
-    public void map() {
+    public void start() {
         worker.start();
 
         synchronized (mux) {
-            if (qryProc.coordinator()) {
-                // Initialize local structures.
-                nodeIds = new HashSet<>();
-                nodeRess = new HashMap<>();
-
-                // Send remote requests.
-                SchemaOperationStatusRequest req =
-                    new SchemaOperationStatusRequest(ctx.localNodeId(), operationId());
-
-                for (ClusterNode alive : ctx.discovery().aliveServerNodes())
-                    nodeIds.add(alive.id());
-
-                if (log.isDebugEnabled())
-                    log.debug("Mapped participating nodes on coordinator [opId=" + operationId() +
-                        ", crdNodeId=" + ctx.localNodeId() + ", nodes=" + nodeIds + ']');
-
-                // Send requests to remote nodes.
-                for (UUID nodeId : nodeIds) {
-                    if (!F.eq(ctx.localNodeId(), nodeId)) {
-                        try {
-                            ctx.io().sendToGridTopic(nodeId, TOPIC_DYNAMIC_SCHEMA, req, QUERY_POOL);
-                        }
-                        catch (IgniteCheckedException e) {
-                            onNodeLeave(nodeId);
-                        }
-                    }
+            worker.future().listen(new IgniteInClosure<IgniteInternalFuture>() {
+                @Override public void apply(IgniteInternalFuture fut) {
+                    onLocalNodeFinished(fut);
                 }
+            });
+        }
+    }
 
-                // Listen for local completion.
-                worker.future().listen(new IgniteInClosure<IgniteInternalFuture>() {
-                    @Override public void apply(IgniteInternalFuture fut) {
-                        try {
-                            fut.get();
+    /**
+     * Handle local node finish.
+     *
+     * @param fut Future.
+     */
+    private void onLocalNodeFinished(IgniteInternalFuture fut) {
+        assert fut.isDone();
 
-                            onNodeFinished(ctx.localNodeId(), null);
-                        }
-                        catch (Exception e) {
-                            onNodeFinished(ctx.localNodeId(), QueryUtils.wrapIfNeeded(e));
-                        }
-                    }
-                });
-            }
+        if (ctx.clientNode())
+            return;
+
+        SchemaOperationException err;
+
+        try {
+            fut.get();
+
+            err = null;
+        }
+        catch (Exception e) {
+            err = QueryUtils.wrapIfNeeded(e);
+        }
+
+        synchronized (mux) {
+            if (isLocalCoordinator())
+                onNodeFinished(ctx.localNodeId(), err);
+            else
+                qryProc.sendStatusMessage(crd.id(), operationId(), err);
         }
     }
 
@@ -141,6 +145,9 @@ public class SchemaOperationManager {
      */
     public void onNodeFinished(UUID nodeId, @Nullable SchemaOperationException err) {
         synchronized (mux) {
+            if (!isLocalCoordinator())
+                return;
+
             if (nodeRess.containsKey(nodeId)) {
                 if (log.isDebugEnabled())
                     log.debug("Received duplicate result [opId=" + operationId() + ", nodeId=" + nodeId +
@@ -160,44 +167,34 @@ public class SchemaOperationManager {
     /**
      * Handle node leave event.
      *
-     * @param nodeId Node ID.
+     * @param nodeId ID of the node that has left the grid.
+     * @param curCrd Current coordinator node.
      */
-    public void onNodeLeave(UUID nodeId) {
+    public void onNodeLeave(UUID nodeId, ClusterNode curCrd) {
         synchronized (mux) {
-            if (qryProc.coordinator()) {
+            assert crd != null;
+
+            if (F.eq(nodeId, crd.id())) {
+                // Coordinator has left!
+                crd = curCrd;
+
+                if (prepareCoordinator()) {
+                    // Check if local execution is completed.
+                    IgniteInternalFuture fut = worker().future();
+
+                    if (fut.isDone())
+                        onLocalNodeFinished(fut);
+                }
+            }
+            else if (isLocalCoordinator()) {
+                // Other node has left, remove it from the coordinator's wait set.
                 // Handle this as success.
                 if (nodeIds.remove(nodeId))
                     nodeRess.remove(nodeId);
-
-                checkFinished();
             }
-            else
-                // We can become coordinator, so try remap.
-                map();
+
+            checkFinished();
         }
-    }
-
-    /**
-     * Handle status request.
-     *
-     * @param nodeId Node ID.
-     */
-    @SuppressWarnings("unchecked")
-    public void onStatusRequest(final UUID nodeId) {
-        worker.future().listen(new IgniteInClosure<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture fut) {
-                Exception err = null;
-
-                try {
-                    fut.get();
-                }
-                catch (Exception e) {
-                    err = e;
-                }
-
-                qryProc.sendStatusResponse(nodeId, operationId(), QueryUtils.wrapIfNeeded(err));
-            }
-        });
     }
 
     /**
@@ -206,24 +203,63 @@ public class SchemaOperationManager {
     private void checkFinished() {
         assert Thread.holdsLock(mux);
 
-        if (nodeIds.size() == nodeRess.size()) {
-            // Initiate finish request.
-            SchemaOperationException err = null;
+        if (isLocalCoordinator()) {
+            if (nodeIds.size() == nodeRess.size()) {
+                // Initiate finish request.
+                SchemaOperationException err = null;
 
-            for (Map.Entry<UUID, SchemaOperationException> nodeRes : nodeRess.entrySet()) {
-                if (nodeRes.getValue() != null) {
-                    err = nodeRes.getValue();
+                for (Map.Entry<UUID, SchemaOperationException> nodeRes : nodeRess.entrySet()) {
+                    if (nodeRes.getValue() != null) {
+                        err = nodeRes.getValue();
 
-                    break;
+                        break;
+                    }
                 }
+
+                if (log.isDebugEnabled())
+                    log.debug("Collected all results, about to send finish message [opId=" + operationId() +
+                        ", err=" + err + ']');
+
+                qryProc.onCoordinatorFinished(operationId(), err);
             }
+        }
+    }
+
+    /**
+     * Prepare topology state in case local node is coordinator.
+     *
+     * @return {@code True} if state was changed by this call.
+     */
+    private boolean prepareCoordinator() {
+        if (isLocalCoordinator() && !crdMapped) {
+            // Initialize local structures.
+            nodeIds = new HashSet<>();
+            nodeRess = new HashMap<>();
+
+            for (ClusterNode alive : ctx.discovery().aliveServerNodes())
+                nodeIds.add(alive.id());
 
             if (log.isDebugEnabled())
-                log.debug("Collected all results, about to send finish message [opId=" + operationId() +
-                    ", err=" + err + ']');
+                log.debug("Mapped participating nodes on coordinator [opId=" + operationId() +
+                    ", crdNodeId=" + ctx.localNodeId() + ", nodes=" + nodeIds + ']');
 
-            qryProc.onCoordinatorFinished(operationId(), err);
+            crdMapped = true;
+
+            return true;
         }
+
+        return false;
+    }
+
+    /**
+     * Check if current node is local coordinator.
+     *
+     * @return {@code True} if coordinator.
+     */
+    private boolean isLocalCoordinator() {
+        assert Thread.holdsLock(mux);
+
+        return crd != null && crd.isLocal();
     }
 
     /**

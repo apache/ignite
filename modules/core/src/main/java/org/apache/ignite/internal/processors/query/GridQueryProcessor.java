@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationClientF
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
-import org.apache.ignite.internal.processors.query.schema.SchemaIoManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationWorker;
 import org.apache.ignite.internal.processors.query.schema.SchemaKey;
@@ -57,8 +56,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusRequest;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusResponse;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
@@ -142,9 +140,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** IO message listener. */
     private final GridMessageListener ioLsnr;
 
-    /** IO manager. */
-    private final SchemaIoManager ioMgr;
-
     /** Schema operations. */
     private final ConcurrentHashMap<SchemaKey, SchemaOperation> schemaOps = new ConcurrentHashMap<>();
 
@@ -157,8 +152,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** General state mutex. */
     private final Object stateMux = new Object();
 
-    /** Coordinator flag (initialized lazily). */
-    private Boolean crd;
+    /** Coordinator node (initialized lazily). */
+    private ClusterNode crd;
 
     /** Registered spaces. */
     private final Collection<String> spaces = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
@@ -166,6 +161,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** ID history for index create/drop discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> dscoMsgIdHist =
         new GridBoundedConcurrentLinkedHashSet<>(QueryUtils.discoveryHistorySize());
+
+    /** History of already completed operations. */
+    private final GridBoundedConcurrentLinkedHashSet<UUID> completedOpIds =
+        new GridBoundedConcurrentLinkedHashSet<>(QueryUtils.discoveryHistorySize());
+
+    /** Pending status messages. */
+    private final LinkedList<SchemaOperationStatusMessage> pendingMsgs = new LinkedList<>();
 
     /** Disconnected flag. */
     private boolean disconnected;
@@ -184,11 +186,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
 
-        ioMgr = new SchemaIoManager(ctx, this);
-
         ioLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object obj) {
-                ioMgr.onMessage(obj);
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                if (msg instanceof SchemaOperationStatusMessage) {
+                    SchemaOperationStatusMessage msg0 = (SchemaOperationStatusMessage)msg;
+
+                    msg0.senderNodeId(nodeId);
+
+                    processStatusMessage(msg0);
+                }
+                else
+                    U.warn(log, "Unsupported IO message: " + msg);
             }
         };
     }
@@ -266,15 +274,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             activeOpsInit.clear();
         }
-
-        ioMgr.onStartOrReconnect();
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         super.onKernalStop(cancel);
-
-        ioMgr.onStop();
 
         if (cancel && idx != null) {
             try {
@@ -440,8 +444,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        ioMgr.onDisconnect();
-
         Collection<SchemaOperationClientFuture> futs;
 
         synchronized (stateMux) {
@@ -487,8 +489,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onCacheStart(GridCacheContext cctx, QuerySchema schema) throws IgniteCheckedException {
-        System.out.println("ON CACHE START: " + cctx.name() + " " + cctx.kernalContext().igniteInstanceName());
-
         if (idx == null)
             return;
 
@@ -753,11 +753,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         SchemaOperationWorker worker =
             new SchemaOperationWorker(ctx, this, desc.cacheDeploymentId(), op, nop, err, cacheStarted, type);
 
-        SchemaOperationManager mgr = new SchemaOperationManager(ctx, this, worker);
+        SchemaOperationManager mgr = new SchemaOperationManager(ctx, this, worker,
+            ctx.clientNode() ? null : coordinator());
 
         schemaOp.manager(mgr);
 
-        mgr.map();
+        mgr.start();
+
+        if (!ctx.clientNode())
+            unwindPendingMessages(schemaOp.id(), mgr);
     }
 
     /**
@@ -970,32 +974,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return {@code True} if current node is coordinator.
+     * Get current coordinator node.
+     *
+     * @return Coordinator node.
      */
-    public boolean coordinator() {
-        if (crd == null)
-            refreshCoordinator();
+    public ClusterNode coordinator() {
+        assert !ctx.clientNode();
 
-        assert crd != null;
+        synchronized (stateMux) {
+            if (crd == null) {
+                ClusterNode crd0 = null;
 
-        return crd;
-    }
+                for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
+                    if (crd0 == null || crd0.order() > node.order())
+                        crd0 = node;
+                }
 
-    /**
-     * Refresh coordinator state.
-     */
-    private void refreshCoordinator() {
-        if (crd != null && crd)
-            return;
+                assert crd0 != null;
 
-        ClusterNode youngest = null;
+                crd = crd0;
+            }
 
-        for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
-            if (youngest == null || youngest.order() > node.order())
-                youngest = node;
+            return crd;
         }
-
-        crd = youngest != null && F.eq(ctx.localNodeId(), youngest.id());
     }
 
     /**
@@ -1010,9 +1011,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** Operation manager. */
         private SchemaOperationManager mgr;
-
-        /** Pending status requests. */
-        private final Collection<UUID> pendingStatusReqs = new LinkedList<>();
 
         /**
          * Constructor.
@@ -1086,21 +1084,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             assert this.mgr == null;
 
             this.mgr = mgr;
-
-            for (UUID nodeId : pendingStatusReqs)
-                mgr.onStatusRequest(nodeId);
-        }
-
-        /**
-         * Handle status request. Manager might not be initialized yet at this point, so enqueue request if needed.
-         *
-         * @param nodeId Node ID.
-         */
-        public void onStatusRequest(UUID nodeId) {
-            if (mgr != null)
-                mgr.onStatusRequest(nodeId);
-            else
-                pendingStatusReqs.add(nodeId);
         }
     }
 
@@ -1136,6 +1119,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
             else
                 assert msg.hasError();
+
+            // Get rid of pending IO messages received from nodes which joined the cluster when operation
+            // had been in progress.
+            completedOpIds.add(opId);
+
+            Iterator<SchemaOperationStatusMessage> it = pendingMsgs.iterator();
+
+            while (it.hasNext()) {
+                SchemaOperationStatusMessage statusMsg = it.next();
+
+                if (F.eq(opId, statusMsg.operationId())) {
+                    it.remove();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Dropped operation status message because it is already completed [opId=" + opId +
+                            ", rmtNode=" + statusMsg.senderNodeId() + ']');
+                }
+            }
         }
     }
 
@@ -1165,6 +1166,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 assert op != null;
                 assert F.eq(opId, op.id());
+
+                assert op.started();
+                assert op.manager().worker().future().isDone();
 
                 // Chain to the next operation (if any).
                 SchemaOperation nextOp = op.next();
@@ -1274,15 +1278,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param node Node.
      */
     public void onNodeLeave(ClusterNode node) {
-        refreshCoordinator();
-
         synchronized (stateMux) {
-            if (disconnected)
+            // Clients new send status messages and are never coordinators.
+            if (ctx.clientNode())
                 return;
 
+            ClusterNode crd0 = coordinator();
+
             for (SchemaOperation op : schemaOps.values()) {
-                if (op.started())
-                    op.manager().onNodeLeave(node.id());
+                if (op.started()) {
+                    op.manager().onNodeLeave(node.id(), crd0);
+
+                    unwindPendingMessages(op.id(), op.manager());
+                }
             }
         }
     }
@@ -2143,114 +2151,82 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Process IO message.
-     *
-     * @param msg Message.
-     */
-    public void processMessage(Object msg) {
-        if (msg instanceof SchemaOperationStatusRequest) {
-            SchemaOperationStatusRequest req = (SchemaOperationStatusRequest)msg;
-
-            processStatusRequest(req);
-        }
-        else if (msg instanceof SchemaOperationStatusResponse) {
-            SchemaOperationStatusResponse resp = (SchemaOperationStatusResponse)msg;
-
-            processStatusResponse(resp);
-        }
-        else
-            U.warn(log, "Unsupported IO message: " + msg);
-    }
-
-    /**
-     * Process status request.
-     *
-     * @param req Status request.
-     */
-    private void processStatusRequest(SchemaOperationStatusRequest req) {
-        synchronized (stateMux) {
-            if (disconnected)
-                return;
-
-            UUID opId = req.operationId();
-
-            SchemaOperationDescriptor desc = activeOps.get(opId);
-
-            if (desc == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received schema operation status request, but no ");
-
-                return;
-            }
-
-            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
-
-            SchemaOperation op = schemaOps.get(key);
-
-            if (op != null && F.eq(op.id(), opId))
-                op.onStatusRequest(req.senderNodeId());
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Local node doesn't have information about schema operation (already completed, " +
-                        "will ignore) [opId=" + opId + ", sndNodeId=" + req.senderNodeId() + ']');
-
-                // Operation completed successfully and is not in local history any more.
-                sendStatusResponse(req.senderNodeId(), opId, null);
-            }
-        }
-    }
-
-    /**
-     * Process status response.
-     *
-     * @param resp Status response.
-     */
-    private void processStatusResponse(SchemaOperationStatusResponse resp) {
-        synchronized (stateMux) {
-            if (disconnected)
-                return;
-
-            UUID opId = resp.operationId();
-
-            SchemaOperationDescriptor desc = activeOps.get(opId);
-
-            assert desc != null;
-
-            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
-
-            SchemaOperation op = schemaOps.get(key);
-
-            if (op != null && F.eq(op.id(), opId)) {
-                assert op.started();
-
-                op.manager().onNodeFinished(resp.senderNodeId(), unmarshalSchemaError(resp.errorBytes()));
-            }
-        }
-    }
-
-    /**
-     * Send status response.
+     * Send status message to coordinator node.
      *
      * @param destNodeId Destination node ID.
      * @param opId Operation ID.
      * @param err Error.
      */
-    public void sendStatusResponse(UUID destNodeId, UUID opId, SchemaOperationException err) {
+    public void sendStatusMessage(UUID destNodeId, UUID opId, SchemaOperationException err) {
         if (log.isDebugEnabled())
-            log.debug("Sending schema operation status response [opId=" + opId + ", crdNode=" + destNodeId +
+            log.debug("Sending schema operation status message [opId=" + opId + ", crdNode=" + destNodeId +
                 ", err=" + err + ']');
 
         try {
             byte[] errBytes = marshalSchemaError(opId, err);
 
-            SchemaOperationStatusResponse resp = new SchemaOperationStatusResponse(ctx.localNodeId(), opId, errBytes);
+            SchemaOperationStatusMessage msg = new SchemaOperationStatusMessage(opId, errBytes);
 
-            ctx.io().sendToGridTopic(destNodeId, TOPIC_DYNAMIC_SCHEMA, resp, QUERY_POOL);
+            ctx.io().sendToGridTopic(destNodeId, TOPIC_DYNAMIC_SCHEMA, msg, QUERY_POOL);
         }
         catch (IgniteCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send schema status response [opId=" + opId + ", destNodeId=" + destNodeId +
                     ", err=" + e + ']');
+        }
+    }
+
+    /**
+     * Process status message.
+     *
+     * @param msg Status message.
+     */
+    private void processStatusMessage(SchemaOperationStatusMessage msg) {
+        synchronized (stateMux) {
+            if (completedOpIds.contains(msg.operationId()))
+                // Received message from a node which joined topology in the middle of operation execution.
+                return;
+
+            UUID opId = msg.operationId();
+
+            SchemaOperationDescriptor desc = activeOps.get(opId);
+
+            if (desc != null) {
+                SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+
+                SchemaOperation op = schemaOps.get(key);
+
+                if (op != null && F.eq(op.id(), opId) && op.started()) {
+                    op.manager().onNodeFinished(msg.senderNodeId(), unmarshalSchemaError(msg.errorBytes()));
+
+                    return;
+                }
+            }
+
+            // Put to pending set if operation is not visible/ready yet.
+            pendingMsgs.add(msg);
+        }
+    }
+
+    /**
+     * Unwind pending messages for particular operation.
+     *
+     * @param opId Operation ID.
+     * @param mgr Manager.
+     */
+    private void unwindPendingMessages(UUID opId, SchemaOperationManager mgr) {
+        assert Thread.holdsLock(stateMux);
+
+        Iterator<SchemaOperationStatusMessage> it = pendingMsgs.iterator();
+
+        while (it.hasNext()) {
+            SchemaOperationStatusMessage msg = it.next();
+
+            if (F.eq(msg.operationId(), opId)) {
+                mgr.onNodeFinished(msg.senderNodeId(), unmarshalSchemaError(msg.errorBytes()));
+
+                it.remove();
+            }
         }
     }
 

@@ -17,43 +17,63 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
 /**
- * Schema operation status request.
+ * Schema operation status message.
  */
-public class SchemaOperationStatusRequest implements Message {
+public class SchemaOperationStatusMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Sender node ID. */
-    private UUID sndNodeId;
 
     /** Operation ID. */
     private UUID opId;
 
+    /** Error bytes (if any). */
+    private byte[] errBytes;
+
+    /** Sender node ID. */
+    @GridDirectTransient
+    private UUID sndNodeId;
+
     /**
      * Default constructor.
      */
-    public SchemaOperationStatusRequest() {
+    public SchemaOperationStatusMessage() {
         // No-op.
     }
 
     /**
      * Constructor.
      *
-     * @param sndNodeId Sender node ID.
      * @param opId Operation ID.
+     * @param errBytes Error bytes.
      */
-    public SchemaOperationStatusRequest(UUID sndNodeId, UUID opId) {
-        this.sndNodeId = sndNodeId;
+    public SchemaOperationStatusMessage(UUID opId, byte[] errBytes) {
         this.opId = opId;
+        this.errBytes = errBytes;
+    }
+
+    /**
+     * @return Operation ID.
+     */
+    public UUID operationId() {
+        return opId;
+    }
+
+    /**
+     * @return Error bytes.
+     */
+    @Nullable public byte[] errorBytes() {
+        return errBytes;
     }
 
     /**
@@ -64,10 +84,10 @@ public class SchemaOperationStatusRequest implements Message {
     }
 
     /**
-     * @return Operation ID.
+     * @param sndNodeId Sender node ID.
      */
-    public UUID operationId() {
-        return opId;
+    public void senderNodeId(UUID sndNodeId) {
+        this.sndNodeId = sndNodeId;
     }
 
     /** {@inheritDoc} */
@@ -83,13 +103,13 @@ public class SchemaOperationStatusRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("sndNodeId", sndNodeId))
+                if (!writer.writeUuid("opId", opId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeUuid("opId", opId))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
@@ -107,7 +127,7 @@ public class SchemaOperationStatusRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                sndNodeId = reader.readUuid("sndNodeId");
+                opId = reader.readUuid("opId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -115,7 +135,7 @@ public class SchemaOperationStatusRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                opId = reader.readUuid("opId");
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -123,7 +143,7 @@ public class SchemaOperationStatusRequest implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(SchemaOperationStatusRequest.class);
+        return reader.afterMessageRead(SchemaOperationStatusMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -143,6 +163,6 @@ public class SchemaOperationStatusRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SchemaOperationStatusRequest.class, this);
+        return S.toString(SchemaOperationStatusMessage.class, this);
     }
 }
