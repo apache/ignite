@@ -1061,6 +1061,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     public void testNearExpiresWithCacheStore() throws Exception {
+        if(cacheMode() != PARTITIONED)
+            return;
+
         factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1));
 
         nearCache = true;
