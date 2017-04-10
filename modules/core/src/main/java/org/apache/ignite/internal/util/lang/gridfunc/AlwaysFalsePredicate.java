@@ -36,7 +36,7 @@ public class AlwaysFalsePredicate<E> implements IgnitePredicate<E> {
      * @return Always <code>false</code>
      */
     @Override public boolean apply(E e) {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
