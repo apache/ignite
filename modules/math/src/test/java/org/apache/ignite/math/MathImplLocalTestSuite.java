@@ -19,6 +19,7 @@ package org.apache.ignite.math;
 
 import org.apache.ignite.math.decompositions.CholeskyDecompositionTest;
 import org.apache.ignite.math.decompositions.EigenDecompositionTest;
+import org.apache.ignite.math.decompositions.QRDecompositionTest;
 import org.apache.ignite.math.impls.matrix.*;
 import org.apache.ignite.math.impls.storage.matrix.MatrixArrayStorageTest;
 import org.apache.ignite.math.impls.vector.SingleElementVectorViewConstructorTest;
@@ -99,7 +100,8 @@ import org.junit.runners.Suite;
     // Decomposes
     LUDecompositionTest.class,
     EigenDecompositionTest.class,
-    CholeskyDecompositionTest.class
+    CholeskyDecompositionTest.class,
+    QRDecompositionTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.

@@ -69,7 +69,7 @@ public class QRDecomposition extends DecompositionSupport {
             Vector qi = qTmp.viewColumn(i);
 
             double alpha = qi.kNorm(2);
-            
+
             if (Math.abs(alpha) > Double.MIN_VALUE)
                 qi.map(Functions.div(alpha));
             else {
@@ -155,7 +155,7 @@ public class QRDecomposition extends DecompositionSupport {
 
         Matrix r = getR();
 
-        for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {
+        for (int k = Math.min(this.cols, rows) - 1; k > 0; k--) {
             // X[k,] = Y[k,] / R[k,k], note that X[k,] starts with 0 so += is same as =
             x.viewRow(k).map(y.viewRow(k), Functions.plusMult(1 / r.get(k, k)));
 
