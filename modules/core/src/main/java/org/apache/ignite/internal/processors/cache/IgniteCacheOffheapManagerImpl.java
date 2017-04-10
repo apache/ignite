@@ -268,7 +268,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public long entriesCount(int part) {
-        if (cctx.isLocal()){
+        if (cctx.isLocal()) {
             assert part == 0;
 
             return locCacheDataStore.size();
@@ -726,7 +726,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         throws IgniteCheckedException {
         final long rootPage = allocateForTree();
 
-        CacheDataRowStore rowStore = new CacheDataRowStore(cctx, cctx.freeList());
+        CacheDataRowStore rowStore = new CacheDataRowStore(cctx, cctx.freeList(), p);
 
         String idxName = treeName(p);
 
@@ -965,8 +965,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException
-        {
+            @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             DataRow dataRow = new DataRow(key, val, ver, partId, expireTime);
 
             if (canUpdateOldRow(oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow))
@@ -1234,7 +1233,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             KeyCacheObject key,
             CacheObject oldVal,
             CacheObject newVal
-            ) throws IgniteCheckedException {
+        ) throws IgniteCheckedException {
             // In case we deal with IGFS cache, count updated data
             if (cctx.cache().isIgfsDataCache() &&
                 !cctx.isNear() &&
@@ -1310,7 +1309,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      */
     private class DataRow extends CacheDataRowAdapter {
         /** */
-        protected int part = -1;
+        protected int part;
 
         /** */
         protected int hash;
@@ -1320,12 +1319,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param link Link.
          * @param rowData Required row data.
          */
-        DataRow(int hash, long link, CacheDataRowAdapter.RowData rowData) {
+        DataRow(int hash, long link, int part, CacheDataRowAdapter.RowData rowData) {
             super(link);
 
             this.hash = hash;
 
-            part = PageIdUtils.partId(link);
+            this.part = part;
 
             try {
                 // We can not init data row lazily because underlying buffer can be concurrently cleared.
@@ -1334,6 +1333,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+
+            if (key != null)
+                key.partition(part);
         }
 
         /**
@@ -1398,14 +1400,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             boolean initNew
         ) throws IgniteCheckedException {
             super(name,
-                    cctx.cacheId(),
-                    cctx.memoryPolicy().pageMemory(),
-                    cctx.shared().wal(),
-                    cctx.offheap().globalRemoveId(),
-                    metaPageId,
-                    reuseList,
-                    DataInnerIO.VERSIONS,
-                    DataLeafIO.VERSIONS);
+                cctx.cacheId(),
+                cctx.memoryPolicy().pageMemory(),
+                cctx.shared().wal(),
+                cctx.offheap().globalRemoveId(),
+                metaPageId,
+                reuseList,
+                DataInnerIO.VERSIONS,
+                DataLeafIO.VERSIONS);
 
             assert rowStore != null;
 
@@ -1556,12 +1558,17 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      *
      */
     protected class CacheDataRowStore extends RowStore {
+        /** */
+        private final int partId;
+
         /**
          * @param cctx Cache context.
          * @param freeList Free list.
          */
-        public CacheDataRowStore(GridCacheContext<?, ?> cctx, FreeList freeList) {
+        public CacheDataRowStore(GridCacheContext<?, ?> cctx, FreeList freeList, int partId) {
             super(cctx, freeList);
+
+            this.partId = partId;
         }
 
         /**
@@ -1570,7 +1577,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @return Search row.
          */
         private CacheSearchRow keySearchRow(int hash, long link) {
-            return new DataRow(hash, link, CacheDataRowAdapter.RowData.KEY_ONLY);
+            return new DataRow(hash, link, partId, CacheDataRowAdapter.RowData.KEY_ONLY);
         }
 
         /**
@@ -1580,7 +1587,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @return Data row.
          */
         private CacheDataRow dataRow(int hash, long link, CacheDataRowAdapter.RowData rowData) {
-            return new DataRow(hash, link, rowData);
+            return new DataRow(hash, link, partId, rowData);
         }
     }
 
