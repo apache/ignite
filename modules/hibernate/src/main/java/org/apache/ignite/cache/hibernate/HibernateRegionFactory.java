@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.ignite.Ignite;
@@ -108,6 +109,9 @@ public class HibernateRegionFactory implements RegionFactory {
 
     /** Map needed to provide the same transaction context for different regions. */
     private final ThreadLocal threadLoc = new ThreadLocal();
+
+    /** */
+    private Map<String, ThreadLocal> threadLocalMap = new HashMap<String, ThreadLocal>() ;
 
     /** {@inheritDoc} */
     @Override public void start(Settings settings, Properties props) throws CacheException {
@@ -218,7 +222,15 @@ public class HibernateRegionFactory implements RegionFactory {
      * @return Thread local instance used to track updates done during one Hibernate transaction.
      */
     ThreadLocal threadLocalForCache(String cacheName) {
-        return threadLoc;
+
+        if (AccessType.NONSTRICT_READ_WRITE.equals(dfltAccessType)) {
+            if (threadLocalMap.get(cacheName)== null) {
+                threadLocalMap.put(cacheName, new ThreadLocal());
+            }
+            return threadLocalMap.get(cacheName);
+        } else {
+            return threadLoc;
+        }
     }
 
     /**
