@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -248,8 +250,31 @@ public class DataPageIO extends PageIO {
      * @param pageAddr Page address.
      * @return Direct count.
      */
-    public int getDirectCount(long pageAddr) {
+    private int getDirectCount(long pageAddr) {
         return PageUtils.getByte(pageAddr, DIRECT_CNT_OFF) & 0xFF;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param c Closure.
+     * @param <T> Closure return type.
+     * @return Collection of closure results for all items in page.
+     * @throws IgniteCheckedException In case of error in closure body.
+     */
+    public <T> List<T> forAllItems(long pageAddr, CC<T> c) throws IgniteCheckedException {
+        long pageId = getPageId(pageAddr);
+
+        int cnt = getDirectCount(pageAddr);
+
+        List<T> res = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; i++) {
+            long link = PageIdUtils.link(pageId, i);
+
+            res.add(c.apply(link));
+        }
+
+        return res;
     }
 
     /**
@@ -1404,5 +1429,21 @@ public class DataPageIO extends PageIO {
         dataOff += 2;
 
         PageUtils.putBytes(pageAddr, dataOff, payload);
+    }
+
+    /**
+     * Defines closure interface for applying computations to data page items.
+     *
+     * @param <T> Closure return type.
+     */
+    public interface CC<T> {
+        /**
+         * Closure body.
+         *
+         * @param link Link to item.
+         * @return Closure return value.
+         * @throws IgniteCheckedException In case of error in closure body.
+         */
+        public T apply(long link) throws IgniteCheckedException;
     }
 }

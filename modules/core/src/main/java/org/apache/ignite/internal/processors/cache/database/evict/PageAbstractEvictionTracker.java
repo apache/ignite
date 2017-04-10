@@ -16,14 +16,12 @@
 */
 package org.apache.ignite.internal.processors.cache.database.evict;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -117,9 +115,9 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     final boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
         long fakePageId = PageIdUtils.pageId(0, (byte)0, pageIdx);
 
-        List<CacheDataRowAdapter> rowsToEvict = new ArrayList<>();
-
         long page = pageMem.acquirePage(0, fakePageId);
+
+        List<CacheDataRowAdapter> rowsToEvict;
 
         try {
             long pageAddr = pageMem.readLockForce(0, fakePageId, page);
@@ -135,19 +133,17 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
                 if (!checkTouch(realPageId))
                     return false; // Can't evict: another thread concurrently invoked forgetPage()
 
-                int dataItemsCnt = io.getDirectCount(pageAddr);
+                rowsToEvict = io.forAllItems(pageAddr, new DataPageIO.CC<CacheDataRowAdapter>() {
+                    @Override public CacheDataRowAdapter apply(long link) throws IgniteCheckedException {
+                        CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-                for (int i = 0; i < dataItemsCnt; i++) {
-                    long link = PageIdUtils.link(realPageId, i);
+                        row.initFromLink(null, sharedCtx, pageMem, CacheDataRowAdapter.RowData.KEY_ONLY);
 
-                    CacheDataRowAdapter row = new CacheDataRowAdapter(link);
+                        assert row.cacheId() != 0 : "Cache ID should be stored in rows of evictable cache";
 
-                    row.initFromLink(null, sharedCtx, pageMem, CacheDataRowAdapter.RowData.KEY_ONLY);
-
-                    assert row.cacheId() != 0 : "Cache ID should be stored in rows of evictable cache";
-
-                    rowsToEvict.add(row);
-                }
+                        return row;
+                    }
+                });
             }
             finally {
                 pageMem.readUnlock(0, fakePageId, page);

@@ -40,14 +40,43 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
-    public void testEvictionWithReadThrough() throws Exception {
+    public void testEvictionWithReadThroughAtomicReplicated() throws Exception {
+        testEvictionWithReadThrough(CacheAtomicityMode.ATOMIC, CacheMode.REPLICATED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEvictionWithReadThroughAtomicLocal() throws Exception {
+        testEvictionWithReadThrough(CacheAtomicityMode.ATOMIC, CacheMode.LOCAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEvictionWithReadThroughTxReplicated() throws Exception {
+        testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL, CacheMode.REPLICATED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEvictionWithReadThroughTxLocal() throws Exception {
+        testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL, CacheMode.LOCAL);
+    }
+
+    /**
+     * @param atomicityMode Atomicity mode.
+     * @param cacheMode Cache mode.
+     * @throws Exception If failed.
+     */
+    private void testEvictionWithReadThrough(CacheAtomicityMode atomicityMode, CacheMode cacheMode) throws Exception {
         startGridsMultiThreaded(4);
 
-        CacheConfiguration<Object, Object> cfg = cacheConfig("evict-rebalance", null, CacheMode.PARTITIONED,
-            CacheAtomicityMode.ATOMIC, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> cfg = cacheConfig("evict-rebalance", null, cacheMode, atomicityMode,
+            CacheWriteSynchronizationMode.PRIMARY_SYNC);
         cfg.setReadThrough(true);
         cfg.setCacheStoreFactory(new TestStoreFactory());
 

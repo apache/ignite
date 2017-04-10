@@ -37,16 +37,50 @@ public class PageEvictionTouchOrderTest extends PageEvictionAbstractTest {
             super.getConfiguration(gridName));
     }
 
-    /**
-     *
-     */
-    public void testTouchOrderWithFairFifoEviction() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         System.setProperty("override.fair.fifo.page.eviction.tracker", "true");
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTouchOrderWithFairFifoEvictionAtomicReplicated() throws Exception {
+        testTouchOrderWithFairFifoEviction(CacheAtomicityMode.ATOMIC, CacheMode.REPLICATED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTouchOrderWithFairFifoEvictionAtomicLocal() throws Exception {
+        testTouchOrderWithFairFifoEviction(CacheAtomicityMode.ATOMIC, CacheMode.LOCAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTouchOrderWithFairFifoEvictionTxReplicated() throws Exception {
+        testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL, CacheMode.REPLICATED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTouchOrderWithFairFifoEvictionTxLocal() throws Exception {
+        testTouchOrderWithFairFifoEviction(CacheAtomicityMode.TRANSACTIONAL, CacheMode.LOCAL);
+    }
+
+    /**
+     * @param atomicityMode Atomicity mode.
+     * @param cacheMode Cache mode.
+     * @throws Exception If failed.
+     */
+    private void testTouchOrderWithFairFifoEviction(CacheAtomicityMode atomicityMode, CacheMode cacheMode)
+        throws Exception {
         startGrid(0);
 
-        CacheConfiguration<Object, Object> cfg = cacheConfig("evict-fair", null, CacheMode.PARTITIONED,
-            CacheAtomicityMode.ATOMIC, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> cfg = cacheConfig("evict-fair", null, cacheMode, atomicityMode,
+            CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
         IgniteCache<Object, Object> cache = ignite(0).getOrCreateCache(cfg);
 
