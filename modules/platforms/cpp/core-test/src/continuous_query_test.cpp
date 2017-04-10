@@ -265,7 +265,6 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestEntry)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestEntry)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(TestEntry)
             IGNITE_BINARY_IS_NULL_FALSE(TestEntry)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(TestEntry)
 
@@ -297,11 +296,6 @@ namespace ignite
 
             }
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-
-            int32_t GetHashCode(const RangeFilter<K,V>&)
-            {
-                return 0;
-            }
 
             bool IsNull(const RangeFilter<K,V>&)
             {

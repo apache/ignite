@@ -15,28 +15,27 @@
  * limitations under the License.
  */
 
-#include <ignite/binary/binary_object.h>
-#include <ignite/impl/binary/binary_utils.h>
+package org.apache.ignite.internal.processors.cache.distributed;
 
-#include <ignite/binary/binary_array_identity_resolver.h>
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.GridBinaryDuplicateIndexObjectsAbstractSelfTest;
 
-namespace ignite
-{
-    namespace binary
-    {
-        BinaryArrayIdentityResolver::BinaryArrayIdentityResolver()
-        {
-            // No-op.
-        }
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
-        BinaryArrayIdentityResolver::~BinaryArrayIdentityResolver()
-        {
-            // No-op.
-        }
+/**
+ * Test PARTITIONED and TRANSACTIONAL.
+ */
+public class GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest extends
+    GridBinaryDuplicateIndexObjectsAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override public CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
 
-        int32_t BinaryArrayIdentityResolver::GetHashCode(const BinaryObject& obj)
-        {
-            return impl::binary::BinaryUtils::GetDataHashCode(obj.impl.GetData(), obj.impl.GetLength());
-        }
+    /** {@inheritDoc} */
+    @Override public CacheMode cacheMode() {
+        return PARTITIONED;
     }
 }

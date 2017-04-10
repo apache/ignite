@@ -70,8 +70,6 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="swapEnabled" value="false"/>
     </bean>
 
     <bean id="tx" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">

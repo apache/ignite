@@ -21,7 +21,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -136,10 +135,12 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @throws IgniteCheckedException If failed.
      */
     private int getMetaInlineSize() throws IgniteCheckedException {
-        try (Page meta = page(metaPageId)) {
-            long pageAddr = readLock(meta); // Meta can't be removed.
+        final long metaPage = acquirePage(metaPageId);
 
-            assert pageAddr != 0 : "Failed to read lock meta page [page=" + meta + ", metaPageId=" +
+        try {
+            long pageAddr = readLock(metaPageId, metaPage); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
                 U.hexLong(metaPageId) + ']';
 
             try {
@@ -148,8 +149,11 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                 return io.getInlineSize(pageAddr);
             }
             finally {
-                readUnlock(meta, pageAddr);
+                readUnlock(metaPageId, metaPage, pageAddr);
             }
+        }
+        finally {
+            releasePage(metaPageId, metaPage);
         }
     }
 

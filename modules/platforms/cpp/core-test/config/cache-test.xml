@@ -30,5 +30,5 @@
         http://www.springframework.org/schema/util/spring-util.xsd">
     <import resource="cache-test-default.xml"/>
 
-        <bean parent="grid.cfg"/>
+    <bean parent="grid.cfg"/>
 </beans>
