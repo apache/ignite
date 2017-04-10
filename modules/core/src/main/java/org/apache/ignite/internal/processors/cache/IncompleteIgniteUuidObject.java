@@ -18,22 +18,44 @@
 package org.apache.ignite.internal.processors.cache;
 
 /**
- * Incomplete object for P2P.
+ * Incomplete object for deployed.
  */
-public class IncompleteIgniteUUIDObject extends IncompleteObject {
+public class IncompleteIgniteUuidObject extends IncompleteObject {
     /** */
     private IncompleteCacheObject incomplete;
+
+    /** */
+    private boolean headOnly;
 
     /**
      * @param data Data.
      * @param incomplete Incomplete object.
      */
-    public IncompleteIgniteUUIDObject(byte[] data, IncompleteCacheObject incomplete) {
+    public IncompleteIgniteUuidObject(byte[] data, IncompleteCacheObject incomplete) {
         super(data);
 
         assert incomplete.isReady();
 
         this.incomplete = incomplete;
+    }
+
+    /**
+     * @param incomplete Incomplete object.
+     */
+    public IncompleteIgniteUuidObject(IncompleteCacheObject incomplete) {
+        super(new byte[1]);
+
+        assert incomplete.isReady();
+
+        this.incomplete = incomplete;
+        this.headOnly = true;
+    }
+
+    /**
+     * @return {@code True} if contains only size.
+     */
+    public boolean isHeadOnly() {
+        return headOnly;
     }
 
     /**

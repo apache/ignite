@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
+import org.apache.ignite.internal.processors.cache.IncompleteIgniteUuidObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
@@ -203,7 +204,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         // Read key classloader id.
         if (depEnabled && keyClsLdrId == null) {
-            incomplete = readIncompleteClassLoaderUUID(coctx, buf, incomplete, keyIncomplete);
+            incomplete = readIncompleteClassLoaderUuid(coctx, buf, incomplete, keyIncomplete);
 
             if (keyClsLdrId == null || keyOnly)
                 return incomplete;
@@ -224,7 +225,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         // Read val classloader id.
         if (depEnabled && valClsLdrId == null) {
-            incomplete = readIncompleteClassLoaderUUID(coctx, buf, incomplete, null);
+            incomplete = readIncompleteClassLoaderUuid(coctx, buf, incomplete, null);
 
             if (valClsLdrId == null)
                 return incomplete;
@@ -469,7 +470,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
-    private IncompleteObject<?> readIncompleteClassLoaderUUID(
+    private IncompleteObject<?> readIncompleteClassLoaderUuid(
         CacheObjectContext coctx,
         ByteBuffer buf,
         IncompleteObject<?> incomplete,
@@ -478,8 +479,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
         if (incomplete == null) {
             int remaining = buf.remaining();
 
-            if (remaining == 0)
-                return null;
+            if (remaining == 0) {
+                if (keyIncomplete == null)
+                    return null;
+                else
+                    // Need to save keyIncomplete object.
+                    return new IncompleteIgniteUuidObject(keyIncomplete);
+            }
 
             byte isNull = buf.get();
 
@@ -497,7 +503,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 return null;
             }
 
-            int size = PageUtils.IGNITE_UUID_SIZE;
+            // One byte was read above.
+            int size = PageUtils.IGNITE_UUID_SIZE - 1;
 
             if (remaining >= size) {
                 // If the whole version is on a single page, just read it.
@@ -523,33 +530,59 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 return null;
             }
 
-            // We have to read multipart version.
-            incomplete = new IncompleteObject<>(new byte[size]);
+            // We have to read multipart Ignite UUID.
+            incomplete = new IncompleteIgniteUuidObject(new byte[size], keyIncomplete);
         }
 
         incomplete.readData(buf);
 
+        assert incomplete instanceof IncompleteIgniteUuidObject;
+
+        IncompleteIgniteUuidObject incomplete0 = (IncompleteIgniteUuidObject)incomplete;
+        keyIncomplete = incomplete0.incompleteObject();
+
         if (incomplete.isReady()) {
-            final ByteBuffer uuidBuf = ByteBuffer.wrap(incomplete.data());
+            IgniteUuid uuid = null;
 
-            uuidBuf.order(buf.order());
+            byte[] data = incomplete.data();
 
-            long mostSigBits = buf.getLong();
-            long leastSigBits = buf.getLong();
-            long locId = buf.getLong();
+            if (incomplete0.isHeadOnly()) {
+                assert data.length != 0;
 
-            IgniteUuid uuid = new IgniteUuid(new UUID(mostSigBits, leastSigBits), locId);
+                boolean isNull = data[0] == 0;
+
+                if (isNull)
+                    uuid = null;
+                else {
+                    // One byte was read above.
+                    int size = PageUtils.IGNITE_UUID_SIZE - 1;
+
+                    // We have to read multipart Ignite UUID.
+                    incomplete = new IncompleteIgniteUuidObject(new byte[size], keyIncomplete);
+                }
+            }
+            else {
+                final ByteBuffer uuidBuf = ByteBuffer.wrap(data);
+
+                uuidBuf.order(buf.order());
+
+                long mostSigBits = buf.getLong();
+                long leastSigBits = buf.getLong();
+                long locId = buf.getLong();
+
+                uuid = new IgniteUuid(new UUID(mostSigBits, leastSigBits), locId);
+            }
 
             if (keyIncomplete != null) {
                 assert keyIncomplete.isReady();
 
-                keyClsLdrId = uuid;
+                keyClsLdrId = uuid == null ? NULL_OBJECT : uuid;
 
                 key = coctx.processor().toKeyCacheObject(coctx, keyIncomplete.type(), keyIncomplete.data(),
-                    keyClsLdrId);
+                    uuid);
             }
             else
-                valClsLdrId = uuid;
+                valClsLdrId = uuid == null ? NULL_OBJECT : uuid;
         }
 
         assert !buf.hasRemaining();
