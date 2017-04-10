@@ -48,8 +48,7 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return hasError() ? new SchemaFinishDiscoveryMessage(op, depId, err) :
-            new SchemaAcceptDiscoveryMessage(op, depId);
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -59,7 +58,7 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
 
     /** {@inheritDoc} */
     @Override public boolean exchange() {
-        return false;
+        return !hasError();
     }
 
     /** {@inheritDoc} */
@@ -72,6 +71,14 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
      */
     public void deploymentId(IgniteUuid depId) {
         this.depId = depId;
+    }
+
+    /**
+     *
+     * @return {@code True} if message is initialized.
+     */
+    public boolean initialized() {
+        return deploymentId() != null || hasError();
     }
 
     /**

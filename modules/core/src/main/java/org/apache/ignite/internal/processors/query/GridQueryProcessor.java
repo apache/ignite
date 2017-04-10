@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.query.schema.SchemaKey;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationDescriptor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
@@ -265,11 +264,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             for (SchemaOperationDescriptor activeOpDesc : activeOpsInit.values()) {
                 onSchemaProposeDiscovery0(activeOpDesc.messagePropose());
 
-                if (activeOpDesc.messageAccept() != null)
-                    onSchemaAccept(activeOpDesc.messageAccept());
+                onSchemaPropose(activeOpDesc.id());
 
-                if (activeOpDesc.messageFinish() != null)
-                    onSchemaFinish(activeOpDesc.messageFinish());
+                if (activeOpDesc.finished())
+                    onSchemaFinish(activeOpDesc.id(), activeOpDesc.finishError());
             }
 
             activeOpsInit.clear();
@@ -507,8 +505,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     public void onCacheStop(GridCacheContext cctx) {
-        System.out.println("ON CACHE STOP: " + cctx.name() + " " + cctx.kernalContext().igniteInstanceName());
-
         if (idx == null)
             return;
 
@@ -540,8 +536,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (msg instanceof SchemaProposeDiscoveryMessage)
             onSchemaProposeDiscovery((SchemaProposeDiscoveryMessage)msg);
-        else if (msg instanceof SchemaAcceptDiscoveryMessage)
-            onSchemaAcceptDiscovery((SchemaAcceptDiscoveryMessage)msg);
         else if (msg instanceof SchemaFinishDiscoveryMessage)
             onSchemaFinishDiscovery((SchemaFinishDiscoveryMessage)msg);
         else
@@ -558,33 +552,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         UUID opId = msg.operation().id();
         String space = msg.operation().space();
 
-        // Ignore in case error was reported by another node earlier.
-        if (msg.hasError()) {
-            if (log.isDebugEnabled())
-                log.debug("Received schema propose discovery message with reported error (will ignore) [opId=" +
-                    opId + ", msg=" + msg + ']');
+        if (!msg.initialized()) {
+            // Ensure cache exists on coordinator node.
+            DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(space);
 
-            return;
+            if (cacheDesc == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Received schema propose discovery message, but cache doesn't exist " +
+                        "(will report error) [opId=" + opId + ", msg=" + msg + ']');
+
+                msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, space));
+            }
+            else {
+                // Preserve deployment ID so that we can distinguish between different caches with the same name.
+                if (msg.deploymentId() == null)
+                    msg.deploymentId(cacheDesc.deploymentId());
+
+                assert F.eq(cacheDesc.deploymentId(), msg.deploymentId());
+            }
         }
-
-        // Ensure cache exists.
-        DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(space);
-
-        if (cacheDesc == null) {
-            if (log.isDebugEnabled())
-                log.debug("Received schema propose discovery message, but cache doesn't exist (will report error) " +
-                    "[opId=" + opId + ", msg=" + msg + ']');
-
-            msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, space));
-
-            return;
-        }
-
-        // Preserve deployment ID so that we can distinguish between different caches with the same name.
-        if (msg.deploymentId() == null)
-            msg.deploymentId(cacheDesc.deploymentId());
-
-        assert F.eq(cacheDesc.deploymentId(), msg.deploymentId());
 
         if (log.isDebugEnabled())
             log.debug("Received schema propose message (discovery) [opId=" + opId + ", msg=" + msg + ']');
@@ -603,6 +589,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         synchronized (stateMux) {
             if (disconnected)
                 return;
+
+            if (msg.hasError()) {
+                // Complete client future and exit immediately.
+                SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
+
+                if (cliFut != null)
+                    cliFut.onDone(msg.error());
+
+                return;
+            }
 
             SchemaOperationDescriptor desc = new SchemaOperationDescriptor(msg);
 
@@ -630,40 +626,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
     }
 
-    /** Process schema accept message from discovery thread.
-     *
-     * @param msg Message.
-     */
-    private void onSchemaAcceptDiscovery(SchemaAcceptDiscoveryMessage msg) {
-        UUID opId = msg.operation().id();
-
-        if (log.isDebugEnabled())
-            log.debug("Received schema accept message (discovery) [opId=" + opId + ", msg=" + msg + ']');
-
-        synchronized (stateMux) {
-            if (disconnected)
-                return;
-
-            SchemaOperationDescriptor desc = activeOps.get(opId);
-
-            assert desc != null;
-            assert desc.messageAccept() == null;
-
-            desc.messageAccept(msg);
-        }
-    }
-
     /**
      * Handle schema accept.
-     *
-     * @param msg Message.
      */
     @SuppressWarnings("ThrowableInstanceNeverThrown")
-    public void onSchemaAccept(SchemaAcceptDiscoveryMessage msg) {
-        UUID opId = msg.operation().id();
-
+    public void onSchemaPropose(UUID opId) {
         if (log.isDebugEnabled())
-            log.debug("Received schema accept message (exchange) [opId=" + opId + ", msg=" + msg + ']');
+            log.debug("Received schema accept message (exchange) [opId=" + opId + ']');
 
         synchronized (stateMux) {
             if (disconnected)
@@ -1112,13 +1081,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             SchemaOperationDescriptor desc = activeOps.get(opId);
 
-            if (desc != null) {
-                assert desc.messageFinish() == null;
+            assert desc != null;
+            assert !desc.finished();
 
-                desc.messageFinish(msg);
-            }
-            else
-                assert msg.hasError();
+            desc.onFinish(msg.error());
 
             // Get rid of pending IO messages received from nodes which joined the cluster when operation
             // had been in progress.
@@ -1141,16 +1107,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Handle index finish message.
+     * Handle schema change finish message.
      *
-     * @param msg Message.
+     * @param opId Operation ID.
+     * @param err Error.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void onSchemaFinish(SchemaFinishDiscoveryMessage msg) {
-        UUID opId = msg.operation().id();
-
+    public void onSchemaFinish(UUID opId, @Nullable SchemaOperationException err) {
         if (log.isDebugEnabled())
-            log.debug("Received schema finish message (exchange) [opId=" + opId + ", msg=" + msg + ']');
+            log.debug("Received schema finish message (exchange) [opId=" + opId + ", err=" + err + ']');
 
         // Complete distributed operations.
         synchronized (stateMux) {
@@ -1176,24 +1141,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (nextOp != null) {
                     schemaOps.put(key, nextOp);
 
-                    if (nextOp.descriptor().messageAccept() != null) {
-                        if (log.isDebugEnabled())
-                            log.debug("Next schema change operation started [opId=" + opId +
-                                ", nextOpId=" + nextOp.id() + ']');
+                    if (log.isDebugEnabled())
+                        log.debug("Next schema change operation started [opId=" + opId +
+                            ", nextOpId=" + nextOp.id() + ']');
 
-                        if (!nextOp.started())
-                            startSchemaChange(nextOp);
-                    }
+                    if (!nextOp.started())
+                        startSchemaChange(nextOp);
                 }
-            }
-            else {
-                SchemaOperationException err = msg.error();
-
-                if (log.isDebugEnabled())
-                    log.debug("Finish schema change without descriptor (error on propose?) [opId=" + opId +
-                        ", err=" + err + ']');
-
-                assert err != null;
             }
         }
 
@@ -1201,8 +1155,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
 
         if (cliFut != null) {
-            if (msg.hasError())
-                cliFut.onDone(msg.error());
+            if (err != null)
+                cliFut.onDone(err);
             else
                 cliFut.onDone();
         }

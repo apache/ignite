@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.internal.processors.query.schema.message.SchemaAcceptDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,11 +36,11 @@ public class SchemaOperationDescriptor implements Serializable {
     /** Propose message. */
     private final SchemaProposeDiscoveryMessage msgPropose;
 
-    /** Accept message. */
-    private SchemaAcceptDiscoveryMessage msgAccept;
+    /** Whether operation is finished. */
+    private boolean finished;
 
-    /** Finish message. */
-    private SchemaFinishDiscoveryMessage msgFinish;
+    /** Error received on finish. */
+    private SchemaOperationException finishErr;
 
     /**
      * Constructor.
@@ -60,8 +58,8 @@ public class SchemaOperationDescriptor implements Serializable {
      */
     public SchemaOperationDescriptor(SchemaOperationDescriptor other) {
         this.msgPropose = other.msgPropose;
-        this.msgAccept = other.msgAccept;
-        this.msgFinish = other.msgFinish;
+        this.finished = other.finished;
+        this.finishErr = other.finishErr;
     }
 
     /**
@@ -100,31 +98,30 @@ public class SchemaOperationDescriptor implements Serializable {
     }
 
     /**
-     * @return Accept message.
+     * Handle finish message arrival.
+     *
+     * @param err Error.
      */
-    @Nullable public SchemaAcceptDiscoveryMessage messageAccept() {
-        return msgAccept;
+    public void onFinish(@Nullable SchemaOperationException err) {
+        finished = true;
+
+        this.finishErr = err;
     }
 
     /**
-     * @param msgAccept Accept message.
+     * @return {@code True} if operation is finished.
      */
-    public void messageAccept(SchemaAcceptDiscoveryMessage msgAccept) {
-        this.msgAccept = msgAccept;
+    public boolean finished() {
+        return finished;
     }
 
     /**
-     * @return Finish message.
+     * @return Error received on finish (if any).
      */
-    @Nullable public SchemaFinishDiscoveryMessage messageFinish() {
-        return msgFinish;
-    }
+    @Nullable public SchemaOperationException finishError() {
+        assert finished;
 
-    /**
-     * @param msgFinish Finish message.
-     */
-    public void messageFinish(SchemaFinishDiscoveryMessage msgFinish) {
-        this.msgFinish = msgFinish;
+        return finishErr;
     }
 
     /** {@inheritDoc} */

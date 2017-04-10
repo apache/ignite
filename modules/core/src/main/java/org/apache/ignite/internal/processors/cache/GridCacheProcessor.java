@@ -66,10 +66,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.schema.message.SchemaAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -399,10 +399,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (task instanceof SchemaExchangeWorkerTask) {
             SchemaAbstractDiscoveryMessage msg = ((SchemaExchangeWorkerTask)task).message();
 
-            if (msg instanceof SchemaAcceptDiscoveryMessage)
-                ctx.query().onSchemaAccept((SchemaAcceptDiscoveryMessage)msg);
+            UUID opId = msg.operation().id();
+
+            if (msg instanceof SchemaProposeDiscoveryMessage)
+                ctx.query().onSchemaPropose(opId);
             else if (msg instanceof SchemaFinishDiscoveryMessage)
-                ctx.query().onSchemaFinish((SchemaFinishDiscoveryMessage)msg);
+                ctx.query().onSchemaFinish(opId, ((SchemaFinishDiscoveryMessage)msg).error());
             else
                 U.warn(log, "Unsupported schema discovery message: " + msg);
         }
