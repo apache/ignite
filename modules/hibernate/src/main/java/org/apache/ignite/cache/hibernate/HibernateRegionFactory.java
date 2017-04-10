@@ -117,7 +117,8 @@ public class HibernateRegionFactory implements RegionFactory {
 
                 return new HibernateKeyWrapper(
                     cacheKey.getKey(),
-                    cacheKey.getEntityOrRoleName()
+                    cacheKey.getEntityOrRoleName(),
+                    cacheKey.getTenantId()
                 );
             }
 

@@ -64,6 +64,20 @@ public interface IgniteTree<L, T> {
     public GridCursor<T> find(L lower, L upper) throws IgniteCheckedException;
 
     /**
+     * Returns a value mapped to the lowest key, or {@code null} if tree is empty
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public T findFirst() throws IgniteCheckedException;
+
+    /**
+     * Returns a value mapped to the greatest key, or {@code null} if tree is empty
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public T findLast() throws IgniteCheckedException;
+
+    /**
      * Removes the mapping for a key from this tree if it is present.
      *
      * @param key Key whose mapping is to be removed from the tree.

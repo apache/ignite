@@ -251,7 +251,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             g.backId(0L); // Usually we'll go left down and don't need it.
 
             int cnt = io.getCount(pageAddr);
-            int idx = findInsertionPoint(io, pageAddr, 0, cnt, g.row, g.shift);
+
+            int idx;
+            if (g.findLast)
+                idx = io.isLeaf()? cnt - 1: -cnt - 1; //(-cnt - 1) mimics not_found result of findInsertionPoint
+                //in case of cnt = 0 we end up in 'not found' branch below with idx being 0 after fix() adjustment
+            else
+                idx = findInsertionPoint(io, pageAddr, 0, cnt, g.row, g.shift);
 
             boolean found = idx >= 0;
 
@@ -949,6 +955,83 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public T findFirst() throws IgniteCheckedException {
+        checkDestroyed();
+
+        try {
+            long firstPageId;
+
+            long metaPage = acquirePage(metaPageId);
+            try {
+                firstPageId = getFirstPageId(metaPageId, metaPage, 0);
+            }
+            finally {
+                releasePage(metaPageId, metaPage);
+            }
+
+            long page = acquirePage(firstPageId);
+
+            try {
+                long pageAddr = readLock(firstPageId, page);
+
+                try {
+                    BPlusIO<L> io = io(pageAddr);
+
+                    int cnt = io.getCount(pageAddr);
+
+                    if (cnt == 0)
+                        return null;
+
+                    return getRow(io, pageAddr, 0);
+                }
+                finally {
+                    readUnlock(firstPageId, page, pageAddr);
+                }
+            }
+            finally {
+                releasePage(firstPageId, page);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on first row lookup", e);
+        }
+        catch (RuntimeException e) {
+            throw new IgniteException("Runtime failure on first row lookup", e);
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Assertion error on first row lookup", e);
+        }
+        finally {
+            checkDestroyed();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public T findLast() throws IgniteCheckedException {
+        checkDestroyed();
+
+        try {
+            GetOne g = new GetOne(null, null, true);
+            doFind(g);
+
+            return (T)g.row;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on last row lookup", e);
+        }
+        catch (RuntimeException e) {
+            throw new IgniteException("Runtime failure on last row lookup", e);
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Assertion error on last row lookup", e);
+        }
+        finally {
+            checkDestroyed();
+        }
+    }
+
     /**
      * @param row Lookup row for exact match.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
@@ -960,7 +1043,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         checkDestroyed();
 
         try {
-            GetOne g = new GetOne(row, x);
+            GetOne g = new GetOne(row, x, false);
 
             doFind(g);
 
@@ -2251,13 +2334,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** If this operation is a part of invoke. */
         Invoke invoke;
 
+        /** Ignore row passed, find last row */
+        boolean findLast;
+
         /**
          * @param row Row.
+         * @param findLast find last row.
          */
-        Get(L row) {
-            assert row != null;
+        Get(L row, boolean findLast) {
+            assert findLast ^ row != null;
 
             this.row = row;
+            this.findLast = findLast;
         }
 
         /**
@@ -2270,6 +2358,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             fwdId = g.fwdId;
             backId = g.backId;
             shift = g.shift;
+            findLast = g.findLast;
         }
 
         /**
@@ -2372,9 +2461,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @param row Row.
          * @param x Implementation specific argument.
+         * @param findLast Ignore row passed, find last row
          */
-        private GetOne(L row, Object x) {
-            super(row);
+        private GetOne(L row, Object x, boolean findLast) {
+            super(row, findLast);
 
             this.x = x;
         }
@@ -2405,7 +2495,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param cursor Cursor.
          */
         GetCursor(L lower, int shift, ForwardCursor cursor) {
-            super(lower);
+            super(lower, false);
 
             assert shift != 0; // Either handle range of equal rows or find a greater row after concurrent merge.
 
@@ -2468,7 +2558,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param needOld {@code True} If need return old value.
          */
         private Put(T row, boolean needOld) {
-            super(row);
+            super(row, false);
 
             this.needOld = needOld;
         }
@@ -2789,7 +2879,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param clo Closure.
          */
         private Invoke(L row, Object x, final InvokeClosure<T> clo) {
-            super(row);
+            super(row, false);
 
             assert clo != null;
 
@@ -3089,7 +3179,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param needOld {@code True} If need return old value.
          */
         private Remove(L row, boolean needOld) {
-            super(row);
+            super(row, false);
 
             this.needOld = needOld;
         }
