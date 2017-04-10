@@ -1101,7 +1101,7 @@ public class DataPageIO extends PageIO {
         if (type == EntryPart.EXPIRE_TIME)
             writeExpireTimeFragment(buf, row.expireTime(), rowOff, len, prevLen);
         else if (type == EntryPart.KEY_CLS_LDR_ID || type == EntryPart.VAL_CLS_LDR_ID)
-            writeUUIDFragment(buf, (type == EntryPart.KEY_CLS_LDR_ID ? row.keyClassLoader() : row.valueClassLoader()),
+            writeUuidFragment(buf, (type == EntryPart.KEY_CLS_LDR_ID ? row.keyClassLoader() : row.valueClassLoader()),
                 rowOff, len, prevLen);
         else if (type != EntryPart.VERSION) {
             // Write key or value.
@@ -1173,17 +1173,17 @@ public class DataPageIO extends PageIO {
      * @param len Length.
      * @param prevLen previous length.
      */
-    private void writeUUIDFragment(ByteBuffer buf, IgniteUuid uuid, int rowOff, int len, int prevLen) {
+    private void writeUuidFragment(ByteBuffer buf, IgniteUuid uuid, int rowOff, int len, int prevLen) {
         int size = PageUtils.sizeIgniteUUID(uuid);
 
         if (size <= len)
-            writeUUIDToBuffer(buf, uuid);
+            writeUuidToBuffer(buf, uuid);
         else {
             ByteBuffer timeBuf = ByteBuffer.allocate(size);
 
             timeBuf.order(buf.order());
 
-            writeUUIDToBuffer(timeBuf, uuid);
+            writeUuidToBuffer(timeBuf, uuid);
 
             buf.put(timeBuf.array(), rowOff - prevLen, len);
         }
@@ -1193,7 +1193,7 @@ public class DataPageIO extends PageIO {
      * @param buf Buffer.
      * @param uuid Ignite UUID.
      */
-    private void writeUUIDToBuffer(ByteBuffer buf, IgniteUuid uuid) {
+    private void writeUuidToBuffer(ByteBuffer buf, IgniteUuid uuid) {
         buf.put(uuid == null ? (byte)0 : (byte)1);
 
         if (uuid != null) {
@@ -1406,7 +1406,7 @@ public class DataPageIO extends PageIO {
             addr += row.key().putValue(addr);
 
             if (row.deploymentEnabled())
-                addr += PageUtils.putIgniteUUID(addr, row.keyClassLoader());
+                addr += PageUtils.putIgniteUuid(addr, row.keyClassLoader());
         }
         else {
             addr += (2 + row.key().valueBytesLength(null));
@@ -1418,7 +1418,7 @@ public class DataPageIO extends PageIO {
         addr += row.value().putValue(addr);
 
         if (row.deploymentEnabled())
-            addr += PageUtils.putIgniteUUID(addr, row.valueClassLoader());
+            addr += PageUtils.putIgniteUuid(addr, row.valueClassLoader());
 
         CacheVersionIO.write(addr, row.version(), false);
         addr += CacheVersionIO.size(row.version(), false);

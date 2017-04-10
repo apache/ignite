@@ -78,6 +78,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
     @GridToStringInclude
     protected GridCacheVersion ver;
 
+    /** */
+    private boolean keyRead;
+
     /**
      * @param link Link.
      */
@@ -192,13 +195,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
         IncompleteCacheObject keyIncomplete = null;
 
         // Read key.
-        if (key == null) {
+        if ((key == null && !depEnabled) || (!keyRead && depEnabled)) {
             keyIncomplete = readIncompleteKey(coctx, buf, (IncompleteCacheObject)incomplete);
             incomplete = keyIncomplete;
 
-            if (!incomplete.isReady() || (keyOnly && !depEnabled))
+            if (((key == null || keyOnly) && !depEnabled)
+                || (incomplete.isReady() && depEnabled))
                 return incomplete;
 
+            keyRead = true;
             incomplete = null;
         }
 
@@ -273,7 +278,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             off += len;
 
             if (depEnabled) {
-                keyClsLdrId = PageUtils.getIgniteUUID(addr, off);
+                keyClsLdrId = PageUtils.getIgniteUuid(addr, off);
                 off += PageUtils.sizeIgniteUUID(keyClsLdrId);
 
                 key = coctx.processor().toKeyCacheObject(coctx, type, bytes, keyClsLdrId);
@@ -303,7 +308,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         if (!depEnabled)
             val = coctx.processor().toCacheObject(coctx, type, bytes);
         else {
-            valClsLdrId = PageUtils.getIgniteUUID(addr, off);
+            valClsLdrId = PageUtils.getIgniteUuid(addr, off);
 
             off += PageUtils.sizeIgniteUUID(valClsLdrId);
 

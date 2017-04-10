@@ -196,7 +196,7 @@ public class PageUtils {
      * @param addr Address.
      * @param v Value.
      */
-    public static int putIgniteUUID(long addr, @Nullable IgniteUuid v) {
+    public static int putIgniteUuid(long addr, @Nullable IgniteUuid v) {
         assert addr > 0 : addr;
 
         GridUnsafe.putByte(addr, (v == null ? (byte)0 : (byte)1));
@@ -222,7 +222,7 @@ public class PageUtils {
      * @param off Offset.
      * @return Value.
      */
-    public static IgniteUuid getIgniteUUID(long addr, int off) {
+    public static IgniteUuid getIgniteUuid(long addr, int off) {
         assert addr > 0 : addr;
         assert off >= 0;
 
