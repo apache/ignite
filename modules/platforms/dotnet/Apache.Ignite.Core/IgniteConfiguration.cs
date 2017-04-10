@@ -30,6 +30,7 @@
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
@@ -375,6 +376,29 @@
             {
                 writer.WriteInt(0);
             }
+
+            if (EventStorageSpi == null)
+            {
+                writer.WriteByte(0);
+            }
+            else if (EventStorageSpi is NoopEventStorageSpi)
+            {
+                writer.WriteByte(1);
+            }
+            else
+            {
+                var memEventStorage = EventStorageSpi as MemoryEventStorageSpi;
+
+                if (memEventStorage == null)
+                {
+                    throw new IgniteException(string.Format(
+                        "Unsupported IgniteConfiguration.EventStorageSpi: '{0}'. " +
+                        "Supported implementations: '{1}', '{2}'.",
+                        EventStorageSpi.GetType(), typeof(NoopEventStorageSpi), typeof(MemoryEventStorageSpi)));
+                }
+
+                memEventStorage.Write(writer);
+            }
         }
 
         /// <summary>
@@ -484,6 +508,17 @@
 
             // Swap
             SwapSpaceSpi = SwapSpaceSerializer.Read(r);
+
+            // Event storage
+            switch (r.ReadByte())
+            {
+                case 1: EventStorageSpi = new NoopEventStorageSpi();
+                    break;
+
+                case 2:
+                    EventStorageSpi = MemoryEventStorageSpi.Read(r);
+                    break;
+            }
         }
 
         /// <summary>
