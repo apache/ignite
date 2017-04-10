@@ -200,7 +200,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
             incomplete = keyIncomplete;
 
             if (((key == null || keyOnly) && !depEnabled)
-                || (incomplete.isReady() && depEnabled))
+                || (!incomplete.isReady() && depEnabled))
                 return incomplete;
 
             keyRead = true;
@@ -546,10 +546,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
         IncompleteIgniteUuidObject incomplete0 = (IncompleteIgniteUuidObject)incomplete;
         keyIncomplete = incomplete0.incompleteObject();
 
-        if (incomplete.isReady()) {
+        if (incomplete0.isReady()) {
             IgniteUuid uuid = null;
 
-            byte[] data = incomplete.data();
+            byte[] data = incomplete0.data();
 
             if (incomplete0.isHeadOnly()) {
                 assert data.length != 0;
