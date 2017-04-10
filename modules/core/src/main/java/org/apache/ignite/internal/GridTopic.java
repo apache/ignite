@@ -109,7 +109,7 @@ public enum GridTopic {
     TOPIC_METADATA_REQ,
 
     /** */
-    TOPIC_DYNAMIC_SCHEMA;
+    TOPIC_CACHE_SCHEMA;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

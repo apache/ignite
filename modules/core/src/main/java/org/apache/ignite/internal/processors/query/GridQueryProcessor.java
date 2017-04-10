@@ -98,7 +98,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
-import static org.apache.ignite.internal.GridTopic.TOPIC_DYNAMIC_SCHEMA;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 
@@ -238,7 +238,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.start(ctx, busyLock);
         }
 
-        ctx.io().addMessageListener(TOPIC_DYNAMIC_SCHEMA, ioLsnr);
+        ctx.io().addMessageListener(TOPIC_CACHE_SCHEMA, ioLsnr);
 
         // Schedule queries detail metrics eviction.
         qryDetailMetricsEvictTask = ctx.timeout().schedule(new Runnable() {
@@ -298,7 +298,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
-        ctx.io().removeMessageListener(TOPIC_DYNAMIC_SCHEMA, ioLsnr);
+        ctx.io().removeMessageListener(TOPIC_CACHE_SCHEMA, ioLsnr);
 
         if (idx != null)
             idx.stop();
@@ -965,94 +965,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             return crd;
-        }
-    }
-
-    /**
-     * Schema operation.
-     */
-    private class SchemaOperation {
-        /** Operation descriptor. */
-        private final SchemaOperationDescriptor desc;
-
-        /** Next schema operation. */
-        private SchemaOperation next;
-
-        /** Operation manager. */
-        private SchemaOperationManager mgr;
-
-        /**
-         * Constructor.
-         *
-         * @param desc Operation descriptor.
-         */
-        public SchemaOperation(SchemaOperationDescriptor desc) {
-            this.desc = desc;
-        }
-
-        /**
-         * @return Operation ID.
-         */
-        public UUID id() {
-            return desc.id();
-        }
-
-        /**
-         * @return Operation descriptor.
-         */
-        public SchemaOperationDescriptor descriptor() {
-            return desc;
-        }
-
-        /**
-         * @return Next schema operation.
-         */
-        @Nullable public SchemaOperation next() {
-            return next;
-        }
-
-        /**
-         * @param next Next schema operation.
-         */
-        public void next(SchemaOperation next) {
-            this.next = next;
-        }
-
-        /**
-         * Unwind operation queue and get tail operation.
-         *
-         * @return Tail operation.
-         */
-        public SchemaOperation unwind() {
-            if (next == null)
-                return this;
-            else
-                return next.unwind();
-        }
-
-        /**
-         * Whether operation started.
-         *
-         * @return {@code True} if started.
-         */
-        public boolean started() {
-            return mgr != null;
-        }
-
-        /**
-         * @return Operation manager.
-         */
-        public SchemaOperationManager manager() {
-            return mgr;
-        }
-
-        /**
-         * @param mgr Operation manager.
-         */
-        public void manager(SchemaOperationManager mgr) {
-            assert this.mgr == null;
-
-            this.mgr = mgr;
         }
     }
 
@@ -2121,7 +2033,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             SchemaOperationStatusMessage msg = new SchemaOperationStatusMessage(opId, errBytes);
 
-            ctx.io().sendToGridTopic(destNodeId, TOPIC_DYNAMIC_SCHEMA, msg, QUERY_POOL);
+            ctx.io().sendToGridTopic(destNodeId, TOPIC_CACHE_SCHEMA, msg, QUERY_POOL);
         }
         catch (IgniteCheckedException e) {
             if (log.isDebugEnabled())
@@ -2242,5 +2154,93 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
         return requestTopVer.get();
+    }
+
+    /**
+     * Schema operation.
+     */
+    private class SchemaOperation {
+        /** Operation descriptor. */
+        private final SchemaOperationDescriptor desc;
+
+        /** Next schema operation. */
+        private SchemaOperation next;
+
+        /** Operation manager. */
+        private SchemaOperationManager mgr;
+
+        /**
+         * Constructor.
+         *
+         * @param desc Operation descriptor.
+         */
+        public SchemaOperation(SchemaOperationDescriptor desc) {
+            this.desc = desc;
+        }
+
+        /**
+         * @return Operation ID.
+         */
+        public UUID id() {
+            return desc.id();
+        }
+
+        /**
+         * @return Operation descriptor.
+         */
+        public SchemaOperationDescriptor descriptor() {
+            return desc;
+        }
+
+        /**
+         * @return Next schema operation.
+         */
+        @Nullable public SchemaOperation next() {
+            return next;
+        }
+
+        /**
+         * @param next Next schema operation.
+         */
+        public void next(SchemaOperation next) {
+            this.next = next;
+        }
+
+        /**
+         * Unwind operation queue and get tail operation.
+         *
+         * @return Tail operation.
+         */
+        public SchemaOperation unwind() {
+            if (next == null)
+                return this;
+            else
+                return next.unwind();
+        }
+
+        /**
+         * Whether operation started.
+         *
+         * @return {@code True} if started.
+         */
+        public boolean started() {
+            return mgr != null;
+        }
+
+        /**
+         * @return Operation manager.
+         */
+        public SchemaOperationManager manager() {
+            return mgr;
+        }
+
+        /**
+         * @param mgr Operation manager.
+         */
+        public void manager(SchemaOperationManager mgr) {
+            assert this.mgr == null;
+
+            this.mgr = mgr;
+        }
     }
 }
