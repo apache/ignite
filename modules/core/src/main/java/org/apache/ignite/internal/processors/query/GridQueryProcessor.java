@@ -249,31 +249,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
     }
 
-    /**
-     * Handle cache kernal start. At this point discovery and IO managers are operational,
-     * GridCacheProcessor.onKernalStart() registered caches received on discovery stage, but exchange worker is not
-     * started.
-     * <p>
-     * At this point we allow concurrent IO messages handling as initial cache state is consistent.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onCacheKernalStart() throws IgniteCheckedException {
-        // Process initial operations.
-        synchronized (stateMux) {
-            for (SchemaOperationDescriptor activeOpDesc : activeOpsInit.values()) {
-                onSchemaProposeDiscovery0(activeOpDesc.messagePropose());
-
-                onSchemaPropose(activeOpDesc.id());
-
-                if (activeOpDesc.finished())
-                    onSchemaFinish(activeOpDesc.id(), activeOpDesc.finishError());
-            }
-
-            activeOpsInit.clear();
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         super.onKernalStop(cancel);
@@ -304,6 +279,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.stop();
 
         U.closeQuiet(qryDetailMetricsEvictTask);
+    }
+
+    /**
+     * Handle cache kernal start. At this point discovery and IO managers are operational,
+     * GridCacheProcessor.onKernalStart() registered caches received on discovery stage, but exchange worker is not
+     * started.
+     * <p>
+     * At this point we allow concurrent IO messages handling as initial cache state is consistent.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onCacheKernalStart() throws IgniteCheckedException {
+        // Process initial operations.
+        synchronized (stateMux) {
+            for (SchemaOperationDescriptor activeOpDesc : activeOpsInit.values()) {
+                onSchemaProposeDiscovery0(activeOpDesc.messagePropose());
+
+                onSchemaPropose(activeOpDesc.id());
+
+                if (activeOpDesc.finished())
+                    onSchemaFinish(activeOpDesc.id(), activeOpDesc.finishError());
+            }
+
+            activeOpsInit.clear();
+        }
     }
 
     /**
@@ -947,7 +947,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @return Coordinator node.
      */
-    public ClusterNode coordinator() {
+    private ClusterNode coordinator() {
         assert !ctx.clientNode();
 
         synchronized (stateMux) {
@@ -1106,7 +1106,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             if (log.isDebugEnabled())
-                log.debug("Local operation finished sucessfully [opId=" + op.id() + ']');
+                log.debug("Local operation finished successfully [opId=" + op.id() + ']');
 
             try {
                 if (op instanceof SchemaIndexCreateOperation) {
@@ -1145,7 +1145,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onNodeLeave(ClusterNode node) {
         synchronized (stateMux) {
-            // Clients new send status messages and are never coordinators.
+            // Clients do not send status messages and are never coordinators.
             if (ctx.clientNode())
                 return;
 

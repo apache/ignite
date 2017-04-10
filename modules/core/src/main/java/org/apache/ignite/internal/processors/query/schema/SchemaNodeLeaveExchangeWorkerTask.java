@@ -47,11 +47,6 @@ public class SchemaNodeLeaveExchangeWorkerTask implements CachePartitionExchange
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isExchange() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaNodeLeaveExchangeWorkerTask.class, this);
     }
