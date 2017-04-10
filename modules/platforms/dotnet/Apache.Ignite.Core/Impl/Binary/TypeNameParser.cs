@@ -37,6 +37,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             _typeName = typeName;
             _start = start;
 
+            NameEnd = -1;
+            NameStart = -1;
+            AssemblyIndex = -1;
+
             Parse();
         }
 
