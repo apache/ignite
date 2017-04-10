@@ -26,16 +26,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Harness for {@link GridCacheWriteBehindStore} tests.
  */
 public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridCommonAbstractTest {
+
     /** Write cache size. */
     public static final int CACHE_SIZE = 1024;
 
@@ -63,11 +68,24 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
      * @throws Exception If failed.
      */
     protected void initStore(int flushThreadCnt) throws Exception {
+        initStore(flushThreadCnt, CacheConfiguration.DFLT_WRITE_BEHIND_WRITE_COALESCING);
+    }
+
+    /**
+     * Initializes store.
+     *
+     * @param flushThreadCnt Count of flush threads
+     * @param writeCoalescing write coalescing flag
+     * @throws Exception If failed.
+     */
+    protected void initStore(int flushThreadCnt, boolean writeCoalescing) throws Exception {
         store = new GridCacheWriteBehindStore<>(null, "", "", log, delegate);
 
         store.setFlushFrequency(FLUSH_FREQUENCY);
 
         store.setFlushSize(CACHE_SIZE);
+
+        store.setWriteCoalescing(writeCoalescing);
 
         store.setFlushThreadCount(flushThreadCnt);
 

@@ -37,6 +37,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.Parameter;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -281,8 +285,10 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
                 Set<Integer> old = perThread.putIfAbsent(Thread.currentThread().getName(), set);
 
-                if (old != null)
+                if (old != null) {
+                    System.out.println("Set already exist");
                     set = old;
+                }
 
                 Random rnd = new Random();
 
