@@ -88,6 +88,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
@@ -104,6 +107,7 @@ import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
+@RunWith(Parameterized.class)
 public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -1764,12 +1768,18 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
     }
 
+    @Parameterized.Parameters
+    public static List<Object[]> data() {
+        return Arrays.asList(new Object[50][0]);
+    }
+
     /**
      * Coordinator is added in failed list during node start, but node detected failure dies before
      * sending {@link TcpDiscoveryNodeFailedMessage}.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedNodes4() throws Exception {
         try {
             final int FAIL_ORDER = 3;
