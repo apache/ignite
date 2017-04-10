@@ -67,6 +67,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
@@ -1134,6 +1135,19 @@ public class PlatformConfigurationUtils {
 
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax());
+
+        EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
+
+        if (eventStorageSpi == null) {
+            w.writeByte((byte) 0);
+        } else if (eventStorageSpi instanceof NoopEventStorageSpi) {
+            w.writeByte((byte) 1);
+        } else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
+            w.writeByte((byte) 1);
+
+            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
+            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireAgeMs());
+        }
     }
 
     /**
