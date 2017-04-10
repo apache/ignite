@@ -144,19 +144,13 @@ public class PlatformConfigurationUtils {
         ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
         ccfg.setCopyOnRead(in.readBoolean());
         ccfg.setEagerTtl(in.readBoolean());
-        ccfg.setEvictSynchronized(in.readBoolean());
-        ccfg.setEvictSynchronizedConcurrencyLevel(in.readInt());
-        ccfg.setEvictSynchronizedKeyBufferSize(in.readInt());
-        ccfg.setEvictSynchronizedTimeout(in.readLong());
         ccfg.setInvalidate(in.readBoolean());
         ccfg.setStoreKeepBinary(in.readBoolean());
         ccfg.setLoadPreviousValue(in.readBoolean());
         ccfg.setDefaultLockTimeout(in.readLong());
         ccfg.setLongQueryWarningTimeout(in.readLong());
         ccfg.setMaxConcurrentAsyncOperations(in.readInt());
-        ccfg.setEvictMaxOverflowRatio(in.readFloat());
         ccfg.setName(in.readString());
-        ccfg.setOffHeapMaxMemory(in.readLong());
         ccfg.setReadFromBackup(in.readBoolean());
         ccfg.setRebalanceBatchSize(in.readInt());
         ccfg.setRebalanceDelay(in.readLong());
@@ -164,7 +158,6 @@ public class PlatformConfigurationUtils {
         ccfg.setRebalanceThrottle(in.readLong());
         ccfg.setRebalanceTimeout(in.readLong());
         ccfg.setSqlEscapeAll(in.readBoolean());
-        ccfg.setSqlOnheapRowCacheSize(in.readInt());
         ccfg.setStartSize(in.readInt());
         ccfg.setWriteBehindBatchSize(in.readInt());
         ccfg.setWriteBehindEnabled(in.readBoolean());
@@ -197,6 +190,9 @@ public class PlatformConfigurationUtils {
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
+        if (ccfg.getEvictionPolicy() != null)
+            ccfg.setOnheapCacheEnabled(true);
+
         ccfg.setAffinity(readAffinityFunction(in));
         ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
 
@@ -755,19 +751,13 @@ public class PlatformConfigurationUtils {
         writeEnumInt(writer, ccfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
         writer.writeBoolean(ccfg.isCopyOnRead());
         writer.writeBoolean(ccfg.isEagerTtl());
-        writer.writeBoolean(ccfg.isEvictSynchronized());
-        writer.writeInt(ccfg.getEvictSynchronizedConcurrencyLevel());
-        writer.writeInt(ccfg.getEvictSynchronizedKeyBufferSize());
-        writer.writeLong(ccfg.getEvictSynchronizedTimeout());
         writer.writeBoolean(ccfg.isInvalidate());
         writer.writeBoolean(ccfg.isStoreKeepBinary());
         writer.writeBoolean(ccfg.isLoadPreviousValue());
         writer.writeLong(ccfg.getDefaultLockTimeout());
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
-        writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
         writer.writeString(ccfg.getName());
-        writer.writeLong(ccfg.getOffHeapMaxMemory());
         writer.writeBoolean(ccfg.isReadFromBackup());
         writer.writeInt(ccfg.getRebalanceBatchSize());
         writer.writeLong(ccfg.getRebalanceDelay());
@@ -775,7 +765,6 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getRebalanceThrottle());
         writer.writeLong(ccfg.getRebalanceTimeout());
         writer.writeBoolean(ccfg.isSqlEscapeAll());
-        writer.writeInt(ccfg.getSqlOnheapRowCacheSize());
         writer.writeInt(ccfg.getStartSize());
         writer.writeInt(ccfg.getWriteBehindBatchSize());
         writer.writeBoolean(ccfg.isWriteBehindEnabled());

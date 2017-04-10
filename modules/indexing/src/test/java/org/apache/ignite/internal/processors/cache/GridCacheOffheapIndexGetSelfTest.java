@@ -38,7 +38,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
@@ -47,9 +46,6 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
  * Tests off heap storage when both offheaped and swapped entries exists.
  */
 public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final long OFFHEAP_MEM = 10L * 1024L;
-
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -79,11 +75,7 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setOffHeapMaxMemory(OFFHEAP_MEM);
-        cacheCfg.setEvictSynchronized(true);
-        cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setMemoryMode(OFFHEAP_TIERED);
         cacheCfg.setEvictionPolicy(null);
 
         return cacheCfg;

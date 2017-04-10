@@ -60,6 +60,7 @@ public interface GridCacheConcurrentMap {
 
     /**
      * Returns the number of key-value mappings in this map.
+     * It does not include entries from underlying data store.
      *
      * @return the number of key-value mappings in this map.
      */
@@ -68,6 +69,7 @@ public interface GridCacheConcurrentMap {
     /**
      * Returns the number of publicly available key-value mappings in this map.
      * It excludes entries that are marked as deleted.
+     * It also does not include entries from underlying data store.
      *
      * @return the number of publicly available key-value mappings in this map.
      */

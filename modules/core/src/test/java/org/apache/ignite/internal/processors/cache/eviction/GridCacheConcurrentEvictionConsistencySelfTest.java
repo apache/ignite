@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -83,6 +84,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
         cc.setNearConfiguration(null);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 
@@ -295,10 +297,10 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
             if (detached)
                 fail("Eviction policy contains keys that are not present in cache");
 
-            if (!(cache.localSize() == 0)) {
+            if (!(cache.localSize(CachePeekMode.ONHEAP) == 0)) {
                 boolean zombies = false;
 
-                for (Cache.Entry<Integer, Integer> e : cache) {
+                for (Cache.Entry<Integer, Integer> e : cache.localEntries(CachePeekMode.ONHEAP)) {
                     U.warn(log, "Zombie entry: " + e);
 
                     zombies = true;

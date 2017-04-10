@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -101,11 +100,6 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
      * @return Cache atomicity mode.
      */
     protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     * @return Cache memory mode;
-     */
-    protected abstract CacheMemoryMode memoryMode();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

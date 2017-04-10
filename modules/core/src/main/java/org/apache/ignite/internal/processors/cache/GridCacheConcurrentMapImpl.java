@@ -113,8 +113,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
         KeyCacheObject key,
         @Nullable final CacheObject val,
         final boolean create,
-        final boolean touch)
-    {
+        final boolean touch) {
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
         GridCacheMapEntry created0 = null;

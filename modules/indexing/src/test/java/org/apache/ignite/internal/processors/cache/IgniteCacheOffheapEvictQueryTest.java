@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -66,17 +65,12 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setBackups(0);
-        cacheCfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
         cacheCfg.setEvictionPolicy(null);
         cacheCfg.setNearConfiguration(null);
-
-        cacheCfg.setSqlOnheapRowCacheSize(128);
 
         cacheCfg.setIndexedTypes(
             Integer.class, Integer.class
         );
-
-        cacheCfg.setOffHeapMaxMemory(2000); // Small offheap for evictions from offheap to swap.
 
         cfg.setCacheConfiguration(cacheCfg);
 

@@ -73,7 +73,6 @@ public class VisorCacheQueryConfiguration implements Serializable, LessNamingBea
         longQryWarnTimeout = ccfg.getLongQueryWarningTimeout();
         sqlEscapeAll = ccfg.isSqlEscapeAll();
         indexedTypes = compactClasses(ccfg.getIndexedTypes());
-        sqlOnheapRowCacheSize = ccfg.getSqlOnheapRowCacheSize();
         sqlSchema = ccfg.getSqlSchema();
 
         return this;

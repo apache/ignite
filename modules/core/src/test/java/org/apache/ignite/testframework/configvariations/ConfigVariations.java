@@ -29,7 +29,6 @@ import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -46,7 +45,6 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 
 import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
 
@@ -86,22 +84,6 @@ public class ConfigVariations {
     );
 
     /** */
-    private static final ConfigParameter<Object> ONHEAP_TIERED_MEMORY_PARAM =
-        Parameters.parameter("setMemoryMode", CacheMemoryMode.ONHEAP_TIERED);
-
-    /** */
-    private static final ConfigParameter<Object> OFFHEAP_TIERED_MEMORY_PARAM =
-        Parameters.parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_TIERED);
-
-    /** */
-    private static final ConfigParameter<Object> OFFHEAP_VALUES_MEMORY_PARAM =
-        Parameters.parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_VALUES);
-
-    /** */
-    private static final ConfigParameter<Object> OFFHEAP_ENABLED =
-        Parameters.parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L);
-
-    /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigParameter[][] {
         Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), optimizedMarshallerFactory()),
@@ -113,13 +95,13 @@ public class ConfigVariations {
     private static final ConfigParameter<CacheConfiguration>[][] BASIC_CACHE_SET = new ConfigParameter[][] {
         Parameters.objectParameters("setCacheMode", CacheMode.REPLICATED, CacheMode.PARTITIONED),
         Parameters.enumParameters("setAtomicityMode", CacheAtomicityMode.class),
-        Parameters.enumParameters("setMemoryMode", CacheMemoryMode.class),
         // Set default parameters.
         Parameters.objectParameters("setLoadPreviousValue", true),
         asArray(SIMPLE_CACHE_STORE_PARAM),
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
         Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
         Parameters.objectParameters("setStartSize", 1024),
+        Parameters.booleanParameters("setOnheapCacheEnabled")
     };
 
     /** */
@@ -127,11 +109,6 @@ public class ConfigVariations {
     private static final ConfigParameter<CacheConfiguration>[][] FULL_CACHE_SET = new ConfigParameter[][] {
         Parameters.enumParameters("setCacheMode", CacheMode.class),
         Parameters.enumParameters("setAtomicityMode", CacheAtomicityMode.class),
-        asArray(ONHEAP_TIERED_MEMORY_PARAM,
-            Parameters.complexParameter(ONHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
-            Parameters.complexParameter(OFFHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
-            Parameters.complexParameter(OFFHEAP_VALUES_MEMORY_PARAM, OFFHEAP_ENABLED)
-        ),
         Parameters.booleanParameters("setLoadPreviousValue"),
         Parameters.booleanParameters("setReadFromBackup"),
         Parameters.booleanParameters("setStoreKeepBinary"),
@@ -153,6 +130,7 @@ public class ConfigVariations {
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
         Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
         Parameters.objectParameters("setStartSize", 1024),
+        Parameters.booleanParameters("setOnheapCacheEnabled")
     };
 
     /**
