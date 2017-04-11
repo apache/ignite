@@ -124,6 +124,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             return _typeName.Substring(_start, NameEnd - _start + 1);
         }
 
+        /// <summary>
+        /// Gets the array part.
+        /// </summary>
         public string GetArray()
         {
             if (ArrayStart < 0)
@@ -132,6 +135,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             return _typeName.Substring(ArrayStart, ArrayEnd - ArrayStart + 1);
         }
 
+        /// <summary>
+        /// Gets the generic header, i.e. '`2'.
+        /// </summary>
         public string GetGenericHeader()
         {
             if (Generics == null)
@@ -140,6 +146,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             return "`" + Generics.Count;
         }
 
+        /// <summary>
+        /// Gets assembly name part.
+        /// </summary>
         public string GetAssemblyName()
         {
             if (AssemblyStart < 0)
@@ -169,6 +178,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             ParseAssemblyName();
         }
 
+        /// <summary>
+        /// Parses the type name with namespace.
+        /// </summary>
         private void ParseTypeName()
         {
             while (Shift())
@@ -185,6 +197,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             NameEnd = End ? _pos : _pos - 1;
         }
 
+        /// <summary>
+        /// Parses the generic part.
+        /// </summary>
         private void ParseGeneric()
         {
             SkipSpaces();
@@ -249,6 +264,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
+        /// <summary>
+        /// Parses the array definition.
+        /// </summary>
         private void ParseArrayDefinition()
         {
             if (Char != '[')
@@ -256,7 +274,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             ArrayStart = _pos;
 
-            bool bracket = true;
+            var bracket = true;
 
             RequireShift();
             
@@ -302,6 +320,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             ArrayEnd = Char == ']' ? _pos : _pos - 1;
         }
 
+        /// <summary>
+        /// Parses assembly name part.
+        /// </summary>
         private void ParseAssemblyName()
         {
             if (Char != ',')
@@ -321,6 +342,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             AssemblyEnd = End ? _pos : _pos - 1;
         }
 
+        /// <summary>
+        /// Shifts the position forward.
+        /// </summary>
         private bool Shift()
         {
             if (_pos < _typeName.Length - 1)
@@ -332,6 +356,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             return false;
         }
 
+        /// <summary>
+        /// Requires position shift or throws an error.
+        /// </summary>
         private void RequireShift()
         {
             if (!Shift())
@@ -340,6 +367,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
+        /// <summary>
+        /// Skips the spaces.
+        /// </summary>
         private void SkipSpaces()
         {
             while (Char == ' ' && Shift())
@@ -348,11 +378,17 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether we are at the end of the string.
+        /// </summary>
         private bool End
         {
             get { return _pos >= _typeName.Length - 1; }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether current char is a digit.
+        /// </summary>
         private bool Digit
         {
             get { return Char >= '0' && Char <= '9'; }
