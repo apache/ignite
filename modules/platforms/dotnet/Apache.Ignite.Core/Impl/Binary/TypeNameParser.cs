@@ -38,10 +38,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Initializes a new instance of the <see cref="TypeNameParser" /> class.
         /// </summary>
-        private TypeNameParser(string typeName, int start = 0)
+        private TypeNameParser(string typeName, ref int pos)
         {
             _typeName = typeName;
-            _start = start;
+            _start = pos;
             _pos = _start;
 
             NameEnd = -1;
@@ -51,6 +51,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             ArrayStart = -1;
 
             Parse();
+
+            pos = _pos;
         }
 
         /// <summary>
@@ -60,7 +62,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            return new TypeNameParser(typeName);
+            int pos = 0;
+
+            return new TypeNameParser(typeName, ref pos);
         }
 
         /// <summary>
@@ -204,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 RequireShift();
 
-                Generics.Add(new TypeNameParser(_typeName, _pos));
+                Generics.Add(new TypeNameParser(_typeName, ref _pos));
 
                 if (Char != ']')
                 {
