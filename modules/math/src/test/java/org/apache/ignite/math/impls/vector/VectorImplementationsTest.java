@@ -290,8 +290,22 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     }
 
     /** */ @Test
-    public void getMetaStorageTest() {
-        consumeSampleVectors((v, desc) -> assertNotNull("Null meta storage in " + desc, v.getMetaStorage()));
+    public void metaAttributesTest() {
+        consumeSampleVectors((v, desc) -> {
+            assertNotNull("Null meta storage in " + desc, v.getMetaStorage());
+
+            final String key = "test key";
+            final String val = "test value";
+            final String details = "key [" + key + "] for " + desc;
+
+            v.setAttribute(key, val);
+            assertTrue("Expect to have meta attribute for " + details, v.hasAttribute(key));
+            assertEquals("Unexpected meta attribute value for " + details, val, v.getAttribute(key));
+
+            v.removeAttribute(key);
+            assertFalse("Expect not to have meta attribute for " + details, v.hasAttribute(key));
+            assertNull("Unexpected meta attribute value for " + details, v.getAttribute(key));
+        });
     }
 
     /** */ @Test
@@ -438,9 +452,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     /** */
     @Test
     public void hashCodeTest(){
-        consumeSampleVectors((v, desc)->{
-            assertTrue("Zero hash code for " + desc, v.hashCode() != 0);
-        });
+        consumeSampleVectors((v, desc)-> assertTrue("Zero hash code for " + desc, v.hashCode() != 0));
     }
 
     /** */

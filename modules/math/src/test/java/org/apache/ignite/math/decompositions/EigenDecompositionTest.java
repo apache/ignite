@@ -28,7 +28,7 @@ import static org.junit.Assert.*;
  * Tests for {@link EigenDecomposition}
  */
 public class EigenDecompositionTest {
-    private static final double EPSILON = 1e-11;
+    /** */ private static final double EPSILON = 1e-11;
 
     /** */
     @Test
@@ -37,11 +37,38 @@ public class EigenDecompositionTest {
             {1.0d, 0.0d, 0.0d, 0.0d},
             {0.0d, 1.0d, 0.0d, 0.0d},
             {0.0d, 0.0d, 2.0d, 0.0d},
-            {1.0d, 1.0d, 0.0d, 2.0d}});
+            {1.0d, 1.0d, 0.0d, 2.0d}},
+            new double[] {1, 2, 2, 1});
     }
 
     /** */
-    private void test(double[][] mRaw) {
+    @Test
+    public void testSymmetricMatrix() {
+        EigenDecomposition decomposition = new EigenDecomposition( new DenseLocalOnHeapMatrix(new double[][] {
+            {1.0d, 0.0d, 0.0d, 1.0d},
+            {0.0d, 1.0d, 0.0d, 1.0d},
+            {0.0d, 0.0d, 2.0d, 0.0d},
+            {1.0d, 1.0d, 0.0d, 2.0d}}));
+
+        Matrix d = decomposition.getD();
+        Matrix v = decomposition.getV();
+
+        assertNotNull("Matrix d is expected to be not null.", d);
+        assertNotNull("Matrix v is expected to be not null.", v);
+
+        assertEquals("Unexpected rows in d matrix.", 4, d.rowSize());
+        assertEquals("Unexpected cols in d matrix.", 4, d.columnSize());
+
+        assertEquals("Unexpected rows in v matrix.", 4, v.rowSize());
+        assertEquals("Unexpected cols in v matrix.", 4, v.columnSize());
+
+        assertIsDiagonal(d);
+
+        decomposition.destroy();
+    }
+
+    /** */
+    private void test(double[][] mRaw, double[] expRealEigenValues) {
         DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(mRaw);
         EigenDecomposition decomposition = new EigenDecomposition(m);
 
@@ -56,6 +83,28 @@ public class EigenDecompositionTest {
         // m = v d v^{-1} is equivalent to
         // m v = v d
         assertMatricesAreEqual(m.times(v), v.times(d));
+
+        assertEigenvalues(decomposition, expRealEigenValues);
+
+        decomposition.destroy();
+    }
+
+    /** */
+    private void assertEigenvalues(EigenDecomposition decomposition, double[] expRealEigenValues) {
+        Vector real = decomposition.getRealEigenValues();
+        Vector imag = decomposition.getImagEigenvalues();
+
+        assertEquals("Real values size differs from expected.", expRealEigenValues.length, real.size());
+        assertEquals("Imag values size differs from expected.", expRealEigenValues.length, imag.size());
+
+        for (int idx = 0; idx < expRealEigenValues.length; idx++) {
+            assertEquals("Real eigen value differs from expected at " + idx,
+                expRealEigenValues[idx], real.get(idx), 0d);
+
+            assertEquals("Imag eigen value differs from expected at " + idx,
+                0d, imag.get(idx), 0d);
+        }
+
     }
 
     /** */
@@ -63,34 +112,34 @@ public class EigenDecompositionTest {
         int n = m.columnSize();
         for (int i = 0; i < n; i++) {
             Vector eigenVector = v.viewColumn(i);
-            double eigenValue = d.getX(i, i);
-            assertVectorsAreEqual(m.times(eigenVector), eigenVector.times(eigenValue));
+            double eigenVal = d.getX(i, i);
+            assertVectorsAreEqual(m.times(eigenVector), eigenVector.times(eigenVal));
         }
 
     }
 
     /** */
-    private void assertMatricesAreEqual(Matrix expected, Matrix actual) {
-        assertTrue("The row sizes of matrices are not equal", expected.rowSize() == actual.rowSize());
-        assertTrue("The col sizes of matrices are not equal", expected.columnSize() == actual.columnSize());
+    private void assertMatricesAreEqual(Matrix exp, Matrix actual) {
+        assertTrue("The row sizes of matrices are not equal", exp.rowSize() == actual.rowSize());
+        assertTrue("The col sizes of matrices are not equal", exp.columnSize() == actual.columnSize());
 
         // Since matrix is square, we need only one dimension
-        int n = expected.columnSize();
+        int n = exp.columnSize();
 
         for (int i = 0; i < n; i++)
             for (int j = 0; j < n; j++)
-                assertEquals("Values should be equal", expected.getX(i, j), actual.getX(i, j), EPSILON);
+                assertEquals("Values should be equal", exp.getX(i, j), actual.getX(i, j), EPSILON);
     }
 
     /** */
-    private void assertVectorsAreEqual(Vector expected, Vector actual) {
-        assertTrue("Vectors sizes are not equal", expected.size() == actual.size());
+    private void assertVectorsAreEqual(Vector exp, Vector actual) {
+        assertTrue("Vectors sizes are not equal", exp.size() == actual.size());
 
         // Since matrix is square, we need only one dimension
-        int n = expected.size();
+        int n = exp.size();
 
         for (int i = 0; i < n; i++)
-            assertEquals("Values should be equal", expected.getX(i), actual.getX(i), EPSILON);
+            assertEquals("Values should be equal", exp.getX(i), actual.getX(i), EPSILON);
     }
 
     /** */
