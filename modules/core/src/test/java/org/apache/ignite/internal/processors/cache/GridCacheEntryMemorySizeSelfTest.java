@@ -28,7 +28,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -134,7 +133,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @return
      */
     protected Marshaller createMarshaller() throws IgniteCheckedException {
-        Marshaller marsh = new OptimizedMarshaller();
+        Marshaller marsh = createStandaloneBinaryMarshaller();
 
         marsh.setContext(new MarshallerContext() {
             @Override public boolean registerClassName(byte platformId, int typeId, String clsName) {

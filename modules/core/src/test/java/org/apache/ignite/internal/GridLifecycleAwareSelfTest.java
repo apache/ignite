@@ -23,8 +23,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorMessageInterceptor;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
@@ -105,7 +105,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestMarshaller extends OptimizedMarshaller implements LifecycleAware {
+    private static class TestMarshaller extends BinaryMarshaller implements LifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 

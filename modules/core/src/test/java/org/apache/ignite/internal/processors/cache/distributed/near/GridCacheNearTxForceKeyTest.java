@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -72,7 +72,7 @@ public class GridCacheNearTxForceKeyTest extends GridCommonAbstractTest {
         Ignite ignite1 = startGrid(1);
 
         // This key should become primary for ignite1.
-        final Integer key = ignite0.configuration().getMarshaller() instanceof OptimizedMarshaller ? 2 : 7;
+        final Integer key = ignite0.configuration().getMarshaller() instanceof BinaryMarshaller ? 7 : 2;
 
         assertNull(cache.getAndPut(key, key));
 

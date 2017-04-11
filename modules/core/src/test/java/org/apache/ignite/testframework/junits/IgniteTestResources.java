@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -244,7 +243,7 @@ public class IgniteTestResources {
         Marshaller marsh;
 
         if (marshallerName == null)
-            marsh = new OptimizedMarshaller();
+            marsh = new BinaryMarshaller();
         else {
             try {
                 Class<? extends Marshaller> cls = (Class<? extends Marshaller>)Class.forName(marshallerName);
@@ -256,9 +255,6 @@ public class IgniteTestResources {
                     marshallerName + ']', e);
             }
         }
-
-        if (marsh instanceof OptimizedMarshaller)
-            ((OptimizedMarshaller)marsh).setRequireSerializable(false);
 
         marsh.setContext(new MarshallerContextTestImpl());
 

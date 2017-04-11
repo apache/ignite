@@ -19,7 +19,7 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -42,7 +42,7 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
         else {
             cfg.setClientMode(true);
 
-            cfg.setMarshaller(new OptimizedMarshaller());
+            cfg.setMarshaller(new BinaryMarshaller());
         }
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));

@@ -27,7 +27,7 @@ import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -54,7 +54,7 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(new BinaryMarshaller());
 
         if (igniteInstanceName.equals(getTestIgniteInstanceName(2))) {
             cfg.setClientMode(true);

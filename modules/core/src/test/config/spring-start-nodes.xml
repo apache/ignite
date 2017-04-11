@@ -31,9 +31,7 @@
         <property name="connectorConfiguration"><null/></property>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller">
-                <property name="requireSerializable" value="false"/>
-            </bean>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
         <property name="discoverySpi">

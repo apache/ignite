@@ -47,7 +47,6 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -241,13 +240,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * @return Use optimized marshaller flag.
-     */
-    protected boolean useOptimizedMarshaller() {
-        return false;
-    }
-
-    /**
      * @return Whether append is supported.
      */
     protected boolean appendSupported() {
@@ -412,9 +404,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
-
-        if (useOptimizedMarshaller())
-            cfg.setMarshaller(new OptimizedMarshaller());
 
         cfg.setIgniteInstanceName(igniteInstanceName);
 

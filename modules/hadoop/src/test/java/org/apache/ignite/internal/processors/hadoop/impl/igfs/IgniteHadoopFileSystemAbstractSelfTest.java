@@ -70,7 +70,7 @@ import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -358,7 +358,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setIgniteInstanceName(igniteInstanceName);
-        cfg.setMarshaller(new OptimizedMarshaller());
+        cfg.setMarshaller(new BinaryMarshaller());
         cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsConfiguration(igniteInstanceName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
