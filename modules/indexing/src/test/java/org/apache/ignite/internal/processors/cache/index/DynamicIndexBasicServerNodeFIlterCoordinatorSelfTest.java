@@ -17,10 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
+
+import java.util.Arrays;
+import java.util.List;
+
 /**
- * Test dynamic schema operations from non-coordinator node.
+ * Test dynamic schema operations from server node which do not pass node filter and which is coordinator.
  */
-public class DynamicIndexServerNonCoordinatorSelfTest extends DynamicIndexAbstractSelfTest {
+public class DynamicIndexBasicServerNodeFIlterCoordinatorSelfTest extends DynamicIndexBasicAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected List<IgniteConfiguration> configurations() throws Exception {
+        return Arrays.asList(
+            serverConfiguration(1, true),
+            serverConfiguration(2),
+            clientConfiguration(3),
+            serverConfiguration(4, true)
+        );
+    }
+
     /** {@inheritDoc} */
     @Override protected int nodeIndex() {
         return 1;
