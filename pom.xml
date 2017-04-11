@@ -164,7 +164,6 @@
                 <module>modules/hibernate</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
-                <module>modules/hibernate5</module>
             </modules>
         </profile>
 
