@@ -100,6 +100,18 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     }
 
     /**
+     * Test composite index creation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateComposite() throws Exception {
+        final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+
+        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+    }
+
+    /**
      * Test create when cache doesn't exist.
      *
      * @throws Exception If failed.
@@ -324,7 +336,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     /**
      * @return Default cache configuration.
      */
-    private CacheConfiguration cacheConfiguration() {
+    private static CacheConfiguration cacheConfiguration() {
         CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
         QueryEntity entity = new QueryEntity();
