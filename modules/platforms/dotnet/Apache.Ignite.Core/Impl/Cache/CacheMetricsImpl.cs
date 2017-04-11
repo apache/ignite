@@ -266,7 +266,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             _cacheTxCommits = reader.ReadLong();
             _cacheTxRollbacks = reader.ReadLong();
             _cacheName = reader.ReadString();
-            _overflowSize = reader.ReadLong();
             _offHeapGets = reader.ReadLong();
             _offHeapPuts = reader.ReadLong();
             _offHeapRemovals = reader.ReadLong();
@@ -280,15 +279,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             _offHeapBackupEntriesCount = reader.ReadLong();
             _offHeapAllocatedSize = reader.ReadLong();
             _offHeapMaxSize = reader.ReadLong();
-            _swapGets = reader.ReadLong();
-            _swapPuts = reader.ReadLong();
-            _swapRemovals = reader.ReadLong();
-            _swapHits = reader.ReadLong();
-            _swapMisses = reader.ReadLong();
-            _swapEntriesCount = reader.ReadLong();
-            _swapSize = reader.ReadLong();
-            _swapHitPercentage = reader.ReadFloat();
-            _swapMissPercentage = reader.ReadFloat();
             _size = reader.ReadInt();
             _keySize = reader.ReadInt();
             _isEmpty = reader.ReadBoolean();
