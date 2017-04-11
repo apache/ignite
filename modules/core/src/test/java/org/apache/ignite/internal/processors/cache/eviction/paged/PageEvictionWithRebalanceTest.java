@@ -51,11 +51,11 @@ public abstract class PageEvictionWithRebalanceTest extends PageEvictionAbstract
                 System.out.println(">>> Entries put: " + i);
         }
 
-        int size = cache.size(CachePeekMode.PRIMARY);
+        int size = cache.size(CachePeekMode.ALL);
 
         System.out.println(">>> Resulting size: " + size);
 
-        assertTrue(size < ENTRIES);
+        assertTrue(size < ENTRIES * 2); // Primary entries and backups.
 
         for (int i = 3; i >= 1; i--) {
             stopGrid(i);
@@ -64,7 +64,7 @@ public abstract class PageEvictionWithRebalanceTest extends PageEvictionAbstract
 
             awaitPartitionMapExchange();
 
-            int rebalanceSize = cache.size(CachePeekMode.PRIMARY);
+            int rebalanceSize = cache.size(CachePeekMode.ALL);
 
             System.out.println(">>> Size after rebalance: " + rebalanceSize);
 
