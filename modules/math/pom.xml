@@ -34,13 +34,6 @@
     <artifactId>ignite-math</artifactId>
     <version>2.0.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
-    <packaging>pom</packaging>
-
-    <modules>
-        <module>../apache-license-gen</module>
-        <module>../tools</module>
-        <module>../core</module>
-    </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -96,57 +89,37 @@
         </dependency>
     </dependencies>
 
-    <profiles>
-        <profile>
-            <id>java8</id>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
 
-            <activation>
-                <jdk>[1.8,)</jdk>
-            </activation>
+        </plugins>
 
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <source>1.8</source>
-                            <target>1.8</target>
-                        </configuration>
-                    </plugin>
+        <!--<resources>-->
+            <!--<resource>-->
+                <!--<directory>src/main/java</directory>-->
+                <!--<excludes>-->
+                    <!--<exclude>**/*.java</exclude>-->
+                <!--</excludes>-->
+            <!--</resource>-->
 
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-                <resources>
-                    <resource>
-                        <directory>src/main/java</directory>
-                        <excludes>
-                            <exclude>**/*.java</exclude>
-                        </excludes>
-                    </resource>
-
-                    <resource>
-                        <directory>src/main/resources</directory>
-                    </resource>
-                </resources>
-                <testResources>
-                    <testResource>
-                        <directory>src/test/java</directory>
-                        <excludes>
-                            <exclude>**/*.java</exclude>
-                        </excludes>
-                    </testResource>
-                </testResources>
-            </build>
-        </profile>
-    </profiles>
+            <!--<resource>-->
+                <!--<directory>src/main/resources</directory>-->
+            <!--</resource>-->
+        <!--</resources>-->
+        <!--<testResources>-->
+            <!--<testResource>-->
+                <!--<directory>src/test/java</directory>-->
+                <!--<excludes>-->
+                    <!--<exclude>**/*.java</exclude>-->
+                <!--</excludes>-->
+            <!--</testResource>-->
+        <!--</testResources>-->
+    </build>
 </project>
