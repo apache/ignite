@@ -23,18 +23,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.apache.ignite.springdata.repository.support.IgniteRepositoryFactoryBean;
-import org.apache.ignite.springdata.repository.support.SimpleIgniteRepository;
+import org.apache.ignite.springdata.repository.support.IgniteRepositoryImpl;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.keyvalue.core.KeyValueOperations;
-import org.springframework.data.keyvalue.core.KeyValueTemplate;
-import org.springframework.data.keyvalue.repository.config.QueryCreatorType;
-import org.springframework.data.keyvalue.repository.query.CachingKeyValuePartTreeQuery;
-import org.springframework.data.keyvalue.repository.query.SpelQueryCreator;
-import org.springframework.data.keyvalue.repository.support.KeyValueRepositoryFactoryBean;
-import org.springframework.data.repository.config.DefaultRepositoryBaseClass;
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 
@@ -117,14 +109,7 @@ public @interface EnableIgniteRepositories {
      *
      * @return
      */
-    Class<?> repositoryBaseClass() default SimpleIgniteRepository.class;
-
-    /**
-     * Configures the name of the {@link KeyValueOperations} bean to be used with the repositories detected.
-     *
-     * @return
-     */
-    String keyValueTemplateRef() default "igniteKeyValueTemplate";
+    Class<?> repositoryBaseClass() default IgniteRepositoryImpl.class;
 
     /**
      * Configures whether nested repository-interfaces (e.g. defined as inner classes) should be discovered by the

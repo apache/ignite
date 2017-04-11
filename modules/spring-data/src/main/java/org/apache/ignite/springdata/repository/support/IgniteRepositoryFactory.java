@@ -16,101 +16,87 @@
  */
 package org.apache.ignite.springdata.repository.support;
 
-import java.lang.reflect.Field;
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.springdata.IgniteKeyValueAdapter;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata.repository.query.IgniteQuery;
 import org.apache.ignite.springdata.repository.query.IgniteQueryGenerator;
 import org.apache.ignite.springdata.repository.query.IgniteRepositoryQuery;
-import org.springframework.data.keyvalue.core.KeyValueAdapter;
-import org.springframework.data.keyvalue.core.KeyValueOperations;
-import org.springframework.data.keyvalue.core.KeyValueTemplate;
-import org.springframework.data.keyvalue.repository.support.KeyValueRepositoryFactory;
 import org.springframework.data.projection.ProjectionFactory;
+import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.NamedQueries;
+import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
+import org.springframework.data.repository.core.support.AbstractEntityInformation;
+import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.RepositoryQuery;
-import org.springframework.data.repository.query.parser.AbstractQueryCreator;
-import org.springframework.data.util.ReflectionUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
  * Crucial for spring-data functionality class. Create proxies for repositories.
  */
-public class IgniteRepositoryFactory extends KeyValueRepositoryFactory {
+public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     /** Ignite instance */
     private Ignite ignite;
 
     /** Mapping of a repository to a cache. */
     private final Map<Class<?>, String> repoToCache = new HashMap<>();
 
-    public IgniteRepositoryFactory(KeyValueOperations keyValueOperations) {
-        super(keyValueOperations);
-
-        initRepositoryFactory(keyValueOperations);
+    /**
+     * Creates the factory with initialized {@link Ignite} instance.
+     *
+     * @param ignite
+     */
+    public IgniteRepositoryFactory(Ignite ignite) {
+        this.ignite = ignite;
     }
 
-    public IgniteRepositoryFactory(KeyValueOperations keyValueOperations,
-        Class<? extends AbstractQueryCreator<?, ?>> queryCreator) {
-        super(keyValueOperations, queryCreator);
-
-        initRepositoryFactory(keyValueOperations);
+    /**
+     * Initializes the factory with provided {@link IgniteConfiguration} that is used to start up an underlying
+     * {@link Ignite} instance.
+     *
+     * @param cfg Ignite configuration.
+     */
+    public IgniteRepositoryFactory(IgniteConfiguration cfg) {
+        this.ignite = Ignition.start(cfg);
     }
 
-    public IgniteRepositoryFactory(KeyValueOperations keyValueOperations,
-        Class<? extends AbstractQueryCreator<?, ?>> queryCreator,
-        Class<? extends RepositoryQuery> repositoryQueryType) {
-        super(keyValueOperations, queryCreator, repositoryQueryType);
-
-        initRepositoryFactory(keyValueOperations);
+    /**
+     * Initializes the factory with provided a configuration under {@code springCfgPath} that is used to start up
+     * an underlying {@link Ignite} instance.
+     *
+     * @param springCfgPath A path to Ignite configuration.
+     */
+    public IgniteRepositoryFactory(String springCfgPath) {
+        this.ignite = Ignition.start(springCfgPath);
     }
 
-    private void initRepositoryFactory(KeyValueOperations keyValueOperations) {
-        try {
-            Field field = ReflectionUtils.findField(KeyValueTemplate.class,
-                new org.springframework.util.ReflectionUtils.FieldFilter() {
-                    @Override public boolean matches(Field field) {
-                        return field.getName().equals("adapter");
-                    }
-                });
+    /** {@inheritDoc} */
+    @Override public <T, ID extends Serializable> EntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
+        return new AbstractEntityInformation<T, ID>(domainClass) {
+            @Override public ID getId(T entity) {
+                return null;
+            }
 
-            field.setAccessible(true);
-
-            IgniteKeyValueAdapter adapter = (IgniteKeyValueAdapter)field.get(keyValueOperations);
-
-            field = ReflectionUtils.findField(IgniteKeyValueAdapter.class,
-                new org.springframework.util.ReflectionUtils.FieldFilter() {
-                    @Override public boolean matches(Field field) {
-                        return field.getName().equals("ignite");
-                    }
-                });
-
-            field.setAccessible(true);
-
-            ignite = (Ignite)field.get(adapter);
-
-            if (ignite == null)
-                throw new IgniteException("Failed to initialize IgniteRepositoryFactory properly: Ignite instance is " +
-                    "not set in IgniteKeyValueAdapter");
-        }
-        catch (Exception e) {
-            throw new IgniteException("Failed to initialize IgniteRepositoryFactory properly.", e);
-        }
+            @Override public Class<ID> getIdType() {
+                return null;
+            }
+        };
     }
 
     /** {@inheritDoc} */
     @Override protected Class<?> getRepositoryBaseClass(RepositoryMetadata metadata) {
-        return SimpleIgniteRepository.class;
+        return IgniteRepositoryImpl.class;
     }
 
     /** {@inheritDoc} */
@@ -129,6 +115,12 @@ public class IgniteRepositoryFactory extends KeyValueRepositoryFactory {
         repoToCache.put(repoItf, annotation.cacheName());
 
         return super.getRepositoryMetadata(repoItf);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Object getTargetRepository(RepositoryInformation metadata) {
+        return getTargetRepositoryViaReflection(metadata,
+            ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
     }
 
     /** {@inheritDoc} */

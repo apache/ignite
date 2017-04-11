@@ -18,38 +18,68 @@
 package org.apache.ignite.springdata.repository.support;
 
 import java.io.Serializable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata.repository.IgniteRepository;
-import org.springframework.data.keyvalue.core.KeyValueOperations;
-import org.springframework.data.keyvalue.repository.support.KeyValueRepositoryFactory;
-import org.springframework.data.keyvalue.repository.support.KeyValueRepositoryFactoryBean;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.data.repository.Repository;
-import org.springframework.data.repository.query.RepositoryQuery;
-import org.springframework.data.repository.query.parser.AbstractQueryCreator;
+import org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport;
+import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 
 /**
  * Apache Ignite repository factory bean.
+ *
+ * The repository requires to define one of the parameters below in your Spring application configuration in order
+ * to get an access to Apache Ignite cluster:
+ * <ul>
+ * <li>{@link Ignite} instance bean named "igniteInstance"</li>
+ * <li>{@link IgniteConfiguration} bean named "igniteCfg"</li>
+ * <li>A path to Ignite's Spring XML configuration named "igniteSpringCfgPath"</li>
+ * <ul/>
  *
  * @param <T> Repository type, {@link IgniteRepository}
  * @param <S> Domain object class.
  * @param <ID> Domain object key, super expects {@link Serializable}.
  */
 public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID extends Serializable>
-    extends KeyValueRepositoryFactoryBean<T, S, ID> {
+    extends RepositoryFactoryBeanSupport<T, S, ID> implements ApplicationContextAware {
+    /** Application context. */
+    private ApplicationContext ctx;
 
-    /**
-     * Creates a new {@code IgniteRepositoryFactoryBean} for the given repository interface.
-     *
-     * @param repositoryInterface must not be {@literal null}.
-     */
-    public IgniteRepositoryFactoryBean(Class<? extends T> repositoryInterface) {
-        super(repositoryInterface);
+    /** {@inheritDoc} */
+    @Override public void setApplicationContext(ApplicationContext context) throws BeansException {
+        this.ctx = context;
     }
 
     /** {@inheritDoc} */
-    @Override protected KeyValueRepositoryFactory createRepositoryFactory(KeyValueOperations operations,
-        Class<? extends AbstractQueryCreator<?, ?>> queryCreator,
-        Class<? extends RepositoryQuery> repositoryQueryType) {
-        return new IgniteRepositoryFactory(operations, queryCreator, repositoryQueryType);
+    @Override protected RepositoryFactorySupport createRepositoryFactory() {
+        try {
+            Ignite ignite = (Ignite)ctx.getBean("igniteInstance");
+
+            return new IgniteRepositoryFactory(ignite);
+        }
+        catch (BeansException ex) {
+            try {
+                IgniteConfiguration cfg = (IgniteConfiguration)ctx.getBean("igniteCfg");
+
+                return new IgniteRepositoryFactory(cfg);
+            }
+            catch (BeansException ex2) {
+                try {
+                    String path = (String)ctx.getBean("igniteSpringCfgPath");
+
+                    return new IgniteRepositoryFactory(path);
+                }
+                catch (BeansException ex3) {
+                    throw new IgniteException("Failed to initialize Ignite repository factory. Ignite instance or" +
+                        " IgniteConfiguration or a path to Ignite's spring XML configuration must be defined in the" +
+                        " application configuration");
+                }
+            }
+        }
     }
 }
 

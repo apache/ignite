@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata;
+package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.springdata.IgniteSpringDataSelfTest;
 
 /**
  *
@@ -30,7 +31,7 @@ public class IgniteSpringDataTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Spring Data Test Suite");
 
-        suite.addTest(new IgniteSpringDataSelfTest());
+        suite.addTestSuite(IgniteSpringDataSelfTest.class);
 
         return suite;
     }

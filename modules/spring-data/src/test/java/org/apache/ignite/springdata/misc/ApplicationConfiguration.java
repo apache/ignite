@@ -21,12 +21,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.springdata.IgniteKeyValueAdapter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
-import org.springframework.data.keyvalue.core.KeyValueOperations;
-import org.springframework.data.keyvalue.core.KeyValueTemplate;
 
 /**
  *
@@ -45,15 +42,5 @@ public class ApplicationConfiguration {
         cfg.setCacheConfiguration(ccfg);
 
         return Ignition.start(cfg);
-    }
-
-    @Bean
-    public KeyValueOperations igniteKeyValueTemplate(Ignite igniteInstance) {
-        return new KeyValueTemplate(new IgniteKeyValueAdapter(igniteInstance));
-    }
-
-    @Bean
-    public IgniteKeyValueAdapter igniteKeyValueAdapter(Ignite igniteInstance) {
-        return new IgniteKeyValueAdapter(igniteInstance);
     }
 }

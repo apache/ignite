@@ -20,13 +20,13 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.support.IgniteRepositoryFactoryBean;
-import org.springframework.data.keyvalue.repository.config.KeyValueRepositoryConfigurationExtension;
 import org.springframework.data.repository.config.RepositoryConfigurationExtension;
+import org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport;
 
 /**
  * Apache Ignite specific implementation of {@link RepositoryConfigurationExtension}.
  */
-public class IgniteRepositoryConfigurationExtension extends KeyValueRepositoryConfigurationExtension {
+public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurationExtensionSupport {
     /** {@inheritDoc} */
     @Override public String getModuleName() {
         return "Apache Ignite";
@@ -35,11 +35,6 @@ public class IgniteRepositoryConfigurationExtension extends KeyValueRepositoryCo
     /** {@inheritDoc} */
     @Override protected String getModulePrefix() {
         return "ignite";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String getDefaultKeyValueTemplateRef() {
-        return "igniteKeyValueTemplate";
     }
 
     /** {@inheritDoc} */

@@ -18,16 +18,16 @@ package org.apache.ignite.springdata.repository;
 
 import java.io.Serializable;
 import java.util.Map;
-import org.springframework.data.keyvalue.repository.KeyValueRepository;
+import org.springframework.data.repository.CrudRepository;
 
 /**
- * Apache Ignite repository that extends basic capabilities of {@link KeyValueRepository}.
+ * Apache Ignite repository that extends basic capabilities of {@link CrudRepository}.
  */
-public interface IgniteRepository<T, ID extends Serializable> extends KeyValueRepository<T, ID> {
+public interface IgniteRepository<T, ID extends Serializable> extends CrudRepository<T, ID> {
     /**
      * Saves a given entity using provided key.
      * </p>
-     * It's suggested to use this method instead of default {@link KeyValueRepository#save(Object)} that generates
+     * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates
      * IDs (keys) that are not unique cluster wide.
      *
      * @param key Entity's key.
@@ -40,7 +40,7 @@ public interface IgniteRepository<T, ID extends Serializable> extends KeyValueRe
     /**
      * Saves all given keys and entities combinations.
      * </p>
-     * It's suggested to use this method instead of default {@link KeyValueRepository#save(Iterable)} that generates
+     * It's suggested to use this method instead of default {@link CrudRepository#save(Iterable)} that generates
      * IDs (keys) that are not unique cluster wide.
      *
      * @param entities Map of key-entities pairs to save.
@@ -48,4 +48,11 @@ public interface IgniteRepository<T, ID extends Serializable> extends KeyValueRe
      * @return Saved entities.
      */
     <S extends T> Iterable<S> save(Map<ID, S> entities);
+
+    /**
+     * Deletes all the entities for the provided ids.
+     *
+     * @param ids List of ids to delete.
+     */
+    void deleteAll(Iterable<ID> ids);
 }
