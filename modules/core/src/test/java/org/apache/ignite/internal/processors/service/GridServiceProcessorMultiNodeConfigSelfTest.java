@@ -194,14 +194,22 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
     public void testDeployLimits() throws Exception {
         final Ignite g = randomGrid();
 
-        checkCount(NODE_SINGLE_WITH_LIMIT, g.services().serviceDescriptors(), nodeCount());
+        final String name = NODE_SINGLE_WITH_LIMIT;
+
+        checkCount(name, g.services().serviceDescriptors(), nodeCount());
 
         int extraNodes = 2;
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        DummyService.exeLatch(name, latch);
 
         startExtraNodes(extraNodes);
 
         try {
-            checkCount(NODE_SINGLE_WITH_LIMIT, g.services().serviceDescriptors(), nodeCount() + 1);
+            latch.await();
+
+            checkCount(name, g.services().serviceDescriptors(), nodeCount() + 1);
         }
         finally {
             stopExtraNodes(extraNodes);
@@ -209,11 +217,11 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
 
         GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @Override public boolean applyx() {
-                return actualCount(NODE_SINGLE_WITH_LIMIT, g.services().serviceDescriptors())  == nodeCount();
+                return actualCount(name, g.services().serviceDescriptors())  == nodeCount();
             }
         }, 1000);
 
-        checkCount(NODE_SINGLE_WITH_LIMIT, g.services().serviceDescriptors(), nodeCount());
+        checkCount(name, g.services().serviceDescriptors(), nodeCount());
     }
 
     /**
