@@ -42,7 +42,7 @@ public class QuerySchema implements Serializable {
     /** Query entities. */
     private final Collection<QueryEntity> entities = new LinkedList<>();
 
-    /** Mutext for state synchronization. */
+    /** Mutex for state synchronization. */
     private final Object mux = new Object();
 
     /**

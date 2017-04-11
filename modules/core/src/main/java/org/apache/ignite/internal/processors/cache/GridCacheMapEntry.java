@@ -4271,9 +4271,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             unswap(false);
 
-            assert val != null;
-
-            proc.apply(key, val, expireTimeUnlocked());
+            if (val != null)
+                proc.apply(key, val, expireTimeUnlocked());
         }
     }
 

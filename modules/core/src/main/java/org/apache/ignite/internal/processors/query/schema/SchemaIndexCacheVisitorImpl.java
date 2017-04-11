@@ -100,20 +100,15 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         boolean reserved = false;
 
-        if (part != null && part.state() != EVICTED) {
-            if (part.state() == MOVING) {
-                cctx.cache().preloader().syncFuture().get();
-
-                part = partition(partNum);
-            }
-
-            reserved = (part != null && (part.state() == OWNING || part.state() == RENTING) && part.reserve());
-        }
+        // TODO: Check in tests whether we need reservation
+        if (part != null && part.state() != EVICTED)
+            reserved = (part.state() == OWNING || part.state() == RENTING) && part.reserve();
 
         if (!reserved)
             return;
 
         try {
+            // TODO: allEntries doesn't work for offheap
             for (final GridCacheEntryEx entry : part.allEntries())
                 processEntry(part, entry, clo);
         }
@@ -130,6 +125,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
+    // TODO: Rework in 3477
     private void processEntry(GridDhtLocalPartition part, GridCacheEntryEx entry, FilteringVisitorClosure clo)
         throws IgniteCheckedException {
         while (true) {
@@ -138,6 +134,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
                 if (entry != null)
                     entry.updateIndex(clo);
+
+                // TODO: Need to call touch() to notify eviction manager.
 
                 break;
             }
@@ -153,6 +151,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     private Collection<Integer> localPartitions() {
         GridCacheAffinityManager aff = cctx.affinity();
 
+        // TODO: Use cctx.topology().localPartitions() instead.
         AffinityTopologyVersion topVer = aff.affinityTopologyVersion();
 
         Set<Integer> res = new HashSet<>();

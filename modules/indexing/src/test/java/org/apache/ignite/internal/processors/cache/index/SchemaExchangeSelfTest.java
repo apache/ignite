@@ -567,6 +567,8 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         return ccfg;
     }
 
+    // TODO: Start/stop many nodes with static configs and dynamic start/stop.
+
     /**
      * Key class 2.
      */
