@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _pos = _start;
 
             NameEnd = -1;
-            NameStart = -1;
+            NameStart = 0;
             AssemblyStart = -1;
             AssemblyEnd = -1;
             ArrayStart = -1;
@@ -118,6 +118,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public string GetFullName()
         {
+            if (NameEnd < 0)
+                return null;
+
             return _typeName.Substring(_start, NameEnd - _start + 1);
         }
 
