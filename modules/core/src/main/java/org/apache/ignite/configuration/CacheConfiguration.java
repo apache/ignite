@@ -1474,7 +1474,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p/>
      * If not provided, default value is {@link #DFLT_WRITE_BEHIND_WRITE_COALESCING}.
      *
-     * @return Write coaliscing flag.
+     * @return Write coalescing flag.
      */
     public boolean getWriteBehindWriteCoalescing() {
         return writeBehindWriteCoalescing;
@@ -1483,7 +1483,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets write coalescing flag for write-behind cache.
      *
-     * @param writeBehindWriteCoalescing write coaliscing flag.
+     * @param writeBehindWriteCoalescing Write coalescing flag.
      * @see #getWriteBehindWriteCoalescing()
      * @return {@code this} for chaining.
      */
