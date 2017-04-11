@@ -232,10 +232,10 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      * @param expectedDeps Expected number of service deployments
      *
      */
-    private void waitForDeployment(final String srvcName, int expectedDeps) throws IgniteInterruptedCheckedException {
+    private boolean waitForDeployment(final String srvcName, final int expectedDeps) throws IgniteInterruptedCheckedException {
         final Ignite g = randomGrid();
 
-        GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+        return GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @Override public boolean applyx() {
                 return actualCount(srvcName, g.services().serviceDescriptors())  == expectedDeps;
             }
