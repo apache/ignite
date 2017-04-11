@@ -49,7 +49,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 /**
  * Future verifying that all remote transactions related to transaction were prepared or committed.
  */
-public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<Boolean> implements GridCacheFuture<Boolean> {
+public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<Boolean> {
     /** */         
     private static final long serialVersionUID = 0L;
     
@@ -426,7 +426,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (sync) {
+        synchronized (this) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -547,9 +547,6 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
      *
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Mini future ID. */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 

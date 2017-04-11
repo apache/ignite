@@ -453,7 +453,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @return Keys for which locks requested from remote nodes but response isn't received.
      */
     public Set<IgniteTxKey> requestedKeys() {
-        synchronized (sync) {
+        synchronized (this) {
             if (timeoutObj != null && timeoutObj.requestedKeys != null)
                 return timeoutObj.requestedKeys;
 
@@ -490,7 +490,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (sync) {
+        synchronized (this) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -1341,7 +1341,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 log.debug("Timed out waiting for lock response: " + this);
 
             if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
-                synchronized (sync) {
+                synchronized (GridDhtColocatedLockFuture.this) {
                     requestedKeys = requestedKeys0();
 
                     clear(); // Stop response processing.
@@ -1389,9 +1389,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         private final int futId;
 

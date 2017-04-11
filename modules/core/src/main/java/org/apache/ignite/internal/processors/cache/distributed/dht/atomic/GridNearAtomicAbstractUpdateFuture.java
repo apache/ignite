@@ -115,9 +115,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Near cache flag. */
     protected final boolean nearEnabled;
 
-    /** Mutex to synchronize state updates. */
-    protected final Object mux = new Object();
-
     /** Topology locked flag. Set if atomic update is performed inside a TX or explicit lock. */
     protected boolean topLocked;
 
@@ -139,7 +136,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
     /** Future ID. */
     @GridToStringInclude
-    protected long futId;
+    protected volatile long futId;
 
     /** Operation result. */
     protected GridCacheReturn opRes;

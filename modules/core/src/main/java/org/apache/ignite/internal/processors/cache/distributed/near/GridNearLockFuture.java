@@ -500,7 +500,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @return Keys for which locks requested from remote nodes but response isn't received.
      */
     public Set<IgniteTxKey> requestedKeys() {
-        synchronized (sync) {
+        synchronized (this) {
             if (timeoutObj != null && timeoutObj.requestedKeys != null)
                 return timeoutObj.requestedKeys;
 
@@ -537,7 +537,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (sync) {
+        synchronized (this) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -1440,7 +1440,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             timedOut = true;
 
             if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
-                synchronized (sync) {
+                synchronized (GridNearLockFuture.this) {
                     requestedKeys = requestedKeys0();
 
                     clear(); // Stop response processing.

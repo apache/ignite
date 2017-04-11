@@ -189,7 +189,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         if (!isDone()) {
             FinishMiniFuture finishFut = null;
 
-            synchronized (sync) {
+            synchronized (this) {
                 int size = futuresCountNoLock();
 
                 for (int i = 0; i < size; i++) {
@@ -878,9 +878,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      *
      */
     private class FinishMiniFuture extends MinFuture {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Keys. */
         @GridToStringInclude
         private GridDistributedTxMapping m;
@@ -926,7 +923,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         if (!F.isEmpty(backups)) {
                             final CheckRemoteTxMiniFuture mini;
 
-                            synchronized (sync) {
+                            synchronized (GridNearTxFinishFuture.this) {
                                 int futId = Integer.MIN_VALUE + futuresCountNoLock();
 
                                 mini = new CheckRemoteTxMiniFuture(futId, new HashSet<>(backups));

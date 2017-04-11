@@ -280,7 +280,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         boolean rmv;
 
-        synchronized (sync) {
+        synchronized (this) {
             rmv = lockKeys.remove(entry.txKey());
         }
 
@@ -311,7 +311,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         if (!locksReady)
             return false;
 
-        synchronized (sync) {
+        synchronized (this) {
             return lockKeys.isEmpty();
         }
     }
@@ -565,7 +565,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (sync) {
+        synchronized (this) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -624,7 +624,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
 
             if (tx.optimistic() && txEntry.explicitVersion() == null) {
-                synchronized (sync) {
+                synchronized (this) {
                     lockKeys.add(txEntry.txKey());
                 }
             }
@@ -1598,9 +1598,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private final int futId;
 
         /** Node ID. */
@@ -1812,7 +1809,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            synchronized (sync) {
+            synchronized (GridDhtTxPrepareFuture.this) {
                 clear();
 
                 lockKeys.clear();

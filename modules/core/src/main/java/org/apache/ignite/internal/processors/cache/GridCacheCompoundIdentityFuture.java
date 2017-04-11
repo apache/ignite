@@ -16,16 +16,9 @@ public abstract class GridCacheCompoundIdentityFuture<T> extends GridCompoundIde
     private volatile long endTime;
 
     /**
-     * Default constructor.
-     */
-    public GridCacheCompoundIdentityFuture() {
-        super();
-    }
-
-    /**
      * @param rdc Reducer.
      */
-    public GridCacheCompoundIdentityFuture(@Nullable IgniteReducer<T, T> rdc) {
+    protected GridCacheCompoundIdentityFuture(@Nullable IgniteReducer<T, T> rdc) {
         super(rdc);
     }
 
@@ -38,7 +31,7 @@ public abstract class GridCacheCompoundIdentityFuture<T> extends GridCompoundIde
     @Override public long duration() {
         long endTime = this.endTime;
 
-        return endTime == 0 ? U.currentTimeMillis() - startTime : endTime - startTime;
+        return (endTime == 0 ? U.currentTimeMillis() : endTime) - startTime;
     }
 
     /** {@inheritDoc} */

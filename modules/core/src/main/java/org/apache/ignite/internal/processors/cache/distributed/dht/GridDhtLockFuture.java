@@ -299,7 +299,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @return Entries.
      */
     public Collection<GridDhtCacheEntry> entriesCopy() {
-        synchronized (sync) {
+        synchronized (this) {
             return new ArrayList<>(entries());
         }
     }
@@ -395,7 +395,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             return null;
         }
 
-        synchronized (sync) {
+        synchronized (this) {
             entries.add(c == null || c.reentry() ? null : entry);
 
             if (c != null && !c.reentry())
@@ -529,7 +529,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (sync) {
+        synchronized (this) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -599,7 +599,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param t Error.
      */
     public void onError(Throwable t) {
-        synchronized (sync) {
+        synchronized (this) {
             if (err != null)
                 return;
 
@@ -646,7 +646,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             log.debug("Received onOwnerChanged() callback [entry=" + entry + ", owner=" + owner + "]");
 
         if (owner != null && owner.version().equals(lockVer)) {
-            synchronized (sync) {
+            synchronized (this) {
                 if (!pendingLocks.remove(entry.key()))
                     return false;
             }
@@ -664,7 +664,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @return {@code True} if locks have been acquired.
      */
     private boolean checkLocks() {
-        synchronized (sync) {
+        synchronized (this) {
             return pendingLocks.isEmpty();
         }
     }
@@ -697,7 +697,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         if (isDone() || (err == null && success && !checkLocks()))
             return false;
 
-        synchronized (sync) {
+        synchronized (this) {
             if (this.err == null)
                 this.err = err;
         }
@@ -776,7 +776,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param entries Entries.
      */
     private void map(Iterable<GridDhtCacheEntry> entries) {
-        synchronized (sync) {
+        synchronized (this) {
             if (mapped)
                 return;
 
@@ -1120,7 +1120,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            synchronized (sync) {
+            synchronized (GridDhtLockFuture.this) {
                 timedOut = true;
 
                 // Stop locks and responses processing.
@@ -1145,9 +1145,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 

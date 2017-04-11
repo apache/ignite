@@ -90,6 +90,11 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         ErrorWrapper(Throwable error) {
             this.error = error;
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return String.valueOf(error);
+        }
     }
 
     /** */
@@ -231,6 +236,8 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
             if (interrupted)
                 Thread.currentThread().interrupt();
         }
+
+        unregisterWaiter(Thread.currentThread());
 
         throw new IgniteFutureTimeoutCheckedException("Timeout was reached before computation completed.");
     }
