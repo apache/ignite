@@ -15,16 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.exceptions;
-
-import org.apache.ignite.IgniteException;
-
 /**
- * Exception to be thrown when a non-singular matrix is expected.
+ * <!-- Package description. -->
+ * Contains serializable functions for distributed code algebra.
  */
-public class SingularMatrixException extends IgniteException {
-    /** */
-    public SingularMatrixException(){
-        super("Regular (or non-singular) matrix expected.");
-    }
-}
+package org.apache.ignite.math.functions;

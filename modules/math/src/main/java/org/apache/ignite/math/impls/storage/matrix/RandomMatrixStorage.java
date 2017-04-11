@@ -24,7 +24,7 @@ import java.io.*;
 import java.nio.*;
 
 /**
- *
+ * TODO: add description.
  */
 public class RandomMatrixStorage implements MatrixStorage {
     private static final int PRIME1 = 104047;

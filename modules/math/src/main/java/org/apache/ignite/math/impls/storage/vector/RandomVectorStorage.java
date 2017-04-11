@@ -25,7 +25,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- *
+ * TODO: add description.
  */
 public class RandomVectorStorage implements VectorStorage {
     private static final long SCALE = 1L << 32;

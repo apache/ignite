@@ -15,4 +15,8 @@
  * limitations under the License.
  */
 
+/**
+ * <!-- Package description. -->
+ * Contains matrix decompositions for distributed code algebra.
+ */
 package org.apache.ignite.math.decompositions;

@@ -9,9 +9,9 @@ Based on ideas from Apache Mahout.
 
 # Local build with javadoc
 
-Locally build Math module
+Locally build Ignite with Math module
 
-run from modules/math:
+run from project root:
 mvn clean package -DskipTests=true -Pjava8
 
 Find generated jars in target folder.
