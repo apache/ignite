@@ -681,17 +681,20 @@ namespace ignite
                 template<typename T>
                 void WriteTopObject(const T& obj)
                 {
-                    ignite::binary::BinaryType<T> type;
+                    typedef ignite::binary::BinaryType<T> BType;
 
-                    if (type.IsNull(obj))
+                    if (BType::IsNull(obj))
                         stream->WriteInt8(IGNITE_HDR_NULL);
                     else
                     {
-                        TemplatedBinaryIdResolver<T> idRslvr(type);
-                        ignite::common::concurrent::SharedPointer<BinaryTypeHandler> metaHnd;
+                        TemplatedBinaryIdResolver<T> idRslvr;
+                        common::concurrent::SharedPointer<BinaryTypeHandler> metaHnd;
+
+                        std::string typeName;
+                        BType::GetTypeName(typeName);
 
                         if (metaMgr)
-                            metaHnd = metaMgr->GetHandler(type.GetTypeName(), idRslvr.GetTypeId());
+                            metaHnd = metaMgr->GetHandler(typeName, idRslvr.GetTypeId());
 
                         int32_t pos = stream->Position();
 
@@ -708,7 +711,7 @@ namespace ignite
                         // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offset.
                         stream->Reserve(12);
 
-                        type.Write(writer, obj);
+                        BType::Write(writer, obj);
 
                         writerImpl.PostWrite();
 
