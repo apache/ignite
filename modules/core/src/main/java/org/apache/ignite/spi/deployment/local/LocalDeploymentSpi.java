@@ -19,7 +19,6 @@ package org.apache.ignite.spi.deployment.local;
 
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -232,7 +231,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
 
         // Maps resources to classes.
         // Map may contain 2 entries for one class.
-        Map<String, String> regRsrcs = new HashMap<>(2, 1.0f);
+        Map<String, String> regRsrcs = U.newHashMap(2);
 
         // Check alias collision for added classes.
         String alias = null;

@@ -426,6 +426,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Releases previously reserved partition.
      */
     @Override public void release() {
+        release0(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void release(int sizeChange, GridCacheEntryEx e) {
+        release0(sizeChange);
+    }
+
+    /**
+     * @param sizeChange Size change delta.
+     */
+    private void release0(int sizeChange) {
         while (true) {
             long state = this.state.get();
 
@@ -437,18 +449,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             assert getPartState(state) != EVICTED;
 
             long newState = setReservations(state, --reservations);
+            newState = setSize(newState, getSize(newState) + sizeChange);
+
+            assert getSize(newState) == getSize(state) + sizeChange;
 
             // Decrement reservations.
             if (this.state.compareAndSet(state, newState)) {
                 if (reservations == 0 && shouldBeRenting)
                     rent(true);
 
-                try {
-                    tryEvict();
-                }
-                catch (NodeStoppingException ignore) {
-                    // No-op.
-                }
+                tryEvictAsync(false);
 
                 break;
             }
@@ -990,26 +1000,53 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
     }
 
+    /**
+     * @param state Composite state.
+     * @return Partition state.
+     */
     private static GridDhtPartitionState getPartState(long state) {
         return GridDhtPartitionState.fromOrdinal((int)(state & (0x0000000000000007L)));
     }
 
+    /**
+     * @param state Composite state to update.
+     * @param partState Partition state.
+     * @return Updated composite state.
+     */
     private static long setPartState(long state, GridDhtPartitionState partState) {
         return (state & (~0x0000000000000007L)) | partState.ordinal();
     }
 
+    /**
+     * @param state Composite state.
+     * @return Reservations.
+     */
     private static int getReservations(long state) {
         return (int)((state & 0x00000000FFFF0000L) >> 16);
     }
 
+    /**
+     * @param state Composite state to update.
+     * @param reservations Reservations to set.
+     * @return Updated composite state.
+     */
     private static long setReservations(long state, int reservations) {
         return (state & (~0x00000000FFFF0000L)) | (reservations << 16);
     }
 
+    /**
+     * @param state Composite state.
+     * @return Size.
+     */
     private static int getSize(long state) {
         return (int)((state & 0xFFFFFFFF00000000L) >> 32);
     }
 
+    /**
+     * @param state Composite state to update.
+     * @param size Size to set.
+     * @return Updated composite state.
+     */
     private static long setSize(long state, int size) {
         return (state & (~0xFFFFFFFF00000000L)) | ((long)size << 32);
     }

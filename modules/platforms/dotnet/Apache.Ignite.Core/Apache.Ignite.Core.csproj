@@ -92,6 +92,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Events\IEventStorageSpi.cs" />
+    <Compile Include="Events\MemoryEventStorageSpi.cs" />
+    <Compile Include="Events\NoopEventStorageSpi.cs" />
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Common\JavaException.cs" />
     <Compile Include="DataStructures\Configuration\Package-Info.cs" />

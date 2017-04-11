@@ -116,8 +116,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         GridCacheMapEntry doomed = null;
 
         boolean done = false;
-
         boolean reserved = false;
+        int sizeChange = 0;
 
         try {
             while (!done) {
@@ -176,7 +176,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                 }
             }
 
-            int sizeChange = 0;
+            sizeChange = 0;
 
             if (doomed != null) {
                 synchronized (doomed) {
@@ -228,19 +228,18 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
             assert Math.abs(sizeChange) <= 1;
 
-            if (sizeChange == -1)
-                decrementPublicSize(cur);
-            else if (sizeChange == 1) {
-                assert reserved;
-
-                incrementPublicSize(cur);
-            }
-
             return cur;
         }
         finally {
             if (reserved)
-                release();
+                release(sizeChange, cur);
+            else {
+                if (sizeChange != 0) {
+                    assert sizeChange == -1;
+
+                    decrementPublicSize(cur);
+                }
+            }
         }
     }
 
@@ -256,6 +255,17 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      */
     protected void release() {
         // No-op.
+    }
+
+    /**
+     * @param sizeChange Size delta.
+     * @param e Map entry.
+     */
+    protected void release(int sizeChange, GridCacheEntryEx e) {
+        if (sizeChange == 1)
+            incrementPublicSize(e);
+        else if (sizeChange == -1)
+            decrementPublicSize(e);
     }
 
     /** {@inheritDoc} */
