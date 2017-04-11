@@ -81,10 +81,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(1, 1));
         partCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         partCacheCfg.setNearConfiguration(null);
-        partCacheCfg.setEvictSynchronized(true);
         partCacheCfg.setEvictionPolicy(null);
-        partCacheCfg.setEvictSynchronizedKeyBufferSize(25);
-        partCacheCfg.setEvictMaxOverflowRatio(0.99f);
         partCacheCfg.setRebalanceMode(ASYNC);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -199,8 +196,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                int size1 = ignite1.cache(null).localSize(CachePeekMode.ALL);
-                return size1 != oldSize && size1 == ignite2.cache(null).localSize(CachePeekMode.ALL);
+                int size1 = ignite1.cache(null).localSize(CachePeekMode.ONHEAP);
+                return size1 != oldSize && size1 == ignite2.cache(null).localSize(CachePeekMode.ONHEAP);
             }
         }, getTestTimeout()));
 

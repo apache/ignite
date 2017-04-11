@@ -133,6 +133,7 @@ namespace Apache.Ignite.Core.Tests
                             <pluginConfigurations>
                                 <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
                             </pluginConfigurations>
+                            <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -242,6 +243,11 @@ namespace Apache.Ignite.Core.Tests
 
             var cachePlugCfg = cacheCfg.PluginConfigurations.Cast<CachePluginConfiguration>().Single();
             Assert.AreEqual("baz", cachePlugCfg.TestProperty);
+
+            var eventStorage = cfg.EventStorageSpi as MemoryEventStorageSpi;
+            Assert.IsNotNull(eventStorage);
+            Assert.AreEqual(23.45, eventStorage.ExpirationTimeout.TotalSeconds);
+            Assert.AreEqual(129, eventStorage.MaxEventCount);
         }
 
         /// <summary>
@@ -621,7 +627,6 @@ namespace Apache.Ignite.Core.Tests
                         LongQueryWarningTimeout = TimeSpan.FromSeconds(99),
                         MaxConcurrentAsyncOperations = 24,
                         MaxEvictionOverflowRatio = 5.6F,
-                        OffHeapMaxMemory = 567,
                         QueryEntities = new[]
                         {
                             new QueryEntity
@@ -650,7 +655,6 @@ namespace Apache.Ignite.Core.Tests
                         RebalanceThrottle = TimeSpan.FromHours(44),
                         RebalanceTimeout = TimeSpan.FromMinutes(8),
                         SqlEscapeAll = true,
-                        SqlOnheapRowCacheSize = 679,
                         StartSize = 1023,
                         WriteBehindBatchSize = 45,
                         WriteBehindEnabled = true,
@@ -771,7 +775,12 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "test",
                 Logger = new IgniteNLogLogger(),
                 FailureDetectionTimeout = TimeSpan.FromMinutes(2),
-                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() }
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
+                EventStorageSpi = new MemoryEventStorageSpi
+                {
+                    ExpirationTimeout = TimeSpan.FromMilliseconds(12345),
+                    MaxEventCount = 257
+                }
             };
         }
 

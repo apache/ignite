@@ -175,7 +175,8 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
                         if (c % logFreq == 0)
                             info("Executed queries: " + c);
                     }
-                }catch (Throwable e){
+                }
+                catch (Throwable e){
                     e.printStackTrace();
 
                     error("Got exception: " + e.getMessage());
@@ -193,40 +194,47 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @SuppressWarnings({"BusyWait"})
             @Override public Object call() throws Exception {
-                GridRandom rnd = new GridRandom();
+                try {
+                    GridRandom rnd = new GridRandom();
 
-                while (!restartsDone.get()) {
-                    int g;
+                    while (!restartsDone.get()) {
+                        int g;
 
-                    do {
-                        g = rnd.nextInt(locks.length());
+                        do {
+                            g = rnd.nextInt(locks.length());
 
-                        if (fail.get())
-                            return null;
+                            if (fail.get())
+                                return null;
+                        }
+                        while (!locks.compareAndSet(g, 0, -1));
+
+                        log.info("Stop node: " + g);
+
+                        stopGrid(g);
+
+                        Thread.sleep(rnd.nextInt(nodeLifeTime));
+
+                        log.info("Start node: " + g);
+
+                        startGrid(g);
+
+                        Thread.sleep(rnd.nextInt(nodeLifeTime));
+
+                        locks.set(g, 0);
+
+                        int c = restartCnt.incrementAndGet();
+
+                        if (c % logFreq == 0)
+                            info("Node restarts: " + c);
                     }
-                    while (!locks.compareAndSet(g, 0, -1));
 
-                    log.info("Stop node: " + g);
-
-                    stopGrid(g);
-
-                    Thread.sleep(rnd.nextInt(nodeLifeTime));
-
-                    log.info("Start node: " + g);
-
-                    startGrid(g);
-
-                    Thread.sleep(rnd.nextInt(nodeLifeTime));
-
-                    locks.set(g, 0);
-
-                    int c = restartCnt.incrementAndGet();
-
-                    if (c % logFreq == 0)
-                        info("Node restarts: " + c);
+                    return true;
                 }
+                catch (Throwable e) {
+                    e.printStackTrace();
 
-                return true;
+                    return true;
+                }
             }
         }, restartThreadsNum, "restart-thread");
 

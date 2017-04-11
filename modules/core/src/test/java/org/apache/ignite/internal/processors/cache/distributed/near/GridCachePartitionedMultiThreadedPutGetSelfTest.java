@@ -77,8 +77,8 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         plc.setMaxMemorySize(1000);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setEvictSynchronized(false);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 

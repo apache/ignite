@@ -342,11 +342,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String msg = "Disable eviction policy (remove from configuration)";
 
-        if (cfg.getEvictionPolicy() != null) {
+        if (cfg.getEvictionPolicy() != null)
             perf.add(msg, false);
-
-            perf.add("Disable synchronized evictions (set 'evictSynchronized' to false)", !cfg.isEvictSynchronized());
-        }
         else
             perf.add(msg, true);
 
@@ -514,6 +511,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cc.getAtomicityMode() == ATOMIC)
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
                 "transaction manager can not be used with ATOMIC cache");
+
+        if (cc.getEvictionPolicy() != null && !cc.isOnheapCacheEnabled())
+            throw new IgniteCheckedException("Onheap cache must be enabled if eviction policy is configured [cacheName="
+                + U.maskName(cc.getName()) + "]");
     }
 
     /**
@@ -1476,7 +1477,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
-        CacheEvictionManager evictMgr = nearEnabled ? new GridCacheEvictionManager() : new CacheOffheapEvictionManager();
+        CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled()) ? new GridCacheEvictionManager() : new CacheOffheapEvictionManager();
         GridCacheQueryManager qryMgr = queryManager(cfg);
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
@@ -1623,7 +1624,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * 7. GridCacheTtlManager.
              * ===============================================
              */
-            evictMgr = new CacheOffheapEvictionManager();
+            evictMgr = cfg.isOnheapCacheEnabled() ? new GridCacheEvictionManager() : new CacheOffheapEvictionManager();
             evtMgr = new GridCacheEventManager();
             pluginMgr = new CachePluginManager(ctx, cfg);
             drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
@@ -3332,15 +3333,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "Write behind flush thread count", locAttr.writeBehindFlushThreadCount(),
                 rmtAttr.writeBehindFlushThreadCount(), false);
 
-            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictMaxOverflowRatio",
-                "Eviction max overflow ratio", locAttr.evictMaxOverflowRatio(),
-                rmtAttr.evictMaxOverflowRatio(), true);
-
             if (locAttr.cacheMode() == PARTITIONED) {
-                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",
-                    "Eviction synchronized", locAttr.evictSynchronized(), rmtAttr.evictSynchronized(),
-                    true);
-
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "nearEvictionPolicy",
                     "Near eviction policy", locAttr.nearEvictionPolicyClassName(),
                     rmtAttr.nearEvictionPolicyClassName(), false);

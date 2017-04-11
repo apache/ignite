@@ -66,11 +66,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -1862,96 +1858,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Sets cache configuration parameters according to test memory mode.
-     *
-     * @param cfg Ignite configuration.
-     * @param ccfg Cache configuration.
-     * @param testMode Test memory mode.
-     * @param maxHeapCnt Maximum number of entries in heap (used if test mode involves eviction from heap).
-     * @param maxOffheapSize Maximum offheap memory size (used if test mode involves eviction from offheap to swap).
-     */
-    public static void setMemoryMode(IgniteConfiguration cfg, CacheConfiguration ccfg,
-        TestMemoryMode testMode,
-        int maxHeapCnt,
-        long maxOffheapSize) {
-        assert testMode != null;
-        assert ccfg != null;
-
-        CacheMemoryMode memMode;
-        boolean swap = false;
-        boolean evictionPlc = false;
-        long offheapMaxMem = -1L;
-
-        switch (testMode) {
-            case HEAP: {
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                swap = false;
-
-                break;
-            }
-
-            case SWAP: {
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                evictionPlc = true;
-                swap = true;
-
-                break;
-            }
-
-            case OFFHEAP_TIERED: {
-                memMode = CacheMemoryMode.OFFHEAP_TIERED;
-                offheapMaxMem = 0;
-
-                break;
-            }
-
-            case OFFHEAP_TIERED_SWAP: {
-                assert maxOffheapSize > 0 : maxOffheapSize;
-
-                memMode = CacheMemoryMode.OFFHEAP_TIERED;
-                offheapMaxMem = maxOffheapSize;
-                swap = true;
-
-                break;
-            }
-
-            case OFFHEAP_EVICT: {
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                evictionPlc = true;
-                offheapMaxMem = 0;
-
-                break;
-            }
-
-            case OFFHEAP_EVICT_SWAP: {
-                assert maxOffheapSize > 0 : maxOffheapSize;
-
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                swap = true;
-                evictionPlc = true;
-                offheapMaxMem = maxOffheapSize;
-
-                break;
-            }
-
-            default:
-                throw new IllegalArgumentException("Invalid mode: " + testMode);
-        }
-
-        ccfg.setMemoryMode(memMode);
-
-        if (evictionPlc) {
-            LruEvictionPolicy plc = new LruEvictionPolicy();
-
-            plc.setMaxSize(maxHeapCnt);
-
-            ccfg.setEvictionPolicy(plc);
-        }
-
-        ccfg.setOffHeapMaxMemory(offheapMaxMem);
-    }
-
-    /**
      * Generate random alphabetical string.
      *
      * @param rnd Random object.
@@ -1967,24 +1873,5 @@ public final class GridTestUtils {
             b.append(ALPHABETH.charAt(rnd.nextInt(ALPHABETH.length())));
 
         return b.toString();
-    }
-
-
-    /**
-     *
-     */
-    public enum TestMemoryMode {
-        /** Heap only. */
-        HEAP,
-        /** Evict from heap to swap with eviction policy. */
-        SWAP,
-        /** Always evict to offheap, no swap. */
-        OFFHEAP_TIERED,
-        /** Always evict to offheap + evict from offheap to swap when max offheap memory limit is reached. */
-        OFFHEAP_TIERED_SWAP,
-        /** Evict to offheap with eviction policy, no swap. */
-        OFFHEAP_EVICT,
-        /** Evict to offheap with eviction policy + evict from offheap to swap when max offheap memory limit is reached. */
-        OFFHEAP_EVICT_SWAP,
     }
 }

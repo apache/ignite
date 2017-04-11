@@ -416,6 +416,14 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
+    public long readLockForce(int cacheId, long pageId, long page) {
+        if (rwLock.readLock(page + LOCK_OFFSET, -1))
+            return page + PAGE_OVERHEAD;
+
+        return 0L;
+    }
+
+    /** {@inheritDoc} */
     @Override public void readUnlock(int cacheId, long pageId, long page) {
         rwLock.readUnlock(page + LOCK_OFFSET);
     }

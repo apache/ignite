@@ -49,7 +49,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
@@ -80,9 +79,6 @@ import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -152,7 +148,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         final CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         grid(0).createCache(ccfg);
@@ -197,7 +192,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, CLIENT);
@@ -210,7 +204,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, SERVER);
@@ -223,7 +216,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, ALL);
@@ -236,7 +228,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, SERVER);
@@ -249,7 +240,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, ALL);
@@ -262,85 +252,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValues() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValuesAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValuesClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTieredAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTieredClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, CLIENT);
@@ -353,7 +264,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, SERVER);
@@ -366,7 +276,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, ALL);
@@ -379,7 +288,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, CLIENT);
@@ -392,7 +300,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, SERVER);
@@ -405,7 +312,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, ALL);
@@ -418,7 +324,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, SERVER);
@@ -431,7 +336,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestNotModifyOperation(ccfg);
@@ -444,7 +348,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestNotModifyOperation(ccfg);
@@ -457,7 +360,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestNotModifyOperation(ccfg);
@@ -470,33 +372,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             ATOMIC,
-            ONHEAP_TIERED,
-            true);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveAtomicOffheap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveAtomicOffheapWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            ATOMIC,
-            OFFHEAP_TIERED,
             true);
 
         doTestNotModifyOperation(ccfg);
@@ -509,7 +384,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestNotModifyOperation(ccfg);
@@ -522,7 +396,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestNotModifyOperation(ccfg);
@@ -535,7 +408,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestNotModifyOperation(ccfg);
@@ -548,7 +420,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestNotModifyOperation(ccfg);
@@ -561,7 +432,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestNotModifyOperation(ccfg);
@@ -574,7 +444,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             true);
 
         doTestNotModifyOperation(ccfg);
@@ -856,7 +725,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, CLIENT);
@@ -869,7 +737,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, CLIENT);
@@ -882,7 +749,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, SERVER);
@@ -895,111 +761,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValues() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValuesAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValuesExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValuesClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTieredAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTieredClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTieredClientExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, CLIENT);
@@ -1012,7 +773,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, SERVER);
@@ -1025,7 +785,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, ALL);
@@ -1038,7 +797,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, SERVER);
@@ -1051,7 +809,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestContinuousQuery(ccfg, CLIENT);
@@ -1633,7 +1390,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @param store If {@code true} configures dummy cache store.
      * @return Cache configuration.
      */
@@ -1641,14 +1397,12 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         CacheMode cacheMode,
         int backups,
         CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode,
         boolean store) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setName("cache-" + UUID.randomUUID()); // TODO GG-11220 (remove setName when fixed).
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 

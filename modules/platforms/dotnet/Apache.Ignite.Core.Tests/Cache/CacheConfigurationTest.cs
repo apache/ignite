@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Tests.Plugin.Cache;
     using NUnit.Framework;
 
@@ -198,13 +197,11 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultMaxConcurrentAsyncOperations, cfg.MaxConcurrentAsyncOperations);
             Assert.AreEqual(CacheConfiguration.DefaultMaxEvictionOverflowRatio, cfg.MaxEvictionOverflowRatio);
-            Assert.AreEqual(CacheConfiguration.DefaultOffHeapMaxMemory, cfg.OffHeapMaxMemory);
             Assert.AreEqual(CacheConfiguration.DefaultReadFromBackup, cfg.ReadFromBackup);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchSize, cfg.RebalanceBatchSize);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceMode, cfg.RebalanceMode);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceThrottle, cfg.RebalanceThrottle);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceTimeout, cfg.RebalanceTimeout);
-            Assert.AreEqual(CacheConfiguration.DefaultSqlOnheapRowCacheSize, cfg.SqlOnheapRowCacheSize);
             Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
             Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindBatchSize, cfg.WriteBehindBatchSize);
@@ -235,13 +232,11 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.LongQueryWarningTimeout, y.LongQueryWarningTimeout);
             Assert.AreEqual(x.MaxConcurrentAsyncOperations, y.MaxConcurrentAsyncOperations);
             Assert.AreEqual(x.MaxEvictionOverflowRatio, y.MaxEvictionOverflowRatio);
-            Assert.AreEqual(x.OffHeapMaxMemory, y.OffHeapMaxMemory);
             Assert.AreEqual(x.ReadFromBackup, y.ReadFromBackup);
             Assert.AreEqual(x.RebalanceBatchSize, y.RebalanceBatchSize);
             Assert.AreEqual(x.RebalanceMode, y.RebalanceMode);
             Assert.AreEqual(x.RebalanceThrottle, y.RebalanceThrottle);
             Assert.AreEqual(x.RebalanceTimeout, y.RebalanceTimeout);
-            Assert.AreEqual(x.SqlOnheapRowCacheSize, y.SqlOnheapRowCacheSize);
             Assert.AreEqual(x.StartSize, y.StartSize);
             Assert.AreEqual(x.StartSize, y.StartSize);
             Assert.AreEqual(x.WriteBehindBatchSize, y.WriteBehindBatchSize);
@@ -487,7 +482,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             return new CacheConfiguration
             {
                 Name = name ?? CacheName,
-                OffHeapMaxMemory = 1,
                 StartSize = 2,
                 MaxConcurrentAsyncOperations = 3,
                 WriteBehindFlushThreadCount = 4,
@@ -516,7 +510,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 RebalanceThrottle = TimeSpan.FromSeconds(15),
                 RebalanceTimeout = TimeSpan.FromSeconds(16),
                 SqlEscapeAll = true,
-                SqlOnheapRowCacheSize = 17,
                 WriteBehindBatchSize = 18,
                 WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
@@ -581,7 +574,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             return new CacheConfiguration
             {
                 Name = name ?? CacheName2,
-                OffHeapMaxMemory = 1,
                 StartSize = 2,
                 MaxConcurrentAsyncOperations = 3,
                 WriteBehindFlushThreadCount = 4,
@@ -610,7 +602,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 RebalanceThrottle = TimeSpan.FromSeconds(15),
                 RebalanceTimeout = TimeSpan.FromSeconds(16),
                 SqlEscapeAll = true,
-                SqlOnheapRowCacheSize = 17,
                 WriteBehindBatchSize = 18,
                 WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,

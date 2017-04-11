@@ -221,7 +221,6 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>schema-import/src/main/java</source>
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>

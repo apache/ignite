@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -43,11 +42,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.configvariations.CacheStartMode;
 import org.apache.ignite.transactions.Transaction;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 
 /**
  * Abstract class for cache configuration variations tests.
@@ -386,34 +382,10 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     }
 
     /**
-     * @return {@code True} if values should be stored off-heap.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return cacheConfiguration().getMemoryMode();
-    }
-
-    /**
-     * @return {@code True} if swap should happend after localEvict() call.
-     */
-    protected boolean swapAfterLocalEvict() {
-        if (memoryMode() == OFFHEAP_TIERED)
-            return false;
-
-        return memoryMode() == ONHEAP_TIERED ? (!offheapEnabled() && swapEnabled()) : swapEnabled();
-    }
-
-    /**
      * @return {@code True} if store is enabled.
      */
     protected boolean storeEnabled() {
         return cacheConfiguration().getCacheStoreFactory() != null;
-    }
-
-    /**
-     * @return {@code True} if offheap memory is enabled.
-     */
-    protected boolean offheapEnabled() {
-        return cacheConfiguration().getOffHeapMaxMemory() >= 0;
     }
 
     /**
@@ -513,20 +485,12 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
     /**
      * @param cache Cache.
-     * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
-     */
-    protected static <K, V> boolean offheapTiered(IgniteCache<K, V> cache) {
-        return cache.getConfiguration(CacheConfiguration.class).getMemoryMode() == OFFHEAP_TIERED;
-    }
-
-    /**
-     * @param cache Cache.
      * @param key Key.
      * @return {@code True} if cache contains given key.
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
     protected static boolean containsKey(IgniteCache cache, Object key) throws Exception {
-        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.OFFHEAP) != null : cache.containsKey(key);
+        return cache.containsKey(key);
     }
 }

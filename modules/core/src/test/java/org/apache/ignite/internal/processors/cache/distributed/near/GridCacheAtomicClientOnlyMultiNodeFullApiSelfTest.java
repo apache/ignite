@@ -192,7 +192,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void _testEvictExpired() throws Exception {
+    @Override public void testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         final String key = primaryKeysForCache(cache, 1).get(0);
@@ -221,10 +221,6 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         // Expired entry should not be swapped.
         cache.localEvict(Collections.singleton(key));
-
-        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
-
-        cache.localPromote(Collections.singleton(key));
 
         assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
@@ -292,7 +288,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void _testPeekExpired() throws Exception {
+    @Override public void testPeekExpired() throws Exception {
         IgniteCache<String, Integer> c = jcache();
 
         String key = primaryKeysForCache(c, 1).get(0);
@@ -313,111 +309,6 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         assert c.localPeek(key, CachePeekMode.ONHEAP) == null;
 
         assert c.localSize() == 0 : "Cache is not empty.";
-    }
-
-    // TODO: GG-11148 check if test makes sense.
-    /** {@inheritDoc} */
-    @Override public void _testUnswap() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        List<String> keys = primaryKeysForCache(cache, 3);
-
-        String k1 = keys.get(0);
-        String k2 = keys.get(1);
-        String k3 = keys.get(2);
-
-        cache.put(k1, 1);
-        cache.put(k2, 2);
-        cache.put(k3, 3);
-
-        final AtomicInteger swapEvts = new AtomicInteger(0);
-        final AtomicInteger unswapEvts = new AtomicInteger(0);
-
-        Collection<String> locKeys = new HashSet<>();
-
-        for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(
-                new LocalListener(swapEvts, unswapEvts), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
-        }
-
-        cache.localEvict(Collections.singleton(k2));
-        cache.localEvict(Collections.singleton(k3));
-
-        assertNull(cache.localPeek(k1, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
-        assertNull(cache.localPeek(k2, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
-        assertNull(cache.localPeek(k3, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
-
-        int cnt = 0;
-
-        if (locKeys.contains(k2)) {
-            cache.localPromote(Collections.singleton(k2));
-
-            assertEquals((Integer)2, cache.localPeek(k2, CachePeekMode.ONHEAP));
-
-            cnt++;
-        }
-        else {
-            cache.localPromote(Collections.singleton(k2));
-
-            assertNull(cache.localPeek(k2, CachePeekMode.ONHEAP));
-        }
-
-
-        if (locKeys.contains(k3)) {
-            cache.localPromote(Collections.singleton(k3));
-
-            assertEquals((Integer)3, cache.localPeek(k3, CachePeekMode.ONHEAP));
-
-            cnt++;
-        }
-        else {
-            cache.localPromote(Collections.singleton(k3));
-
-            assertNull(cache.localPeek(k3, CachePeekMode.ONHEAP));
-        }
-
-        assertEquals(cnt, swapEvts.get());
-        assertEquals(cnt, unswapEvts.get());
-
-        cache.localEvict(Collections.singleton(k1));
-
-        assertEquals((Integer)1, cache.get(k1));
-
-        if (locKeys.contains(k1))
-            cnt++;
-
-        assertEquals(cnt, swapEvts.get());
-        assertEquals(cnt, unswapEvts.get());
-
-        cache.clear();
-
-        // Check with multiple arguments.
-        cache.put(k1, 1);
-        cache.put(k2, 2);
-        cache.put(k3, 3);
-
-        swapEvts.set(0);
-        unswapEvts.set(0);
-
-        cache.localEvict(Collections.singleton(k2));
-        cache.localEvict(Collections.singleton(k3));
-
-        assertNull(cache.localPeek(k1, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
-        assertNull(cache.localPeek(k2, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
-        assertNull(cache.localPeek(k3, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
-
-        cache.localPromote(ImmutableSet.of(k2, k3));
-
-        cnt = 0;
-
-        if (locKeys.contains(k2))
-            cnt++;
-
-        if (locKeys.contains(k3))
-            cnt++;
-
-        assertEquals(cnt, swapEvts.get());
-        assertEquals(cnt, unswapEvts.get());
     }
 
     /**

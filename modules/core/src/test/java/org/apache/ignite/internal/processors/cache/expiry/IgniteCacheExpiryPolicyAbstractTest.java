@@ -38,7 +38,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -110,22 +109,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cfg.setExpiryPolicyFactory(factory);
 
-        cfg.setMemoryMode(memoryMode());
-
-        if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED)
-            cfg.setOffHeapMaxMemory(0);
-
         if (disableEagerTtl)
             cfg.setEagerTtl(false);
 
         return cfg;
-    }
-
-    /**
-     * @return Cache memory mode.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
     }
 
     /**

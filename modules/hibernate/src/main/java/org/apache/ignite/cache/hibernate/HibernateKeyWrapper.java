@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cache.hibernate;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Hibernate cache key wrapper.
  */
@@ -27,36 +29,44 @@ public class HibernateKeyWrapper {
     /** Entry. */
     private final String entry;
 
+    /** */
+    private final String tenantId;
+
     /**
      * @param key Key.
      * @param entry Entry.
+     * @param tenantId Tenant ID.
      */
-    public HibernateKeyWrapper(Object key, String entry) {
+    HibernateKeyWrapper(Object key, String entry, String tenantId) {
         this.key = key;
         this.entry = entry;
+        this.tenantId = tenantId;
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
+        if (this == o) return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
-        HibernateKeyWrapper wrapper = (HibernateKeyWrapper)o;
+        HibernateKeyWrapper that = (HibernateKeyWrapper) o;
 
-        if (key != null ? !key.equals(wrapper.key) : wrapper.key != null)
-            return false;
-
-        return entry != null ? entry.equals(wrapper.entry) : wrapper.entry == null;
+        return (key != null ? key.equals(that.key) : that.key == null) &&
+            (entry != null ? entry.equals(that.entry) : that.entry == null) &&
+            (tenantId != null ? tenantId.equals(that.tenantId) : that.tenantId == null);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = key != null ? key.hashCode() : 0;
+        int res = key != null ? key.hashCode() : 0;
+        res = 31 * res + (entry != null ? entry.hashCode() : 0);
+        res = 31 * res + (tenantId != null ? tenantId.hashCode() : 0);
+        return res;
+    }
 
-        result = 31 * result + (entry != null ? entry.hashCode() : 0);
-
-        return result;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(HibernateKeyWrapper.class, this);
     }
 }

@@ -36,6 +36,11 @@ public interface CacheDataRow extends CacheSearchRow {
     public GridCacheVersion version();
 
     /**
+     * @return Cache id. Stored only if memory policy with configured per-page eviction is used.
+     */
+    public int cacheId();
+
+    /**
      * @return Expire time.
      */
     public long expireTime();

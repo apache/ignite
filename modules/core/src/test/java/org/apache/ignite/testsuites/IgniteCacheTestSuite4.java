@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeDynam
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeDynamicStartTxTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartAtomicTest;
 import org.apache.ignite.internal.processors.cache.CacheStoreUsageMultinodeStaticStartTxTest;
-import org.apache.ignite.internal.processors.cache.CacheSwapUnswapGetTest;
 import org.apache.ignite.internal.processors.cache.CacheTxNotAllowReadFromBackupTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheLockTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMarshallingNodeJoinSelfTest;
@@ -131,13 +130,9 @@ import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStor
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheTxStoreSessionWriteBehindTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalAtomicSwapDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalTransactionalSelfTest;
-import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedAtomicOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedTransactionalOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedTransactionalSelfTest;
-import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedAtomicOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedTransactionalOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedTransactionalSelfTest;
 
 /**
@@ -290,12 +285,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheVersionedEntryLocalTransactionalSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryPartitionedAtomicSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryPartitionedTransactionalSelfTest.class);
-        suite.addTestSuite(CacheVersionedEntryPartitionedAtomicOffHeapSelfTest.class);
-        suite.addTestSuite(CacheVersionedEntryPartitionedTransactionalOffHeapSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryReplicatedAtomicSelfTest.class);
         suite.addTestSuite(CacheVersionedEntryReplicatedTransactionalSelfTest.class);
-        suite.addTestSuite(CacheVersionedEntryReplicatedAtomicOffHeapSelfTest.class);
-        suite.addTestSuite(CacheVersionedEntryReplicatedTransactionalOffHeapSelfTest.class);
 
         // TODO GG-11148.
         // suite.addTestSuite(CacheSwapUnswapGetTest.class);

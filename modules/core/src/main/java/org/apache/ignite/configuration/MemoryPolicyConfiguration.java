@@ -19,6 +19,8 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 
 /**
  * Configuration bean used for creating {@link MemoryPolicy} instances.
@@ -42,6 +44,18 @@ public final class MemoryPolicyConfiguration implements Serializable {
     public String getName() {
         return name;
     }
+
+    /** Algorithm for per-page eviction. If {@link DataPageEvictionMode#DISABLED} set, eviction is not performed. */
+    private DataPageEvictionMode pageEvictionMode = DataPageEvictionMode.DISABLED;
+
+    /** Allocation of new {@link DataPageIO} pages is stopped when this percentage of pages are allocated. */
+    private double evictionThreshold = 0.9;
+
+    /** Allocation of new {@link DataPageIO} pages is stopped by maintaining this amount of empty pages in
+     * corresponding {@link FreeList} bucket. Pages get into the bucket through evicting all data entries one by one.
+     * Higher load and contention require larger pool size.
+     */
+    private int emptyPagesPoolSize = 100;
 
     /**
      * @param name Unique name of MemoryPolicy.
@@ -80,6 +94,62 @@ public final class MemoryPolicyConfiguration implements Serializable {
      */
     public MemoryPolicyConfiguration setSwapFilePath(String swapFilePath) {
         this.swapFilePath = swapFilePath;
+
+        return this;
+    }
+
+    /**
+     * Gets data page eviction mode.
+     */
+    public DataPageEvictionMode getPageEvictionMode() {
+        return pageEvictionMode;
+    }
+
+    /**
+     * Sets data page eviction mode.
+     *
+     * @param evictionMode Eviction mode.
+     */
+    public MemoryPolicyConfiguration setPageEvictionMode(DataPageEvictionMode evictionMode) {
+        pageEvictionMode = evictionMode;
+
+        return this;
+    }
+
+    /**
+     * Gets data page eviction threshold.
+     *
+     * @return Data page eviction threshold.
+     */
+    public double getEvictionThreshold() {
+        return evictionThreshold;
+    }
+
+    /**
+     * Sets data page eviction threshold.
+     *
+     * @param evictionThreshold Eviction threshold.
+     */
+    public MemoryPolicyConfiguration setEvictionThreshold(double evictionThreshold) {
+        this.evictionThreshold = evictionThreshold;
+
+        return this;
+    }
+
+    /**
+     * Gets empty pages pool size.
+     */
+    public int getEmptyPagesPoolSize() {
+        return emptyPagesPoolSize;
+    }
+
+    /**
+     * Sets empty pages pool size.
+     *
+     * @param emptyPagesPoolSize Empty pages pool size.
+     */
+    public MemoryPolicyConfiguration setEmptyPagesPoolSize(int emptyPagesPoolSize) {
+        this.emptyPagesPoolSize = emptyPagesPoolSize;
 
         return this;
     }

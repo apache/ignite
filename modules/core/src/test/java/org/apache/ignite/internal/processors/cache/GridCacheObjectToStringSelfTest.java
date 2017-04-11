@@ -68,6 +68,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setEvictionPolicy(evictionPlc);
+        cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 

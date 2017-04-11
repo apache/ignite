@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
@@ -31,6 +30,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.database.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPagePayload;
@@ -71,17 +72,22 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private final int MIN_SIZE_FOR_DATA_PAGE;
 
     /** */
+    private final int emptyDataPagesBucket;
+
+    /** */
     private final PageHandler<CacheDataRow, Boolean> updateRow = new UpdateRowHandler();
 
     /** */
     private final MemoryMetricsImpl memMetrics;
 
+    /** */
+    private final PageEvictionTracker evictionTracker;
+
     /**
      *
      */
     private final class UpdateRowHandler extends PageHandler<CacheDataRow, Boolean> {
-        @Override
-        public Boolean run(
+        @Override public Boolean run(
             int cacheId,
             long pageId,
             long page,
@@ -96,6 +102,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             int rowSize = getRowSize(row);
 
             boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
+
+            evictionTracker.touchPage(pageId);
 
             if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
                 // TODO This record must contain only a reference to a logical WAL record with the actual data.
@@ -125,8 +133,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      *
      */
     private final class WriteRowHandler extends PageHandler<CacheDataRow, Integer> {
-        @Override
-        public Integer run(
+        @Override public Integer run(
             int cacheId,
             long pageId,
             long page,
@@ -155,6 +162,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                 put(null, pageId, page, pageAddr, bucket);
             }
+
+            if (written == rowSize)
+                evictionTracker.touchPage(pageId);
 
             // Avoid boxing with garbage generation for usual case.
             return written == rowSize ? COMPLETE : written;
@@ -287,6 +297,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 }
                 else
                     put(null, pageId, page, pageAddr, newBucket);
+
+                if (io.isEmpty(pageAddr))
+                    evictionTracker.forgetPage(pageId);
             }
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
@@ -297,8 +310,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /**
      * @param cacheId Cache ID.
      * @param name Name (for debug purpose).
-     * @param pageMem Page memory.
      * @param memMetrics Memory metrics.
+     * @param memPlc Memory policy.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
@@ -308,13 +321,14 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     public FreeListImpl(
         int cacheId,
         String name,
-        PageMemory pageMem,
         MemoryMetricsImpl memMetrics,
+        MemoryPolicy memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, pageMem, BUCKETS, wal, metaPageId);
+        super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+        this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 
@@ -336,6 +350,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         this.shift = shift;
 
         this.memMetrics = memMetrics;
+
+        emptyDataPagesBucket = bucket(MIN_SIZE_FOR_DATA_PAGE, false);
 
         init(metaPageId, initNew);
     }
@@ -446,24 +462,25 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             int freeSpace = Math.min(MIN_SIZE_FOR_DATA_PAGE, rowSize - written);
 
-            int bucket = bucket(freeSpace, false);
+            long pageId = 0L;
 
-            long pageId = 0;
+            if (freeSpace == MIN_SIZE_FOR_DATA_PAGE)
+                pageId = takeEmptyPage(emptyDataPagesBucket, DataPageIO.VERSIONS);
+
             boolean reuseBucket = false;
 
             // TODO: properly handle reuse bucket.
-            for (int b = bucket + 1; b < BUCKETS - 1; b++) {
-                pageId = takeEmptyPage(b, DataPageIO.VERSIONS);
+            if (pageId == 0L) {
+                for (int b = bucket(freeSpace, false) + 1; b < BUCKETS - 1; b++) {
+                    pageId = takeEmptyPage(b, DataPageIO.VERSIONS);
 
-                if (pageId != 0L) {
-                    reuseBucket = isReuseBucket(b);
+                    if (pageId != 0L) {
+                        reuseBucket = isReuseBucket(b);
 
-                    break;
+                        break;
+                    }
                 }
             }
-
-            if (pageId == 0L)
-                pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
 
             boolean allocated = pageId == 0L;
 
@@ -531,6 +548,13 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         return bucket == REUSE_BUCKET;
     }
 
+    /**
+     * @return Number of empty data pages in free list.
+     */
+    public int emptyDataPages() {
+        return bucketsSize[emptyDataPagesBucket].intValue();
+    }
+
     /** {@inheritDoc} */
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this: "not allowed to be a reuse list";
@@ -561,7 +585,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         int keyLen = row.key().valueBytesLength(null);
         int valLen = row.value().valueBytesLength(null);
 
-        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8;
+        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8 + (row.cacheId() == 0 ? 0 : 4);
     }
 
     /** {@inheritDoc} */

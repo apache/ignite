@@ -37,6 +37,7 @@ import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePartialUpdateException;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -61,7 +62,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
-import static org.apache.ignite.testframework.GridTestUtils.TestMemoryMode;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -85,13 +85,13 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     }
 
     /**
-     * @param memMode Memory mode.
+     * @param evict If {@code true} adds eviction policy.
      * @param store If {@code true} adds cache store.
      * @return Cache configuration.
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected CacheConfiguration cacheConfiguration(TestMemoryMode memMode, boolean store) throws Exception {
+    protected CacheConfiguration cacheConfiguration(boolean evict, boolean store) throws Exception {
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setAtomicityMode(atomicityMode());
@@ -100,12 +100,20 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
         cfg.setBackups(1);
         cfg.setRebalanceMode(SYNC);
 
+        if (evict) {
+            LruEvictionPolicy plc = new LruEvictionPolicy();
+
+            plc.setMaxSize(100);
+
+            cfg.setEvictionPolicy(plc);
+
+            cfg.setOnheapCacheEnabled(true);
+        }
+
         if (store) {
             cfg.setCacheStoreFactory(new TestStoreFactory());
             cfg.setWriteThrough(true);
         }
-
-        GridTestUtils.setMemoryMode(null, cfg, memMode, 100, 1024);
 
         return cfg;
     }
@@ -173,80 +181,73 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        checkRetry(Test.PUT, TestMemoryMode.HEAP, false);
+        checkRetry(Test.PUT, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetAndPut() throws Exception {
-        checkRetry(Test.GET_AND_PUT, TestMemoryMode.HEAP, false);
+        checkRetry(Test.GET_AND_PUT, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutStoreEnabled() throws Exception {
-        checkRetry(Test.PUT, TestMemoryMode.HEAP, true);
+        checkRetry(Test.PUT, false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAll() throws Exception {
-        checkRetry(Test.PUT_ALL, TestMemoryMode.HEAP, false);
+        checkRetry(Test.PUT_ALL, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAsync() throws Exception {
-        checkRetry(Test.PUT_ASYNC, TestMemoryMode.HEAP, false);
+        checkRetry(Test.PUT_ASYNC, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutAsyncStoreEnabled() throws Exception {
-        checkRetry(Test.PUT_ASYNC, TestMemoryMode.HEAP, true);
+        checkRetry(Test.PUT_ASYNC, false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvoke() throws Exception {
-        checkRetry(Test.INVOKE, TestMemoryMode.HEAP, false);
+        checkRetry(Test.INVOKE, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvokeAll() throws Exception {
-        checkRetry(Test.INVOKE_ALL, TestMemoryMode.HEAP, false);
+        checkRetry(Test.INVOKE_ALL, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllOffheapSwap() throws Exception {
-        checkRetry(Test.INVOKE_ALL, TestMemoryMode.OFFHEAP_EVICT_SWAP, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeAllOffheapTiered() throws Exception {
-        checkRetry(Test.INVOKE_ALL, TestMemoryMode.OFFHEAP_TIERED, false);
+    public void testInvokeAllEvict() throws Exception {
+        checkRetry(Test.INVOKE_ALL, true, false);
     }
 
     /**
      * @param test Test type.
-     * @param memMode Memory mode.
+     * @param evict If {@code true} uses eviction policy
      * @param store If {@code true} uses cache with store.
      * @throws Exception If failed.
      */
-    protected final void checkRetry(Test test, TestMemoryMode memMode, boolean store) throws Exception {
-        ignite(0).createCache(cacheConfiguration(memMode, store));
+    protected final void checkRetry(Test test, boolean evict, boolean store) throws Exception {
+        ignite(0).createCache(cacheConfiguration(evict, store));
 
         final AtomicBoolean finished = new AtomicBoolean();
 
@@ -520,7 +521,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     private void checkFailsWithNoRetries(boolean async) throws Exception {
-        ignite(0).createCache(cacheConfiguration(TestMemoryMode.HEAP, false));
+        ignite(0).createCache(cacheConfiguration(false, false));
 
         final AtomicBoolean finished = new AtomicBoolean();
 
