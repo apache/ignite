@@ -298,7 +298,11 @@ BOOST_AUTO_TEST_CASE(GetDataHashCode)
 
 BOOST_AUTO_TEST_CASE(IdentityEquilityWithGuid)
 {
+#ifdef IGNITE_TESTS_32
+    Ignite grid = ignite_test::StartNode("cache-identity-32.xml");
+#else
     Ignite grid = ignite_test::StartNode("cache-identity.xml");
+#endif
 
     CompositeKey key("Key String", Timestamp(123851, 562304134), Guid(0x4A950C6206FE4502, 0xAC06145097E56F02));
     int32_t value = 12321;
@@ -321,7 +325,11 @@ BOOST_AUTO_TEST_CASE(IdentityEquilityWithGuid)
 
 BOOST_AUTO_TEST_CASE(IdentityEquilityWithoutGuid)
 {
+#ifdef IGNITE_TESTS_32
+    Ignite grid = ignite_test::StartNode("cache-identity-32.xml");
+#else
     Ignite grid = ignite_test::StartNode("cache-identity.xml");
+#endif
 
     CompositeKeySimple key("Lorem ipsum", Timestamp(112460, 163002155), 1337);
     int32_t value = 42;

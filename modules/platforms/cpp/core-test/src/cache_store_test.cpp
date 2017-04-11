@@ -41,8 +41,13 @@ struct CacheStoreTestSuiteFixture
     /*
      * Constructor.
      */
-    CacheStoreTestSuiteFixture() : 
+    CacheStoreTestSuiteFixture() :
+#ifdef IGNITE_TESTS_32
+        node1(ignite_test::StartNode("cache-store-32.xml", "node1"))
+#else
         node1(ignite_test::StartNode("cache-store.xml", "node1"))
+#endif
+
     {
         // No-op.
     }
@@ -102,7 +107,11 @@ BOOST_AUTO_TEST_CASE(LoadCacheSingleNodeNoPredicate)
 BOOST_AUTO_TEST_CASE(LoadCacheSeveralNodesNoPredicate)
 {
     BOOST_CHECKPOINT("Starting additional node");
+#ifdef IGNITE_TESTS_32
+    Ignite node2 = ignite_test::StartNode("cache-store-32.xml", "node2");
+#else
     Ignite node2 = ignite_test::StartNode("cache-store.xml", "node2");
+#endif
 
     const int64_t entriesNum = 100;
 
