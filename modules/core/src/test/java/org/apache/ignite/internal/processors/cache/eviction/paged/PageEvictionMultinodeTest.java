@@ -102,8 +102,8 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
 
         System.out.println(">>> Resulting size: " + resultingSize);
 
-        // More than half of entries evicted, no OutOfMemory occurred, success.
-        assertTrue(resultingSize < ENTRIES / 2);
+        // Eviction started, no OutOfMemory occurred, success.
+        assertTrue(resultingSize < ENTRIES);
 
         ignite(0).destroyCache(cfg.getName());
     }
