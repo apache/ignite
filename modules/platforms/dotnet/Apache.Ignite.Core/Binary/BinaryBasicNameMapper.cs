@@ -27,6 +27,8 @@ namespace Apache.Ignite.Core.Binary
     /// </summary>
     public class BinaryBasicNameMapper : IBinaryNameMapper
     {
+        // TODO: Dedicated fixture.
+
         /// <summary>
         /// The simple name instance.
         /// </summary>
