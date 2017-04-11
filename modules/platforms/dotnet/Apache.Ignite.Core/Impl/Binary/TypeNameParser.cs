@@ -129,6 +129,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             return _typeName.Substring(ArrayStart, ArrayEnd - ArrayStart + 1);
         }
 
+        public string GetGenericHeader()
+        {
+            if (Generics == null)
+                return null;
+
+            return "`" + Generics.Count;
+        }
+
         /// <summary>
         /// Parses this instance.
         /// </summary>
