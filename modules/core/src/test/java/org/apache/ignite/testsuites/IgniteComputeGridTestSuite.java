@@ -30,6 +30,7 @@ import org.apache.ignite.internal.GridCollisionJobsContextSelfTest;
 import org.apache.ignite.internal.GridDeploymentMultiThreadedSelfTest;
 import org.apache.ignite.internal.GridDeploymentSelfTest;
 import org.apache.ignite.internal.GridEventStorageCheckAllEventsSelfTest;
+import org.apache.ignite.internal.GridEventStorageDefaultExceptionTest;
 import org.apache.ignite.internal.GridEventStorageRuntimeConfigurationSelfTest;
 import org.apache.ignite.internal.GridEventStorageSelfTest;
 import org.apache.ignite.internal.GridFailoverCustomTopologySelfTest;
@@ -140,6 +141,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridTaskNameAnnotationSelfTest.class);
         suite.addTestSuite(GridJobCheckpointCleanupSelfTest.class);
         suite.addTestSuite(GridEventStorageSelfTest.class);
+        suite.addTestSuite(GridEventStorageDefaultExceptionTest.class);
         suite.addTestSuite(GridFailoverTaskWithPredicateSelfTest.class);
         suite.addTestSuite(GridProjectionLocalJobMultipleArgumentsSelfTest.class);
         suite.addTestSuite(GridAffinitySelfTest.class);

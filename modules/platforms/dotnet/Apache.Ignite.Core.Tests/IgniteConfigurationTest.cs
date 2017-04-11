@@ -80,6 +80,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new LruEvictionPolicy());
             CheckDefaultValueAttributes(new AtomicConfiguration());
             CheckDefaultValueAttributes(new TransactionConfiguration());
+            CheckDefaultValueAttributes(new MemoryEventStorageSpi());
         }
 
         /// <summary>
@@ -184,6 +185,13 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.IsNotNull(resCfg.PluginConfigurations);
                 Assert.AreEqual(cfg.PluginConfigurations, resCfg.PluginConfigurations);
+
+                var eventCfg = cfg.EventStorageSpi as MemoryEventStorageSpi;
+                var resEventCfg = resCfg.EventStorageSpi as MemoryEventStorageSpi;
+                Assert.IsNotNull(eventCfg);
+                Assert.IsNotNull(resEventCfg);
+                Assert.AreEqual(eventCfg.ExpirationTimeout, resEventCfg.ExpirationTimeout);
+                Assert.AreEqual(eventCfg.MaxEventCount, resEventCfg.MaxEventCount);
             }
         }
 
@@ -523,7 +531,12 @@ namespace Apache.Ignite.Core.Tests
                         }
                     }
                 },
-                PluginConfigurations = new[] { new TestIgnitePluginConfiguration() }
+                PluginConfigurations = new[] { new TestIgnitePluginConfiguration() },
+                EventStorageSpi = new MemoryEventStorageSpi
+                {
+                    ExpirationTimeout = TimeSpan.FromSeconds(5),
+                    MaxEventCount = 10
+                }
             };
         }
     }

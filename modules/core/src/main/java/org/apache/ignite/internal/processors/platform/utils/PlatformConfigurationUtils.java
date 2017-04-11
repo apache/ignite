@@ -79,6 +79,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.EventStorageSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -598,6 +601,18 @@ public class PlatformConfigurationUtils {
             cfg.setTransactionConfiguration(tx);
         }
 
+        switch (in.readByte()) {
+            case 1:
+                cfg.setEventStorageSpi(new NoopEventStorageSpi());
+                break;
+
+            case 2:
+                cfg.setEventStorageSpi(new MemoryEventStorageSpi()
+                        .setExpireCount(in.readLong())
+                        .setExpireAgeMs(in.readLong()));
+                break;
+        }
+
         readPluginConfiguration(cfg, in);
     }
 
@@ -1000,6 +1015,19 @@ public class PlatformConfigurationUtils {
         }
         else
             w.writeBoolean(false);
+
+        EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
+
+        if (eventStorageSpi == null) {
+            w.writeByte((byte) 0);
+        } else if (eventStorageSpi instanceof NoopEventStorageSpi) {
+            w.writeByte((byte) 1);
+        } else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
+            w.writeByte((byte) 2);
+
+            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
+            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireAgeMs());
+        }
 
         w.writeString(cfg.getIgniteHome());
 
