@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Binary
 {
     using System;
+    using System.Text;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -32,26 +34,6 @@ namespace Apache.Ignite.Core.Binary
         {
             IsSimpleName = true
         };
-
-        /// <summary>
-        /// The assembly name separator.
-        /// </summary>
-        private const char AssemblyNameSeparator = ',';
-
-        /// <summary>
-        /// The namespace separator.
-        /// </summary>
-        private const char NamespaceSeparator = '.';
-
-        /// <summary>
-        /// The nested class separator.
-        /// </summary>
-        private const char NestedTypeSeparator = '+';
-
-        /// <summary>
-        /// The generic separator.
-        /// </summary>
-        private const char GenericSeparator = ']';
 
         /// <summary>
         /// Gets or sets a value indicating whether this instance maps to simple type names.
@@ -81,31 +63,7 @@ namespace Apache.Ignite.Core.Binary
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            // Example of assembly-qualified name:
-            // Apache.Ignite.Bar+Foo, Apache.Ignite, Version=2.0.0.0, Culture=neutral, PublicKeyToken=69a2bf55bb31d6b3
-
-            var asmPos = typeName.IndexOf(AssemblyNameSeparator);
-
-            if (asmPos < 0)
-            {
-                asmPos = typeName.Length;
-            }
-
-            var nsPos = Math.Max(
-                typeName.LastIndexOf(NamespaceSeparator, asmPos - 1),
-                typeName.LastIndexOf(NestedTypeSeparator, asmPos - 1));
-
-            if (nsPos < 0)
-            {
-                nsPos = 0;
-            }
-
-            if (nsPos == 0 && asmPos == typeName.Length)
-            {
-                return typeName;
-            }
-
-            return typeName.Substring(nsPos + 1, asmPos - nsPos - 1);
+            return BuildTypeName(TypeNameParser.Parse(typeName), new StringBuilder(), x => x.GetName()).ToString();
         }
 
         /// <summary>
@@ -115,9 +73,38 @@ namespace Apache.Ignite.Core.Binary
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            var asmPos = typeName.IndexOf(AssemblyNameSeparator);
+            return BuildTypeName(TypeNameParser.Parse(typeName), new StringBuilder(), x => x.GetFullName()).ToString();
+        }
 
-            return asmPos < 0 ? typeName : typeName.Substring(0, asmPos);
+        /// <summary>
+        /// Builds the type name.
+        /// </summary>
+        private static StringBuilder BuildTypeName(TypeNameParser typeName, StringBuilder sb, 
+            Func<TypeNameParser, string> typeNameFunc)
+        {
+            sb.Append(typeNameFunc(typeName));
+
+            var generics = typeName.Generics;
+
+            if (generics != null)
+            {
+                sb.Append(typeName.GetGenericHeader()).Append('[');
+
+                foreach (var genArg in generics)
+                {
+                    sb.Append('[');
+
+                    BuildTypeName(genArg, sb, typeNameFunc);
+
+                    sb.Append(']');
+                }
+
+                sb.Append(']');
+            }
+
+            sb.Append(typeName.GetArray());
+
+            return sb;
         }
     }
 }
