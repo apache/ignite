@@ -1087,8 +1087,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cache.put(key, 1);
 
-        assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
+        // Make entry cached in client NearCache.
         assertEquals(1, cache.get(key));
+
+        assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
 
         waitExpired(key);
 
