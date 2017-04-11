@@ -140,6 +140,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             return "`" + Generics.Count;
         }
 
+        public string GetAssemblyName()
+        {
+            if (AssemblyStart < 0)
+                return null;
+
+            return _typeName.Substring(AssemblyStart, AssemblyEnd - AssemblyStart + 1);
+        }
+
         /// <summary>
         /// Parses this instance.
         /// </summary>
@@ -301,12 +309,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             RequireShift();
 
+            SkipSpaces();
+
             AssemblyStart = _pos;
 
             while (Char != ']' && Shift())
             {
                 // No-op.
             }
+
+            AssemblyEnd = End ? _pos : _pos - 1;
         }
 
         private bool Shift()

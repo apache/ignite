@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -58,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(7, res.NameStart);
             Assert.AreEqual(9, res.NameEnd);
             Assert.IsNull(res.Generics);
-            Assert.AreEqual(11, res.AssemblyStart);
+            Assert.AreEqual(12, res.AssemblyStart);
 
             // Real types.
             CheckType(GetType());
@@ -73,6 +75,16 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestGenericTypes()
         {
             // One arg.
+            var res = TypeNameParser.Parse(typeof(List<int>).AssemblyQualifiedName);
+            Assert.AreEqual("List", res.GetName());
+            Assert.AreEqual("System.Collections.Generic.List", res.GetFullName());
+            Assert.IsTrue(res.GetAssemblyName().StartsWith("mscorlib,"));
+
+            Assert.AreEqual(1, res.Generics.Count);
+            var gen = res.Generics.Single();
+            Assert.AreEqual("Int32", gen.GetName());
+            Assert.AreEqual("System.Int32", gen.GetFullName());
+            Assert.IsTrue(gen.GetAssemblyName().StartsWith("mscorlib,"));
 
             // Two args.
 
@@ -100,10 +112,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestInvalidTypes()
         {
-            // TODO
             Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(null));
             Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(""));
-            Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(""));
+
+            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x["));
+            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x[[]"));
+            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`["));
+            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`]"));
+            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`[ ]"));
         }
 
         /// <summary>
@@ -124,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(type.FullName, res.GetFullName() + res.GetArray());
             }
 
-            Assert.AreEqual(type.FullName.Length + 1, res.AssemblyStart);
+            Assert.AreEqual(type.FullName.Length + 2, res.AssemblyStart);
         }
     }
 }
