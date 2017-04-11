@@ -360,7 +360,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     };
 
     /** */
-    private volatile GridKernalContext ctx;
+    protected volatile GridKernalContext ctx;
 
     /** */
     private final DmlStatementsProcessor dmlProc = new DmlStatementsProcessor();

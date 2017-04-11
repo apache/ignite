@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
@@ -146,7 +147,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     /**
      * @return Default cache configuration.
      */
-    protected static CacheConfiguration cacheConfiguration() {
+    protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
         QueryEntity entity = new QueryEntity();
@@ -261,7 +262,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param id ID.
      * @return Key object.
      */
-    protected static BinaryObject key(IgniteEx ignite, long id) {
+    protected static BinaryObject key(Ignite ignite, long id) {
         return ignite.binary().builder(KeyClass.class.getName()).setField("id", id).build();
     }
 
@@ -272,7 +273,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param id ID.
      * @return Value object.
      */
-    protected static BinaryObject value(IgniteEx ignite, long id) {
+    protected static BinaryObject value(Ignite ignite, long id) {
         return ignite.binary().builder(ValueClass.class.getName())
             .setField(FIELD_NAME_1, id)
             .setField(FIELD_NAME_2, id)
@@ -286,8 +287,18 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param id ID.
      * @return Entry.
      */
-    protected static T2<BinaryObject, BinaryObject> entry(IgniteEx ignite, long id) {
+    protected static T2<BinaryObject, BinaryObject> entry(Ignite ignite, long id) {
         return new T2<>(key(ignite, id), value(ignite, id));
+    }
+
+    /**
+     * Get common cache.
+     *
+     * @param node Node.
+     * @return Cache.
+     */
+    protected static IgniteCache<BinaryObject, BinaryObject> cache(Ignite node) {
+        return node.cache(CACHE_NAME).withKeepBinary();
     }
 
     /**
@@ -296,10 +307,10 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param node Node.
      * @param id ID.
      */
-    protected static BinaryObject get(IgniteEx node, int id) {
+    protected static BinaryObject get(Ignite node, int id) {
         BinaryObject key = key(node, id);
 
-        return (BinaryObject)node.cache(CACHE_NAME).withKeepBinary().get(key);
+        return cache(node).get(key);
     }
 
     /**
@@ -309,7 +320,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param from From key.
      * @param to To key.
      */
-    protected static void put(IgniteEx node, int from, int to) {
+    protected static void put(Ignite node, int from, int to) {
         for (int i = from; i < to; i++)
             put(node, i);
     }
@@ -317,14 +328,14 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     /**
      * Put key to cache.
      *
-     * @param ignite Ignite.
+     * @param node Node.
      * @param id ID.
      */
-    protected static void put(IgniteEx ignite, long id) {
-        BinaryObject key = key(ignite, id);
-        BinaryObject val = value(ignite, id);
+    protected static void put(Ignite node, long id) {
+        BinaryObject key = key(node, id);
+        BinaryObject val = value(node, id);
 
-        ignite.cache(CACHE_NAME).withKeepBinary().put(key, val);
+        cache(node).put(key, val);
     }
 
     /**
@@ -334,7 +345,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param from From key.
      * @param to To key.
      */
-    protected static void remove(IgniteEx node, int from, int to) {
+    protected static void remove(Ignite node, int from, int to) {
         for (int i = from; i < to; i++)
             remove(node, i);
     }
@@ -342,13 +353,13 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     /**
      * Remove key form cache.
      *
-     * @param ignite Ignite.
+     * @param node Node.
      * @param id ID.
      */
-    protected static void remove(IgniteEx ignite, long id) {
-        BinaryObject key = key(ignite, id);
+    protected static void remove(Ignite node, long id) {
+        BinaryObject key = key(node, id);
 
-        ignite.cache(CACHE_NAME).withKeepBinary().remove(key);
+        cache(node).remove(key);
     }
 
     /**
