@@ -34,8 +34,18 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestSimpleTypes()
         {
+            // One letter.
+            var res = TypeNameParser.Parse("x");
+            Assert.AreEqual("x", res.GetFullName());
+            Assert.AreEqual("x", res.GetName());
+            Assert.AreEqual(0, res.NameStart);
+            Assert.AreEqual(0, res.NameEnd);
+            Assert.AreEqual(-1, res.AssemblyStart);
+            Assert.AreEqual(-1, res.AssemblyEnd);
+            Assert.IsNull(res.Generics);
+
             // Without assembly.
-            var res = TypeNameParser.Parse("System.Int");
+            res = TypeNameParser.Parse("System.Int");
 
             Assert.AreEqual(7, res.NameStart);
             Assert.AreEqual(9, res.NameEnd);
@@ -91,6 +101,9 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestInvalidTypes()
         {
             // TODO
+            Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(null));
+            Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(""));
+            Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(""));
         }
 
         /// <summary>
