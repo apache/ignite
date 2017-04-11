@@ -212,7 +212,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
     @Override protected void afterTest() throws Exception {
         try {
             // Cleanup.
-            igfsPrimary.format();
+            igfsPrimary.clear();
 
             while (!dataCache.isEmpty())
                 U.sleep(100);

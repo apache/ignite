@@ -32,7 +32,6 @@ import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStoreSession;
@@ -120,7 +119,6 @@ public class ConfigVariations {
                 EVICTION_PARAM,
                 CACHE_STORE_PARAM,
                 REBALANCING_PARAM,
-                Parameters.parameter("setAffinity", Parameters.factory(FairAffinityFunction.class)),
                 Parameters.parameter("setInterceptor", Parameters.factory(NoopInterceptor.class)),
                 Parameters.parameter("setTopologyValidator", Parameters.factory(NoopTopologyValidator.class)),
                 Parameters.parameter("addCacheEntryListenerConfiguration", Parameters.factory(EmptyCacheEntryListenerConfiguration.class))

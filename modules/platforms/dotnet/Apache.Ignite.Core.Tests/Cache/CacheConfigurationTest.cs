@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
@@ -186,17 +185,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
             Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
             Assert.AreEqual(CacheConfiguration.DefaultEagerTtl, cfg.EagerTtl);
-            Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronizedKeyBufferSize, cfg.EvictSynchronizedKeyBufferSize);
-            Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronized, cfg.EvictSynchronized);
-            Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronizedConcurrencyLevel, cfg.EvictSynchronizedConcurrencyLevel);
-            Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronizedTimeout, cfg.EvictSynchronizedTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultInvalidate, cfg.Invalidate);
             Assert.AreEqual(CacheConfiguration.DefaultKeepVinaryInStore, cfg.KeepBinaryInStore);
             Assert.AreEqual(CacheConfiguration.DefaultLoadPreviousValue, cfg.LoadPreviousValue);
             Assert.AreEqual(CacheConfiguration.DefaultLockTimeout, cfg.LockTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultMaxConcurrentAsyncOperations, cfg.MaxConcurrentAsyncOperations);
-            Assert.AreEqual(CacheConfiguration.DefaultMaxEvictionOverflowRatio, cfg.MaxEvictionOverflowRatio);
             Assert.AreEqual(CacheConfiguration.DefaultReadFromBackup, cfg.ReadFromBackup);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchSize, cfg.RebalanceBatchSize);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceMode, cfg.RebalanceMode);
@@ -221,17 +215,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.CopyOnRead, y.CopyOnRead);
             Assert.AreEqual(x.StartSize, y.StartSize);
             Assert.AreEqual(x.EagerTtl, y.EagerTtl);
-            Assert.AreEqual(x.EvictSynchronizedKeyBufferSize, y.EvictSynchronizedKeyBufferSize);
-            Assert.AreEqual(x.EvictSynchronized, y.EvictSynchronized);
-            Assert.AreEqual(x.EvictSynchronizedConcurrencyLevel, y.EvictSynchronizedConcurrencyLevel);
-            Assert.AreEqual(x.EvictSynchronizedTimeout, y.EvictSynchronizedTimeout);
             Assert.AreEqual(x.Invalidate, y.Invalidate);
             Assert.AreEqual(x.KeepBinaryInStore, y.KeepBinaryInStore);
             Assert.AreEqual(x.LoadPreviousValue, y.LoadPreviousValue);
             Assert.AreEqual(x.LockTimeout, y.LockTimeout);
             Assert.AreEqual(x.LongQueryWarningTimeout, y.LongQueryWarningTimeout);
             Assert.AreEqual(x.MaxConcurrentAsyncOperations, y.MaxConcurrentAsyncOperations);
-            Assert.AreEqual(x.MaxEvictionOverflowRatio, y.MaxEvictionOverflowRatio);
             Assert.AreEqual(x.ReadFromBackup, y.ReadFromBackup);
             Assert.AreEqual(x.RebalanceBatchSize, y.RebalanceBatchSize);
             Assert.AreEqual(x.RebalanceMode, y.RebalanceMode);
@@ -487,22 +476,17 @@ namespace Apache.Ignite.Core.Tests.Cache
                 WriteBehindFlushThreadCount = 4,
                 LongQueryWarningTimeout = TimeSpan.FromSeconds(5),
                 LoadPreviousValue = true,
-                EvictSynchronizedKeyBufferSize = 6,
                 CopyOnRead = true,
                 WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
                 WriteBehindFlushSize = 7,
-                EvictSynchronized = true,
                 AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
                 AtomicityMode = CacheAtomicityMode.Atomic,
                 Backups = 8,
                 CacheMode = CacheMode.Partitioned,
                 EagerTtl = true,
-                EvictSynchronizedConcurrencyLevel = 9,
-                EvictSynchronizedTimeout = TimeSpan.FromSeconds(10),
                 Invalidate = true,
                 KeepBinaryInStore = true,
                 LockTimeout = TimeSpan.FromSeconds(11),
-                MaxEvictionOverflowRatio = 0.5f,
                 ReadFromBackup = true,
                 RebalanceBatchSize = 12,
                 RebalanceDelay = TimeSpan.FromSeconds(13),
@@ -579,22 +563,17 @@ namespace Apache.Ignite.Core.Tests.Cache
                 WriteBehindFlushThreadCount = 4,
                 LongQueryWarningTimeout = TimeSpan.FromSeconds(5),
                 LoadPreviousValue = true,
-                EvictSynchronizedKeyBufferSize = 6,
                 CopyOnRead = true,
                 WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
                 WriteBehindFlushSize = 7,
-                EvictSynchronized = true,
                 AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Clock,
                 AtomicityMode = CacheAtomicityMode.Transactional,
                 Backups = 8,
                 CacheMode = CacheMode.Partitioned,
                 EagerTtl = true,
-                EvictSynchronizedConcurrencyLevel = 9,
-                EvictSynchronizedTimeout = TimeSpan.FromSeconds(10),
                 Invalidate = true,
                 KeepBinaryInStore = true,
                 LockTimeout = TimeSpan.FromSeconds(11),
-                MaxEvictionOverflowRatio = 0.5f,
                 ReadFromBackup = true,
                 RebalanceBatchSize = 12,
                 RebalanceDelay = TimeSpan.FromSeconds(13),
@@ -649,7 +628,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     MaxMemorySize = 2501,
                     BatchSize = 33
                 },
-                AffinityFunction = new FairAffinityFunction
+                AffinityFunction = new RendezvousAffinityFunction
                 {
                     Partitions = 113,
                     ExcludeNeighbors = false

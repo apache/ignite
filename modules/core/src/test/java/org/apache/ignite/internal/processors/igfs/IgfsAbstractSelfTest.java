@@ -682,7 +682,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         assert dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) > 0;
 
-        igfs.format();
+        igfs.clear();
 
         // Ensure format is not propagated to the secondary file system.
         if (dual) {
@@ -745,7 +745,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     private void checkRootPropertyUpdate(String prop, String setVal, String expGetVal) throws Exception {
         igfs.update(IgfsPath.ROOT, Collections.singletonMap(prop, setVal));
 
-        igfs.format();
+        igfs.clear();
 
         IgfsFile file = igfs.info(IgfsPath.ROOT);
 

@@ -23,8 +23,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTe
 import org.apache.ignite.internal.processors.cache.IgniteCacheTopologySafeGetSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSizeFailoverTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxFairAffinityNodeJoinTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxNearDisabledPutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtAtomicRemoveFailureTest;
@@ -85,10 +83,8 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
         suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
-        suite.addTestSuite(IgniteCacheTxFairAffinityNodeJoinTest.class);
 
         suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
-        suite.addTestSuite(IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest.class);
 
         suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
 

@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -371,7 +370,6 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
             ccfg.setName("cache-3");
             ccfg.setAtomicityMode(ATOMIC);
             ccfg.setBackups(1);
-            ccfg.setAffinity(new FairAffinityFunction());
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             res.add(ccfg);
@@ -405,7 +403,6 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
             ccfg.setName("cache-4");
             ccfg.setAtomicityMode(TRANSACTIONAL);
             ccfg.setBackups(1);
-            ccfg.setAffinity(new FairAffinityFunction());
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             res.add(ccfg);
