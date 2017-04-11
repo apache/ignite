@@ -180,8 +180,7 @@ public class PlatformConfigurationUtils {
         if (qryEntCnt > 0) {
             Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
 
-            for (int i
-                 = 0; i < qryEntCnt; i++)
+            for (int i = 0; i < qryEntCnt; i++)
                 entities.add(readQueryEntity(in));
 
             ccfg.setQueryEntities(entities);
