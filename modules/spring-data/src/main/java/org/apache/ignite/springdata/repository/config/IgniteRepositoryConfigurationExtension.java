@@ -16,6 +16,10 @@
  */
 package org.apache.ignite.springdata.repository.config;
 
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.springdata.repository.IgniteRepository;
+import org.apache.ignite.springdata.repository.support.IgniteRepositoryFactoryBean;
 import org.springframework.data.keyvalue.repository.config.KeyValueRepositoryConfigurationExtension;
 import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 
@@ -36,5 +40,15 @@ public class IgniteRepositoryConfigurationExtension extends KeyValueRepositoryCo
     /** {@inheritDoc} */
     @Override protected String getDefaultKeyValueTemplateRef() {
         return "igniteKeyValueTemplate";
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getRepositoryFactoryClassName() {
+        return IgniteRepositoryFactoryBean.class.getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Collection<Class<?>> getIdentifyingTypes() {
+        return Collections.<Class<?>>singleton(IgniteRepository.class);
     }
 }

@@ -185,7 +185,7 @@ public class IgniteKeyValueAdapter extends AbstractKeyValueAdapter {
         if (!keyspace.getClass().equals(String.class))
             throw new IgniteException("Keyspace must be of String type");
 
-        return ignite.cache((String)keyspace);
+        return ignite.getOrCreateCache((String)keyspace);
     }
 
     /**
