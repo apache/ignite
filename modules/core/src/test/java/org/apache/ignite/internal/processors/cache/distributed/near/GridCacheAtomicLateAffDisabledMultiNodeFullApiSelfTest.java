@@ -22,8 +22,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  *
  */
-public class GridCacheAtomicLateAffDisabledPrimaryWriteOrderMultiNodeFullApiSelfTest extends
-    GridCacheAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest {
+public class GridCacheAtomicLateAffDisabledMultiNodeFullApiSelfTest extends
+    GridCacheAtomicMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);

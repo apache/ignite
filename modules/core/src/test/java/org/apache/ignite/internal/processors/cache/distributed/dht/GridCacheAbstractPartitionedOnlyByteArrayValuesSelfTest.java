@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractPartitionedByteArrayValuesSelfTest;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -59,19 +58,16 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
 
         atomicCacheCfg.setName(CACHE_ATOMIC);
         atomicCacheCfg.setAtomicityMode(ATOMIC);
-        atomicCacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
         CacheConfiguration atomicOffheapCacheCfg = offheapCacheConfiguration0();
 
         atomicOffheapCacheCfg.setName(CACHE_ATOMIC_OFFHEAP);
         atomicOffheapCacheCfg.setAtomicityMode(ATOMIC);
-        atomicOffheapCacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
         CacheConfiguration atomicOffheapTieredCacheCfg = offheapTieredCacheConfiguration();
 
         atomicOffheapTieredCacheCfg.setName(CACHE_ATOMIC_OFFHEAP_TIERED);
         atomicOffheapTieredCacheCfg.setAtomicityMode(ATOMIC);
-        atomicOffheapTieredCacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
         c.setCacheConfiguration(cacheConfiguration(),
             offheapCacheConfiguration(),

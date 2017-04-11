@@ -15,33 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import org.apache.ignite.cache.CacheMode;
 
 /**
- * Tests {@link CacheInterceptor}.
+ *
  */
-public class GridCacheInterceptorAtomicPrimaryWriteOrderSelfTest extends GridCacheInterceptorAbstractSelfTest {
+public class CacheContinuousQueryAsyncFailoverAtomicSelfTest
+    extends CacheContinuousQueryFailoverAbstractSelfTest {
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+        return CacheAtomicityMode.ATOMIC;
     }
 
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override protected CacheAtomicWriteOrderMode writeOrderMode() {
-        return PRIMARY;
+    @Override protected boolean asyncCallback() {
+        return true;
     }
 }

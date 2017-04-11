@@ -106,7 +106,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
@@ -315,7 +314,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Concurrent invoke can not be used for ATOMIC cache in CLOCK mode.
         if (atomicityMode() == ATOMIC &&
             cacheMode() != LOCAL &&
-            cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode() == CLOCK)
+            false)
             return;
 
         final Set<String> keys = Collections.singleton("myKey");
@@ -3351,8 +3350,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         checkSize(F.asSet("key1", "key2", "key3"));
 
-        atomicClockModeDelay(cache);
-
         IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
         if (async) {
@@ -3374,8 +3371,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 2);
         cache.put("key3", 3);
 
-        atomicClockModeDelay(cache);
-
         if (async) {
             IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
 
@@ -3394,8 +3389,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < entryCnt; i++)
             assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
-
-        atomicClockModeDelay(cache);
 
         if (async) {
             asyncCache.removeAll();
@@ -3422,8 +3415,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         checkSize(F.asSet("key1", "key2", "key3"));
 
-        atomicClockModeDelay(cache);
-
         if (async)
             cache.removeAllAsync(F.asSet("key1", "key2")).get();
         else
@@ -3440,8 +3431,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 2);
         cache.put("key3", 3);
 
-        atomicClockModeDelay(cache);
-
         if (async)
             jcache(gridCount() > 1 ? 1 : 0).removeAllAsync().get();
         else
@@ -3455,8 +3444,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < entryCnt; i++)
             assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
-
-        atomicClockModeDelay(cache);
 
         if (async)
             cache.removeAllAsync().get();
