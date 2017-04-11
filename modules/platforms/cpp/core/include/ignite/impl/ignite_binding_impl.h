@@ -43,13 +43,16 @@ namespace ignite
             typedef int64_t(Callback)(binary::BinaryReaderImpl&, binary::BinaryWriterImpl&, IgniteEnvironment&);
 
         public:
-            enum CallbackType
+            struct CallbackType
             {
-                CACHE_ENTRY_PROCESSOR_APPLY = 1,
+                enum Type
+                {
+                    CACHE_ENTRY_PROCESSOR_APPLY = 1,
 
-                CACHE_ENTRY_FILTER_CREATE = 2,
+                    CACHE_ENTRY_FILTER_CREATE = 2,
 
-                CACHE_ENTRY_FILTER_APPLY = 3,
+                    CACHE_ENTRY_FILTER_APPLY = 3,
+                };
             };
 
             /**
