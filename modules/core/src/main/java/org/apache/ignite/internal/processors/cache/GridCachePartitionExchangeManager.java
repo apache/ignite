@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -384,27 +385,63 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++) {
                 final int idx = cnt;
 
+                // rebQ & rebOwn provides guaranties (efficiently) of maximum threads amount can be used at rebalancing
+                // specified at IgniteConfiguration.getRebalanceThreadPoolSize()
+                final ConcurrentLinkedDeque<T2<GridCacheMessage, UUID>> rebQ = new ConcurrentLinkedDeque<>();
+                final AtomicBoolean rebOwn = new AtomicBoolean();
+
                 cctx.io().addOrderedHandler(rebalanceTopic(cnt), new CI2<UUID, GridCacheMessage>() {
-                    @Override public void apply(final UUID id, final GridCacheMessage m) {
-                        if (!enterBusy())
-                            return;
+                    @Override public void apply(final UUID id0, final GridCacheMessage m0) {
+                        rebQ.add(new T2<>(m0, id0));
 
-                        try {
-                            GridCacheContext cacheCtx = cctx.cacheContext(m.cacheId);
+                        if (!rebOwn.get() && rebOwn.compareAndSet(false, true)) {
+                            boolean locked = true;
 
-                            if (cacheCtx != null) {
-                                if (m instanceof GridDhtPartitionSupplyMessage)
-                                    cacheCtx.preloader().handleSupplyMessage(
-                                        idx, id, (GridDhtPartitionSupplyMessage)m);
-                                else if (m instanceof GridDhtPartitionDemandMessage)
-                                    cacheCtx.preloader().handleDemandMessage(
-                                        idx, id, (GridDhtPartitionDemandMessage)m);
-                                else
-                                    U.error(log, "Unsupported message type: " + m.getClass().getName());
+                            while (locked || !rebQ.isEmpty()) {
+                                if (!locked && !rebOwn.compareAndSet(false, true))
+                                    return;
+
+                                try {
+                                    T2<GridCacheMessage, UUID> t = rebQ.poll();
+
+                                    if (t != null) {
+                                        GridCacheMessage m = t.get1();
+                                        UUID id = t.get2();
+
+                                        if (!enterBusy())
+                                            return;
+
+                                        try {
+                                            GridCacheContext cacheCtx = cctx.cacheContext(m.cacheId);
+
+                                            if (cacheCtx != null) {
+                                                if (m instanceof GridDhtPartitionSupplyMessage)
+                                                    cacheCtx.preloader().handleSupplyMessage(
+                                                        idx, id, (GridDhtPartitionSupplyMessage)m);
+                                                else if (m instanceof GridDhtPartitionDemandMessage)
+                                                    cacheCtx.preloader().handleDemandMessage(
+                                                        idx, id, (GridDhtPartitionDemandMessage)m);
+                                                else
+                                                    U.error(log, "Unsupported message type: " + m.getClass().getName());
+                                            }
+                                        }
+                                        finally {
+                                            leaveBusy();
+                                        }
+                                    }
+                                }
+                                finally {
+                                    if (!rebQ.isEmpty())
+                                        locked = true;
+                                    else {
+                                        boolean res = rebOwn.compareAndSet(true, false);
+
+                                        assert res;
+
+                                        locked = false;
+                                    }
+                                }
                             }
-                        }
-                        finally {
-                            leaveBusy();
                         }
                     }
                 });
