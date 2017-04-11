@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
     using NUnit.Framework;
@@ -236,7 +235,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             localCache.Get(1);
             
             // Wait for metrics to propagate.
-            Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
 
             var localMetrics = func(localCache);
             Assert.IsTrue(localMetrics.IsStatisticsEnabled);

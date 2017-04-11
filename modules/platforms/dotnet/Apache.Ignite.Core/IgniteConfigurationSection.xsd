@@ -911,11 +911,6 @@
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="heartbeatFrequency" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>Delay between issuing of heartbeat messages. SPI sends heartbeat messages in configurable time interval to other nodes to notify them about its state.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                         <xs:attribute name="ipFinderCleanFrequency" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>IP finder clean frequency.</xs:documentation>

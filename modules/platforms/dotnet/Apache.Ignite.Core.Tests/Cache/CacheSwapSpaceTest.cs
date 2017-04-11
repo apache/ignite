@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
-    using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.SwapSpace.File;
     using NUnit.Framework;
@@ -108,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CollectionAssert.IsNotEmpty(files);
                 
                 // Wait for metrics update and check metrics.
-                Thread.Sleep(((TcpDiscoverySpi) ignite.GetConfiguration().DiscoverySpi).HeartbeatFrequency);
+                Thread.Sleep(ignite.GetConfiguration().MetricsUpdateFrequency);
 
                 var metrics = cache.GetLocalMetrics();
 
