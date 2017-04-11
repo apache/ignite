@@ -249,7 +249,7 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(QueryPerson)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryPerson)
 
-            void Write(BinaryWriter& writer, QueryPerson obj)
+            static void Write(BinaryWriter& writer, const QueryPerson& obj)
             {
                 writer.WriteString("name", obj.GetName());
                 writer.WriteInt32("age", obj.GetAge());
@@ -257,14 +257,14 @@ namespace ignite
                 writer.WriteTimestamp("recordCreated", obj.GetCreationTime());
             }
 
-            QueryPerson Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, QueryPerson& dst)
             {
                 std::string name = reader.ReadString("name");
                 int age = reader.ReadInt32("age");
                 Date birthday = reader.ReadDate("birthday");
                 Timestamp recordCreated = reader.ReadTimestamp("recordCreated");
             
-                return QueryPerson(name, age, birthday, recordCreated);
+                dst = QueryPerson(name, age, birthday, recordCreated);
             }
         IGNITE_BINARY_TYPE_END
 
@@ -279,18 +279,18 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(QueryRelation)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryRelation)
 
-            void Write(BinaryWriter& writer, QueryRelation obj)
+            static void Write(BinaryWriter& writer, QueryRelation obj)
             {
                 writer.WriteInt32("personId", obj.GetPersonId());
                 writer.WriteInt32("someVal", obj.GetHobbyId());
             }
 
-            QueryRelation Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, QueryRelation& dst)
             {
                 int32_t personId = reader.ReadInt32("personId");
                 int32_t someVal = reader.ReadInt32("someVal");
 
-                return QueryRelation(personId, someVal);
+                dst = QueryRelation(personId, someVal);
             }
         IGNITE_BINARY_TYPE_END
     }

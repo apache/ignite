@@ -916,6 +916,8 @@ namespace ignite
 
                         case IGNITE_HDR_FULL:
                         {
+                            typedef ignite::binary::BinaryType<T> BType;
+
                             int8_t protoVer = stream->ReadInt8();
 
                             if (protoVer != IGNITE_PROTO_VER) {
@@ -976,14 +978,14 @@ namespace ignite
 
                             bool usrType = (flags & IGNITE_BINARY_FLAG_USER_TYPE) != 0;
 
-                            ignite::binary::BinaryType<T> type;
-                            TemplatedBinaryIdResolver<T> idRslvr(type);
+                            TemplatedBinaryIdResolver<T> idRslvr;
                             BinaryReaderImpl readerImpl(stream, &idRslvr, pos, usrType,
                                                         typeId, hashCode, len, rawOff,
                                                         footerBegin, footerEnd, schemaType);
                             ignite::binary::BinaryReader reader(&readerImpl);
 
-                            T val = type.Read(reader);
+                            T val;
+                            BType::Read(reader, val);
 
                             stream->Position(pos + len);
 
@@ -1004,9 +1006,11 @@ namespace ignite
                 template<typename T>
                 T GetNull() const
                 {
-                    ignite::binary::BinaryType<T> type;
+                    T res;
 
-                    return type.GetNull();
+                    ignite::binary::BinaryType<T>::GetNull(res);
+
+                    return res;
                 }
 
                 /**
@@ -1439,6 +1443,72 @@ namespace ignite
 
             template<>
             std::string IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<std::string>();
+
+            template<>
+            inline int8_t BinaryReaderImpl::GetNull() const
+            {
+                return 0;
+            }
+
+            template<>
+            inline int16_t BinaryReaderImpl::GetNull() const
+            {
+                return 0;
+            }
+
+            template<>
+            inline int32_t BinaryReaderImpl::GetNull() const
+            {
+                return 0;
+            }
+
+            template<>
+            inline int64_t BinaryReaderImpl::GetNull() const
+            {
+                return 0;
+            }
+
+            template<>
+            inline float BinaryReaderImpl::GetNull() const
+            {
+                return 0.0f;
+            }
+
+            template<>
+            inline double BinaryReaderImpl::GetNull() const
+            {
+                return 0.0;
+            }
+
+            template<>
+            inline Guid BinaryReaderImpl::GetNull() const
+            {
+                return Guid();
+            }
+
+            template<>
+            inline Date BinaryReaderImpl::GetNull() const
+            {
+                return Date();
+            }
+
+            template<>
+            inline Timestamp BinaryReaderImpl::GetNull() const
+            {
+                return Timestamp();
+            }
+
+            template<>
+            inline Time BinaryReaderImpl::GetNull() const
+            {
+                return Time();
+            }
+
+            template<>
+            inline std::string BinaryReaderImpl::GetNull() const
+            {
+                return std::string();
+            }
         }
     }
 }
