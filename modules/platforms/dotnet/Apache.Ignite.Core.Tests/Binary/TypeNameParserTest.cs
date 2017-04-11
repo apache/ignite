@@ -120,6 +120,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`["));
             Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`]"));
             Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`[ ]"));
+            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x,"));
+            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`x"));
+            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`2[x"));
+            Assert.Throws<IgniteException>(() => TypeNameParser.Parse("x`2xx"));
         }
 
         /// <summary>
