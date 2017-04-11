@@ -458,7 +458,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 if (reservations == 0 && shouldBeRenting)
                     rent(true);
 
-                tryEvictAsync(false);
+                try {
+                    tryEvict();
+                }
+                catch (NodeStoppingException ignore) {
+                    // Node is stopping.
+                }
 
                 break;
             }

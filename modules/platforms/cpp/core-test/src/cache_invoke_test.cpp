@@ -396,7 +396,11 @@ struct CacheInvokeTestSuiteFixture
      * Constructor.
      */
     CacheInvokeTestSuiteFixture() :
+#ifdef IGNITE_TESTS_32
+        node(ignite_test::StartNode("cache-query-32.xml", "InvokeTest"))
+#else
         node(ignite_test::StartNode("cache-query.xml", "InvokeTest"))
+#endif
     {
         // No-op.
     }

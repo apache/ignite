@@ -718,8 +718,13 @@ BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
 
 BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
 {
+#ifdef IGNITE_TESTS_32
+    Ignite node2 = ignite_test::StartNode("cache-query-continuous-32.xml", "node-02");
+    Ignite node3 = ignite_test::StartNode("cache-query-continuous-32.xml", "node-03");
+#else
     Ignite node2 = ignite_test::StartNode("cache-query-continuous.xml", "node-02");
     Ignite node3 = ignite_test::StartNode("cache-query-continuous.xml", "node-03");
+#endif
 
     node.GetBinding().RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
 

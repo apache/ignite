@@ -554,35 +554,6 @@
                                             <xs:documentation>Write synchronization mode. This mode controls whether the main caller should wait for update on other nodes to complete or not.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
-                                    <xs:attribute name="evictSynchronized" type="xs:boolean">
-                                        <xs:annotation>
-                                            <xs:documentation>
-                                                Flag indicating whether eviction is synchronized between primary, backup and near nodes. If this parameter is true and swap is disabled then ICache.LocalEvict will involve all nodes where an entry is kept. If this property is set to false then eviction is done independently on different cache nodes. Note that it's not recommended to set this value to true if cache store is configured since it will allow to significantly improve cache performance.
-                                            </xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>Size of the key buffer for synchronized evictions.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="evictSynchronizedConcurrencyLevel" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>
-                                                Concurrency level for synchronized evictions. This flag only makes sense with EvictSynchronized set to true. When synchronized evictions are enabled, it is possible that local eviction policy will try to evict entries faster than evictions can be synchronized with backup or near nodes. This value specifies how many concurrent synchronous eviction sessions should be allowed before the system is forced to wait and let synchronous evictions catch up with the eviction policy.
-                                            </xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="evictSynchronizedTimeout" type="xs:string">
-                                        <xs:annotation>
-                                            <xs:documentation>Timeout for synchronized evictions</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="maxEvictionOverflowRatio" type="xs:decimal">
-                                        <xs:annotation>
-                                            <xs:documentation>This value denotes the maximum size of eviction queue in percents of cache size in case of distributed cache (replicated and partitioned) and using synchronized eviction</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
                                     <xs:attribute name="startSize" type="xs:int">
                                         <xs:annotation>
                                             <xs:documentation>Initial cache size which will be used to pre-create internal hash table after start.</xs:documentation>

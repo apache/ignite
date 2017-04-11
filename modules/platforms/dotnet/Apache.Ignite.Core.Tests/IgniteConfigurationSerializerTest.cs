@@ -33,7 +33,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Xml.Linq;
     using System.Xml.Schema;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
@@ -616,17 +615,12 @@ namespace Apache.Ignite.Core.Tests
                         CacheStoreFactory = new TestCacheStoreFactory(),
                         CopyOnRead = false,
                         EagerTtl = false,
-                        EvictSynchronized = true,
-                        EvictSynchronizedConcurrencyLevel = 13,
-                        EvictSynchronizedKeyBufferSize = 14,
-                        EvictSynchronizedTimeout = TimeSpan.FromMinutes(3),
                         Invalidate = true,
                         KeepBinaryInStore = true,
                         LoadPreviousValue = true,
                         LockTimeout = TimeSpan.FromSeconds(56),
                         LongQueryWarningTimeout = TimeSpan.FromSeconds(99),
                         MaxConcurrentAsyncOperations = 24,
-                        MaxEvictionOverflowRatio = 5.6F,
                         QueryEntities = new[]
                         {
                             new QueryEntity
@@ -674,7 +668,7 @@ namespace Apache.Ignite.Core.Tests
                         {
                             BatchSize = 18, MaxMemorySize = 1023, MaxSize = 554
                         },
-                        AffinityFunction = new FairAffinityFunction
+                        AffinityFunction = new RendezvousAffinityFunction
                         {
                             ExcludeNeighbors = true,
                             Partitions = 48

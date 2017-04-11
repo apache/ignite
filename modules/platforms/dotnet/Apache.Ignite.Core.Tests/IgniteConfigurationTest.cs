@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
@@ -74,7 +73,6 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
             CheckDefaultValueAttributes(new TcpCommunicationSpi());
             CheckDefaultValueAttributes(new RendezvousAffinityFunction());
-            CheckDefaultValueAttributes(new FairAffinityFunction());
             CheckDefaultValueAttributes(new NearCacheConfiguration());
             CheckDefaultValueAttributes(new FifoEvictionPolicy());
             CheckDefaultValueAttributes(new LruEvictionPolicy());
