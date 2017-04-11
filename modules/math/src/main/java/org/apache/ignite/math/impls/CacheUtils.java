@@ -52,7 +52,7 @@ public class CacheUtils {
 
         /**
          *
-         * @return
+         *
          */
         public Cache.Entry<K, V> entry() {
             return entry;
@@ -60,7 +60,7 @@ public class CacheUtils {
 
         /**
          *
-         * @return
+         *
          */
         public IgniteCache<K, V> cache() {
             return cache;
@@ -79,7 +79,7 @@ public class CacheUtils {
      * @param cacheName
      * @param k
      * @param <K>
-     * @return
+     *
      */
     public static <K> ClusterGroup groupForKey(String cacheName, K k) {
         return ignite().cluster().forNode(ignite().affinity(cacheName).mapKeyToNode(k));
@@ -92,7 +92,7 @@ public class CacheUtils {
      * @param valMapper
      * @param <K>
      * @param <V>
-     * @return
+     *
      */
     public static <K, V> double sum(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         Collection<Double> subSums = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
@@ -111,7 +111,7 @@ public class CacheUtils {
     /**
      *
      * @param cacheName
-     * @return
+     *
      */
     public static <K, V> double sparseSum(String cacheName) {
         Collection<Double> subSums = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
@@ -128,7 +128,7 @@ public class CacheUtils {
     /**
      *
      * @param c
-     * @return
+     *
      */
     private static double sum(Collection<Double> c) {
         double sum = 0.0;
@@ -146,7 +146,7 @@ public class CacheUtils {
      * @param valMapper
      * @param <K>
      * @param <V>
-     * @return
+     *
      */
     public static <K, V> double min(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         Collection<Double> mins = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
@@ -168,7 +168,7 @@ public class CacheUtils {
     /**
      *
      * @param cacheName
-     * @return
+     *
      */
     public static <K, V> double sparseMin(String cacheName) {
         Collection<Double> mins = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
@@ -188,7 +188,7 @@ public class CacheUtils {
     /**
      *
      * @param cacheName
-     * @return
+     *
      */
     public static <K, V> double sparseMax(String cacheName) {
         Collection<Double> maxes = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
@@ -212,7 +212,7 @@ public class CacheUtils {
      * @param valMapper
      * @param <K>
      * @param <V>
-     * @return
+     *
      */
     public static <K, V> double max(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         Collection<Double> maxes = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
@@ -306,7 +306,7 @@ public class CacheUtils {
      * @param <K>
      * @param <V>
      * @param <A>
-     * @return
+     *
      */
     public static <K, V, A> Collection<A> fold(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
         return bcast(cacheName, () -> {
@@ -350,7 +350,7 @@ public class CacheUtils {
      * @param cacheName
      * @param call
      * @param <A>
-     * @return
+     *
      */
     public static <A> Collection<A> bcast(String cacheName, IgniteCallable<A> call) {
         return ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(call);

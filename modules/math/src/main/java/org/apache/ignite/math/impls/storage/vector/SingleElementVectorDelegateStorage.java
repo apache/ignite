@@ -51,7 +51,7 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     public int index() {
         return idx;
@@ -59,7 +59,7 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     public Vector delegate() {
         return vec;

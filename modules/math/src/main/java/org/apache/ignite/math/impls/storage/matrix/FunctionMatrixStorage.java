@@ -82,7 +82,6 @@ public class FunctionMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public IntIntToDoubleFunction getFunction() {
         return getFunc;
@@ -90,7 +89,6 @@ public class FunctionMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public IntIntDoubleToVoidFunction setFunction() {
         return setFunc;

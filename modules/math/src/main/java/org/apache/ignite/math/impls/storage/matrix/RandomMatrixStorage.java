@@ -75,7 +75,6 @@ public class RandomMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public boolean isFastHash() {
         return fastHash;

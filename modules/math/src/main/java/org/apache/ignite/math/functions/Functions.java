@@ -89,7 +89,7 @@ public final class Functions {
      * Function that returns <tt>a + b</tt>. <tt>a</tt> is a variable, <tt>b</tt> is fixed.
      *
      * @param b
-     * @return
+     *
      */
     public static IgniteDoubleFunction<Double> plus(final double b) {
         return (a) -> a + b;
@@ -99,7 +99,7 @@ public final class Functions {
      * Function that returns <tt>a * b</tt>. <tt>a</tt> is a variable, <tt>b</tt> is fixed.
      *
      * @param b
-     * @return
+     *
      */
     public static IgniteDoubleFunction<Double> mult(final double b) {
         return (a) -> a * b;
@@ -129,7 +129,7 @@ public final class Functions {
     /**
      * 
      * @param b
-     * @return
+     *
      */
     public static IgniteDoubleFunction<Double> pow(final double b) {
         return (a) -> {

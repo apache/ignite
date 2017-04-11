@@ -72,7 +72,7 @@ public class MatrixVectorStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     int row() {
         return row;
@@ -80,7 +80,7 @@ public class MatrixVectorStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     int column() {
         return col;
@@ -88,7 +88,7 @@ public class MatrixVectorStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     int rowStride() {
         return rowStride;
@@ -96,7 +96,7 @@ public class MatrixVectorStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     int columnStride() {
         return colStride;
@@ -104,7 +104,7 @@ public class MatrixVectorStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     private int getSize() {
         if (rowStride != 0 && colStride != 0) {

@@ -59,7 +59,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public int[] rowPivot() {
         return rowPivot;
@@ -67,7 +66,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public int[] columnPivot() {
         return colPivot;
@@ -75,7 +73,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public int[] rowUnpivot() {
         return rowUnpivot;
@@ -83,7 +80,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public int[] columnUnpivot() {
         return colUnpivot;
@@ -234,7 +230,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
     /**
      *
      * @param n
-     * @return
      */
     private static int[] identityPivot(int n) {
         int[] pivot = new int[n];
@@ -248,7 +243,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
     /**
      *
      * @param pivot
-     * @return
      */
     private static int[] invert(int[] pivot) {
         int[] x = new int[pivot.length];

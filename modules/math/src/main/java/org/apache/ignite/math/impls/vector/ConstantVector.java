@@ -45,7 +45,7 @@ public class ConstantVector extends AbstractReadOnlyVector {
 
     /**
      *
-     * @return
+     *
      */
     private ConstantVectorStorage storage() {
         return (ConstantVectorStorage)getStorage();

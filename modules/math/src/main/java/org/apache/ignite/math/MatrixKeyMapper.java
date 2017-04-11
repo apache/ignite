@@ -25,7 +25,7 @@ public interface MatrixKeyMapper<K> extends KeyMapper<K> {
      * 
      * @param x
      * @param y
-     * @return
+     *
      */
     public K apply(int x, int y);
 }

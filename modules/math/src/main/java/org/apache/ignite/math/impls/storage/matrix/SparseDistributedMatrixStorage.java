@@ -62,7 +62,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /**
      *
-     * @return
+     *
      */
     private IgniteCache<Integer, Map<Integer, Double>> newCache() {
         CacheConfiguration<Integer, Map<Integer, Double>> cfg = new CacheConfiguration<>();
@@ -94,7 +94,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /**
      * 
-     * @return
+     *
      */
     public IgniteCache<Integer, Map<Integer, Double>> cache() {
         return cache;
@@ -102,7 +102,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /**
      *
-     * @return
+     *
      */
     public int accessMode() {
         return acsMode;
@@ -110,7 +110,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /**
      * 
-     * @return
+     *
      */
     public int storageMode() {
         return stoMode;

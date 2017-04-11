@@ -54,7 +54,7 @@ public class CacheVector<K, V> extends AbstractVector {
     /**
      *
      * @param mapper
-     * @return
+     *
      */
     private Vector mapOverCache(IgniteFunction<Double, Double> mapper) {
         CacheVectorStorage<K, V> sto = storage();
@@ -118,7 +118,7 @@ public class CacheVector<K, V> extends AbstractVector {
 
     /**
      *
-     * @return
+     *
      */
     @SuppressWarnings({"unchecked"})
     private CacheVectorStorage<K, V> storage() {

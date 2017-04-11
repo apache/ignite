@@ -49,7 +49,7 @@ public class ConstantVectorStorage implements VectorStorage {
 
     /**
      * 
-     * @return
+     *
      */
     public double constant() {
         return val;

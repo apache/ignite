@@ -55,7 +55,7 @@ public class TracerTest {
     /**
      *
      * @param size
-     * @return
+     *
      */
     private Vector makeRandomVector(int size) {
         DenseLocalOnHeapVector vec = new DenseLocalOnHeapVector(size);
@@ -69,7 +69,7 @@ public class TracerTest {
      *
      * @param rows
      * @param cols
-     * @return
+     *
      */
     private Matrix makeRandomMatrix(int rows, int cols) {
         DenseLocalOnHeapMatrix mtx = new DenseLocalOnHeapMatrix(rows, cols);

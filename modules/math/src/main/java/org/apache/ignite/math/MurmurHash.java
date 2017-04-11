@@ -186,7 +186,7 @@ public class MurmurHash {
      *
      * @param data
      * @param seed
-     * @return
+     *
      */
     public static long hash64A(byte[] data, int seed) {
         return hash64A(ByteBuffer.wrap(data), seed);
@@ -198,7 +198,7 @@ public class MurmurHash {
      * @param offset
      * @param length
      * @param seed
-     * @return
+     *
      */
     public static long hash64A(byte[] data, int offset, int length, int seed) {
         return hash64A(ByteBuffer.wrap(data, offset, length), seed);
@@ -208,7 +208,7 @@ public class MurmurHash {
      *
      * @param buf
      * @param seed
-     * @return
+     *
      */
     public static long hash64A(ByteBuffer buf, int seed) {
         ByteOrder byteOrder = buf.order();

@@ -63,7 +63,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
         return this;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector times(double x) {
         if (x == 0.0)
             return like(size()).assign(0);

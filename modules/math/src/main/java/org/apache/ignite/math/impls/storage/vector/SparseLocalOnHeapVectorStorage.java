@@ -60,7 +60,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
 
     /**
      *
-     * @return
+     *
      */
     public int getAccessMode() {
         return acsMode;

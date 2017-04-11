@@ -98,7 +98,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
         return new DenseLocalOnHeapMatrix(rows, cols);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         return new DenseLocalOnHeapVector(crd);
     }

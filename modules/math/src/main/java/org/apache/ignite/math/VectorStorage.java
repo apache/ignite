@@ -25,14 +25,14 @@ import java.io.*;
 public interface VectorStorage extends Externalizable, StorageOpsMetrics, Destroyable {
     /**
      *
-     * @return
+     *
      */
     public int size();
 
     /**
      *
      * @param i
-     * @return
+     *
      */
     public double get(int i);
 

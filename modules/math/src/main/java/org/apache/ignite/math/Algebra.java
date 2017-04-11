@@ -484,7 +484,7 @@ public class Algebra extends Constants {
 
     /**
      * Evaluates the given polynomial of degree <tt>N</tt> at <tt>x</tt>, assuming coefficient of N is 1.0. Otherwise same
-     * as {@see #evalPoly}.
+     * as {@link #evalPoly(double, double[], int)}.
      * <pre>
      *                     2          N
      * y  =  C  + C x + C x  +...+ C x
@@ -498,7 +498,7 @@ public class Algebra extends Constants {
      * coef[0] = C  , ..., coef[N-1] = C  .
      *            N-1                   0
      *
-     * Calling arguments are otherwise the same as {@see #evalPoly}.
+     * Calling arguments are otherwise the same as {@link #evalPoly(double, double[], int)}.
      * </pre>
      * In the interest of speed, there are no checks for out of bounds arithmetic.
      *

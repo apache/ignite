@@ -61,7 +61,6 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
     /**
      * 
-     * @return
      */
     public MatrixStorage delegate() {
         return sto;
@@ -69,7 +68,6 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public int rowOffset() {
         return rowOff;
@@ -77,7 +75,6 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public int columnOffset() {
         return colOff;
@@ -85,7 +82,6 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public int rowsLength() {
         return rows;
@@ -93,7 +89,6 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
     /**
      *
-     * @return
      */
     public int columnsLength() {
         return cols;

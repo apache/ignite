@@ -61,7 +61,7 @@ public class PivotedVectorView extends AbstractVector {
 
     /**
      *
-     * @return
+     *
      */
     private PivotedVectorStorage storage() {
         return (PivotedVectorStorage)getStorage();
@@ -76,7 +76,7 @@ public class PivotedVectorView extends AbstractVector {
 
     /**
      *
-     * @return
+     *
      */
     public Vector getBaseVector() {
         return vec;
@@ -85,7 +85,7 @@ public class PivotedVectorView extends AbstractVector {
     /**
      *
      * @param i
-     * @return
+     *
      */
     public int pivot(int i) {
         return storage().pivot()[i];
@@ -94,7 +94,7 @@ public class PivotedVectorView extends AbstractVector {
     /**
      *
      * @param i
-     * @return
+     *
      */
     public int unpivot(int i) {
         return storage().unpivot()[i];
@@ -103,7 +103,7 @@ public class PivotedVectorView extends AbstractVector {
     /**
      *
      * @param idx
-     * @return
+     *
      */
     protected Vector.Element makeElement(int idx) {
         checkIndex(idx);

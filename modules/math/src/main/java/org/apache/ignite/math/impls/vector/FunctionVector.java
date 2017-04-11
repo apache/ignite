@@ -82,7 +82,7 @@ public class FunctionVector extends AbstractVector {
 
     /**
      *
-     * @return
+     *
      */
     private FunctionVectorStorage storage() {
         return (FunctionVectorStorage)getStorage();
@@ -100,7 +100,7 @@ public class FunctionVector extends AbstractVector {
         throw new UnsupportedOperationException();
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector times(double x) {
         if (x == 0.0)
             return like(size()).assign(0);

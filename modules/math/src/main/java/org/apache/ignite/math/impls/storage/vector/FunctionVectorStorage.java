@@ -56,7 +56,7 @@ public class FunctionVectorStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     public IgniteFunction<Integer, Double> getFunction() {
         return getFunc;
@@ -64,7 +64,7 @@ public class FunctionVectorStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     public IntDoubleToVoidFunction setFunction() {
         return setFunc;

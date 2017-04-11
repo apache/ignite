@@ -425,7 +425,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * 
      * @param off
      * @param len
-     * @return
+     *
      */
     Vector viewPart(int off, int len);
 

@@ -61,7 +61,7 @@ public class DiagonalMatrix extends AbstractMatrix {
 
     /**
      *
-     * @return
+     *
      */
     private DiagonalMatrixStorage storage() {
         return (DiagonalMatrixStorage)getStorage();

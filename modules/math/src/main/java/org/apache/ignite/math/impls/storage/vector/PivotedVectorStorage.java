@@ -32,7 +32,7 @@ public class PivotedVectorStorage implements VectorStorage {
     /**
      *
      * @param pivot
-     * @return
+     *
      */
     private static int[] reverse(int[] pivot) {
         int[] res = new int[pivot.length];
@@ -45,7 +45,7 @@ public class PivotedVectorStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     public int[] pivot() {
         return pivot;
@@ -53,7 +53,7 @@ public class PivotedVectorStorage implements VectorStorage {
 
     /**
      *
-     * @return
+     *
      */
     public int[] unpivot() {
         return unpivot;

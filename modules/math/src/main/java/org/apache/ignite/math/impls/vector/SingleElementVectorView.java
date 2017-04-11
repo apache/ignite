@@ -45,7 +45,7 @@ public class SingleElementVectorView extends AbstractVector {
 
     /**
      *
-     * @return
+     *
      */
     private SingleElementVectorDelegateStorage storage() {
         return (SingleElementVectorDelegateStorage)getStorage();

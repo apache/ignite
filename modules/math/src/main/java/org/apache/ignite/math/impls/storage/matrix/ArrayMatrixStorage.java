@@ -115,7 +115,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
         return data;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
@@ -123,7 +123,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
         out.writeObject(data);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
         cols = in.readInt();

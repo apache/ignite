@@ -245,7 +245,7 @@ public class Tracer {
      *
      * @param d
      * @param clr
-     * @return
+     *
      */
     static private String dataColorJson(double d, Color clr) {
         return "{" +
@@ -320,7 +320,7 @@ public class Tracer {
      *
      * @param vec Vector to string-ify.
      * @param fmt {@link String#format(Locale, String, Object...)} format.
-     * @return
+     *
      */
     private static String mkString(Vector vec, String fmt) {
         boolean first = true;
@@ -348,7 +348,7 @@ public class Tracer {
      *
      * @param vec Vector to JavaScript-ify.
      * @param cm Color mapper to user.
-     * @return
+     *
      */
     private static String mkJsArrayString(Vector vec, ColorMapper cm) {
         boolean first = true;
@@ -376,7 +376,7 @@ public class Tracer {
      *
      * @param mtx Matrix to JavaScript-ify.
      * @param cm Color mapper to user.
-     * @return
+     *
      */
     private static String mkJsArrayString(Matrix mtx, ColorMapper cm) {
         boolean first = true;
@@ -419,7 +419,7 @@ public class Tracer {
      *
      * @param mtx
      * @param fmt
-     * @return
+     *
      */
     private static String mkString(Matrix mtx, String fmt) {
         StringBuilder buf = new StringBuilder();

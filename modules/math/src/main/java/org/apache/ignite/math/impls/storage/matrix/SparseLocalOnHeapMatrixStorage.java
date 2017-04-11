@@ -57,7 +57,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
 
     /**
      *
-     * @return
+     *
      */
     public int getStorageMode() {
         return stoMode;
@@ -65,7 +65,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
 
     /**
      *
-     * @return
+     *
      */
     public int getAccessMode() {
         return acsMode;

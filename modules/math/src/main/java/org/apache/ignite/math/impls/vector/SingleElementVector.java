@@ -64,7 +64,7 @@ public class SingleElementVector extends AbstractVector {
 
     /**
      *
-     * @return
+     *
      */
     private SingleElementVectorStorage storage() {
         return (SingleElementVectorStorage)getStorage();

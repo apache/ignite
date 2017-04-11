@@ -93,7 +93,7 @@ public abstract class AbstractMatrix implements Matrix {
      *
      * @param row
      * @param col
-     * @return
+     *
      */
     protected double storageGet(int row, int col) {
         return sto.get(row, col);
@@ -165,7 +165,7 @@ public abstract class AbstractMatrix implements Matrix {
      *
      * @param row
      * @param col
-     * @return
+     *
      */
     private Element mkElement(int row, int col) {
         return new Element() {

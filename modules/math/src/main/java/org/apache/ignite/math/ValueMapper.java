@@ -18,14 +18,14 @@ public interface ValueMapper<V> extends Serializable {
     /**
      *
      * @param v
-     * @return
+     *
      */
     public V fromDouble(double v);
 
     /**
      *
      * @param v
-     * @return
+     *
      */
     public double toDouble(V  v);
 }

@@ -27,7 +27,6 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destro
      *
      * @param x
      * @param y
-     * @return
      */
     public double get(int x, int y);
 
@@ -41,13 +40,11 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destro
 
     /**
      *
-     * @return
      */
     public int columnSize();
 
     /**
      * 
-     * @return
      */
     public int rowSize();
 

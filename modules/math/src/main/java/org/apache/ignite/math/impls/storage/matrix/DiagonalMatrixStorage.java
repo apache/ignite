@@ -47,7 +47,6 @@ public class DiagonalMatrixStorage implements MatrixStorage {
 
     /**
      * 
-     * @return
      */
     public Vector diagonal() {
         return diagonal;

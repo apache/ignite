@@ -62,7 +62,7 @@ public class MatrixView extends AbstractMatrix {
 
     /**
      *
-     * @return
+     *
      */
     private MatrixDelegateStorage storage() {
         return (MatrixDelegateStorage)getStorage();

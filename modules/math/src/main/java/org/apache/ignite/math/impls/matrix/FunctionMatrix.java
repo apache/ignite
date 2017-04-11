@@ -68,7 +68,7 @@ public class FunctionMatrix extends AbstractMatrix {
 
     /**
      *
-     * @return
+     *
      */
     private FunctionMatrixStorage storage() {
         return (FunctionMatrixStorage)getStorage();
