@@ -47,7 +47,13 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         public string GetTypeName(string name)
         {
-            return IsSimpleName ? GetSimpleTypeName(name) : GetFullTypeName(name);
+            IgniteArgumentCheck.NotNullOrEmpty(name, "typeName");
+
+            var nameFunc = IsSimpleName
+                ? (Func<TypeNameParser, string>) (x => x.GetName())
+                : (x => x.GetFullName());
+
+            return BuildTypeName(TypeNameParser.Parse(name), new StringBuilder(), nameFunc).ToString();
         }
 
         /// <summary>
@@ -63,9 +69,7 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         private static string GetSimpleTypeName(string typeName)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            return BuildTypeName(TypeNameParser.Parse(typeName), new StringBuilder(), x => x.GetName()).ToString();
         }
 
         /// <summary>
