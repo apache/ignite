@@ -339,11 +339,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             return;
 
         try {
-            // Notify internal discovery listeners first.
-            notifyDiscoveryListeners(evt, discoCache);
-
-            // Notify all other registered listeners.
             record(evt);
+
+            notifyDiscoveryListeners(evt, discoCache);
         }
         finally {
             leaveBusy();
