@@ -429,6 +429,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         release0(0);
     }
 
+    /** {@inheritDoc} */
     @Override protected void release(int sizeChange, GridCacheEntryEx e) {
         release0(sizeChange);
     }
@@ -457,12 +458,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 if (reservations == 0 && shouldBeRenting)
                     rent(true);
 
-                try {
-                    tryEvict();
-                }
-                catch (NodeStoppingException ignore) {
-                    // No-op.
-                }
+                tryEvictAsync(false);
 
                 break;
             }

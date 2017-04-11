@@ -28,6 +28,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.database.CacheSearchRow;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
@@ -969,7 +969,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             @Nullable CacheDataRow oldRow,
             @Nullable IgniteUuid keyClsLdrId,
             @Nullable IgniteUuid valClsLdrId) throws IgniteCheckedException {
-            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, keyClsLdrId, valClsLdrId);
+            int cacheId = cctx.memoryPolicy().config().getPageEvictionMode() == DataPageEvictionMode.DISABLED ?
+                0 : cctx.cacheId();
+
+            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId, keyClsLdrId, valClsLdrId);
 
             dataRow.deploymentEnabled(cctx.deploymentEnabled());
 
@@ -1002,6 +1005,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
+                int cacheId = cctx.memoryPolicy().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED ?
+                    cctx.cacheId() : 0;
+
                 IgniteUuid keyClsLdrId = null;
                 IgniteUuid valClsLdrId = null;
 
@@ -1015,7 +1021,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                         U.detectObjectClassLoader(key.value(cctx.cacheObjectContext(), false)));
                 }
 
-                DataRow dataRow = new DataRow(key, val, ver, p, expireTime, keyClsLdrId, valClsLdrId);
+                DataRow dataRow = new DataRow(key, val, ver, p, expireTime, cacheId, keyClsLdrId, valClsLdrId);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -1158,8 +1164,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             CacheDataRow row = dataTree.findOne(new SearchRow(key), CacheDataRowAdapter.RowData.NO_KEY);
 
-            if (row != null)
+            if (row != null) {
                 row.key(key);
+
+                cctx.memoryPolicy().evictionTracker().touchPage(row.link());
+            }
 
             return row;
         }
@@ -1364,12 +1373,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param expireTime Expire time.
          * @param keyClsLdrId Class loader ID for entry key.
          * @param valClsLdrId Class loader ID for entry value.
+         * @param cacheId Cache ID.
          */
         DataRow(KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             int part,
             long expireTime,
+            int cacheId,
             @Nullable IgniteUuid keyClsLdrId,
             @Nullable IgniteUuid valClsLdrId) {
             super(0);
@@ -1382,6 +1393,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             this.expireTime = expireTime;
             this.keyClsLdrId = keyClsLdrId;
             this.valClsLdrId = valClsLdrId;
+            this.cacheId = cacheId;
         }
 
         /** {@inheritDoc} */
@@ -1500,6 +1512,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                     if (data.nextLink() == 0) {
                         long addr = pageAddr + data.offset();
+
+                        if (cctx.memoryPolicy().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED)
+                            addr += 4; // Skip cache id.
 
                         final int len = PageUtils.getInt(addr, 0);
 
@@ -1699,6 +1714,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public int getHash(long pageAddr, int idx) {
             return PageUtils.getInt(pageAddr, offset(idx) + 8);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visit(long pageAddr, IgniteInClosure<CacheSearchRow> c) {
+            int cnt = getCount(pageAddr);
+
+            for (int i = 0; i < cnt; i++)
+                c.apply(new CacheDataRowAdapter(getLink(pageAddr, i)));
         }
     }
 

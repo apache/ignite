@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -251,6 +253,29 @@ public class DataPageIO extends PageIO {
      */
     private int getDirectCount(long pageAddr) {
         return PageUtils.getByte(pageAddr, DIRECT_CNT_OFF) & 0xFF;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param c Closure.
+     * @param <T> Closure return type.
+     * @return Collection of closure results for all items in page.
+     * @throws IgniteCheckedException In case of error in closure body.
+     */
+    public <T> List<T> forAllItems(long pageAddr, CC<T> c) throws IgniteCheckedException {
+        long pageId = getPageId(pageAddr);
+
+        int cnt = getDirectCount(pageAddr);
+
+        List<T> res = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; i++) {
+            long link = PageIdUtils.link(pageId, i);
+
+            res.add(c.apply(link));
+        }
+
+        return res;
     }
 
     /**
@@ -1010,7 +1035,8 @@ public class DataPageIO extends PageIO {
         final int keyClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUuid(row.keyClassLoader()) : 0;
         final int valClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUuid(row.valueClassLoader()) : 0;
 
-        int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.KEY, keySize, valSize, keyClsLdrSize, valClsLdrSize);
+        int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.CACHE_ID, keySize, valSize, keyClsLdrSize, valClsLdrSize);
+        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.KEY, keySize, valSize, keyClsLdrSize, valClsLdrSize);
 
         if (row.deploymentEnabled())
             written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.KEY_CLS_LDR_ID, keySize, valSize, keyClsLdrSize, valClsLdrSize);
@@ -1052,40 +1078,48 @@ public class DataPageIO extends PageIO {
         final int prevLen;
         final int curLen;
 
+        int cacheIdSize = row.cacheId() == 0 ? 0 : 4;
+
         switch (type) {
-            case KEY:
+            case CACHE_ID:
                 prevLen = 0;
-                curLen = keySize;
+                curLen = cacheIdSize;
+
+                break;
+
+            case KEY:
+                prevLen = cacheIdSize;
+                curLen = cacheIdSize + keySize;
 
                 break;
 
             case KEY_CLS_LDR_ID:
-                prevLen = keySize;
-                curLen = keySize + keyClsLdrSize;
+                prevLen = cacheIdSize + keySize;
+                curLen = cacheIdSize + keySize + keyClsLdrSize;
 
                 break;
 
             case EXPIRE_TIME:
-                prevLen = keyClsLdrSize + keySize;
-                curLen = keyClsLdrSize + keySize + 8;
+                prevLen = cacheIdSize + keyClsLdrSize + keySize;
+                curLen = cacheIdSize + keyClsLdrSize + keySize + 8;
 
                 break;
 
             case VAL_CLS_LDR_ID:
-                prevLen = keyClsLdrSize + keySize + 8;
-                curLen = keyClsLdrSize + keySize + valClsLdrSize + 8;
+                prevLen = cacheIdSize + keyClsLdrSize + keySize + 8;
+                curLen = cacheIdSize + keyClsLdrSize + keySize + valClsLdrSize + 8;
 
                 break;
 
             case VALUE:
-                prevLen = keyClsLdrSize + keySize + valClsLdrSize + 8;
-                curLen = keyClsLdrSize + keySize + valClsLdrSize + valSize  + 8;
+                prevLen = cacheIdSize + keyClsLdrSize + keySize + valClsLdrSize + 8;
+                curLen = cacheIdSize + keyClsLdrSize + keySize + valClsLdrSize + valSize  + 8;
 
                 break;
 
             case VERSION:
-                prevLen = keyClsLdrSize + keySize + valClsLdrSize + valSize  + 8;
-                curLen = keyClsLdrSize + keySize + valClsLdrSize + valSize + CacheVersionIO.size(row.version(), false) + 8;
+                prevLen = cacheIdSize + keyClsLdrSize + keySize + valClsLdrSize + valSize  + 8;
+                curLen = cacheIdSize + keyClsLdrSize + keySize + valClsLdrSize + valSize + CacheVersionIO.size(row.version(), false) + 8;
 
                 break;
 
@@ -1103,6 +1137,8 @@ public class DataPageIO extends PageIO {
         else if (type == EntryPart.KEY_CLS_LDR_ID || type == EntryPart.VAL_CLS_LDR_ID)
             writeUuidFragment(buf, (type == EntryPart.KEY_CLS_LDR_ID ? row.keyClassLoader() : row.valueClassLoader()),
                 rowOff, len, prevLen);
+        else if (type == EntryPart.CACHE_ID)
+            writeCacheIdFragment(buf, row.cacheId(), rowOff, len, prevLen);
         else if (type != EntryPart.VERSION) {
             // Write key or value.
             final CacheObject co = type == EntryPart.KEY ? row.key() : row.value();
@@ -1206,6 +1242,32 @@ public class DataPageIO extends PageIO {
     }
 
     /**
+     * @param buf Buffer.
+     * @param cacheId Cache ID.
+     * @param rowOff Row offset.
+     * @param len Length.
+     * @param prevLen Prev length.
+     */
+    private void writeCacheIdFragment(ByteBuffer buf, int cacheId, int rowOff, int len, int prevLen) {
+        if (cacheId == 0)
+            return;
+
+        int size = 4;
+
+        if (size <= len)
+            buf.putInt(cacheId);
+        else {
+            ByteBuffer cacheIdBuf = ByteBuffer.allocate(size);
+
+            cacheIdBuf.order(buf.order());
+
+            cacheIdBuf.putInt(cacheId);
+
+            buf.put(cacheIdBuf.array(), rowOff - prevLen, len);
+        }
+    }
+
+    /**
      *
      */
     private enum EntryPart {
@@ -1225,7 +1287,10 @@ public class DataPageIO extends PageIO {
         KEY_CLS_LDR_ID,
 
         /** */
-        VAL_CLS_LDR_ID
+        VAL_CLS_LDR_ID,
+
+        /** */
+        CACHE_ID
     }
 
     /**
@@ -1399,9 +1464,16 @@ public class DataPageIO extends PageIO {
     ) throws IgniteCheckedException {
         long addr = pageAddr + dataOff;
 
+        int cacheIdSize = row.cacheId() != 0 ? 4 : 0;
+
         if (newRow) {
             PageUtils.putShort(addr, 0, (short)payloadSize);
             addr += 2;
+
+            if (cacheIdSize != 0)
+                PageUtils.putInt(addr, 0, row.cacheId());
+
+            addr += cacheIdSize;
 
             addr += row.key().putValue(addr);
 
@@ -1409,7 +1481,7 @@ public class DataPageIO extends PageIO {
                 addr += PageUtils.putIgniteUuid(addr, row.keyClassLoader());
         }
         else {
-            addr += (2 + row.key().valueBytesLength(null));
+            addr += (2 + cacheIdSize + row.key().valueBytesLength(null));
 
             if (row.deploymentEnabled())
                 addr += PageUtils.sizeIgniteUuid(row.keyClassLoader());
@@ -1440,5 +1512,21 @@ public class DataPageIO extends PageIO {
         dataOff += 2;
 
         PageUtils.putBytes(pageAddr, dataOff, payload);
+    }
+
+    /**
+     * Defines closure interface for applying computations to data page items.
+     *
+     * @param <T> Closure return type.
+     */
+    public interface CC<T> {
+        /**
+         * Closure body.
+         *
+         * @param link Link to item.
+         * @return Closure return value.
+         * @throws IgniteCheckedException In case of error in closure body.
+         */
+        public T apply(long link) throws IgniteCheckedException;
     }
 }

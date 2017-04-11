@@ -190,4 +190,9 @@ public abstract class GridH2Row extends Row implements GridSearchRowPointer, Cac
     @Override public IgniteUuid valueClassLoader() {
         throw new UnsupportedOperationException();
     }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return 0;
+    }
 }
