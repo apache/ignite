@@ -62,10 +62,14 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     private static final int KEY_AFTER = 200;
 
     /** SQL to check index on the field 1. */
-    private static final String SQL = "SELECT * FROM " + TBL_NAME + " WHERE " + FIELD_NAME_1 + " >= ?";
+    private static final String SQL_SIMPLE_FIELD_1 = "SELECT * FROM " + TBL_NAME + " WHERE " + FIELD_NAME_1 + " >= ?";
 
-    /** Argument for the first SQL. */
-    public static final int SQL_ARG = 40;
+    /** SQL to check index on the field 2. */
+    private static final String SQL_SIMPLE_FIELD_2 =
+        "SELECT * FROM " + TBL_NAME + " WHERE " + alias(FIELD_NAME_2) + " >= ?";
+
+    /** Argument for simple SQL. */
+    public static final int SQL_SIMPLE_ARG = 40;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -83,7 +87,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
 
-        put(node(), 0, KEY_BEFORE);
+        loadInitialData();
     }
 
     /** {@inheritDoc} */
@@ -98,6 +102,13 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         stopAllGrids();
 
         super.afterTestsStopped();
+    }
+
+    /**
+     * Load initial data.
+     */
+    private void loadInitialData() {
+        put(node(), 0, KEY_BEFORE);
     }
 
     /**
@@ -122,7 +133,9 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
 
-        assertSimpleIndexOperations();
+        assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
+
+        assertIndexUsed(IDX_NAME, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
     }
 
     /**
@@ -135,6 +148,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+
+        // TODO
     }
 
     /**
@@ -208,6 +223,10 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(alias(FIELD_NAME_2)));
+
+        assertSimpleIndexOperations(SQL_SIMPLE_FIELD_2);
+
+        assertIndexUsed(IDX_NAME, SQL_SIMPLE_FIELD_2, SQL_SIMPLE_ARG);
     }
 
     /**
@@ -221,8 +240,18 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
 
+        assertIndexUsed(IDX_NAME, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+
+        assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
+
+        loadInitialData();
+
         queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+
+        assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
+
+        assertIndexNotUsed(IDX_NAME, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
     }
 
     /**
@@ -410,43 +439,40 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
     /**
      * Assert FIELD_1 index usage.
+     *
+     * @param sql Simple SQL.
      */
-    private void assertSimpleIndexOperations() {
-        for (Ignite node : Ignition.allGrids()) {
-            IgniteEx node0 = (IgniteEx)node;
-
-            assertIndexUsed(node0, IDX_NAME, SQL, SQL_ARG);
-            assertSimpleIndexData(node0, KEY_BEFORE - SQL_ARG);
-        }
+    private void assertSimpleIndexOperations(String sql) {
+        for (Ignite node : Ignition.allGrids())
+            assertSqlSimpleData((IgniteEx)node, sql, KEY_BEFORE - SQL_SIMPLE_ARG);
 
         put(node(), KEY_BEFORE, KEY_AFTER);
 
         for (Ignite node : Ignition.allGrids())
-            assertSimpleIndexData((IgniteEx)node, KEY_AFTER - SQL_ARG);
+            assertSqlSimpleData((IgniteEx)node, sql, KEY_AFTER - SQL_SIMPLE_ARG);
 
         remove(node(), 0, KEY_BEFORE);
 
         for (Ignite node : Ignition.allGrids())
-            assertSimpleIndexData((IgniteEx)node, KEY_AFTER - KEY_BEFORE);
+            assertSqlSimpleData((IgniteEx)node, sql, KEY_AFTER - KEY_BEFORE);
 
         remove(node(), KEY_BEFORE, KEY_AFTER);
 
         for (Ignite node : Ignition.allGrids())
-            assertSimpleIndexData((IgniteEx)node, 0);
+            assertSqlSimpleData((IgniteEx)node, sql, 0);
     }
 
     /**
      * Assert query on initial data when FIELD_1 index is used.
      *
      * @param node Node.
+     * @param sql SQL query.
      * @param expSize Expected size.
      */
-    private static void assertSimpleIndexData(IgniteEx node, int expSize) {
-        SqlQuery qry = new SqlQuery(tableName(ValueClass.class), SQL).setArgs(SQL_ARG);
+    private static void assertSqlSimpleData(IgniteEx node, String sql, int expSize) {
+        SqlQuery qry = new SqlQuery(tableName(ValueClass.class), sql).setArgs(SQL_SIMPLE_ARG);
 
         List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
-
-        assertEquals(expSize, res.size());
 
         Set<Long> ids = new HashSet<>();
 
@@ -456,17 +482,32 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
             long field1 = entry.getValue().field(FIELD_NAME_1);
             long field2 = entry.getValue().field(FIELD_NAME_2);
 
-            assertTrue(field1 >= SQL_ARG);
+            assertTrue(field1 >= SQL_SIMPLE_ARG);
 
             assertEquals(id, field1);
             assertEquals(id, field2);
 
             assertTrue(ids.add(id));
         }
+
+        assertEquals("Size mismatch [exp=" + expSize + ", actual=" + res.size() + ", ids=" + ids + ']',
+            expSize, res.size());
     }
 
     /**
-     * Ensure index on the FIELD_1 is used in plan.
+     * Ensure index is used in plan.
+     *
+     * @param idxName Index name.
+     * @param sql SQL.
+     * @param args Arguments.
+     */
+    private static void assertIndexUsed(String idxName, String sql, Object... args) {
+        for (Ignite node : Ignition.allGrids())
+            assertIndexUsed((IgniteEx)node, idxName, sql, args);
+    }
+
+    /**
+     * Ensure index is used in plan.
      *
      * @param node Node.
      * @param idxName Index name.
@@ -482,6 +523,37 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         String plan = (String)node.cache(CACHE_NAME).query(qry).getAll().get(0).get(0);
 
         assertTrue("Index is not used: " + plan, plan.contains(idxName));
+    }
+
+    /**
+     * Ensure index is not used in plan.
+     *
+     * @param idxName Index name.
+     * @param sql SQL.
+     * @param args Arguments.
+     */
+    private static void assertIndexNotUsed(String idxName, String sql, Object... args) {
+        for (Ignite node : Ignition.allGrids())
+            assertIndexNotUsed((IgniteEx)node, idxName, sql, args);
+    }
+
+    /**
+     * Ensure index is not used in plan.
+     *
+     * @param node Node.
+     * @param idxName Index name.
+     * @param sql SQL.
+     * @param args Arguments.
+     */
+    private static void assertIndexNotUsed(IgniteEx node, String idxName, String sql, Object... args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("EXPLAIN " + sql);
+
+        if (args != null && args.length > 0)
+            qry.setArgs(args);
+
+        String plan = (String)node.cache(CACHE_NAME).query(qry).getAll().get(0).get(0);
+
+        assertFalse("Index is used: " + plan, plan.contains(idxName));
     }
 
     /**
