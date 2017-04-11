@@ -87,8 +87,26 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(gen.GetAssemblyName().StartsWith("mscorlib,"));
 
             // Two args.
+            res = TypeNameParser.Parse(typeof(Dictionary<int, string>).AssemblyQualifiedName);
+            Assert.AreEqual("Dictionary", res.GetName());
+            Assert.AreEqual("System.Collections.Generic.Dictionary", res.GetFullName());
+            Assert.IsTrue(res.GetAssemblyName().StartsWith("mscorlib,"));
+
+            Assert.AreEqual(2, res.Generics.Count);
+
+            gen = res.Generics.First();
+            Assert.AreEqual("Int32", gen.GetName());
+            Assert.AreEqual("System.Int32", gen.GetFullName());
+            Assert.IsTrue(gen.GetAssemblyName().StartsWith("mscorlib,"));
+
+            gen = res.Generics.Last();
+            Assert.AreEqual("String", gen.GetName());
+            Assert.AreEqual("System.String", gen.GetFullName());
+            Assert.IsTrue(gen.GetAssemblyName().StartsWith("mscorlib,"));
 
             // Nested args.
+
+            // Generic array.
         }
 
         /// <summary>
