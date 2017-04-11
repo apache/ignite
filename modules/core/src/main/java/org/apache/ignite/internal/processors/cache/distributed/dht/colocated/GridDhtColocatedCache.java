@@ -123,13 +123,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
                 KeyCacheObject key,
-                int hash,
-                CacheObject val
+                int hash
             ) {
                 if (ctx.useOffheapEntry())
-                    return new GridDhtColocatedOffHeapCacheEntry(ctx, topVer, key, hash, val);
+                    return new GridDhtColocatedOffHeapCacheEntry(ctx, topVer, key, hash);
 
-                return new GridDhtColocatedCacheEntry(ctx, topVer, key, hash, val);
+                return new GridDhtColocatedCacheEntry(ctx, topVer, key, hash);
             }
         };
     }

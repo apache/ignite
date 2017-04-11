@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,6 +41,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -70,90 +72,123 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(0);
+
+        client = true;
+
+        startGrid(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        super.afterTest();
+        super.afterTestsStopped();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomicGet() throws Exception {
-        Ignite srv = startGrid(0);
+        doGet(ATOMIC, ONHEAP_TIERED);
+    }
 
-        client = true;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicGetOffheap() throws Exception {
+        doGet(ATOMIC, OFFHEAP_TIERED);
+    }
 
-        Ignite client = startGrid(1);
+    /**
+     * @throws Exception If failed.
+     */
+    private void doGet(CacheAtomicityMode atomicityMode, CacheMemoryMode memoryMode) throws Exception {
+        Ignite srv = ignite(0);
 
-        final IgniteCache cache = client.createCache(cacheConfiguration());
+        Ignite client = ignite(1);
 
-        cache.put(1, 1);
+        final IgniteCache cache = client.createCache(cacheConfiguration(atomicityMode, memoryMode));
 
-        {
-            hangLatch = new CountDownLatch(1);
-            processorStartLatch = new CountDownLatch(1);
+        try {
+            // Get from compute closure.
+            {
+                cache.put(1, 1);
 
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    cache.invoke(1, new HangEntryProcessor());
+                hangLatch = new CountDownLatch(1);
+                processorStartLatch = new CountDownLatch(1);
 
-                    return null;
+                IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        cache.invoke(1, new HangEntryProcessor());
+
+                        return null;
+                    }
+                });
+
+                try {
+                    boolean wait = processorStartLatch.await(30, TimeUnit.SECONDS);
+
+                    assertTrue(wait);
+
+                    assertEquals(1, client.compute().affinityCall(cache.getName(), 1, new GetClosure(1, cache.getName())));
+
+                    hangLatch.countDown();
+
+                    fut.get();
                 }
-            });
-
-            try {
-                boolean wait = processorStartLatch.await(30, TimeUnit.SECONDS);
-
-                assertTrue(wait);
-
-                assertEquals(1, client.compute().affinityCall(cache.getName(), 1, new GetClosure(1, cache.getName())));
-
-                hangLatch.countDown();
-
-                fut.get();
+                finally {
+                    hangLatch.countDown();
+                }
             }
-            finally {
-                hangLatch.countDown();
+
+            // Local get.
+            {
+                cache.put(1, 1);
+
+                hangLatch = new CountDownLatch(1);
+                processorStartLatch = new CountDownLatch(1);
+
+                IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        cache.invoke(1, new HangEntryProcessor());
+
+                        return null;
+                    }
+                });
+
+                try {
+                    boolean wait = processorStartLatch.await(30, TimeUnit.SECONDS);
+
+                    assertTrue(wait);
+
+                    assertEquals(1, srv.cache(cache.getName()).get(1));
+
+                    hangLatch.countDown();
+
+                    fut.get();
+                }
+                finally {
+                    hangLatch.countDown();
+                }
             }
         }
-
-        {
-            hangLatch = new CountDownLatch(1);
-            processorStartLatch = new CountDownLatch(1);
-
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    cache.invoke(1, new HangEntryProcessor());
-
-                    return null;
-                }
-            });
-
-            try {
-                boolean wait = processorStartLatch.await(30, TimeUnit.SECONDS);
-
-                assertTrue(wait);
-
-                assertEquals(1, srv.cache(cache.getName()).get(1));
-
-                hangLatch.countDown();
-
-                fut.get();
-            }
-            finally {
-                hangLatch.countDown();
-            }
+        finally {
+            client.destroyCache(cache.getName());
         }
     }
 
     /**
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration() {
+    private CacheConfiguration cacheConfiguration(CacheAtomicityMode atomicityMode, CacheMemoryMode memoryMode) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setAtomicityMode(ATOMIC);
+        ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setName("testCache");
 

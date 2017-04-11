@@ -172,13 +172,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param cctx Cache context.
      * @param key Cache key.
      * @param hash Key hash value.
-     * @param val Entry value.
      */
     protected GridCacheMapEntry(
         GridCacheContext<?, ?> cctx,
         KeyCacheObject key,
-        int hash,
-        CacheObject val
+        int hash
     ) {
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
@@ -190,12 +188,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         this.key = key;
         this.hash = hash;
         this.cctx = cctx;
-
-        val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
-        synchronized (this) {
-            value(val);
-        }
 
         ver = cctx.versions().next();
 
@@ -379,16 +371,21 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean isNewLocked() throws GridCacheEntryRemovedException {
-        checkObsolete();
+    @Override public boolean isNewLocked() throws GridCacheEntryRemovedException {
+        if (val != null)
+            return false;
 
-        return isStartVersion();
+        synchronized (this) {
+            checkObsolete();
+
+            return isStartVersion();
+        }
     }
 
     /**
      * @return {@code True} if start version.
      */
-    public boolean isStartVersion() {
+    private boolean isStartVersion() {
         return ver.nodeOrder() == cctx.localNode().order() && ver.order() == startVer;
     }
 
@@ -475,6 +472,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     clearIndex(val);
                 }
+
+                value(null);
             }
             else {
                 obsolete = false;
@@ -874,6 +873,34 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridCacheVersion ver0 = null;
 
         Object res = null;
+
+        // TODO IGNITE-4932: metrics/events.
+
+        if (readerArgs == null && expiryPlc == null) {
+            if (!retVer && cctx.config().isEagerTtl()) { // Fast heap get.
+                CacheObject val0 = this.val;
+
+                if (val0 != null)
+                    return val0;
+            }
+
+            if (cctx.isSwapOrOffheapEnabled() && readSwap) {
+                GridCacheSwapEntry swapEntry = cctx.swap().read(this, false, true, true, false);
+
+                if (swapEntry != null) {
+                    long expireTime = swapEntry.expireTime();
+
+                    if (expireTime != 0) {
+                        if (expireTime - U.currentTimeMillis() > 0) {
+                            return retVer ? new EntryGetWithTtlResult(val, ver, false, expireTime, swapEntry.ttl()) :
+                                swapEntry.value();
+                        }
+                    }
+                    else
+                        return retVer ? new EntryGetResult(val, ver, false) : swapEntry.value();
+                }
+            }
+        }
 
         synchronized (this) {
             checkObsolete();
@@ -2917,6 +2944,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException {
+        if (val != null)
+            return false;
+
         boolean obsolete = false;
         boolean deferred = false;
         GridCacheVersion ver0 = null;
@@ -3057,8 +3087,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public final synchronized boolean obsolete() {
-        return obsoleteVersionExtras() != null;
+    @Override public final boolean obsolete() {
+        if (val != null)
+            return false;
+
+        synchronized (this) {
+            return obsoleteVersionExtras() != null;
+        }
     }
 
     /** {@inheritDoc} */

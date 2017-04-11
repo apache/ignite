@@ -195,13 +195,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
                 KeyCacheObject key,
-                int hash,
-                CacheObject val
+                int hash
             ) {
                 if (ctx.useOffheapEntry())
-                    return new GridDhtAtomicOffHeapCacheEntry(ctx, topVer, key, hash, val);
+                    return new GridDhtAtomicOffHeapCacheEntry(ctx, topVer, key, hash);
 
-                return new GridDhtAtomicCacheEntry(ctx, topVer, key, hash, val);
+                return new GridDhtAtomicCacheEntry(ctx, topVer, key, hash);
             }
         };
     }

@@ -38,7 +38,6 @@ public interface GridCacheConcurrentMap {
     /**
      * @param topVer Topology version.
      * @param key Key.
-     * @param val Value.
      * @param create Create flag.
      * @return Triple where the first element is current entry associated with the key,
      *      the second is created entry and the third is doomed (all may be null).
@@ -46,7 +45,6 @@ public interface GridCacheConcurrentMap {
     @Nullable public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
-        @Nullable CacheObject val,
         boolean create,
         boolean touch);
 

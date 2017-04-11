@@ -973,8 +973,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             cur = map.putEntryIfObsoleteOrAbsent(
                 topVer,
                 key,
-                null,
-                create, touch);
+                create,
+                touch);
         }
 
         return cur;
@@ -1947,19 +1947,38 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 }
                             }
                             else {
-                                res = entry.innerGetVersioned(
-                                    null,
-                                    null,
-                                    ctx.isSwapOrOffheapEnabled(),
-                                    /*unmarshal*/true,
-                                    updateMetrics,
-                                    evt,
-                                    subjId,
-                                    null,
-                                    taskName,
-                                    expiry,
-                                    !deserializeBinary,
-                                    readerArgs);
+                                if (needVer || readerArgs != null) {
+                                    res = entry.innerGetVersioned(
+                                        null,
+                                        null,
+                                        ctx.isSwapOrOffheapEnabled(),
+                                       /*unmarshal*/true,
+                                        updateMetrics,
+                                        evt,
+                                        subjId,
+                                        null,
+                                        taskName,
+                                        expiry,
+                                        !deserializeBinary,
+                                        readerArgs);
+                                }
+                                else {
+                                    CacheObject val = entry.innerGet(
+                                        null,
+                                        null,
+                                        ctx.isSwapOrOffheapEnabled(),
+                                        false,
+                                        updateMetrics,
+                                        evt,
+                                        false,
+                                        subjId,
+                                        null,
+                                        taskName,
+                                        expiry,
+                                        !deserializeBinary);
+
+                                    res = val != null ? new EntryGetResult(val, null) : null;
+                                }
 
                                 if (res == null)
                                     ctx.evicts().touch(entry, topVer);
