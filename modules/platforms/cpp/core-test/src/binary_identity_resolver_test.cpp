@@ -198,18 +198,14 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(DefaultHashing)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(DefaultHashing)
 
-            void Write(BinaryWriter& writer, const DefaultHashing& obj)
+            static void Write(BinaryWriter& writer, const DefaultHashing& obj)
             {
                 writer.WriteInt32("field", obj.field);
             }
 
-            DefaultHashing Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, DefaultHashing& dst)
             {
-                DefaultHashing val;
-
-                val.field = reader.ReadInt32("field");
-
-                return val;
+                dst.field = reader.ReadInt32("field");
             }
         };
 
@@ -222,23 +218,19 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(GetHashDefined)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(GetHashDefined)
 
-            int32_t GetHashCode(const GetHashDefined& obj)
+            static int32_t GetHashCode(const GetHashDefined& obj)
             {
                 return obj.field * 10;
             }
 
-            void Write(BinaryWriter& writer, const GetHashDefined& obj)
+            static void Write(BinaryWriter& writer, const GetHashDefined& obj)
             {
                 writer.WriteInt32("field", obj.field);
             }
 
-            GetHashDefined Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, GetHashDefined& dst)
             {
-                GetHashDefined val;
-
-                val.field = reader.ReadInt32("field");
-
-                return val;
+                dst.field = reader.ReadInt32("field");
             }
         };
 
@@ -251,23 +243,19 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(ResolverDefined)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(ResolverDefined)
 
-            ignite::Reference<ignite::binary::BinaryIdentityResolver> GetIdentityResolver()
+            static ignite::Reference<ignite::binary::BinaryIdentityResolver> GetIdentityResolver()
             {
                 return ignite::MakeReferenceFromCopy(CustomIdResolver());
             }
 
-            void Write(BinaryWriter& writer, const ResolverDefined& obj)
+            static void Write(BinaryWriter& writer, const ResolverDefined& obj)
             {
                 writer.WriteInt32("field", obj.field);
             }
 
-            ResolverDefined Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, ResolverDefined& dst)
             {
-                ResolverDefined val;
-
-                val.field = reader.ReadInt32("field");
-
-                return val;
+                dst.field = reader.ReadInt32("field");
             }
         };
 
@@ -280,28 +268,24 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(BothDefined)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(BothDefined)
 
-            int32_t GetHashCode(const GetHashDefined& obj)
+            static int32_t GetHashCode(const GetHashDefined& obj)
             {
                 return obj.field * 10;
             }
 
-            ignite::Reference<ignite::binary::BinaryIdentityResolver> GetIdentityResolver()
+            static ignite::Reference<ignite::binary::BinaryIdentityResolver> GetIdentityResolver()
             {
                 return ignite::MakeReferenceFromCopy(CustomIdResolver());
             }
 
-            void Write(BinaryWriter& writer, const BothDefined& obj)
+            static void Write(BinaryWriter& writer, const BothDefined& obj)
             {
                 writer.WriteInt32("field", obj.field);
             }
 
-            BothDefined Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, BothDefined& dst)
             {
-                BothDefined val;
-
-                val.field = reader.ReadInt32("field");
-
-                return val;
+                dst.field = reader.ReadInt32("field");
             }
         };
 
@@ -318,22 +302,18 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(CompositeKey)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CompositeKey)
 
-            void Write(BinaryWriter& writer, const CompositeKey& obj)
+            static void Write(BinaryWriter& writer, const CompositeKey& obj)
             {
                 writer.WriteString("str", obj.str);
                 writer.WriteTimestamp("ts", obj.ts);
                 writer.WriteGuid("guid", obj.guid);
             }
 
-            CompositeKey Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, CompositeKey& dst)
             {
-                CompositeKey val;
-
-                val.str = reader.ReadString("str");
-                val.ts = reader.ReadTimestamp("ts");
-                val.guid = reader.ReadGuid("guid");
-
-                return val;
+                dst.str = reader.ReadString("str");
+                dst.ts = reader.ReadTimestamp("ts");
+                dst.guid = reader.ReadGuid("guid");
             }
         };
 
@@ -349,22 +329,18 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(CompositeKeySimple)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CompositeKeySimple)
 
-            void Write(BinaryWriter& writer, const CompositeKeySimple& obj)
+            static void Write(BinaryWriter& writer, const CompositeKeySimple& obj)
             {
                 writer.WriteString("str", obj.str);
                 writer.WriteTimestamp("ts", obj.ts);
                 writer.WriteInt64("i64", obj.i64);
             }
 
-            CompositeKeySimple Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, CompositeKeySimple& dst)
             {
-                CompositeKeySimple val;
-
-                val.str = reader.ReadString("str");
-                val.ts = reader.ReadTimestamp("ts");
-                val.i64 = reader.ReadInt64("i64");
-
-                return val;
+                dst.str = reader.ReadString("str");
+                dst.ts = reader.ReadTimestamp("ts");
+                dst.i64 = reader.ReadInt64("i64");
             }
         };
 
@@ -380,27 +356,23 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(ComplexType2)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(ComplexType2)
 
-            ignite::Reference<ignite::binary::BinaryIdentityResolver> GetIdentityResolver()
+            static ignite::Reference<ignite::binary::BinaryIdentityResolver> GetIdentityResolver()
             {
                 return ignite::MakeReferenceFromCopy(CustomFieldIdResolver());
             }
 
-            void Write(BinaryWriter& writer, ComplexType2 obj)
+            static void Write(BinaryWriter& writer, const ComplexType2& obj)
             {
                 writer.WriteInt32("i32Field", obj.i32Field);
                 writer.WriteObject("objField", obj.objField);
                 writer.WriteString("strField", obj.strField);
             }
 
-            ComplexType2 Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, ComplexType2& dst)
             {
-                ComplexType2 obj;
-
-                obj.i32Field = reader.ReadInt32("i32Field");
-                obj.objField = reader.ReadObject<InnerObject>("objField");
-                obj.strField = reader.ReadString("strField");
-
-                return obj;
+                dst.i32Field = reader.ReadInt32("i32Field");
+                dst.objField = reader.ReadObject<InnerObject>("objField");
+                dst.strField = reader.ReadString("strField");
             }
         };
     }
