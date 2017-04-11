@@ -9,15 +9,10 @@ Based on ideas from Apache Mahout.
 
 # Local build with javadoc
 
-1. Locally deploy Apache Ignite License Generator module
+Locally build Math module
 
-run from modules/apache-license-gen:
-mvn clean deploy -DskipTests=true
-
-2. Locally build Math module
-
-run from modules/apache-license-gen:
-mvn clean package -DskipTests=true
+run from modules/math:
+mvn clean package -DskipTests=true -Pjava8
 
 Find generated jars in target folder.
 

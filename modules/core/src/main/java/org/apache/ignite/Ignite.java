@@ -39,7 +39,6 @@ import java.util.concurrent.*;
  * Ignite provides the following functionality:
  * <ul>
  * <li>{@link IgniteCluster} - clustering functionality.</li>
- * <li>{@link IgniteMath} - distributed core algebra and ML functionality.</li>
  * <li>{@link IgniteCache} - functionality for in-memory distributed cache, including SQL, TEXT, and Predicate-based queries.</li>
  * <li>{@link IgniteTransactions} - distributed ACID-compliant transactions.</li>
  * <li>{@link IgniteDataStreamer} - functionality for streaming large amounts of data into cache.</li>
