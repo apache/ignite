@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -186,6 +187,8 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         finally {
             stopExtraNodes(nodeCnt);
         }
+
+        checkCount(AFFINITY, g.services().serviceDescriptors(), 1);
     }
 
     /**
@@ -195,6 +198,8 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         final Ignite g = randomGrid();
 
         final String name = NODE_SINGLE_WITH_LIMIT;
+
+        waitForDeployment(name, nodeCount());
 
         checkCount(name, g.services().serviceDescriptors(), nodeCount());
 
@@ -215,13 +220,26 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
             stopExtraNodes(extraNodes);
         }
 
-        GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-            @Override public boolean applyx() {
-                return actualCount(name, g.services().serviceDescriptors())  == nodeCount();
-            }
-        }, 1000);
+        assertEquals(name, 1, DummyService.cancelled(name));
+
+        waitForDeployment(name, nodeCount());
 
         checkCount(name, g.services().serviceDescriptors(), nodeCount());
+    }
+
+    /**
+     * @param srvcName Service name
+     * @param expectedDeps Expected number of service deployments
+     *
+     */
+    private void waitForDeployment(final String srvcName, int expectedDeps) throws IgniteInterruptedCheckedException {
+        final Ignite g = randomGrid();
+
+        GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @Override public boolean applyx() {
+                return actualCount(srvcName, g.services().serviceDescriptors())  == expectedDeps;
+            }
+        }, 1500);
     }
 
     /**
@@ -264,10 +282,6 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         try {
             latch.await();
 
-            // Ensure service is deployed.
-            assertNotNull(grid(nodeCount() + newNodes - 1).services()
-                .serviceProxy(NODE_SINGLE_BUT_CLIENT, Service.class, false, 2000));
-
             assertEquals(name, newNodes, DummyService.started(name));
             assertEquals(name, 0, DummyService.cancelled(name));
 
@@ -276,6 +290,10 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         finally {
             stopExtraNodes(newNodes);
         }
+
+        waitForDeployment(name, nodeCount());
+
+        checkCount(name, g.services().serviceDescriptors(), nodeCount());
     }
 
     /**
@@ -305,5 +323,9 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
         finally {
             stopExtraNodes(servers + clients);
         }
+
+        waitForDeployment(name, nodeCount());
+
+        checkCount(name, g.services().serviceDescriptors(), nodeCount());
     }
 }
