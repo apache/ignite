@@ -65,24 +65,6 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
-        /// Gets the simple type name, without namespace and assembly.
-        /// </summary>
-        private static string GetSimpleTypeName(string typeName)
-        {
-
-        }
-
-        /// <summary>
-        /// Gets the full type name, with namespace and assembly, without assembly version.
-        /// </summary>
-        private static string GetFullTypeName(string typeName)
-        {
-            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
-
-            return BuildTypeName(TypeNameParser.Parse(typeName), new StringBuilder(), x => x.GetFullName()).ToString();
-        }
-
-        /// <summary>
         /// Builds the type name.
         /// </summary>
         private static StringBuilder BuildTypeName(TypeNameParser typeName, StringBuilder sb, 
