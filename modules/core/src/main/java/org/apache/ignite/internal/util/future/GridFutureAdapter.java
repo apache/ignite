@@ -19,7 +19,7 @@ package org.apache.ignite.internal.util.future;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -39,31 +39,26 @@ import org.jetbrains.annotations.Nullable;
  * Future adapter.
  */
 public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
+    /** Done state representation. */
+    private static final String DONE = "DONE";
+
+    /** Initial state. */
+    private static final Node INIT = new Node(null);
+
+    /** Cancelled state. */
+    private static final Object CANCELLED = new Object();
+
+    /** */
+    private static final AtomicReferenceFieldUpdater<GridFutureAdapter, Object> fieldUpdater =
+        AtomicReferenceFieldUpdater.newUpdater(GridFutureAdapter.class, Object.class, "state");
+
+
     /*
      * https://bugs.openjdk.java.net/browse/JDK-8074773
      */
     static {
         @SuppressWarnings("unused")
         Class<?> ensureLoaded = LockSupport.class;
-    }
-
-    /**
-     * No result representation (in case the future has not completed yet).
-     */
-    private static final Object NONE = new Object();
-
-    /**
-     * Future state.
-     */
-    private enum State {
-        /** */
-        INIT,
-        /** */
-        CANCELLED,
-        /** */
-        FAILED,
-        /** */
-        DONE
     }
 
     /**
@@ -74,7 +69,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         private final Object val;
 
         /** */
-        private volatile Object next;
+        private volatile Node next;
 
         /**
          * @param val Node value.
@@ -85,15 +80,24 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /** */
+    private static final class ErrorWrapper {
+        /** */
+        private final Throwable error;
+
+        /**
+         * @param error Error.
+         */
+        ErrorWrapper(Throwable error) {
+            this.error = error;
+        }
+    }
+
+    /** */
     private boolean ignoreInterrupts;
 
     /** */
     @GridToStringExclude
-    private final AtomicReference<Object> state = new AtomicReference<Object>(State.INIT);
-
-    /** */
-    @GridToStringExclude
-    private volatile Object res = NONE;
+    private volatile Object state = INIT;
 
     /**
      * Determines whether the future will ignore interrupts.
@@ -104,13 +108,26 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
     /** {@inheritDoc} */
     @Override public Throwable error() {
-        return State.FAILED == state.get() ? (Throwable)result0() : null;
+        Object state0 = state;
+
+        if (state0 != null && state0.getClass() == ErrorWrapper.class)
+            return ((ErrorWrapper)state0).error;
+
+        return null;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public R result() {
-        return State.DONE == state.get() ? (R)result0() : null;
+        Object state0 = state;
+
+        if(state0 == null ||                           // It is DONE state
+           (state0.getClass() != Node.class &&         // It is not INIT state
+            state0.getClass() != ErrorWrapper.class && // It is not FAILED
+            state0 != CANCELLED))                      // It is not CANCELLED
+            return (R)state0;
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -226,28 +243,13 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      */
     @SuppressWarnings("unchecked")
     private R resolve() throws IgniteCheckedException {
-        Object state0 = state.get();
-
-        if (state0 == State.DONE)
-            return (R)result0();
-        else if (state0 == State.FAILED)
-            throw U.cast((Throwable)result0());
-        else if (state0 == State.CANCELLED)
+        if(state == CANCELLED)
             throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
-        throw new IllegalStateException("Illegal state: " + stateStr(state0));
-    }
+        if(state == null || state.getClass() != ErrorWrapper.class)
+            return (R)state;
 
-    /**
-     * @return Future result.
-     */
-    @SuppressWarnings("StatementWithEmptyBody")
-    private Object result0() {
-        assert isDone(state.get());
-
-        while (res == NONE); // Wait for result if necessary
-
-        return res;
+        throw U.cast(((ErrorWrapper)state).error);
     }
 
     /**
@@ -258,26 +260,18 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         Node node = null;
 
         while (true) {
-            final Object oldState = state.get();
+            final Object oldState = state;
 
             if (isDone(oldState))
                 return false;
 
-            Object newState;
+            if(node == null)
+                node = new Node(waiter);
 
-            if (oldState == State.INIT)
-                newState = waiter;
+            if(oldState != INIT && oldState.getClass() == Node.class)
+                node.next = (Node)oldState;
 
-            else {
-                if (node == null)
-                    node = new Node(waiter);
-
-                node.next = oldState;
-
-                newState = node;
-            }
-
-            if (state.compareAndSet(oldState, newState))
+            if (compareAndSetState(oldState, node))
                 return true;
         }
     }
@@ -287,19 +281,20 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      */
     private void unregisterWaiter(Thread waiter) {
         Node prev = null;
-        Object cur = state.get();
+        Object cur = state;
 
         while (cur != null) {
-            boolean isNode = cur.getClass() == Node.class;
+            if(cur.getClass() != Node.class)
+                return;
 
-            Object curWaiter = isNode ? ((Node)cur).val : cur;
-            Object next = isNode ? ((Node)cur).next : null;
+            Object curWaiter = ((Node)cur).val;
+            Node next = ((Node)cur).next;
 
             if (curWaiter == waiter) {
                 if (prev == null) {
-                    Object n = next == null ? State.INIT : next;
+                    Object n = next == null ? INIT : next;
 
-                    cur = state.compareAndSet(cur, n) ? null : state.get();
+                    cur = compareAndSetState(cur, n) ? null : state;
                 }
                 else {
                     prev.next = next;
@@ -308,7 +303,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
                 }
             }
             else {
-                prev = isNode ? (Node)cur : null;
+                prev = (Node)cur;
 
                 cur = next;
             }
@@ -316,31 +311,33 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /**
-     * @param waiter Head of waiters stack.
+     * @param exp Expected state.
+     * @param newState New state.
+     * @return {@code True} if success
+     */
+    private boolean compareAndSetState(Object exp, Object newState) {
+        return fieldUpdater.compareAndSet(this, exp, newState);
+    }
+
+    /**
+     * @param head Head of waiters stack.
      */
     @SuppressWarnings("unchecked")
-    private void unblockAll(Object waiter) {
-        while (waiter != null) {
-            if (waiter instanceof Thread) {
-                LockSupport.unpark((Thread)waiter);
-
-                return;
-            }
-            else if (waiter instanceof IgniteInClosure) {
-                notifyListener((IgniteInClosure<? super IgniteInternalFuture<R>>)waiter);
-
-                return;
-            }
-            else if (waiter.getClass() == Node.class) {
-                Node node = (Node) waiter;
-
-                unblockAll(node.val);
-
-                waiter = node.next;
-            }
-            else
-                return;
+    private void unblockAll(Node head) {
+        while (head != null) {
+            unblock(head.val);
+            head = head.next;
         }
+    }
+
+    /**
+     * @param waiter Waiter to unblock
+     */
+    private void unblock(Object waiter) {
+        if(waiter instanceof Thread)
+            LockSupport.unpark((Thread)waiter);
+        else
+            notifyListener((IgniteInClosure<? super IgniteInternalFuture<R>>)waiter);
     }
 
     /** {@inheritDoc} */
@@ -401,7 +398,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
     /** {@inheritDoc} */
     @Override public boolean isDone() {
-        return res != NONE;
+        return isDone(state);
     }
 
     /**
@@ -409,19 +406,21 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @return {@code True} if future is done.
      */
     private boolean isDone(Object state) {
-        return State.INIT != state && state.getClass() == State.class;
+        return state == null || state.getClass() != Node.class;
     }
 
     /**
-     * @return Checks is future is completed with exception.
+     * @return {@code True} if future is completed with exception.
      */
     public boolean isFailed() {
-        return state.get() == State.FAILED;
+        Object state0 = state;
+
+        return state0 != null && state0.getClass() == ErrorWrapper.class;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isCancelled() {
-        return state.get() == State.CANCELLED;
+        return state == CANCELLED;
     }
 
     /**
@@ -475,33 +474,18 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @return {@code True} if result was set by this call.
      */
     protected boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel) {
-        Object val;
-        State newState;
-
-        if (cancel) {
-            newState = State.CANCELLED;
-            val = null;
-        }
-        else if (err != null) {
-            newState = State.FAILED;
-            val = err;
-        }
-        else {
-            newState = State.DONE;
-            val = res;
-        }
+        Object newState = cancel ? CANCELLED : err != null ? new ErrorWrapper(err) : res;
 
         while (true) {
-            final Object oldState = state.get();
+            final Object oldState = state;
 
             if (isDone(oldState))
                 return false;
 
-            if (state.compareAndSet(oldState, newState)) {
-                this.res = val;
+            if (compareAndSetState(oldState, newState)) {
 
-                if(oldState != State.INIT)
-                    unblockAll(oldState);
+                if(oldState != INIT)
+                    unblockAll((Node)oldState);
 
                 return true;
             }
@@ -518,11 +502,17 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("StringEquality")
     @Override public String toString() {
+        Object state0 = state;
+
+        String stateStr = stateStr(state0);
+        String resStr = stateStr == DONE ? String.valueOf(state0) : null;
+
         return S.toString(
             GridFutureAdapter.class, this,
-            "state", stateStr(state.get()), false,
-            "res", resStr(res), true,
+            "state", stateStr, false,
+            "res", resStr, true,
             "hash", System.identityHashCode(this), false);
     }
 
@@ -531,15 +521,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @return State string representation.
      */
     private String stateStr(Object s) {
-        return s.getClass() == State.class ? s.toString() : "INIT";
-    }
-
-    /**
-     * @param res Result.
-     * @return Result string representation.
-     */
-    private String resStr(Object res) {
-        return res == NONE ? "null" : String.valueOf(res);
+        return s == CANCELLED ? "CANCELLED" : s != null && s.getClass() == Node.class ? "INIT" : DONE;
     }
 
     /**
