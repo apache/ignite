@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -33,10 +38,13 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.Cache;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -46,6 +54,18 @@ import java.util.UUID;
 public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
     /** Attribute to filter node out of cache data nodes. */
     private static final String ATTR_FILTERED = "FILTERED";
+
+    /** Key range limit for "before" step. */
+    private static final int KEY_BEFORE = 100;
+
+    /** Key range limit for "after" step. */
+    private static final int KEY_AFTER = 200;
+
+    /** SQL to check index on the field 1. */
+    private static final String SQL = "SELECT * FROM " + TBL_NAME + " WHERE " + FIELD_NAME_1 + " >= ?";
+
+    /** Argument for the first SQL. */
+    public static final int SQL_ARG = 40;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -62,6 +82,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         node().getOrCreateCache(cacheConfiguration());
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+
+        put(node(), 0, KEY_BEFORE);
     }
 
     /** {@inheritDoc} */
@@ -84,19 +106,23 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @throws Exception If failed.
      */
     public void testCreate() throws Exception {
+        final IgniteEx node = node();
+
         final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_1));
 
-        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
             }
         }, SchemaOperationException.CODE_INDEX_EXISTS);
 
-        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
+        queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
+
+        assertSimpleIndexOperations();
     }
 
     /**
@@ -345,8 +371,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         entity.setValueType(ValueClass.class.getName());
 
         entity.addQueryField("id", Long.class.getName(), null);
-        entity.addQueryField(FIELD_NAME_1, String.class.getName(), null);
-        entity.addQueryField(FIELD_NAME_2, String.class.getName(), null);
+        entity.addQueryField(FIELD_NAME_1, Long.class.getName(), null);
+        entity.addQueryField(FIELD_NAME_2, Long.class.getName(), null);
 
         entity.setKeyFields(Collections.singleton("id"));
 
@@ -383,10 +409,183 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     }
 
     /**
+     * Assert FIELD_1 index usage.
+     */
+    private void assertSimpleIndexOperations() {
+        for (Ignite node : Ignition.allGrids()) {
+            IgniteEx node0 = (IgniteEx)node;
+
+            assertIndexUsed(node0, IDX_NAME, SQL, SQL_ARG);
+            assertSimpleIndexData(node0, KEY_BEFORE - SQL_ARG);
+        }
+
+        put(node(), KEY_BEFORE, KEY_AFTER);
+
+        for (Ignite node : Ignition.allGrids())
+            assertSimpleIndexData((IgniteEx)node, KEY_AFTER - SQL_ARG);
+
+        remove(node(), 0, KEY_BEFORE);
+
+        for (Ignite node : Ignition.allGrids())
+            assertSimpleIndexData((IgniteEx)node, KEY_AFTER - KEY_BEFORE);
+
+        remove(node(), KEY_BEFORE, KEY_AFTER);
+
+        for (Ignite node : Ignition.allGrids())
+            assertSimpleIndexData((IgniteEx)node, 0);
+    }
+
+    /**
+     * Assert query on initial data when FIELD_1 index is used.
+     *
+     * @param node Node.
+     * @param expSize Expected size.
+     */
+    private static void assertSimpleIndexData(IgniteEx node, int expSize) {
+        SqlQuery qry = new SqlQuery(tableName(ValueClass.class), SQL).setArgs(SQL_ARG);
+
+        List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
+
+        assertEquals(expSize, res.size());
+
+        Set<Long> ids = new HashSet<>();
+
+        for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
+            long id = entry.getKey().field("id");
+
+            long field1 = entry.getValue().field(FIELD_NAME_1);
+            long field2 = entry.getValue().field(FIELD_NAME_2);
+
+            assertTrue(field1 >= SQL_ARG);
+
+            assertEquals(id, field1);
+            assertEquals(id, field2);
+
+            assertTrue(ids.add(id));
+        }
+    }
+
+    /**
+     * Ensure index on the FIELD_1 is used in plan.
+     *
+     * @param node Node.
+     * @param idxName Index name.
+     * @param sql SQL.
+     * @param args Arguments.
+     */
+    private static void assertIndexUsed(IgniteEx node, String idxName, String sql, Object... args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("EXPLAIN " + sql);
+
+        if (args != null && args.length > 0)
+            qry.setArgs(args);
+
+        String plan = (String)node.cache(CACHE_NAME).query(qry).getAll().get(0).get(0);
+
+        assertTrue("Index is not used: " + plan, plan.contains(idxName));
+    }
+
+    /**
+     * Create key object.
+     *
+     * @param ignite Ignite instance.
+     * @param id ID.
+     * @return Key object.
+     */
+    private static BinaryObject key(IgniteEx ignite, long id) {
+        return ignite.binary().builder(KeyClass.class.getName()).setField("id", id).build();
+    }
+
+    /**
+     * Create value object.
+     *
+     * @param ignite Ignite instance.
+     * @param id ID.
+     * @return Value object.
+     */
+    private static BinaryObject value(IgniteEx ignite, long id) {
+        return ignite.binary().builder(ValueClass.class.getName())
+            .setField(FIELD_NAME_1, id)
+            .setField(FIELD_NAME_2, id)
+            .build();
+    }
+
+    /**
+     * Create key/value entry for the given key.
+     *
+     * @param ignite Ignite instance.
+     * @param id ID.
+     * @return Entry.
+     */
+    private static T2<BinaryObject, BinaryObject> entry(IgniteEx ignite, long id) {
+        return new T2<>(key(ignite, id), value(ignite, id));
+    }
+
+    /**
+     * Put key to cache.
+     *
+     * @param ignite Ignite.
+     * @param id ID.
+     */
+    private static void put(IgniteEx ignite, long id) {
+        BinaryObject key = key(ignite, id);
+        BinaryObject val = value(ignite, id);
+
+        ignite.cache(CACHE_NAME).withKeepBinary().put(key, val);
+    }
+
+    /**
+     * Remove key form cache.
+     *
+     * @param ignite Ignite.
+     * @param id ID.
+     */
+    private static void remove(IgniteEx ignite, long id) {
+        BinaryObject key = key(ignite, id);
+
+        ignite.cache(CACHE_NAME).withKeepBinary().remove(key);
+    }
+
+    /**
      * @return Random string.
      */
     private static String randomString() {
         return UUID.randomUUID().toString();
+    }
+
+    /**
+     * Get key.
+     *
+     * @param node Node.
+     * @param id ID.
+     */
+    private static BinaryObject get(IgniteEx node, int id) {
+        BinaryObject key = key(node, id);
+
+        return (BinaryObject)node.cache(CACHE_NAME).withKeepBinary().get(key);
+    }
+
+    /**
+     * Put key range.
+     *
+     * @param node Node.
+     * @param from From key.
+     * @param to To key.
+     */
+    private static void put(IgniteEx node, int from, int to) {
+        for (int i = from; i < to; i++)
+            put(node, i);
+    }
+
+    /**
+     * Remove key range.
+     *
+     * @param node Node.
+     * @param from From key.
+     * @param to To key.
+     */
+    private static void remove(IgniteEx node, int from, int to) {
+        for (int i = from; i < to; i++)
+            remove(node, i);
     }
 
     /**
