@@ -202,6 +202,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private void ParseGeneric()
         {
+            // Generics can be nested:
+            // UserQuery+Gen`1+Gen2`1[[System.Int32, mscorlib],[System.String, mscorlib]]
+
             SkipSpaces();
 
             if (Char != '`')
