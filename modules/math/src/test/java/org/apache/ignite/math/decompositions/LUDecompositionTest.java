@@ -19,7 +19,11 @@ package org.apache.ignite.math.decompositions;
 
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.exceptions.SingularMatrixException;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.math.impls.matrix.PivotedMatrixView;
+import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,7 +40,7 @@ public class LUDecompositionTest {
     /** */
     private Matrix testP;
     /** */
-    private LUDecomposition luDecomposition;
+    private Matrix testMatrix;
     /** */
     private int[] rawPivot;
 
@@ -66,74 +70,172 @@ public class LUDecompositionTest {
 
         rawPivot = new int[] {3, 4, 2, 1};
 
-        /* */
-        Matrix testMatrix = new DenseLocalOnHeapMatrix(rawMatrix);
+        testMatrix = new DenseLocalOnHeapMatrix(rawMatrix);
         testL = new DenseLocalOnHeapMatrix(rawL);
         testU = new DenseLocalOnHeapMatrix(rawU);
         testP = new DenseLocalOnHeapMatrix(rawP);
-
-        luDecomposition = new LUDecomposition(testMatrix);
     }
 
     /** */
     @Test
     public void getL() throws Exception {
-        Matrix luDecompositionL = luDecomposition.getL();
+        Matrix luDecompositionL = new LUDecomposition(testMatrix).getL();
 
-        assertEquals("Value should be equal.", testL.rowSize(), luDecompositionL.rowSize());
-        assertEquals("Value should be equal.", testL.columnSize(), luDecompositionL.columnSize());
+        assertEquals("Unexpected row size.", testL.rowSize(), luDecompositionL.rowSize());
+        assertEquals("Unexpected column size.", testL.columnSize(), luDecompositionL.columnSize());
 
         for (int i = 0; i < testL.rowSize(); i++)
             for (int j = 0; j < testL.columnSize(); j++)
-                assertEquals("Value should be equal.", testL.getX(i, j), luDecompositionL.getX(i, j), 0.0000001d);
+                assertEquals("Unexpected value at (" + i + "," + j + ").",
+                    testL.getX(i, j), luDecompositionL.getX(i, j), 0.0000001d);
+
+        luDecompositionL.destroy();
     }
 
     /** */
     @Test
     public void getU() throws Exception {
-        Matrix luDecompositionU = luDecomposition.getU();
+        Matrix luDecompositionU = new LUDecomposition(testMatrix).getU();
 
-        assertEquals("Value should be equal.", testU.rowSize(), luDecompositionU.rowSize());
-        assertEquals("Value should be equal.", testU.columnSize(), luDecompositionU.columnSize());
+        assertEquals("Unexpected row size.", testU.rowSize(), luDecompositionU.rowSize());
+        assertEquals("Unexpected column size.", testU.columnSize(), luDecompositionU.columnSize());
 
         for (int i = 0; i < testU.rowSize(); i++)
             for (int j = 0; j < testU.columnSize(); j++)
-                assertEquals("Value should be equal.", testU.getX(i, j), luDecompositionU.getX(i, j), 0.0000001d);
+                assertEquals("Unexpected value at (" + i + "," + j + ").",
+                    testU.getX(i, j), luDecompositionU.getX(i, j), 0.0000001d);
+
+        luDecompositionU.destroy();
     }
 
     /** */
     @Test
     public void getP() throws Exception {
-        Matrix luDecompositionP = luDecomposition.getP();
+        Matrix luDecompositionP = new LUDecomposition(testMatrix).getP();
 
-        assertEquals("Value should be equal.", testP.rowSize(), luDecompositionP.rowSize());
-        assertEquals("Value should be equal.", testP.columnSize(), luDecompositionP.columnSize());
+        assertEquals("Unexpected row size.", testP.rowSize(), luDecompositionP.rowSize());
+        assertEquals("Unexpected column size.", testP.columnSize(), luDecompositionP.columnSize());
 
         for (int i = 0; i < testP.rowSize(); i++)
             for (int j = 0; j < testP.columnSize(); j++)
-                assertEquals("Value should be equal.", testP.getX(i, j), luDecompositionP.getX(i, j), 0.0000001d);
+                assertEquals("Unexpected value at (" + i + "," + j + ").",
+                    testP.getX(i, j), luDecompositionP.getX(i, j), 0.0000001d);
+
+        luDecompositionP.destroy();
     }
 
     /** */
     @Test
     public void getPivot() throws Exception {
-        Vector pivot = luDecomposition.getPivot();
+        Vector pivot = new LUDecomposition(testMatrix).getPivot();
 
-        assertEquals("Value should be equal.", rawPivot.length, pivot.size());
+        assertEquals("Unexpected pivot size.", rawPivot.length, pivot.size());
 
         for (int i = 0; i < testU.rowSize(); i++)
-            assertEquals("Value should be equal.", (int)pivot.get(i) + 1, rawPivot[i]);
+            assertEquals("Unexpected value at " + i, rawPivot[i], (int)pivot.get(i) + 1);
+    }
+
+    /**
+     * Test for {@link DecompositionSupport} features.
+     */
+    @Test
+    public void decompositionSupportTest() {
+        LUDecomposition dec = new LUDecomposition(new PivotedMatrixView(testMatrix));
+        Matrix luDecompositionL = dec.getL();
+
+        assertEquals("Unexpected L row size.", testL.rowSize(), luDecompositionL.rowSize());
+        assertEquals("Unexpected L column size.", testL.columnSize(), luDecompositionL.columnSize());
+
+        for (int i = 0; i < testL.rowSize(); i++)
+            for (int j = 0; j < testL.columnSize(); j++)
+                assertEquals("Unexpected L value at (" + i + "," + j + ").",
+                    testL.getX(i, j), luDecompositionL.getX(i, j), 0.0000001d);
+
+        Matrix luDecompositionU = dec.getU();
+
+        assertEquals("Unexpected U row size.", testU.rowSize(), luDecompositionU.rowSize());
+        assertEquals("Unexpected U column size.", testU.columnSize(), luDecompositionU.columnSize());
+
+        for (int i = 0; i < testU.rowSize(); i++)
+            for (int j = 0; j < testU.columnSize(); j++)
+                assertEquals("Unexpected U value at (" + i + "," + j + ").",
+                    testU.getX(i, j), luDecompositionU.getX(i, j), 0.0000001d);
+
+        Matrix luDecompositionP = dec.getP();
+
+        assertEquals("Unexpected P row size.", testP.rowSize(), luDecompositionP.rowSize());
+        assertEquals("Unexpected P column size.", testP.columnSize(), luDecompositionP.columnSize());
+
+        for (int i = 0; i < testP.rowSize(); i++)
+            for (int j = 0; j < testP.columnSize(); j++)
+                assertEquals("Unexpected P value at (" + i + "," + j + ").",
+                    testP.getX(i, j), luDecompositionP.getX(i, j), 0.0000001d);
+
+        dec.destroy();
+    }
+
+    /** */
+    @Test(expected = CardinalityException.class)
+    public void solveVecWrongSize() throws Exception {
+        new LUDecomposition(testMatrix).solve(new DenseLocalOnHeapVector(testMatrix.rowSize() + 1));
+    }
+    /** */
+    @Test(expected = SingularMatrixException.class)
+    public void solveVecSingularMatrix() throws Exception {
+        new LUDecomposition(new DenseLocalOnHeapMatrix(testMatrix.rowSize(), testMatrix.rowSize()))
+            .solve(new DenseLocalOnHeapVector(testMatrix.rowSize()));
     }
 
     /** */
     @Test
     public void solveVec() throws Exception {
-        // TODO
+        Vector sol = new LUDecomposition(new PivotedMatrixView(testMatrix))
+            .solve(new DenseLocalOnHeapVector(testMatrix.rowSize()));
+
+        assertEquals("Wrong solution vector size.", testMatrix.rowSize(), sol.size());
+
+        for (int i = 0; i < sol.size(); i++)
+            assertEquals("Unexpected value at index " + i, 0d, sol.getX(i), 0.0000001d);
+    }
+
+    /** */
+    @Test(expected = CardinalityException.class)
+    public void solveMtxWrongSize() throws Exception {
+        new LUDecomposition(testMatrix).solve(
+            new DenseLocalOnHeapMatrix(testMatrix.rowSize() + 1, testMatrix.rowSize()));
+    }
+    /** */
+    @Test(expected = SingularMatrixException.class)
+    public void solveMtxSingularMatrix() throws Exception {
+        new LUDecomposition(new DenseLocalOnHeapMatrix(testMatrix.rowSize(), testMatrix.rowSize()))
+            .solve(new DenseLocalOnHeapMatrix(testMatrix.rowSize(), testMatrix.rowSize()));
     }
 
     /** */
     @Test
     public void solveMtx() throws Exception {
-        // TODO
+        Matrix sol = new LUDecomposition(new PivotedMatrixView(testMatrix))
+            .solve(new DenseLocalOnHeapMatrix(testMatrix.rowSize(), testMatrix.rowSize()));
+
+        assertEquals("Wrong solution matrix row size.", testMatrix.rowSize(), sol.rowSize());
+
+        assertEquals("Wrong solution matrix column size.", testMatrix.rowSize(), sol.columnSize());
+
+        for (int row = 0; row < sol.rowSize(); row++)
+            for (int col = 0; col < sol.columnSize(); col++)
+                assertEquals("Unexpected P value at (" + row + "," + col + ").",
+                    0d, sol.getX(row, col), 0.0000001d);
+    }
+
+    /** */
+    @Test(expected = AssertionError.class)
+    public void nullMatrixTest() {
+        new LUDecomposition(null);
+    }
+
+    /** */
+    @Test(expected = CardinalityException.class)
+    public void nonSquareMatrixTest() {
+        new LUDecomposition(new DenseLocalOnHeapMatrix(2, 3));
     }
 }

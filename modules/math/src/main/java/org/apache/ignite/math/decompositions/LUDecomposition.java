@@ -31,7 +31,7 @@ import org.apache.ignite.math.exceptions.*;
 public class LUDecomposition extends DecompositionSupport {
     /** Default bound to determine effective singularity in LU decomposition. */
     private static final double DEFAULT_TOO_SMALL = 1e-11;
-    
+
     /** Pivot permutation associated with LU decomposition. */
     private final Vector pivot;
     /** Parity of the permutation associated with the LU decomposition. */
@@ -68,7 +68,9 @@ public class LUDecomposition extends DecompositionSupport {
      * @param singularityThreshold threshold (based on partial row norm).
      * @throws CardinalityException if matrix is not square.
      */
-    public LUDecomposition(Matrix matrix, double singularityThreshold){
+    public LUDecomposition(Matrix matrix, double singularityThreshold) {
+        assert matrix != null;
+
         int rows = matrix.rowSize();
         int cols = matrix.columnSize();
 
@@ -86,7 +88,7 @@ public class LUDecomposition extends DecompositionSupport {
 
         even     = true;
         singular = false;
-        
+
         cachedL = null;
         cachedU = null;
         cachedP = null;
