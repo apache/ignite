@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
