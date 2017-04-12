@@ -50,15 +50,6 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private IIgnite[] _grids;
-        
-        /** */
-        public static int IdGen;
-
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
-        {
-            StopGrids();
-        }
 
         /// <summary>
         /// Executes before each test.
@@ -74,7 +65,7 @@ namespace Apache.Ignite.Core.Tests
         /// Executes after each test.
         /// </summary>
         [TearDown]
-        public virtual void TearDown()
+        public void TearDown()
         {
             try
             {
@@ -94,6 +85,15 @@ namespace Apache.Ignite.Core.Tests
                 if (TestContext.CurrentContext.Test.Name.StartsWith("TestEventTypes"))
                     StopGrids(); // clean events for other tests
             }
+        }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            StopGrids();
         }
 
         /// <summary>
@@ -611,6 +611,36 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the event store configuration.
+        /// </summary>
+        [Test]
+        public void TestConfiguration()
+        {
+            var cfg = _grid1.GetConfiguration().EventStorageSpi as MemoryEventStorageSpi;
+
+            Assert.IsNotNull(cfg);
+
+            Assert.AreEqual(MemoryEventStorageSpi.DefaultExpirationTimeout, cfg.ExpirationTimeout);
+            Assert.AreEqual(MemoryEventStorageSpi.DefaultMaxEventCount, cfg.MaxEventCount);
+
+            // Test user-defined event storage.
+            var igniteCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = "grid4",
+                EventStorageSpi = new MyEventStorage()
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(igniteCfg));
+            Assert.AreEqual("Failed to start Ignite.NET, check inner exception for details", ex.Message);
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Unsupported IgniteConfiguration.EventStorageSpi: " +
+                            "'Apache.Ignite.Core.Tests.MyEventStorage'. Supported implementations: " +
+                            "'Apache.Ignite.Core.Events.NoopEventStorageSpi', " +
+                            "'Apache.Ignite.Core.Events.MemoryEventStorageSpi'.", ex.InnerException.Message);
+        }
+
+        /// <summary>
         /// Checks base event fields serialization.
         /// </summary>
         /// <param name="evt">The evt.</param>
@@ -666,7 +696,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private static IgniteConfiguration Configuration(string springConfigUrl)
+        private static IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
             return new IgniteConfiguration
             {
@@ -679,7 +709,8 @@ namespace Apache.Ignite.Core.Tests
                     {
                         new BinaryTypeConfiguration(typeof (RemoteEventBinarizableFilter))
                     }
-                }
+                },
+                EventStorageSpi = new MemoryEventStorageSpi()
             };
         }
 
@@ -761,9 +792,9 @@ namespace Apache.Ignite.Core.Tests
             if (_grid1 != null)
                 return;
 
-            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid1.xml"));
+            _grid2 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid2.xml"));
+            _grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
 
             _grids = new[] {_grid1, _grid2, _grid3};
         }
@@ -1068,5 +1099,10 @@ namespace Apache.Ignite.Core.Tests
         {
             throw new NotImplementedException();
         }
+    }
+
+    public class MyEventStorage : IEventStorageSpi
+    {
+        // No-op.
     }
 }

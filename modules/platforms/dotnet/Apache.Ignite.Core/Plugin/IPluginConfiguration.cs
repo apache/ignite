@@ -17,11 +17,10 @@
 
 namespace Apache.Ignite.Core.Plugin
 {
-    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
-    /// Plugin configuration marker interface.
+    /// Plugin configuration interface.
     /// <para />
     /// Implementations should be linked to corresponding <see cref="IPluginProvider{TConfig}"/>
     /// via <see cref="PluginProviderTypeAttribute"/>.
@@ -41,7 +40,6 @@ namespace Apache.Ignite.Core.Plugin
     /// </code>
     /// </example>
     /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface IPluginConfiguration
     {
         /// <summary>

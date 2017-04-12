@@ -931,7 +931,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgfsInputStream open(IgfsPath path) {
-        return open(path, cfg.getStreamBufferSize(), cfg.getSequentialReadsBeforePrefetch());
+        return open(path, cfg.getBufferSize(), cfg.getSequentialReadsBeforePrefetch());
     }
 
     /** {@inheritDoc} */
@@ -951,7 +951,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Open file for reading [path=" + path + ", bufSize=" + bufSize + ']');
 
-                int bufSize0 = bufSize == 0 ? cfg.getStreamBufferSize() : bufSize;
+                int bufSize0 = bufSize == 0 ? cfg.getBufferSize() : bufSize;
 
                 IgfsMode mode = resolveMode(path);
 
@@ -1034,7 +1034,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream create(IgfsPath path, boolean overwrite) {
-        return create0(path, cfg.getStreamBufferSize(), overwrite, null, 0, null, true);
+        return create0(path, cfg.getBufferSize(), overwrite, null, 0, null, true);
     }
 
     /** {@inheritDoc} */
@@ -1141,7 +1141,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream append(IgfsPath path, boolean create) {
-        return append(path, cfg.getStreamBufferSize(), create, null);
+        return append(path, cfg.getBufferSize(), create, null);
     }
 
     /** {@inheritDoc} */
@@ -1404,7 +1404,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void format() {
+    @Override public void clear() {
         try {
             IgniteUuid id = meta.format();
 
@@ -1432,8 +1432,8 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> formatAsync() throws IgniteException {
-        return (IgniteFuture<Void>)createFuture(formatAsync0());
+    @Override public IgniteFuture<Void> clearAsync() throws IgniteException {
+        return (IgniteFuture<Void>)createFuture(clearAsync0());
     }
 
     /**
@@ -1441,7 +1441,7 @@ public final class IgfsImpl implements IgfsEx {
      *
      * @return Future.
      */
-    IgniteInternalFuture<?> formatAsync0() {
+    IgniteInternalFuture<?> clearAsync0() {
         GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
         Thread t = new Thread(new FormatRunnable(fut), "igfs-format-" + cfg.getName() + "-" +
@@ -1808,7 +1808,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return Real buffer size.
      */
     private int bufferSize(int bufSize) {
-        return bufSize == 0 ? cfg.getStreamBufferSize() : bufSize;
+        return bufSize == 0 ? cfg.getBufferSize() : bufSize;
     }
 
     /**
@@ -1871,7 +1871,7 @@ public final class IgfsImpl implements IgfsEx {
             IgfsException err = null;
 
             try {
-                format();
+                clear();
             }
             catch (Throwable err0) {
                 err = IgfsUtils.toIgfsException(err0);

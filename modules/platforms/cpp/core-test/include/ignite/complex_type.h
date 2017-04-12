@@ -18,10 +18,8 @@
 #ifndef _IGNITE_ODBC_TEST_COMPLEX_TYPE
 #define _IGNITE_ODBC_TEST_COMPLEX_TYPE
 
+#include <stdint.h>
 #include <string>
-
-#include "ignite/ignite.h"
-#include "ignite/ignition.h"
 
 namespace ignite
 {
@@ -81,20 +79,16 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(InnerObject)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(InnerObject)
 
-            void Write(BinaryWriter& writer, InnerObject obj)
+            static void Write(BinaryWriter& writer, const InnerObject& obj)
             {
                 writer.WriteInt32("f1", obj.f1);
                 writer.WriteString("f2", obj.f2);
             }
 
-            InnerObject Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, InnerObject& dst)
             {
-                InnerObject obj;
-
-                obj.f1 = reader.ReadInt32("f1");
-                obj.f2 = reader.ReadString("f2");
-
-                return obj;
+                dst.f1 = reader.ReadInt32("f1");
+                dst.f2 = reader.ReadString("f2");
             }
 
         IGNITE_BINARY_TYPE_END
@@ -110,22 +104,18 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(ComplexType)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(ComplexType)
 
-            void Write(BinaryWriter& writer, ComplexType obj)
+            static void Write(BinaryWriter& writer, const ComplexType& obj)
             {
                 writer.WriteInt32("i32Field", obj.i32Field);
                 writer.WriteObject("objField", obj.objField);
                 writer.WriteString("strField", obj.strField);
             }
 
-            ComplexType Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, ComplexType& dst)
             {
-                ComplexType obj;
-
-                obj.i32Field = reader.ReadInt32("i32Field");
-                obj.objField = reader.ReadObject<InnerObject>("objField");
-                obj.strField = reader.ReadString("strField");
-
-                return obj;
+                dst.i32Field = reader.ReadInt32("i32Field");
+                dst.objField = reader.ReadObject<InnerObject>("objField");
+                dst.strField = reader.ReadString("strField");
             }
 
         IGNITE_BINARY_TYPE_END

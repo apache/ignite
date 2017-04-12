@@ -61,12 +61,6 @@
         </file>
 
         <file>
-            <source>examples/schema-import/pom-standalone.xml</source>
-            <outputDirectory>/examples/schema-import</outputDirectory>
-            <destName>pom.xml</destName>
-        </file>
-
-        <file>
             <source>config/dotnet/default-dotnet.xml</source>
             <outputDirectory>/config/dotnet</outputDirectory>
         </file>
@@ -221,9 +215,6 @@
                 <include>rest/**</include>
                 <include>memcached/**</include>
                 <include>redis/**</include>
-                <include>schema-import/src/**</include>
-                <include>schema-import/bin/**</include>
-                <include>schema-import/README.txt</include>
             </includes>
         </fileSet>
 
