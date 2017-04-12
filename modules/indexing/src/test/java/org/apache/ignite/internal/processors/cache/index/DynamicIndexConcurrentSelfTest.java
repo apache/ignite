@@ -71,9 +71,10 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
      */
     public void testOperationJoin() throws Exception {
         Ignite srv1 = Ignition.start(serverConfiguration(1));
-        Ignite srv2 = Ignition.start(serverConfiguration(2));
-        Ignite srv3 = Ignition.start(serverConfiguration(3, true));
-        Ignite cli = Ignition.start(clientConfiguration(4));
+
+        Ignition.start(serverConfiguration(2));
+        Ignition.start(serverConfiguration(3, true));
+        Ignition.start(clientConfiguration(4));
 
         srv1.getOrCreateCache(cacheConfiguration());
 
@@ -86,7 +87,9 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
         IgniteInternalFuture<?> idxFut2 = queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx2, false);
 
         // Start even more nodes of different flavors
-        // TODO
+        Ignition.start(serverConfiguration(5));
+        Ignition.start(serverConfiguration(6, true));
+        Ignition.start(clientConfiguration(7));
 
         assert !idxFut1.isDone();
         assert !idxFut2.isDone();
