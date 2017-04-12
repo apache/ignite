@@ -27,7 +27,10 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 
 /**
  * Versioned entry abstract test.
@@ -35,6 +38,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractSelfTest {
     /** Entries number to store in a cache. */
     private static final int ENTRIES_NUM = 500;
+
+    /** Inv count. */
+    private static final AtomicInteger INV_CNT = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -49,6 +55,8 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
 
         for (int i = 0 ; i < ENTRIES_NUM; i++)
             cache.put(i, "value_" + i);
+
+        INV_CNT.set(0);
     }
 
     /**
@@ -57,13 +65,13 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     public void testInvoke() throws Exception {
         Cache<Integer, String> cache = grid(0).cache(null);
 
-        final AtomicInteger invoked = new AtomicInteger();
+        int key = getKeyForRemoteNode(cache);
 
-        cache.invoke(100, new EntryProcessor<Integer, String, Object>() {
+        cache.invoke(key, new EntryProcessor<Integer, String, Object>() {
             @Override public Object process(MutableEntry<Integer, String> entry, Object... arguments)
                 throws EntryProcessorException {
 
-                invoked.incrementAndGet();
+                INV_CNT.incrementAndGet();
 
                 CacheEntry<Integer, String> verEntry = entry.unwrap(CacheEntry.class);
 
@@ -73,7 +81,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
             }
         });
 
-        assert invoked.get() > 0;
+        assert INV_CNT.get() > 0;
     }
 
     /**
@@ -87,13 +95,11 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
         for (int i = 0; i < ENTRIES_NUM; i++)
             keys.add(i);
 
-        final AtomicInteger invoked = new AtomicInteger();
-
         cache.invokeAll(keys, new EntryProcessor<Integer, String, Object>() {
             @Override public Object process(MutableEntry<Integer, String> entry, Object... arguments)
                 throws EntryProcessorException {
 
-                invoked.incrementAndGet();
+                INV_CNT.incrementAndGet();
 
                 CacheEntry<Integer, String> verEntry = entry.unwrap(CacheEntry.class);
 
@@ -103,7 +109,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
             }
         });
 
-        assert invoked.get() > 0;
+        assert INV_CNT.get() > 0;
     }
 
     /**
@@ -169,5 +175,22 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
 
         assertNotNull(entry.getKey());
         assertNotNull(entry.getValue());
+    }
+
+
+    /**
+     * @param cache Cache.
+     */
+    private int getKeyForRemoteNode(Cache cache) {
+        GridCacheAffinityManager aff = ((IgniteCacheProxy)cache).context().affinity();
+
+        int key;
+
+        for (key = 0; key < ENTRIES_NUM; key++) {
+            if (!aff.primary(grid(0).localNode(), (Integer)key, AffinityTopologyVersion.NONE))
+                break;
+        }
+
+        return key;
     }
 }
