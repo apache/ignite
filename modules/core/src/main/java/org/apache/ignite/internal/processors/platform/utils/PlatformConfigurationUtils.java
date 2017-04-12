@@ -603,6 +603,8 @@ public class PlatformConfigurationUtils {
             if (in.readBoolean())  // compact footer is set
                 cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
 
+            // TODO: Set name mapper.
+
             int typeCnt = in.readInt();
 
             if (typeCnt > 0) {
