@@ -55,8 +55,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var parsedType = TypeNameParser.Parse(typeName);
 
             // Partial names should be resolved by scanning assemblies.
-            return ResolveType(assemblyName, parsedType, AppDomain.CurrentDomain.GetAssemblies())
-                ?? ResolveTypeInReferencedAssemblies(assemblyName, parsedType);
+            return ResolveType(assemblyName, parsedType, AppDomain.CurrentDomain.GetAssemblies());
         }
 
         /// <summary>
@@ -68,9 +67,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns> 
         /// Resolved type. 
         /// </returns>
-        private static Type ResolveType(string assemblyName, TypeNameParser typeName, ICollection<Assembly> assemblies)
+        private Type ResolveType(string assemblyName, TypeNameParser typeName, ICollection<Assembly> assemblies)
         {
             var type = ResolveNonGenericType(assemblyName, typeName.GetFullName(), assemblies);
+
+            if (type == null)
+            {
+                return ResolveTypeInReferencedAssemblies(assemblyName, typeName);
+            }
 
             if (type.IsGenericTypeDefinition && typeName.Generics != null)
             {
