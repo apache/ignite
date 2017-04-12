@@ -214,23 +214,35 @@ namespace Apache.Ignite.Linq.Impl
 
             if (validTableNames.Length == 1)
             {
-                return validTableNames[0];
+                return EscapeTableName(validTableNames[0]);
             }
 
             var valueTypeName = cacheValueType.FullName;
 
             if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
             {
-                // TODO: Strip namespace, but keep nested type specification
-                // TODO: Replace "+"?
-                var ns = cacheValueType.Namespace;
-                return ns == null ? valueTypeName : valueTypeName.Substring(0, ns.Length);
+                return EscapeTableName(valueTypeName);
             }
 
             throw new CacheException(string.Format("Table name cannot be inferred for cache '{0}', " +
                                                    "please use AsCacheQueryable overload with tableName parameter. " +
                                                    "Valid table names: {1}", _cacheConfiguration.Name ?? "null",
                                                     validTableNames.Aggregate((x, y) => x + ", " + y)));
+        }
+
+        /// <summary>
+        /// Escapes the name of the table: strips namespace and replaces nested class qualifiers.
+        /// </summary>
+        private static string EscapeTableName(string valueTypeName)
+        {
+            var nsIndex = valueTypeName.LastIndexOf('.');
+
+            if (nsIndex > 0)
+            {
+                valueTypeName = valueTypeName.Substring(nsIndex + 1);
+            }
+
+            return valueTypeName.Replace('+', '_');
         }
 
         /// <summary>
