@@ -30,6 +30,7 @@
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
@@ -348,7 +349,33 @@
             // Swap space
             SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
 
-            // Plugins
+            // Event storage
+            if (EventStorageSpi == null)
+            {
+                writer.WriteByte(0);
+            }
+            else if (EventStorageSpi is NoopEventStorageSpi)
+            {
+                writer.WriteByte(1);
+            }
+            else
+            {
+                var memEventStorage = EventStorageSpi as MemoryEventStorageSpi;
+
+                if (memEventStorage == null)
+                {
+                    throw new IgniteException(string.Format(
+                        "Unsupported IgniteConfiguration.EventStorageSpi: '{0}'. " +
+                        "Supported implementations: '{1}', '{2}'.",
+                        EventStorageSpi.GetType(), typeof(NoopEventStorageSpi), typeof(MemoryEventStorageSpi)));
+                }
+
+                writer.WriteByte(2);
+
+                memEventStorage.Write(writer);
+            }
+
+            // Plugins (should be last)
             if (PluginConfigurations != null)
             {
                 var pos = writer.Stream.Position;
@@ -484,6 +511,17 @@
 
             // Swap
             SwapSpaceSpi = SwapSpaceSerializer.Read(r);
+
+            // Event storage
+            switch (r.ReadByte())
+            {
+                case 1: EventStorageSpi = new NoopEventStorageSpi();
+                    break;
+
+                case 2:
+                    EventStorageSpi = MemoryEventStorageSpi.Read(r);
+                    break;
+            }
         }
 
         /// <summary>
@@ -923,5 +961,13 @@
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<IPluginConfiguration> PluginConfigurations { get; set; }
+
+        /// <summary>
+        /// Gets or sets the event storage interface.
+        /// <para />
+        /// Only predefined implementations are supported: 
+        /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
+        /// </summary>
+        public IEventStorageSpi EventStorageSpi { get; set; }
     }
 }

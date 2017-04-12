@@ -100,7 +100,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        igfs.format();
+        igfs.clear();
     }
 
     /**

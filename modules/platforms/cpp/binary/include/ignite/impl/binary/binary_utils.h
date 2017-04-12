@@ -471,9 +471,11 @@ namespace ignite
                 template<typename T>
                 static T GetDefaultValue()
                 {
-                    ignite::binary::BinaryType<T> binType;
+                    T res;
 
-                    return binType.GetNull();
+                    ignite::binary::BinaryType<T>::GetNull(res);
+
+                    return res;
                 }
             };
 

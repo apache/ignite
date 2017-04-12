@@ -117,7 +117,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        mgr.igfsCtx.igfs().format();
+        mgr.igfsCtx.igfs().clear();
     }
 
     /** {@inheritDoc} */
