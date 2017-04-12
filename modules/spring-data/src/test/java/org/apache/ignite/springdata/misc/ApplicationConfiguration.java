@@ -35,7 +35,7 @@ public class ApplicationConfiguration {
     public Ignite igniteInstance() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        CacheConfiguration ccfg = new CacheConfiguration("cache");
+        CacheConfiguration ccfg = new CacheConfiguration("PersonCache");
 
         ccfg.setIndexedTypes(Integer.class, Person.class);
 

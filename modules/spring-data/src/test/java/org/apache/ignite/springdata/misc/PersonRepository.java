@@ -30,8 +30,8 @@ import org.apache.ignite.springdata.repository.IgniteRepository;
 /**
  *
  */
-@RepositoryConfig(cacheName = "cache")
-public interface FirstRepository extends IgniteRepository<Person, Integer> {
+@RepositoryConfig(cacheName = "PersonCache")
+public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** */
     public List<Person> findByFirstName(String val);
 

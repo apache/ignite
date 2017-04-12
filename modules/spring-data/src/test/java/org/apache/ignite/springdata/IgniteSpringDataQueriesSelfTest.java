@@ -21,9 +21,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import javax.cache.Cache;
-import org.apache.ignite.springdata.misc.FirstRepository;
+import org.apache.ignite.springdata.misc.ApplicationConfiguration;
+import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.misc.Person;
-import org.apache.ignite.springdata.misc.SecondRepository;
+import org.apache.ignite.springdata.misc.PersonSecondRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.domain.PageRequest;
@@ -33,28 +34,32 @@ import org.springframework.data.domain.Sort;
 /**
  *
  */
-public class IgniteSpringDataSelfTest extends GridCommonAbstractTest {
+public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     /** Repository. */
-    private static FirstRepository repo;
+    private static PersonRepository repo;
 
     /** Repository 2. */
-    private static SecondRepository repo2;
+    private static PersonSecondRepository repo2;
 
     /** Context. */
     private static AnnotationConfigApplicationContext ctx;
+
+    /** Number of entries to store */
+    private static int CACHE_SIZE = 1000;
 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ctx = new AnnotationConfigApplicationContext();
 
-        ctx.scan("org.apache.ignite.springdata");
+        ctx.register(ApplicationConfiguration.class);
+
         ctx.refresh();
 
-        repo = ctx.getBean(FirstRepository.class);
-        repo2 = ctx.getBean(SecondRepository.class);
+        repo = ctx.getBean(PersonRepository.class);
+        repo2 = ctx.getBean(PersonSecondRepository.class);
 
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < CACHE_SIZE; i++)
             repo.save(i, new Person("person" + Integer.toHexString(i),
                 "lastName" + Integer.toHexString((i + 16) % 256)));
     }

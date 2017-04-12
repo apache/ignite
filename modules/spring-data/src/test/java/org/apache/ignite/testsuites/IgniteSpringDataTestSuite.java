@@ -18,7 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.springdata.IgniteSpringDataSelfTest;
+import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
+import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
 
 /**
  *
@@ -31,7 +32,8 @@ public class IgniteSpringDataTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Spring Data Test Suite");
 
-        suite.addTestSuite(IgniteSpringDataSelfTest.class);
+        suite.addTestSuite(IgniteSpringDataCrudSelfTest.class);
+        suite.addTestSuite(IgniteSpringDataQueriesSelfTest.class);
 
         return suite;
     }
