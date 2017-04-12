@@ -73,7 +73,7 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
      * @throws Exception If failed.
      */
     private void testEvictionWithReadThrough(CacheAtomicityMode atomicityMode, CacheMode cacheMode) throws Exception {
-        startGridsMultiThreaded(4);
+        startGrid(0);
 
         CacheConfiguration<Object, Object> cfg = cacheConfig("evict-rebalance", null, cacheMode, atomicityMode,
             CacheWriteSynchronizationMode.PRIMARY_SYNC);

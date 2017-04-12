@@ -17,10 +17,9 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.mem.OutOfMemoryException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
-import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 
 /**
  * Configuration bean used for creating {@link MemoryPolicy} instances.
@@ -48,12 +47,19 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Algorithm for per-page eviction. If {@link DataPageEvictionMode#DISABLED} set, eviction is not performed. */
     private DataPageEvictionMode pageEvictionMode = DataPageEvictionMode.DISABLED;
 
-    /** Allocation of new {@link DataPageIO} pages is stopped when this percentage of pages are allocated. */
+    /** Threshold for per-page eviction.
+     * When this percentage of memory pages of the current policy is allocated (90% by default),
+     * system starts page eviction.
+     * Decrease this parameter if {@link OutOfMemoryException} occurred with enabled page eviction.
+     */
     private double evictionThreshold = 0.9;
 
-    /** Allocation of new {@link DataPageIO} pages is stopped by maintaining this amount of empty pages in
-     * corresponding {@link FreeList} bucket. Pages get into the bucket through evicting all data entries one by one.
-     * Higher load and contention require larger pool size.
+    /** When {@link #evictionThreshold} is reached, allocation of new data pages is prevented by maintaining this
+     * amount of evicted data pages in the pool. If any thread needs free page to store cache entry,
+     * it will take empty page from the pool instead of allocating a new one.
+     * Increase this parameter if cache can contain very big entries (total size of pages in the pool should be enough
+     * to contain largest cache entry).
+     * Increase this parameter if {@link OutOfMemoryException} occurred with enabled page eviction.
      */
     private int emptyPagesPoolSize = 100;
 
