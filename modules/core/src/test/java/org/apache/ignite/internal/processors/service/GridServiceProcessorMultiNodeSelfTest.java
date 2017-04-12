@@ -264,4 +264,65 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             stopGrid("client");
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployLimits() throws Exception {
+            String name = "serviceWithLimitsUpdateTopology";
+
+            Ignite g = randomGrid();
+
+            final int totalInstances = nodeCount() + 1;
+
+            CountDownLatch latch = new CountDownLatch(nodeCount());
+
+            DummyService.exeLatch(name, latch);
+
+            ServiceConfiguration srvcCfg = new ServiceConfiguration();
+
+            srvcCfg.setName(name);
+            srvcCfg.setMaxPerNodeCount(1);
+            srvcCfg.setTotalCount(totalInstances);
+            srvcCfg.setService(new DummyService());
+
+            IgniteServices svcs = g.services().withAsync();
+
+            svcs.deploy(srvcCfg);
+
+            IgniteFuture<?> fut = svcs.future();
+
+            info("Deployed service: " + name);
+
+            fut.get();
+
+            info("Finished waiting for service future: " + name);
+
+            latch.await();
+
+            TestCase.assertEquals(name, nodeCount(), DummyService.started(name));
+            TestCase.assertEquals(name, 0, DummyService.cancelled(name));
+
+            checkCount(name, g.services().serviceDescriptors(), nodeCount());
+
+            int extraNodes = 2;
+
+            latch = new CountDownLatch(1);
+
+            DummyService.exeLatch(name, latch);
+
+            startExtraNodes(2);
+
+            try {
+                latch.await();
+
+                TestCase.assertEquals(name, totalInstances, DummyService.started(name));
+                TestCase.assertEquals(name, 0, DummyService.cancelled(name));
+
+                checkCount(name, g.services().serviceDescriptors(), totalInstances);
+            }
+            finally {
+                stopExtraNodes(extraNodes);
+            }
+    }
 }

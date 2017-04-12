@@ -968,7 +968,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
                         int remainder = totalCnt != 0 ? totalCnt % size : 0;
 
-                        if (perNodeCnt > maxPerNodeCnt && maxPerNodeCnt != 0) {
+                        if (perNodeCnt >= maxPerNodeCnt && maxPerNodeCnt != 0) {
                             perNodeCnt = maxPerNodeCnt;
                             remainder = 0;
                         }
