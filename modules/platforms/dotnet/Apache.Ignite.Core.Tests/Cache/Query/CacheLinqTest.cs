@@ -1393,15 +1393,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, T>(new CacheConfiguration(PersonOrgCacheName,
-                    new QueryEntity(typeof (int), typeof (Person))
+                    new QueryEntity(typeof(int), typeof(Person))
                     {
                         Aliases = new[]
                         {
                             new QueryAlias("AliasTest", "Person_AliasTest"),
-                            new QueryAlias("Address.AliasTest", "Addr_AliasTest")
+                            new QueryAlias("CacheLinqTest+Address.AliasTest", "Addr_AliasTest")
                         }
                     },
-                    new QueryEntity(typeof (int), typeof (Organization))) {CacheMode = CacheMode.Replicated});
+                    new QueryEntity(typeof(int), typeof(Organization))) {CacheMode = CacheMode.Replicated});
         }
 
         /// <summary>
