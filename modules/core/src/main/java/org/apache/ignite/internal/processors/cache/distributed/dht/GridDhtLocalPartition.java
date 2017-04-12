@@ -624,7 +624,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (markForDestroy())
                 finishDestroy(updateSeq);
         }
-        else
+        else if (partState == RENTING || shouldBeRenting())
             cctx.preloader().evictPartitionAsync(this);
     }
 
