@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EventListener;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -80,10 +81,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
  */
 public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi> {
     /** Local event listeners. */
-    private final ConcurrentMap<Integer, Set<GridLocalEventListener>> lsnrs = new ConcurrentHashMap8<>();
-
-    /** Internal discovery listeners. */
-    private final ConcurrentMap<Integer, Set<DiscoveryEventListener>> discoLsnrs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, Set<EventListener>> lsnrs = new ConcurrentHashMap8<>();
 
     /** Busy lock to control activity of threads. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
@@ -205,7 +203,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     @Override public void printMemoryStats() {
         int lsnrsCnt = 0;
 
-        for (Set<GridLocalEventListener> lsnrs0 : lsnrs.values())
+        for (Set<EventListener> lsnrs0 : lsnrs.values())
             lsnrsCnt += lsnrs0.size();
 
         X.println(">>>");
@@ -254,7 +252,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             msgLsnr = null;
 
             lsnrs.clear();
-            discoLsnrs.clear();
 
             stopped = true;
         }
@@ -296,6 +293,26 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param evt Event to record.
      */
     public void record(Event evt) {
+        record0(evt);
+    }
+
+    /**
+     * Records discovery events.
+     *
+     * @param evt Event to record.
+     * @param discoCache Discovery cache.
+     */
+    public void record(DiscoveryEvent evt, DiscoCache discoCache) {
+        record0(evt, discoCache);
+    }
+
+    /**
+     * Records event if it's recordable.
+     *
+     * @param evt Event to record.
+     * @param params Additional parameters.
+     */
+    private void record0(Event evt, Object... params) {
         assert evt != null;
 
         if (!enterBusy())
@@ -319,29 +336,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 }
 
             if (isRecordable(type))
-                notifyListeners(evt);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
-     * Records discovery events.
-     *
-     * @param evt Event to record.
-     * @param discoCache Discovery cache.
-     */
-    public void record(DiscoveryEvent evt, DiscoCache discoCache) {
-        assert evt != null;
-
-        if (!enterBusy())
-            return;
-
-        try {
-            record(evt);
-
-            notifyDiscoveryListeners(evt, discoCache);
+                notifyListeners(lsnrs.get(evt.type()), evt, params);
         }
         finally {
             leaveBusy();
@@ -681,7 +676,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
         try {
             for (int t : types) {
-                getOrCreate(discoLsnrs, t).add(lsnr);
+                getOrCreate(lsnrs, t).add(lsnr);
             }
         }
         finally {
@@ -703,11 +698,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             return;
 
         try {
-            getOrCreate(discoLsnrs, type).add(lsnr);
+            getOrCreate(lsnrs, type).add(lsnr);
 
             if (types != null) {
                 for (int t : types) {
-                    getOrCreate(discoLsnrs, t).add(lsnr);
+                    getOrCreate(lsnrs, t).add(lsnr);
                 }
             }
         }
@@ -747,7 +742,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Returns {@code true} if removed.
      */
     public boolean removeLocalEventListener(IgnitePredicate<? extends Event> lsnr, @Nullable int... types) {
-        return removeLocalEventListener(new UserListenerWrapper(lsnr), types);
+        return removeEventListener(new UserListenerWrapper(lsnr), types);
     }
 
     /**
@@ -759,12 +754,36 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Returns {@code true} if removed.
      */
     public boolean removeLocalEventListener(GridLocalEventListener lsnr, @Nullable int... types) {
+        return removeEventListener(lsnr, types);
+    }
+
+    /**
+     * Removes listener for specified events, if any. If no event types provided - it
+     * remove the listener for all its registered events.
+     *
+     * @param lsnr Listener.
+     * @param types Event types.
+     * @return Returns {@code true} if removed.
+     */
+    public boolean removeDiscoveryEventListener(DiscoveryEventListener lsnr, @Nullable int... types) {
+        return removeEventListener(lsnr, types);
+    }
+
+    /**
+     * Removes listener for specified events, if any. If no event types provided - it
+     * remove the listener for all its registered events.
+     *
+     * @param lsnr Listener.
+     * @param types Event types.
+     * @return Returns {@code true} if removed.
+     */
+    private boolean removeEventListener(EventListener lsnr, @Nullable int[] types) {
         assert lsnr != null;
 
         boolean found = false;
 
         if (F.isEmpty(types)) {
-            for (Set<GridLocalEventListener> set : lsnrs.values())
+            for (Set<EventListener> set : lsnrs.values())
                 if (set.remove(lsnr))
                     found = true;
         }
@@ -772,7 +791,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             assert types != null;
 
             for (int type : types) {
-                Set<GridLocalEventListener> set = lsnrs.get(type);
+                Set<EventListener> set = lsnrs.get(type);
 
                 if (set != null && set.remove(lsnr))
                     found = true;
@@ -785,38 +804,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
             if (p instanceof PlatformEventFilterListener)
                 ((PlatformEventFilterListener)p).onClose();
-        }
-
-        return found;
-    }
-
-    /**
-     * Removes listener for specified events, if any. If no event types provided - it
-     * remove the listener for all its registered events.
-     *
-     * @param lsnr Listener.
-     * @param types Event types.
-     * @return Returns {@code true} if removed.
-     */
-    public boolean removeDiscoveryEventListener(DiscoveryEventListener lsnr, @Nullable int... types) {
-        assert lsnr != null;
-
-        boolean found = false;
-
-        if (F.isEmpty(types)) {
-            for (Set<DiscoveryEventListener> set : discoLsnrs.values())
-                if (set.remove(lsnr))
-                    found = true;
-        }
-        else {
-            assert types != null;
-
-            for (int type : types) {
-                Set<DiscoveryEventListener> set = discoLsnrs.get(type);
-
-                if (set != null && set.remove(lsnr))
-                    found = true;
-            }
         }
 
         return found;
@@ -882,27 +869,18 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
-     * @param evt Event to notify about.
-     */
-    private void notifyListeners(Event evt) {
-        assert evt != null;
-
-        notifyListeners(lsnrs.get(evt.type()), evt);
-    }
-
-    /**
      * @param set Set of listeners.
      * @param evt Grid event.
      */
-    private void notifyListeners(@Nullable Collection<GridLocalEventListener> set, Event evt) {
+    private void notifyListeners(@Nullable Collection<EventListener> set, Event evt, Object[] params) {
         assert evt != null;
 
         if (!F.isEmpty(set)) {
             assert set != null;
 
-            for (GridLocalEventListener lsnr : set) {
+            for (EventListener lsnr : set) {
                 try {
-                    lsnr.onEvent(evt);
+                    notifyListener(lsnr, evt, params);
                 }
                 catch (Throwable e) {
                     U.error(log, "Unexpected exception in listener notification for event: " + evt, e);
@@ -915,38 +893,15 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
-     * @param evt Discovery event
-     * @param cache Discovery cache.
+     * @param lsnr Listener.
+     * @param evt Event.
+     * @param params Additional parameters.
      */
-    private void notifyDiscoveryListeners(DiscoveryEvent evt, DiscoCache cache) {
-        assert evt != null;
-
-        notifyDiscoveryListeners(discoLsnrs.get(evt.type()), evt, cache);
-    }
-
-    /**
-     * @param set Set of listeners.
-     * @param evt Discovery event.
-     * @param cache Discovery cache.
-     */
-    private void notifyDiscoveryListeners(@Nullable Collection<DiscoveryEventListener> set, DiscoveryEvent evt, DiscoCache cache) {
-        assert evt != null;
-
-        if (!F.isEmpty(set)) {
-            assert set != null;
-
-            for (DiscoveryEventListener lsnr : set) {
-                try {
-                    lsnr.onEvent(evt, cache);
-                }
-                catch (Throwable e) {
-                    U.error(log, "Unexpected exception in listener notification for event: " + evt, e);
-
-                    if (e instanceof Error)
-                        throw (Error)e;
-                }
-            }
-        }
+    private void notifyListener(EventListener lsnr, Event evt, Object[] params) {
+        if(lsnr instanceof GridLocalEventListener)
+            ((GridLocalEventListener)lsnr).onEvent(evt);
+        else if(params.length != 0) // for now only two types of listeners are presented
+            ((DiscoveryEventListener)lsnr).onEvent((DiscoveryEvent)evt, (DiscoCache)params[0]);
     }
 
     /**
