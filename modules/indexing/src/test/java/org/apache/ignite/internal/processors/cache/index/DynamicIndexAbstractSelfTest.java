@@ -172,6 +172,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         ccfg.setNodeFilter(new NodeFilter());
 
+        ccfg.setBackups(1);
+
         return ccfg;
     }
 

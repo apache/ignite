@@ -73,31 +73,58 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
         // Start servers.
         Ignite srv1 = Ignition.start(serverConfiguration(1));
         Ignite srv2 = Ignition.start(serverConfiguration(2));
-        Ignite srv3 = Ignition.start(serverConfiguration(3, true));
+        Ignition.start(serverConfiguration(3, true));
+        Ignition.start(serverConfiguration(4));
 
         UUID srv1Id = srv1.cluster().localNode().id();
         UUID srv2Id = srv2.cluster().localNode().id();
-        UUID srv3Id = srv3.cluster().localNode().id();
 
         // Start client which will execute operations.
-        Ignite cli = Ignition.start(clientConfiguration(4));
+        Ignite cli = Ignition.start(clientConfiguration(5));
 
         cli.getOrCreateCache(cacheConfiguration());
 
-        // Check migration from srv1 to srv2.
+        put(srv1, 0, KEY_AFTER);
+
+        // Test migration between normal servers.
         blockIndexing(srv1Id);
 
-        QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+        QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        IgniteInternalFuture<?> idxFut = queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
+        IgniteInternalFuture<?> idxFut1 = queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx1, false);
 
         Thread.sleep(100);
 
-        srv1.close();
+        //srv1.close();
+        Ignition.stop(srv1.name(), true);
 
         unblockIndexing(srv1Id);
 
-        idxFut.get();
+        idxFut1.get();
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+
+        // Test migration from normal server to non-affinity server.
+        blockIndexing(srv2Id);
+
+        QueryIndex idx2 = index(IDX_NAME_2, field(alias(FIELD_NAME_2)));
+
+        IgniteInternalFuture<?> idxFut2 = queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx2, false);
+
+        Thread.sleep(100);
+
+        //srv2.close();
+        Ignition.stop(srv2.name(), true);
+
+        unblockIndexing(srv2Id);
+
+        idxFut2.get();
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_SIMPLE_ARG);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_2, KEY_AFTER - SQL_SIMPLE_ARG);
     }
 
     /**
