@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -1333,7 +1334,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         /** {@inheritDoc} */
         @Override void onEvent(Event evt, @NotNull Object[] params) {
             // No checks there since only DiscoveryManager produses DiscoveryEvents
-            // and it uses overloaded method with additional parameters
+            // and it uses an overloaded method with additional parameters
             lsnr.onEvent((DiscoveryEvent)evt, (DiscoCache)params[0]);
         }
 
@@ -1349,7 +1350,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
-     * Wraps user listener predicate provided via {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)}.
+     * Wraps user listener predicate provided via {@link IgniteEvents#localListen(IgnitePredicate, int...)}.
      */
     private final class UserListenerWrapper extends ListenerWrapper {
         /** */
