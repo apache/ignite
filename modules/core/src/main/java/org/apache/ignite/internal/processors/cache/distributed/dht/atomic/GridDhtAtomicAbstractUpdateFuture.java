@@ -110,7 +110,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         this.updateReq = updateReq;
         this.writeVer = writeVer;
 
-        futId = cctx.mvcc().atomicFutureId();
+        futId = cctx.mvcc().nextAtomicId();
 
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
@@ -295,7 +295,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public final Long id() {
+    @Override public final long id() {
         return futId;
     }
 

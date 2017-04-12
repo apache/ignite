@@ -65,7 +65,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -2016,10 +2016,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private void blockSupplySend(TestRecordingCommunicationSpi spi, final String cacheName) {
         spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
             @Override public boolean apply(GridIoMessage ioMsg) {
-                if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessageV2.class))
+                if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessage.class))
                     return false;
 
-                GridDhtPartitionSupplyMessageV2 msg = (GridDhtPartitionSupplyMessageV2)ioMsg.message();
+                GridDhtPartitionSupplyMessage msg = (GridDhtPartitionSupplyMessage)ioMsg.message();
 
                 return msg.cacheId() == CU.cacheId(cacheName);
             }
