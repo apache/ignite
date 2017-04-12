@@ -499,7 +499,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         return key;
     }
 
-
     /** {@inheritDoc} */
     @Override public void reset() {
         // No-op.
