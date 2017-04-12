@@ -61,7 +61,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     protected static final String TBL_NAME_2 = tableName(ValueClass2.class);
 
     /** Index name 1. */
-    protected static final String IDX_NAME = "idx_1";
+    protected static final String IDX_NAME_1 = "idx_1";
 
     /** Index name 2. */
     protected static final String IDX_NAME_2 = "idx_2";

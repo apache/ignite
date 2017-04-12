@@ -65,6 +65,50 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
     }
 
     /**
+     * Test operations join.
+     *
+     * @throws Exception If failed.
+     */
+    public void testOperationJoin() throws Exception {
+        Ignite srv1 = Ignition.start(serverConfiguration(1));
+        Ignite srv2 = Ignition.start(serverConfiguration(2));
+        Ignite srv3 = Ignition.start(serverConfiguration(3, true));
+        Ignite cli = Ignition.start(clientConfiguration(4));
+
+        srv1.getOrCreateCache(cacheConfiguration());
+
+        blockIndexing(srv1);
+
+        QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1));
+        QueryIndex idx2 = index(IDX_NAME_2, field(alias(FIELD_NAME_2)));
+
+        IgniteInternalFuture<?> idxFut1 = queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx1, false);
+        IgniteInternalFuture<?> idxFut2 = queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx2, false);
+
+        // Start even more nodes of different flavors
+        // TODO
+
+        assert !idxFut1.isDone();
+        assert !idxFut2.isDone();
+
+        unblockIndexing(srv1);
+
+        idxFut1.get();
+        idxFut2.get();
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
+
+        put(srv1, 0, KEY_AFTER);
+
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_SIMPLE_ARG);
+
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_2, KEY_AFTER - SQL_SIMPLE_ARG);
+    }
+
+    /**
      * Test node join on pending operation.
      *
      * @throws Exception If failed.
@@ -72,15 +116,17 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
     public void testNodeJoinOnPendingOperation() throws Exception {
         Ignite srv1 = Ignition.start(serverConfiguration(1));
 
-        blockIndexing(srv1);
-
         srv1.getOrCreateCache(cacheConfiguration());
 
-        QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_1));
+        blockIndexing(srv1);
+
+        QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         IgniteInternalFuture<?> idxFut = queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
 
-        Ignite srv2 = Ignition.start(serverConfiguration(2));
+        Ignition.start(serverConfiguration(2));
+        Ignition.start(serverConfiguration(3, true));
+        Ignition.start(clientConfiguration(4));
 
         assert !idxFut.isDone();
 
@@ -90,12 +136,12 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         Thread.sleep(100L);
 
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
 
         put(srv1, 0, KEY_AFTER);
 
-        assertSqlSimpleData(srv1, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
-        assertSqlSimpleData(srv2, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
     }
 
     /**

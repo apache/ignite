@@ -63,7 +63,7 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         client().getOrCreateCache(cacheConfiguration());
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
         IgniteCache<KeyClass, ValueClass> cache = client().cache(CACHE_NAME);
 
@@ -87,7 +87,7 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         assertSize(3);
 
-        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME + "\" ON \"" + TBL_NAME + "\"(\""
+        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1 + "\" ON \"" + TBL_NAME + "\"(\""
             + FIELD_NAME_1 + "\" ASC)"));
 
         // Test that local queries on all nodes use new index.
@@ -121,12 +121,12 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     public void testCreateIndexWithDuplicateName() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
-        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME + "\" ON \"" + TBL_NAME + "\"(\""
+        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1 + "\" ON \"" + TBL_NAME + "\"(\""
             + FIELD_NAME_1 + "\" ASC)"));
 
         assertSqlException(new RunnableX() {
             @Override public void run() throws Exception {
-                cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME + "\" ON \"" + TBL_NAME + "\"(\"id\" ASC)"));
+                cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1 + "\" ON \"" + TBL_NAME + "\"(\"id\" ASC)"));
             }
         }, IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
     }
@@ -137,10 +137,10 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     public void testCreateIndexIfNotExists() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
-        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME + "\" ON \"" + TBL_NAME + "\"(\""
+        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1 + "\" ON \"" + TBL_NAME + "\"(\""
             + FIELD_NAME_1 + "\" ASC)"));
 
-        cache.query(new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS \"" + IDX_NAME + "\" ON \"" + TBL_NAME +
+        cache.query(new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS \"" + IDX_NAME_1 + "\" ON \"" + TBL_NAME +
             "\"(\"id\" ASC)"));
     }
 
@@ -152,12 +152,12 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         assertSize(3);
 
-        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME + "\" ON \"" + TBL_NAME + "\"(\""
+        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1 + "\" ON \"" + TBL_NAME + "\"(\""
             + FIELD_NAME_1 + "\" ASC)"));
 
         assertSize(3);
 
-        cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME + "\""));
+        cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1 + "\""));
 
         // Test that no local queries on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
@@ -184,7 +184,7 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         assertSqlException(new RunnableX() {
             @Override public void run() throws Exception {
-                cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME + "\""));
+                cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1 + "\""));
             }
         }, IgniteQueryErrorCode.INDEX_NOT_FOUND);
     }
@@ -195,7 +195,7 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     public void testDropMissingIndexIfExists() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
-        cache.query(new SqlFieldsQuery("DROP INDEX IF EXISTS \"" + IDX_NAME + "\""));
+        cache.query(new SqlFieldsQuery("DROP INDEX IF EXISTS \"" + IDX_NAME_1 + "\""));
     }
 
     /**
@@ -206,7 +206,7 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         assertColumnValues("val1", "val2", "val3");
 
-        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME + "\" ON \"" + TBL_NAME + "\"(\""
+        cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1 + "\" ON \"" + TBL_NAME + "\"(\""
             + FIELD_NAME_1 + "\" ASC)"));
 
         assertColumnValues("val1", "val2", "val3");
@@ -219,7 +219,7 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         assertColumnValues("someVal", "val1", "val3");
 
-        cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME + "\""));
+        cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1 + "\""));
 
         assertColumnValues("someVal", "val1", "val3");
     }

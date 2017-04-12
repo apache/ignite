@@ -375,7 +375,18 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     }
 
     /**
-     * Assert query on initial data when FIELD_1 index is used.
+     * Assert SQL simple data state.
+     *
+     * @param sql SQL query.
+     * @param expSize Expected size.
+     */
+    protected static void assertSqlSimpleData(String sql, int expSize) {
+        for (Ignite node : Ignition.allGrids())
+            assertSqlSimpleData(node, sql, expSize);
+    }
+
+    /**
+     * Assert SQL simple data state.
      *
      * @param node Node.
      * @param sql SQL query.

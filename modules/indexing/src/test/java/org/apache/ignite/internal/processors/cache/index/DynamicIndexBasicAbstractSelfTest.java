@@ -46,7 +46,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
 
         node().getOrCreateCache(cacheConfiguration());
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
         loadInitialData();
     }
@@ -73,10 +73,10 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     public void testCreate() throws Exception {
         final IgniteEx node = node();
 
-        final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_1));
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
@@ -85,11 +85,11 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
         }, SchemaOperationException.CODE_INDEX_EXISTS);
 
         queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
-        assertIndexUsed(IDX_NAME, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
     }
 
     /**
@@ -98,10 +98,10 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateComposite() throws Exception {
-        final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
 
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
 
         // TODO
     }
@@ -112,7 +112,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateNoCache() throws Exception {
-        final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_1));
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
@@ -120,7 +120,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
             }
         }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
 
     /**
@@ -129,7 +129,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateNoTable() throws Exception {
-        final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_1));
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
@@ -137,7 +137,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
             }
         }, SchemaOperationException.CODE_TABLE_NOT_FOUND);
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
 
     /**
@@ -146,7 +146,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testCreateNoColumn() throws Exception {
-        final QueryIndex idx = index(IDX_NAME, field(randomString()));
+        final QueryIndex idx = index(IDX_NAME_1, field(randomString()));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
@@ -154,7 +154,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
             }
         }, SchemaOperationException.CODE_COLUMN_NOT_FOUND);
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
 
     /**
@@ -165,22 +165,22 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     public void testCreateColumnWithAlias() throws Exception {
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_2));
+                QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_2));
 
                 queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
             }
         }, SchemaOperationException.CODE_COLUMN_NOT_FOUND);
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
-        QueryIndex idx = index(IDX_NAME, field(alias(FIELD_NAME_2)));
+        QueryIndex idx = index(IDX_NAME_1, field(alias(FIELD_NAME_2)));
 
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(alias(FIELD_NAME_2)));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(alias(FIELD_NAME_2)));
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_2);
 
-        assertIndexUsed(IDX_NAME, SQL_SIMPLE_FIELD_2, SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_2, SQL_SIMPLE_ARG);
     }
 
     /**
@@ -189,23 +189,23 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      * @throws Exception If failed.
      */
     public void testDrop() throws Exception {
-        QueryIndex idx = index(IDX_NAME, field(FIELD_NAME_1));
+        QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
-        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
 
-        assertIndexUsed(IDX_NAME, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
         loadInitialData();
 
-        queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+        queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false).get();
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
-        assertIndexNotUsed(IDX_NAME, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertIndexNotUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
     }
 
     /**
@@ -216,12 +216,12 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     public void testDropNoIndex() throws Exception {
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME, false).get();
+                queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false).get();
             }
         }, SchemaOperationException.CODE_INDEX_NOT_FOUND);
 
-        queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME, true).get();
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+        queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true).get();
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
 
     /**
@@ -236,7 +236,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
             }
         }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
 
     /**
