@@ -33,9 +33,6 @@ public class VisorCacheRebalanceConfiguration implements Serializable, LessNamin
     /** Cache rebalance mode. */
     private CacheRebalanceMode mode;
 
-    /** Rebalance thread pool size. */
-    private int threadPoolSize;
-
     /** Cache rebalance batch size. */
     private int batchSize;
 
@@ -57,7 +54,6 @@ public class VisorCacheRebalanceConfiguration implements Serializable, LessNamin
 
         cfg.mode = ccfg.getRebalanceMode();
         cfg.batchSize = ccfg.getRebalanceBatchSize();
-        cfg.threadPoolSize = ccfg.getRebalanceThreadPoolSize();
         cfg.partitionedDelay = ccfg.getRebalanceDelay();
         cfg.throttle = ccfg.getRebalanceThrottle();
         cfg.timeout = ccfg.getRebalanceTimeout();
@@ -70,13 +66,6 @@ public class VisorCacheRebalanceConfiguration implements Serializable, LessNamin
      */
     public CacheRebalanceMode mode() {
         return mode;
-    }
-
-    /**
-     * @return Rebalance thread pool size.
-     */
-    public int threadPoolSize() {
-        return threadPoolSize;
     }
 
     /**

@@ -172,7 +172,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setRebalanceMode(preloadMode);
         cacheCfg.setRebalanceBatchSize(batchSize);
-        cacheCfg.setRebalanceThreadPoolSize(poolSize);
 
         if (extClassloadingAtCfg)
             loadExternalClassesToCfg(cacheCfg);
