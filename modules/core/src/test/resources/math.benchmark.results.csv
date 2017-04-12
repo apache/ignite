@@ -1,9 +1,0 @@
-Benchmark name,Benchmark date,Time (milliseconds),Measure runs,Warmup runs,Tag,Comments
-DenseLocalOffHeapVector small sizes,2017-02-17 23:37:45,0.710000,100,1,,
-DenseLocalOffHeapVector sizes powers of 2,2017-02-17 23:37:46,10.920000,100,1,,
-DenseLocalOffHeapVector large sizes,2017-02-17 23:37:47,68.440000,100,1,,
-DenseLocalOffHeapVector extra large sizes,2017-02-17 23:37:55,1532.000000,10,1,,
-DenseLocalOnHeapVector small sizes,2017-02-17 23:38:11,0.190000,100,1,,
-DenseLocalOnHeapVector sizes powers of 2,2017-02-17 23:38:11,9.120000,100,1,,
-DenseLocalOnHeapVector large sizes,2017-02-17 23:38:12,45.760000,100,1,,
-DenseLocalOnHeapVector extra large sizes,2017-02-17 23:38:17,1077.200000,10,1,,
