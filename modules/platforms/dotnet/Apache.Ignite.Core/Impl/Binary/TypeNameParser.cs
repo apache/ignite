@@ -380,5 +380,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             get { return _typeName[_pos]; }
         }
+
+        /** <inheritdoc /> */
+        public override string ToString()
+        {
+            return _typeName;
+        }
     }
 }

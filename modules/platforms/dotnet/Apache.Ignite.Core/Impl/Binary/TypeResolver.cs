@@ -48,7 +48,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             var type = Type.GetType(typeName, false);
 
             if (type != null)
+            {
                 return type;
+            }
 
             var parsedType = TypeNameParser.Parse(typeName);
 
@@ -89,20 +91,34 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Resolved type, or null.</returns>
         private static Type ResolveNonGenericType(string assemblyName, string typeName, ICollection<Assembly> assemblies)
         {
+            // Fully-qualified name can be resolved with system mechanism.
+            var type = Type.GetType(typeName, false);
+
+            if (type != null)
+            {
+                return type;
+            }
+
             if (!string.IsNullOrEmpty(assemblyName))
+            {
                 assemblies = assemblies
                     .Where(x => x.FullName == assemblyName || x.GetName().Name == assemblyName).ToArray();
+            }
 
             if (!assemblies.Any())
+            {
                 return null;
+            }
 
             // Trim assembly qualification
             var commaIdx = typeName.IndexOf(',');
 
             if (commaIdx > 0)
+            {
                 typeName = typeName.Substring(0, commaIdx);
+            }
 
-            return assemblies.Select(a => a.GetType(typeName, false, false)).FirstOrDefault(type => type != null);
+            return assemblies.Select(a => a.GetType(typeName, false, false)).FirstOrDefault(x => x != null);
         }
 
         /// <summary>
