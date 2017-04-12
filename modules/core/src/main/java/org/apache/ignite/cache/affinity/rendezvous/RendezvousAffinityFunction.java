@@ -384,6 +384,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         Iterable<ClusterNode> sortedNodes = new LazyLinearSortedContainer(hashArr, primaryAndBackups);
 
+        // REPLICATED cache case
+        if (backups == Integer.MAX_VALUE)
+            return replicatedAssign(nodes, sortedNodes);
+
         Iterator<ClusterNode> it = sortedNodes.iterator();
 
         List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
@@ -444,6 +448,29 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         }
 
         assert res.size() <= primaryAndBackups;
+
+        return res;
+    }
+
+    /**
+     * Creates assignment for REPLICATED cache
+     *
+     * @param nodes Topology.
+     * @param sortedNodes Sorted for specified partitions nodes.
+     * @return Assignment.
+     */
+    private List<ClusterNode> replicatedAssign(List<ClusterNode> nodes, Iterable<ClusterNode> sortedNodes) {
+        ClusterNode primary = sortedNodes.iterator().next();
+
+        List<ClusterNode> res = new ArrayList<>(nodes.size());
+
+        res.add(primary);
+
+        for (ClusterNode n : nodes)
+            if (!n.equals(primary))
+                res.add(n);
+
+        assert res.size() == nodes.size() : "Not enough backups: " + res.size();
 
         return res;
     }
