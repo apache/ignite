@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
+import static org.apache.ignite.spi.deployment.local.LocalDeploymentSpi.IGNITE_DEPLOYMENT_ADDITIONAL_CHECK;
 
 /**
  * Test to make sure that if job executes on the same node, it reuses the same class loader as task.
@@ -221,6 +222,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
 
         // Force rmvQueue removal task to run very often.
         System.setProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1");
+        System.setProperty(IGNITE_DEPLOYMENT_ADDITIONAL_CHECK, "true");
 
         try {
             final Ignite ignite = startGrid();
@@ -255,6 +257,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             stopAllGrids();
 
             System.clearProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL);
+            System.clearProperty(IGNITE_DEPLOYMENT_ADDITIONAL_CHECK);
         }
     }
 
