@@ -21,11 +21,16 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
-    /// Represents a result of <see cref="ICacheEntryProcessor{TK,TV,TA,TR}"/> invocation.
+    /// Represents a result of <see cref="ICacheEntryProcessor{TK,TV,TA,TR}" /> invocation.
     /// </summary>
+    /// <typeparam name="TK">Key type.</typeparam>
     /// <typeparam name="T">Result type.</typeparam>
-    internal class CacheEntryProcessorResult<T> : ICacheEntryProcessorResult<T>
+    /// <seealso cref="Apache.Ignite.Core.Cache.ICacheEntryProcessorResult{TK, T}" />
+    internal class CacheEntryProcessorResult<TK, T> : ICacheEntryProcessorResult<TK, T>
     {
+        // Key
+        private readonly TK _key;
+
         // Result
         private readonly T _res;
 
@@ -33,21 +38,31 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly Exception _err;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheEntryProcessorResult{T}"/> class.
+        /// Initializes a new instance of the <see cref="CacheEntryProcessorResult{TK, T}" /> class.
         /// </summary>
+        /// <param name="key">The key.</param>
         /// <param name="result">The result.</param>
-        public CacheEntryProcessorResult(T result)
+        public CacheEntryProcessorResult(TK key, T result)
         {
+            _key = key;
             _res = result;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheEntryProcessorResult{T}"/> class.
+        /// Initializes a new instance of the <see cref="CacheEntryProcessorResult{TK, T}" /> class.
         /// </summary>
+        /// <param name="key">The key.</param>
         /// <param name="error">The error.</param>
-        public CacheEntryProcessorResult(Exception error)
+        public CacheEntryProcessorResult(TK key, Exception error)
         {
+            _key = key;
             _err = error;
+        }
+
+        /** <inheritdoc /> */
+        public TK Key
+        {
+            get { return _key; }
         }
 
         /** <inheritdoc /> */

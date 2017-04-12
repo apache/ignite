@@ -497,11 +497,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 45:
-                // Empty ID.
-                // GridDhtPartitionSupplyMessage was removed on v2.0
-                break;
-
             case 46:
                 msg = new GridDhtPartitionsFullMessage();
 

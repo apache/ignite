@@ -78,46 +78,29 @@ namespace ignite
                 /**
                  * Constructor.
                  */
-                TemplatedBinaryIdResolver() : 
-                    type()
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Constructor.
-                 *
-                 * @param type Binary type.
-                 */
-                TemplatedBinaryIdResolver(ignite::binary::BinaryType<T> type) :
-                    type(type)
+                TemplatedBinaryIdResolver()
                 {
                     // No-op.
                 }
 
                 virtual int32_t GetTypeId()
                 {
-                    return type.GetTypeId();
+                    return ignite::binary::BinaryType<T>::GetTypeId();
                 }
 
-                virtual int32_t GetFieldId(const int32_t typeId, const char* name) {
+                virtual int32_t GetFieldId(const int32_t typeId, const char* name)
+                {
                     if (name)
-                        return type.GetFieldId(name);
-                    else
-                    {
-                        IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_BINARY,
-                            "Field name cannot be NULL.", "typeId", typeId);
-                    }
+                        return ignite::binary::BinaryType<T>::GetFieldId(name);
+
+                    IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_BINARY,
+                        "Field name cannot be NULL.", "typeId", typeId);
                 }
 
                 virtual BinaryIdResolver* Clone() const
                 {
                     return new TemplatedBinaryIdResolver<T>(*this);
                 }
-
-            private:
-                /** Actual type.  */
-                ignite::binary::BinaryType<T> type; 
             };
 
             /**

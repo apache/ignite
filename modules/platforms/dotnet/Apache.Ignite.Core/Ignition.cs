@@ -276,7 +276,11 @@ namespace Apache.Ignite.Core
 
                     // 3. Throw error further (use startup error if exists because it is more precise).
                     if (_startup.Error != null)
-                        throw _startup.Error;
+                    {
+                        // Wrap in a new exception to preserve original stack trace.
+                        throw new IgniteException("Failed to start Ignite.NET, check inner exception for details", 
+                            _startup.Error);
+                    }
 
                     throw;
                 }

@@ -21,7 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +31,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,26 +63,93 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         ctx.add(new GridClosureProcessor(ctx));
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testClassName() throws Exception {
-        MarshallerContextImpl ctx = new MarshallerContextImpl(null);
+        MarshallerContextImpl marshCtx = new MarshallerContextImpl(null);
 
-        ctx.onMarshallerProcessorStarted(this.ctx, null);
+        marshCtx.onMarshallerProcessorStarted(ctx, null);
 
         MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
-        ctx.onMappingProposed(item);
+        marshCtx.onMappingProposed(item);
 
-        ctx.onMappingAccepted(item);
+        marshCtx.onMappingAccepted(item);
 
         try (Ignite g1 = startGrid(1)) {
-            MarshallerContextImpl marshCtx = ((IgniteKernal)g1).context().marshallerContext();
+            marshCtx = ((IgniteKernal)g1).context().marshallerContext();
             String clsName = marshCtx.getClassName(JAVA_ID, 1);
 
             assertEquals("java.lang.String", clsName);
         }
+    }
+
+    /**
+     * Test for adding non-java mappings (with platformId &gt; 0) to MarshallerContext and collecting them
+     * for discovery.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultiplatformMappingsCollecting() throws Exception {
+        String nonJavaClassName = "random.platform.Mapping";
+
+        MarshallerContextImpl marshCtx = new MarshallerContextImpl(null);
+
+        marshCtx.onMarshallerProcessorStarted(ctx, null);
+
+        MarshallerMappingItem item = new MarshallerMappingItem((byte) 2, 101, nonJavaClassName);
+
+        marshCtx.onMappingProposed(item);
+
+        marshCtx.onMappingAccepted(item);
+
+        ArrayList<Map<Integer, MappedName>> allMappings = marshCtx.getCachedMappings();
+
+        assertEquals(allMappings.size(), 3);
+
+        assertTrue(allMappings.get(0).isEmpty());
+
+        assertTrue(allMappings.get(1).isEmpty());
+
+        Map<Integer, MappedName> nonJavaMappings = allMappings.get(2);
+
+        assertNotNull(nonJavaMappings);
+
+        assertNotNull(nonJavaMappings.get(101));
+
+        assertEquals(nonJavaClassName, nonJavaMappings.get(101).className());
+    }
+
+    /**
+     * Test for adding non-java mappings (with platformId &gt; 0) to MarshallerContext and distributing them
+     * to newly joining nodes.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultiplatformMappingsDistributing() throws Exception {
+        String nonJavaClassName = "random.platform.Mapping";
+
+        Ignite grid0 = startGrid(0);
+
+        MarshallerContextImpl marshCtx0 = ((IgniteKernal)grid0).context().marshallerContext();
+
+        MarshallerMappingItem item = new MarshallerMappingItem((byte) 2, 101, nonJavaClassName);
+
+        marshCtx0.onMappingProposed(item);
+
+        marshCtx0.onMappingAccepted(item);
+
+        Ignite grid1 = startGrid(1);
+
+        MarshallerContextImpl marshCtx1 = ((IgniteKernal)grid1).context().marshallerContext();
+
+        assertEquals(nonJavaClassName, marshCtx1.getClassName((byte) 2, 101));
     }
 
     /**

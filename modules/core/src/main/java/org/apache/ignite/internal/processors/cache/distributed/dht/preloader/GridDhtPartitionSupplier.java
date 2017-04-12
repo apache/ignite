@@ -86,13 +86,6 @@ class GridDhtPartitionSupplier {
     /**
      *
      */
-    void start() {
-        // No-op.
-    }
-
-    /**
-     *
-     */
     void stop() {
         synchronized (scMap) {
             Iterator<T3<UUID, Integer, AffinityTopologyVersion>> it = scMap.keySet().iterator();
@@ -143,6 +136,7 @@ class GridDhtPartitionSupplier {
      *
      * @param topVer Topology version.
      */
+    @SuppressWarnings("ConstantConditions")
     public void onTopologyChanged(AffinityTopologyVersion topVer) {
         synchronized (scMap) {
             Iterator<T3<UUID, Integer, AffinityTopologyVersion>> it = scMap.keySet().iterator();
@@ -176,6 +170,7 @@ class GridDhtPartitionSupplier {
      * @param idx Index.
      * @param id Node uuid.
      */
+    @SuppressWarnings("unchecked")
     public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
         assert d != null;
         assert id != null;
