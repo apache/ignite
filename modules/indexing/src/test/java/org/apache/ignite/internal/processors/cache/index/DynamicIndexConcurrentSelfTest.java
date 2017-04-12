@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.index;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.IgniteEx;
@@ -33,8 +32,10 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -64,6 +65,11 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
         stopAllGrids();
 
         super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 5 * 60 * 1000L;
     }
 
     /**
@@ -217,7 +223,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    public void testConcurrentCacheDestroyBeforeOperation() throws Exception {
+    public void testConcurrentCacheDestroy() throws Exception {
         // Start complex topology.
         Ignite srv1 = Ignition.start(serverConfiguration(1));
 
@@ -255,6 +261,181 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
         catch (SchemaOperationException e) {
             // No-op.
         }
+    }
+
+    /**
+     * Make sure that contended operations on the same index from different nodes do not hang.
+     *
+     * @throws Exception If failed.
+     */
+    public void testConcurrentOperationsMultithreaded() throws Exception {
+        // Start complex topology.
+        Ignition.start(serverConfiguration(1));
+        Ignition.start(serverConfiguration(2));
+        Ignition.start(serverConfiguration(3, true));
+
+        Ignite cli = Ignition.start(clientConfiguration(4));
+
+        final AtomicBoolean stopped = new AtomicBoolean();
+
+        // Start several threads which will mess around indexes.
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+        IgniteInternalFuture idxFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                boolean exists = false;
+
+                while (!stopped.get()) {
+                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
+
+                    IgniteInternalFuture fut;
+
+                    if (exists) {
+                        fut = queryProcessor(node).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true);
+
+                        exists = false;
+                    }
+                    else {
+                        fut = queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true);
+
+                        exists = true;
+                    }
+
+                    try {
+                        fut.get();
+                    }
+                    catch (SchemaOperationException e) {
+                        log.info("Got operation exception (expected): " + e);
+                    }
+                    catch (Exception e) {
+                        fail("Unexpected exception: " + e);
+                    }
+                }
+
+                return null;
+            }
+        }, 8);
+
+        // Let them play for 30 seconds.
+        Thread.sleep(30_000);
+
+        stopped.set(true);
+
+        // Make sure nothing hanged.
+        idxFut.get();
+
+        // Make sure cache is operational at this point.
+        cli.getOrCreateCache(cacheConfiguration());
+
+        queryProcessor(cli).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true).get();
+        queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+
+        put(cli, 0, KEY_AFTER);
+
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+    }
+
+    /**
+     * Multithreaded cache start/stop along with index operations. Nothing should hang.
+     *
+     * @throws Exception If failed.
+     */
+    public void testConcurrentOperationsAndCacheDestroyMultithreaded() throws Exception {
+        // Start complex topology.
+        Ignition.start(serverConfiguration(1));
+        Ignition.start(serverConfiguration(2));
+        Ignition.start(serverConfiguration(3, true));
+
+        Ignite cli = Ignition.start(clientConfiguration(4));
+
+        final AtomicBoolean stopped = new AtomicBoolean();
+
+        // Start cache create/destroy worker.
+        IgniteInternalFuture startStopFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                boolean exists = false;
+
+                while (!stopped.get()) {
+                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
+
+                    if (exists) {
+                        node.destroyCache(CACHE_NAME);
+
+                        exists = false;
+                    }
+                    else {
+                        node.createCache(cacheConfiguration());
+
+                        exists = true;
+                    }
+                }
+
+                return null;
+            }
+        }, 1);
+
+        // Start several threads which will mess around indexes.
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+        IgniteInternalFuture idxFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                boolean exists = false;
+
+                while (!stopped.get()) {
+                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
+
+                    IgniteInternalFuture fut;
+
+                    if (exists) {
+                        fut = queryProcessor(node).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true);
+
+                        exists = false;
+                    }
+                    else {
+                        fut = queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true);
+
+                        exists = true;
+                    }
+
+                    try {
+                        fut.get();
+                    }
+                    catch (SchemaOperationException e) {
+                        log.info("Got operation exception (expected): " + e);
+                    }
+                    catch (Exception e) {
+                        fail("Unexpected exception: " + e);
+                    }
+                }
+
+                return null;
+            }
+        }, 8);
+
+        // Let them play for 30 seconds.
+        Thread.sleep(30_000);
+
+        stopped.set(true);
+
+        // Make sure nothing hanged.
+        startStopFut.get();
+        idxFut.get();
+
+        // Make sure cache is operational at this point.
+        cli.getOrCreateCache(cacheConfiguration());
+
+        queryProcessor(cli).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true).get();
+        queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+
+        put(cli, 0, KEY_AFTER);
+
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
     }
 
     /**
