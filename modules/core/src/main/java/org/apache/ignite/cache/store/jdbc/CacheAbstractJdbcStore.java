@@ -578,7 +578,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     (cacheName == null && type.getCacheName() == null))
                     cacheTypes.add(type);
 
-            entryMappings = U.newHashMap(cacheTypes.size());
+            entryMappings = U.newLinkedHashMap(cacheTypes.size());
 
             if (!cacheTypes.isEmpty()) {
                 boolean binarySupported = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
@@ -605,17 +605,19 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                     checkTypeConfiguration(cacheName, valKind, valType, type.getValueFields());
 
-                    entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, keyKind, valKind, sqlEscapeAll));
-
                     // Add one more binding to binary typeId for POJOs,
                     // because object could be passed to store in binary format.
                     if (binarySupported && keyKind == TypeKind.POJO) {
-                        keyTypeId = typeIdForTypeName(TypeKind.BINARY, keyType);
+                        Object binaryKeyTypeId = typeIdForTypeName(TypeKind.BINARY, keyType);
 
-                        valKind = valKind == TypeKind.POJO ? TypeKind.BINARY : valKind;
+                        TypeKind binaryValKind = valKind == TypeKind.POJO ? TypeKind.BINARY : valKind;
 
-                        entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, TypeKind.BINARY, valKind, sqlEscapeAll));
+                        entryMappings.put(binaryKeyTypeId,
+                            new EntryMapping(cacheName, dialect, type, TypeKind.BINARY, binaryValKind, sqlEscapeAll));
                     }
+
+                    entryMappings.put(keyTypeId,
+                        new EntryMapping(cacheName, dialect, type, keyKind, valKind, sqlEscapeAll));
                 }
 
                 Map<String, Map<Object, EntryMapping>> mappings = new HashMap<>(cacheMappings);

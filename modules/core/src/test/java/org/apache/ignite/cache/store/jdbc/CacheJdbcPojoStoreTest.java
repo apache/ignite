@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -25,21 +26,29 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.cache.integration.CacheWriterException;
-
+import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
 import org.apache.ignite.cache.store.jdbc.model.Person;
 import org.apache.ignite.cache.store.jdbc.model.PersonComplexKey;
 import org.apache.ignite.cache.store.jdbc.model.PersonKey;
+import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTest;
 import org.h2.jdbcx.JdbcConnectionPool;
@@ -56,6 +65,12 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
     /** Person count. */
     protected static final int PERSON_CNT = 100000;
+
+    /** Ignite. */
+    private Ignite ig;
+
+    /** Binary enable. */
+    private boolean binaryEnable;
 
     /**
      * @throws Exception If failed.
@@ -226,6 +241,43 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         U.closeQuiet(conn);
 
         super.beforeTest();
+
+        Ignite ig = U.field(store, "ignite");
+
+        Marshaller marshaller = ig.configuration().getMarshaller();
+
+        // Need registrate class manual in case use binary marshaller enable.
+        if (marshaller instanceof BinaryMarshaller) {
+            binaryEnable = true;
+
+            this.ig = ig;
+
+            BinaryMarshaller bm = (BinaryMarshaller)marshaller;
+
+            BinaryContext ctx = U.field(ig, "ctx");
+
+            MarshallerContextImpl bCtx = (MarshallerContextImpl)bm.getContext();
+
+            Map<Integer, MappedName> map = ((CopyOnWriteArrayList<Map<Integer, MappedName>>)U.field(bCtx, "allCaches")).get(0);
+
+            String orgKey = "org.apache.ignite.cache.store.jdbc.model.OrganizationKey";
+            String org = "org.apache.ignite.cache.store.jdbc.model.Organization";
+            String persKeyComplex = "org.apache.ignite.cache.store.jdbc.model.PersonComplexKey";
+            String persKey = "org.apache.ignite.cache.store.jdbc.model.PersonKey";
+            String pers = "org.apache.ignite.cache.store.jdbc.model.Person";
+
+            ctx.descriptorForClass(OrganizationKey.class, true);
+            ctx.descriptorForClass(Organization.class, true);
+            ctx.descriptorForClass(PersonComplexKey.class, true);
+            ctx.descriptorForClass(PersonKey.class, true);
+            ctx.descriptorForClass(Person.class, true);
+
+            map.put(ctx.typeId(orgKey), new MappedName(orgKey, true));
+            map.put(ctx.typeId(org), new MappedName(org, true));
+            map.put(ctx.typeId(persKeyComplex), new MappedName(persKeyComplex, true));
+            map.put(ctx.typeId(persKey), new MappedName(persKey, true));
+            map.put(ctx.typeId(pers), new MappedName(pers, true));
+        }
     }
 
     /**
@@ -300,7 +352,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
                     k = ((BinaryObject)k).deserialize();
 
                 if (v instanceof BinaryObject)
-                    v = ((BinaryObject)k).deserialize();
+                    v = ((BinaryObject)v).deserialize();
 
                 if (k instanceof OrganizationKey && v instanceof Organization)
                     orgKeys.add((OrganizationKey)k);
@@ -392,7 +444,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
                     k = ((BinaryObject)k).deserialize();
 
                 if (v instanceof BinaryObject)
-                    v = ((BinaryObject)k).deserialize();
+                    v = ((BinaryObject)v).deserialize();
 
                 if (k instanceof PersonComplexKey && v instanceof Person)
                     prnComplexKeys.add((PersonComplexKey)k);
@@ -450,7 +502,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         ses.newSession(null);
 
         try {
-            store.write(new CacheEntryImpl<>(k1, v1));
+            store.write(new CacheEntryImpl<>(wrap(k1), wrap(v1)));
 
             fail("CacheWriterException wasn't thrown.");
         }
@@ -479,4 +531,29 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         assertNull(store.load(k));
     }
+
+    /**
+     * @param obj Object.
+     */
+    private Object wrap(Object obj) throws IllegalAccessException {
+        if (binaryEnable) {
+            Class<?> cls = obj.getClass();
+
+            BinaryObjectBuilder builder = ig.binary().builder(cls.getName());
+
+            for (Field f : cls.getDeclaredFields()) {
+                if (f.getName().contains("serialVersionUID"))
+                    continue;
+
+                f.setAccessible(true);
+
+                builder.setField(f.getName(), f.get(obj));
+            }
+
+            return builder.build();
+        }
+
+        return obj;
+    }
+
 }
