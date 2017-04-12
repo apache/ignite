@@ -168,7 +168,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private void ValidateTableName()
         {
-            var validTableNames = GetValidTableNames();
+            var validTableNames = GetValidTableNames().Select(x => EscapeTableName(x)).ToArray();
 
             if (!validTableNames.Contains(_tableName, StringComparer.OrdinalIgnoreCase))
             {
