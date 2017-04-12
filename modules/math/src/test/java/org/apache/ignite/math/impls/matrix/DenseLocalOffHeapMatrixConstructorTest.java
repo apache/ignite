@@ -19,7 +19,7 @@ package org.apache.ignite.math.impls.matrix;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /** */
 public class DenseLocalOffHeapMatrixConstructorTest {
@@ -49,5 +49,13 @@ public class DenseLocalOffHeapMatrixConstructorTest {
 
         assertEquals("Expected number of cols, double[][] parameter.", 1,
             new DenseLocalOffHeapMatrix(new double[][] {new double[1], new double[1]}).columnSize());
+
+        double[][] data1 = new double[][] {{1, 2}, {3, 4}}, data2 = new double[][] {{1, 2}, {3, 5}};
+
+        assertTrue("Matrices with same values are expected to be equal",
+            new DenseLocalOffHeapMatrix(data1).equals(new DenseLocalOffHeapMatrix(data1)));
+
+        assertFalse("Matrices with same values are expected to be equal",
+            new DenseLocalOffHeapMatrix(data1).equals(new DenseLocalOffHeapMatrix(data2)));
     }
 }
