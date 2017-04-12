@@ -2068,10 +2068,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         /** <inheritdoc /> */
         public string GetTypeName(string name)
         {
-            if (name == TestTypeName)
-                return name + "_";
+            if (name == typeof(NameMapperTestType).AssemblyQualifiedName)
+                return TestTypeName + "_";
 
-            return name;
+            return BinaryBasicNameMapper.SimpleNameInstance.GetTypeName(name);
         }
 
         /** <inheritdoc /> */
