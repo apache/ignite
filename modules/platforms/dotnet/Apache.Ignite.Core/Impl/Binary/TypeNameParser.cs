@@ -172,6 +172,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private void ParseTypeName()
         {
+            NameStart = _pos;
+
             while (Shift())
             {
                 if (Char == '.' || Char == '+')
