@@ -14,11 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.admin-page.row
-    .docs-content.greedy
-        header
-            h1 Admin panel
-        .docs-body
-            .row
-                .col-xs-12
-                    ignite-list-of-registered-users(data-options='ctrl.data')
+include ./includes/header
+
+.container.body-container
+    div(ui-view='')
+
+include ./includes/footer

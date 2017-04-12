@@ -15,16 +15,37 @@
  * limitations under the License.
  */
 
-export default [
-    {name: 'Actions', visible: false, selectable: false},
-    {name: 'User', visible: true, selectable: false},
-    {name: 'Email', visible: true, selectable: true},
-    {name: 'Company', visible: true, selectable: true},
-    {name: 'Country', visible: true, selectable: true},
-    {name: 'Last login', visible: false, selectable: true},
-    {name: 'Last activity', visible: true, selectable: true},
-    {name: 'Configurations', visible: false, selectable: true},
-    {name: 'Total activities', visible: true, selectable: true},
-    {name: 'Configuration\'s activities', visible: false, selectable: true},
-    {name: 'Queries\' activities', visible: false, selectable: true}
-];
+@import '../../../public/stylesheets/variables';
+
+.panel--ignite {
+  border: none;
+  border-radius: 0;
+
+  font-family: Roboto;
+
+  background-color: white;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+
+  .panel-heading {
+    height: auto;
+    padding: 22px 20px;
+
+    background-color: initial;
+    border-bottom: 1px solid $panel-default-border;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  .panel-title {
+    font-size: 16px;
+    line-height: 36px;
+  }
+
+  .panel-selected {
+    font-size: 14px;
+    font-style: italic;
+    line-height: 36px;
+  }
+}

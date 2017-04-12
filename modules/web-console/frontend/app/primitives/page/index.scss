@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-export default [
-    {name: 'Actions', visible: false, selectable: false},
-    {name: 'User', visible: true, selectable: false},
-    {name: 'Email', visible: true, selectable: true},
-    {name: 'Company', visible: true, selectable: true},
-    {name: 'Country', visible: true, selectable: true},
-    {name: 'Last login', visible: false, selectable: true},
-    {name: 'Last activity', visible: true, selectable: true},
-    {name: 'Configurations', visible: false, selectable: true},
-    {name: 'Total activities', visible: true, selectable: true},
-    {name: 'Configuration\'s activities', visible: false, selectable: true},
-    {name: 'Queries\' activities', visible: false, selectable: true}
-];
+.docs-content {
+    header {
+        margin: 40px 0 30px;
+        border: none;
+        background-color: initial;
+
+        h1 {
+            color: #393939;
+            font-family: Roboto;
+            font-size: 24px;
+            font-weight: normal;
+            font-style: normal;
+            font-stretch: normal;
+            line-height: 24px;
+            letter-spacing: normal;
+        }
+    }
+}
