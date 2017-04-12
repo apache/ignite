@@ -73,7 +73,7 @@ public class ExecutorConfiguration {
      * Set thread pool name.
      *
      * @param name Executor name.
-     * @deprecated {@code this} for chaining.
+     * @return {@code this} for chaining.
      */
     public ExecutorConfiguration setName(@NotNull String name) {
         this.name = name;
