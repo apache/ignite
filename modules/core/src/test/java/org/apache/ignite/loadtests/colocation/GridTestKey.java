@@ -28,6 +28,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
  * Accenture key.
  */
 public class GridTestKey implements Externalizable {
+    /** */
     private long id;
 
     /** */
@@ -43,6 +44,7 @@ public class GridTestKey implements Externalizable {
 
     public GridTestKey(long id) {
         this.id = id;
+
         affKey = affinityKey(id);
     }
 

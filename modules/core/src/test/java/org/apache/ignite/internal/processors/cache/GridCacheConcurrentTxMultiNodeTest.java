@@ -437,8 +437,9 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         /**
          * @param msg Message.
          */
-        PerfJob(@Nullable Message msg) {
+        PerfJob(Message msg) {
             super(msg);
+
             affKey = msg.getTerminalId();
         }
 

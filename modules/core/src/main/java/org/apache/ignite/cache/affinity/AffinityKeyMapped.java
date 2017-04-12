@@ -27,24 +27,14 @@ import java.util.concurrent.Callable;
 /**
  * Optional annotation to specify custom key-to-node affinity. Affinity key is a key
  * which will be used to determine a node on which given cache key will be stored. This
- * annotation allows to mark a field or a method in the cache key object that will be
+ * annotation allows to mark a field in the cache key object that will be
  * used as an affinity key (instead of the entire cache key object that is used for
- * affinity by default). Note that a class can have only one field or method annotated
+ * affinity by default). Note that a class can have only one field annotated
  * with {@code @AffinityKeyMapped} annotation.
  * <p>
  * One of the major use cases for this annotation is the routing of grid computations
  * to the nodes where the data for this computation is cached, the concept
  * otherwise known as {@code Collocation Of Computations And Data}.
- * <p>
- * <h1 class="header">Mapping Cache Keys</h1>
- * The default implementation of {@link AffinityKeyMapper}, which will be used
- * if no explicit affinity mapper is specified in cache configuration, will first look
- * for any field or method annotated with {@code @AffinityKeyMapped} annotation.
- * If such field or method is not found, then the cache key itself will be used for
- * key-to-node affinity (this means that all objects with the same cache key will always
- * be routed to the same node). If such field or method is found, then the value of this
- * field or method will be used for key-to-node affinity. This allows to specify alternate
- * affinity key, other than the cache key itself, whenever needed.
  * <p>
  * For example, if a {@code Person} object is always accessed together with a {@code Company} object
  * for which this person is an employee, then for better performance and scalability it makes sense to

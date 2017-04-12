@@ -75,6 +75,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      */
     public GridDsiPerfJob(@Nullable GridDsiMessage msg) {
         super(msg);
+
         affKey = message().getTerminalId();
     }
 

@@ -218,7 +218,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
 
         /** */
         @AffinityKeyMapped
-        private static String affKey = "key";
+        private String affKey = "key";
 
         /** {@inheritDoc} */
         @Override public Boolean call() throws Exception {
@@ -230,13 +230,6 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
             Thread.sleep(10);
 
             return true;
-        }
-
-        /**
-         * @return Affinity key.
-         */
-        public String affinityKey() {
-            return affKey;
         }
     }
 }
