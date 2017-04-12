@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     Generics = Generics ?? new List<TypeNameParser>();
                 }
 
-                if (Char == '[' || Char == ',' || Char == ' ')
+                if (Char == '[' || Char == ']' || Char == ',' || Char == ' ')
                     break;
             }
 
