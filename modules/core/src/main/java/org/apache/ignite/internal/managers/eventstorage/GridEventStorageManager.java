@@ -1332,9 +1332,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
         /** {@inheritDoc} */
         @Override void onEvent(Event evt, @NotNull Object[] params) {
-            if(params.length > 0)
-                // For now there are only one type of listener with additional parameters
-                lsnr.onEvent((DiscoveryEvent)evt, (DiscoCache)params[0]);
+            // No checks there since only DiscoveryManager produses DiscoveryEvents
+            // and it uses overloaded method with additional parameters
+            lsnr.onEvent((DiscoveryEvent)evt, (DiscoCache)params[0]);
         }
 
         /** {@inheritDoc} */
