@@ -74,8 +74,13 @@ public class PivotedMatrixViewConstructorTest {
 
         for (int row = 0; row < view.rowSize(); row++)
             for (int col = 0; col < view.columnSize(); col++)
-                assertEquals("Unexpected swap value set at (" + row + "," + col + ")",
+                assertEquals("Unexpected swap value set at (" + row + "," + col + ").",
                     view.get(row, col), swap.get(row, col), 0d);
+
+        //noinspection EqualsWithItself
+        assertTrue("View is expected to be equal to self.", view.equals(view));
+        //noinspection ObjectEqualsNull
+        assertFalse("View is expected to be not equal to null.", view.equals(null));
     }
 
     /** */ @Test
