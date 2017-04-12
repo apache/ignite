@@ -494,7 +494,6 @@ public class IgniteConfiguration {
      *
      * @param cfg Grid configuration to copy from.
      */
-    // TODO: Copy
     public IgniteConfiguration(IgniteConfiguration cfg) {
         assert cfg != null;
 

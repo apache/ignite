@@ -178,9 +178,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.fullSup = fullSup;
         this.internal = internal;
         this.subjId = subjId;
+        this.execName = execName;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
-        this.execName = execName;
     }
 
     /** {@inheritDoc} */

@@ -1062,13 +1062,13 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(prj);
-        // TODO: Serialize name
+        out.writeObject(execName);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         prj = (ClusterGroupAdapter)in.readObject();
-        // TODO: Serialize name
+        execName = (String)in.readObject();
     }
 
     /**
