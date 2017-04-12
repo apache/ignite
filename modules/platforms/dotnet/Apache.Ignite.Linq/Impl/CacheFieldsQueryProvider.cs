@@ -201,7 +201,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private static string GetTableName(QueryEntity e)
         {
-            return e.TableName ?? e.ValueTypeName.Split('.').Last();
+            return e.TableName ?? e.ValueTypeName;
         }
 
         /// <summary>
@@ -213,12 +213,17 @@ namespace Apache.Ignite.Linq.Impl
             var validTableNames = GetValidTableNames();
 
             if (validTableNames.Length == 1)
+            {
                 return validTableNames[0];
+            }
 
-            var valueTypeName = cacheValueType.Name;
+            var valueTypeName = cacheValueType.FullName;
 
             if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
+            {
+                // TODO: Strip namespace, but keep nested type specification
                 return valueTypeName;
+            }
 
             throw new CacheException(string.Format("Table name cannot be inferred for cache '{0}', " +
                                                    "please use AsCacheQueryable overload with tableName parameter. " +
