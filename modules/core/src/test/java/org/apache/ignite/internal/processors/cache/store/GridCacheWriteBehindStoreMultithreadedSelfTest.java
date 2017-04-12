@@ -55,7 +55,7 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
      * @throws Exception If failed.
      */
     private void testPutGetRemove(boolean writeCoalescing) throws Exception {
-        initStore(2);
+        initStore(2, writeCoalescing);
 
         Set<Integer> exp;
 

@@ -265,7 +265,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
             if (store.getWriteCoalescing()) {
                 assertTrue("Too many puts were made to the underlying store", delegatePutCnt < actualPutCnt.get() / 10);
             } else {
-                assertTrue("Too few puts cnt=" + actualPutCnt.get() + " <> storePutCnt=" + delegatePutCnt, delegatePutCnt>actualPutCnt.get() / 2);
+                assertTrue("Too few puts cnt=" + actualPutCnt.get() + " << storePutCnt=" + delegatePutCnt, delegatePutCnt > actualPutCnt.get() / 2);
             }
         }
         finally {

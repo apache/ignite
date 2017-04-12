@@ -193,7 +193,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public static final int DFLT_WRITE_BEHIND_BATCH_SIZE = 512;
 
     /** Default write coalescing for write-behind cache store. */
-    public static final boolean DFLT_WRITE_BEHIND_WRITE_COALESCING = true;
+    public static final boolean DFLT_WRITE_BEHIND_COALESCING = true;
 
     /** Default maximum number of query iterators that can be stored. */
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
@@ -348,7 +348,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
 
     /** Write coalescing flag for write-behind cache store */
-    private boolean writeBehindWriteCoalescing = DFLT_WRITE_BEHIND_WRITE_COALESCING;
+    private boolean writeBehindCoalescing = DFLT_WRITE_BEHIND_COALESCING;
 
     /** Maximum number of query iterators that can be stored. */
     private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
@@ -515,7 +515,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
-        writeBehindWriteCoalescing = cc.getWriteBehindWriteCoalescing();
+        writeBehindCoalescing = cc.getWriteBehindCoalescing();
         writeSync = cc.getWriteSynchronizationMode();
     }
 
@@ -1472,23 +1472,23 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * with the same key are combined or coalesced to single, resulting operation
      * to reduce pressure to underlying cache store.
      * <p/>
-     * If not provided, default value is {@link #DFLT_WRITE_BEHIND_WRITE_COALESCING}.
+     * If not provided, default value is {@link #DFLT_WRITE_BEHIND_COALESCING}.
      *
      * @return Write coalescing flag.
      */
-    public boolean getWriteBehindWriteCoalescing() {
-        return writeBehindWriteCoalescing;
+    public boolean getWriteBehindCoalescing() {
+        return writeBehindCoalescing;
     }
 
     /**
      * Sets write coalescing flag for write-behind cache.
      *
-     * @param writeBehindWriteCoalescing Write coalescing flag.
-     * @see #getWriteBehindWriteCoalescing()
+     * @param writeBehindCoalescing Write coalescing flag.
+     * @see #getWriteBehindCoalescing()
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setWriteBehindWriteCoalescing(boolean writeBehindWriteCoalescing) {
-        this.writeBehindWriteCoalescing = writeBehindWriteCoalescing;
+    public CacheConfiguration<K, V> setWriteBehindCoalescing(boolean writeBehindCoalescing) {
+        this.writeBehindCoalescing = writeBehindCoalescing;
 
         return this;
     }
