@@ -30,6 +30,10 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 public class GridTestKey implements Externalizable {
     private long id;
 
+    /** */
+    @AffinityKeyMapped
+    private int affKey;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -39,15 +43,15 @@ public class GridTestKey implements Externalizable {
 
     public GridTestKey(long id) {
         this.id = id;
+        affKey = affinityKey(id);
     }
 
     public long getId() {
         return id;
     }
 
-    @AffinityKeyMapped
     public int affinityKey() {
-        return affinityKey(id);
+        return affKey;
     }
 
     public static int affinityKey(long id) {

@@ -427,6 +427,10 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private static final long MAX = 5000;
 
         /** */
+        @AffinityKeyMapped
+        private String affKey;
+
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -435,6 +439,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          */
         PerfJob(@Nullable Message msg) {
             super(msg);
+            affKey = msg.getTerminalId();
         }
 
         /**
@@ -447,7 +452,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         /**
          * @return Terminal ID.
          */
-        @AffinityKeyMapped
         public String terminalId() {
             return message().getTerminalId();
         }

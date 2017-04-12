@@ -216,6 +216,10 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         /** */
         private static AtomicInteger cnt = new AtomicInteger();
 
+        /** */
+        @AffinityKeyMapped
+        private static String affKey = "key";
+
         /** {@inheritDoc} */
         @Override public Boolean call() throws Exception {
             int c = cnt.incrementAndGet();
@@ -231,9 +235,8 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         /**
          * @return Affinity key.
          */
-        @AffinityKeyMapped
         public String affinityKey() {
-            return "key";
+            return affKey;
         }
     }
 }

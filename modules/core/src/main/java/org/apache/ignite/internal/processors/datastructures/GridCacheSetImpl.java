@@ -616,6 +616,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         private static final long serialVersionUID = -1400701398705953750L;
 
         /** */
+        @AffinityKeyMapped
         private String setName;
 
         /**
@@ -639,7 +640,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         /**
          * @return Item affinity key.
          */
-        @AffinityKeyMapped
         public Object affinityKey() {
             return setName;
         }

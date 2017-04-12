@@ -701,6 +701,10 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        @AffinityKeyMapped
+        private String affKey;
+
         /**
          * Required by {@link Externalizable}.
          */
@@ -715,14 +719,14 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
          */
         private CollocatedItemKey(IgniteUuid id, String queueName, long idx) {
             super(id, queueName, idx);
+            affKey = queueName;
         }
 
         /**
          * @return Item affinity key.
          */
-        @AffinityKeyMapped
         public Object affinityKey() {
-            return queueName();
+            return affKey;
         }
     }
 
