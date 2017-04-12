@@ -137,6 +137,16 @@ namespace Apache.Ignite.Core.Tests.Binary
             gen = res.Generics.Single();
             Assert.AreEqual("Int32", gen.GetName());
             Assert.AreEqual("System.Int32", gen.GetFullName());
+
+            res = TypeNameParser.Parse(typeof(NestedGeneric<int>.NestedGeneric2<string>).AssemblyQualifiedName);
+            
+            Assert.AreEqual("NestedGeneric2`1", res.GetName());
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.TypeNameParserTest+NestedGeneric`1+NestedGeneric2`1", 
+                res.GetFullName());
+
+            Assert.AreEqual(2, res.Generics.Count);
+            Assert.AreEqual("Int32", res.Generics.First().GetName());
+            Assert.AreEqual("String", res.Generics.Last().GetName());
         }
 
         /// <summary>
@@ -205,7 +215,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
         private class NestedGeneric<T>
         {
-            // No-op.
+            public class NestedGeneric2<T2>
+            {
+                // No-op.
+            }
         }
     }
 }
