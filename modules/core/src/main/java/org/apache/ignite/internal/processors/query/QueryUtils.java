@@ -740,7 +740,7 @@ public class QueryUtils {
         if (e instanceof SchemaOperationException)
             return (SchemaOperationException)e;
 
-        return new SchemaOperationException("Unexpected error.", e);
+        return new SchemaOperationException("Unexpected exception.", e);
     }
 
     /**

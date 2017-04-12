@@ -156,9 +156,17 @@ public class SchemaOperationManager {
                 return;
             }
 
-            log.debug("Received result [opId=" + operationId() + ", nodeId=" + nodeId + ", err=" + err + ']');
+            if (nodeIds.contains(nodeId)) {
+                if (log.isDebugEnabled())
+                    log.debug("Received result [opId=" + operationId() + ", nodeId=" + nodeId + ", err=" + err + ']');
 
-            nodeRess.put(nodeId, err);
+                nodeRess.put(nodeId, err);
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Received result from untracked node (it joined after operation started, will ignore) " +
+                        "[opId=" + operationId() + ", nodeId=" + nodeId + ", err=" + err + ']');
+            }
 
             checkFinished();
         }

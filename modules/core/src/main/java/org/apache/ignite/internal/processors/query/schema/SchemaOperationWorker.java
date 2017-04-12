@@ -22,6 +22,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -109,9 +110,7 @@ public class SchemaOperationWorker extends GridWorker {
             fut.onDone();
         }
         catch (Exception e) {
-            assert e instanceof SchemaOperationException;
-
-            fut.onDone(e);
+            fut.onDone(QueryUtils.wrapIfNeeded(e));
         }
     }
 

@@ -829,6 +829,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
+            ctx.query().onCacheKernalStart();
+
             // Start dynamic caches received from collect discovery data.
             for (DynamicCacheDescriptor desc : cacheDescriptors()) {
                 if (ctx.config().isDaemon())
@@ -869,8 +871,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
                 }
             }
-
-            ctx.query().onCacheKernalStart();
         }
         finally {
             cacheStartedLatch.countDown();

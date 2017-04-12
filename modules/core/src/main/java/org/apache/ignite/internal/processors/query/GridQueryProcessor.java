@@ -73,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -285,9 +286,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Handle cache kernal start. At this point discovery and IO managers are operational,
-     * GridCacheProcessor.onKernalStart() registered caches received on discovery stage, but exchange worker is not
-     * started.
+     * Handle cache kernal start. At this point discovery and IO managers are operational, caches are not started yet.
      * <p>
      * At this point we allow concurrent IO messages handling as initial cache state is consistent.
      *
@@ -306,6 +305,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             activeOpsInit.clear();
+        }
+    }
+
+    /**
+     * Handle cache reconnect.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onCacheReconnect() throws IgniteCheckedException {
+        synchronized (stateMux) {
+            assert disconnected;
+
+            disconnected = false;
+
+            onCacheKernalStart();
         }
     }
 
@@ -469,19 +483,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.onDisconnected(reconnectFut);
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
-        System.out.println("QUERY RECONNECT");
-
-        synchronized (stateMux) {
-            disconnected = false;
-        }
-
-        onCacheKernalStart();
-
-        return super.onReconnected(clusterRestarted);
-    }
-
     /**
      * Handle cache start. Invoked either from GridCacheProcessor.onKernalStart() method or from exchange worker.
      * When called for the first time, we initialize topology thus understanding whether current node is coordinator
@@ -492,8 +493,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onCacheStart(GridCacheContext cctx, QuerySchema schema) throws IgniteCheckedException {
-        System.out.println("CACHE START: " + cctx.name());
-
         if (idx == null)
             return;
 
@@ -1033,8 +1032,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param opId Operation ID.
      * @param err Error.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void onSchemaFinish(UUID opId, @Nullable SchemaOperationException err) {
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+    public void onSchemaFinish(final UUID opId, @Nullable SchemaOperationException err) {
         if (log.isDebugEnabled())
             log.debug("Received schema finish message (exchange) [opId=" + opId + ", err=" + err + ']');
 
@@ -1046,29 +1045,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             SchemaOperationDescriptor desc = activeOps.remove(opId);
 
             if (desc != null) {
-                SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+                final SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
 
-                SchemaOperation op = schemaOps.remove(key);
+                final SchemaOperation op = schemaOps.get(key);
 
                 assert op != null;
+                assert op.started();
                 assert F.eq(opId, op.id());
 
-                assert op.started();
-                assert op.manager().worker().future().isDone();
+                // Operation might be still in progress on client nodes which are not tracked by coordinator,
+                // so we chain to operation future instead of doing synchronous unwind.
+                op.manager().worker().future().listen(new IgniteInClosure<IgniteInternalFuture>() {
+                    @Override public void apply(IgniteInternalFuture fut) {
+                        synchronized (stateMux) {
+                            SchemaOperation op = schemaOps.remove(key);
 
-                // Chain to the next operation (if any).
-                SchemaOperation nextOp = op.next();
+                            assert op != null;
 
-                if (nextOp != null) {
-                    schemaOps.put(key, nextOp);
+                            // Chain to the next operation (if any).
+                            SchemaOperation nextOp = op.next();
 
-                    if (log.isDebugEnabled())
-                        log.debug("Next schema change operation started [opId=" + opId +
-                            ", nextOpId=" + nextOp.id() + ']');
+                            if (nextOp != null) {
+                                schemaOps.put(key, nextOp);
 
-                    if (!nextOp.started())
-                        startSchemaChange(nextOp);
-                }
+                                if (log.isDebugEnabled())
+                                    log.debug("Next schema change operation started [opId=" + opId +
+                                        ", nextOpId=" + nextOp.id() + ']');
+
+                                if (!nextOp.started())
+                                    startSchemaChange(nextOp);
+                            }
+                        }
+                    }
+                });
             }
         }
 
