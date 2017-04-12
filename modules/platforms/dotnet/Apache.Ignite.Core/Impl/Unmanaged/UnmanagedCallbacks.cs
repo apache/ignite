@@ -246,6 +246,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.CachePluginDestroy, CachePluginDestroy);
             AddHandler(UnmanagedCallbackOp.CachePluginIgniteStart, CachePluginIgniteStart);
             AddHandler(UnmanagedCallbackOp.CachePluginIgniteStop, CachePluginIgniteStop);
+            AddHandler(UnmanagedCallbackOp.PluginCallbackInLongLongOutLong, PluginCallbackInLongLongOutLong);
         }
 
         /// <summary>
@@ -375,7 +376,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     stream.Reset();
 
-                    _ignite.Marshaller.StartMarshal(stream).WriteObject(e);
+                    var writer = _ignite.Marshaller.StartMarshal(stream);
+
+                    writer.WriteObject(e);
+
+                    _ignite.Marshaller.FinishMarshal(writer);
 
                     return -1;
                 }
@@ -1163,7 +1168,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
 
                 var func = reader.ReadObjectEx<IAffinityFunction>();
 
@@ -1283,6 +1288,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             pluginProvider.OnIgniteStop(cancel != 0);
 
             return 0;
+        }
+
+        private long PluginCallbackInLongLongOutLong(long callbackId, long inPtr, long outPtr, void* arg)
+        {
+            return _ignite.PluginProcessor.InvokeCallback(callbackId, inPtr, outPtr);
         }
 
         #endregion

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -94,8 +95,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (isDebug()) {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -110,9 +111,6 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(commSpi);
 
         cfg.setClientMode(client);
-
-        // Test spi blocks message send, this can cause hang with striped pool.
-        cfg.setStripedPoolSize(-1);
 
         return cfg;
     }
@@ -555,15 +553,25 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     GridCacheVersion txId = req.version();
 
-                    if (TX_IDS.contains(txId)) {
-                        while (TX_IDS.size() < TX_CNT) {
-                            try {
-                                U.sleep(50);
+                    if (TX_IDS.contains(txId) && TX_IDS.size() < TX_CNT) {
+                        GridTestUtils.runAsync(new Callable<Void>() {
+                            @Override public Void call() throws Exception {
+                                while (TX_IDS.size() < TX_CNT) {
+                                    try {
+                                        U.sleep(50);
+                                    }
+                                    catch (IgniteInterruptedCheckedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                                TestCommunicationSpi.super.sendMessage(node, msg, ackC);
+
+                                return null;
                             }
-                            catch (IgniteInterruptedCheckedException e) {
-                                e.printStackTrace();
-                            }
-                        }
+                        });
+
+                        return;
                     }
                 }
                 else if (msg0 instanceof GridNearTxPrepareResponse) {

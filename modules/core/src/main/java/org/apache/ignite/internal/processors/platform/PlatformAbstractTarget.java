@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Abstract interop target.
  */
-public abstract class PlatformAbstractTarget implements PlatformTarget, PlatformAsyncTarget {
+public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** Constant: TRUE.*/
     protected static final int TRUE = 1;
 
@@ -70,16 +70,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     /** {@inheritDoc} */
     @Override public Exception convertException(Exception e) {
         return e;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        throw new IgniteCheckedException("Future listening is not supported in " + getClass());
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public PlatformFutureUtils.Writer futureWriter(int opId){
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -123,6 +113,14 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     /** {@inheritDoc} */
     @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         return throwUnsupported(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryRawReaderEx reader)
+            throws IgniteCheckedException {
+        throwUnsupported(type);
+
+        return null;
     }
 
     /**
@@ -192,18 +190,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteFuture fut)
         throws IgniteCheckedException {
         return readAndListenFuture(reader, fut, null);
-    }
-
-    /**
-     * Reads future information and listens.
-     *
-     * @param reader Reader.
-     * @throws IgniteCheckedException In case of error.
-     */
-    protected long readAndListenFuture(BinaryRawReader reader) throws IgniteCheckedException {
-        readAndListenFuture(reader, currentFuture(), null);
-
-        return TRUE;
     }
 
     /**

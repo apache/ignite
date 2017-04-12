@@ -130,11 +130,11 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
         VisorIgfsConfiguration cfg = new VisorIgfsConfiguration();
 
         cfg.name = igfs.getName();
-        cfg.metaCacheName = igfs.getMetaCacheName();
-        cfg.dataCacheName = igfs.getDataCacheName();
+        cfg.metaCacheName = igfs.getMetaCacheConfiguration().getName();
+        cfg.dataCacheName = igfs.getDataCacheConfiguration().getName();
         cfg.blockSize = igfs.getBlockSize();
         cfg.prefetchBlocks = igfs.getPrefetchBlocks();
-        cfg.streamBufSize = igfs.getStreamBufferSize();
+        cfg.streamBufSize = igfs.getBufferSize();
         cfg.perNodeBatchSize = igfs.getPerNodeBatchSize();
         cfg.perNodeParallelBatchCnt = igfs.getPerNodeParallelBatchCount();
 

@@ -17,8 +17,11 @@
 
 #include <ignite/common/utils.h>
 
-#include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/binary/binary_type_updater_impl.h"
+#include <ignite/impl/cache/cache_impl.h>
+#include <ignite/impl/binary/binary_type_updater_impl.h>
+#include <ignite/impl/cache/query/continuous/continuous_query_handle_impl.h>
+
+#include <ignite/cache/query/continuous/continuous_query_handle.h>
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -73,8 +76,14 @@ namespace ignite
             /** Operation: Invoke. */
             const int32_t OP_INVOKE = 12;
 
+            /** Operation: LoadCache */
+            const int32_t OP_LOAD_CACHE = 15;
+
             /** Operation: LocalEvict. */
             const int32_t OP_LOCAL_EVICT = 16;
+
+            /** Operation: LocalLoadCache */
+            const int32_t OP_LOC_LOAD_CACHE = 17;
 
             /** Operation: LocalClear. */
             const int32_t OP_LOCAL_CLEAR = 20;
@@ -333,13 +342,134 @@ namespace ignite
                 return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
             }
 
-            struct DummyQry { void Write(BinaryRawWriter&) const { }};
+            void CacheImpl::LoadCache(IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropOutputStream out(mem.Get());
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                // Predicate. Always null for now.
+                writer.WriteNull();
+
+                // Arguments. No arguments supported for now.
+                writer.WriteInt32(0);
+
+                out.Synchronize();
+
+                InStreamOutLong(OP_LOAD_CACHE, *mem.Get(), err);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            }
+
+            void CacheImpl::LocalLoadCache(IgniteError & err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropOutputStream out(mem.Get());
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                // Predicate. Always null for now.
+                writer.WriteNull();
+
+                // Arguments. No arguments supported for now.
+                writer.WriteInt32(0);
+
+                out.Synchronize();
+
+                InStreamOutLong(OP_LOC_LOAD_CACHE, *mem.Get(), err);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            }
+
+            struct Dummy
+            {
+                void Write(BinaryRawWriter&) const
+                {
+                    // No-op.
+                }
+            };
 
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
                 IgniteError& err)
             {
-                DummyQry dummy;
+                Dummy dummy;
                 return QueryContinuous(qry, dummy, -1, OP_QRY_CONTINUOUS, err);
+            }
+
+            template <typename T>
+            QueryCursorImpl* CacheImpl::QueryInternal(const T& qry, int32_t typ, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropMemory* mem0 = mem.Get();
+                InteropOutputStream out(mem0);
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+                BinaryRawWriter rawWriter(&writer);
+
+                qry.Write(rawWriter);
+
+                out.Synchronize();
+
+                jobject qryJavaRef = GetEnvironment().Context()->CacheOutOpQueryCursor(GetTarget(),
+                    typ, mem.Get()->PointerLong(), &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
+                    return new QueryCursorImpl(GetEnvironmentPointer(), qryJavaRef);
+
+                return 0;
+            }
+
+            template <typename T>
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const T& initialQry, int32_t typ, int32_t cmd, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropMemory* mem0 = mem.Get();
+                InteropOutputStream out(mem0);
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+                BinaryRawWriter rawWriter(&writer);
+
+                const ContinuousQueryImplBase& qry0 = *qry.Get();
+
+                int64_t handle = GetEnvironment().GetHandleRegistry().Allocate(qry);
+
+                rawWriter.WriteInt64(handle);
+                rawWriter.WriteBool(qry0.GetLocal());
+
+                event::CacheEntryEventFilterHolderBase& filterOp = qry0.GetFilterHolder();
+
+                filterOp.Write(writer);
+
+                rawWriter.WriteInt32(qry0.GetBufferSize());
+                rawWriter.WriteInt64(qry0.GetTimeInterval());
+
+                // Autounsubscribe is a filter feature.
+                rawWriter.WriteBool(false);
+
+                // Writing initial query. When there is not initial query writing -1.
+                rawWriter.WriteInt32(typ);
+                if (typ != -1)
+                    initialQry.Write(rawWriter);
+
+                out.Synchronize();
+
+                jobject qryJavaRef = GetEnvironment().Context()->CacheOutOpContinuousQuery(GetTarget(),
+                    cmd, mem.Get()->PointerLong(), &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
+                    return new ContinuousQueryHandleImpl(GetEnvironmentPointer(), handle, qryJavaRef);
+
+                return 0;
             }
         }
     }

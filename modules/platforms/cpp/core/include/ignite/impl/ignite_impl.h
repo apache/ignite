@@ -22,10 +22,10 @@
 #include <ignite/jni/java.h>
 #include <ignite/common/utils.h>
 
-#include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/transactions/transactions_impl.h"
-#include "ignite/impl/cluster/cluster_group_impl.h"
-#include "ignite/impl/ignite_environment.h"
+#include <ignite/impl/cache/cache_impl.h>
+#include <ignite/impl/transactions/transactions_impl.h>
+#include <ignite/impl/cluster/cluster_group_impl.h>
+#include <ignite/impl/ignite_environment.h>
 
 namespace ignite 
 {
@@ -154,7 +154,7 @@ namespace ignite
              *
              * @return IgniteBinding class instance.
              */
-            IgniteBinding GetBinding();
+            common::concurrent::SharedPointer<IgniteBindingImpl> GetBinding();
 
             /**
              * Get instance of the implementation from the proxy class.
@@ -167,6 +167,17 @@ namespace ignite
             static IgniteImpl* GetFromProxy(T& proxy)
             {
                 return proxy.impl.Get();
+            }
+
+            /**
+             * Get environment.
+             * Internal method. Should not be used by user.
+             *
+             * @return Environment pointer.
+             */
+            IgniteEnvironment* GetEnvironment()
+            {
+                return env.Get();
             }
 
             /**

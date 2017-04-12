@@ -29,8 +29,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Grid future implementation.
     /// </summary>
     [SuppressMessage("ReSharper", "ParameterHidesMember")]
-    [CLSCompliant(false)]
-    public sealed class Future<T> : IFutureInternal
+    internal sealed class Future<T> : IFutureInternal
     {
         /** Converter. */
         private readonly IFutureConverter<T> _converter;

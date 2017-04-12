@@ -52,7 +52,7 @@ public class NoopSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         U.warn(log, "Swap space is disabled. To enable use FileSwapSpaceSpi.");
     }
 
@@ -143,6 +143,13 @@ public class NoopSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     @Override public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName,
         int part) throws IgniteSpiException {
         return new GridEmptyCloseableIterator<>();
+    }
+
+    /** {@inheritDoc} */
+    @Override public NoopSwapSpaceSpi setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 
     /** {@inheritDoc} */

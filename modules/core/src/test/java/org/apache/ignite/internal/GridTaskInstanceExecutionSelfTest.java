@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -50,7 +49,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousExecute() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         testState = 12345;
 
@@ -59,11 +58,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
         assert task.getState() != null;
         assert task.getState() == testState;
 
-        IgniteCompute comp = ignite.compute().withAsync();
-
-        assertNull(comp.execute(task,  "testArg"));
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = ignite.compute().executeAsync(task,  "testArg");
 
         assert fut != null;
 

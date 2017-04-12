@@ -57,9 +57,9 @@ namespace ignite
     {
         namespace binary
         {
-            IGNITE_DECLARE_BINARY_TYPE_METHOD_CHECKER(GetHashCode, int32_t(ignite::binary::BinaryType<T>::*)(const T&));
+            IGNITE_DECLARE_BINARY_TYPE_METHOD_CHECKER(GetHashCode, int32_t(*)(const T&));
             IGNITE_DECLARE_BINARY_TYPE_METHOD_CHECKER(GetIdentityResolver,
-                ignite::Reference<ignite::binary::BinaryIdentityResolver>(ignite::binary::BinaryType<T>::*)());
+                ignite::Reference<ignite::binary::BinaryIdentityResolver>(*)());
 
             /**
              * This type is used to get hash code for binary types which have not
@@ -85,9 +85,7 @@ namespace ignite
             {
                 static int32_t Get(const T& obj, const ignite::binary::BinaryObject&)
                 {
-                    ignite::binary::BinaryType<T> bt;
-
-                    return bt.GetHashCode(obj);
+                    return ignite::binary::BinaryType<T>::GetHashCode(obj);
                 }
             };
 
@@ -100,10 +98,10 @@ namespace ignite
             {
                 static int32_t Get(const T&, const ignite::binary::BinaryObject& obj)
                 {
-                    ignite::binary::BinaryType<T> bt;
-                    ignite::Reference<ignite::binary::BinaryIdentityResolver> resolver = bt.GetIdentityResolver();
+                    ignite::Reference<ignite::binary::BinaryIdentityResolver> resolver =
+                        ignite::binary::BinaryType<T>::GetIdentityResolver();
 
-                    return resolver.Get().GetHashCode(obj);
+                    return resolver.Get()->GetHashCode(obj);
                 }
             };
 

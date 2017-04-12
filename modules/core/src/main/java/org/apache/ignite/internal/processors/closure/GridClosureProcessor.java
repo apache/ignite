@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.closure;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -70,7 +66,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.LoadBalancerResource;
@@ -87,9 +82,6 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
  *
  */
 public class GridClosureProcessor extends GridProcessorAdapter {
-    /** Ignite version in which binarylizable versions of closures were introduced. */
-    public static final IgniteProductVersion BINARYLIZABLE_CLOSURES_SINCE = IgniteProductVersion.fromString("1.6.0");
-
     /** Pool processor. */
     private final PoolProcessor pools;
 
@@ -181,7 +173,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         try {
             if (stopping) {
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T1.class,
-                    new IgniteCheckedException("Closure processor cannot be used on stopped grid: " + ctx.gridName()));
+                    new IgniteCheckedException("Closure processor cannot be used on stopped grid: " + ctx.igniteInstanceName()));
             }
 
             if (F.isEmpty(nodes))
@@ -262,7 +254,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     case BROADCAST: {
                         for (ClusterNode n : nodes)
                             for (Runnable r : jobs)
-                                mapper.map(downgradeJobIfNeeded(job(r), n), n);
+                                mapper.map(job(r), n);
 
                         break;
                     }
@@ -273,7 +265,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                             ClusterNode n = lb.getBalancedNode(job, null);
 
-                            mapper.map(downgradeJobIfNeeded(job, n), n);
+                            mapper.map(job, n);
                         }
 
                         break;
@@ -316,7 +308,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     case BROADCAST: {
                         for (ClusterNode n : nodes)
                             for (Callable<R> c : jobs)
-                                mapper.map(downgradeJobIfNeeded(job(c), n), n);
+                                mapper.map(job(c), n);
 
                         break;
                     }
@@ -327,7 +319,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                             ClusterNode n = lb.getBalancedNode(job, null);
 
-                            mapper.map(downgradeJobIfNeeded(job, n), n);
+                            mapper.map(job, n);
                         }
 
                         break;
@@ -438,7 +430,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      * @param cacheNames Cache names.
      * @param partId Partition.
-     * @param affKey Affinity key.
      * @param job Closure to execute.
      * @param nodes Grid nodes.
      * @return Grid future for collection of closure results.
@@ -446,7 +437,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     public <R> ComputeTaskInternalFuture<R> affinityCall(@NotNull Collection<String> cacheNames,
         int partId,
-        @Nullable Object affKey,
         Callable<R> job,
         @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert partId >= 0 : partId;
@@ -467,7 +457,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T5(node, job, cacheNames, partId, affKey, mapTopVer), null, false);
+            return ctx.task().execute(new T5(node, job, cacheNames, partId, mapTopVer), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -477,7 +467,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      * @param cacheNames Cache names.
      * @param partId Partition.
-     * @param affKey Affinity key.
      * @param job Job.
      * @param nodes Grid nodes.
      * @return Job future.
@@ -485,7 +474,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     public ComputeTaskInternalFuture<?> affinityRun(@NotNull Collection<String> cacheNames,
         int partId,
-        @Nullable Object affKey,
         Runnable job,
         @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert partId >= 0 : partId;
@@ -506,7 +494,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T4(node, job, cacheNames, partId, affKey, mapTopVer), null, false);
+            return ctx.task().execute(new T4(node, job, cacheNames, partId, mapTopVer), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -518,6 +506,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param job Closure to execute.
      * @param nodes Grid nodes.
      * @param sys If {@code true}, then system pool will be used.
+     * @param timeout Timeout.
      * @param <R> Type.
      * @return Grid future for collection of closure results.
      */
@@ -776,7 +765,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final GridWorkerFuture fut = new GridWorkerFuture();
 
-            GridWorker w = new GridWorker(ctx.gridName(), "closure-proc-worker", log) {
+            GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {
                     try {
                         if (ldr != null)
@@ -902,7 +891,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, byte plc)
+    public <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, byte plc)
         throws IgniteCheckedException {
         if (c == null)
             return new GridFinishedFuture<>();
@@ -918,7 +907,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final GridWorkerFuture<R> fut = new GridWorkerFuture<>();
 
-            GridWorker w = new GridWorker(ctx.gridName(), "closure-proc-worker", log) {
+            GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {
                     try {
                         if (ldr != null)
@@ -1021,7 +1010,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private static <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg) {
         A.notNull(job, "job");
 
-        return job instanceof ComputeJobMasterLeaveAware ? new C1MLAV2<>(job, arg) : new C1V2<>(job, arg);
+        return job instanceof ComputeJobMasterLeaveAware ? new C1MLA<>(job, arg) : new C1<>(job, arg);
     }
 
     /**
@@ -1033,7 +1022,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private static <R> ComputeJob job(final Callable<R> c) {
         A.notNull(c, "job");
 
-        return c instanceof ComputeJobMasterLeaveAware ? new C2MLAV2<>(c) : new C2V2<>(c);
+        return c instanceof ComputeJobMasterLeaveAware ? new C2MLA<>(c) : new C2<>(c);
     }
 
     /**
@@ -1045,46 +1034,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private static ComputeJob job(final Runnable r) {
         A.notNull(r, "job");
 
-        return r instanceof ComputeJobMasterLeaveAware ? new C4MLAV2(r) : new C4V2(r);
-    }
-
-    /**
-     * Downgrades provided job to older version if target does not support it.
-     *
-     * @param job Job.
-     * @param node Node.
-     * @return Provided or downgraded job.
-     */
-    private static ComputeJob downgradeJobIfNeeded(ComputeJob job, ClusterNode node) {
-        A.notNull(job, "job");
-
-        assert node != null;
-
-        IgniteProductVersion nodeVer = node.version();
-
-        if (nodeVer.compareTo(BINARYLIZABLE_CLOSURES_SINCE) >= 0)
-            return job;
-
-        if (job instanceof C1V2) {
-            if (job instanceof C1MLAV2)
-                return new C1MLA<>(((C1MLAV2)job).job, ((C1MLAV2)job).arg);
-            else
-                return new C1<>(((C1V2)job).job, ((C1V2)job).arg);
-        }
-        else if (job instanceof C2V2) {
-            if (job instanceof C2MLAV2)
-                return new C2MLA<>(((C2MLAV2)job).c);
-            else
-                return new C2<>(((C2V2)job).c);
-        }
-        else if (job instanceof C4V2) {
-            if (job instanceof C4MLAV2)
-                return new C4MLA(((C4MLAV2)job).r);
-            else
-                return new C4(((C4V2)job).r);
-        }
-
-        return job;
+        return r instanceof ComputeJobMasterLeaveAware ? new C4MLA(r) : new C4(r);
     }
 
     /**
@@ -1116,12 +1066,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private boolean hadLocNode;
 
-        /** */
-        private byte[] closureBytes;
-
-        /** */
-        private IgniteClosure<?, ?> closure;
-
         /**
          * @param expJobCnt Expected Jobs count.
          */
@@ -1139,22 +1083,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 if (hadLocNode) {
                     Marshaller marsh = ctx.config().getMarshaller();
 
-                    if (job instanceof C1) {
-                        C1 c = (C1)job;
-
-                        if (closureBytes == null) {
-                            closure = c.job;
-
-                            closureBytes = U.marshal(marsh, c.job);
-                        }
-
-                        if (c.job == closure)
-                            c.job = U.unmarshal(marsh, closureBytes, U.resolveClassLoader(ctx.config()));
-                        else
-                            c.job = U.unmarshal(marsh, U.marshal(marsh, c.job), U.resolveClassLoader(ctx.config()));
-                    }
-                    else
-                        job = U.unmarshal(marsh, U.marshal(marsh, job), U.resolveClassLoader(ctx.config()));
+                    job = U.unmarshal(marsh, U.marshal(marsh, job), U.resolveClassLoader(ctx.config()));
                 }
                 else
                     hadLocNode = true;
@@ -1324,9 +1253,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Runnable job;
 
         /** */
-        private Object affKey;
-
-        /** */
         private int partId;
 
         /** */
@@ -1335,16 +1261,14 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private Collection<String> affCacheNames;
 
-
         /**
          * @param node Cluster node.
          * @param job Job affinity partition.
          * @param affCacheNames Affinity caches.
          * @param partId Partition.
-         * @param affKey Affinity key.
          * @param topVer Affinity topology version.
          */
-        private T4(ClusterNode node, Runnable job, Collection<String> affCacheNames, int partId, Object affKey,
+        private T4(ClusterNode node, Runnable job, Collection<String> affCacheNames, int partId,
             AffinityTopologyVersion topVer) {
             super(U.peerDeployAware0(job));
 
@@ -1354,13 +1278,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             this.job = job;
             this.affCacheNames = affCacheNames;
             this.partId = partId;
-            this.affKey = affKey;
             this.topVer = topVer;
         }
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
-            return Collections.singletonMap(downgradeJobIfNeeded(job(this.job), node), node);
+            return Collections.singletonMap(job(job), node);
         }
 
         /** {@inheritDoc} */
@@ -1376,11 +1299,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Nullable @Override public AffinityTopologyVersion topologyVersion() {
             return topVer;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object affinityKey() {
-            return affKey;
         }
     }
 
@@ -1398,9 +1316,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Callable<R> job;
 
         /** */
-        private Object affKey;
-
-        /** */
         private int partId;
 
         /** */
@@ -1409,21 +1324,17 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private Collection<String> affCacheNames;
 
-
-
         /**
          * @param node Cluster node.
          * @param job Job affinity partition.
          * @param affCacheNames Affinity caches.
          * @param partId Partition.
-         * @param affKey Affinity key.
          * @param topVer Affinity topology version.
          */
         private T5(ClusterNode node,
             Callable<R> job,
             Collection<String> affCacheNames,
             int partId,
-            Object affKey,
             AffinityTopologyVersion topVer) {
             super(U.peerDeployAware0(job));
 
@@ -1431,13 +1342,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             this.job = job;
             this.affCacheNames = affCacheNames;
             this.partId = partId;
-            this.affKey = affKey;
             this.topVer = topVer;
         }
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
-            return Collections.singletonMap(downgradeJobIfNeeded(job(this.job), node), node);
+            return Collections.singletonMap(job(job), node);
         }
 
         /** {@inheritDoc} */
@@ -1448,11 +1358,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             }
 
             throw new IgniteException("Failed to find successful job result: " + res);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object affinityKey() {
-            return affKey;
         }
 
         /** {@inheritDoc} */
@@ -1587,7 +1492,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ClusterNode node = lb.getBalancedNode(job, null);
 
-            return Collections.singletonMap(downgradeJobIfNeeded(job, node), node);
+            return Collections.singletonMap(job, node);
         }
 
         /** {@inheritDoc} */
@@ -1638,7 +1543,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                     ClusterNode node = lb.getBalancedNode(job, null);
 
-                    mapper.map(downgradeJobIfNeeded(job, node), node);
+                    mapper.map(job, node);
                 }
 
                 return mapper.map();
@@ -1696,7 +1601,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                     ClusterNode node = lb.getBalancedNode(job, null);
 
-                    mapper.map(downgradeJobIfNeeded(job, node), node);
+                    mapper.map(job, node);
                 }
 
                 return mapper.map();
@@ -1750,7 +1655,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 JobMapper mapper = new JobMapper(subgrid.size());
 
                 for (ClusterNode n : subgrid)
-                    mapper.map(downgradeJobIfNeeded(job(job, arg), n), n);
+                    mapper.map(job(job, arg), n);
 
                 return mapper.map();
             }
@@ -1768,72 +1673,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C1<T, R> implements ComputeJob, Externalizable, GridNoImplicitInjection,
-        GridInternalWrapper<IgniteClosure> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        @GridToStringInclude
-        protected IgniteClosure<T, R> job;
-
-        /** */
-        @GridToStringInclude(sensitive = true)
-        private T arg;
-
-        /**
-         *
-         */
-        public C1() {
-            // No-op.
-        }
-
-        /**
-         * @param job Job.
-         * @param arg Argument.
-         */
-        C1(IgniteClosure<T, R> job, T arg) {
-            this.job = job;
-            this.arg = arg;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
-            return job.apply(arg);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(job);
-            out.writeObject(arg);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            job = (IgniteClosure<T, R>)in.readObject();
-            arg = (T)in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteClosure userObject() {
-            return job;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(C1.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    public static class C1V2<T, R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
+    public static class C1<T, R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
         GridInternalWrapper<IgniteClosure> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -1849,7 +1689,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          *
          */
-        public C1V2() {
+        public C1() {
             // No-op.
         }
 
@@ -1857,7 +1697,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
          * @param job Job.
          * @param arg Argument.
          */
-        C1V2(IgniteClosure<T, R> job, T arg) {
+        C1(IgniteClosure<T, R> job, T arg) {
             this.job = job;
             this.arg = arg;
         }
@@ -1893,14 +1733,14 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(C1V2.class, this);
+            return S.toString(C1.class, this);
         }
     }
 
     /**
      *
      */
-    private static class C1MLA<T, R> extends C1<T, R> implements ComputeJobMasterLeaveAware {
+    public static class C1MLA<T, R> extends C1<T, R> implements ComputeJobMasterLeaveAware {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1933,40 +1773,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    public static class C1MLAV2<T, R> extends C1V2<T, R> implements ComputeJobMasterLeaveAware {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         *
-         */
-        public C1MLAV2() {
-            // No-op.
-        }
-
-        /**
-         * @param job Job.
-         * @param arg Argument.
-         */
-        private C1MLAV2(IgniteClosure<T, R> job, T arg) {
-            super(job, arg);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
-            ((ComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(C1MLAV2.class, this, super.toString());
-        }
-    }
-
-    /**
-     *
-     */
-    private static class C2<R> implements ComputeJob, Externalizable, GridNoImplicitInjection, GridInternalWrapper<Callable> {
+    public static class C2<R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
+        GridInternalWrapper<Callable> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2003,14 +1811,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             // No-op.
         }
 
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(c);
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.rawWriter().writeObject(c);
         }
 
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            c = (Callable<R>)in.readObject();
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            c = reader.rawReader().readObject();
         }
 
         /** {@inheritDoc} */
@@ -2027,67 +1833,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    public static class C2V2<R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
-        GridInternalWrapper<Callable> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        @GridToStringInclude
-        protected Callable<R> c;
-
-        /**
-         *
-         */
-        public C2V2() {
-            // No-op.
-        }
-
-        /**
-         * @param c Callable.
-         */
-        private C2V2(Callable<R> c) {
-            this.c = c;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object execute() {
-            try {
-                return c.call();
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            // No-op.
-        }
-
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.rawWriter().writeObject(c);
-        }
-
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            c = reader.rawReader().readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Callable userObject() {
-            return c;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(C2V2.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class C2MLA<R> extends C2<R> implements ComputeJobMasterLeaveAware {
+    public static class C2MLA<R> extends C2<R> implements ComputeJobMasterLeaveAware {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2117,40 +1863,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
-     *
      */
-    public static class C2MLAV2<R> extends C2V2<R> implements ComputeJobMasterLeaveAware {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         *
-         */
-        public C2MLAV2() {
-            // No-op.
-        }
-
-        /**
-         * @param c Callable.
-         */
-        private C2MLAV2(Callable<R> c) {
-            super(c);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
-            ((ComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(C2MLAV2.class, this, super.toString());
-        }
-    }
-
-    /**
-     */
-    private static class C4 implements ComputeJob, Externalizable, GridNoImplicitInjection, GridInternalWrapper<Runnable> {
+    public static class C4 implements ComputeJob, Binarylizable, GridNoImplicitInjection, GridInternalWrapper<Runnable> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2184,63 +1898,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             // No-op.
         }
 
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(r);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            r = (Runnable)in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Runnable userObject() {
-            return r;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(C4.class, this);
-        }
-    }
-
-    /**
-     */
-    public static class C4V2 implements ComputeJob, Binarylizable, GridNoImplicitInjection, GridInternalWrapper<Runnable> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        @GridToStringInclude
-        protected Runnable r;
-
-        /**
-         *
-         */
-        public C4V2() {
-            // No-op.
-        }
-
-        /**
-         * @param r Runnable.
-         */
-        private C4V2(Runnable r) {
-            this.r = r;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object execute() {
-            r.run();
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancel() {
-            // No-op.
-        }
-
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.rawWriter().writeObject(r);
         }
@@ -2256,14 +1913,14 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(C4V2.class, this);
+            return S.toString(C4.class, this);
         }
     }
 
     /**
      *
      */
-    private static class C4MLA extends C4 implements ComputeJobMasterLeaveAware {
+    public static class C4MLA extends C4 implements ComputeJobMasterLeaveAware {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2289,38 +1946,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(C4MLA.class, this, super.toString());
-        }
-    }
-
-    /**
-     *
-     */
-    public static class C4MLAV2 extends C4V2 implements ComputeJobMasterLeaveAware {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         *
-         */
-        public C4MLAV2() {
-            // No-op.
-        }
-
-        /**
-         * @param r Runnable.
-         */
-        private C4MLAV2(Runnable r) {
-            super(r);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
-            ((ComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(C4MLAV2.class, this, super.toString());
         }
     }
 }

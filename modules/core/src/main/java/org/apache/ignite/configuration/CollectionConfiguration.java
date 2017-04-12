@@ -68,9 +68,13 @@ public class CollectionConfiguration implements Serializable {
      * @param collocated If {@code true} then all items within the same collection will be collocated on the same node.
      *      Otherwise elements of the same set maybe be cached on different nodes. This parameter works only
      *      collections stored in {@link CacheMode#PARTITIONED} cache.
+     *
+     * @return {@code this} for chaining.
      */
-    public void setCollocated(boolean collocated) {
+    public CollectionConfiguration setCollocated(boolean collocated) {
         this.collocated = collocated;
+
+        return this;
     }
 
     /**
@@ -82,9 +86,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param atomicityMode Cache atomicity mode.
+     * @return {@code this} for chaining.
      */
-    public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
+    public CollectionConfiguration setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
+
+        return this;
     }
 
     /**
@@ -96,9 +103,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param cacheMode Cache mode.
+     * @return {@code this} for chaining.
      */
-    public void setCacheMode(CacheMode cacheMode) {
+    public CollectionConfiguration setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
+
+        return this;
     }
 
     /**
@@ -110,9 +120,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param memoryMode Memory mode.
+     * @return {@code this} for chaining.
      */
-    public void setMemoryMode(CacheMemoryMode memoryMode) {
+    public CollectionConfiguration setMemoryMode(CacheMemoryMode memoryMode) {
         this.memoryMode = memoryMode;
+
+        return this;
     }
 
     /**
@@ -124,9 +137,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param nodeFilter Predicate specifying on which nodes the cache should be started.
+     * @return {@code this} for chaining.
      */
-    public void setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+    public CollectionConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
+
+        return this;
     }
 
     /**
@@ -138,9 +154,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param backups Cache number of backups.
+     * @return {@code this} for chaining.
      */
-    public void setBackups(int backups) {
+    public CollectionConfiguration setBackups(int backups) {
         this.backups = backups;
+
+        return this;
     }
 
     /**
@@ -152,9 +171,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param offHeapMaxMemory Off-heap memory size.
+     * @return {@code this} for chaining.
      */
-    public void setOffHeapMaxMemory(long offHeapMaxMemory) {
+    public CollectionConfiguration setOffHeapMaxMemory(long offHeapMaxMemory) {
         this.offHeapMaxMem = offHeapMaxMemory;
+
+        return this;
     }
 
     /** {@inheritDoc} */

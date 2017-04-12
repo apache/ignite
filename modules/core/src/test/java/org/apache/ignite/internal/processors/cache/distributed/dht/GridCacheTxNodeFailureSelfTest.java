@@ -72,12 +72,12 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         BanningCommunicationSpi commSpi = new BanningCommunicationSpi();
 
@@ -89,10 +89,10 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) {
+    protected CacheConfiguration cacheConfiguration(String igniteInstanceName) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
@@ -237,15 +237,11 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
                         try (Transaction tx = ignite.transactions().txStart(conc, REPEATABLE_READ)) {
                             cache.put(key, key);
 
-                            Transaction asyncTx = (Transaction)tx.withAsync();
-
-                            asyncTx.commit();
+                            IgniteFuture<?> fut = tx.commitAsync();
 
                             commitLatch.countDown();
 
                             try {
-                                IgniteFuture<Object> fut = asyncTx.future();
-
                                 fut.get();
 
                                 if (!commit) {
@@ -266,16 +262,14 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
                         }
                     }
                     else {
-                        IgniteCache<Object, Object> cache0 = cache.withAsync();
-
-                        cache0.put(key, key);
+                        IgniteFuture fut = cache.putAsync(key, key);
 
                         Thread.sleep(1000);
 
                         commitLatch.countDown();
 
                         try {
-                            cache0.future().get();
+                            fut.get();
 
                             if (!commit) {
                                 error("Transaction has been committed");

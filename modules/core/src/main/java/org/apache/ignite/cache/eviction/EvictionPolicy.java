@@ -19,7 +19,6 @@ package org.apache.ignite.cache.eviction;
 
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
-import org.apache.ignite.cache.eviction.random.RandomEvictionPolicy;
 import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
 
 /**
@@ -31,7 +30,6 @@ import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
  * Ignite comes with following eviction policies out-of-the-box:
  * <ul>
  * <li>{@link LruEvictionPolicy}</li>
- * <li>{@link RandomEvictionPolicy}</li>
  * <li>{@link FifoEvictionPolicy}</li>
  * <li>{@link SortedEvictionPolicy}</li>
  * </ul>

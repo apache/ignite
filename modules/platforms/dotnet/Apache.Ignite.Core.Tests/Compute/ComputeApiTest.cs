@@ -118,6 +118,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         /** Type: enum array from cache. */
         private const int EchoTypeEnumArrayFromCache = 21;
+                
+        /** Echo type: IgniteUuid. */
+        private const int EchoTypeIgniteUuid = 22;
 
         /** First node. */
         private IIgnite _grid1;
@@ -542,7 +545,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
                     SpringConfigUrl = GetConfigs().Item1,
-                    GridName = "daemonGrid",
+                    IgniteInstanceName = "daemonGrid",
                     IsDaemon = true
                 })
             )
@@ -908,10 +911,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, res.GetField<int>("field"));
 
             // This call must fail because "keepBinary" flag is reset.
-            Assert.Catch(typeof(BinaryObjectException), () =>
+            var ex = Assert.Throws<BinaryObjectException>(() =>
             {
                 compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
             });
+
+            Assert.AreEqual("Unknown pair [platformId=1, typeId=2009791293]", ex.Message);
         }
 
         /// <summary>
@@ -1029,6 +1034,22 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(0, enumMeta.Fields.Count);
 
             Assert.AreEqual(enumVal, res);
+        }
+
+        /// <summary>
+        /// Tests that IgniteGuid in .NET maps to IgniteUuid in Java.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskIgniteUuid()
+        {
+            var guid = Guid.NewGuid();
+
+            _grid1.GetCache<int, object>(null)[EchoTypeIgniteUuid] = new IgniteGuid(guid, 25);
+
+            var res = _grid1.GetCompute().ExecuteJavaTask<IgniteGuid>(EchoTask, EchoTypeIgniteUuid);
+
+            Assert.AreEqual(guid, res.GlobalId);
+            Assert.AreEqual(25, res.LocalId);
         }
 
         /// <summary>
@@ -1367,9 +1388,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class InvalidNetSimpleJob : NetSimpleJob
+    class InvalidNetSimpleJob : NetSimpleJob, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 
     [Serializable]
@@ -1441,9 +1470,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class InvalidComputeAction : ComputeAction
+    class InvalidComputeAction : ComputeAction, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 
     interface IUserInterface<out T>

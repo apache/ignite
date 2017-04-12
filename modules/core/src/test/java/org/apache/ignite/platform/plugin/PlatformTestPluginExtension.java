@@ -46,6 +46,6 @@ public class PlatformTestPluginExtension implements PlatformPluginExtension {
 
     /** {@inheritDoc} */
     @Override public PlatformTarget createTarget() {
-        return new PlatformTestPluginTarget(ignite.context().platform().context(), "");
+        return new PlatformTestPluginTarget(ignite.context().platform().context(), null);
     }
 }

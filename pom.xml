@@ -56,6 +56,7 @@
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
+        <module>modules/spring-data</module>
         <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
@@ -88,6 +89,8 @@
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
         <module>modules/flink</module>
+        <module>modules/kubernetes</module>
+        <module>modules/zeromq</module>
     </modules>
 
     <profiles>
@@ -338,11 +341,6 @@
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
 
-                                        <replaceregexp file="${basedir}/target/release-package/examples/schema-import/pom.xml" byline="true">
-                                            <regexp pattern="to_be_replaced_by_ignite_version" />
-                                            <substitution expression="${project.version}" />
-                                        </replaceregexp>
-
                                         <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
 
                                         <!--
@@ -506,9 +504,13 @@
                                             <fileset dir="${basedir}/target/release-package/benchmarks/config/">
                                                 <include name="*.*" />
                                                 <exclude name="benchmark.properties"/>
+                                                <exclude name="benchmark-remote.properties"/>
+                                                <exclude name="benchmark-sample.properties"/>
+                                                <exclude name="benchmark-remote-sample.properties"/>
                                                 <exclude name="benchmark-multicast.properties"/>
                                                 <exclude name="ignite-base-config.xml"/>
                                                 <exclude name="ignite-localhost-config.xml"/>
+                                                <exclude name="ignite-remote-config.xml"/>
                                                 <exclude name="ignite-multicast-config.xml"/>
                                             </fileset>
                                         </delete>
@@ -540,7 +542,7 @@
                                               tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
                                         </copy>
 
-                                        <copy file="${basedir}/modules/yardstick/DEVNOTES.txt"
+                                        <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt"
                                               tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
                                     </target>
                                 </configuration>
@@ -599,7 +601,6 @@
             <id>examples</id>
             <modules>
                 <module>examples</module>
-                <module>examples/schema-import</module>
             </modules>
         </profile>
 
@@ -782,125 +783,10 @@
         </profile>
 
         <profile>
-            <id>java8-schema-import</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/lib/ext/jfxrt.jar</exists>
-                </file>
-            </activation>
-            <modules>
-                <module>modules/schema-import</module>
-                <module>modules/schema-import-db</module>
-            </modules>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-
-                        <executions>
-                            <execution>
-                                <id>dependencies-schema-import</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package/bin</outputDirectory>
-                                    <finalName>include</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>schema-import-scripts</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/release-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package</outputDirectory>
-                                    <finalName>bin</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>schema-import</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/lib/jfxrt.jar</exists>
-                </file>
-            </activation>
-            <modules>
-                <module>modules/schema-import</module>
-                <module>modules/schema-import-db</module>
-            </modules>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-
-                        <executions>
-                            <execution>
-                                <id>dependencies-schema-import</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package/bin</outputDirectory>
-                                    <finalName>include</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>schema-import-scripts</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/release-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package</outputDirectory>
-                                    <finalName>bin</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>web-console</id>
             <modules>
                 <module>modules/web-console</module>
                 <module>modules/web-console/web-agent</module>
-                <module>modules/schema-import-db</module>
             </modules>
         </profile>
 

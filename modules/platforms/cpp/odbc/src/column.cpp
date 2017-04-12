@@ -282,6 +282,15 @@ namespace ignite
                     break;
                 }
 
+                case IGNITE_TYPE_TIME:
+                {
+                    reader.ReadTime();
+
+                    sizeTmp = 8;
+
+                    break;
+                }
+
                 case IGNITE_TYPE_TIMESTAMP:
                 {
                     reader.ReadTimestamp();
@@ -305,6 +314,7 @@ namespace ignite
                 default:
                 {
                     // This is a fail case.
+                    std::cout << (int)hdr << std::endl;
                     assert(false);
                     return;
                 }
@@ -481,6 +491,15 @@ namespace ignite
                     Timestamp ts = reader.ReadTimestamp();
 
                     dataBuf.PutTimestamp(ts);
+
+                    break;
+                }
+
+                case IGNITE_TYPE_TIME:
+                {
+                    Time time = reader.ReadTime();
+
+                    dataBuf.PutTime(time);
 
                     break;
                 }

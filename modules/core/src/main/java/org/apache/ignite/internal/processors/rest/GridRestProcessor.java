@@ -147,7 +147,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             workersCnt.increment();
 
-            GridWorker w = new GridWorker(ctx.gridName(), "rest-proc-worker", log) {
+            GridWorker w = new GridWorker(ctx.igniteInstanceName(), "rest-proc-worker", log) {
                 @Override protected void body() {
                     try {
                         IgniteInternalFuture<GridRestResponse> res = handleRequest(req);
@@ -414,8 +414,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         sesTtl = sesExpTime0;
 
-        sesTimeoutCheckerThread = new IgniteThread(ctx.gridName(), "session-timeout-worker",
-            new GridWorker(ctx.gridName(), "session-timeout-worker", log) {
+        sesTimeoutCheckerThread = new IgniteThread(ctx.igniteInstanceName(), "session-timeout-worker",
+            new GridWorker(ctx.igniteInstanceName(), "session-timeout-worker", log) {
                 @Override protected void body() throws InterruptedException {
                     while (!isCancelled()) {
                         Thread.sleep(SES_TIMEOUT_CHECK_DELAY);
@@ -887,7 +887,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> REST processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> REST processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   protosSize: " + protos.size());
         X.println(">>>   handlersSize: " + handlers.size());
     }

@@ -23,7 +23,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
@@ -52,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             var cfg = new IgniteConfiguration
             {
-                GridName = GridName,
+                IgniteInstanceName = GridName,
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\native-client-test-cache-store.xml",
@@ -106,9 +108,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             for (int i = 105; i < 110; i++)
                 Assert.AreEqual("val_" + i, cache.Get(i));
-
-            // Test invalid filter
-            Assert.Throws<BinaryObjectException>(() => cache.LoadCache(new InvalidCacheEntryFilter(), 100, 10));
 
             // Test exception in filter
             Assert.Throws<CacheStoreException>(() => cache.LoadCache(new ExceptionalEntryFilter(), 100, 10));
@@ -208,12 +207,38 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual("val", cache.Get(1));
 
             Assert.AreEqual(1, cache.GetSize());
+        }
 
-            // Test errors
+        [Test]
+        public void TestExceptions()
+        {
+            var cache = GetCache();
+
+            cache.Put(1, "val");
+
             CacheTestStore.ThrowError = true;
             CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
 
-            cache.LocalEvict(new[] { 1 });
+            cache.LocalEvict(new[] {1});
+            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Get(1)).InnerException);
+
+            CacheTestStore.ThrowError = false;
+
+            cache.Remove(1);
+        }
+
+        [Test]
+        [Ignore("IGNITE-4657")]
+        public void TestExceptionsNoRemove()
+        {
+            var cache = GetCache();
+
+            cache.Put(1, "val");
+
+            CacheTestStore.ThrowError = true;
+            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
+
+            cache.LocalEvict(new[] {1});
             CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Get(1)).InnerException);
         }
 
@@ -302,7 +327,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             for (int i = 0; i < 10; i++)
                 keys.Add(i);
 
-            IDictionary<int, string> loaded = cache.GetAll(keys);
+            IDictionary<int, string> loaded = cache.GetAll(keys).ToDictionary(x => x.Key, x => x.Value);
 
             Assert.AreEqual(10, loaded.Count);
 

@@ -89,8 +89,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
         cfg.setNetworkTimeout(10000);
@@ -101,7 +101,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        if (gridName.contains("testCacheRedeployVersionChangeContinuousMode")) {
+        if (igniteInstanceName.contains("testCacheRedeployVersionChangeContinuousMode")) {
             CacheConfiguration cacheCfg = new CacheConfiguration();
 
             cacheCfg.setCacheMode(CacheMode.REPLICATED);

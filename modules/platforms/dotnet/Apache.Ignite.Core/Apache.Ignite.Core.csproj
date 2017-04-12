@@ -92,6 +92,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryArrayEqualityComparer.cs" />
+    <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Events\IEventStorageSpi.cs" />
+    <Compile Include="Events\MemoryEventStorageSpi.cs" />
+    <Compile Include="Events\NoopEventStorageSpi.cs" />
     <Compile Include="Impl\Binary\BinaryFieldEqualityComparer.cs" />
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Common\JavaException.cs" />
@@ -185,11 +189,15 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
-    <Compile Include="Impl\Binary\DateTimeSerializer.cs" />
     <Compile Include="Impl\Binary\IO\IBinaryStreamProcessor.cs" />
+    <Compile Include="Impl\Binary\Metadata\BinaryField.cs" />
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
-    <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Binary\DeserializationCallbackProcessor.cs" />
+    <Compile Include="Impl\Binary\ReflectionUtils.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Cache\Store\CacheStore.cs" />
+    <Compile Include="Impl\Cache\Store\ICacheStoreInternal.cs" />
     <Compile Include="Impl\Transactions\CacheTransactionManager.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicyFactory.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicySerializer.cs" />
@@ -298,7 +306,7 @@
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryUtils.cs" />
     <Compile Include="Impl\Cache\Query\FieldsQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursor.cs" />
-    <Compile Include="Impl\Cache\Store\CacheStore.cs" />
+    <Compile Include="Impl\Cache\Store\CacheStoreInternal.cs" />
     <Compile Include="Impl\Cache\Store\CacheStoreSession.cs" />
     <Compile Include="Impl\Cache\Store\CacheStoreSessionProxy.cs" />
     <Compile Include="Impl\Cluster\ClusterGroupImpl.cs" />
@@ -315,6 +323,7 @@
     <Compile Include="Impl\Common\CopyOnWriteConcurrentDictionary.cs" />
     <Compile Include="Impl\Common\DelegateConverter.cs" />
     <Compile Include="Impl\Common\DelegateTypeDescriptor.cs" />
+    <Compile Include="Impl\Common\SerializableTypeDescriptor.cs" />
     <Compile Include="Impl\Events\EventTypeConverter.cs" />
     <Compile Include="Impl\Common\Fnv1Hash.cs" />
     <Compile Include="Impl\Common\Future.cs" />
@@ -377,16 +386,13 @@
     <Compile Include="Impl\Memory\PlatformMemoryStream.cs" />
     <Compile Include="Impl\Memory\PlatformMemoryUtils.cs" />
     <Compile Include="Impl\Memory\PlatformPooledMemory.cs" />
-    <Compile Include="Impl\Memory\PlatformRawMemory.cs" />
     <Compile Include="Impl\Memory\PlatformUnpooledMemory.cs" />
     <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
-    <Compile Include="Impl\Binary\DateTimeHolder.cs" />
     <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
     <Compile Include="Impl\Binary\IO\BinaryStreamBase.cs" />
     <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
-    <Compile Include="Impl\Binary\IO\BinaryStreamAdapter.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />
     <Compile Include="Impl\Binary\Metadata\IBinaryTypeHandler.cs" />
@@ -416,7 +422,6 @@
     <Compile Include="Impl\Binary\BinaryObject.cs" />
     <Compile Include="Impl\Binary\BinaryUtils.cs" />
     <Compile Include="Impl\Binary\BinaryWriter.cs" />
-    <Compile Include="Impl\Binary\SerializableObjectHolder.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructure.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureEntry.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureJumpTable.cs" />
@@ -491,6 +496,7 @@
     <Compile Include="Plugin\IPluginConfiguration.cs" />
     <Compile Include="Plugin\IPluginContext.cs" />
     <Compile Include="Plugin\IPluginProvider.cs" />
+    <Compile Include="Plugin\PluginCallback.cs" />
     <Compile Include="Plugin\PluginNotFoundException.cs" />
     <Compile Include="Plugin\PluginProviderTypeAttribute.cs" />
     <Compile Include="Plugin\Cache\ICachePluginConfiguration.cs" />
