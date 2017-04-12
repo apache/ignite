@@ -138,7 +138,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
 
     /** Future ID. */
     @GridToStringInclude
-    protected Long futId;
+    protected long futId;
 
     /** Operation result. */
     protected GridCacheReturn opRes;

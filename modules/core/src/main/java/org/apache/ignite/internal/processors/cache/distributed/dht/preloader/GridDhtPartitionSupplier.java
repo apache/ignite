@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -87,13 +86,6 @@ class GridDhtPartitionSupplier {
     /**
      *
      */
-    void start() {
-        startOldListeners();
-    }
-
-    /**
-     *
-     */
     void stop() {
         synchronized (scMap) {
             Iterator<T3<UUID, Integer, AffinityTopologyVersion>> it = scMap.keySet().iterator();
@@ -106,8 +98,6 @@ class GridDhtPartitionSupplier {
                 it.remove();
             }
         }
-
-        stopOldListeners();
     }
 
     /**
@@ -146,6 +136,7 @@ class GridDhtPartitionSupplier {
      *
      * @param topVer Topology version.
      */
+    @SuppressWarnings("ConstantConditions")
     public void onTopologyChanged(AffinityTopologyVersion topVer) {
         synchronized (scMap) {
             Iterator<T3<UUID, Integer, AffinityTopologyVersion>> it = scMap.keySet().iterator();
@@ -179,6 +170,7 @@ class GridDhtPartitionSupplier {
      * @param idx Index.
      * @param id Node uuid.
      */
+    @SuppressWarnings("unchecked")
     public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
         assert d != null;
         assert id != null;
@@ -208,7 +200,7 @@ class GridDhtPartitionSupplier {
             log.debug("Demand request accepted [current=" + cutTop + ", demanded=" + demTop +
                 ", from=" + id + ", idx=" + idx + "]");
 
-        GridDhtPartitionSupplyMessageV2 s = new GridDhtPartitionSupplyMessageV2(
+        GridDhtPartitionSupplyMessage s = new GridDhtPartitionSupplyMessage(
             d.updateSequence(), cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
 
         ClusterNode node = cctx.discovery().node(id);
@@ -338,7 +330,7 @@ class GridDhtPartitionSupplier {
                                     if (!reply(node, d, s, scId))
                                         return;
 
-                                    s = new GridDhtPartitionSupplyMessageV2(d.updateSequence(),
+                                    s = new GridDhtPartitionSupplyMessage(d.updateSequence(),
                                         cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
                                 }
                             }
@@ -424,7 +416,7 @@ class GridDhtPartitionSupplier {
                                         if (!reply(node, d, s, scId))
                                             return;
 
-                                        s = new GridDhtPartitionSupplyMessageV2(d.updateSequence(),
+                                        s = new GridDhtPartitionSupplyMessage(d.updateSequence(),
                                             cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
                                     }
                                 }
@@ -545,7 +537,7 @@ class GridDhtPartitionSupplier {
                                     if (!reply(node, d, s, scId))
                                         return;
 
-                                    s = new GridDhtPartitionSupplyMessageV2(d.updateSequence(),
+                                    s = new GridDhtPartitionSupplyMessage(d.updateSequence(),
                                         cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
                                 }
                             }
@@ -605,7 +597,7 @@ class GridDhtPartitionSupplier {
      */
     private boolean reply(ClusterNode n,
         GridDhtPartitionDemandMessage d,
-        GridDhtPartitionSupplyMessageV2 s,
+        GridDhtPartitionSupplyMessage s,
         T3<UUID, Integer, AffinityTopologyVersion> scId)
         throws IgniteCheckedException {
 
@@ -741,294 +733,6 @@ class GridDhtPartitionSupplier {
         /** {@inheritDoc} */
         public String toString() {
             return S.toString(SupplyContext.class, this);
-        }
-    }
-
-    @Deprecated//Backward compatibility. To be removed in future.
-    public void startOldListeners() {
-        if (!cctx.kernalContext().clientNode() && cctx.rebalanceEnabled()) {
-            cctx.io().addHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage>() {
-                @Override public void apply(UUID id, GridDhtPartitionDemandMessage m) {
-                    processOldDemandMessage(m, id);
-                }
-            });
-        }
-    }
-
-    @Deprecated//Backward compatibility. To be removed in future.
-    public void stopOldListeners() {
-        if (!cctx.kernalContext().clientNode() && cctx.rebalanceEnabled())
-            cctx.io().removeHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class);
-    }
-
-    /**
-     * @param d D.
-     * @param id Id.
-     */
-    @Deprecated//Backward compatibility. To be removed in future.
-    private void processOldDemandMessage(GridDhtPartitionDemandMessage d, UUID id) {
-        GridDhtPartitionSupplyMessage s = new GridDhtPartitionSupplyMessage(d.workerId(),
-            d.updateSequence(), cctx.cacheId(), cctx.deploymentEnabled());
-
-        ClusterNode node = cctx.node(id);
-
-        if (node == null)
-            return;
-
-        long preloadThrottle = cctx.config().getRebalanceThrottle();
-
-        boolean ack = false;
-
-        try {
-            for (int part : d.partitions()) {
-                GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
-
-                if (loc == null || loc.state() != OWNING || !loc.reserve()) {
-                    // Reply with partition of "-1" to let sender know that
-                    // this node is no longer an owner.
-                    s.missed(part);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Requested partition is not owned by local node [part=" + part +
-                            ", demander=" + id + ']');
-
-                    continue;
-                }
-
-                GridCacheEntryInfoCollectSwapListener swapLsnr = null;
-
-                try {
-                    if (cctx.isSwapOrOffheapEnabled()) {
-                        swapLsnr = new GridCacheEntryInfoCollectSwapListener(log);
-
-                        cctx.swap().addOffHeapListener(part, swapLsnr);
-                        cctx.swap().addSwapListener(part, swapLsnr);
-                    }
-
-                    boolean partMissing = false;
-
-                    for (GridCacheEntryEx e : loc.allEntries()) {
-                        if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
-                            // Demander no longer needs this partition, so we send '-1' partition and move on.
-                            s.missed(part);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Demanding node does not need requested partition [part=" + part +
-                                    ", nodeId=" + id + ']');
-
-                            partMissing = true;
-
-                            break;
-                        }
-
-                        if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
-                            ack = true;
-
-                            if (!replyOld(node, d, s))
-                                return;
-
-                            // Throttle preloading.
-                            if (preloadThrottle > 0)
-                                U.sleep(preloadThrottle);
-
-                            s = new GridDhtPartitionSupplyMessage(d.workerId(), d.updateSequence(),
-                                cctx.cacheId(), cctx.deploymentEnabled());
-                        }
-
-                        GridCacheEntryInfo info = e.info();
-
-                        if (info != null && !info.isNew()) {
-                            if (preloadPred == null || preloadPred.apply(info))
-                                s.addEntry(part, info, cctx);
-                            else if (log.isDebugEnabled())
-                                log.debug("Rebalance predicate evaluated to false (will not sender cache entry): " +
-                                    info);
-                        }
-                    }
-
-                    if (partMissing)
-                        continue;
-
-                    if (cctx.isSwapOrOffheapEnabled()) {
-                        GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> iter =
-                            cctx.swap().iterator(part);
-
-                        // Iterator may be null if space does not exist.
-                        if (iter != null) {
-                            try {
-                                boolean prepared = false;
-
-                                for (Map.Entry<byte[], GridCacheSwapEntry> e : iter) {
-                                    if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
-                                        // Demander no longer needs this partition,
-                                        // so we send '-1' partition and move on.
-                                        s.missed(part);
-
-                                        if (log.isDebugEnabled())
-                                            log.debug("Demanding node does not need requested partition " +
-                                                "[part=" + part + ", nodeId=" + id + ']');
-
-                                        partMissing = true;
-
-                                        break; // For.
-                                    }
-
-                                    if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
-                                        ack = true;
-
-                                        if (!replyOld(node, d, s))
-                                            return;
-
-                                        // Throttle preloading.
-                                        if (preloadThrottle > 0)
-                                            U.sleep(preloadThrottle);
-
-                                        s = new GridDhtPartitionSupplyMessage(d.workerId(),
-                                            d.updateSequence(), cctx.cacheId(), cctx.deploymentEnabled());
-                                    }
-
-                                    GridCacheSwapEntry swapEntry = e.getValue();
-
-                                    GridCacheEntryInfo info = new GridCacheEntryInfo();
-
-                                    info.keyBytes(e.getKey());
-                                    info.ttl(swapEntry.ttl());
-                                    info.expireTime(swapEntry.expireTime());
-                                    info.version(swapEntry.version());
-                                    info.value(swapEntry.value());
-
-                                    if (preloadPred == null || preloadPred.apply(info))
-                                        s.addEntry0(part, info, cctx);
-                                    else {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Rebalance predicate evaluated to false (will not send " +
-                                                "cache entry): " + info);
-
-                                        continue;
-                                    }
-
-                                    // Need to manually prepare cache message.
-                                    if (depEnabled && !prepared) {
-                                        ClassLoader ldr = swapEntry.keyClassLoaderId() != null ?
-                                            cctx.deploy().getClassLoader(swapEntry.keyClassLoaderId()) :
-                                            swapEntry.valueClassLoaderId() != null ?
-                                                cctx.deploy().getClassLoader(swapEntry.valueClassLoaderId()) :
-                                                null;
-
-                                        if (ldr == null)
-                                            continue;
-
-                                        if (ldr instanceof GridDeploymentInfo) {
-                                            s.prepare((GridDeploymentInfo)ldr);
-
-                                            prepared = true;
-                                        }
-                                    }
-                                }
-
-                                if (partMissing)
-                                    continue;
-                            }
-                            finally {
-                                iter.close();
-                            }
-                        }
-                    }
-
-                    // Stop receiving promote notifications.
-                    if (swapLsnr != null) {
-                        cctx.swap().removeOffHeapListener(part, swapLsnr);
-                        cctx.swap().removeSwapListener(part, swapLsnr);
-                    }
-
-                    if (swapLsnr != null) {
-                        Collection<GridCacheEntryInfo> entries = swapLsnr.entries();
-
-                        swapLsnr = null;
-
-                        for (GridCacheEntryInfo info : entries) {
-                            if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
-                                // Demander no longer needs this partition,
-                                // so we send '-1' partition and move on.
-                                s.missed(part);
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Demanding node does not need requested partition " +
-                                        "[part=" + part + ", nodeId=" + id + ']');
-
-                                // No need to continue iteration over swap entries.
-                                break;
-                            }
-
-                            if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
-                                ack = true;
-
-                                if (!replyOld(node, d, s))
-                                    return;
-
-                                s = new GridDhtPartitionSupplyMessage(d.workerId(),
-                                    d.updateSequence(),
-                                    cctx.cacheId(),
-                                    cctx.deploymentEnabled());
-                            }
-
-                            if (preloadPred == null || preloadPred.apply(info))
-                                s.addEntry(part, info, cctx);
-                            else if (log.isDebugEnabled())
-                                log.debug("Rebalance predicate evaluated to false (will not sender cache entry): " +
-                                    info);
-                        }
-                    }
-
-                    // Mark as last supply message.
-                    s.last(part);
-
-                    if (ack) {
-                        s.markAck();
-
-                        break; // Partition for loop.
-                    }
-                }
-                finally {
-                    loc.release();
-
-                    if (swapLsnr != null) {
-                        cctx.swap().removeOffHeapListener(part, swapLsnr);
-                        cctx.swap().removeSwapListener(part, swapLsnr);
-                    }
-                }
-            }
-
-            replyOld(node, d, s);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send partition supply message to node: " + node.id(), e);
-        }
-    }
-
-    /**
-     * @param n Node.
-     * @param d Demand message.
-     * @param s Supply message.
-     * @return {@code True} if message was sent, {@code false} if recipient left grid.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Deprecated//Backward compatibility. To be removed in future.
-    private boolean replyOld(ClusterNode n, GridDhtPartitionDemandMessage d, GridDhtPartitionSupplyMessage s)
-        throws IgniteCheckedException {
-        try {
-            if (log.isDebugEnabled())
-                log.debug("Replying to partition demand [node=" + n.id() + ", demand=" + d + ", supply=" + s + ']');
-
-            cctx.io().sendOrderedMessage(n, d.topic(), s, cctx.ioPolicy(), d.timeout());
-
-            return true;
-        }
-        catch (ClusterTopologyCheckedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send partition supply message because node left grid: " + n.id());
-
-            return false;
         }
     }
 
