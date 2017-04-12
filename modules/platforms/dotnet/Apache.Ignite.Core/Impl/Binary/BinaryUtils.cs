@@ -1670,7 +1670,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static string GetSqlTypeName(Type type)
         {
             // SQL always uses simple type name without namespace, parent class, etc.
-            return type.Name.Split('`').First();
+            return type.FullName;
         }
 
         /**
