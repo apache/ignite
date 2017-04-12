@@ -147,10 +147,10 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * Get primary IPC endpoint configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return IPC primary endpoint configuration.
      */
-    protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String gridName);
+    protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String igniteInstanceName);
 
     /**
      * Gets secondary file system URI path.
@@ -216,7 +216,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            cfg.setGridName("grid_secondary");
+            cfg.setIgniteInstanceName("grid_secondary");
 
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -238,20 +238,20 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestIgniteInstanceName() {
         return "grid";
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setFileSystemConfiguration(igfsConfiguration(gridName));
+        cfg.setFileSystemConfiguration(igfsConfiguration(igniteInstanceName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         cfg.setLocalHost("127.0.0.1");
         cfg.setCommunicationSpi(communicationSpi());
@@ -262,10 +262,10 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * Gets cache configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration dataCacheConfiguration(String gridName) {
+    protected CacheConfiguration dataCacheConfiguration(String igniteInstanceName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
@@ -297,24 +297,24 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * Gets IGFS configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return IGFS configuration.
      */
-    protected FileSystemConfiguration igfsConfiguration(String gridName) throws IgniteCheckedException {
+    protected FileSystemConfiguration igfsConfiguration(String igniteInstanceName) throws IgniteCheckedException {
         FileSystemConfiguration cfg = new FileSystemConfiguration();
 
         cfg.setName("igfs");
         cfg.setPrefetchBlocks(1);
         cfg.setMaxSpaceSize(64 * 1024 * 1024);
         cfg.setDefaultMode(mode);
-        cfg.setMetaCacheConfiguration(metaCacheConfiguration(gridName));
-        cfg.setDataCacheConfiguration(dataCacheConfiguration(gridName));
+        cfg.setMetaCacheConfiguration(metaCacheConfiguration(igniteInstanceName));
+        cfg.setDataCacheConfiguration(dataCacheConfiguration(igniteInstanceName));
 
         if (mode != PRIMARY)
             cfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(secondaryFileSystemUriPath(),
                 secondaryFileSystemConfigPath(), SECONDARY_FS_USER));
 
-        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
+        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(igniteInstanceName));
         cfg.setManagementPort(-1);
 
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.

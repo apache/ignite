@@ -91,10 +91,10 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        if (gridName != null && gridName.toLowerCase().startsWith("binary"))
+        if (igniteInstanceName != null && igniteInstanceName.toLowerCase().startsWith("binary"))
             c.setMarshaller(new BinaryMarshaller());
         else
             c.setMarshaller(new OptimizedMarshaller());
@@ -279,7 +279,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         for (int i = 0; i < 1; i++) {
             builder.setField("id", i);
-            builder.hashCode(i);
 
             entity = builder.build();
 

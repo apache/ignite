@@ -141,7 +141,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void marshal(Object obj, boolean enableReplace) throws BinaryObjectException {
-        String newName = ctx.configuration().getGridName();
+        String newName = ctx.configuration().getIgniteInstanceName();
         String oldName = IgniteUtils.setCurrentIgniteName(newName);
 
         try {
@@ -247,10 +247,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      *
      * @param userType User type flag.
      * @param registered Whether type is registered.
-     * @param hashCode Hash code.
-     * @param isHashCodeSet Hash code presence flag.
      */
-    public void postWrite(boolean userType, boolean registered, int hashCode, boolean isHashCodeSet) {
+    public void postWrite(boolean userType, boolean registered) {
         short flags;
         boolean useCompactFooter;
 
@@ -307,9 +305,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             }
         }
 
-        if (!isHashCodeSet)
-            flags |= BinaryUtils.FLAG_EMPTY_HASH_CODE;
-
         // Actual write.
         int retPos = out.position();
 
@@ -319,7 +314,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         out.unsafeWriteByte(GridBinaryMarshaller.PROTO_VER);
         out.unsafeWriteShort(flags);
         out.unsafeWriteInt(registered ? typeId : GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
-        out.unsafeWriteInt(hashCode);
+        out.unsafePosition(start + GridBinaryMarshaller.TOTAL_LEN_POS);
         out.unsafeWriteInt(retPos - start);
         out.unsafeWriteInt(finalSchemaId);
         out.unsafeWriteInt(offset);
@@ -337,35 +332,23 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         BinaryIdentityResolver identity = ctx.identity(typeId);
 
-        if (identity != null) {
-            if (out.hasArray()) {
-                // Heap.
-                byte[] data = out.array();
+        if (out.hasArray()) {
+            // Heap.
+            byte[] data = out.array();
 
-                BinaryObjectImpl obj = new BinaryObjectImpl(ctx, data, start);
+            BinaryObjectImpl obj = new BinaryObjectImpl(ctx, data, start);
 
-                short flags = BinaryPrimitives.readShort(data, start + GridBinaryMarshaller.FLAGS_POS);
+            BinaryPrimitives.writeInt(data, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
+        }
+        else {
+            // Offheap.
+            long ptr = out.rawOffheapPointer();
 
-                BinaryPrimitives.writeShort(data, start + GridBinaryMarshaller.FLAGS_POS,
-                    (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
+            assert ptr != 0;
 
-                BinaryPrimitives.writeInt(data, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
-            }
-            else {
-                // Offheap.
-                long ptr = out.rawOffheapPointer();
+            BinaryObjectOffheapImpl obj = new BinaryObjectOffheapImpl(ctx, ptr, start, out.capacity());
 
-                assert ptr != 0;
-
-                BinaryObjectOffheapImpl obj = new BinaryObjectOffheapImpl(ctx, ptr, start, out.capacity());
-
-                short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
-
-                BinaryPrimitives.writeShort(ptr, start + GridBinaryMarshaller.FLAGS_POS,
-                    (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
-
-                BinaryPrimitives.writeInt(ptr, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
-            }
+            BinaryPrimitives.writeInt(ptr, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
         }
     }
 

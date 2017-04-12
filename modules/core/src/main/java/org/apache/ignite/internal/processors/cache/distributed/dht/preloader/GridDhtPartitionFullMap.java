@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Full partition map.
  */
-public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap2>
+public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
     implements Comparable<GridDhtPartitionFullMap>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -65,32 +65,9 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap2>
      * @param nodeOrder Node order.
      * @param updateSeq Update sequence number.
      * @param m Map to copy.
-     */
-    @Deprecated // Backward compatibility.
-    public GridDhtPartitionFullMap(UUID nodeId, long nodeOrder, long updateSeq, Map<UUID, GridDhtPartitionMap2> m) {
-        assert nodeId != null;
-        assert updateSeq > 0;
-        assert nodeOrder > 0;
-
-        this.nodeId = nodeId;
-        this.nodeOrder = nodeOrder;
-        this.updateSeq = updateSeq;
-
-        for (Map.Entry<UUID, GridDhtPartitionMap2> e : m.entrySet()) {
-            GridDhtPartitionMap2 part = e.getValue();
-
-            put(e.getKey(), new GridDhtPartitionMap(part.nodeId(), part.updateSequence(), part.map()));
-        }
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param nodeOrder Node order.
-     * @param updateSeq Update sequence number.
-     * @param m Map to copy.
      * @param onlyActive If {@code true}, then only active partitions will be included.
      */
-    public GridDhtPartitionFullMap(UUID nodeId, long nodeOrder, long updateSeq, Map<UUID, GridDhtPartitionMap2> m,
+    public GridDhtPartitionFullMap(UUID nodeId, long nodeOrder, long updateSeq, Map<UUID, GridDhtPartitionMap> m,
         boolean onlyActive) {
         assert nodeId != null;
         assert updateSeq > 0;
@@ -100,10 +77,10 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap2>
         this.nodeOrder = nodeOrder;
         this.updateSeq = updateSeq;
 
-        for (Map.Entry<UUID, GridDhtPartitionMap2> e : m.entrySet()) {
-            GridDhtPartitionMap2 part = e.getValue();
+        for (Map.Entry<UUID, GridDhtPartitionMap> e : m.entrySet()) {
+            GridDhtPartitionMap part = e.getValue();
 
-            GridDhtPartitionMap2 cpy = new GridDhtPartitionMap2(part.nodeId(),
+            GridDhtPartitionMap cpy = new GridDhtPartitionMap(part.nodeId(),
                 part.updateSequence(),
                 part.topologyVersion(),
                 part.map(),
@@ -168,8 +145,8 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap2>
         if (size() != fullMap.size())
             return false;
 
-        for (Map.Entry<UUID, GridDhtPartitionMap2> e : entrySet()) {
-            GridDhtPartitionMap2 m = fullMap.get(e.getKey());
+        for (Map.Entry<UUID, GridDhtPartitionMap> e : entrySet()) {
+            GridDhtPartitionMap m = fullMap.get(e.getKey());
 
             if (m == null || !m.map().equals(e.getValue().map()))
                 return false;
@@ -238,7 +215,7 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap2>
         nodeOrder = in.readLong();
         updateSeq = in.readLong();
 
-        putAll(U.<UUID, GridDhtPartitionMap2>readMap(in));
+        putAll(U.<UUID, GridDhtPartitionMap>readMap(in));
     }
 
     /** {@inheritDoc} */
@@ -260,7 +237,7 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap2>
      * @return Map string representation.
      */
     public String map2string() {
-        Iterator<Map.Entry<UUID, GridDhtPartitionMap2>> it = entrySet().iterator();
+        Iterator<Map.Entry<UUID, GridDhtPartitionMap>> it = entrySet().iterator();
 
         if (!it.hasNext())
             return "{}";
@@ -270,11 +247,11 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap2>
         buf.append('{');
 
         while(true) {
-            Map.Entry<UUID, GridDhtPartitionMap2> e = it.next();
+            Map.Entry<UUID, GridDhtPartitionMap> e = it.next();
 
             UUID nodeId = e.getKey();
 
-            GridDhtPartitionMap2 partMap = e.getValue();
+            GridDhtPartitionMap partMap = e.getValue();
 
             buf.append(nodeId).append('=').append(partMap.toFullString());
 

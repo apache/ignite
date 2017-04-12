@@ -108,12 +108,12 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         fs = grid(0).fileSystem("igfs");
 
         // Cleanup FS.
-        fs.format();
+        fs.clear();
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLateAffinityAssignment(false);
         cfg.setCacheConfiguration();

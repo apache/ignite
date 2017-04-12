@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Impl
         {
             if (!string.IsNullOrEmpty(_cfg.SpringConfigUrl))
             {
-                // If there is a Spring config, use setting from Spring, 
+                // If there is a Spring config, use setting from Spring,
                 // since we ignore .NET config in legacy mode.
                 var cfg0 = GetConfiguration().BinaryConfiguration;
 
@@ -424,7 +424,7 @@ namespace Apache.Ignite.Core.Impl
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var writer = Marshaller.StartMarshal(stream);
+                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
 
@@ -463,7 +463,8 @@ namespace Apache.Ignite.Core.Impl
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var writer = Marshaller.StartMarshal(stream);
+                // Use system marshaller: full footers, always unregistered mode.
+                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
 
@@ -639,6 +640,8 @@ namespace Apache.Ignite.Core.Impl
 
                 writer.Write(initialValue);
 
+                Marshaller.FinishMarshal(writer);
+
                 var memPtr = stream.SynchronizeOutput();
 
                 return UU.ProcessorAtomicReference(_proc, name, memPtr, true);
@@ -654,7 +657,7 @@ namespace Apache.Ignite.Core.Impl
 
                 stream.SynchronizeInput();
 
-                return new IgniteConfiguration(_marsh.StartUnmarshal(stream), _cfg);
+                return new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(stream), _cfg);
             }
         }
 
@@ -724,7 +727,7 @@ namespace Apache.Ignite.Core.Impl
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var writer = Marshaller.StartMarshal(stream);
+                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
 

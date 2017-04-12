@@ -103,24 +103,25 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return getConfiguration(gridName, getIgfsConfiguration());
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return getConfiguration(igniteInstanceName, getIgfsConfiguration());
     }
 
     /**
-     * The same as getConfiguration(String gridName) but it sets custom IGFS configuration
+     * The same as getConfiguration(String igniteInstanceName) but it sets custom IGFS configuration
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param igfsCfg IGFS configuration.
      * @return Grid configuration.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration getConfiguration(String gridName, FileSystemConfiguration igfsCfg) throws Exception {
+    protected IgniteConfiguration getConfiguration(String igniteInstanceName, FileSystemConfiguration igfsCfg)
+        throws Exception {
         IgniteConfiguration cfg = IgnitionEx.loadConfiguration("config/hadoop/default-config.xml").get1();
 
         assert cfg != null;
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         cfg.setIncludeEventTypes(concat(EVTS_IGFS, EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED));
 
@@ -175,7 +176,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         // Clean up file system.
         if (igfs != null)
-            igfs.format();
+            igfs.clear();
     }
 
     /** {@inheritDoc} */

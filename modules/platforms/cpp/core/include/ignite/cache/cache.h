@@ -30,20 +30,20 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/ignite_error.h>
 
-#include "ignite/cache/cache_peek_mode.h"
-#include "ignite/cache/query/query_cursor.h"
-#include "ignite/cache/query/query_fields_cursor.h"
-#include "ignite/cache/query/query_scan.h"
-#include "ignite/cache/query/query_sql.h"
-#include "ignite/cache/query/query_text.h"
-#include "ignite/cache/query/query_sql_fields.h"
-#include "ignite/cache/query/continuous/continuous_query_handle.h"
-#include "ignite/cache/query/continuous/continuous_query.h"
-#include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/cache/cache_entry_processor_holder.h"
-#include "ignite/impl/operations.h"
-#include "ignite/impl/module_manager.h"
-#include "ignite/ignite_error.h"
+#include <ignite/cache/cache_peek_mode.h>
+#include <ignite/cache/query/query_cursor.h>
+#include <ignite/cache/query/query_fields_cursor.h>
+#include <ignite/cache/query/query_scan.h>
+#include <ignite/cache/query/query_sql.h>
+#include <ignite/cache/query/query_text.h>
+#include <ignite/cache/query/query_sql_fields.h>
+#include <ignite/cache/query/continuous/continuous_query_handle.h>
+#include <ignite/cache/query/continuous/continuous_query.h>
+#include <ignite/impl/cache/cache_impl.h>
+#include <ignite/impl/cache/cache_entry_processor_holder.h>
+#include <ignite/impl/operations.h>
+#include <ignite/impl/module_manager.h>
+#include <ignite/ignite_error.h>
 
 namespace ignite
 {
@@ -60,6 +60,9 @@ namespace ignite
          * of this class instance will only create another reference to the same
          * underlying object. Underlying object released automatically once all
          * the instances are destructed.
+         *
+         * @tparam K Cache key type.
+         * @tparam V Cache value type.
          */
         template<typename K, typename V>
         class IGNITE_IMPORT_EXPORT Cache
@@ -171,6 +174,29 @@ namespace ignite
                 IgniteError err;
 
                 bool res = ContainsKeys(keys, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Check if cache contains mapping for these keys.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             * @return True if cache contains mapping for all these keys.
+             */
+            template<typename InputIter>
+            bool ContainsKeys(InputIter begin, InputIter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, InputIter> op(begin, end);
+
+                bool res = impl.Get()->ContainsKeys(op, err);
 
                 IgniteError::ThrowIfNeeded(err);
 
@@ -334,6 +360,32 @@ namespace ignite
             }
 
             /**
+             * Retrieves values mapped to the specified keys from cache.
+             * If some value is not present in cache, then it will be looked up from swap storage. If
+             * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
+             * will be loaded from persistent store.
+             * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             * @param dst Output iterator. Should dereference to std::pair or CacheEntry.
+             */
+            template<typename InIter, typename OutIter>
+            void GetAll(InIter begin, InIter end, OutIter dst)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, InIter> inOp(begin, end);
+                impl::OutMapIterOperation<K, V, OutIter> outOp(dst);
+
+                impl.Get()->GetAll(inOp, outOp, err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
              * Associates the specified value with the specified key in the cache.
              * If the cache previously contained a mapping for the key,
              * the old value is replaced by the specified value.
@@ -403,6 +455,28 @@ namespace ignite
                 impl::InMapOperation<K, V> op(vals);
 
                 impl.Get()->PutAll(op, err);
+            }
+
+            /**
+             * Stores given key-value pairs in cache.
+             * If write-through is enabled, the stored values will be persisted to store.
+             * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key-value pair sequence.
+             * @param end Iterator pointing to the end of the key-value pair sequence.
+             */
+            template<typename Iter>
+            void PutAll(Iter begin, Iter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, Iter> op(begin, end);
+
+                impl.Get()->PutAll(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
             }
 
             /**
@@ -758,6 +832,29 @@ namespace ignite
             }
 
             /**
+             * Attempts to evict all entries associated with keys.
+             *
+             * @note Entry will be evicted only if it's not used (not
+             * participating in any locks or transactions).
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            template<typename Iter>
+            void LocalEvict(Iter begin, Iter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, Iter> op(begin, end);
+
+                impl.Get()->LocalEvict(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
              * Clear cache.
              *
              * This method should only be used on the valid instance.
@@ -850,6 +947,27 @@ namespace ignite
             }
 
             /**
+             * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
+             * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            template<typename Iter>
+            void ClearAll(Iter begin, Iter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, Iter> op(begin, end);
+
+                impl.Get()->ClearAll(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
              * Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
              * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
              *
@@ -925,6 +1043,30 @@ namespace ignite
                 impl::InSetOperation<K> op(keys);
 
                 impl.Get()->LocalClearAll(op, err);
+            }
+
+            /**
+             * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
+             * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+             *
+             * @note This operation is local as it merely clears entries from local cache, it does not
+             * remove entries from remote caches.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            template<typename Iter>
+            void LocalClearAll(Iter begin, Iter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, Iter> op(begin, end);
+
+                impl.Get()->LocalClearAll(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
             }
 
             /**
@@ -1050,6 +1192,28 @@ namespace ignite
                 impl::InSetOperation<K> op(keys);
 
                 impl.Get()->RemoveAll(op, err);
+            }
+
+            /**
+             * Removes given key mappings from cache.
+             * If write-through is enabled, the value will be removed from store.
+             * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            template<typename Iter>
+            void RemoveAll(Iter begin, Iter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, Iter> op(begin, end);
+
+                impl.Get()->RemoveAll(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
             }
 
             /**
@@ -1482,8 +1646,11 @@ namespace ignite
                 const query::continuous::ContinuousQuery<K, V>& qry, IgniteError& err)
             {
                 using namespace impl::cache::query::continuous;
+                using namespace common::concurrent;
 
-                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                const SharedPointer<ContinuousQueryImpl<K, V> >& qryImpl = qry.impl;
+
+                if (!qryImpl.IsValid() || !qryImpl.Get()->HasListener())
                 {
                     err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                         "Event listener is not set for ContinuousQuery instance");
@@ -1491,11 +1658,7 @@ namespace ignite
                     return query::continuous::ContinuousQueryHandle<K, V>();
                 }
 
-                ContinuousQueryHandleImpl* cqImpl;
-                cqImpl = impl.Get()->QueryContinuous(qry.impl, err);
-
-                if (cqImpl)
-                    cqImpl->SetQuery(qry.impl);
+                ContinuousQueryHandleImpl* cqImpl = impl.Get()->QueryContinuous(qryImpl, err);
 
                 return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
             }
@@ -1535,8 +1698,11 @@ namespace ignite
                 const Q& initialQry, IgniteError& err)
             {
                 using namespace impl::cache::query::continuous;
+                using namespace common::concurrent;
 
-                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                const SharedPointer<ContinuousQueryImpl<K, V> >& qryImpl = qry.impl;
+
+                if (!qryImpl.IsValid() || !qryImpl.Get()->HasListener())
                 {
                     err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                         "Event listener is not set for ContinuousQuery instance");
@@ -1544,11 +1710,7 @@ namespace ignite
                     return query::continuous::ContinuousQueryHandle<K, V>();
                 }
 
-                ContinuousQueryHandleImpl* cqImpl;
-                cqImpl = impl.Get()->QueryContinuous(qry.impl, initialQry, err);
-
-                if (cqImpl)
-                    cqImpl->SetQuery(qry.impl);
+                ContinuousQueryHandleImpl* cqImpl = impl.Get()->QueryContinuous(qryImpl, initialQry, err);
 
                 return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
             }
@@ -1567,6 +1729,35 @@ namespace ignite
             bool IsValid() const
             {
                 return impl.IsValid();
+            }
+
+            /**
+             * Executes LocalLoadCache on all cache nodes.
+             */
+            void LoadCache()
+            {
+                IgniteError err;
+
+                impl.Get()->LoadCache(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
+             * Loads state from the underlying persistent storage.
+             *
+             * This method is not transactional and may end up loading a stale value into
+             * cache if another thread has updated the value immediately after it has been
+             * loaded. It is mostly useful when pre-loading the cache from underlying
+             * data store before start, or for read-only caches.
+             */
+            void LocalLoadCache()
+            {
+                IgniteError err;
+
+                impl.Get()->LocalLoadCache(err);
+
+                IgniteError::ThrowIfNeeded(err);
             }
 
         private:

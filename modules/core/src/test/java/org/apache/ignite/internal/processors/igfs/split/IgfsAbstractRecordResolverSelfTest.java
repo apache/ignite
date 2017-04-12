@@ -82,7 +82,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid");
+        cfg.setIgniteInstanceName("grid");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -103,7 +103,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        igfs.format();
+        igfs.clear();
     }
 
     /**

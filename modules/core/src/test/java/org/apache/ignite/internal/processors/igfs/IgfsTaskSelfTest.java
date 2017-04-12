@@ -100,7 +100,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        igfs.format();
+        igfs.clear();
     }
 
     /**
@@ -143,7 +143,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsCfg);
 
-        cfg.setGridName("node-" + idx);
+        cfg.setIgniteInstanceName("node-" + idx);
 
         return cfg;
     }
@@ -162,6 +162,25 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         IgniteBiTuple<Long, Integer> taskRes = igfs.execute(new Task(),
             new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg);
+
+        assert F.eq(genLen, taskRes.getKey());
+        assert F.eq(TOTAL_WORDS, taskRes.getValue());
+    }
+
+    /**
+     * Test task.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void testTaskAsync() throws Exception {
+        String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
+
+        generateFile(TOTAL_WORDS);
+        Long genLen = igfs.info(FILE).length();
+
+        IgniteBiTuple<Long, Integer> taskRes = igfs.executeAsync(new Task(),
+            new IgfsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg).get();
 
         assert F.eq(genLen, taskRes.getKey());
         assert F.eq(TOTAL_WORDS, taskRes.getValue());

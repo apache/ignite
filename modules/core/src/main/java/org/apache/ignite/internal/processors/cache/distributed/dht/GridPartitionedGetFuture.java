@@ -53,14 +53,11 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture.SINGLE_GET_MSG_SINCE;
 
 /**
  * Colocated get future.
@@ -71,9 +68,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
-
-    /** Dummy version sent to older nodes for backward compatibility, */
-    private static final GridCacheVersion DUMMY_VER = new GridCacheVersion(0, 0, 0, 0);
 
     /** Logger. */
     private static IgniteLogger log;
@@ -335,7 +329,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     cctx.cacheId(),
                     futId,
                     fut.futureId(),
-                    n.version().compareTo(SINGLE_GET_MSG_SINCE) >= 0 ? null : DUMMY_VER,
+                    null,
                     mappedKeys,
                     readThrough,
                     topVer,
@@ -447,11 +441,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 if (entry != null) {
                     boolean isNew = entry.isNewLocked();
 
+                    EntryGetResult getRes = null;
                     CacheObject v = null;
                     GridCacheVersion ver = null;
 
                     if (needVer) {
-                        EntryGetResult res = entry.innerGetVersioned(
+                        getRes = entry.innerGetVersioned(
                             null,
                             null,
                             /*swap*/true,
@@ -465,9 +460,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             !deserializeBinary,
                             null);
 
-                        if (res != null) {
-                            v = res.value();
-                            ver = res.version();
+                        if (getRes != null) {
+                            v = getRes.value();
+                            ver = getRes.version();
                         }
                     }
                     else {
@@ -501,7 +496,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             keepCacheObjects,
                             deserializeBinary,
                             true,
-                            ver);
+                            getRes,
+                            ver,
+                            0,
+                            0,
+                            needVer);
 
                         return true;
                     }
@@ -560,7 +559,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     keepCacheObjects,
                     deserializeBinary,
                     false,
-                    needVer ? info.version() : null);
+                    needVer ? info.version() : null,
+                    0,
+                    0);
             }
 
             return map;

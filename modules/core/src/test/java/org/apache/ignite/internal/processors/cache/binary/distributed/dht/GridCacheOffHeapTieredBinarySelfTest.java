@@ -33,9 +33,9 @@ public class GridCacheOffHeapTieredBinarySelfTest extends GridCacheOffHeapTiered
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         // Enable binary.
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 

@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -136,9 +135,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
         assertEquals(2, latch1.count());
 
-        IgniteCompute comp = grid(0).compute().withAsync();
-
-        comp.call(new IgniteCallable<Object>() {
+        IgniteFuture<Object> fut = grid(0).compute().callAsync(new IgniteCallable<Object>() {
             @IgniteInstanceResource
             private Ignite ignite;
 
@@ -172,8 +169,6 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
                 return null;
             }
         });
-
-        IgniteFuture<Object> fut = comp.future();
 
         Thread.sleep(3000);
 

@@ -51,6 +51,13 @@ namespace ignite_test
         cfg.jvmOpts.push_back("-DIGNITE_CONSOLE_APPENDER=false");
         cfg.jvmOpts.push_back("-DIGNITE_UPDATE_NOTIFIER=false");
 
+        std::string home;
+        bool homeFound = jni::ResolveIgniteHome("", home);
+
+        assert(homeFound);
+
+        cfg.jvmClassPath = jni::CreateIgniteHomeClasspath(home, true);
+
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
         cfg.jvmMaxMem = 768;

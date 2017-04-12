@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -75,8 +75,8 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -234,7 +234,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         int cnt = 0;
 
         for (Ignite ignite : Ignition.allGrids()) {
-            if (getTestGridName(crdIdx).equals(ignite.name()) || ignite.configuration().isClientMode())
+            if (getTestIgniteInstanceName(crdIdx).equals(ignite.name()) || ignite.configuration().isClientMode())
                 continue;
 
             TestRecordingCommunicationSpi commSpi0 =
@@ -333,12 +333,12 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         GridDhtPartitionFullMap emptyFullMap = parts.get(cacheId);
 
-        for (GridDhtPartitionMap2 map : emptyFullMap.values())
+        for (GridDhtPartitionMap map : emptyFullMap.values())
             assertEquals(0, map.map().size());
 
         GridDhtPartitionFullMap fullMap = parts.get(dupCacheId);
 
-        for (GridDhtPartitionMap2 map : fullMap.values())
+        for (GridDhtPartitionMap map : fullMap.values())
             assertFalse(map.map().isEmpty());
     }
 
@@ -369,13 +369,13 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         assertEquals(dupCacheId, dupPartsData.get(cacheId));
         assertFalse(dupPartsData.containsKey(dupCacheId));
 
-        Map<Integer, GridDhtPartitionMap2> parts = msg.partitions();
+        Map<Integer, GridDhtPartitionMap> parts = msg.partitions();
 
-        GridDhtPartitionMap2 emptyMap = parts.get(cacheId);
+        GridDhtPartitionMap emptyMap = parts.get(cacheId);
 
         assertEquals(0, emptyMap.map().size());
 
-        GridDhtPartitionMap2 map = parts.get(dupCacheId);
+        GridDhtPartitionMap map = parts.get(dupCacheId);
 
         assertFalse(map.map().isEmpty());
     }

@@ -412,7 +412,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
                     if (entry != null) {
                         CacheObject v;
-                        GridCacheVersion ver;
 
                         if (needVer) {
                             EntryGetResult res = entry.innerGetVersioned(
@@ -430,18 +429,15 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null);
 
                             if (res != null) {
-                                v = res.value();
-                                ver = res.version();
-
                                 ctx.addResult(
                                     vals,
                                     cacheKey,
-                                    v,
+                                    res,
                                     skipVals,
                                     false,
                                     deserializeBinary,
                                     true,
-                                    ver);
+                                    needVer);
                             }
                             else
                                 success = false;
@@ -468,7 +464,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     skipVals,
                                     false,
                                     deserializeBinary,
-                                    true);
+                                    true,
+                                    null,
+                                    0,
+                                    0);
                             }
                             else
                                 success = false;

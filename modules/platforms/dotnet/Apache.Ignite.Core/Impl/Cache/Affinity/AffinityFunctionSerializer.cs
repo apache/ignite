@@ -255,9 +255,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 return;
             }
 
-            if (func != null && !func.GetType().IsSerializable)
-                throw new IgniteException("AffinityFunction should be serializable.");
-
             writer.WriteObject(func);
         }
 

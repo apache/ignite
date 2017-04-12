@@ -95,11 +95,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public UUID localNodeId();
 
     /**
-     * Gets grid name.
+     * Gets Ignite instance name.
      *
-     * @return Grid name.
+     * @return Ignite instance name.
      */
-    public String gridName();
+    public String igniteInstanceName();
 
     /**
      * Gets logger for given category.
@@ -505,6 +505,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *      requests and user messages sent to the node.
      */
     public ExecutorService getExecutorService();
+
+    /**
+     * Executor service that is in charge of processing service proxy invocations.
+     *
+     * @return Thread pool implementation to be used in grid for service proxy invocations.
+     */
+    public ExecutorService getServiceExecutorService();
 
     /**
      * Executor service that is in charge of processing internal system messages.

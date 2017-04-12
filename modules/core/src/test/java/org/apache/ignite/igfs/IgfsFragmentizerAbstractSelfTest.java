@@ -52,8 +52,8 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
     protected static final int IGFS_GROUP_SIZE = 32;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -156,6 +156,6 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).fileSystem("igfs").format();
+        grid(0).fileSystem("igfs").clear();
     }
 }

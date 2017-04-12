@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -74,8 +74,8 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     private static final int OP_GET = 3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -206,7 +206,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         assertNotNull(primary);
 
         log.info("Check call [key=" + key +
-            ", primary=" + primary.attribute(ATTR_GRID_NAME) +
+            ", primary=" + primary.attribute(ATTR_IGNITE_INSTANCE_NAME) +
             ", concurrency=" + concurrency +
             ", isolation=" + isolation + "]");
 

@@ -30,19 +30,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.cache.VisorCache;
-import org.apache.ignite.internal.visor.cache.VisorCacheV2;
-import org.apache.ignite.internal.visor.cache.VisorCacheV3;
-import org.apache.ignite.internal.visor.cache.VisorCacheV4;
 import org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
-import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isIgfsCache;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
 import static org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder.COMPUTE_MONITORING_HOLDER_KEY;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.EVT_MAPPER;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.EVT_MAPPER_V2;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.checkExplicitTaskMonitoring;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.collectEvents;
@@ -54,18 +49,6 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTaskArg, VisorNodeDataCollectorJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final IgniteProductVersion VER_1_4_1 = IgniteProductVersion.fromString("1.4.1");
-
-    /** */
-    private static final IgniteProductVersion VER_1_5_10 = IgniteProductVersion.fromString("1.5.10");
-
-    /** */
-    private static final IgniteProductVersion VER_1_5_26 = IgniteProductVersion.fromString("1.5.26");
-
-    /** */
-    protected static final IgniteProductVersion VER_1_7_2 = IgniteProductVersion.fromString("1.7.2");
 
     /**
      * Create job with given argument.
@@ -87,8 +70,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      */
     protected void events0(VisorNodeDataCollectorJobResult res, String evtOrderKey, String evtThrottleCntrKey,
         final boolean all) {
-        res.events().addAll(collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, all,
-            compatibleWith(VER_1_7_2) ? EVT_MAPPER_V2 : EVT_MAPPER));
+        res.events().addAll(collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, all, EVT_MAPPER));
     }
 
     /**
@@ -135,34 +117,6 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     }
 
     /**
-     * @param ver Version to check.
-     * @return {@code true} if found at least one compatible node with specified version.
-     */
-    protected boolean compatibleWith(IgniteProductVersion ver) {
-        for (ClusterNode node : ignite.cluster().nodes())
-            if (node.version().compareToIgnoreTimestamp(ver) <= 0)
-                return true;
-
-        return false;
-    }
-
-    /**
-     * @return Compatible {@link VisorCache} instance.
-     */
-    private VisorCache createVisorCache() {
-        if (compatibleWith(VER_1_4_1))
-            return new VisorCache();
-
-        if (compatibleWith(VER_1_5_10))
-            return new VisorCacheV2();
-
-        if (compatibleWith(VER_1_5_26))
-            return new VisorCacheV3();
-
-        return new VisorCacheV4();
-    }
-
-    /**
      * @param cacheName Cache name to check.
      * @return {@code true} if cache on local node is not a data cache or near cache disabled.
      */
@@ -189,11 +143,11 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     continue;
 
                 if (arg.systemCaches() ||
-                    !(isSystemCache(cacheName) || isIgfsCache(ignite.configuration(), cacheName))) {
+                    !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
                     long start0 = U.currentTimeMillis();
 
                     try {
-                        VisorCache cache = createVisorCache().from(ignite, cacheName, arg.sample());
+                        VisorCache cache = new VisorCache().from(ignite, cacheName, arg.sample());
 
                         if (cache != null)
                             res.caches().add(cache);
@@ -269,7 +223,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      */
     protected VisorNodeDataCollectorJobResult run(VisorNodeDataCollectorJobResult res,
         VisorNodeDataCollectorTaskArg arg) {
-        res.gridName(ignite.name());
+        res.igniteInstanceName(ignite.name());
 
         res.topologyVersion(ignite.cluster().topologyVersion());
 

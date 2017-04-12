@@ -39,7 +39,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -267,11 +266,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         if (cacheCtx.isNear())
             cacheCtx.near().dht().clearLocally(keys, true);
-
-        GridCacheQueryManager<K, V> qryMgr = cacheCtx.queries();
-
-        if (qryMgr != null)
-            qryMgr.onUndeploy(ldr);
 
         // Examine swap for entries to undeploy.
         int swapUndeployCnt = cacheCtx.isNear() ?
@@ -746,7 +740,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Cache deployment manager memory stats [grid=" + cctx.gridName() + ']');
+        X.println(">>> Cache deployment manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() + ']');
         X.println(">>>   Undeploys: " + undeploys.size());
         X.println(">>>   Cached deployments: " + deps.size());
         X.println(">>>   All participants: " + allParticipants.size());

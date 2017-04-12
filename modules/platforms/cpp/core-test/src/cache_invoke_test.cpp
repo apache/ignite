@@ -28,8 +28,12 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
+#include "ignite/test_utils.h"
+
 #include "ignite/ignite_binding_context.h"
 #include "ignite/cache/cache_entry_processor.h"
+
+#include "ignite/test_utils.h"
 
 using namespace boost::unit_test;
 
@@ -40,7 +44,7 @@ using namespace ignite::common;
 /**
  * CacheEntryModifier class for invoke tests.
  */
-class CacheEntryModifier : public CacheEntryProcessor<CacheEntryModifier, int, int, int, int>
+class CacheEntryModifier : public CacheEntryProcessor<int, int, int, int>
 {
 public:
     /**
@@ -129,16 +133,16 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(CacheEntryModifier)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CacheEntryModifier)
 
-            void Write(BinaryWriter& writer, CacheEntryModifier obj)
+            static void Write(BinaryWriter& writer, const CacheEntryModifier& obj)
             {
                 writer.WriteInt32("num", obj.GetNum());
             }
 
-            CacheEntryModifier Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, CacheEntryModifier& dst)
             {
                 int num = reader.ReadInt32("num");
 
-                return CacheEntryModifier(num);
+                dst = CacheEntryModifier(num);
             }
         IGNITE_BINARY_TYPE_END
     }
@@ -147,7 +151,7 @@ namespace ignite
 /**
  * Divisor class for invoke tests.
  */
-class Divisor : public CacheEntryProcessor<Divisor, int, int, double, double>
+class Divisor : public CacheEntryProcessor<int, int, double, double>
 {
 public:
     /**
@@ -240,16 +244,16 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(Divisor)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Divisor)
 
-            void Write(BinaryWriter& writer, Divisor obj)
+            static void Write(BinaryWriter& writer, const Divisor& obj)
             {
                 writer.WriteDouble("scale", obj.GetScale());
             }
 
-            Divisor Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, Divisor& dst)
             {
                 double scale = reader.ReadDouble("scale");
 
-                return Divisor(scale);
+                dst = Divisor(scale);
             }
         IGNITE_BINARY_TYPE_END
     }
@@ -258,7 +262,7 @@ namespace ignite
 /**
  * Character remover class for invoke tests.
  */
-class CharRemover : public CacheEntryProcessor<CharRemover, std::string, std::string, int, bool>
+class CharRemover : public CacheEntryProcessor<std::string, std::string, int, bool>
 {
 public:
     /**
@@ -361,16 +365,16 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(CharRemover)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CharRemover)
 
-            void Write(BinaryWriter& writer, CharRemover obj)
+            static void Write(BinaryWriter& writer, const CharRemover& obj)
             {
                 writer.WriteInt8("toRemove", obj.GetCharToRemove());
             }
 
-            CharRemover Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, CharRemover& dst)
             {
                 char toRemove = static_cast<char>(reader.ReadInt8("toRemove"));
 
-                return CharRemover(toRemove);
+                dst = CharRemover(toRemove);
             }
         IGNITE_BINARY_TYPE_END
     }
@@ -387,45 +391,17 @@ IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context
 /**
  * Test setup fixture.
  */
-struct CacheInvokeTestSuiteFixture {
-
-    Ignite CreateGrid()
-    {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-        cfg.jvmOpts.push_back("-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 512;
-#else
-        cfg.jvmInitMem = 512;
-        cfg.jvmMaxMem = 2048;
-#endif
-
-        cfg.springCfgPath = std::string(getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH")) + "/cache-query.xml";
-
-        IgniteError err;
-
-        Ignite grid0 = Ignition::Start(cfg, &err);
-
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_ERROR(err.GetText());
-
-        return grid0;
-    }
+struct CacheInvokeTestSuiteFixture
+{
+    Ignite node;
 
     /**
      * Constructor.
      */
-    CacheInvokeTestSuiteFixture()
+    CacheInvokeTestSuiteFixture() :
+        node(ignite_test::StartNode("cache-query.xml", "InvokeTest"))
     {
-        grid = CreateGrid();
+        // No-op.
     }
 
     /**
@@ -433,10 +409,8 @@ struct CacheInvokeTestSuiteFixture {
      */
     ~CacheInvokeTestSuiteFixture()
     {
-        Ignition::Stop(grid.GetName(), true);
+        Ignition::StopAll(true);
     }
-
-    Ignite grid;
 };
 
 BOOST_FIXTURE_TEST_SUITE(CacheInvokeTestSuite, CacheInvokeTestSuiteFixture)
@@ -446,7 +420,7 @@ BOOST_FIXTURE_TEST_SUITE(CacheInvokeTestSuite, CacheInvokeTestSuiteFixture)
  */
 BOOST_AUTO_TEST_CASE(TestExisting)
 {
-    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = node.GetOrCreateCache<int, int>("TestCache");
 
     cache.Put(5, 20);
 
@@ -464,7 +438,7 @@ BOOST_AUTO_TEST_CASE(TestExisting)
  */
 BOOST_AUTO_TEST_CASE(TestNonExisting)
 {
-    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = node.GetOrCreateCache<int, int>("TestCache");
 
     CacheEntryModifier ced;
 
@@ -480,7 +454,7 @@ BOOST_AUTO_TEST_CASE(TestNonExisting)
  */
 BOOST_AUTO_TEST_CASE(TestSeveral)
 {
-    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = node.GetOrCreateCache<int, int>("TestCache");
 
     CacheEntryModifier ced(2);
     Divisor div(10.0);
@@ -515,11 +489,11 @@ BOOST_AUTO_TEST_CASE(TestSeveral)
  */
 BOOST_AUTO_TEST_CASE(TestStrings)
 {
-    IgniteBinding binding = grid.GetBinding();
+    IgniteBinding binding = node.GetBinding();
 
     binding.RegisterCacheEntryProcessor<CharRemover>();
 
-    Cache<std::string, std::string> cache = grid.GetOrCreateCache<std::string, std::string>("TestCache");
+    Cache<std::string, std::string> cache = node.GetOrCreateCache<std::string, std::string>("TestCache");
 
     CharRemover cr('.');
 
