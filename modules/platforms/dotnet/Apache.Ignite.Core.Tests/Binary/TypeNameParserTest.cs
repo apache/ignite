@@ -80,8 +80,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             // One arg.
             var res = TypeNameParser.Parse(typeof(List<int>).AssemblyQualifiedName);
-            Assert.AreEqual("List", res.GetName());
-            Assert.AreEqual("System.Collections.Generic.List", res.GetFullName());
+            Assert.AreEqual("List`1", res.GetName());
+            Assert.AreEqual("System.Collections.Generic.List`1", res.GetFullName());
             Assert.IsTrue(res.GetAssemblyName().StartsWith("mscorlib,"));
 
             Assert.AreEqual(1, res.Generics.Count);
@@ -92,8 +92,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // Two args.
             res = TypeNameParser.Parse(typeof(Dictionary<int, string>).AssemblyQualifiedName);
-            Assert.AreEqual("Dictionary", res.GetName());
-            Assert.AreEqual("System.Collections.Generic.Dictionary", res.GetFullName());
+            Assert.AreEqual("Dictionary`2", res.GetName());
+            Assert.AreEqual("System.Collections.Generic.Dictionary`2", res.GetFullName());
             Assert.IsTrue(res.GetAssemblyName().StartsWith("mscorlib,"));
 
             Assert.AreEqual(2, res.Generics.Count);
@@ -111,15 +111,15 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Nested args.
             res = TypeNameParser.Parse(typeof(Dictionary<int, List<string>>).FullName);
 
-            Assert.AreEqual("Dictionary", res.GetName());
-            Assert.AreEqual("System.Collections.Generic.Dictionary", res.GetFullName());
+            Assert.AreEqual("Dictionary`2", res.GetName());
+            Assert.AreEqual("System.Collections.Generic.Dictionary`2", res.GetFullName());
             Assert.IsNull(res.GetAssemblyName());
 
             Assert.AreEqual(2, res.Generics.Count);
 
             gen = res.Generics.Last();
-            Assert.AreEqual("List", gen.GetName());
-            Assert.AreEqual("System.Collections.Generic.List", gen.GetFullName());
+            Assert.AreEqual("List`1", gen.GetName());
+            Assert.AreEqual("System.Collections.Generic.List`1", gen.GetFullName());
             Assert.IsTrue(gen.GetAssemblyName().StartsWith("mscorlib,"));
             Assert.AreEqual(1, gen.Generics.Count);
 
@@ -131,8 +131,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Nested class.
             res = TypeNameParser.Parse(typeof(NestedGeneric<int>).FullName);
 
-            Assert.AreEqual("TypeNameParserTest+NestedGeneric", res.GetName());
-            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.TypeNameParserTest+NestedGeneric", res.GetFullName());
+            Assert.AreEqual("NestedGeneric`1", res.GetName());
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.TypeNameParserTest+NestedGeneric`1", res.GetFullName());
 
             gen = res.Generics.Single();
             Assert.AreEqual("Int32", gen.GetName());
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var res = TypeNameParser.Parse(name);
 
-            Assert.AreEqual(type.Name, res.GetName() + res.GetGenericHeader() + res.GetArray());
+            Assert.AreEqual(type.Name, res.GetName() + res.GetArray());
 
             if (res.Generics == null)
             {

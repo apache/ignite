@@ -185,12 +185,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             while (Shift())
             {
-                if (Char == '.')
+                if (Char == '.' || Char == '+')
                 {
                     NameStart = _pos + 1;
                 }
 
-                if (Char == '`' || Char == '[' || Char == ',' || Char == ' ')
+                if (Char == '`')
+                {
+                    // Non-null ist indicates detected generic type.
+                    Generics = Generics ?? new List<TypeNameParser>();
+                }
+
+                if (Char == '[' || Char == ',' || Char == ' ')
                     break;
             }
 
@@ -205,29 +211,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Generics can be nested:
             // UserQuery+Gen`1+Gen2`1[[System.Int32, mscorlib],[System.String, mscorlib]]
 
-            SkipSpaces();
-
-            if (Char != '`')
+            if (Generics == null)
+            {
                 return;
-
-            int start = _pos + 1;
-
-            RequireShift();
-
-            if (!Digit)
-            {
-                throw new IgniteException("Invalid generic type name, '`' must be followed by a number: " + _typeName);
             }
-
-            while (Digit && Shift())
-            {
-                // No-op.
-            }
-
-            var count = int.Parse(_typeName.Substring(start, _pos - start));
-            Generics = new List<TypeNameParser>(count);
-
-            SkipSpaces();
 
             if (Char != '[')
             {
