@@ -348,7 +348,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** */
     private final ReconnectState reconnectState = new ReconnectState();
-    private String name;
 
     /**
      * No-arg constructor is required by externalization.
