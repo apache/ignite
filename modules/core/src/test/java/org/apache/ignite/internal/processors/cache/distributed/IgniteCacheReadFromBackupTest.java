@@ -38,7 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -197,10 +197,10 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
 
                     spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
                         @Override public boolean apply(GridIoMessage ioMsg) {
-                            if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessageV2.class))
+                            if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessage.class))
                                 return false;
 
-                            GridDhtPartitionSupplyMessageV2 msg = (GridDhtPartitionSupplyMessageV2)ioMsg.message();
+                            GridDhtPartitionSupplyMessage msg = (GridDhtPartitionSupplyMessage)ioMsg.message();
 
                             return msg.cacheId() == CU.cacheId(ccfg.getName());
                         }
