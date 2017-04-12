@@ -41,13 +41,13 @@ namespace ignite
                     enum Type
                     {
                         /** Null. */
-                        R_NULL = 0,
+                        AI_NULL = 0,
 
                         /** Success. */
-                        R_SUCCESS = 1,
+                        AI_SUCCESS = 1,
 
                         /** Error. */
-                        R_ERROR = -1
+                        AI_ERROR = -1
                     };
                 };
 

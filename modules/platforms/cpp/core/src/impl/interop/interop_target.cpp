@@ -186,11 +186,11 @@ namespace ignite
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS && res == OperationResult::R_SUCCESS)
+                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS && res == OperationResult::AI_SUCCESS)
                         ReadFrom(outInMem.Get(), outOp);
-                    else if (res == OperationResult::R_NULL)
+                    else if (res == OperationResult::AI_NULL)
                         outOp.SetNull();
-                    else if (res == OperationResult::R_ERROR)
+                    else if (res == OperationResult::AI_ERROR)
                         ReadError(outInMem.Get(), err);
                     else
                         assert(false);
@@ -213,7 +213,7 @@ namespace ignite
                     return static_cast<OperationResult::Type>(res);
                 }
 
-                return OperationResult::R_ERROR;
+                return OperationResult::AI_ERROR;
             }
 
             int64_t InteropTarget::OutInOpLong(int32_t opType, int64_t val, IgniteError& err)
