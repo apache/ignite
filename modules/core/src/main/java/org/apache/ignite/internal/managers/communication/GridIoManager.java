@@ -833,13 +833,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (msg0 instanceof CustomExecutorAwareMessage) {
                 String execName = ((CustomExecutorAwareMessage)msg0).getExecutorName();
 
-                if (F.isEmpty(execName)) {
-                    U.error(log, "Executor name is empty. [msg=" + msg + ']');
+                if (!F.isEmpty(execName))
+                    pools.customPoolByName(execName).execute(c);
+                else
+                    pools.poolForPolicy(plc).execute(c);
 
-                    return;
-                }
-
-                pools.customPoolByName(execName).execute(c);
             }
             else
                 pools.poolForPolicy(plc).execute(c);
