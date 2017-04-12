@@ -252,26 +252,14 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Sets partitions for a query.
      * The query will be executed only on nodes which are primary for specified partitions.
+     * <p>
+     * Note what passed array'll be sorted in place for performance reasons, if it wasn't sorted yet.
      *
      * @param parts Partitions.
      * @return {@code this} for chaining.
      */
     public SqlFieldsQuery setPartitions(@Nullable int... parts) {
-        this.parts = parts;
-
-        if (this.parts != null) {
-            A.notEmpty(parts, "Partitions");
-
-            // Validate partitions.
-            for (int i = 0; i < parts.length; i++) {
-                if (i < parts.length - 1)
-                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
-
-                A.ensure(0 <= parts[i] && parts[i] < CacheConfiguration.MAX_PARTITIONS_COUNT, "Illegal partition");
-            }
-
-            Arrays.sort(this.parts);
-        }
+        this.parts = prepare(parts);
 
         return this;
     }

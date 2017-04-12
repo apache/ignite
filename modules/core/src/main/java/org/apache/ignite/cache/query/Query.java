@@ -18,7 +18,10 @@
 package org.apache.ignite.cache.query;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -91,6 +94,42 @@ public abstract class Query<R> implements Serializable {
         this.loc = loc;
 
         return this;
+    }
+
+    /**
+     * Prepares the partitions.
+     *
+     * @param parts Partitions.
+     */
+    protected static int[] prepare(int[] parts) {
+        if (parts == null)
+            return null;
+
+        A.notEmpty(parts, "Partitions");
+
+        boolean sorted = true;
+
+        // Try to do validation in one pass, if array is already sorted.
+        for (int i = 0; i < parts.length; i++) {
+            if (i < parts.length - 1)
+                if (parts[i] > parts[i + 1])
+                    sorted = false;
+                else if (sorted)
+                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+
+            A.ensure(0 <= parts[i] && parts[i] < CacheConfiguration.MAX_PARTITIONS_COUNT, "Illegal partition");
+        }
+
+        // Sort and validate again.
+        if (!sorted)
+            Arrays.sort(parts);
+
+        for (int i = 0; i < parts.length; i++) {
+            if (i < parts.length - 1)
+                A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+        }
+
+        return parts;
     }
 
     /** {@inheritDoc} */
