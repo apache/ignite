@@ -62,7 +62,34 @@ public class EigenDecompositionTest {
         assertEquals("Unexpected rows in v matrix.", 4, v.rowSize());
         assertEquals("Unexpected cols in v matrix.", 4, v.columnSize());
 
-        assertIsDiagonal(d);
+        assertIsDiagonalNonZero(d);
+
+        decomposition.destroy();
+    }
+
+    /** */
+    @Test
+    public void testNonSquareMatrix() {
+        EigenDecomposition decomposition = new EigenDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
+            {1.0d, 0.0d, 0.0d},
+            {0.0d, 1.0d, 0.0d},
+            {0.0d, 0.0d, 2.0d},
+            {1.0d, 1.0d, 0.0d}}));
+        // todo find out why decomposition of 3X4 matrix throws row index exception
+
+        Matrix d = decomposition.getD();
+        Matrix v = decomposition.getV();
+
+        assertNotNull("Matrix d is expected to be not null.", d);
+        assertNotNull("Matrix v is expected to be not null.", v);
+
+        assertEquals("Unexpected rows in d matrix.", 4, d.rowSize());
+        assertEquals("Unexpected cols in d matrix.", 4, d.columnSize());
+
+        assertEquals("Unexpected rows in v matrix.", 4, v.rowSize());
+        assertEquals("Unexpected cols in v matrix.", 3, v.columnSize());
+
+        assertIsDiagonal(d, true);
 
         decomposition.destroy();
     }
@@ -75,7 +102,7 @@ public class EigenDecompositionTest {
         Matrix d = decomposition.getD();
         Matrix v = decomposition.getV();
 
-        assertIsDiagonal(d);
+        assertIsDiagonalNonZero(d);
 
         // check that d's diagonal consists of eigenvalues of m.
         assertDiagonalConsistsOfEigenvalues(m, d, v);
@@ -143,13 +170,21 @@ public class EigenDecompositionTest {
     }
 
     /** */
-    private void assertIsDiagonal(Matrix m) {
+    private void assertIsDiagonalNonZero(Matrix m) {
+        assertIsDiagonal(m, false);
+    }
+
+    /** */
+    private void assertIsDiagonal(Matrix m, boolean zeroesAllowed) {
         // Since matrix is square, we need only one dimension
         int n = m.columnSize();
+
+        assertEquals("Diagonal matrix is not square", n, m.rowSize());
 
         for (int i = 0; i < n; i++)
             for (int j = 0; j < n; j++)
                 assertTrue("Matrix is not diagonal, violation at (" + i + "," + j + ")",
-                    ((i == j) && m.getX(i, j) != 0) || ((i != j) && m.getX(i, j) == 0));
+                    ((i == j) && (zeroesAllowed || m.getX(i, j) != 0))
+                        || ((i != j) && m.getX(i, j) == 0));
     }
 }

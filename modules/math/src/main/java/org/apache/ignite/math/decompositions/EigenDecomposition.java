@@ -34,8 +34,9 @@ public class EigenDecomposition extends DecompositionSupport {
     /** Array for internal storage of eigen vectors. */
     private final Matrix v;
 
-    /** Arrays for internal storage of eigenvalues. */
+    /** Array for internal storage of eigenvalues. */
     private final Vector d;
+    /** Array for internal storage of eigenvalues. */
     private final Vector e;
 
     /** */
@@ -95,7 +96,7 @@ public class EigenDecomposition extends DecompositionSupport {
      * @return D
      */
     public Matrix getD() {
-        Matrix res = like(v);
+        Matrix res = like(v, d.size(), d.size());
         res.assign(0);
         res.viewDiagonal().assign(d);
         for (int i = 0; i < n; i++) {
@@ -202,7 +203,7 @@ public class EigenDecomposition extends DecompositionSupport {
                     v.setX(i, j, 0.0);
                 }
             }
-            
+
             d.setX(i, h);
         }
     }
@@ -225,12 +226,12 @@ public class EigenDecomposition extends DecompositionSupport {
 
             // Scale column.
 
-            Vector hColumn = hessenBerg.viewColumn(m - 1).viewPart(m, high - m + 1);
-            double scale = hColumn.kNorm(1);
+            Vector hCol = hessenBerg.viewColumn(m - 1).viewPart(m, high - m + 1);
+            double scale = hCol.kNorm(1);
 
             if (scale != 0.0) {
                 // Compute Householder transformation.
-                ort.viewPart(m, high - m + 1).map(hColumn, Functions.plusMult(1 / scale));
+                ort.viewPart(m, high - m + 1).map(hCol, Functions.plusMult(1 / scale));
                 double h = ort.viewPart(m, high - m + 1).getLengthSquared();
 
                 double g = Math.sqrt(h);
@@ -892,8 +893,9 @@ public class EigenDecomposition extends DecompositionSupport {
         return true;
     }
 
-    // Complex scalar division.
+    /** Complex scalar division - real part. */
     private double cdivr;
+    /** Complex scalar division - imaginary part. */
     private double cdivi;
 
     /** */
