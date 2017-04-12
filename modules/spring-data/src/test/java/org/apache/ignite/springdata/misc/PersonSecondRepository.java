@@ -20,7 +20,7 @@ package org.apache.ignite.springdata.misc;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.springdata.repository.IgniteRepository;
-import org.apache.ignite.springdata.repository.Query;
+import org.apache.ignite.springdata.repository.config.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.springframework.data.domain.AbstractPageRequest;
 import org.springframework.data.domain.PageRequest;

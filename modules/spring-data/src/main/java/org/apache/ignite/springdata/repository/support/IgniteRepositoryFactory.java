@@ -24,7 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata.repository.IgniteRepository;
-import org.apache.ignite.springdata.repository.Query;
+import org.apache.ignite.springdata.repository.config.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata.repository.query.IgniteQuery;
 import org.apache.ignite.springdata.repository.query.IgniteQueryGenerator;
@@ -144,7 +144,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
                 if (key == QueryLookupStrategy.Key.USE_DECLARED_QUERY)
                     throw new IllegalStateException("To use QueryLookupStrategy.Key.USE_DECLARED_QUERY, pass " +
-                        "a query string via org.apache.ignite.springdata.repository.Query annotation.");
+                        "a query string via org.apache.ignite.springdata.repository.config.Query annotation.");
 
                 return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd,
                     factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));

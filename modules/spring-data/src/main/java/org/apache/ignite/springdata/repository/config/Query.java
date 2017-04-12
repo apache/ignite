@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.repository;
+package org.apache.ignite.springdata.repository.config;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

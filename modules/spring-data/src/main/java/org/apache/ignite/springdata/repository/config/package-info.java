@@ -15,27 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
-import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
-
 /**
- * Ignite Spring Data test suite.
+ * <!-- Package description. -->
+ * Package includes Spring Data integration related configuration files.
  */
-public class IgniteSpringDataTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Spring Data Test Suite");
-
-        suite.addTestSuite(IgniteSpringDataCrudSelfTest.class);
-        suite.addTestSuite(IgniteSpringDataQueriesSelfTest.class);
-
-        return suite;
-    }
-}
-
+package org.apache.ignite.springdata.repository.config;

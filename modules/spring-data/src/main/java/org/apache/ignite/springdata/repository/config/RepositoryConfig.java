@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
 @Inherited
 public @interface RepositoryConfig {
     /**
-     * @return A name of a distributed Apache Ignite cache the repository will be mapped to.
+     * @return A name of a distributed Apache Ignite cache an annotated repository will be mapped to.
      */
     String cacheName() default "";
 }

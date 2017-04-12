@@ -1,14 +1,13 @@
 Apache Ignite Spring Module
 ---------------------------
 
-Apache Ignite Spring module provides resources injection capabilities and parser for Spring-based
-configuration XML files.
+Apache Ignite Spring Data module provides an integration with Spring Data framework.
 
-To enable Spring module when starting a standalone node, move 'optional/ignite-spring' folder to
+To enable Spring Data module when starting a standalone node, move 'optional/ignite-spring-data' folder to
 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
-Importing Spring Module In Maven Project
+Importing Spring Data Module In Maven Project
 ----------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Spring module
@@ -24,7 +23,7 @@ interested in):
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring</artifactId>
+            <artifactId>ignite-spring-data</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...
