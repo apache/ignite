@@ -23,6 +23,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,8 +38,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.Cache;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -367,6 +372,38 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      */
     protected static String randomString() {
         return UUID.randomUUID().toString();
+    }
+
+    /**
+     * Assert query on initial data when FIELD_1 index is used.
+     *
+     * @param node Node.
+     * @param sql SQL query.
+     * @param expSize Expected size.
+     */
+    protected static void assertSqlSimpleData(Ignite node, String sql, int expSize) {
+        SqlQuery qry = new SqlQuery(tableName(ValueClass.class), sql).setArgs(SQL_SIMPLE_ARG);
+
+        List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
+
+        Set<Long> ids = new HashSet<>();
+
+        for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
+            long id = entry.getKey().field("id");
+
+            long field1 = entry.getValue().field(FIELD_NAME_1);
+            long field2 = entry.getValue().field(FIELD_NAME_2);
+
+            assertTrue(field1 >= SQL_SIMPLE_ARG);
+
+            assertEquals(id, field1);
+            assertEquals(id, field2);
+
+            assertTrue(ids.add(id));
+        }
+
+        assertEquals("Size mismatch [exp=" + expSize + ", actual=" + res.size() + ", ids=" + ids + ']',
+            expSize, res.size());
     }
 
     /**

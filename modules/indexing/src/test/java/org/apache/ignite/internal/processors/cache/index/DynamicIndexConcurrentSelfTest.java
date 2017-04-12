@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Concurrency tests for dynamic indexes.
  */
+@SuppressWarnings("unchecked")
 public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest {
     /** Latches to block certain index operations. */
     private static final ConcurrentHashMap<UUID, T2<CountDownLatch, AtomicBoolean>> BLOCKS = new ConcurrentHashMap<>();
@@ -57,6 +58,8 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
             block.get1().countDown();
 
         BLOCKS.clear();
+
+        stopAllGrids();
 
         super.afterTest();
     }
@@ -82,6 +85,17 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
         assert !idxFut.isDone();
 
         unblockIndexing(srv1);
+
+        idxFut.get();
+
+        Thread.sleep(100L);
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME_1));
+
+        put(srv1, 0, KEY_AFTER);
+
+        assertSqlSimpleData(srv1, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+        assertSqlSimpleData(srv2, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
     }
 
     /**
@@ -89,6 +103,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
      *
      * @param node Node.
      */
+    @SuppressWarnings("SuspiciousMethodCalls")
     private static void blockIndexing(Ignite node) {
         UUID nodeId = ((IgniteEx)node).localNode().id();
 
