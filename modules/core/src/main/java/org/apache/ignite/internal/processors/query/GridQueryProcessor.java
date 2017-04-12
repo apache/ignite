@@ -201,6 +201,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.QUERY_PROC;
+    }
+
+    /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         synchronized (stateMux) {
             LinkedHashMap<UUID, SchemaOperationDescriptor> data = new LinkedHashMap<>();
@@ -221,10 +226,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             LinkedHashMap<UUID, SchemaOperationDescriptor> data0 =
                 (LinkedHashMap<UUID, SchemaOperationDescriptor>)data.commonData();
 
-            for (Map.Entry<UUID, SchemaOperationDescriptor> dataEntry : data0.entrySet()) {
+            for (Map.Entry<UUID, SchemaOperationDescriptor> dataEntry : data0.entrySet())
                 activeOpsInit.put(dataEntry.getKey(), new SchemaOperationDescriptor(dataEntry.getValue()));
-                activeOps.put(dataEntry.getKey(), new SchemaOperationDescriptor(dataEntry.getValue()));
-            }
         }
     }
 
@@ -468,6 +471,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        System.out.println("QUERY RECONNECT");
+
         synchronized (stateMux) {
             disconnected = false;
         }
@@ -487,6 +492,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onCacheStart(GridCacheContext cctx, QuerySchema schema) throws IgniteCheckedException {
+        System.out.println("CACHE START: " + cctx.name());
+
         if (idx == null)
             return;
 
@@ -505,6 +512,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     public void onCacheStop(GridCacheContext cctx) {
+        System.out.println("CACHE STOP: " + cctx.name());
+
         if (idx == null)
             return;
 
