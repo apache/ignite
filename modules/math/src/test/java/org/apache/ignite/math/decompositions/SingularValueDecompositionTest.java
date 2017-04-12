@@ -19,6 +19,7 @@ package org.apache.ignite.math.decompositions;
 
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.math.impls.matrix.PivotedMatrixView;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -28,12 +29,58 @@ public class SingularValueDecompositionTest {
     /** */
     @Test
     public void basicTest() {
-        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][]{
+        basicTest(new DenseLocalOnHeapMatrix(new double[][]{
             {2.0d,  -1.0d,  0.0d},
             {-1.0d, 2.0d,  -1.0d},
             {0.0d, -1.0d, 2.0d}
+        }));
+    }
+
+    /**
+     * Test for {@link DecompositionSupport} features.
+     */
+    @Test
+    public void decompositionSupportTest() {
+        basicTest(new PivotedMatrixView(new DenseLocalOnHeapMatrix(new double[][]{
+            {2.0d,  -1.0d,  0.0d},
+            {-1.0d, 2.0d,  -1.0d},
+            {0.0d, -1.0d, 2.0d}
+        })));
+    }
+
+    /** */
+    @Test
+    public void rowsLessThanColumnsTest() {
+        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][]{
+            {2.0d,  -1.0d,  0.0d},
+            {-1.0d, 2.0d,  -1.0d}
         });
 
+        SingularValueDecomposition dec = new SingularValueDecomposition(m);
+        assertEquals("Unexpected value for singular values size.",
+            2, dec.getSingularValues().length);
+
+        Matrix s = dec.getS();
+        Matrix u = dec.getU();
+        Matrix v = dec.getV();
+        Matrix covariance = dec.getCovariance(0.5);
+
+        assertNotNull("Matrix s is expected to be not null.", s);
+        assertNotNull("Matrix u is expected to be not null.", u);
+        assertNotNull("Matrix v is expected to be not null.", v);
+        assertNotNull("Covariance matrix is expected to be not null.", covariance);
+
+        dec.destroy();
+    }
+
+    /** */
+    @Test(expected = AssertionError.class)
+    public void nullMatrixTest() {
+        new SingularValueDecomposition(null);
+    }
+
+    /** */
+    private void basicTest(Matrix m) {
         SingularValueDecomposition dec = new SingularValueDecomposition(m);
         assertEquals("Unexpected value for singular values size.",
             3, dec.getSingularValues().length);
@@ -65,31 +112,6 @@ public class SingularValueDecompositionTest {
             for (int col = row + 1; col < covariance.columnSize(); col++)
                 assertEquals("Unexpected covariance matrix value at (" + row + "," + col + ").",
                     covariance.get(row, col), covariance.get(col, row), 0.001);
-
-        dec.destroy();
-    }
-
-    /** */
-    @Test
-    public void rowsLessThanColumnsTest() {
-        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d}
-        });
-
-        SingularValueDecomposition dec = new SingularValueDecomposition(m);
-        assertEquals("Unexpected value for singular values size.",
-            2, dec.getSingularValues().length);
-
-        Matrix s = dec.getS();
-        Matrix u = dec.getU();
-        Matrix v = dec.getV();
-        Matrix covariance = dec.getCovariance(0.5);
-
-        assertNotNull("Matrix s is expected to be not null.", s);
-        assertNotNull("Matrix u is expected to be not null.", u);
-        assertNotNull("Matrix v is expected to be not null.", v);
-        assertNotNull("Covariance matrix is expected to be not null.", covariance);
 
         dec.destroy();
     }

@@ -25,19 +25,18 @@ import org.apache.ignite.math.Matrix;
  */
 public class SingularValueDecomposition extends DecompositionSupport {
     // U and V.
-    private final double[][] u;
-    private final double[][] v;
+    /** */ private final double[][] u;
+    /** */ private final double[][] v;
 
-    // Singular values.
+    /** Singular values. */
     private final double[] s;
 
-    /// Row and column dimensions.
-    private final int m;
-    private final int n;
+    /** Row dimension. */ private final int m;
+    /** Column dimension. */ private final int n;
 
-    private Matrix arg;
+    /** */ private Matrix arg;
 
-    private boolean transpositionNeeded;
+    /** */ private boolean transpositionNeeded;
 
     /**
      * Singular value decomposition object.
@@ -45,18 +44,20 @@ public class SingularValueDecomposition extends DecompositionSupport {
      * @param arg A rectangular matrix.
      */
     public SingularValueDecomposition(Matrix arg) {
+        assert arg != null;
+
         this.arg = arg;
-        
-        if (arg.rowSize() < arg.columnSize()) 
+
+        if (arg.rowSize() < arg.columnSize())
             transpositionNeeded = true;
 
         double[][] a;
-        
+
         if (transpositionNeeded) {
             // Use the transpose matrix.
             m = arg.columnSize();
             n = arg.rowSize();
-            
+
             a = new double[m][n];
 
             for (int i = 0; i < m; i++)
@@ -300,7 +301,7 @@ public class SingularValueDecomposition extends DecompositionSupport {
                     kase = 1;
                 else {
                     kase = 2;
-                    
+
                     k = ks;
                 }
             }
@@ -467,7 +468,7 @@ public class SingularValueDecomposition extends DecompositionSupport {
                         if (k < m - 1)
                             for (int i = 0; i < m; i++) {
                                 t = u[i][k + 1];
-                                
+
                                 u[i][k + 1] = u[i][k];
                                 u[i][k] = t;
                             }
@@ -488,7 +489,7 @@ public class SingularValueDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Gets the two norm condition number, which is <tt>max(S) / min(S)</tt>.
+     * Gets the two norm condition number, which is {@code max(S) / min(S)} .
      */
     public double cond() {
         return s[0] / s[Math.min(m, n) - 1];
@@ -511,19 +512,19 @@ public class SingularValueDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Gets the diagonal of <tt>S</tt>, which is a one-dimensional array of
+     * Gets the diagonal of {@code S} , which is a one-dimensional array of
      * singular values.
      *
-     * @return diagonal of <tt>S</tt>.
+     * @return diagonal of {@code S} .
      */
     public double[] getSingularValues() {
         return s;
     }
 
     /**
-     * Gets the left singular vectors <tt>U</tt>.
+     * Gets the left singular vectors {@code U} .
      *
-     * @return <tt>U</tt>
+     * @return {@code U}
      */
     public Matrix getU() {
         if (transpositionNeeded)
@@ -542,9 +543,9 @@ public class SingularValueDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Gets the right singular vectors <tt>V</tt>.
+     * Gets the right singular vectors {@code V} .
      *
-     * @return <tt>V</tt>
+     * @return {@code V}
      */
     public Matrix getV() {
         if (transpositionNeeded) {
@@ -563,7 +564,7 @@ public class SingularValueDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Gets the two norm, which is <tt>max(S)</tt>.
+     * Gets the two norm, which is {@code max(S)} .
      */
     public double norm2() {
         return s[0];
@@ -587,14 +588,14 @@ public class SingularValueDecomposition extends DecompositionSupport {
     /**
      * Gets [n × n] covariance matrix.
      *
-     * @param minSingularValue value below which singular values are ignored.
+     * @param minSingularVal Value below which singular values are ignored.
      */
-    Matrix getCovariance(double minSingularValue) {
+    Matrix getCovariance(double minSingularVal) {
         Matrix j = like(arg, s.length,s.length);
         Matrix vMat = like(arg, v.length, v.length).assign(v);
 
         for (int i = 0; i < s.length; i++)
-            j.set(i, i, s[i] >= minSingularValue ? 1 / (s[i] * s[i]) : 0.0);
+            j.set(i, i, s[i] >= minSingularVal ? 1 / (s[i] * s[i]) : 0.0);
 
         return vMat.times(j).times(vMat.transpose());
     }
