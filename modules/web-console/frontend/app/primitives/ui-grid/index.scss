@@ -236,6 +236,10 @@
 
     .ui-grid-header,
     .ui-grid-viewport {
+        .ui-grid-icon-cancel {
+            right: 20px;
+        }
+
         .ui-grid-tree-base-row-header-buttons {
             .ui-grid-icon-plus-squared,
             .ui-grid-icon-minus-squared,
@@ -305,6 +309,10 @@
 
                     &.disabled {
                         opacity: .5;
+
+                        .ui-grid-icon-ok {
+                            cursor: default;
+                        }
                     }
                 }
             }
