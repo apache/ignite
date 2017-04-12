@@ -213,9 +213,8 @@ public class GridReduceQueryExecutor {
         });
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override
-            public void onEvent(final Event evt) {
-                UUID nodeId = ((DiscoveryEvent) evt).eventNode().id();
+            @Override public void onEvent(final Event evt) {
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 for (QueryRun r : runs.values()) {
                     for (GridMergeIndex idx : r.idxs) {
