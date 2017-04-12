@@ -18,8 +18,8 @@
 package org.apache.ignite.math.decompositions;
 
 import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.Tracer;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.math.impls.matrix.PivotedMatrixView;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -29,12 +29,43 @@ public class QRDecompositionTest {
     /** */
     @Test
     public void basicTest() {
-        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][]{
+        basicTest(new DenseLocalOnHeapMatrix(new double[][]{
             {2.0d,  -1.0d,  0.0d},
             {-1.0d, 2.0d,  -1.0d},
             {0.0d, -1.0d, 2.0d}
-        });
+        }));
+    }
 
+    /**
+     * Test for {@link DecompositionSupport} features.
+     */
+    @Test
+    public void decompositionSupportTest() {
+        basicTest(new PivotedMatrixView(new DenseLocalOnHeapMatrix(new double[][]{
+            {2.0d,  -1.0d,  0.0d},
+            {-1.0d, 2.0d,  -1.0d},
+            {0.0d, -1.0d, 2.0d}
+        })));
+    }
+
+    /** */
+    @Test(expected = AssertionError.class)
+    public void nullMatrixTest() {
+        new QRDecomposition(null);
+    }
+
+    /** */
+    @Test(expected = IllegalArgumentException.class)
+    public void solveWrongMatrixSizeTest() {
+        new QRDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
+            {2.0d,  -1.0d,  0.0d},
+            {-1.0d, 2.0d,  -1.0d},
+            {0.0d, -1.0d, 2.0d}
+        })).solve(new DenseLocalOnHeapMatrix(2, 3));
+    }
+
+    /** */
+    private void basicTest(Matrix m) {
         QRDecomposition dec = new QRDecomposition(m);
         assertTrue("Unexpected value for full rank in decomposition " + dec, dec.hasFullRank());
 
@@ -44,7 +75,9 @@ public class QRDecompositionTest {
         assertNotNull("Matrix q is expected to be not null.", q);
         assertNotNull("Matrix r is expected to be not null.", r);
 
-        Matrix expIdentity = q.times(q.transpose());
+        Matrix qSafeCp = safeCopy(q);
+
+        Matrix expIdentity = qSafeCp.times(qSafeCp.transpose());
 
         final double delta = 0.0001;
 
@@ -58,7 +91,7 @@ public class QRDecompositionTest {
                 assertEquals("Unexpected upper triangular matrix value at (" + row + "," + col + ").",
                     0d, r.get(row, col), delta);
 
-        Matrix recomposed = q.times(r);
+        Matrix recomposed = qSafeCp.times(r);
 
         for (int row = 0; row < m.rowSize(); row++)
             for (int col = 0; col < m.columnSize(); col++)
@@ -69,7 +102,6 @@ public class QRDecompositionTest {
         assertEquals("Unexpected rows in solution matrix.", 3, sol.rowSize());
         assertEquals("Unexpected cols in solution matrix.", 10, sol.columnSize());
 
-        Tracer.showAscii(sol);
         for (int row = 0; row < sol.rowSize(); row++)
             for (int col = 0; col < sol.columnSize(); col++)
                 assertEquals("Unexpected solution matrix value at (" + row + "," + col + ").",
@@ -99,12 +131,7 @@ public class QRDecompositionTest {
     }
 
     /** */
-    @Test(expected = IllegalArgumentException.class)
-    public void solveWrongMatrixSizeTest() {
-        new QRDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
-            {0.0d, -1.0d, 2.0d}
-        })).solve(new DenseLocalOnHeapMatrix(2, 3));
+    private Matrix safeCopy(Matrix orig) {
+        return new DenseLocalOnHeapMatrix(orig.rowSize(), orig.columnSize()).assign(orig);
     }
 }

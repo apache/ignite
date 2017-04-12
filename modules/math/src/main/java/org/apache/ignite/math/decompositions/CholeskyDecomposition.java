@@ -72,7 +72,7 @@ public class CholeskyDecomposition extends DecompositionSupport {
 
     /**
      * Calculates the Cholesky decomposition of the given matrix.
-     * 
+     *
      * @param mtx the matrix to decompose.
      * @param relSymmetryThreshold threshold above which off-diagonal elements are considered too different and matrix not symmetric
      * @param absPositivityThreshold threshold below which diagonal elements are considered null and matrix not positive definite
@@ -81,6 +81,8 @@ public class CholeskyDecomposition extends DecompositionSupport {
      * @see #DFLT_ABS_POSITIVITY_THRESHOLD
      */
     public CholeskyDecomposition(final Matrix mtx, final double relSymmetryThreshold, final double absPositivityThreshold) {
+        assert mtx != null;
+
         if (mtx.columnSize() != mtx.rowSize())
             throw new CardinalityException(mtx.rowSize(), mtx.columnSize());
 
@@ -88,7 +90,7 @@ public class CholeskyDecomposition extends DecompositionSupport {
 
         final int order = mtx.rowSize();
 
-        lTData = mtx.getStorage().data();
+        lTData = toDoubleArr(mtx);
         cachedL = null;
         cachedLT = null;
 
@@ -149,7 +151,7 @@ public class CholeskyDecomposition extends DecompositionSupport {
      */
     public Matrix getL() {
         if (cachedL == null)
-            cachedL = getLT().transpose();
+            cachedL = transpose(getLT());
 
         return cachedL;
     }
@@ -163,7 +165,7 @@ public class CholeskyDecomposition extends DecompositionSupport {
     public Matrix getLT() {
 
         if (cachedLT == null) {
-            Matrix like = origin.like(origin.rowSize(), origin.columnSize());
+            Matrix like = like(origin, origin.rowSize(), origin.columnSize());
             like.assign(lTData);
 
             cachedLT = like;
@@ -225,7 +227,7 @@ public class CholeskyDecomposition extends DecompositionSupport {
                 x[i] -= xJ * lTData[i][j];
         }
 
-        return origin.likeVector(m).assign(x);
+        return likeVector(origin, m).assign(x);
     }
 
     /**
@@ -279,6 +281,21 @@ public class CholeskyDecomposition extends DecompositionSupport {
             }
         }
 
-        return origin.like(m, b.columnSize()).assign(x);
+        return like(origin, m, b.columnSize()).assign(x);
+    }
+
+    /** */private double[][] toDoubleArr(Matrix mtx) {
+        if (mtx.isArrayBased())
+            return mtx.getStorage().data();
+
+        double[][] res = new double[mtx.rowSize()][];
+
+        for (int row = 0; row < mtx.rowSize(); row++) {
+            res[row] = new double[mtx.columnSize()];
+            for (int col = 0; col < mtx.columnSize(); col++)
+                res[row][col] = mtx.get(row, col);
+        }
+
+        return res;
     }
 }

@@ -243,11 +243,11 @@ public class Algebra extends Constants {
     /**
      * Efficiently returns the binomial coefficient, often also referred to as
      * "n over k" or "n choose k". The binomial coefficient is defined as
-     * <tt>(n * n-1 * ... * n-k+1 ) / ( 1 * 2 * ... * k )</tt>.
-     * <ul> <li><tt>k&lt;0</tt>: <tt>0</tt>.</li>
-     * <li><tt>k==0</tt>: <tt>1</tt>.</li>
-     * <li><tt>k==1</tt>: <tt>n</tt>.</li>
-     * <li>else: <tt>(n * n-1 * ... * n-k+1 ) / ( 1 * 2 * ... * k)</tt>.</li>
+     * {@code (n * n-1 * ... * n-k+1 ) / ( 1 * 2 * ... * k )}.
+     * <ul> <li>{@code k&lt;0}: {@code 0}.</li>
+     * <li>{@code k==0}: {@code 1}.</li>
+     * <li>{@code k==1}: {@code n}.</li>
+     * <li>else: {@code (n * n-1 * ... * n-k+1 ) / ( 1 * 2 * ... * k)}.</li>
      * </ul>
      *
      * @param n
@@ -278,8 +278,8 @@ public class Algebra extends Constants {
     /**
      * Efficiently returns the binomial coefficient, often also referred to as "n over k" or "n choose k".
      * The binomial coefficient is defined as
-     * <ul> <li><tt>k&lt;0</tt>: <tt>0</tt>. <li><tt>k==0 || k==n</tt>: <tt>1</tt>. <li><tt>k==1 || k==n-1</tt>:
-     * <tt>n</tt>. <li>else: <tt>(n * n-1 * ... * n-k+1 ) / ( 1 * 2 * ... * k )</tt>. </ul>
+     * <ul> <li>{@code k&lt;0}: {@code 0}. <li>{@code k==0 || k==n}: {@code 1}. <li>{@code k==1 || k==n-1}:
+     * {@code n}. <li>else: {@code (n * n-1 * ... * n-k+1 ) / ( 1 * 2 * ... * k )}. </ul>
      *
      * @param n
      * @param k
@@ -374,9 +374,9 @@ public class Algebra extends Constants {
     }
 
     /**
-     * Instantly returns the factorial <tt>k!</tt>.
+     * Instantly returns the factorial {@code k!}.
      *
-     * @param k must hold <tt>k &gt;= 0</tt>.
+     * @param k must hold {@code k &gt;= 0}.
      */
     private static double factorial(int k) {
         if (k < 0)
@@ -402,14 +402,14 @@ public class Algebra extends Constants {
     }
 
     /**
-     * Returns <tt>log<sub>base</sub>value</tt>.
+     * Returns {@code log<sub>base</sub>value}.
      */
     public static double log(double base, double value) {
         return Math.log(value) / Math.log(base);
     }
 
     /**
-     * Returns <tt>log<sub>10</sub>value</tt>.
+     * Returns {@code log<sub>10</sub>value}.
      */
     public static double log10(double value) {
         // 1.0 / Math.log(10) == 0.43429448190325176
@@ -417,7 +417,7 @@ public class Algebra extends Constants {
     }
 
     /**
-     * Returns <tt>log<sub>2</sub>value</tt>.
+     * Returns {@code log<sub>2</sub>value}.
      */
     public static double log2(double value) {
         // 1.0 / Math.log(2) == 1.4426950408889634
@@ -425,10 +425,10 @@ public class Algebra extends Constants {
     }
 
     /**
-     * Returns <tt>log(k!)</tt>. Tries to avoid overflows. For <tt>k&lt;30</tt> simply looks up a table in O(1).
-     * For <tt>k&gt;=30</tt> uses stirlings approximation.
+     * Returns {@code log(k!)}. Tries to avoid overflows. For {@code k&lt;30} simply looks up a table in O(1).
+     * For {@code k&gt;=30} uses stirlings approximation.
      *
-     * @param k must hold <tt>k &gt;= 0</tt>.
+     * @param k must hold {@code k &gt;= 0}.
      */
     public static double logFactorial(int k) {
         if (k >= 30) {
@@ -446,7 +446,7 @@ public class Algebra extends Constants {
     }
 
     /**
-     * Instantly returns the factorial <tt>k!</tt>.
+     * Instantly returns the factorial {@code k!}.
      *
      * @param k must hold {@code k >= 0 && k < 21}
      */
@@ -463,10 +463,10 @@ public class Algebra extends Constants {
     /**
      * Returns the StirlingCorrection.
      *
-     * Correction term of the Stirling approximation for <tt>log(k!)</tt> (series in
-     * 1/k, or table values for small k) with int parameter k. </p> <tt> log k! = (k + 1/2)log(k + 1) - (k + 1) +
+     * Correction term of the Stirling approximation for {@code log(k!)} (series in
+     * 1/k, or table values for small k) with int parameter k. </p> {@code  log k! = (k + 1/2)log(k + 1) - (k + 1) +
      * (1/2)log(2Pi) + STIRLING_CORRECTION(k + 1) log k! = (k + 1/2)log(k)     -  k      + (1/2)log(2Pi) +
-     * STIRLING_CORRECTION(k) </tt>
+     * STIRLING_CORRECTION(k) }
      */
     public static double stirlingCorrection(int k) {
         if (k > 30) {
@@ -483,7 +483,7 @@ public class Algebra extends Constants {
     }
 
     /**
-     * Evaluates the given polynomial of degree <tt>N</tt> at <tt>x</tt>, assuming coefficient of N is 1.0. Otherwise same
+     * Evaluates the given polynomial of degree {@code N} at {@code x}, assuming coefficient of N is 1.0. Otherwise same
      * as {@link #evalPoly(double, double[], int)}.
      * <pre>
      *                     2          N
@@ -516,7 +516,7 @@ public class Algebra extends Constants {
     }
 
     /**
-     * Evaluates the given polynomial of degree <tt>N</tt> at <tt>x</tt>.
+     * Evaluates the given polynomial of degree {@code N} at {@code x}.
      * <pre>
      *                     2          N
      * y  =  C  + C x + C x  +...+ C x

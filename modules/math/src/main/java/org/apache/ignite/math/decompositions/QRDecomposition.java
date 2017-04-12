@@ -20,25 +20,25 @@ package org.apache.ignite.math.decompositions;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.functions.Functions;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 
 /**
- * For an <tt>m x n</tt> matrix <tt>A</tt> with {@code m >= n}, the QR decomposition
- * is an <tt>m x n</tt> orthogonal matrix <tt>Q</tt> and an <tt>n x n</tt> upper
- * triangular matrix <tt>R</tt> so that <tt>A = Q*R</tt>.
+ * For an {@code m x n} matrix {@code A} with {@code m >= n}, the QR decomposition
+ * is an {@code m x n} orthogonal matrix {@code Q} and an {@code n x n} upper
+ * triangular matrix {@code R} so that {@code A = Q*R}.
  */
 public class QRDecomposition extends DecompositionSupport {
-    private final Matrix q;
-    private final Matrix r;
-    private final Matrix mType;
-    private final boolean fullRank;
+    /** */ private final Matrix q;
+    /** */ private final Matrix r;
 
-    private final int rows;
-    private final int cols;
+    /** */ private final Matrix mType;
+    /** */ private final boolean fullRank;
+
+    /** */ private final int rows;
+    /** */ private final int cols;
 
     /**
      *
-     * @param v
+     * @param v Value to be checked for being an ordinary double.
      */
     private void checkDouble(double v) {
         if (Double.isInfinite(v) || Double.isNaN(v))
@@ -51,6 +51,8 @@ public class QRDecomposition extends DecompositionSupport {
      * @param mtx A rectangular matrix.
      */
     public QRDecomposition(Matrix mtx) {
+        assert mtx != null;
+
         rows = mtx.rowSize();
 
         int min = Math.min(mtx.rowSize(), mtx.columnSize());
@@ -59,7 +61,7 @@ public class QRDecomposition extends DecompositionSupport {
 
         mType = like(mtx, 1, 1);
 
-        Matrix qTmp = mtx.copy();
+        Matrix qTmp = copy(mtx);
 
         boolean fullRank = true;
 
@@ -106,6 +108,7 @@ public class QRDecomposition extends DecompositionSupport {
         this.fullRank = fullRank;
     }
 
+    /** {@inheritDoc} */
     @Override public void destroy() {
         q.destroy();
         r.destroy();
@@ -113,34 +116,34 @@ public class QRDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Gets orthogonal factor <tt>Q</tt>.
+     * Gets orthogonal factor {@code Q}.
      */
     public Matrix getQ() {
         return q;
     }
 
     /**
-     * Gets triangular factor <tt>R</tt>.
+     * Gets triangular factor {@code R}.
      */
     public Matrix getR() {
         return r;
     }
 
     /**
-     * Returns whether the matrix <tt>A</tt> has full rank.
+     * Returns whether the matrix {@code A} has full rank.
      *
-     * @return true if <tt>R</tt>, and hence <tt>A</tt>, has full rank.
+     * @return true if {@code R}, and hence {@code A{@code , has full rank.
      */
     public boolean hasFullRank() {
         return fullRank;
     }
 
     /**
-     * Least squares solution of <tt>A*X = B</tt>; <tt>returns X</tt>.
+     * Least squares solution of {@code A*X = B}; {@code returns X{@code .
      *
-     * @param mtx A matrix with as many rows as <tt>A</tt> and any number of cols.
-     * @return <tt>X</tt> that minimizes the two norm of <tt>Q*R*X - B</tt>.
-     * @throws IllegalArgumentException if <tt>B.rows() != A.rows()</tt>.
+     * @param mtx A matrix with as many rows as {@code A} and any number of cols.
+     * @return {@code X<} that minimizes the two norm of {@code Q*R*X - B}.
+     * @throws IllegalArgumentException if {@code B.rows() != A.rows()}.
      */
     public Matrix solve(Matrix mtx) {
         if (mtx.rowSize() != rows)
@@ -150,7 +153,7 @@ public class QRDecomposition extends DecompositionSupport {
 
         Matrix x = like(mType, this.cols, cols);
 
-        Matrix qt = getQ().transpose();
+        Matrix qt = transpose(getQ());
         Matrix y = qt.times(mtx);
 
         Matrix r = getR();
@@ -160,10 +163,10 @@ public class QRDecomposition extends DecompositionSupport {
             x.viewRow(k).map(y.viewRow(k), Functions.plusMult(1 / r.get(k, k)));
 
             // Y[0:(k-1),] -= R[0:(k-1),k] * X[k,]
-            Vector rColumn = r.viewColumn(k).viewPart(0, k);
+            Vector rCol = r.viewColumn(k).viewPart(0, k);
 
             for (int c = 0; c < cols; c++)
-                y.viewColumn(c).viewPart(0, k).map(rColumn, Functions.plusMult(-x.get(k, c)));
+                y.viewColumn(c).viewPart(0, k).map(rCol, Functions.plusMult(-x.get(k, c)));
         }
 
         return x;

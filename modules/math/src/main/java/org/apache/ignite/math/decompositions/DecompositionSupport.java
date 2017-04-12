@@ -27,7 +27,7 @@ import org.apache.ignite.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
- * TODO: add description.
+ * Helper methods to support decomposition of matrix types having some functionality limited.
  */
 public abstract class DecompositionSupport implements Destroyable {
     /**
@@ -60,13 +60,24 @@ public abstract class DecompositionSupport implements Destroyable {
      * Create the like vector with read-only matrices support.
      *
      * @param matrix Matrix for like.
+     * @param crd Cardinality of the vector.
+     * @return Like vector.
+     */
+    protected Vector likeVector(Matrix matrix, int crd){
+        if (isCopyLikeSupport(matrix))
+            return new DenseLocalOnHeapVector(crd);
+        else
+            return matrix.likeVector(crd);
+    }
+
+    /**
+     * Create the like vector with read-only matrices support.
+     *
+     * @param matrix Matrix for like.
      * @return Like vector.
      */
     protected Vector likeVector(Matrix matrix){
-        if (isCopyLikeSupport(matrix))
-            return new DenseLocalOnHeapVector(matrix.rowSize());
-        else
-            return matrix.likeVector(matrix.rowSize());
+        return likeVector(matrix, matrix.rowSize());
     }
 
     /**
@@ -84,6 +95,23 @@ public abstract class DecompositionSupport implements Destroyable {
             return cp;
         } else
             return matrix.copy();
+    }
+
+    /**
+     * Create the transposed copy of matrix with read-only matrices support.
+     *
+     * @param matrix Matrix for copy.
+     * @return Copy.
+     */
+    protected Matrix transpose(Matrix matrix){
+        if (isCopyLikeSupport(matrix)){
+            DenseLocalOnHeapMatrix cp = new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
+
+            cp.assign(matrix);
+
+            return cp.transpose();
+        } else
+            return matrix.transpose();
     }
 
     /** */

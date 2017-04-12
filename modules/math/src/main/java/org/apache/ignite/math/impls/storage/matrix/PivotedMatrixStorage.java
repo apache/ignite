@@ -28,8 +28,10 @@ public class PivotedMatrixStorage implements MatrixStorage {
     /** Matrix storage. */
     private MatrixStorage sto;
 
-    private int[] rowPivot, colPivot;
-    private int[] rowUnpivot, colUnpivot;
+    /** */ private int[] rowPivot;
+    /** */ private int[] colPivot;
+    /** */ private int[] rowUnpivot;
+    /** */ private int[] colUnpivot;
 
     /**
      *
@@ -40,9 +42,9 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param sto
-     * @param rowPivot
-     * @param colPivot
+     * @param sto Matrix storage.
+     * @param rowPivot Pivot array for rows.
+     * @param colPivot Pivot array for columns.
      */
     public PivotedMatrixStorage(MatrixStorage sto, int[] rowPivot, int[] colPivot) {
         assert sto != null;
@@ -87,8 +89,8 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param sto
-     * @param pivot
+     * @param sto Matrix storage.
+     * @param pivot Pivot array.
      */
     public PivotedMatrixStorage(MatrixStorage sto, int[] pivot) {
         this(sto, pivot, pivot == null ? null : java.util.Arrays.copyOf(pivot, pivot.length));
@@ -96,7 +98,7 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param sto
+     * @param sto Matrix storage.
      */
     public PivotedMatrixStorage(MatrixStorage sto) {
         this(sto, sto == null ? null : identityPivot(sto.rowSize()), sto == null ? null : identityPivot(sto.columnSize()));
@@ -104,8 +106,8 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param i
-     * @param j
+     * @param i First row index to swap.
+     * @param j Second row index to swap.
      */
     public void swapRows(int i, int j) {
         if (i != j) {
@@ -121,8 +123,8 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param i
-     * @param j
+     * @param i First column index to swap.
+     * @param j Second column index to swap.
      */
     public void swapColumns(int i, int j) {
         if (i != j) {
@@ -196,7 +198,7 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
-        return sto.isArrayBased();
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -229,7 +231,7 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param n
+     * @param n Pivot array length.
      */
     private static int[] identityPivot(int n) {
         int[] pivot = new int[n];
@@ -242,7 +244,7 @@ public class PivotedMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param pivot
+     * @param pivot Pivot array to be inverted.
      */
     private static int[] invert(int[] pivot) {
         int[] x = new int[pivot.length];
