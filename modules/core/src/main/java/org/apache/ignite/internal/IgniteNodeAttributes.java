@@ -169,8 +169,7 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_SERVICES_COMPATIBILITY_MODE = ATTR_PREFIX + ".services.compatibility.enabled";
 
     /** Set of names of custom named executors (can be {@code null} when custom executors are not configured). */
-    // TODO: Rename to ATTR_CUSTOM_EXECUTORS_NAMES
-    public static final String ATTR_CUSTOM_EXECUTORS_NAMES_SET = ATTR_PREFIX + ".custom.executors";
+    public static final String ATTR_CUSTOM_EXECUTORS_NAMES = ATTR_PREFIX + ".custom.executors";
 
     /**
      * Enforces singleton.

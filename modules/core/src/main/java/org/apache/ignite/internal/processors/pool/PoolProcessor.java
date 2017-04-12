@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CUSTOM_EXECUTORS_NAMES_SET;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CUSTOM_EXECUTORS_NAMES;
 
 /**
  * Processor which abstracts out thread pool management.
@@ -85,7 +85,7 @@ public class PoolProcessor extends GridProcessorAdapter {
         customNamedPools = ctx.getCustomNamedExecutorServices();
 
         if (customNamedPools != null)
-            ctx.addNodeAttribute(ATTR_CUSTOM_EXECUTORS_NAMES_SET, new HashSet(customNamedPools.keySet()));
+            ctx.addNodeAttribute(ATTR_CUSTOM_EXECUTORS_NAMES, new HashSet(customNamedPools.keySet()));
     }
 
     /** {@inheritDoc} */
