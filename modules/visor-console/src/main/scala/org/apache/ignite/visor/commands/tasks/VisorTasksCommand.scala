@@ -222,7 +222,7 @@ private case class VisorTask(
     lazy val avgNodes: Int =
         (0 /: execs)((b, a) => a.nodeIds.size + b) / execs.size
 
-    override def equals(r: Any): Boolean =
+    override def equals(r: Any) =
         if (this eq r.asInstanceOf[AnyRef])
             true
         else if (r == null || !r.isInstanceOf[VisorTask])
@@ -230,7 +230,7 @@ private case class VisorTask(
         else
             r.asInstanceOf[VisorTask].taskName == taskName
 
-    override def hashCode(): Int =
+    override def hashCode() =
         taskName.hashCode()
 }
 
@@ -420,7 +420,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
             else if (hasArgName("n", argLst)) {
                 val n = argValue("n", argLst)
 
-                if (n.isEmpty)
+                if (!n.isDefined)
                     scold("Invalid arguments: " + args)
                 else
                     task(n.get, hasArgFlag("r", argLst), hasArgFlag("a", argLst))
@@ -428,7 +428,7 @@ class VisorTasksCommand extends VisorConsoleCommand {
             else if (hasArgName("e", argLst)) {
                 val s = argValue("e", argLst)
 
-                if (s.isEmpty)
+                if (!s.isDefined)
                     scold("Invalid arguments: " + args)
                 else
                     exec(s.get, hasArgFlag("r", argLst))
