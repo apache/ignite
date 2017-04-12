@@ -66,6 +66,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             CheckType(GetType());
             CheckType(typeof(string));
             CheckType(typeof(IDictionary));
+
+            // Nested types.
+            CheckType(typeof(Nested));
+            CheckType(typeof(Nested.Nested2));
         }
 
         /// <summary>
@@ -123,6 +127,16 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("String", gen.GetName());
             Assert.AreEqual("System.String", gen.GetFullName());
             Assert.IsTrue(gen.GetAssemblyName().StartsWith("mscorlib,"));
+
+            // Nested class.
+            res = TypeNameParser.Parse(typeof(NestedGeneric<int>).FullName);
+
+            Assert.AreEqual("TypeNameParserTest+NestedGeneric", res.GetName());
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.TypeNameParserTest+NestedGeneric", res.GetFullName());
+
+            gen = res.Generics.Single();
+            Assert.AreEqual("Int32", gen.GetName());
+            Assert.AreEqual("System.Int32", gen.GetFullName());
         }
 
         /// <summary>
@@ -179,6 +193,19 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
 
             Assert.AreEqual(type.FullName.Length + 2, res.AssemblyStart);
+        }
+
+        private class Nested
+        {
+            public class Nested2
+            {
+                // No-op.
+            }
+        }
+
+        private class NestedGeneric<T>
+        {
+            // No-op.
         }
     }
 }
