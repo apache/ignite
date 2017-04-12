@@ -35,7 +35,8 @@ mixin ignite-form-field-datepicker(label, model, name, mindate, maxdate, disable
             data-min-date=mindate ? `{{ ${mindate} }}` : false
             data-max-date=maxdate ? `{{ ${maxdate} }}` : `today`
 
-            data-container='body > .wrapper'
+            data-placement='bottom'
+            data-container='.docs-content'
 
             tabindex='0'
 
@@ -44,7 +45,7 @@ mixin ignite-form-field-datepicker(label, model, name, mindate, maxdate, disable
             data-ignite-form-panel-field=''
         )&attributes(attributes.attributes)
 
-    .ignite-form-field
+    .datepicker--ignite.ignite-form-field
         if name
             +ignite-form-field__label(label, name, required)
 

@@ -101,6 +101,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Number of partitions. */
     private int parts;
 
+    /** Mask to use in calculation when partitions count is power of 2. */
+    private transient int mask = -1;
+
     /** Exclude neighbors flag. */
     private boolean exclNeighbors;
 
@@ -189,7 +192,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <=" + CacheConfiguration.MAX_PARTITIONS_COUNT);
 
         this.exclNeighbors = exclNeighbors;
-        this.parts = parts;
+
+        setPartitions(parts);
+
         this.backupFilter = backupFilter;
 
         try {
@@ -217,15 +222,21 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Sets total number of partitions.
+     * Sets total number of partitions.If the number of partitions is a power of two,
+     * the PowerOfTwo hashing method will be used.  Otherwise the Standard hashing
+     * method will be applied.
      *
      * @param parts Total number of partitions.
      * @return {@code this} for chaining.
      */
     public RendezvousAffinityFunction setPartitions(int parts) {
-        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
+        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT,
+            "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
+        A.ensure(parts > 0, "parts > 0");
 
         this.parts = parts;
+
+        mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
 
         return this;
     }
@@ -508,6 +519,12 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
                 "Make sure that an affinity key that is used is initialized properly.");
 
+        if (mask >= 0) {
+            int h;
+
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
+
         return U.safeAbs(key.hashCode() % parts);
     }
 
@@ -554,7 +571,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        parts = in.readInt();
+        setPartitions(in.readInt());
+
         exclNeighbors = in.readBoolean();
         hashIdRslvr = (AffinityNodeHashResolver)in.readObject();
         backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();

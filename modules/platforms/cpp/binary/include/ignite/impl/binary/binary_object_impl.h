@@ -109,9 +109,8 @@ namespace ignite
                 template<typename T>
                 T Deserialize() const
                 {
-                    ignite::binary::BinaryType<T> bt;
                     int32_t actualTypeId = GetTypeId();
-                    int32_t requestedTypeId = bt.GetTypeId();
+                    int32_t requestedTypeId = ignite::binary::BinaryType<T>::GetTypeId();
 
                     if (requestedTypeId != actualTypeId)
                     {
