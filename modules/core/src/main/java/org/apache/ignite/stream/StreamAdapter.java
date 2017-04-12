@@ -26,14 +26,6 @@ import org.apache.ignite.IgniteDataStreamer;
  * streaming from different data sources. The purpose of adapters is to
  * convert different message formats into Ignite stream key-value tuples
  * and feed the tuples into the provided {@link org.apache.ignite.IgniteDataStreamer}.
- * <p>
- * Two types of tuple extractors are supported:
- * <ol>
- *     <li>A single tuple extractor, which extracts either no or 1 tuple out of a message. See
- *     see {@link #setTupleExtractor(StreamTupleExtractor)}.</li>
- *     <li>A multiple tuple extractor, which is capable of extracting multiple tuples out of a single message, in the
- *     form of a {@link Map}. See {@link #setMultipleTupleExtractor(StreamMultipleTupleExtractor)}.</li>
- * </ol>
  */
 public abstract class StreamAdapter<T, K, V> {
     /** Tuple extractor extracting a single tuple from an event */
@@ -89,31 +81,6 @@ public abstract class StreamAdapter<T, K, V> {
      */
     public void setStreamer(IgniteDataStreamer<K, V> stmr) {
         this.stmr = stmr;
-    }
-
-    /**
-     * @return Provided tuple extractor.
-     * @see #getSingleTupleExtractor()
-     */
-    @Deprecated
-    public StreamTupleExtractor<T, K, V> getTupleExtractor() {
-        if (singleTupleExtractor instanceof StreamTupleExtractor)
-            return (StreamTupleExtractor) singleTupleExtractor;
-
-        throw new IllegalArgumentException("This method is deprecated and only relevant if using an old " +
-            "StreamTupleExtractor; use getSingleTupleExtractor instead");
-    }
-
-    /**
-     * @param extractor Extractor for a single key-value tuple from the message.
-     * @see #setSingleTupleExtractor(StreamSingleTupleExtractor)
-     */
-    @Deprecated
-    public void setTupleExtractor(StreamTupleExtractor<T, K, V> extractor) {
-        if (multipleTupleExtractor != null)
-            throw new IllegalArgumentException("Multiple tuple extractor already set; cannot set both types at once.");
-
-        this.singleTupleExtractor = extractor;
     }
 
     /**

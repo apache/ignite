@@ -39,12 +39,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.stream.StreamAdapter;
-import org.apache.ignite.stream.StreamTupleExtractor;
+import org.apache.ignite.stream.StreamMultipleTupleExtractor;
+import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Server that receives data from TCP socket, converts it to key-value pairs using {@link StreamTupleExtractor} and
- * streams into {@link IgniteDataStreamer} instance.
+ * Server that receives data from TCP socket, converts it to key-value pairs using {@link StreamSingleTupleExtractor},
+ * {@link StreamMultipleTupleExtractor} and streams into {@link IgniteDataStreamer} instance.
  * <p>
  * By default server uses size-based message processing. That is every message sent over the socket is prepended with
  * 4-byte integer header containing message size. If message delimiter is defined (see {@link #setDelimiter}) then
