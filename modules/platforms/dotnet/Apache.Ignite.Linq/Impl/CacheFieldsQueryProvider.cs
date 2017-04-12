@@ -222,7 +222,9 @@ namespace Apache.Ignite.Linq.Impl
             if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
             {
                 // TODO: Strip namespace, but keep nested type specification
-                return valueTypeName;
+                // TODO: Replace "+"?
+                var ns = cacheValueType.Namespace;
+                return ns == null ? valueTypeName : valueTypeName.Substring(0, ns.Length);
             }
 
             throw new CacheException(string.Format("Table name cannot be inferred for cache '{0}', " +
