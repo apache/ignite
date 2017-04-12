@@ -550,8 +550,8 @@ class VisorTasksCommand extends VisorConsoleCommand {
 
                 s.evts = s.evts :+ te
                 s.nodeIds = s.nodeIds + te.nid()
-                s.startTs = scala.math.min(s.startTs, te.timestamp())
-                s.endTs = scala.math.max(s.endTs, te.timestamp())
+                s.startTs = math.min(s.startTs, te.timestamp())
+                s.endTs = math.max(s.endTs, te.timestamp())
 
                 te.typeId() match {
                     case EVT_TASK_STARTED =>
