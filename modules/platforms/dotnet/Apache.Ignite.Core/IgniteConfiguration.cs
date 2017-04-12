@@ -275,6 +275,10 @@
                     writer.WriteBoolean(false);
                 }
 
+                // Name mapper.
+                var mapper = BinaryConfiguration.DefaultNameMapper as BinaryBasicNameMapper;
+                writer.WriteBoolean(mapper != null && mapper.IsSimpleName);
+
                 // Send only descriptors with non-null EqualityComparer to preserve old behavior where
                 // remote nodes can have no BinaryConfiguration.
 

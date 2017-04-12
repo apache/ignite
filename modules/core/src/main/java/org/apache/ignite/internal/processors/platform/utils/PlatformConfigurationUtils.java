@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.utils;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryFieldIdentityResolver;
 import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -603,7 +604,10 @@ public class PlatformConfigurationUtils {
             if (in.readBoolean())  // compact footer is set
                 cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
 
-            // TODO: Set name mapper.
+            if (in.readBoolean()) {
+                // Simple name mapper.
+                cfg.getBinaryConfiguration().setNameMapper(new BinaryBasicNameMapper(true));
+            }
 
             int typeCnt = in.readInt();
 
