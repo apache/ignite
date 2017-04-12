@@ -175,6 +175,13 @@ public class LUDecompositionTest {
     }
 
     /** */
+    @Test
+    public void singularDeterminant() throws Exception {
+        assertEquals("Unexpected determinant for singular matrix decomposition.",
+            0d, new LUDecomposition(new DenseLocalOnHeapMatrix(2, 2)).determinant(), 0d);
+    }
+
+    /** */
     @Test(expected = CardinalityException.class)
     public void solveVecWrongSize() throws Exception {
         new LUDecomposition(testMatrix).solve(new DenseLocalOnHeapVector(testMatrix.rowSize() + 1));
