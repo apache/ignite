@@ -269,7 +269,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
      * @throws Exception If failed.
      */
     public void testDeployLimits() throws Exception {
-            String name = "serviceOnEachNodeUpdateTopology";
+            String name = "serviceWithLimitsUpdateTopology";
 
             Ignite g = randomGrid();
 
@@ -315,9 +315,6 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
             try {
                 latch.await();
-
-                // Ensure service is deployed
-                assertNotNull(grid(nodeCount()+extraNodes - 1).services().serviceProxy(name, Service.class, false, 2000));
 
                 TestCase.assertEquals(name, totalInstances, DummyService.started(name));
                 TestCase.assertEquals(name, 0, DummyService.cancelled(name));
