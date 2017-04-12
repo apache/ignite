@@ -60,18 +60,16 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
     /**
      * Perform initial startup.
      *
-     * @param initDfltPathModes WHether to initialize default path modes.
      * @throws Exception If failed.
      */
     @SuppressWarnings({"NullableProblems", "unchecked"})
-    private void startUp(boolean initDfltPathModes) throws Exception {
+    private void startUp() throws Exception {
         startUpSecondary();
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
-        igfsCfg.setInitializeDefaultPathModes(initDfltPathModes);
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
@@ -181,14 +179,6 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
         G.start(cfg);
     }
 
-    /**
-     * Test scenario when defaults are initialized.
-     *
-     * @throws Exception If failed.
-     */
-    public void testDefaultsInitialized() throws Exception {
-        check(true);
-    }
 
     /**
      * Test scenario when defaults are not initialized.
@@ -196,18 +186,15 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
      * @throws Exception If failed.
      */
     public void testDefaultsNotInitialized() throws Exception {
-        check(false);
+        check();
     }
 
     /**
      * Actual check.
      *
-     * @param initDfltPathModes Whether to initialize default path modes.
      * @throws Exception If failed.
      */
-    private void check(boolean initDfltPathModes) throws Exception {
-        startUp(initDfltPathModes);
-
-        assertEquals(initDfltPathModes, fs.hasSecondaryFileSystem());
+    private void check() throws Exception {
+        startUp();
     }
 }
