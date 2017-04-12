@@ -290,7 +290,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestJavaInterop()
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    DefaultNameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                }
+            };
+
+            using (var ignite = Ignition.Start(cfg))
             {
                 var cacheCfg = new CacheConfiguration(null, new QueryEntity(typeof(PlatformComputeBinarizable))
                 {
