@@ -147,6 +147,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(2, res.Generics.Count);
             Assert.AreEqual("Int32", res.Generics.First().GetName());
             Assert.AreEqual("String", res.Generics.Last().GetName());
+
+            // Custom strings.
+            res = TypeNameParser.Parse("List`1[[Int]]");
+            Assert.AreEqual("List`1", res.GetName());
+            Assert.AreEqual("List`1", res.GetFullName());
+            Assert.AreEqual("Int", res.Generics.Single().GetName());
+            Assert.AreEqual("Int", res.Generics.Single().GetFullName());
         }
 
         /// <summary>
