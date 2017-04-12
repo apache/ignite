@@ -37,7 +37,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Harness for {@link GridCacheWriteBehindStore} tests.
  */
 public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridCommonAbstractTest {
-
     /** Write cache size. */
     public static final int CACHE_SIZE = 1024;
 

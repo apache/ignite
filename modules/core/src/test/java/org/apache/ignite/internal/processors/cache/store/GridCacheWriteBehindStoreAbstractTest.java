@@ -285,10 +285,8 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
                 Set<Integer> old = perThread.putIfAbsent(Thread.currentThread().getName(), set);
 
-                if (old != null) {
-                    System.out.println("Set already exist");
+                if (old != null)
                     set = old;
-                }
 
                 Random rnd = new Random();
 

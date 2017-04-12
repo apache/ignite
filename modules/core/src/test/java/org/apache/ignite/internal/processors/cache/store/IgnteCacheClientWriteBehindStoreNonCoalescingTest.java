@@ -49,11 +49,13 @@ import java.util.Set;
  * This class provides non write coalescing tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
 public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCacheAbstractTest {
+    /** {@inheritDoc} */
     @Override
     protected int gridCount() {
         return 1;
     }
 
+    /** {@inheritDoc} */
     @Override
     protected CacheMode cacheMode() {
         return null;
@@ -69,6 +71,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
         return CLOCK;
     }
 
+    /** {@inheritDoc} */
     @Override
     protected NearCacheConfiguration nearConfiguration() {
         return null;

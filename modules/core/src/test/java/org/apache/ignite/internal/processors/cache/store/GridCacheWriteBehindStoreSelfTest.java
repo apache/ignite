@@ -57,10 +57,10 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     /**
      * Tests correct store shutdown when underlying store fails.
      *
-     * @param writeCoalescing write coalescing flag
+     * @param writeCoalescing Write coalescing flag.
      * @throws Exception If failed.
      */
-    private void testShutdownWithFailure(boolean writeCoalescing) throws Exception {
+    private void testShutdownWithFailure(final boolean writeCoalescing) throws Exception {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
         multithreadedAsync(new Runnable() {
@@ -68,7 +68,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
                 try {
                     delegate.setShouldFail(true);
 
-                    initStore(2);
+                    initStore(2, writeCoalescing);
 
                     try {
                         store.write(new CacheEntryImpl<>(1, "val1"));
@@ -111,11 +111,11 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     /**
      * Simple store test.
      *
-     * @param writeCoalescing write coalescing flag
+     * @param writeCoalescing Write coalescing flag.
      * @throws Exception If failed.
      */
     private void testSimpleStore(boolean writeCoalescing) throws Exception {
-        initStore(2);
+        initStore(2, writeCoalescing);
 
         try {
             store.write(new CacheEntryImpl<>(1, "v1"));
@@ -159,13 +159,13 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     /**
      * Check that all values written to the store will be in underlying store after timeout or due to size limits.
      *
-     * @param writeCoalescing write coalescing flag
+     * @param writeCoalescing Write coalescing flag
      * @throws Exception If failed.
      */
     @SuppressWarnings({"NullableProblems"})
     private void testValuePropagation(boolean writeCoalescing) throws Exception {
         // Need to test size-based write.
-        initStore(1);
+        initStore(1, writeCoalescing);
 
         try {
             for (int i = 0; i < CACHE_SIZE * 2; i++)
@@ -197,7 +197,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     /**
      * Tests store with write coalescing behaviour under continuous put of the same key with different values.
      *
-     * @throws Exception If failed
+     * @throws Exception If failed.
      */
     public void testContinuousPutWithCoalescing() throws Exception {
         testContinuousPut(true);
@@ -206,7 +206,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     /**
      * Tests store without write coalescing behaviour under continuous put of the same key with different values.
      *
-     * @throws Exception If failed
+     * @throws Exception If failed.
      */
     public void testContinuousPutWithoutCoalescing() throws Exception {
         testContinuousPut(false);
@@ -215,11 +215,11 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     /**
      * Tests store behaviour under continuous put of the same key with different values.
      *
-     * @param writeCoalwscing write coalescing flag for cache
-     * @throws Exception If failed
+     * @param writeCoalescing Write coalescing flag for cache.
+     * @throws Exception If failed.
      */
-    private void testContinuousPut(boolean writeCoalwscing) throws Exception {
-        initStore(2, writeCoalwscing);
+    private void testContinuousPut(boolean writeCoalescing) throws Exception {
+        initStore(2, writeCoalescing);
 
         try {
             final AtomicBoolean running = new AtomicBoolean(true);
@@ -303,7 +303,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      * Tests that all values were put into the store will be written to the underlying store
      * after shutdown is called.
      *
-     * @param writeCoalescing write coalescing flag
+     * @param writeCoalescing Write coalescing flag.
      * @throws Exception If failed.
      */
     private void testShutdown(boolean writeCoalescing) throws Exception {
@@ -373,7 +373,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
      * Tests that all values will be written to the underlying store
      * right in the same order as they were put into the store.
      *
-     * @param writeCoalescing write coalescing flag
+     * @param writeCoalescing Write coalescing flag.
      * @throws Exception If failed.
      */
     private void testBatchApply(boolean writeCoalescing) throws Exception {

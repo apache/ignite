@@ -71,7 +71,6 @@ import static javax.cache.Cache.Entry;
  * transaction objects are passed to the underlying store.
  */
 public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, LifecycleAware {
-
     /** Default write cache initial capacity. */
     public static final int DFLT_INITIAL_CAPACITY = 1024;
 
@@ -776,9 +775,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                         lock.lock(e.getKey().hashCode());
                         try {
                             StatefulValue<K,V> lastSV = writeCache.get(e.getKey());
-                            if (lastSV == e.getValue()) {
+                            if (lastSV == e.getValue())
                                 writeCache.remove(e.getKey());
-                            }
                         }
                         finally {
                             lock.unlock(e.getKey().hashCode());
@@ -1234,8 +1232,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          * @param valStatus Value status.
          */
         private void update(@Nullable Entry<? extends K, ? extends V> val,
-                            StoreOperation storeOperation,
-                            ValueStatus valStatus) {
+            StoreOperation storeOperation,
+            ValueStatus valStatus) {
             this.val = val;
             this.storeOperation = storeOperation;
             this.valStatus = valStatus;
