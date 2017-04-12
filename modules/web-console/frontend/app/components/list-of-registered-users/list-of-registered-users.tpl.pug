@@ -21,7 +21,7 @@ mixin grid-settings()
         i.fa.fa-cog(data-animation='am-flip-x' bs-dropdown='' aria-haspopup='true' aria-expanded='expanded' data-auto-close='1' data-trigger='click')
         ul.select.dropdown-menu(role='menu')
             li
-                a(ng-click='$ctrl.gridOptions.selectedAll ? $ctrl.clearAllColumns() : $ctrl.selectAllColumns()') 
+                a(ng-click='$ctrl.gridOptions.selectedAll ? $ctrl.clearAllColumns() : $ctrl.selectAllColumns()')
                     i.fa.fa-check-square-o.pull-left(ng-if='$ctrl.gridOptions.selectedAll')
                     i.fa.fa-square-o.pull-left(ng-if='!$ctrl.gridOptions.selectedAll')
                     span All
@@ -36,7 +36,10 @@ mixin grid-settings()
         li(role='presentation' ng-class='{ active: $ctrl.groupBy === "user" }') 
             a(ng-click='$ctrl.groupByUser()') 
                 span Users
-                span.badge.badge--blue {{ $ctrl.gridOptions.data.length }}
+                span.badge.badge--blue(ng-hide='$ctrl.groupBy === "user"')
+                    | {{ $ctrl.gridOptions.data.length }}
+                span.badge.badge--blue(ng-show='$ctrl.groupBy === "user"')
+                    | {{ $ctrl.filteredRows.length }}
         li(role='presentation' ng-class='{ active: $ctrl.groupBy === "company" }')
             a(ng-click='$ctrl.groupByCompany()') 
                 span Companies
