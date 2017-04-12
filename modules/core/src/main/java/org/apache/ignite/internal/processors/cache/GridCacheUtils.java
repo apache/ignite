@@ -129,21 +129,7 @@ public class GridCacheUtils {
             cheatCacheId = 0;
     }
 
-    /**
-     * Quickly checks if passed in cache ID is a "cheat cache ID" set by -DCHEAT_CACHE=user_cache_name
-     * and resolved in static block above.
-     *
-     * FOR DEBUGGING AND TESTING PURPOSES!
-     *
-     * @param id Cache ID to check.
-     * @return {@code True} if this is cheat cache ID.
-     */
-    @Deprecated
-    public static boolean cheatCache(int id) {
-        return cheatCacheId != 0 && id == cheatCacheId;
-    }
-
-    /**  Hadoop syste cache name. */
+    /**  Hadoop system cache name. */
     public static final String SYS_CACHE_HADOOP_MR = "ignite-hadoop-mr-sys-cache";
 
     /** System cache name. */
