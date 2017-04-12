@@ -153,7 +153,7 @@ public class QRDecomposition extends DecompositionSupport {
 
         Matrix x = like(mType, this.cols, cols);
 
-        Matrix qt = transpose(getQ());
+        Matrix qt = getQ().transpose();
         Matrix y = qt.times(mtx);
 
         Matrix r = getR();

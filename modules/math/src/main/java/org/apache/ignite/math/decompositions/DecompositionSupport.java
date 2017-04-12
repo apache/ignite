@@ -97,23 +97,6 @@ public abstract class DecompositionSupport implements Destroyable {
             return matrix.copy();
     }
 
-    /**
-     * Create the transposed copy of matrix with read-only matrices support.
-     *
-     * @param matrix Matrix for copy.
-     * @return Copy.
-     */
-    protected Matrix transpose(Matrix matrix){
-        if (isCopyLikeSupport(matrix)){
-            DenseLocalOnHeapMatrix cp = new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
-
-            cp.assign(matrix);
-
-            return cp.transpose();
-        } else
-            return matrix.transpose();
-    }
-
     /** */
     private boolean isCopyLikeSupport(Matrix matrix) {
         return matrix instanceof RandomMatrix || matrix instanceof PivotedMatrixView || matrix instanceof CacheMatrix;

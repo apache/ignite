@@ -151,7 +151,7 @@ public class CholeskyDecomposition extends DecompositionSupport {
      */
     public Matrix getL() {
         if (cachedL == null)
-            cachedL = transpose(getLT());
+            cachedL = getLT().transpose();
 
         return cachedL;
     }
