@@ -74,9 +74,7 @@ import org.jetbrains.annotations.Nullable;
  * @see EventType#EVT_CACHE_OBJECT_PUT
  * @see EventType#EVT_CACHE_OBJECT_READ
  * @see EventType#EVT_CACHE_OBJECT_REMOVED
- * @see EventType#EVT_CACHE_OBJECT_SWAPPED
  * @see EventType#EVT_CACHE_OBJECT_UNLOCKED
- * @see EventType#EVT_CACHE_OBJECT_UNSWAPPED
  * @see EventType#EVTS_CACHE
  */
 public class CacheEvent extends EventAdapter {

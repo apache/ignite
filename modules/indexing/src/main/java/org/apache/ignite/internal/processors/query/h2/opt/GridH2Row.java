@@ -166,6 +166,11 @@ public abstract class GridH2Row extends Row implements GridSearchRowPointer, Cac
     }
 
     /** {@inheritDoc} */
+    @Override public Value getValue(int index) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public Value[] getValueList() {
         throw new UnsupportedOperationException();
     }

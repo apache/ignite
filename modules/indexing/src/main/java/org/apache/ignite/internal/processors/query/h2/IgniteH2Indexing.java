@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -91,8 +90,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -101,8 +98,8 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -110,6 +107,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerI
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
+import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -710,53 +708,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl.tbl.update(key, partId, val, ver, 0, true, 0)) {
             if (tbl.luceneIdx != null)
                 tbl.luceneIdx.remove(key);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onSwap(@Nullable String spaceName, KeyCacheObject key,
-        int partId) throws IgniteCheckedException {
-        Schema schema = schemas.get(schema(spaceName));
-
-        if (schema == null)
-            return;
-
-        Class<?> keyCls = getClass(objectContext(spaceName), key);
-
-        for (TableDescriptor tbl : schema.tbls.values()) {
-            if (tbl.type().keyClass().isAssignableFrom(keyCls)) {
-                try {
-                    if (tbl.tbl.onSwap(key, partId))
-                        return;
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteCheckedException(e);
-                }
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onUnswap(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val)
-        throws IgniteCheckedException {
-        assert val != null;
-
-        CacheObjectContext coctx = objectContext(spaceName);
-
-        Class<?> keyCls = getClass(coctx, key);
-        Class<?> valCls = getClass(coctx, val);
-
-        for (TableDescriptor tbl : tables(schema(spaceName))) {
-            if (tbl.type().keyClass().isAssignableFrom(keyCls)
-                && tbl.type().valueClass().isAssignableFrom(valCls)) {
-                try {
-                    if (tbl.tbl.onUnswap(key, partId, val))
-                        return;
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteCheckedException(e);
-                }
-            }
         }
     }
 
@@ -3297,9 +3248,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final GridUnsafeGuard guard;
 
         /** */
-        private final boolean preferSwapVal;
-
-        /** */
         private final boolean snapshotableIdx;
 
         /** */
@@ -3343,10 +3291,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 props[i] = p;
             }
-
-            // TODO GG-10884.
-//            preferSwapVal = schema.ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED;
-            preferSwapVal = true;
 
             // Index is not snapshotable in db-x.
             snapshotableIdx = false;
@@ -3498,14 +3442,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
-            assert false : "'readFromSwap' to be removed";
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public int valueType() {
             return valType;
         }
@@ -3561,11 +3497,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @Override public GridH2Row cachedRow(long link) {
             return schema.rowCache.get(link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean preferSwapValue() {
-            return preferSwapVal;
         }
 
         /** {@inheritDoc} */

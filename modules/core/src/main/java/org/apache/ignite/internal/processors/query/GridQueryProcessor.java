@@ -850,61 +850,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Will be called when entry for key will be swapped.
-     *
-     * @param spaceName Space name.
-     * @param key key.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onSwap(String spaceName, KeyCacheObject key, int partId) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Swap [space=" + spaceName + ", key=" + key + "]");
-
-        if (idx == null)
-            return;
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to process swap event (grid is stopping).");
-
-        try {
-            idx.onSwap(
-                spaceName,
-                key,
-                partId);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * Will be called when entry for key will be unswapped.
-     *
-     * @param spaceName Space name.
-     * @param key Key.
-     * @param val Value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onUnswap(String spaceName, KeyCacheObject key, int partId, CacheObject val)
-        throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Unswap [space=" + spaceName + ", key=" + key + ", val=" + val + "]");
-
-        if (idx == null)
-            return;
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to process swap event (grid is stopping).");
-
-        try {
-            idx.onUnswap(spaceName, key, partId, val);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
      * Gets types for space.
      *
      * @param space Space name.

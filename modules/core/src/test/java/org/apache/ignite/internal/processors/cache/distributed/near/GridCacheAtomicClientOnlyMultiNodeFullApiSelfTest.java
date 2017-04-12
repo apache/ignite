@@ -44,8 +44,6 @@ import org.apache.ignite.resources.LoggerResource;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_SWAPPED;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNSWAPPED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -309,47 +307,5 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         assert c.localPeek(key, CachePeekMode.ONHEAP) == null;
 
         assert c.localSize() == 0 : "Cache is not empty.";
-    }
-
-    /**
-     *
-     */
-    private static class LocalListener implements IgnitePredicate<Event> {
-        /** Logger. */
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** Swap events. */
-        private final AtomicInteger swapEvts;
-
-        /** Unswap events. */
-        private final AtomicInteger unswapEvts;
-
-        /**
-         * @param swapEvts Swap events.
-         * @param unswapEvts Unswap events.
-         */
-        public LocalListener(AtomicInteger swapEvts, AtomicInteger unswapEvts) {
-            this.swapEvts = swapEvts;
-            this.unswapEvts = unswapEvts;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(Event evt) {
-            log.info("Received event: " + evt);
-
-            switch (evt.type()) {
-                case EVT_CACHE_OBJECT_SWAPPED:
-                    swapEvts.incrementAndGet();
-
-                    break;
-                case EVT_CACHE_OBJECT_UNSWAPPED:
-                    unswapEvts.incrementAndGet();
-
-                    break;
-            }
-
-            return true;
-        }
     }
 }
