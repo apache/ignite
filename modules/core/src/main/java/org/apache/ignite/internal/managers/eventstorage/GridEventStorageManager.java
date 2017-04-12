@@ -64,6 +64,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -312,7 +313,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param evt Event to record.
      * @param params Additional parameters.
      */
-    private void record0(Event evt, Object... params) {
+    private void record0(Event evt, @NotNull Object... params) {
         assert evt != null;
 
         if (!enterBusy())
@@ -586,6 +587,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param types Event types to subscribe listener for.
      */
     public void addLocalEventListener(IgnitePredicate<? extends Event> lsnr, int[] types) {
+        assert lsnr != null;
+
         try {
             ctx.resource().injectGeneric(lsnr);
         }
@@ -593,7 +596,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             throw new IgniteException("Failed to inject resources to event listener: " + lsnr, e);
         }
 
-        addLocalEventListener(new UserListenerWrapper(lsnr), types);
+        addEventListener(new UserListenerWrapper(lsnr), types);
     }
 
     /**
@@ -609,6 +612,60 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         assert types != null;
         assert types.length > 0;
 
+        addEventListener(new LocalListenerWrapper(lsnr), types);
+    }
+
+    /**
+     * Adds local event listener.
+     *
+     * @param lsnr Listener to add.
+     * @param type Event type to subscribe listener for.
+     * @param types Additional event types to subscribe listener for.
+     */
+    public void addLocalEventListener(GridLocalEventListener lsnr, int type, @Nullable int... types) {
+        assert lsnr != null;
+
+        addEventListener(new LocalListenerWrapper(lsnr), type, types);
+    }
+
+    /**
+     * Adds discovery event listener. Note that this method specifically disallow an empty
+     * array of event type to prevent accidental subscription for all system event that
+     * may lead to a drastic performance decrease.
+     *
+     * @param lsnr Listener to add.
+     * @param types Event types to subscribe listener for.
+     */
+    public void addDiscoveryEventListener(DiscoveryEventListener lsnr, int[] types) {
+        assert lsnr != null;
+        assert types != null;
+        assert types.length > 0;
+
+        addEventListener(new DiscoveryListenerWrapper(lsnr), types);
+    }
+
+    /**
+     * Adds discovery event listener.
+     *
+     * @param lsnr Listener to add.
+     * @param type Event type to subscribe listener for.
+     * @param types Additional event types to subscribe listener for.
+     */
+    public void addDiscoveryEventListener(DiscoveryEventListener lsnr, int type, @Nullable int... types) {
+        assert lsnr != null;
+
+        addEventListener(new DiscoveryListenerWrapper(lsnr), type, types);
+    }
+
+    /**
+     * Adds local event listener. Note that this method specifically disallow an empty
+     * array of event type to prevent accidental subscription for all system event that
+     * may lead to a drastic performance decrease.
+     *
+     * @param lsnr Listener to add.
+     * @param types Event types to subscribe listener for.
+     */
+    private void addEventListener(EventListener lsnr, int[] types) {
         if (!enterBusy())
             return;
 
@@ -632,9 +689,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param type Event type to subscribe listener for.
      * @param types Additional event types to subscribe listener for.
      */
-    public void addLocalEventListener(GridLocalEventListener lsnr, int type, @Nullable int... types) {
-        assert lsnr != null;
-
+    private void addEventListener(EventListener lsnr, int type, @Nullable int... types) {
         if (!enterBusy())
             return;
 
@@ -658,58 +713,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
     }
 
-    /**
-     * Adds discovery event listener. Note that this method specifically disallow an empty
-     * array of event type to prevent accidental subscription for all system event that
-     * may lead to a drastic performance decrease.
-     *
-     * @param lsnr Listener to add.
-     * @param types Event types to subscribe listener for.
-     */
-    public void addDiscoveryEventListener(DiscoveryEventListener lsnr, int[] types) {
-        assert lsnr != null;
-        assert types != null;
-        assert types.length > 0;
-
-        if (!enterBusy())
-            return;
-
-        try {
-            for (int t : types) {
-                getOrCreate(lsnrs, t).add(lsnr);
-            }
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
-     * Adds discovery event listener.
-     *
-     * @param lsnr Listener to add.
-     * @param type Event type to subscribe listener for.
-     * @param types Additional event types to subscribe listener for.
-     */
-    public void addDiscoveryEventListener(DiscoveryEventListener lsnr, int type, @Nullable int... types) {
-        assert lsnr != null;
-
-        if (!enterBusy())
-            return;
-
-        try {
-            getOrCreate(lsnrs, type).add(lsnr);
-
-            if (types != null) {
-                for (int t : types) {
-                    getOrCreate(lsnrs, t).add(lsnr);
-                }
-            }
-        }
-        finally {
-            leaveBusy();
-        }
-    }
 
     /**
      * @param lsnrs Listeners map.
@@ -872,7 +875,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param set Set of listeners.
      * @param evt Grid event.
      */
-    private void notifyListeners(@Nullable Collection<EventListener> set, Event evt, Object[] params) {
+    private void notifyListeners(@Nullable Collection<EventListener> set, Event evt, @NotNull Object[] params) {
         assert evt != null;
 
         if (!F.isEmpty(set)) {
@@ -880,7 +883,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
             for (EventListener lsnr : set) {
                 try {
-                    notifyListener(lsnr, evt, params);
+                    ((ListenerWrapper)lsnr).onEvent(evt, params);
                 }
                 catch (Throwable e) {
                     U.error(log, "Unexpected exception in listener notification for event: " + evt, e);
@@ -890,18 +893,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 }
             }
         }
-    }
-
-    /**
-     * @param lsnr Listener.
-     * @param evt Event.
-     * @param params Additional parameters.
-     */
-    private void notifyListener(EventListener lsnr, Event evt, Object[] params) {
-        if(lsnr instanceof GridLocalEventListener)
-            ((GridLocalEventListener)lsnr).onEvent(evt);
-        else if(params.length != 0) // for now only two types of listeners are presented
-            ((DiscoveryEventListener)lsnr).onEvent((DiscoveryEvent)evt, (DiscoCache)params[0]);
     }
 
     /**
@@ -1290,10 +1281,77 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
     }
 
+    /** */
+    private abstract static class ListenerWrapper implements EventListener {
+        abstract void onEvent(Event evt, @NotNull Object[] params);
+    }
+
+    /**
+     * Wraps local listener
+     */
+    private static final class LocalListenerWrapper extends ListenerWrapper {
+        /** */
+        private final GridLocalEventListener lsnr;
+
+        /**
+         * @param lsnr Listener.
+         */
+        private LocalListenerWrapper(GridLocalEventListener lsnr) {
+            this.lsnr = lsnr;
+        }
+
+        /** {@inheritDoc} */
+        @Override void onEvent(Event evt, @NotNull Object[] params) {
+            lsnr.onEvent(evt);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return lsnr.equals(o);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return lsnr.hashCode();
+        }
+    }
+
+    /**
+     * Wraps discovery local listener
+     */
+    private static final class DiscoveryListenerWrapper extends ListenerWrapper {
+        /** */
+        private final DiscoveryEventListener lsnr;
+
+        /**
+         * @param lsnr Listener.
+         */
+        private DiscoveryListenerWrapper(DiscoveryEventListener lsnr) {
+            this.lsnr = lsnr;
+        }
+
+        /** {@inheritDoc} */
+        @Override void onEvent(Event evt, @NotNull Object[] params) {
+            if(params.length > 0)
+                // For now there are only one type of listener with additional parameters
+                lsnr.onEvent((DiscoveryEvent)evt, (DiscoCache)params[0]);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return lsnr.equals(o);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return lsnr.hashCode();
+        }
+    }
+
     /**
      * Wraps user listener predicate provided via {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)}.
      */
-    private class UserListenerWrapper implements GridLocalEventListener {
+    private final class UserListenerWrapper extends ListenerWrapper {
         /** */
         private final IgnitePredicate<Event> lsnr;
 
@@ -1312,9 +1370,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
 
         /** {@inheritDoc} */
-        @Override public void onEvent(Event evt) {
+        @Override void onEvent(Event evt, @NotNull Object[] params) {
             if (!lsnr.apply(evt))
-                removeLocalEventListener(this);
+                removeEventListener(this, null);
         }
 
         /** {@inheritDoc} */
