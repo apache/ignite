@@ -15,17 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.multijvm;
+package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWrityOrderOffHeapMultiNodeFullApiSelfTest;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 
 /**
- * Multi-JVM tests.
+ *
  */
-public class GridCacheAtomicPrimaryWrityOrderOffHeapMultiJvmFullApiSelfTest extends
-    GridCacheAtomicPrimaryWrityOrderOffHeapMultiNodeFullApiSelfTest {
+public class CacheContinuousQueryFailoverAtomicSelfTest extends CacheContinuousQueryFailoverAbstractSelfTest {
     /** {@inheritDoc} */
-    protected boolean isMultiJvm() {
-        return true;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 }
