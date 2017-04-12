@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
@@ -211,6 +213,51 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
     }
 
     /**
+     * Check what happen in case cache is destroyed before operation is started.
+     *
+     * @throws Exception If failed.
+     */
+    public void testConcurrentCacheDestroyBeforeOperation() throws Exception {
+        // Start complex topology.
+        Ignite srv1 = Ignition.start(serverConfiguration(1));
+
+        Ignition.start(serverConfiguration(2));
+        Ignition.start(serverConfiguration(3, true));
+
+        Ignite cli = Ignition.start(clientConfiguration(4));
+
+        // Start cache and populate it with data.
+        IgniteCache cache = cli.getOrCreateCache(cacheConfiguration());
+
+        put(cli, KEY_AFTER);
+
+        // Start index operation and block it on coordinator.
+        blockIndexing(srv1);
+
+        QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+        final IgniteInternalFuture<?> idxFut =
+            queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
+
+        Thread.sleep(100);
+
+        // Destroy cache.
+        cache.destroy();
+
+        // Unblock indexing and see what happens.
+        unblockIndexing(srv1);
+
+        try {
+            idxFut.get();
+
+            fail("Ëxception has not been thrown.");
+        }
+        catch (SchemaOperationException e) {
+            // No-op.
+        }
+    }
+
+    /**
      * Block indexing.
      *
      * @param node Node.
@@ -269,13 +316,15 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
         if (blocker != null) {
             assertTrue(blocker.get2().compareAndSet(false, true));
 
-            try {
-                blocker.get1().await();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            while (true) {
+                try {
+                    blocker.get1().await();
 
-                throw new IgniteException("Got interrupted!");
+                    break;
+                }
+                catch (InterruptedException e) {
+                    // No-op.
+                }
             }
         }
     }

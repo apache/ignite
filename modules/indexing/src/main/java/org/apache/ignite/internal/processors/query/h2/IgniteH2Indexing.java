@@ -844,6 +844,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final GridH2IndexBase idx0 = createIndex(tbl, idx, schema.escapeAll());
 
         tbl.addTempIndex(idx0);
+
         final GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
 
         SchemaIndexCacheVisitorClosure clo = new SchemaIndexCacheVisitorClosure() {
