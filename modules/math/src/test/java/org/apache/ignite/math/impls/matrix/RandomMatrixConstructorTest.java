@@ -19,7 +19,7 @@ package org.apache.ignite.math.impls.matrix;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /** */
 public class RandomMatrixConstructorTest {
@@ -57,5 +57,11 @@ public class RandomMatrixConstructorTest {
 
         assertEquals("Expected number of cols, int parameters, fastHash false.", 1,
             new RandomMatrix(2, 1, false).columnSize());
+
+        RandomMatrix m = new RandomMatrix(1, 1);
+        //noinspection EqualsWithItself
+        assertTrue("Matrix is expected to be equal to self.", m.equals(m));
+        //noinspection ObjectEqualsNull
+        assertFalse("Matrix is expected to be not equal to null.", m.equals(null));
     }
 }

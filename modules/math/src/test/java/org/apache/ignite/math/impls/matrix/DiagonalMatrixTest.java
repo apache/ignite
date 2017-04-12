@@ -61,6 +61,11 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
 
             assertEquals(UNEXPECTED_VALUE + " at (" + i + "," + i + ")", testMatrix.get(i, i), testVal, 0d);
         }
+
+        //noinspection EqualsWithItself
+        assertTrue("Matrix is expected to be equal to self.", testMatrix.equals(testMatrix));
+        //noinspection ObjectEqualsNull
+        assertFalse("Matrix is expected to be not equal to null.", testMatrix.equals(null));
     }
 
     /** */

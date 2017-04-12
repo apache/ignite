@@ -51,6 +51,12 @@ public class FunctionMatrixConstructorTest {
         for (int rows : new int[] {1, 2, 3})
             for (int cols : new int[] {1, 2, 3})
                 basicTest(rows, cols);
+
+        Matrix m = new FunctionMatrix(1, 1, (i, j) -> 1d);
+        //noinspection EqualsWithItself
+        assertTrue("Matrix is expected to be equal to self.", m.equals(m));
+        //noinspection ObjectEqualsNull
+        assertFalse("Matrix is expected to be not equal to null.", m.equals(null));
     }
 
     /** */

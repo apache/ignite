@@ -89,6 +89,7 @@ import org.junit.runners.Suite;
     FunctionMatrixConstructorTest.class,
     MatrixViewConstructorTest.class,
     PivotedMatrixViewConstructorTest.class,
+    SparseLocalOnHeapMatrixConstructorTest.class,
     // Matrix tests.
     MatrixImplementationsTest.class,
     DiagonalMatrixTest.class,
