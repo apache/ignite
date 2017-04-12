@@ -36,6 +36,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.IsFalse(mapper.IsSimpleName);
 
+            // TODO: More tests.
+
             foreach (var type in new[] {GetType(), typeof(Foo)})
             {
                 Assert.AreEqual(type.FullName, mapper.GetTypeName(type.AssemblyQualifiedName));
@@ -79,6 +81,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Nested generic class.
         /// </summary>
+        // ReSharper disable once UnusedTypeParameter
         private class Bar<T>
         {
             // No-op.
