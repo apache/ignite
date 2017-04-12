@@ -1908,80 +1908,130 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 Map<KeyCacheObject, EntryGetResult> misses = null;
 
+                boolean offheapRead = ctx.offheapRead(expiry, readerArgs != null);
+
                 for (KeyCacheObject key : keys) {
                     while (true) {
-                        GridCacheEntryEx entry = needEntry ? entryEx(key) : peekEx(key);
-
-                        if (entry == null) {
-                            if (!skipVals && ctx.config().isStatisticsEnabled())
-                                ctx.cache().metrics0().onRead(false);
-
-                            break;
-                        }
-
                         try {
-                            EntryGetResult res;
+                            EntryGetResult res = null;
 
                             boolean evt = !skipVals;
                             boolean updateMetrics = !skipVals;
 
-                            if (storeEnabled) {
-                                res = entry.innerGetAndReserveForLoad(ctx.isSwapOrOffheapEnabled(),
-                                    updateMetrics,
-                                    evt,
-                                    subjId,
-                                    taskName,
-                                    expiry,
-                                    !deserializeBinary,
-                                    readerArgs);
+                            GridCacheEntryEx entry = null;
 
-                                assert res != null;
+                            boolean skipEntry;
 
-                                if (res.value() == null) {
-                                    if (misses == null)
-                                        misses = new HashMap<>();
+                            if (offheapRead) {
+                                GridCacheSwapEntry swapEntry = ctx.swap().readSwapEntry(key);
 
-                                    misses.put(key, res);
+                                if (swapEntry != null) {
+                                    skipEntry = true;
 
-                                    res = null;
+                                    long expireTime = swapEntry.expireTime();
+
+                                    if (expireTime != 0) {
+                                        if (expireTime - U.currentTimeMillis() > 0) {
+                                            res = new EntryGetWithTtlResult(swapEntry.value(),
+                                                swapEntry.version(),
+                                                false,
+                                                expireTime,
+                                                swapEntry.ttl());
+                                        }
+                                        else
+                                            skipEntry = false; // Do not skip entry if need process expiration.
+                                    }
+                                    else
+                                        res = new EntryGetResult(swapEntry.value(), swapEntry.version(), false);
+                                }
+                                else
+                                    skipEntry = !storeEnabled;
+
+                                if (skipEntry) {
+                                    if (evt) {
+                                        ctx.events().readEvent(key,
+                                            null,
+                                            swapEntry != null ? swapEntry.value() : null,
+                                            subjId,
+                                            taskName,
+                                            !deserializeBinary);
+                                    }
+
+                                    if (updateMetrics && ctx.cache().configuration().isStatisticsEnabled())
+                                        ctx.cache().metrics0().onRead(swapEntry != null);
                                 }
                             }
-                            else {
-                                if (needVer || readerArgs != null) {
-                                    res = entry.innerGetVersioned(
-                                        null,
-                                        null,
-                                        ctx.isSwapOrOffheapEnabled(),
-                                       /*unmarshal*/true,
+                            else
+                                skipEntry = false;
+
+                            if (!skipEntry) {
+                                entry = needEntry ? entryEx(key) : peekEx(key);
+
+                                if (entry == null) {
+                                    if (!skipVals && ctx.config().isStatisticsEnabled())
+                                        ctx.cache().metrics0().onRead(false);
+
+                                    break;
+                                }
+
+                                if (storeEnabled) {
+                                    res = entry.innerGetAndReserveForLoad(ctx.isSwapOrOffheapEnabled(),
                                         updateMetrics,
                                         evt,
                                         subjId,
-                                        null,
                                         taskName,
                                         expiry,
                                         !deserializeBinary,
                                         readerArgs);
+
+                                    assert res != null;
+
+                                    if (res.value() == null) {
+                                        if (misses == null)
+                                            misses = new HashMap<>();
+
+                                        misses.put(key, res);
+
+                                        res = null;
+                                    }
                                 }
                                 else {
-                                    CacheObject val = entry.innerGet(
-                                        null,
-                                        null,
-                                        ctx.isSwapOrOffheapEnabled(),
-                                        false,
-                                        updateMetrics,
-                                        evt,
-                                        false,
-                                        subjId,
-                                        null,
-                                        taskName,
-                                        expiry,
-                                        !deserializeBinary);
+                                    if (needVer || readerArgs != null) {
+                                        res = entry.innerGetVersioned(
+                                            null,
+                                            null,
+                                            ctx.isSwapOrOffheapEnabled(),
+                                            /*unmarshal*/true,
+                                            updateMetrics,
+                                            evt,
+                                            subjId,
+                                            null,
+                                            taskName,
+                                            expiry,
+                                            !deserializeBinary,
+                                            readerArgs);
+                                    }
+                                    else {
+                                        CacheObject val = entry.innerGet(
+                                            null,
+                                            null,
+                                            ctx.isSwapOrOffheapEnabled(),
+                                            false,
+                                            updateMetrics,
+                                            evt,
+                                            false,
+                                            subjId,
+                                            null,
+                                            taskName,
+                                            expiry,
+                                            !deserializeBinary);
 
-                                    res = val != null ? new EntryGetResult(val, null) : null;
+                                        res = val != null ? new EntryGetResult(val, null) : null;
+                                    }
+
+                                    if (res == null)
+                                        ctx.evicts().touch(entry, topVer);
                                 }
-
-                                if (res == null)
-                                    ctx.evicts().touch(entry, topVer);
                             }
 
                             if (res != null) {
@@ -1994,7 +2044,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     true,
                                     needVer);
 
-                                if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
+                                if (entry != null && (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED)))
                                     ctx.evicts().touch(entry, topVer);
 
                                 if (keysSize == 1)

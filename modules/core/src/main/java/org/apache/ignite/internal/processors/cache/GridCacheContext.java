@@ -2058,6 +2058,15 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @param expiryPlc
+     * @param readers
+     * @return
+     */
+    public boolean offheapRead(IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
+        return offheapTiered() && isSwapOrOffheapEnabled() && expiryPlc == null && !readers;
+    }
+
+    /**
      * @param part Partition.
      * @param affNodes Affinity nodes.
      * @param topVer Topology version.

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +30,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -93,37 +95,51 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAtomicGet() throws Exception {
-        doGet(ATOMIC, ONHEAP_TIERED);
+        doGet(ATOMIC, ONHEAP_TIERED, false);
+
+        doGet(ATOMIC, ONHEAP_TIERED, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomicGetOffheap() throws Exception {
-        doGet(ATOMIC, OFFHEAP_TIERED);
+        doGet(ATOMIC, OFFHEAP_TIERED, false);
+
+        doGet(ATOMIC, OFFHEAP_TIERED, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void doGet(CacheAtomicityMode atomicityMode, CacheMemoryMode memoryMode) throws Exception {
+    private void doGet(CacheAtomicityMode atomicityMode,
+        CacheMemoryMode memoryMode,
+        final boolean getAll) throws Exception {
         Ignite srv = ignite(0);
 
         Ignite client = ignite(1);
 
         final IgniteCache cache = client.createCache(cacheConfiguration(atomicityMode, memoryMode));
 
+        final Map<Object, Object> data = new HashMap<>();
+
+        data.put(1, 1);
+        data.put(2, 2);
+
         try {
             // Get from compute closure.
             {
-                cache.put(1, 1);
+                cache.putAll(data);
 
                 hangLatch = new CountDownLatch(1);
                 processorStartLatch = new CountDownLatch(1);
 
                 IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        cache.invoke(1, new HangEntryProcessor());
+                        if (getAll)
+                            cache.invokeAll(data.keySet(), new HangEntryProcessor());
+                        else
+                            cache.invoke(1, new HangEntryProcessor());
 
                         return null;
                     }
@@ -134,7 +150,14 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
 
                     assertTrue(wait);
 
-                    assertEquals(1, client.compute().affinityCall(cache.getName(), 1, new GetClosure(1, cache.getName())));
+                    if (getAll) {
+                        assertEquals(data, client.compute().affinityCall(cache.getName(), 1,
+                            new GetAllClosure(data.keySet(), cache.getName())));
+                    }
+                    else {
+                        assertEquals(1, client.compute().affinityCall(cache.getName(), 1,
+                            new GetClosure(1, cache.getName())));
+                    }
 
                     hangLatch.countDown();
 
@@ -147,14 +170,17 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
 
             // Local get.
             {
-                cache.put(1, 1);
+                cache.putAll(data);
 
                 hangLatch = new CountDownLatch(1);
                 processorStartLatch = new CountDownLatch(1);
 
                 IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        cache.invoke(1, new HangEntryProcessor());
+                        if (getAll)
+                            cache.invokeAll(data.keySet(), new HangEntryProcessor());
+                        else
+                            cache.invoke(1, new HangEntryProcessor());
 
                         return null;
                     }
@@ -165,7 +191,10 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
 
                     assertTrue(wait);
 
-                    assertEquals(1, srv.cache(cache.getName()).get(1));
+                    if (getAll)
+                        assertEquals(data, srv.cache(cache.getName()).getAll(data.keySet()));
+                    else
+                        assertEquals(1, srv.cache(cache.getName()).get(1));
 
                     hangLatch.countDown();
 
@@ -247,6 +276,34 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             return ignite.cache(cacheName).get(key);
+        }
+    }
+
+    /**
+     *
+     */
+    public static class GetAllClosure implements IgniteCallable<Object> {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private final Set<Object> keys;
+
+        /** */
+        private final String cacheName;
+
+        /**
+         * @param keys Keys.
+         */
+        public GetAllClosure(Set<Object> keys, String cacheName) {
+            this.keys = keys;
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            return ignite.cache(cacheName).getAll(keys);
         }
     }
 }

@@ -874,31 +874,36 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         Object res = null;
 
-        // TODO IGNITE-4932: metrics/events.
+        if (readerArgs == null && expiryPlc == null && !retVer && cctx.config().isEagerTtl()) {
+            // Fast heap get without 'synchronized'.
+            CacheObject val0 = this.val;
 
-        if (readerArgs == null && expiryPlc == null) {
-            if (!retVer && cctx.config().isEagerTtl()) { // Fast heap get.
-                CacheObject val0 = this.val;
+            if (val0 != null) {
+                if (updateMetrics && cctx.cache().configuration().isStatisticsEnabled())
+                    cctx.cache().metrics0().onRead(true);
 
-                if (val0 != null)
-                    return val0;
-            }
+                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+                    transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
 
-            if (cctx.isSwapOrOffheapEnabled() && readSwap) {
-                GridCacheSwapEntry swapEntry = cctx.swap().read(this, false, true, true, false);
+                    GridCacheMvcc mvcc = mvccExtras();
 
-                if (swapEntry != null) {
-                    long expireTime = swapEntry.expireTime();
-
-                    if (expireTime != 0) {
-                        if (expireTime - U.currentTimeMillis() > 0) {
-                            return retVer ? new EntryGetWithTtlResult(val, ver, false, expireTime, swapEntry.ttl()) :
-                                swapEntry.value();
-                        }
-                    }
-                    else
-                        return retVer ? new EntryGetResult(val, ver, false) : swapEntry.value();
+                    cctx.events().addEvent(
+                        partition(),
+                        key,
+                        tx,
+                        mvcc != null ? mvcc.anyOwner() : null,
+                        EVT_CACHE_OBJECT_READ,
+                        val0,
+                        true,
+                        val0,
+                        true,
+                        subjId,
+                        transformClo != null ? transformClo.getClass().getName() : null,
+                        taskName,
+                        keepBinary);
                 }
+
+                return val0;
             }
         }
 

@@ -819,6 +819,28 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param key Key.
+     * @return Read value.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public GridCacheSwapEntry readSwapEntry(KeyCacheObject key) throws IgniteCheckedException {
+        assert offheapEnabled || swapEnabled;
+
+        GridCacheSwapEntry entry = read(key,
+            key.valueBytes(cctx.cacheObjectContext()),
+            cctx.affinity().partition(key),
+            false,
+            true,
+            true,
+            false);
+
+        assert entry == null || entry.value() != null : entry;
+        assert entry == null || entry.version() != null : entry;
+
+        return entry;
+    }
+
+    /**
      * @param entry Entry to read.
      * @return Read value address.
      * @throws IgniteCheckedException If read failed.

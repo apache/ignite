@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
@@ -59,6 +60,29 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      */
     public void removeListener(GridLocalEventListener lsnr) {
         cctx.gridEvents().removeLocalEventListener(lsnr);
+    }
+
+    public void readEvent(KeyCacheObject key,
+        IgniteInternalTx tx,
+        CacheObject val,
+        UUID subjId,
+        String taskName,
+        boolean keepBinary) {
+        if (isRecordable(EVT_CACHE_OBJECT_READ)) {
+            addEvent(cctx.affinity().partition(key),
+                key,
+                tx,
+                null,
+                EVT_CACHE_OBJECT_READ,
+                val,
+                val != null,
+                val,
+                val != null,
+                subjId,
+                null,
+                taskName,
+                keepBinary);
+        }
     }
 
     /**
