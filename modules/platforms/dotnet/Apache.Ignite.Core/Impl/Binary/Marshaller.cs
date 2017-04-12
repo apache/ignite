@@ -835,8 +835,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static IBinaryNameMapper GetDefaultNameMapper()
         {
-            // TODO: Switch to full mapper.
-            return BinaryBasicNameMapper.SimpleNameInstance;
+            return BinaryBasicNameMapper.FullNameInstance;
         }
     }
 }

@@ -36,6 +36,11 @@ namespace Apache.Ignite.Core.Binary
         };
 
         /// <summary>
+        /// The full name instance.
+        /// </summary>
+        internal static readonly BinaryBasicNameMapper FullNameInstance = new BinaryBasicNameMapper();
+
+        /// <summary>
         /// Gets or sets a value indicating whether this instance maps to simple type names.
         /// </summary>
         public bool IsSimpleName { get; set; }
