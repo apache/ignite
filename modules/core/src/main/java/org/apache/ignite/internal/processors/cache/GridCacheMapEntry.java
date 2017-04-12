@@ -874,7 +874,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         Object res = null;
 
-        if (readerArgs == null && expiryPlc == null && !retVer && cctx.config().isEagerTtl()) {
+        if (readerArgs == null && (expiryPlc == null || !expiryPlc.hasAccessTtl()) && !retVer && cctx.config().isEagerTtl()) {
             // Fast heap get without 'synchronized'.
             CacheObject val0 = this.val;
 

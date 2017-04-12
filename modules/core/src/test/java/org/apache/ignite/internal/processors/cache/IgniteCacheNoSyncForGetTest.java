@@ -42,9 +42,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -268,7 +269,7 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
         /**
          * @param key Key.
          */
-        public GetClosure(int key, String cacheName) {
+        GetClosure(int key, String cacheName) {
             this.key = key;
             this.cacheName = cacheName;
         }
@@ -296,7 +297,7 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
         /**
          * @param keys Keys.
          */
-        public GetAllClosure(Set<Object> keys, String cacheName) {
+        GetAllClosure(Set<Object> keys, String cacheName) {
             this.keys = keys;
             this.cacheName = cacheName;
         }

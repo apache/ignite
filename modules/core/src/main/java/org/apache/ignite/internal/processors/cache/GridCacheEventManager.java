@@ -62,11 +62,19 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         cctx.gridEvents().removeLocalEventListener(lsnr);
     }
 
+    /**
+     * @param key Key for event.
+     * @param tx Possible surrounding transaction.
+     * @param val Read value.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param keepBinary Keep binary flag.
+     */
     public void readEvent(KeyCacheObject key,
-        IgniteInternalTx tx,
-        CacheObject val,
-        UUID subjId,
-        String taskName,
+        @Nullable IgniteInternalTx tx,
+        @Nullable CacheObject val,
+        @Nullable UUID subjId,
+        @Nullable String taskName,
         boolean keepBinary) {
         if (isRecordable(EVT_CACHE_OBJECT_READ)) {
             addEvent(cctx.affinity().partition(key),

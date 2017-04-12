@@ -46,6 +46,11 @@ public interface IgniteCacheExpiryPolicy {
     public long forAccess();
 
     /**
+     * @return {@code True}
+     */
+    public boolean hasAccessTtl();
+
+    /**
      * Callback for ttl update on entry access.
      *
      * @param key Entry key.

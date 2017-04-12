@@ -2063,7 +2063,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return
      */
     public boolean offheapRead(IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
-        return offheapTiered() && isSwapOrOffheapEnabled() && expiryPlc == null && !readers;
+        return offheapTiered() &&
+            isSwapOrOffheapEnabled() &&
+            (expiryPlc == null || !expiryPlc.hasAccessTtl()) &&
+            !readers;
     }
 
     /**
