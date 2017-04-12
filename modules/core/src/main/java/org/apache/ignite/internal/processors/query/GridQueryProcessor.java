@@ -511,8 +511,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     public void onCacheStop(GridCacheContext cctx) {
-        System.out.println("CACHE STOP: " + cctx.name());
-
         if (idx == null)
             return;
 
@@ -737,7 +735,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         mgr.start();
 
-        if (!ctx.clientNode())
+        if (!ctx.clientNode() && coordinator().isLocal())
             unwindPendingMessages(schemaOp.id(), mgr);
     }
 
@@ -1162,6 +1160,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param node Node.
      */
     public void onNodeLeave(ClusterNode node) {
+        System.out.println("ON NODE LEAVE: " + ctx.igniteInstanceName());
+
         synchronized (stateMux) {
             // Clients do not send status messages and are never coordinators.
             if (ctx.clientNode())
@@ -1169,11 +1169,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             ClusterNode crd0 = coordinator();
 
+            if (F.eq(node.id(), crd0.id())) {
+                crd = null;
+
+                crd0 = coordinator();
+            }
+
             for (SchemaOperation op : schemaOps.values()) {
                 if (op.started()) {
                     op.manager().onNodeLeave(node.id(), crd0);
 
-                    unwindPendingMessages(op.id(), op.manager());
+                    if (crd0.isLocal())
+                        unwindPendingMessages(op.id(), op.manager());
                 }
             }
         }
@@ -2067,9 +2074,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private void processStatusMessage(SchemaOperationStatusMessage msg) {
         synchronized (stateMux) {
-            if (completedOpIds.contains(msg.operationId()))
+            if (completedOpIds.contains(msg.operationId())) {
                 // Received message from a node which joined topology in the middle of operation execution.
+                if (log.isDebugEnabled())
+                    log.debug("Received status message for completed operation (will ignore) [" +
+                        "opId=" + msg.operationId() + ", sndNodeId=" + msg.senderNodeId() + ']');
+
                 return;
+            }
 
             UUID opId = msg.operationId();
 
@@ -2080,7 +2092,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 SchemaOperation op = schemaOps.get(key);
 
-                if (op != null && F.eq(op.id(), opId) && op.started()) {
+                if (op != null && F.eq(op.id(), opId) && op.started() && coordinator().isLocal()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received status message [opId=" + msg.operationId() +
+                            ", sndNodeId=" + msg.senderNodeId() + ']');
+
                     op.manager().onNodeFinished(msg.senderNodeId(), unmarshalSchemaError(msg.errorBytes()));
 
                     return;
@@ -2089,6 +2105,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // Put to pending set if operation is not visible/ready yet.
             pendingMsgs.add(msg);
+
+            if (log.isDebugEnabled())
+                log.debug("Received status message (added to pending set) [opId=" + msg.operationId() +
+                    ", sndNodeId=" + msg.senderNodeId() + ']');
         }
     }
 

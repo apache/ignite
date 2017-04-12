@@ -65,6 +65,42 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
     }
 
     /**
+     * Make sure that coordinator migrates correctly between nodes.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCoordinatorChange() throws Exception {
+        // Start servers.
+        Ignite srv1 = Ignition.start(serverConfiguration(1));
+        Ignite srv2 = Ignition.start(serverConfiguration(2));
+        Ignite srv3 = Ignition.start(serverConfiguration(3, true));
+
+        UUID srv1Id = srv1.cluster().localNode().id();
+        UUID srv2Id = srv2.cluster().localNode().id();
+        UUID srv3Id = srv3.cluster().localNode().id();
+
+        // Start client which will execute operations.
+        Ignite cli = Ignition.start(clientConfiguration(4));
+
+        cli.getOrCreateCache(cacheConfiguration());
+
+        // Check migration from srv1 to srv2.
+        blockIndexing(srv1Id);
+
+        QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+        IgniteInternalFuture<?> idxFut = queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
+
+        Thread.sleep(100);
+
+        srv1.close();
+
+        unblockIndexing(srv1Id);
+
+        idxFut.get();
+    }
+
+    /**
      * Test operations join.
      *
      * @throws Exception If failed.
@@ -156,6 +192,16 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
     private static void blockIndexing(Ignite node) {
         UUID nodeId = ((IgniteEx)node).localNode().id();
 
+        blockIndexing(nodeId);
+    }
+
+    /**
+     * Block indexing.
+     *
+     * @param nodeId Node.
+     */
+    @SuppressWarnings("SuspiciousMethodCalls")
+    private static void blockIndexing(UUID nodeId) {
         assertFalse(BLOCKS.contains(nodeId));
 
         BLOCKS.put(nodeId, new T2<>(new CountDownLatch(1), new AtomicBoolean()));
@@ -169,6 +215,15 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
     private static void unblockIndexing(Ignite node) {
         UUID nodeId = ((IgniteEx)node).localNode().id();
 
+        unblockIndexing(nodeId);
+    }
+
+    /**
+     * Unblock indexing.
+     *
+     * @param nodeId Node ID.
+     */
+    private static void unblockIndexing(UUID nodeId) {
         T2<CountDownLatch, AtomicBoolean> blocker = BLOCKS.remove(nodeId);
 
         assertNotNull(blocker);

@@ -145,8 +145,7 @@ public class SchemaOperationManager {
      */
     public void onNodeFinished(UUID nodeId, @Nullable SchemaOperationException err) {
         synchronized (mux) {
-            if (!isLocalCoordinator())
-                return;
+            assert isLocalCoordinator();
 
             if (nodeRess.containsKey(nodeId)) {
                 if (log.isDebugEnabled())
@@ -164,7 +163,7 @@ public class SchemaOperationManager {
             }
             else {
                 if (log.isDebugEnabled())
-                    log.debug("Received result from untracked node (it joined after operation started, will ignore) " +
+                    log.debug("Received result from non-tracked node (joined after operation started, will ignore) " +
                         "[opId=" + operationId() + ", nodeId=" + nodeId + ", err=" + err + ']');
             }
 
@@ -186,13 +185,7 @@ public class SchemaOperationManager {
                 // Coordinator has left!
                 crd = curCrd;
 
-                if (prepareCoordinator()) {
-                    // Check if local execution is completed.
-                    IgniteInternalFuture fut = worker().future();
-
-                    if (fut.isDone())
-                        onLocalNodeFinished(fut);
-                }
+                prepareCoordinator();
             }
             else if (isLocalCoordinator()) {
                 // Other node has left, remove it from the coordinator's wait set.
@@ -200,6 +193,11 @@ public class SchemaOperationManager {
                 if (nodeIds.remove(nodeId))
                     nodeRess.remove(nodeId);
             }
+
+            IgniteInternalFuture fut = worker().future();
+
+            if (fut.isDone())
+                onLocalNodeFinished(fut);
 
             checkFinished();
         }
@@ -240,6 +238,8 @@ public class SchemaOperationManager {
      */
     private boolean prepareCoordinator() {
         if (isLocalCoordinator() && !crdMapped) {
+            System.out.println("PREPARE COORDINATOR: " + ctx.localNodeId());
+
             // Initialize local structures.
             nodeIds = new HashSet<>();
             nodeRess = new HashMap<>();
