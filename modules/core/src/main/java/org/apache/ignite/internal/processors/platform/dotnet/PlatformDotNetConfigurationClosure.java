@@ -139,8 +139,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         if (bCfg == null) {
             bCfg = new BinaryConfiguration();
 
-            bCfg.setNameMapper(new BinaryBasicNameMapper(false));
-            bCfg.setIdMapper(new BinaryBasicIdMapper(false));
+            bCfg.setNameMapper(new BinaryBasicNameMapper(true));  // TODO
+            bCfg.setIdMapper(new BinaryBasicIdMapper(true));
 
             igniteCfg.setBinaryConfiguration(bCfg);
 
