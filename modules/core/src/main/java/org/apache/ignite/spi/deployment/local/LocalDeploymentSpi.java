@@ -70,7 +70,7 @@ import org.jsr166.ConcurrentLinkedHashMap;
 @IgnoreIfPeerClassLoadingDisabled
 public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /** Enables additional check for resource name on resources removal. */
-    public static final String IGNITE_DEPLOYMENT_ADDITIONAL_CHECK = "ignite.deployment.additional.check";
+    public static final String IGNITE_DEPLOYMENT_ADDITIONAL_CHECK = "IGNITE.DEPLOYMENT.ADDITIONAL.CHECK";
 
     /** Value for additional check on resources removal. */
     private static final boolean ENABLE_IGNITE_DEPLOYMENT_ADDITIONAL_CHECK =
