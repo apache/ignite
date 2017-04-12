@@ -27,8 +27,6 @@ namespace Apache.Ignite.Core.Binary
     /// </summary>
     public class BinaryBasicNameMapper : IBinaryNameMapper
     {
-        // TODO: Dedicated fixture.
-
         /// <summary>
         /// The simple name instance.
         /// </summary>
@@ -76,10 +74,21 @@ namespace Apache.Ignite.Core.Binary
 
             if (generics != null)
             {
-                sb.Append(typeName.GetGenericHeader()).Append('[');
+                sb.Append('[');
+
+                var first = true;
 
                 foreach (var genArg in generics)
                 {
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        sb.Append(',');
+                    }
+
                     sb.Append('[');
 
                     BuildTypeName(genArg, sb, typeNameFunc);

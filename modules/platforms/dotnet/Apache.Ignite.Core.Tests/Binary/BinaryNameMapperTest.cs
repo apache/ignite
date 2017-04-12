@@ -62,10 +62,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
 
             // Generics.
-            Assert.AreEqual("List[String]", mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
-            Assert.AreEqual("Dictionary[Int32,String]", 
+            Assert.AreEqual("List`1[[String]]", mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
+            Assert.AreEqual("Dictionary`2[[Int32],[String]]", 
                 mapper.GetTypeName(typeof(Dictionary<int, string>).AssemblyQualifiedName));
-            Assert.AreEqual("Bar[Foo]", mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
+            Assert.AreEqual("Bar`1[[Foo]]", mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
         }
 
         /// <summary>

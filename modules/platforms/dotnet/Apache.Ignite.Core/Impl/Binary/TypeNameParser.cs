@@ -136,17 +136,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the generic header, i.e. '`2'.
-        /// </summary>
-        public string GetGenericHeader()
-        {
-            if (Generics == null)
-                return null;
-
-            return "`" + Generics.Count;
-        }
-
-        /// <summary>
         /// Gets assembly name part.
         /// </summary>
         public string GetAssemblyName()
