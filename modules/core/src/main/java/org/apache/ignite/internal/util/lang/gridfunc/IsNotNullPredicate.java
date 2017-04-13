@@ -15,32 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.util.lang.gridfunc;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
- * this exception can contain {@link TransactionDeadlockException} as cause.
+ * Defines a predicate which checks a parameter on <code>null</code>.
+ *
+ * @param <E> Type of predicate parameter.
  */
-public class TransactionTimeoutException extends TransactionException {
+public class IsNotNullPredicate<E> implements IgnitePredicate<E> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
+     * @param e Parameter for check.
+     * @return 'true' if parameter NOT equals to <code>null</code>, otherwise 'false'.
      */
-    public TransactionTimeoutException(String msg) {
-        super(msg);
+    @Override public boolean apply(E e) {
+        return e != null;
     }
 
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
-     */
-    public TransactionTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IsNotNullPredicate.class, this);
     }
 }
