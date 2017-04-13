@@ -85,7 +85,7 @@ namespace ignite
                     *result = 0;
 
                 connection->GetDiagnosticRecords().Reset();
-                connection->AddStatusRecord(odbc::SQL_STATE_IM001_FUNCTION_NOT_SUPPORTED,
+                connection->AddStatusRecord(odbc::SqlState::SIM001_FUNCTION_NOT_SUPPORTED,
                                             "The HandleType argument was SQL_HANDLE_DESC, and "
                                             "the driver does not support allocating a descriptor handle");
 
@@ -919,11 +919,11 @@ namespace ignite
         LOG_MSG("SQLGetDiagField called: " << recNum);
 
         SqlLen outResLen;
-        ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_DEFAULT, buffer, bufferLen, &outResLen);
+        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_DEFAULT, buffer, bufferLen, &outResLen);
 
-        SqlResult result;
+        SqlResult::Type result;
 
-        DiagnosticField field = DiagnosticFieldToInternal(diagId);
+        DiagnosticField::Type field = DiagnosticFieldToInternal(diagId);
 
         switch (handleType)
         {
@@ -940,12 +940,12 @@ namespace ignite
 
             default:
             {
-                result = SQL_RESULT_NO_DATA;
+                result = SqlResult::AI_NO_DATA;
                 break;
             }
         }
 
-        if (resLen && result == SQL_RESULT_SUCCESS)
+        if (resLen && result == SqlResult::AI_SUCCESS)
             *resLen = static_cast<SQLSMALLINT>(outResLen);
 
         return SqlResultToReturnCode(result);
@@ -1000,7 +1000,7 @@ namespace ignite
             *nativeError = 0;
 
         SqlLen outResLen;
-        ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuffer, msgBufferLen, &outResLen);
+        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_CHAR, msgBuffer, msgBufferLen, &outResLen);
 
         outBuffer.PutString(record.GetMessageText());
 
@@ -1100,7 +1100,7 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        IgniteSqlType driverType = ToDriverType(targetType);
+        OdbcNativeType::Type driverType = ToDriverType(targetType);
 
         ApplicationDataBuffer dataBuffer(driverType, targetValue, bufferLength, strLengthOrIndicator);
 
@@ -1147,7 +1147,7 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         SqlLen outResLen;
-        ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_DEFAULT, valueBuf,
+        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_DEFAULT, valueBuf,
             static_cast<int32_t>(valueBufLen), &outResLen);
 
         environment->GetAttribute(attr, outBuffer);
@@ -1295,7 +1295,7 @@ namespace ignite
             *error = 0;
 
         SqlLen outResLen;
-        ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuf, msgBufLen, &outResLen);
+        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_CHAR, msgBuf, msgBufLen, &outResLen);
 
         outBuffer.PutString(record.GetMessageText());
 
