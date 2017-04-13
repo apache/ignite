@@ -101,16 +101,6 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception Test exception.
-     */
-    public void testStreamer3() throws Exception {
-        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(CACHE_NAME)) {
-            IgniteAkkaStreamer streamer = newStreamerInstance(dataStreamer);
-            executeStreamer(streamer.onComplete());
-        }
-    }
-
-    /**
      * Execute akka streamer.
      */
     private void executeStreamer(Sink sink) throws Exception {
