@@ -23,13 +23,15 @@ import java.util.stream.*;
 import org.apache.ignite.math.VectorStorage;
 
 /**
- * TODO: add description.
+ * Local, dense off-heap vector storage.
  */
 public class DenseLocalOffHeapVectorStorage implements VectorStorage {
+    /** Vector size. */
     private int size;
-    private transient long ptr;
+
+    /** */ private transient long ptr;
     //TODO: temp solution.
-    private int ptrInitialHash;
+    /** */ private int ptrInitHash;
 
     /**
      *
@@ -40,7 +42,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
 
     /**
      *
-     * @param size
+     * @param size Vector size.
      */
     public DenseLocalOffHeapVectorStorage(int size){
         assert size > 0;
@@ -98,7 +100,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
-        out.writeInt(ptrInitialHash);
+        out.writeInt(ptrInitHash);
 
         for (int i = 0; i < size; i++)
             out.writeDouble(get(i));
@@ -110,7 +112,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
 
         allocateMemory(size);
 
-        ptrInitialHash = in.readInt();
+        ptrInitHash = in.readInt();
 
         for (int i = 0; i < size; i++)
             set(i, in.readDouble());
@@ -126,7 +128,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
         int res = 1;
 
         res = res * 37 + size;
-        res = res * 37 + ptrInitialHash;
+        res = res * 37 + ptrInitHash;
 
         return res;
     }
@@ -162,6 +164,6 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     private void allocateMemory(int size) {
         ptr = GridUnsafe.allocateMemory(size * Double.BYTES);
 
-        ptrInitialHash = Long.hashCode(ptr);
+        ptrInitHash = Long.hashCode(ptr);
     }
 }

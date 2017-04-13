@@ -21,11 +21,17 @@ import java.io.*;
 import org.apache.ignite.math.VectorStorage;
 
 /**
- * TODO: add description.
+ * {@link VectorStorage} implementation that delegates to parent matrix.
  */
 public class DelegateVectorStorage implements VectorStorage {
+    /** Parent vector storage. */
     private VectorStorage sto;
-    private int off, len;
+
+    /** Offset in the parent vector. */
+    private int off;
+
+    /** Size of the vector. */
+    private int len;
 
     /**
      *
@@ -37,8 +43,8 @@ public class DelegateVectorStorage implements VectorStorage {
     /**
      *
      * @param sto Vector storage to delegate to.
-     * @param off
-     * @param len
+     * @param off Offset in the parent vector.
+     * @param len Size of the vector.
      */
     public DelegateVectorStorage(VectorStorage sto, int off, int len) {
         assert sto != null;

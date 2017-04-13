@@ -22,14 +22,14 @@ import java.util.*;
 import org.apache.ignite.math.VectorStorage;
 
 /**
- * TODO: add description.
+ * Array based {@link VectorStorage} implementation.
  */
 public class ArrayVectorStorage implements VectorStorage {
-    /** */
+    /** Backing data array. */
     private double[] data;
 
     /**
-     * IMPL NOTE required by Externalizable
+     * IMPL NOTE required by {@link Externalizable}.
      */
     public ArrayVectorStorage() {
         // No-op.
@@ -37,7 +37,7 @@ public class ArrayVectorStorage implements VectorStorage {
 
     /**
      *
-     * @param size
+     * @param size Vector size.
      */
     public ArrayVectorStorage(int size) {
         assert size > 0;
@@ -47,7 +47,7 @@ public class ArrayVectorStorage implements VectorStorage {
 
     /**
      *
-     * @param data
+     * @param data Backing data array.
      */
     public ArrayVectorStorage(double[] data) {
         assert data != null;

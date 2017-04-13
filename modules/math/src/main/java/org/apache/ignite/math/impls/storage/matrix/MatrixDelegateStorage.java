@@ -24,7 +24,7 @@ import org.apache.ignite.math.MatrixStorage;
  * {@link MatrixStorage} implementation that delegates to parent matrix.
  */
 public class MatrixDelegateStorage implements MatrixStorage {
-    /** parent matrix storage */
+    /** Parent matrix storage. */
     private MatrixStorage sto;
 
     /** Row offset in the parent matrix. */

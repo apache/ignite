@@ -25,14 +25,19 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * TODO: add description.
+ * {@link VectorStorage} implementation with random values in the vector elements.
  */
 public class RandomVectorStorage implements VectorStorage {
-    private static final long SCALE = 1L << 32;
-    private static final int PRIME = 104047;
+    /** */ private static final long SCALE = 1L << 32;
+    /** */ private static final int PRIME = 104047;
 
+    /** Random generation seed. */
     private int seed;
+
+    /** Vector size. */
     private int size;
+
+    /** Whether fast hash is used, in {@link #get(int)}. */
     private boolean fastHash;
 
     /** */
@@ -54,10 +59,12 @@ public class RandomVectorStorage implements VectorStorage {
         seed = new Random().nextInt();
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return size;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int i) {
         if (!fastHash) {
             ByteBuffer buf = ByteBuffer.allocate(4);
@@ -71,26 +78,31 @@ public class RandomVectorStorage implements VectorStorage {
             return (((i * PRIME) & 8) * 0.25) - 1;
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         throw new UnsupportedOperationException("Random vector storage is a read-only storage.");
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
         out.writeInt(seed);
         out.writeBoolean(fastHash);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         seed = in.readInt();
         fastHash = in.readBoolean();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return true;
     }
@@ -105,19 +117,20 @@ public class RandomVectorStorage implements VectorStorage {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 1;
+        int res = 1;
 
-        result = result * 37 + Boolean.hashCode(fastHash);
-        result = result * 37 + seed;
-        result = result * 37 + size;
+        res = res * 37 + Boolean.hashCode(fastHash);
+        res = res * 37 + seed;
+        res = res * 37 + size;
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */

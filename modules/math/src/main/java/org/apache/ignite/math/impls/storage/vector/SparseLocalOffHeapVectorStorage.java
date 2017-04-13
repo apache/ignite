@@ -28,7 +28,7 @@ import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 
 /**
- * TODO:add description
+ * {@link VectorStorage} implementation for {@link org.apache.ignite.math.impls.vector.SparseLocalOffHeapVector}.
  */
 public class SparseLocalOffHeapVectorStorage implements VectorStorage {
     /** Assume 10% density.*/
@@ -110,6 +110,7 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
         gridOffHeapMap.destruct();
     }
 
+    /** */
     private int hash(int h){
         // Apply base step of MurmurHash; see http://code.google.com/p/smhasher/
         // Despite two multiplies, this is often faster than others
@@ -122,16 +123,18 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
         return (h >>> 16) ^ h;
     }
 
-    private byte[] intToByteArray(int value) {
+    /** */
+    private byte[] intToByteArray(int val) {
         return new byte[] {
-                (byte)(value >>> 24),
-                (byte)(value >>> 16),
-                (byte)(value >>> 8),
-                (byte)value};
+                (byte)(val >>> 24),
+                (byte)(val >>> 16),
+                (byte)(val >>> 8),
+                (byte) val};
     }
 
-    private byte[] doubleToByteArray(double value){
-        long l = Double.doubleToRawLongBits(value);
+    /** */
+    private byte[] doubleToByteArray(double val){
+        long l = Double.doubleToRawLongBits(val);
         return new byte[] {
                 (byte)((l >> 56) & 0xff),
                 (byte)((l >> 48) & 0xff),
