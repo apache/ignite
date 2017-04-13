@@ -98,10 +98,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Maximum number of partitions. */
     public static final int MAX_PARTITIONS_COUNT = 0x4000;
 
-    /** Default size of rebalance thread pool. */
-    @Deprecated
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 2;
-
     /** Default rebalance timeout (ms).*/
     public static final long DFLT_REBALANCE_TIMEOUT = 10000;
 
@@ -226,10 +222,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Threshold for concurrent loading of keys from {@link CacheStore}. */
     private int storeConcurrentLoadAllThreshold = DFLT_CONCURRENT_LOAD_ALL_THRESHOLD;
 
-    /** Rebalance thread pool size. */
-    @Deprecated
-    private int rebalancePoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
-
     /** Rebalance timeout. */
     private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
 
@@ -298,9 +290,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Flag indicating whether this is invalidation-based cache. */
     private boolean invalidate = DFLT_INVALIDATE;
-
-    /** Name of class implementing GridCacheTmLookup. */
-    private String tmLookupClsName;
 
     /** Distributed cache rebalance mode. */
     private CacheRebalanceMode rebalanceMode = DFLT_REBALANCE_MODE;
@@ -480,7 +469,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         rebalanceDelay = cc.getRebalanceDelay();
         rebalanceMode = cc.getRebalanceMode();
         rebalanceOrder = cc.getRebalanceOrder();
-        rebalancePoolSize = cc.getRebalanceThreadPoolSize();
         rebalanceTimeout = cc.getRebalanceTimeout();
         rebalanceThrottle = cc.getRebalanceThrottle();
         snapshotableIdx = cc.isSnapshotableIndex();
@@ -492,7 +480,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeFactory = cc.getCacheStoreFactory();
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
         swapEnabled = cc.isSwapEnabled();
-        tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
@@ -1135,32 +1122,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets class name of transaction manager finder for integration for JEE app servers.
-     *
-     * @return Transaction manager finder.
-     * @deprecated Use {@link TransactionConfiguration#getTxManagerFactory()} instead.
-     */
-    @Deprecated
-    public String getTransactionManagerLookupClassName() {
-        return tmLookupClsName;
-    }
-
-    /**
-     * Sets look up mechanism for available {@code TransactionManager} implementation, if any.
-     *
-     * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
-     *      receive JTA transaction manager.
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link TransactionConfiguration#setTxManagerFactory(Factory)} instead.
-     */
-    @Deprecated
-    public CacheConfiguration<K, V> setTransactionManagerLookupClassName(String tmLookupClsName) {
-        this.tmLookupClsName = tmLookupClsName;
-
-        return this;
-    }
-
-    /**
      * Sets cache rebalance mode.
      *
      * @param rebalanceMode Rebalance mode.
@@ -1449,29 +1410,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setWriteBehindBatchSize(int writeBehindBatchSize) {
         this.writeBehindBatchSize = writeBehindBatchSize;
-
-        return this;
-    }
-
-    /**
-     * Use {@link IgniteConfiguration#getRebalanceThreadPoolSize()} instead.
-     *
-     * @return Size of rebalancing thread pool.
-     */
-    @Deprecated
-    public int getRebalanceThreadPoolSize() {
-        return rebalancePoolSize;
-    }
-
-    /**
-     * Use {@link IgniteConfiguration#getRebalanceThreadPoolSize()} instead.
-     *
-     * @param rebalancePoolSize Size of rebalancing thread pool.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public CacheConfiguration<K, V> setRebalanceThreadPoolSize(int rebalancePoolSize) {
-        this.rebalancePoolSize = rebalancePoolSize;
 
         return this;
     }

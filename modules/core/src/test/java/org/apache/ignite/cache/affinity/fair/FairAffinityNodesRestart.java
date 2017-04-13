@@ -36,21 +36,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class FairAffinityNodesRestart extends GridCommonAbstractTest {
     /** */
-    private final static P2<ClusterNode, ClusterNode> BACKUP_FILTER = new P2<ClusterNode, ClusterNode>() {
-        @Override public boolean apply(ClusterNode node, ClusterNode node2) {
-            return true;
-        }
-    };
-
-    /** */
     private final static P2<ClusterNode, List<ClusterNode>> AFF_BACKUP_FILTER = new P2<ClusterNode, List<ClusterNode>>() {
         @Override public boolean apply(ClusterNode node, List<ClusterNode> nodes) {
             return true;
         }
     };
-
-    /** */
-    private boolean affBackup;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -60,10 +50,7 @@ public class FairAffinityNodesRestart extends GridCommonAbstractTest {
 
         FairAffinityFunction aff = new FairAffinityFunction(32);
 
-        if (!affBackup)
-            aff.setBackupFilter(BACKUP_FILTER);
-        else
-            aff.setAffinityBackupFilter(AFF_BACKUP_FILTER);
+        aff.setAffinityBackupFilter(AFF_BACKUP_FILTER);
 
         ccfg.setAffinity(aff);
         ccfg.setBackups(0);
@@ -86,21 +73,11 @@ public class FairAffinityNodesRestart extends GridCommonAbstractTest {
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testBackupFilter() throws Exception {
-        affBackup = false;
-
-        check();
-    }
 
     /**
      * @throws Exception If failed.
      */
     public void testAffinityBackupFilter() throws Exception {
-        affBackup = true;
-
         check();
     }
 

@@ -1314,7 +1314,6 @@ export default class IgniteConfigurationGenerator {
             .intProperty('defaultTxTimeout')
             .intProperty('pessimisticTxLogLinger')
             .intProperty('pessimisticTxLogSize')
-            .boolProperty('txSerializableEnabled')
             .emptyBeanProperty('txManagerFactory');
 
         if (bean.nonEmpty())

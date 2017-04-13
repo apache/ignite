@@ -38,8 +38,6 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
 
         TransactionConfiguration tCfg = new TransactionConfiguration();
 
-        tCfg.setTxSerializableEnabled(true);
-
         cfg.setTransactionConfiguration(tCfg);
 
         return cfg;

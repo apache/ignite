@@ -126,12 +126,6 @@
                 <property name="socketTimeout" value="300" />
             </bean>
         </property>
-
-        <property name="transactionConfiguration">
-            <bean class="org.apache.ignite.configuration.TransactionConfiguration">
-                <property name="txSerializableEnabled" value="true"/>
-            </bean>
-        </property>
     </bean>
 
     <bean id="cache-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">

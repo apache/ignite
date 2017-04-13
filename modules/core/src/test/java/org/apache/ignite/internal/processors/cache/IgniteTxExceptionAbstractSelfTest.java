@@ -77,8 +77,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         cfg.setIndexingSpi(new TestIndexingSpi());
 
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
-
         return cfg;
     }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,7 +57,15 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
  */
 public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest {
     /** */
+    private static final Random RND = new Random(System.currentTimeMillis());
+
+    /** */
     private static final String VALUE = createValue();
+
+    /** */
+    private static final int KEYS_COUNT = 5000;
+
+    /** */
     public static final CachePeekMode[] ALL_PEEK_MODES = new CachePeekMode[]{CachePeekMode.ALL};
 
     /** */
@@ -110,7 +119,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
             final IgniteCache<Integer, Object> cache1 = ignite1.cache(null);
 
-            for (int i = 0; i < 5000; i++)
+            for (int i = 0; i < KEYS_COUNT; i++)
                 cache1.put(i, VALUE + i);
 
             info("Finished data population.");
@@ -213,7 +222,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @return Random entry from cache.
      */
     @Nullable private Cache.Entry<Integer, Object> randomEntry(Ignite g) {
-        return g.<Integer, Object>cache(null).randomEntry();
+        return g.<Integer, Object>cache(null).getEntry(RND.nextInt(KEYS_COUNT));
     }
 
     /**

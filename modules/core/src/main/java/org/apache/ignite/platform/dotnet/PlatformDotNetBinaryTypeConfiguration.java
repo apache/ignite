@@ -62,7 +62,7 @@ public class PlatformDotNetBinaryTypeConfiguration {
         idMapper = cfg.getIdMapper();
         serializer = cfg.getSerializer();
         affinityKeyFieldName = cfg.getAffinityKeyFieldName();
-        keepDeserialized = cfg.isKeepDeserialized();
+        keepDeserialized = cfg.getKeepDeserialized();
         isEnum = cfg.isEnum();
     }
 
@@ -149,17 +149,6 @@ public class PlatformDotNetBinaryTypeConfiguration {
         this.affinityKeyFieldName = affinityKeyFieldName;
 
         return this;
-    }
-
-    /**
-     * Gets keep deserialized flag.
-     *
-     * @return Flag indicates whether to cache deserialized value.
-     * @deprecated Use {@link #getKeepDeserialized()} instead.
-     */
-    @Deprecated
-    @Nullable public Boolean isKeepDeserialized() {
-        return keepDeserialized;
     }
 
     /**

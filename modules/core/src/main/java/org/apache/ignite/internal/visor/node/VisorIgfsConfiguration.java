@@ -77,23 +77,11 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
     /** Map of paths to IGFS modes. */
     private Map<String, IgfsMode> pathModes;
 
-    /** Dual mode PUT operations executor service. */
-    private String dualModePutExecutorSrvc;
-
-    /** Dual mode PUT operations executor service shutdown flag. */
-    private boolean dualModePutExecutorSrvcShutdown;
-
-    /** Maximum amount of data in pending puts. */
-    private long dualModeMaxPendingPutsSize;
-
     /** Maximum range length. */
     private long maxTaskRangeLen;
 
     /** Fragmentizer concurrent files. */
     private int fragmentizerConcurrentFiles;
-
-    /** Fragmentizer local writes ratio. */
-    private float fragmentizerLocWritesRatio;
 
     /** Fragmentizer enabled flag. */
     private boolean fragmentizerEnabled;
@@ -119,9 +107,6 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
     /** Amount of sequential block reads before prefetch is triggered. */
     private int seqReadsBeforePrefetch;
 
-    /** Trash purge await timeout. */
-    private long trashPurgeTimeout;
-
     /**
      * @param igfs IGFS configuration.
      * @return Data transfer object for IGFS configuration properties.
@@ -140,12 +125,8 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
 
         cfg.dfltMode = igfs.getDefaultMode();
         cfg.pathModes = igfs.getPathModes();
-        cfg.dualModePutExecutorSrvc = compactClass(igfs.getDualModePutExecutorService());
-        cfg.dualModePutExecutorSrvcShutdown = igfs.getDualModePutExecutorServiceShutdown();
-        cfg.dualModeMaxPendingPutsSize = igfs.getDualModeMaxPendingPutsSize();
         cfg.maxTaskRangeLen = igfs.getMaximumTaskRangeLength();
         cfg.fragmentizerConcurrentFiles = igfs.getFragmentizerConcurrentFiles();
-        cfg.fragmentizerLocWritesRatio = igfs.getFragmentizerLocalWritesRatio();
         cfg.fragmentizerEnabled = igfs.isFragmentizerEnabled();
         cfg.fragmentizerThrottlingBlockLen = igfs.getFragmentizerThrottlingBlockLength();
         cfg.fragmentizerThrottlingDelay = igfs.getFragmentizerThrottlingDelay();
@@ -158,7 +139,6 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
         cfg.maxSpace = igfs.getMaxSpaceSize();
         cfg.mgmtPort = igfs.getManagementPort();
         cfg.seqReadsBeforePrefetch = igfs.getSequentialReadsBeforePrefetch();
-        cfg.trashPurgeTimeout = igfs.getTrashPurgeTimeout();
 
         return cfg;
     }
@@ -273,27 +253,6 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
     }
 
     /**
-     * @return Dual mode PUT operations executor service.
-     */
-    public String dualModePutExecutorService() {
-        return dualModePutExecutorSrvc;
-    }
-
-    /**
-     * @return Dual mode PUT operations executor service shutdown flag.
-     */
-    public boolean dualModePutExecutorServiceShutdown() {
-        return dualModePutExecutorSrvcShutdown;
-    }
-
-    /**
-     * @return Maximum amount of data in pending puts.
-     */
-    public long dualModeMaxPendingPutsSize() {
-        return dualModeMaxPendingPutsSize;
-    }
-
-    /**
      * @return Maximum range length.
      */
     public long maxTaskRangeLength() {
@@ -305,13 +264,6 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
      */
     public int fragmentizerConcurrentFiles() {
         return fragmentizerConcurrentFiles;
-    }
-
-    /**
-     * @return Fragmentizer local writes ratio.
-     */
-    public float fragmentizerLocalWritesRatio() {
-        return fragmentizerLocWritesRatio;
     }
 
     /**
@@ -368,13 +320,6 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
      */
     public int sequenceReadsBeforePrefetch() {
         return seqReadsBeforePrefetch;
-    }
-
-    /**
-     * @return Trash purge await timeout.
-     */
-    public long trashPurgeTimeout() {
-        return trashPurgeTimeout;
     }
 
     /** {@inheritDoc} */

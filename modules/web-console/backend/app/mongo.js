@@ -654,7 +654,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             defaultTxTimeout: Number,
             pessimisticTxLogLinger: Number,
             pessimisticTxLogSize: Number,
-            txSerializableEnabled: Boolean,
             txManagerFactory: String
         },
         sslEnabled: Boolean,

@@ -61,7 +61,6 @@ import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.AsyncSupportAdapter;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -285,26 +284,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw new IllegalArgumentException();
 
         return clazz.cast(cfg);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
-    @Nullable @Override public Cache.Entry<K, V> randomEntry() {
-        GridKernalContext kctx = ctx.kernalContext();
-
-        if (kctx.isDaemon() || kctx.clientNode())
-            throw new UnsupportedOperationException("Not applicable for daemon or client node.");
-
-        GridCacheGateway<K, V> gate = this.gate;
-
-        CacheOperationContext prev = onEnter(gate, opCtx);
-
-        try {
-            return ctx.cache().randomEntry();
-        }
-        finally {
-            onLeave(gate, prev);
-        }
     }
 
     /** {@inheritDoc} */

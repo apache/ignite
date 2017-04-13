@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityNodeIdHashResolver;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -573,8 +572,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         // Different hash ID resolver.
         RendezvousAffinityFunction aff0 = new RendezvousAffinityFunction(false, 100);
-
-        aff0.setHashIdResolver(new AffinityNodeIdHashResolver());
 
         aff = aff0;
 

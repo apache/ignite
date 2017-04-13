@@ -250,7 +250,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     public void testPutRandomKeys() throws Exception {
         map = newMap();
 
-        AffinityFunction aff = new RendezvousAffinityFunction(parts, null);
+        AffinityFunction aff = new RendezvousAffinityFunction(false, parts);
 
         getTestResources().inject(aff);
 

@@ -25,15 +25,6 @@ import org.apache.ignite.cache.affinity.AffinityFunctionBackupFilterAbstractSelf
  */
 public class RendezvousAffinityFunctionBackupFilterSelfTest extends AffinityFunctionBackupFilterAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected AffinityFunction affinityFunction() {
-        RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false);
-
-        aff.setBackupFilter(backupFilter);
-
-        return aff;
-    }
-
-    /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunctionWithAffinityBackupFilter() {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false);
 

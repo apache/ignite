@@ -25,15 +25,6 @@ import org.apache.ignite.cache.affinity.AffinityFunctionBackupFilterAbstractSelf
  */
 public class FairAffinityFunctionBackupFilterSelfTest extends AffinityFunctionBackupFilterAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected AffinityFunction affinityFunction() {
-        FairAffinityFunction aff = new FairAffinityFunction(false);
-
-        aff.setBackupFilter(backupFilter);
-
-        return aff;
-    }
-
-    /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunctionWithAffinityBackupFilter() {
         FairAffinityFunction aff = new FairAffinityFunction(false);
 

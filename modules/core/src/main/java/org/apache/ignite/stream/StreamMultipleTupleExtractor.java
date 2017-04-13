@@ -21,13 +21,8 @@ import java.util.Map;
 
 /**
  * Stream tuple extractor to convert a single message to zero, one or many tuples.
- * <p>
- * For cases where cardinality will always be 1:1 (or 0:1), you may consider {@link StreamTupleExtractor}.
- *
- * @see StreamTupleExtractor
  */
 public interface StreamMultipleTupleExtractor<T, K, V> {
-
     /**
      * Extracts a set of key-values from a message.
      *

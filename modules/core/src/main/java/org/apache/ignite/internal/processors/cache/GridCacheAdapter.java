@@ -3615,31 +3615,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return fut;
     }
 
-    /**
-     * @return Random cache entry.
-     */
-    @Deprecated
-    @Nullable public Cache.Entry<K, V> randomEntry() {
-        GridCacheMapEntry entry;
-
-        if (ctx.offheapTiered()) {
-            Iterator<Cache.Entry<K, V>> it;
-
-            try {
-                it = ctx.swap().offheapIterator(true, true, ctx.affinity().affinityTopologyVersion(), ctx.keepBinary());
-            }
-            catch (IgniteCheckedException e) {
-                throw CU.convertToCacheException(e);
-            }
-
-            return it.hasNext() ? it.next() : null;
-        }
-        else
-            entry = map.randomEntry();
-
-        return entry == null || entry.obsolete() ? null : entry.<K, V>wrapLazyValue(ctx.keepBinary());
-    }
-
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode[] peekModes) throws IgniteCheckedException {
         if (isLocal())

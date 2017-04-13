@@ -81,11 +81,6 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry randomEntry() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }

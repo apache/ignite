@@ -36,7 +36,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
@@ -734,11 +733,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         }
 
         /** {@inheritDoc} */
-        @Override public void addMessageListener(GridMessageListener lsnr, String topic) {
-            /* No-op. */
-        }
-
-        /** {@inheritDoc} */
         @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
             /* No-op. */
         }
@@ -836,11 +830,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         /** {@inheritDoc} */
         @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
              /* No-op. */
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean removeMessageListener(GridMessageListener lsnr, String topic) {
-            return false;
         }
 
         /** {@inheritDoc} */

@@ -25,7 +25,6 @@ import java.util.Map;
  * Alternatively, {@link StreamMultipleTupleExtractor} can be used in cases where a single message/event may
  * produce more than one tuple.
  * <p>
- * NOTE: This interface supersedes the former {@link StreamTupleExtractor} which is now deprecated.
  *
  * @see StreamMultipleTupleExtractor
  */

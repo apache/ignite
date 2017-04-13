@@ -73,7 +73,6 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
         txCfg.setDefaultTxConcurrency(txConcurrency);
         txCfg.setDefaultTxIsolation(txIsolation);
-        txCfg.setTxSerializableEnabled(true);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

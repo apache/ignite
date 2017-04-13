@@ -104,7 +104,6 @@ public class ConfigVariationsFactory implements ConfigFactory {
         // Specials.
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
     }
 
     /**

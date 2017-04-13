@@ -35,7 +35,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -412,22 +411,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         A.notNull(topic, "p");
 
                         ctx.io().removeUserMessageListener(topic, p);
-                    }
-
-                    @SuppressWarnings("deprecation")
-                    @Override public void addMessageListener(GridMessageListener lsnr, String topic) {
-                        A.notNull(lsnr, "lsnr");
-                        A.notNull(topic, "topic");
-
-                        ctx.io().addMessageListener(topic, lsnr);
-                    }
-
-                    @SuppressWarnings("deprecation")
-                    @Override public boolean removeMessageListener(GridMessageListener lsnr, String topic) {
-                        A.notNull(lsnr, "lsnr");
-                        A.notNull(topic, "topic");
-
-                        return ctx.io().removeMessageListener(topic, lsnr);
                     }
 
                     @Override public void addLocalEventListener(GridLocalEventListener lsnr, int... types) {
