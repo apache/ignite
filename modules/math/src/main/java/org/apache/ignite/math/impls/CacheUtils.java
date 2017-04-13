@@ -79,7 +79,7 @@ public class CacheUtils {
      * @param cacheName Cache name.
      * @param k Key into the cache.
      * @param <K> Key type.
-     *
+     * @return Cluster group for given key.
      */
     public static <K> ClusterGroup groupForKey(String cacheName, K k) {
         return ignite().cluster().forNode(ignite().affinity(cacheName).mapKeyToNode(k));
@@ -92,6 +92,7 @@ public class CacheUtils {
      * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
      * @param <K> Cache key object type.
      * @param <V> Cache value object type.
+     * @return Sum of the values obtained for valid keys.
      */
     public static <K, V> double sum(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         Collection<Double> subSums = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
@@ -110,7 +111,7 @@ public class CacheUtils {
     /**
      *
      * @param cacheName Cache name.
-     *
+     * @return Sum obtained using sparse logic.
      */
     public static <K, V> double sparseSum(String cacheName) {
         Collection<Double> subSums = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
@@ -127,7 +128,7 @@ public class CacheUtils {
     /**
      *
      * @param c {@link Collection} of double values to sum.
-     *
+     * @return Sum of the values.
      */
     private static double sum(Collection<Double> c) {
         double sum = 0.0;
@@ -145,6 +146,7 @@ public class CacheUtils {
      * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
      * @param <K> Cache key object type.
      * @param <V> Cache value object type.
+     * @return Minimum value for valid keys.
      */
     public static <K, V> double min(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         Collection<Double> mins = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
@@ -166,7 +168,7 @@ public class CacheUtils {
     /**
      *
      * @param cacheName Cache name.
-     *
+     * @return Minimum value obtained using sparse logic.
      */
     public static <K, V> double sparseMin(String cacheName) {
         Collection<Double> mins = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
@@ -186,7 +188,7 @@ public class CacheUtils {
     /**
      *
      * @param cacheName Cache name.
-     *
+     * @return Maximum value obtained using sparse logic.
      */
     public static <K, V> double sparseMax(String cacheName) {
         Collection<Double> maxes = fold(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce, Double acc) -> {
@@ -210,6 +212,7 @@ public class CacheUtils {
      * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
      * @param <K> Cache key object type.
      * @param <V> Cache value object type.
+     * @return Maximum value for valid keys.
      */
     public static <K, V> double max(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         Collection<Double> maxes = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
@@ -303,6 +306,7 @@ public class CacheUtils {
      * @param <K> Cache key object type.
      * @param <V> Cache value object type.
      * @param <A> Fold result type.
+     * @return Fold operation result.
      *
      */
     public static <K, V, A> Collection<A> fold(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
