@@ -60,7 +60,7 @@
                     <property name="queryEntities">
                         <list>
                             <bean class="org.apache.ignite.cache.QueryEntity">
-                                <property name="valueType" value="QueryPerson"/>
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.QueryPerson"/>
                                 <property name="fields">
                                     <util:map map-class="java.util.LinkedHashMap">
                                         <entry key="age" value="int" />

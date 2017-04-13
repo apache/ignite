@@ -275,6 +275,10 @@
                     writer.WriteBoolean(false);
                 }
 
+                // Name mapper.
+                var mapper = BinaryConfiguration.DefaultNameMapper as BinaryBasicNameMapper;
+                writer.WriteBoolean(mapper != null && mapper.IsSimpleName);
+
                 // Send only descriptors with non-null EqualityComparer to preserve old behavior where
                 // remote nodes can have no BinaryConfiguration.
 
@@ -289,7 +293,7 @@
 
                     foreach (var type in types)
                     {
-                        writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
+                        writer.WriteString(type.TypeName);
                         writer.WriteBoolean(type.IsEnum);
                         BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
                     }
@@ -459,7 +463,14 @@
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
 
                 if (r.ReadBoolean())
+                {
                     BinaryConfiguration.CompactFooter = r.ReadBoolean();
+                }
+
+                if (r.ReadBoolean())
+                {
+                    BinaryConfiguration.DefaultNameMapper = BinaryBasicNameMapper.SimpleNameInstance;
+                }
 
                 var typeCount = r.ReadInt();
 
