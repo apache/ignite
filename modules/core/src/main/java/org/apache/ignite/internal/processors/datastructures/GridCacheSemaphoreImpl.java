@@ -532,6 +532,18 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
     /** {@inheritDoc} */
     @Override public void onNodeRemoved(UUID nodeId) {
+        try {
+            initializeSemaphore();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to recover from failover because distributed semaphore cannot be initialized " +
+                "(Ignore if this node is failing also)." );
+
+            // Degrade gracefully, no exception is thrown
+            // because other semaphores might also attempt to recover from failover.
+            return;
+        }
+
         int numPermits = sync.getPermitsForNode(nodeId);
 
         if (numPermits > 0) {
