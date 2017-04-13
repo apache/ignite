@@ -36,6 +36,21 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
  * Test for distributed queries with node restarts.
  */
 public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
+    /** Total nodes. */
+    private int totalNodes = 6;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        if (totalNodes > GRID_CNT) {
+            for (int i = GRID_CNT; i < totalNodes; i++)
+                startGrid(i);
+        }
+        else
+            totalNodes = GRID_CNT;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -61,7 +76,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
         final int nodeLifeTime = 4000;
         final int logFreq = 100;
 
-        final AtomicIntegerArray locks = new AtomicIntegerArray(GRID_CNT);
+        final AtomicIntegerArray locks = new AtomicIntegerArray(totalNodes);
 
         SqlFieldsQuery qry0 ;
 
