@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.util.lang.gridfunc;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteClosure;
 
 /**
- * Exception thrown whenever grid transactions has been automatically rolled back.
+ * Identity closure.
  */
-public class TransactionRollbackException extends TransactionException {
+public class IdentityClosure implements IgniteClosure {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = -6338573080046225172L;
 
-    /**
-     * Creates new rollback exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public TransactionRollbackException(String msg) {
-        super(msg);
+    /** {@inheritDoc} */
+    @Override public Object apply(Object o) {
+        return o;
     }
 
-    /**
-     * Creates new rollback exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public TransactionRollbackException(String msg, Throwable cause) {
-        super(msg, cause);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IdentityClosure.class, this);
     }
 }

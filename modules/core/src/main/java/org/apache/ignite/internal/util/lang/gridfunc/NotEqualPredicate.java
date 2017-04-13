@@ -15,32 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.util.lang.gridfunc;
+
+import org.apache.ignite.internal.util.lang.GridFunc;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
- * this exception can contain {@link TransactionDeadlockException} as cause.
+ * Predicate that evaluates to {@code true} if its free variable is equal to {@code target} or both are
+ * {@code null}.
+ *
+ * @param <T> Type of the free variable, i.e. the element the predicate is called on.
  */
-public class TransactionTimeoutException extends TransactionException {
+public class NotEqualPredicate<T> implements IgnitePredicate<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public TransactionTimeoutException(String msg) {
-        super(msg);
-    }
+    /** */
+    private final T target;
 
     /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
+     * @param target Object to compare free variable to.
      */
-    public TransactionTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
+    public NotEqualPredicate(T target) {
+        this.target = target;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean apply(T t) {
+        return !GridFunc.eq(t, target);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NotEqualPredicate.class, this);
     }
 }
