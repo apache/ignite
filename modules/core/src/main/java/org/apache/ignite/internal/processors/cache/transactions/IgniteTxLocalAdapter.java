@@ -1823,8 +1823,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         for (Iterator<KeyCacheObject> it = missed.keySet().iterator(); it.hasNext(); ) {
                             KeyCacheObject cacheKey = it.next();
 
-                            K keyVal =
-                                (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx.cacheObjectContext(), false));
+                            K keyVal = (K)(keepCacheObjects ? cacheKey
+                                : cacheCtx.cacheObjectContext()
+                                    .unwrapBinaryIfNeeded(cacheKey, !deserializeBinary, false));
 
                             if (retMap.containsKey(keyVal))
                                 it.remove();
