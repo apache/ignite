@@ -21,6 +21,8 @@ package org.apache.ignite.math;
  * Identity value mapper.
  */
 public class IdentityValueMapper implements ValueMapper<Double> {
+    private static final long serialVersionUID = -8010078306142216389L;
+
     /** {@inheritDoc} */
     @Override public Double fromDouble(double v) {
         return v;
@@ -31,5 +33,21 @@ public class IdentityValueMapper implements ValueMapper<Double> {
         assert v != null;
 
         return v;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Long.hashCode(serialVersionUID);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        return true;
     }
 }
