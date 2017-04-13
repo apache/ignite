@@ -90,6 +90,7 @@
     <Compile Include="Cache\CacheSwapSpaceTest.cs" />
     <Compile Include="Cache\Query\CacheDmlQueriesTest.cs" />
     <Compile Include="Cache\CacheAbstractTransactionalTest.cs" />
+    <Compile Include="Cache\Query\CacheLinqTestSimpleNameMapper.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
     <Compile Include="Cache\Store\NamedNodeCacheStoreTest.cs" />
     <Compile Include="Collections\MultiValueDictionaryTest.cs" />
