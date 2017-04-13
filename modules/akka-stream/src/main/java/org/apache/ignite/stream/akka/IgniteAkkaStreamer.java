@@ -17,27 +17,45 @@
 
 package org.apache.ignite.stream.akka;
 
-import akka.Done;
 import akka.stream.javadsl.Sink;
-import java.util.concurrent.CompletionStage;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.stream.StreamAdapter;
+import org.jetbrains.annotations.NotNull;
+import scala.concurrent.ExecutionContext;
 
 public class IgniteAkkaStreamer<K, V> extends StreamAdapter<Object, K, V> {
     /** Logger. */
     protected IgniteLogger log;
 
-    public IgniteAkkaStreamer() {
+    /**
+     * Create {@link Sink} foreach method.
+     *
+     * @return {@link Sink} akka object.
+     */
+    public Sink foreach() {
+        A.ensure(getSingleTupleExtractor() != null || getMultipleTupleExtractor() != null,
+            "the extractor must be initialize.");
+
+        return Sink.foreach(e -> {
+            addMessage(e);
+        });
     }
 
     /**
-     * Create Sink Akka streamer.
+     * Create {@link Sink} foreachParallel method.
+     *
+     * @param threads Threads on sink.
+     * @param ec {@link ExecutionContext} object.
+     * @return {@link Sink} akka object.
      */
-    public Sink sink() {
-        final Sink<Integer, CompletionStage<Done>> sink = Sink.foreach(e -> {
-            addMessage(e);
-        });
+    public Sink foreachParallel(int threads, @NotNull ExecutionContext ec) {
+        A.ensure(threads > 0, "threads has to larger than 0.");
+        A.ensure(getSingleTupleExtractor() != null || getMultipleTupleExtractor() != null,
+            "the extractor must be initialize.");
 
-        return sink;
+        return Sink.foreachParallel(threads, e -> {
+            addMessage(e);
+        }, ec);
     }
 }
