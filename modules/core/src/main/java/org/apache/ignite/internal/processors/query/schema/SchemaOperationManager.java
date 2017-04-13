@@ -226,7 +226,7 @@ public class SchemaOperationManager {
                     log.debug("Collected all results, about to send finish message [opId=" + operationId() +
                         ", err=" + err + ']');
 
-                qryProc.onCoordinatorFinished(operationId(), err);
+                qryProc.onCoordinatorFinished(worker.operation(), err);
             }
         }
     }
@@ -238,8 +238,6 @@ public class SchemaOperationManager {
      */
     private boolean prepareCoordinator() {
         if (isLocalCoordinator() && !crdMapped) {
-            System.out.println("PREPARE COORDINATOR: " + ctx.localNodeId());
-
             // Initialize local structures.
             nodeIds = new HashSet<>();
             nodeRess = new HashMap<>();

@@ -21,7 +21,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,21 +30,24 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cache deployment ID. */
-    private final IgniteUuid depId;
-
     /** Error. */
     private final SchemaOperationException err;
+
+    /** Whether exchange should be triggered by this message. */
+    private transient boolean exchange;
+
+    /** Original propose message. */
+    private transient SchemaProposeDiscoveryMessage proposeMsg;
+
     /**
      * Constructor.
      *
      * @param op Original operation.
      * @param err Error.
      */
-    public SchemaFinishDiscoveryMessage(SchemaAbstractOperation op, IgniteUuid depId, SchemaOperationException err) {
+    public SchemaFinishDiscoveryMessage(SchemaAbstractOperation op, SchemaOperationException err) {
         super(op);
 
-        this.depId = depId;
         this.err = err;
     }
 
@@ -61,12 +63,14 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
 
     /** {@inheritDoc} */
     @Override public boolean exchange() {
-        return true;
+        return exchange;
     }
 
-    /** {@inheritDoc} */
-    public IgniteUuid deploymentId() {
-        return depId;
+    /**
+     * @param exchnage Exchange flag.
+     */
+    public void exchange(boolean exchnage) {
+        this.exchange = exchnage;
     }
 
     /**
@@ -83,9 +87,22 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
         return err;
     }
 
+    /**
+     * @return Propose message.
+     */
+    public SchemaProposeDiscoveryMessage proposeMessage() {
+        return proposeMsg;
+    }
+
+    /**
+     * @param proposeMsg Propose message.
+     */
+    public void proposeMessage(SchemaProposeDiscoveryMessage proposeMsg) {
+        this.proposeMsg = proposeMsg;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaFinishDiscoveryMessage.class, this, "parent", super.toString());
     }
-
 }

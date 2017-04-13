@@ -50,7 +50,7 @@ public class SchemaOperationWorker extends GridWorker {
     private final boolean nop;
 
     /** Whether cache started. */
-    private final boolean cacheStarted;
+    private final boolean cacheRegistered;
 
     /** Type descriptor. */
     private final QueryTypeDescriptorImpl type;
@@ -76,11 +76,11 @@ public class SchemaOperationWorker extends GridWorker {
      * @param op Target operation.
      * @param nop No-op flag.
      * @param err Predefined error.
-     * @param cacheStarted Whether cache started.
+     * @param cacheRegistered Whether cache is registered in indexing at this point.
      * @param type Type descriptor (if available).
      */
     public SchemaOperationWorker(GridKernalContext ctx, GridQueryProcessor qryProc, IgniteUuid depId,
-        SchemaAbstractOperation op, boolean nop, @Nullable SchemaOperationException err, boolean cacheStarted,
+        SchemaAbstractOperation op, boolean nop, @Nullable SchemaOperationException err, boolean cacheRegistered,
         @Nullable QueryTypeDescriptorImpl type) {
         super(ctx.igniteInstanceName(), workerName(op), ctx.log(SchemaOperationWorker.class));
 
@@ -88,14 +88,14 @@ public class SchemaOperationWorker extends GridWorker {
         this.depId = depId;
         this.op = op;
         this.nop = nop;
-        this.cacheStarted = cacheStarted;
+        this.cacheRegistered = cacheRegistered;
         this.type = type;
 
         fut = new GridFutureAdapter();
 
         if (err != null)
             fut.onDone(err);
-        else if (nop || !cacheStarted)
+        else if (nop || !cacheRegistered)
             fut.onDone();
 
         pubFut = publicFuture(fut);
@@ -144,15 +144,16 @@ public class SchemaOperationWorker extends GridWorker {
 
                 try {
                     fut.get();
+
+                    if (cacheRegistered && !nop)
+                        qryProc.onLocalOperationFinished(op, type);
                 }
                 catch (Exception e) {
                     err = e;
                 }
-
-                if (cacheStarted && !nop && err == null)
-                    qryProc.onLocalOperationFinished(op.id(), type);
-
-                chainedFut.onDone(null, err);
+                finally {
+                    chainedFut.onDone(null, err);
+                }
             }
         });
 
@@ -167,10 +168,10 @@ public class SchemaOperationWorker extends GridWorker {
     }
 
     /**
-     * @return Whether cache started.
+     * @return Whether cache is registered.
      */
-    public boolean cacheStarted() {
-        return cacheStarted;
+    public boolean cacheRegistered() {
+        return cacheRegistered;
     }
 
     /**

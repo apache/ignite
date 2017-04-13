@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCa
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationWorker;
 import org.apache.ignite.internal.processors.query.schema.SchemaKey;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationDescriptor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
@@ -143,11 +142,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Schema operations. */
     private final ConcurrentHashMap<SchemaKey, SchemaOperation> schemaOps = new ConcurrentHashMap<>();
 
-    /** Current active operations. */
-    private final LinkedHashMap<UUID, SchemaOperationDescriptor> activeOps = new LinkedHashMap<>();
-
-    /** Initial active operations received with discovery data. */
-    private final LinkedHashMap<UUID, SchemaOperationDescriptor> activeOpsInit = new LinkedHashMap<>();
+    /** Active propose messages. */
+    private final LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals = new LinkedHashMap<>();
 
     /** General state mutex. */
     private final Object stateMux = new Object();
@@ -171,6 +167,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** Disconnected flag. */
     private boolean disconnected;
+
+    /** Whether exchange thread is ready to process further requests. */
+    private boolean exchangeReady;
 
     /**
      * @param ctx Kernal context.
@@ -199,37 +198,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     U.warn(log, "Unsupported IO message: " + msg);
             }
         };
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
-        return DiscoveryDataExchangeType.QUERY_PROC;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        synchronized (stateMux) {
-            LinkedHashMap<UUID, SchemaOperationDescriptor> data = new LinkedHashMap<>();
-
-            for (Map.Entry<UUID, SchemaOperationDescriptor> activeOp : activeOps.entrySet())
-                data.put(activeOp.getKey(), new SchemaOperationDescriptor(activeOp.getValue()));
-
-            dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), data);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        synchronized (stateMux) {
-            assert activeOps.isEmpty();
-
-            LinkedHashMap<UUID, SchemaOperationDescriptor> data0 =
-                (LinkedHashMap<UUID, SchemaOperationDescriptor>)data.commonData();
-
-            for (Map.Entry<UUID, SchemaOperationDescriptor> dataEntry : data0.entrySet())
-                activeOpsInit.put(dataEntry.getKey(), new SchemaOperationDescriptor(dataEntry.getValue()));
-        }
     }
 
     /** {@inheritDoc} */
@@ -287,24 +255,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * Handle cache kernal start. At this point discovery and IO managers are operational, caches are not started yet.
-     * <p>
-     * At this point we allow concurrent IO messages handling as initial cache state is consistent.
      *
      * @throws IgniteCheckedException If failed.
      */
     public void onCacheKernalStart() throws IgniteCheckedException {
-        // Process initial operations.
         synchronized (stateMux) {
-            for (SchemaOperationDescriptor activeOpDesc : activeOpsInit.values()) {
-                onSchemaProposeDiscovery0(activeOpDesc.messagePropose());
+            exchangeReady = true;
 
-                onSchemaPropose(activeOpDesc.id());
-
-                if (activeOpDesc.finished())
-                    onSchemaFinish(activeOpDesc.id(), activeOpDesc.finishError());
-            }
-
-            activeOpsInit.clear();
+            // Re-run pending top-level proposals.
+            for (SchemaOperation schemaOp : schemaOps.values())
+                onSchemaPropose(schemaOp.proposeMessage());
         }
     }
 
@@ -321,6 +281,340 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             onCacheKernalStart();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.QUERY_PROC;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        // Collect active proposals.
+        synchronized (stateMux) {
+            LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> data = new LinkedHashMap<>(activeProposals);
+
+            dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), data);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+        synchronized (stateMux) {
+            // Preserve proposals.
+            LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> data0 =
+                (LinkedHashMap<UUID, SchemaProposeDiscoveryMessage>)data.commonData();
+
+            // Process proposals as if they were received as regular discovery messages.
+            for (SchemaProposeDiscoveryMessage activeProposal : data0.values())
+                onSchemaProposeDiscovery0(activeProposal);
+        }
+    }
+
+    /**
+     * Process schema propose message from discovery thread.
+     *
+     * @param msg Message.
+     * @return {@code True} if exchange should be triggered.
+     */
+    private boolean onSchemaProposeDiscovery(SchemaProposeDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
+        String space = msg.operation().space();
+
+        if (!msg.initialized()) {
+            // Ensure cache exists on coordinator node.
+            DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(space);
+
+            if (cacheDesc == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Received schema propose discovery message, but cache doesn't exist " +
+                        "(will report error) [opId=" + opId + ", msg=" + msg + ']');
+
+                msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, space));
+            }
+            else {
+                // Preserve deployment ID so that we can distinguish between different caches with the same name.
+                if (msg.deploymentId() == null)
+                    msg.deploymentId(cacheDesc.deploymentId());
+
+                assert F.eq(cacheDesc.deploymentId(), msg.deploymentId());
+            }
+        }
+
+        // Complete client future and exit immediately in case of error.
+        if (msg.hasError()) {
+            SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
+
+            if (cliFut != null)
+                cliFut.onDone(msg.error());
+
+            return false;
+        }
+
+        return onSchemaProposeDiscovery0(msg);
+    }
+
+    /**
+     * Process schema propose message from discovery thread (or from cache start routine).
+     *
+     * @param msg Message.
+     * @return {@code True} if exchange should be triggered.
+     */
+    private boolean onSchemaProposeDiscovery0(SchemaProposeDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
+
+        synchronized (stateMux) {
+            if (disconnected) {
+                if (log.isDebugEnabled())
+                    log.debug("Processing discovery schema propose message, but node is disconnected (will ignore) " +
+                        "[opId=" + opId + ", msg=" + msg + ']');
+
+                return false;
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Processing discovery schema propose message [opId=" + opId + ", msg=" + msg + ']');
+
+            // Put message to active operations set.
+            SchemaProposeDiscoveryMessage oldDesc = activeProposals.put(msg.operation().id(), msg);
+
+            assert oldDesc == null;
+
+            // Create schema operation and either trigger it immediately from exchange thread or append to already
+            // running operation.
+            SchemaOperation schemaOp = new SchemaOperation(msg);
+
+            SchemaKey key = msg.schemaKey();
+
+            SchemaOperation prevSchemaOp = schemaOps.get(key);
+
+            if (prevSchemaOp != null) {
+                prevSchemaOp = prevSchemaOp.unwind();
+
+                if (log.isDebugEnabled())
+                    log.debug("Schema change is enqueued and will be executed after previous operation is completed " +
+                        "[opId=" + opId + ", prevOpId=" + prevSchemaOp.id() + ']');
+
+                prevSchemaOp.next(schemaOp);
+
+                return false;
+            }
+            else {
+                schemaOps.put(key, schemaOp);
+
+                return exchangeReady;
+            }
+        }
+    }
+
+    /**
+     * Handle schema propose from exchange thread.
+     *
+     * @param msg Discovery message.
+     */
+    @SuppressWarnings("ThrowableInstanceNeverThrown")
+    public void onSchemaPropose(SchemaProposeDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
+
+        if (log.isDebugEnabled())
+            log.debug("Processing schema propose message (exchange) [opId=" + opId + ']');
+
+        synchronized (stateMux) {
+            if (disconnected)
+                return;
+
+            SchemaOperation curOp = schemaOps.get(msg.schemaKey());
+
+            assert curOp != null;
+            assert F.eq(opId, curOp.id());
+            assert !curOp.started();
+
+            startSchemaChange(curOp);
+        }
+    }
+
+    /**
+     * Process schema finish message from discovery thread.
+     *
+     * @param msg Message.
+     * @return {@code True} if exchange is needed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private boolean onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
+        UUID opId = msg.operation().id();
+
+        if (log.isDebugEnabled())
+            log.debug("Received schema finish message (discovery) [opId=" + opId + ", msg=" + msg + ']');
+
+        boolean res = false;
+
+        synchronized (stateMux) {
+            if (disconnected)
+                return false;
+
+            // Remove propose message so that it will not be shared with joining nodes.
+            SchemaProposeDiscoveryMessage proposeMsg = activeProposals.remove(opId);
+
+            assert proposeMsg != null;
+
+            // Apply changes to public cache schema if operation is successful and original cache is still there.
+            if (!msg.hasError()) {
+                DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(msg.operation().space());
+
+                if (cacheDesc != null && F.eq(cacheDesc.deploymentId(), proposeMsg.deploymentId()))
+                    cacheDesc.schemaChangeFinish(msg);
+            }
+
+            // Propose message will be used from exchange thread to
+            msg.proposeMessage(proposeMsg);
+
+            if (exchangeReady) {
+
+                res = true;
+            }
+            else
+                // Process message in discovery thread as no real index change will happen and no caches are registered.
+                onSchemaFinish(msg);
+
+            // Clean stale IO messages from just-joined nodes.
+            cleanStaleStatusMessages(opId);
+        }
+
+        // Complete client future (if any).
+        SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
+
+        if (cliFut != null) {
+            if (msg.hasError())
+                cliFut.onDone(msg.error());
+            else
+                cliFut.onDone();
+        }
+
+        return res;
+    }
+
+    /**
+     * Handle schema change finish message.
+     *
+     * @param msg Message.
+     */
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+    public void onSchemaFinish(SchemaFinishDiscoveryMessage msg) {
+        final UUID opId = msg.operation().id();
+
+        if (log.isDebugEnabled())
+            log.debug("Processing schema finish message (exchange) [opId=" + opId + ", msg=" + msg+ ']');
+
+        // Complete distributed operations.
+        synchronized (stateMux) {
+            if (disconnected)
+                return;
+
+            final SchemaKey key = msg.proposeMessage().schemaKey();
+
+            final SchemaOperation op = schemaOps.get(key);
+
+            assert op != null;
+            assert op.started();
+            assert F.eq(opId, op.id());
+
+            // Operation might be still in progress on client nodes which are not tracked by coordinator,
+            // so we chain to operation future instead of doing synchronous unwind.
+            op.manager().worker().future().listen(new IgniteInClosure<IgniteInternalFuture>() {
+                @Override public void apply(IgniteInternalFuture fut) {
+                    synchronized (stateMux) {
+                        SchemaOperation op = schemaOps.remove(key);
+
+                        assert op != null;
+
+                        // Chain to the next operation (if any).
+                        SchemaOperation nextOp = op.next();
+
+                        if (nextOp != null) {
+                            schemaOps.put(key, nextOp);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Next schema change operation started [opId=" + opId +
+                                    ", nextOpId=" + nextOp.id() + ']');
+
+                            if (!nextOp.started())
+                                startSchemaChange(nextOp);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Initiate actual schema change operation.
+     *
+     * @param schemaOp Schema operation.
+     */
+    @SuppressWarnings({"unchecked", "ThrowableInstanceNeverThrown"})
+    private void startSchemaChange(SchemaOperation schemaOp) {
+        assert Thread.holdsLock(stateMux);
+        assert !schemaOp.started();
+
+        // Get current cache state.
+        SchemaProposeDiscoveryMessage msg = schemaOp.proposeMessage();
+
+        String space = msg.operation().space();
+
+        DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(space);
+
+        boolean cacheExists = cacheDesc != null && F.eq(msg.deploymentId(), cacheDesc.deploymentId());
+
+        boolean cacheRegistered = cacheExists && spaces.contains(CU.mask(space));
+
+        // Validate schema state and decide whether we should proceed or not.
+        SchemaAbstractOperation op = msg.operation();
+
+        QueryTypeDescriptorImpl type = null;
+        SchemaOperationException err;
+
+        boolean nop = false;
+
+        if (cacheExists) {
+            if (cacheRegistered) {
+                // If cache is started, we perform validation against real schema.
+                T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> res = prepareChangeOnStartedCache(op);
+
+                assert res.get2() != null;
+
+                type = res.get1();
+                nop = res.get2();
+                err = res.get3();
+            }
+            else {
+                // If cache is not started yet, there is no schema. Take schema from cache descriptor and validate.
+                QuerySchema schema = cacheDesc.schema();
+
+                T2<Boolean, SchemaOperationException> res = prepareChangeOnNotStartedCache(op, schema);
+
+                assert res.get1() != null;
+
+                nop = res.get1();
+                err = res.get2();
+            }
+        }
+        else
+            err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
+
+        // Start operation.
+        SchemaOperationWorker worker =
+            new SchemaOperationWorker(ctx, this, msg.deploymentId(), op, nop, err, cacheRegistered, type);
+
+        SchemaOperationManager mgr = new SchemaOperationManager(ctx, this, worker,
+            ctx.clientNode() ? null : coordinator());
+
+        schemaOp.manager(mgr);
+
+        mgr.start();
+
+        if (!ctx.clientNode() && coordinator().isLocal())
+            unwindPendingMessages(schemaOp.id(), mgr);
     }
 
     /**
@@ -392,20 +686,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (disconnected)
                 return;
 
-            for (SchemaOperationDescriptor desc : activeOps.values()) {
-                if (F.eq(desc.cacheDeploymentId(), cctx.dynamicDeploymentId())) {
-                    SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+            for (SchemaOperation op : schemaOps.values()) {
+                if (F.eq(op.proposeMessage().deploymentId(), cctx.dynamicDeploymentId())) {
+                    if (op.started()) {
+                        SchemaOperationWorker worker = op.manager().worker();
 
-                    SchemaOperation op = schemaOps.get(key);
-
-                    assert op != null;
-
-                    SchemaOperationManager mgr = op.manager();
-
-                    if (mgr != null) {
-                        SchemaOperationWorker worker = mgr.worker();
-
-                        assert !worker.cacheStarted();
+                        assert !worker.cacheRegistered();
 
                         if (!worker.nop()) {
                             IgniteInternalFuture fut = worker.future();
@@ -413,7 +699,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             assert fut.isDone();
 
                             if (fut.error() == null) {
-                                SchemaAbstractOperation op0 = op.descriptor().operation();
+                                SchemaAbstractOperation op0 = op.proposeMessage().operation();
 
                                 if (op0 instanceof SchemaIndexCreateOperation) {
                                     SchemaIndexCreateOperation opCreate = (SchemaIndexCreateOperation)op0;
@@ -439,6 +725,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                         }
                     }
+
+                    break;
                 }
             }
         }
@@ -463,6 +751,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         synchronized (stateMux) {
             disconnected = true;
+            exchangeReady = false;
 
             // Clear client futures.
             futs = new ArrayList<>(schemaCliFuts.values());
@@ -470,8 +759,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             schemaCliFuts.clear();
 
             // Clear operations data.
-            activeOps.clear();
-            activeOpsInit.clear();
+            activeProposals.clear();
             schemaOps.clear();
         }
 
@@ -540,203 +828,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
         }
 
-        if (msg instanceof SchemaProposeDiscoveryMessage)
-            onSchemaProposeDiscovery((SchemaProposeDiscoveryMessage)msg);
-        else if (msg instanceof SchemaFinishDiscoveryMessage)
-            onSchemaFinishDiscovery((SchemaFinishDiscoveryMessage)msg);
+        if (msg instanceof SchemaProposeDiscoveryMessage) {
+            SchemaProposeDiscoveryMessage msg0 = (SchemaProposeDiscoveryMessage)msg;
+
+            boolean exchange = onSchemaProposeDiscovery(msg0);
+
+            msg0.exchange(exchange);
+        }
+        else if (msg instanceof SchemaFinishDiscoveryMessage) {
+            SchemaFinishDiscoveryMessage msg0 = (SchemaFinishDiscoveryMessage)msg;
+
+            boolean exchange = onSchemaFinishDiscovery(msg0);
+
+            msg0.exchange(exchange);
+        }
         else
             U.warn(log, "Received unsupported schema custom discovery message (will ignore) [opId=" +
                 msg.operation().id() + ", msg=" + msg  +']');
-    }
-
-    /**
-     * Process schema propose message from discovery thread.
-     *
-     * @param msg Message.
-     */
-    private void onSchemaProposeDiscovery(SchemaProposeDiscoveryMessage msg) {
-        UUID opId = msg.operation().id();
-        String space = msg.operation().space();
-
-        if (!msg.initialized()) {
-            // Ensure cache exists on coordinator node.
-            DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(space);
-
-            if (cacheDesc == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received schema propose discovery message, but cache doesn't exist " +
-                        "(will report error) [opId=" + opId + ", msg=" + msg + ']');
-
-                msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, space));
-            }
-            else {
-                // Preserve deployment ID so that we can distinguish between different caches with the same name.
-                if (msg.deploymentId() == null)
-                    msg.deploymentId(cacheDesc.deploymentId());
-
-                assert F.eq(cacheDesc.deploymentId(), msg.deploymentId());
-            }
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Received schema propose message (discovery) [opId=" + opId + ", msg=" + msg + ']');
-
-        onSchemaProposeDiscovery0(msg);
-    }
-
-    /**
-     * Process schema propose message from discovery thread (or from cache start routine).
-     *
-     * @param msg Message.
-     */
-    private void onSchemaProposeDiscovery0(SchemaProposeDiscoveryMessage msg) {
-        UUID opId = msg.operation().id();
-
-        synchronized (stateMux) {
-            if (disconnected)
-                return;
-
-            if (msg.hasError()) {
-                // Complete client future and exit immediately.
-                SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
-
-                if (cliFut != null)
-                    cliFut.onDone(msg.error());
-
-                return;
-            }
-
-            SchemaOperationDescriptor desc = new SchemaOperationDescriptor(msg);
-
-            SchemaOperationDescriptor oldDesc = activeOps.put(desc.id(), desc);
-
-            assert oldDesc == null;
-
-            SchemaOperation schemaOp = new SchemaOperation(desc);
-
-            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
-
-            SchemaOperation oldSchemaOp = schemaOps.get(key);
-
-            if (oldSchemaOp != null) {
-                oldSchemaOp = oldSchemaOp.unwind();
-
-                if (log.isDebugEnabled())
-                    log.debug("Schema change is enqueued and will be executed after previous operation is completed [" +
-                        "opId=" + opId + ", prevOpId=" + oldSchemaOp.id() + ']');
-
-                oldSchemaOp.next(schemaOp);
-            }
-            else
-                schemaOps.put(key, schemaOp);
-        }
-    }
-
-    /**
-     * Handle schema accept.
-     */
-    @SuppressWarnings("ThrowableInstanceNeverThrown")
-    public void onSchemaPropose(UUID opId) {
-        if (log.isDebugEnabled())
-            log.debug("Received schema accept message (exchange) [opId=" + opId + ']');
-
-        synchronized (stateMux) {
-            if (disconnected)
-                return;
-
-            SchemaOperationDescriptor desc = activeOps.get(opId);
-
-            assert desc != null;
-
-            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
-
-            SchemaOperation curOp = schemaOps.get(key);
-
-            assert curOp != null;
-
-            // If accepted operation is top-level operation for the given schema key, then start it immediately.
-            // Otherwise it will be handled later when previous operations complete.
-            if (F.eq(desc.id(), curOp.id())) {
-                if (!curOp.started())
-                    startSchemaChange(curOp);
-            }
-            else {
-                if (log.isDebugEnabled()) {
-                    curOp = curOp.unwind();
-
-                    log.debug("Schema accept processing will be delayed until previous operation is completed [" +
-                        "opId=" + opId + ", prevOpId=" + curOp.id() + ']');
-                }
-            }
-        }
-    }
-
-    /**
-     * Initiate actual schema change operation.
-     *
-     * @param schemaOp Schema operation.
-     */
-    @SuppressWarnings({"unchecked", "ThrowableInstanceNeverThrown"})
-    private void startSchemaChange(SchemaOperation schemaOp) {
-        assert Thread.holdsLock(stateMux);
-        assert !schemaOp.started();
-
-        // Get current cache state.
-        SchemaOperationDescriptor desc = schemaOp.descriptor();
-
-        DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(desc.space());
-
-        boolean cacheExists = cacheDesc != null && F.eq(desc.cacheDeploymentId(), cacheDesc.deploymentId());
-
-        boolean cacheStarted = cacheExists && spaces.contains(CU.mask(desc.space()));
-
-        // Validate schema state and decide whether we should proceed or not.
-        SchemaAbstractOperation op = schemaOp.descriptor().operation();
-
-        QueryTypeDescriptorImpl type = null;
-        SchemaOperationException err;
-
-        boolean nop = false;
-
-        if (cacheExists) {
-            if (cacheStarted) {
-                // If cache is started, we perform validation against real schema.
-                T3<QueryTypeDescriptorImpl, Boolean, SchemaOperationException> res = prepareChangeOnStartedCache(op);
-
-                assert res.get2() != null;
-
-                type = res.get1();
-                nop = res.get2();
-                err = res.get3();
-            }
-            else {
-                // If cache is not started yet, there is no schema. Take schema from cache descriptor and validate.
-                QuerySchema schema = cacheDesc.schema();
-
-                T2<Boolean, SchemaOperationException> res = prepareChangeOnNotStartedCache(op, schema);
-
-                assert res.get1() != null;
-
-                nop = res.get1();
-                err = res.get2();
-            }
-        }
-        else
-            err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, op.space());
-
-        // Start operation.
-        SchemaOperationWorker worker =
-            new SchemaOperationWorker(ctx, this, desc.cacheDeploymentId(), op, nop, err, cacheStarted, type);
-
-        SchemaOperationManager mgr = new SchemaOperationManager(ctx, this, worker,
-            ctx.clientNode() ? null : coordinator());
-
-        schemaOp.manager(mgr);
-
-        mgr.start();
-
-        if (!ctx.clientNode() && coordinator().isLocal())
-            unwindPendingMessages(schemaOp.id(), mgr);
     }
 
     /**
@@ -918,32 +1026,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Invoked when coordinator finished ensured that all participants are ready.
+     * Invoked when coordinator finished ensuring that all participants are ready.
      *
-     * @param opId Operation ID.
+     * @param op Operation.
      * @param err Error (if any).
      */
-    public void onCoordinatorFinished(UUID opId, @Nullable SchemaOperationException err) {
+    public void onCoordinatorFinished(SchemaAbstractOperation op, @Nullable SchemaOperationException err) {
         synchronized (stateMux) {
-            SchemaOperationDescriptor desc = activeOps.get(opId);
-
-            assert desc != null;
-
-            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
-
-            SchemaOperation op = schemaOps.get(key);
-
-            assert op != null;
-
-            SchemaFinishDiscoveryMessage msg =
-                new SchemaFinishDiscoveryMessage(desc.operation(), desc.cacheDeploymentId(), err);
+            SchemaFinishDiscoveryMessage msg = new SchemaFinishDiscoveryMessage(op, err);
 
             try {
                 ctx.discovery().sendCustomEvent(msg);
             }
             catch (Exception e) {
                 // Failed to send finish message over discovery. This is something unrecoverable.
-                U.warn(log, "Failed to send index finish discovery message [opId=" + opId + ']', e);
+                U.warn(log, "Failed to send schema finish discovery message [opId=" + op.id() + ']', e);
             }
         }
     }
@@ -975,142 +1072,38 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Process schema finish message from discovery thread.
-     *
-     * @param msg Message.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
-        UUID opId = msg.operation().id();
-
-        if (log.isDebugEnabled())
-            log.debug("Received schema finish message (discovery) [opId=" + opId + ", msg=" + msg + ']');
-
-        // Apply changes to public cache schema.
-        DynamicCacheDescriptor cacheDesc = ctx.cache().cacheDescriptor(msg.operation().space());
-
-        if (cacheDesc != null && F.eq(cacheDesc.deploymentId(), msg.deploymentId()) && !msg.hasError())
-            cacheDesc.schemaChangeFinish(msg);
-
-        // Process message.
-        synchronized (stateMux) {
-            if (disconnected)
-                return;
-
-            SchemaOperationDescriptor desc = activeOps.get(opId);
-
-            assert desc != null;
-            assert !desc.finished();
-
-            desc.onFinish(msg.error());
-
-            // Get rid of pending IO messages received from nodes which joined the cluster when operation
-            // had been in progress.
-            completedOpIds.add(opId);
-
-            Iterator<SchemaOperationStatusMessage> it = pendingMsgs.iterator();
-
-            while (it.hasNext()) {
-                SchemaOperationStatusMessage statusMsg = it.next();
-
-                if (F.eq(opId, statusMsg.operationId())) {
-                    it.remove();
-
-                    if (log.isDebugEnabled())
-                        log.debug("Dropped operation status message because it is already completed [opId=" + opId +
-                            ", rmtNode=" + statusMsg.senderNodeId() + ']');
-                }
-            }
-        }
-    }
-
-    /**
-     * Handle schema change finish message.
+     * Get rid of stale IO message received from other nodes which joined when operation had been in progress.
      *
      * @param opId Operation ID.
-     * @param err Error.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    public void onSchemaFinish(final UUID opId, @Nullable SchemaOperationException err) {
-        if (log.isDebugEnabled())
-            log.debug("Received schema finish message (exchange) [opId=" + opId + ", err=" + err + ']');
+    private void cleanStaleStatusMessages(UUID opId) {
+        completedOpIds.add(opId);
 
-        // Complete distributed operations.
-        synchronized (stateMux) {
-            if (disconnected)
-                return;
+        Iterator<SchemaOperationStatusMessage> it = pendingMsgs.iterator();
 
-            SchemaOperationDescriptor desc = activeOps.remove(opId);
+        while (it.hasNext()) {
+            SchemaOperationStatusMessage statusMsg = it.next();
 
-            if (desc != null) {
-                final SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
+            if (F.eq(opId, statusMsg.operationId())) {
+                it.remove();
 
-                final SchemaOperation op = schemaOps.get(key);
-
-                assert op != null;
-                assert op.started();
-                assert F.eq(opId, op.id());
-
-                // Operation might be still in progress on client nodes which are not tracked by coordinator,
-                // so we chain to operation future instead of doing synchronous unwind.
-                op.manager().worker().future().listen(new IgniteInClosure<IgniteInternalFuture>() {
-                    @Override public void apply(IgniteInternalFuture fut) {
-                        synchronized (stateMux) {
-                            SchemaOperation op = schemaOps.remove(key);
-
-                            assert op != null;
-
-                            // Chain to the next operation (if any).
-                            SchemaOperation nextOp = op.next();
-
-                            if (nextOp != null) {
-                                schemaOps.put(key, nextOp);
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Next schema change operation started [opId=" + opId +
-                                        ", nextOpId=" + nextOp.id() + ']');
-
-                                if (!nextOp.started())
-                                    startSchemaChange(nextOp);
-                            }
-                        }
-                    }
-                });
+                if (log.isDebugEnabled())
+                    log.debug("Dropped operation status message because it is already completed [opId=" + opId +
+                        ", rmtNode=" + statusMsg.senderNodeId() + ']');
             }
-        }
-
-        // Complete client future.
-        SchemaOperationClientFuture cliFut = schemaCliFuts.remove(opId);
-
-        if (cliFut != null) {
-            if (err != null)
-                cliFut.onDone(err);
-            else
-                cliFut.onDone();
         }
     }
 
     /**
      * Apply positive index operation result.
      *
-     * @param opId Operation ID.
+     * @param op Operation.
      * @param type Type descriptor (if available),
      */
-    public void onLocalOperationFinished(UUID opId, @Nullable QueryTypeDescriptorImpl type) {
+    public void onLocalOperationFinished(SchemaAbstractOperation op, @Nullable QueryTypeDescriptorImpl type) {
         synchronized (stateMux) {
             if (disconnected)
                 return;
-
-            SchemaOperationDescriptor desc = activeOps.get(opId);
-
-            SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
-
-            SchemaOperation schemaOp = schemaOps.get(key);
-
-            assert schemaOp != null;
-            assert F.eq(schemaOp.id(), opId);
-
-            SchemaAbstractOperation op = schemaOp.descriptor().operation();
 
             // No need to apply anything to obsolete type.
             if (type == null || type.obsolete()) {
@@ -1160,8 +1153,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param node Node.
      */
     public void onNodeLeave(ClusterNode node) {
-        System.out.println("ON NODE LEAVE: " + ctx.igniteInstanceName());
-
         synchronized (stateMux) {
             // Clients do not send status messages and are never coordinators.
             if (ctx.clientNode())
@@ -2085,12 +2076,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             UUID opId = msg.operationId();
 
-            SchemaOperationDescriptor desc = activeOps.get(opId);
+            SchemaProposeDiscoveryMessage proposeMsg = activeProposals.get(opId);
 
-            if (desc != null) {
-                SchemaKey key = new SchemaKey(desc.space(), desc.cacheDeploymentId());
-
-                SchemaOperation op = schemaOps.get(key);
+            if (proposeMsg != null) {
+                SchemaOperation op = schemaOps.get(proposeMsg.schemaKey());
 
                 if (op != null && F.eq(op.id(), opId) && op.started() && coordinator().isLocal()) {
                     if (log.isDebugEnabled())
@@ -2198,8 +2187,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Schema operation.
      */
     private class SchemaOperation {
-        /** Operation descriptor. */
-        private final SchemaOperationDescriptor desc;
+        /** Original propose msg. */
+        private final SchemaProposeDiscoveryMessage proposeMsg;
 
         /** Next schema operation. */
         private SchemaOperation next;
@@ -2210,24 +2199,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /**
          * Constructor.
          *
-         * @param desc Operation descriptor.
+         * @param proposeMsg Original propose message.
          */
-        public SchemaOperation(SchemaOperationDescriptor desc) {
-            this.desc = desc;
+        public SchemaOperation(SchemaProposeDiscoveryMessage proposeMsg) {
+            this.proposeMsg = proposeMsg;
         }
 
         /**
          * @return Operation ID.
          */
         public UUID id() {
-            return desc.id();
+            return proposeMsg.operation().id();
         }
 
         /**
-         * @return Operation descriptor.
+         * @return Original propose message.
          */
-        public SchemaOperationDescriptor descriptor() {
-            return desc;
+        public SchemaProposeDiscoveryMessage proposeMessage() {
+            return proposeMsg;
         }
 
         /**

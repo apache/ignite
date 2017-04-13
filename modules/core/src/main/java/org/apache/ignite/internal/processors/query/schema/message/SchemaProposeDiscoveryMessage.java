@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.schema.message;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.query.schema.SchemaKey;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,6 +37,9 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
 
     /** Error. */
     private SchemaOperationException err;
+
+    /** Whether to perform exchange. */
+    private transient boolean exchange;
 
     /**
      * Constructor.
@@ -58,10 +62,19 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
 
     /** {@inheritDoc} */
     @Override public boolean exchange() {
-        return !hasError();
+        return exchange;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param exchange Whether to perform exchange.
+     */
+    public void exchange(boolean exchange) {
+        this.exchange = exchange;
+    }
+
+    /**
+     * @return Deployment ID.
+     */
     @Nullable public IgniteUuid deploymentId() {
         return depId;
     }
@@ -104,6 +117,13 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
      */
     @Nullable public SchemaOperationException error() {
         return err;
+    }
+
+    /**
+     * @return Schema key.
+     */
+    public SchemaKey schemaKey() {
+        return new SchemaKey(operation().space(), depId);
     }
 
     /** {@inheritDoc} */

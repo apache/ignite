@@ -401,10 +401,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             UUID opId = msg.operation().id();
 
-            if (msg instanceof SchemaProposeDiscoveryMessage)
-                ctx.query().onSchemaPropose(opId);
-            else if (msg instanceof SchemaFinishDiscoveryMessage)
-                ctx.query().onSchemaFinish(opId, ((SchemaFinishDiscoveryMessage)msg).error());
+            if (msg instanceof SchemaProposeDiscoveryMessage) {
+                SchemaProposeDiscoveryMessage msg0 = (SchemaProposeDiscoveryMessage)msg;
+
+                ctx.query().onSchemaPropose(msg0);
+            }
+            else if (msg instanceof SchemaFinishDiscoveryMessage) {
+                SchemaFinishDiscoveryMessage msg0 = (SchemaFinishDiscoveryMessage)msg;
+
+                ctx.query().onSchemaFinish(msg0);
+            }
             else
                 U.warn(log, "Unsupported schema discovery message: " + msg);
         }

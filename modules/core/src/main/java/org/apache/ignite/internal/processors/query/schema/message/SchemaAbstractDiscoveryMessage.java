@@ -63,11 +63,6 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
      */
     public abstract boolean exchange();
 
-    /**
-     * @return Deployment ID.
-     */
-    public abstract IgniteUuid deploymentId();
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaAbstractDiscoveryMessage.class, this);
