@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import com.sun.javafx.beans.annotations.NonNull;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -221,7 +221,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @NonNull @Override public String name() {
+    @NotNull @Override public String name() {
         return igfs.name();
     }
 
