@@ -5838,20 +5838,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return null;
 
             return new CacheExpiryPolicy() {
-                private Long accessTtl;
-
                 @Override public long forAccess() {
-                    if (accessTtl == null)
-                        accessTtl = CU.toTtl(expiryPlc.getExpiryForAccess());
-
-                    return accessTtl;
+                    return CU.toTtl(expiryPlc.getExpiryForAccess());
                 }
 
                 @Override public boolean hasAccessTtl() {
-                    if (accessTtl == null)
-                        accessTtl = CU.toTtl(expiryPlc.getExpiryForAccess());
-
-                    return accessTtl != CU.TTL_NOT_CHANGED;
+                    return CU.toTtl(expiryPlc.getExpiryForAccess()) != CU.TTL_NOT_CHANGED;
                 }
 
                 @Override public long forCreate() {
