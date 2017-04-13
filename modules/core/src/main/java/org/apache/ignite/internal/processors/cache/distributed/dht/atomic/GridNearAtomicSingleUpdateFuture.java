@@ -126,9 +126,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
     /** {@inheritDoc} */
     @Override public long id() {
-        synchronized (mux) {
-            return futId;
-        }
+        return futId;
     }
 
     /** {@inheritDoc} */
@@ -141,7 +139,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         boolean rcvAll = false;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (reqState == null)
                 return false;
 
@@ -215,7 +213,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         CachePartialUpdateCheckedException err0;
         AffinityTopologyVersion remapTopVer0;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (futId == 0 || futId != res.futureId())
                 return;
 
@@ -257,7 +255,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         GridCacheReturn opRes0 = null;
         CachePartialUpdateCheckedException err0 = null;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (futId == 0 || futId != res.futureId())
                 return;
 
@@ -331,7 +329,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @return Non-null topology version if update should be remapped.
      */
     private AffinityTopologyVersion onAllReceived() {
-        assert Thread.holdsLock(mux);
+        assert Thread.holdsLock(this);
         assert futId > 0;
 
         AffinityTopologyVersion remapTopVer0 = null;
@@ -488,7 +486,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         try {
             reqState0 = mapSingleUpdate(topVer, futId);
 
-            synchronized (mux) {
+            synchronized (this) {
                 assert this.futId == 0 : this;
                 assert this.topVer == AffinityTopologyVersion.ZERO : this;
 
@@ -537,7 +535,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         GridNearAtomicCheckUpdateRequest checkReq = null;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (this.futId == 0 || this.futId != futId)
                 return;
 
@@ -568,7 +566,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     private Long onFutureDone() {
         Long id0;
 
-        synchronized (mux) {
+        synchronized (this) {
             id0 = futId;
 
             futId = 0;
@@ -734,9 +732,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     }
 
     /** {@inheritDoc} */
-    public String toString() {
-        synchronized (mux) {
-            return S.toString(GridNearAtomicSingleUpdateFuture.class, this, super.toString());
-        }
+    public synchronized String toString() {
+        return S.toString(GridNearAtomicSingleUpdateFuture.class, this, super.toString());
     }
 }
