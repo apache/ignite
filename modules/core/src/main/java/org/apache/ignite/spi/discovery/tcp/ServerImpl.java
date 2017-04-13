@@ -839,14 +839,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!auth && spi.nodeAuth != null)
                     localAuthentication(locCred);
 
-                locNode.order(1);
-                locNode.internalOrder(1);
-
+                ring.resetLocalNodeOrder();
                 spi.gridStartTime = U.currentTimeMillis();
 
                 locNode.visible(true);
-
-                ring.clear();
 
                 ring.topologyVersion(1);
 

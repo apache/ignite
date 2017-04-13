@@ -19,6 +19,9 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
+import org.apache.ignite.spi.discovery.tcp.RegionNodeComparatorTest;
+import org.apache.ignite.spi.discovery.tcp.RegionTcpDiscoverySelfTest;
+import org.apache.ignite.spi.discovery.tcp.RegionTcpDiscoveryStressTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiFailureTimeoutSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpiMulticastTest;
@@ -85,8 +88,12 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(TcpDiscoveryRestartTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryMultiThreadedTest.class));
-
         suite.addTest(new TestSuite(TcpDiscoveryNodeAttributesUpdateOnReconnectTest.class));
+
+        //Ring
+        suite.addTest(new TestSuite(RegionNodeComparatorTest.class));
+        suite.addTest(new TestSuite(RegionTcpDiscoverySelfTest.class));
+        suite.addTest(new TestSuite(RegionTcpDiscoveryStressTest.class));
 
         // SSL.
         suite.addTest(new TestSuite(TcpDiscoverySslSelfTest.class));

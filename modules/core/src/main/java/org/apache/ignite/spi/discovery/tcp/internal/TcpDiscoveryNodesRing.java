@@ -17,6 +17,16 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -29,15 +39,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeSet;
-import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -70,11 +71,15 @@ public class TcpDiscoveryNodesRing {
 
     /** All nodes in topology. */
     @GridToStringInclude
-    private NavigableSet<TcpDiscoveryNode> nodes = new TreeSet<>();
+    private NavigableSet<TcpDiscoveryNode> nodes;
 
     /** All started nodes. */
     @GridToStringExclude
     private Map<UUID, TcpDiscoveryNode> nodesMap = new HashMap<>();
+
+    /** Number of old nodes in topology. */
+    @GridToStringExclude
+    private long oldNodesCount = 0L;
 
     /** Current topology version */
     private long topVer;
@@ -91,6 +96,13 @@ public class TcpDiscoveryNodesRing {
 
     /** */
     private IgniteProductVersion minNodeVer;
+
+    /** Comparator is used for choice next node in ring. */
+    private final Comparator<TcpDiscoveryNode> nodeComparator = new RegionNodeComparator();
+
+    public TcpDiscoveryNodesRing() {
+        nodes = new TreeSet<>(nodeComparator);
+    }
 
     /**
      * @return Minimum node version.
@@ -119,9 +131,7 @@ public class TcpDiscoveryNodesRing {
         try {
             this.locNode = locNode;
 
-            clear();
-
-            maxInternalOrder = locNode.internalOrder();
+            notSyncClear();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -227,22 +237,29 @@ public class TcpDiscoveryNodesRing {
             if (nodesMap.containsKey(node.id()))
                 return false;
 
-            long maxInternalOrder0 = maxInternalOrder();
+            long maxInternalOrder0 = notSyncMaxInternalOrder();
 
             assert node.internalOrder() > maxInternalOrder0 : "Adding node to the middle of the ring " +
                 "[ring=" + this + ", node=" + node + ']';
 
             nodesMap.put(node.id(), node);
 
-            nodes = new TreeSet<>(nodes);
+            if (!node.version().greaterThanEqual(2, 0, 0)) {
+                oldNodesCount++;
+                TreeSet<TcpDiscoveryNode> nodesTmp = new TreeSet<>();
+                nodesTmp.addAll(nodes);
+                nodes = nodesTmp;
+            }
+            else
+                nodes = new TreeSet<>(nodes);
 
             node.lastUpdateTime(U.currentTimeMillis());
-
             nodes.add(node);
 
             nodeOrder = node.internalOrder();
 
-            maxInternalOrder = node.internalOrder();
+            if (maxInternalOrder < node.internalOrder())
+                maxInternalOrder = node.internalOrder();
 
             initializeMinimumVersion();
         }
@@ -254,19 +271,24 @@ public class TcpDiscoveryNodesRing {
     }
 
     /**
+     * Must called on read lock.
+     *
+     * @return Max internal order.
+     */
+    private long notSyncMaxInternalOrder() {
+        if (maxInternalOrder == 0)
+            return -1;
+        return maxInternalOrder;
+    }
+
+    /**
      * @return Max internal order.
      */
     public long maxInternalOrder() {
         rwLock.readLock().lock();
 
         try {
-            if (maxInternalOrder == 0) {
-                TcpDiscoveryNode last = nodes.last();
-
-                return last != null ? maxInternalOrder = last.internalOrder() : -1;
-            }
-
-            return maxInternalOrder;
+            return notSyncMaxInternalOrder();
         }
         finally {
             rwLock.readLock().unlock();
@@ -293,25 +315,31 @@ public class TcpDiscoveryNodesRing {
         try {
             locNode.internalOrder(topVer);
 
-            clear();
+            notSyncClear();
 
-            boolean firstAdd = true;
+            for (TcpDiscoveryNode node : nodes) {
+                if (!node.version().greaterThanEqual(2, 0, 0))
+                    oldNodesCount++;
+            }
+
+            if (oldNodesCount > 0) {
+                TreeSet<TcpDiscoveryNode> nodesTmp = new TreeSet<>();
+                nodesTmp.addAll(this.nodes);
+                this.nodes = nodesTmp;
+            }
+            else
+                this.nodes = new TreeSet<>(this.nodes);
 
             for (TcpDiscoveryNode node : nodes) {
                 if (nodesMap.containsKey(node.id()))
                     continue;
 
                 nodesMap.put(node.id(), node);
-
-                if (firstAdd) {
-                    this.nodes = new TreeSet<>(this.nodes);
-
-                    firstAdd = false;
-                }
-
                 node.lastUpdateTime(U.currentTimeMillis());
-
                 this.nodes.add(node);
+
+                if (maxInternalOrder < node.internalOrder())
+                    maxInternalOrder = node.internalOrder();
             }
 
             nodeOrder = topVer;
@@ -358,9 +386,23 @@ public class TcpDiscoveryNodesRing {
             TcpDiscoveryNode rmv = nodesMap.remove(nodeId);
 
             if (rmv != null) {
-                nodes = new TreeSet<>(nodes);
+                if (!rmv.version().greaterThanEqual(2, 0, 0) && --oldNodesCount <= 0) {
+                    TreeSet<TcpDiscoveryNode> nodesTmp = new TreeSet<>(nodeComparator);
+                    nodesTmp.addAll(nodes);
+                    nodes = nodesTmp;
+                }
+                else
+                    nodes = new TreeSet<>(nodes);
 
                 nodes.remove(rmv);
+                if (maxInternalOrder == rmv.internalOrder()) {
+                    long newMaxInternalOrder = 0;
+                    for (TcpDiscoveryNode node : nodes) {
+                        if (newMaxInternalOrder < node.internalOrder())
+                            newMaxInternalOrder = node.internalOrder();
+                    }
+                    maxInternalOrder = newMaxInternalOrder;
+                }
             }
 
             initializeMinimumVersion();
@@ -373,6 +415,48 @@ public class TcpDiscoveryNodesRing {
     }
 
     /**
+     * Reset local node's order.
+     *
+     */
+    public void resetLocalNodeOrder() {
+        rwLock.writeLock().lock();
+        try {
+            locNode.order(1);
+            locNode.internalOrder(1);
+            locNode.visible(true);
+
+            notSyncClear();
+        } finally {
+            rwLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Removes all remote nodes, leaves only local node.
+     * <p>
+     * Must be called on write lock
+     */
+    private void notSyncClear() {
+        nodes = new TreeSet<>(nodeComparator);
+        oldNodesCount = 0L;
+
+        if (locNode != null) {
+            nodes.add(locNode);
+            maxInternalOrder = locNode.internalOrder();
+        } else
+            maxInternalOrder = 0;
+
+        nodesMap = new HashMap<>();
+
+        if (locNode != null)
+            nodesMap.put(locNode.id(), locNode);
+
+        nodeOrder = 0;
+        topVer = 0;
+        minNodeVer = locNode.version();
+    }
+
+    /**
      * Removes all remote nodes, leaves only local node.
      * <p>
      * This should be called when SPI should be disconnected from topology and
@@ -382,22 +466,7 @@ public class TcpDiscoveryNodesRing {
         rwLock.writeLock().lock();
 
         try {
-            nodes = new TreeSet<>();
-
-            if (locNode != null)
-                nodes.add(locNode);
-
-            nodesMap = new HashMap<>();
-
-            if (locNode != null)
-                nodesMap.put(locNode.id(), locNode);
-
-            nodeOrder = 0;
-            maxInternalOrder = 0;
-
-            topVer = 0;
-
-            minNodeVer = locNode.version();
+            notSyncClear();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -416,11 +485,30 @@ public class TcpDiscoveryNodesRing {
             if (F.isEmpty(nodes))
                 return null;
 
-            return coordinator(null);
+            return notSyncCoordinator(null);
         }
         finally {
             rwLock.readLock().unlock();
         }
+    }
+
+    /**
+     * Finds coordinator in the topology filtering excluded nodes from the search.
+     * <p>
+     * Must called on read lock.
+     * <p>
+     * This may be used when handling current coordinator leave or failure.
+     *
+     * @param excluded Nodes to exclude from the search (optional).
+     * @return Coordinator node among remaining nodes or {@code null} if all nodes are excluded.
+     */
+    @Nullable private TcpDiscoveryNode notSyncCoordinator(@Nullable Collection<TcpDiscoveryNode> excluded) {
+        Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
+
+        if (F.isEmpty(filtered))
+            return null;
+
+        return Collections.min(filtered);
     }
 
     /**
@@ -435,12 +523,7 @@ public class TcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
-
-            if (F.isEmpty(filtered))
-                return null;
-
-            return Collections.min(filtered);
+            return notSyncCoordinator(excluded);
         }
         finally {
             rwLock.readLock().unlock();
@@ -459,7 +542,7 @@ public class TcpDiscoveryNodesRing {
             if (nodes.size() < 2)
                 return null;
 
-            return nextNode(null);
+            return notSyncNextNode(null);
         }
         finally {
             rwLock.readLock().unlock();
@@ -469,12 +552,44 @@ public class TcpDiscoveryNodesRing {
     /**
      * Finds next node in the topology filtering excluded nodes from search.
      * <p>
+     * Must called on read lock.
+     * <p>
      * This may be used when detecting and handling nodes failure.
      *
-     * @param excluded Nodes to exclude from the search (optional). If provided,
-     * cannot contain local node.
-     * @return Next node or {@code null} if all nodes were filtered out or
-     * topology contains less than two nodes.
+     * @param excluded Nodes to exclude from the search (optional). If provided, cannot contain local node.
+     * @return Next node or {@code null} if all nodes were filtered out or topology contains less than two nodes.
+     */
+    @Nullable private TcpDiscoveryNode notSyncNextNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
+        assert locNode.internalOrder() > 0 : locNode;
+        assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode) : excluded;
+
+        Iterator<TcpDiscoveryNode> filtered = serverNodes(excluded, locNode).iterator();
+
+        if (filtered.hasNext())
+            return filtered.next();
+        else {
+            filtered = serverNodes(excluded).iterator();
+
+            if (filtered.hasNext()) {
+                TcpDiscoveryNode firstNode = filtered.next();
+                //When locNode is first and last.
+                if (firstNode.equals(locNode))
+                    return null;
+                else
+                    return firstNode;
+            }
+            else
+                return null;
+        }
+    }
+
+    /**
+     * Finds next node in the topology filtering excluded nodes from search.
+     * <p>
+     * This may be used when detecting and handling nodes failure.
+     *
+     * @param excluded Nodes to exclude from the search (optional). If provided, cannot contain local node.
+     * @return Next node or {@code null} if all nodes were filtered out or topology contains less than two nodes.
      */
     @Nullable public TcpDiscoveryNode nextNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
         assert locNode.internalOrder() > 0 : locNode;
@@ -483,21 +598,7 @@ public class TcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
-
-            if (filtered.size() < 2)
-                return null;
-
-            Iterator<TcpDiscoveryNode> iter = filtered.iterator();
-
-            while (iter.hasNext()) {
-                TcpDiscoveryNode node = iter.next();
-
-                if (locNode.equals(node))
-                    break;
-            }
-
-            return iter.hasNext() ? iter.next() : F.first(filtered);
+            return notSyncNextNode(excluded);
         }
         finally {
             rwLock.readLock().unlock();
@@ -569,9 +670,10 @@ public class TcpDiscoveryNodesRing {
 
         try {
             if (nodeOrder == 0)
-                nodeOrder = maxInternalOrder();
+                nodeOrder = notSyncMaxInternalOrder();
 
-            return ++nodeOrder;
+            long temp = ++nodeOrder;
+            return temp;
         }
         finally {
             rwLock.writeLock().unlock();
@@ -612,8 +714,26 @@ public class TcpDiscoveryNodesRing {
     }
 
     /**
+     * Gets server nodes from topology in part of ring is started from specific node.
      *
+     * @param excluded Nodes to exclude from the search (optional).
+     * @param from Start position in ring (exclude)
+     * @return Collection of server nodes.
      */
+    private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded,
+        TcpDiscoveryNode from) {
+        final boolean excludedEmpty = F.isEmpty(excluded);
+        NavigableSet<TcpDiscoveryNode> nodesSet = nodes.tailSet(from, false);
+        if (nodesSet.isEmpty()) return Collections.EMPTY_SET;
+        return F.view(nodesSet, new P1<TcpDiscoveryNode>() {
+            @Override
+            public boolean apply(TcpDiscoveryNode node) {
+                return !node.isClient() && (excludedEmpty || !excluded.contains(node));
+            }
+        });
+    }
+
+    /** */
     private void initializeMinimumVersion() {
         minNodeVer = null;
 
