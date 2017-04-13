@@ -91,9 +91,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Exclude neighbors warning. */
     private transient boolean exclNeighborsWarn;
 
-    /** Optional backup filter. First node is primary, second node is a node being tested. */
-    private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
-
     /** Optional affinity backups filter. The first node is a node being tested,
      *  the second is a list of nodes that are already assigned for a given partition (the first node in the list
      *  is primary). */
@@ -126,49 +123,17 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /**
      * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other,
      * and specified number of backups and partitions.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
      *      of each other.
      * @param parts Total number of partitions.
      */
-    public RendezvousAffinityFunction(boolean exclNeighbors, int parts) {
-        this(exclNeighbors, parts, null);
-    }
-
-    /**
-     * Initializes optional counts for replicas and backups.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
-     *
-     * @param parts Total number of partitions.
-     * @param backupFilter Optional back up filter for nodes. If provided, backups will be selected
-     *      from all nodes that pass this filter. First argument for this filter is primary node, and second
-     *      argument is node being tested.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
-     */
-    public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
-        this(false, parts, backupFilter);
-    }
-
-    /**
-     * Private constructor.
-     *
-     * @param exclNeighbors Exclude neighbors flag.
-     * @param parts Partitions count.
-     * @param backupFilter Backup filter.
-     */
-    private RendezvousAffinityFunction(boolean exclNeighbors, int parts,
-        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+    public  RendezvousAffinityFunction(boolean exclNeighbors, int parts) {
         A.ensure(parts > 0, "parts > 0");
 
         this.exclNeighbors = exclNeighbors;
 
         setPartitions(parts);
-
-        this.backupFilter = backupFilter;
     }
 
     /**
@@ -203,38 +168,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         this.parts = parts;
 
         mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
-
-        return this;
-    }
-
-    /**
-     * Gets optional backup filter. If not {@code null}, backups will be selected
-     * from all nodes that pass this filter. First node passed to this filter is primary node,
-     * and second node is a node being tested.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
-     *
-     * @return Optional backup filter.
-     */
-    @Nullable public IgniteBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
-        return backupFilter;
-    }
-
-    /**
-     * Sets optional backup filter. If provided, then backups will be selected from all
-     * nodes that pass this filter. First node being passed to this filter is primary node,
-     * and second node is a node being tested.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
-     *
-     * @param backupFilter Optional backup filter.
-     * @deprecated Use {@code affinityBackupFilter} instead.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public RendezvousAffinityFunction setBackupFilter(
-        @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
-        this.backupFilter = backupFilter;
 
         return this;
     }
@@ -366,9 +299,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                         allNeighbors.addAll(neighborhoodCache.get(node.id()));
                     }
                 }
-                else if ((backupFilter != null && backupFilter.apply(primary, node))
-                    || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
-                    || (affinityBackupFilter == null && backupFilter == null) ) {
+                else if ((affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
+                    || affinityBackupFilter == null) {
                     res.add(node);
 
                     if (exclNeighbors)
@@ -504,7 +436,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(parts);
         out.writeBoolean(exclNeighbors);
-        out.writeObject(backupFilter);
     }
 
     /** {@inheritDoc} */
@@ -513,7 +444,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         setPartitions(in.readInt());
 
         exclNeighbors = in.readBoolean();
-        backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
     }
 
     /**

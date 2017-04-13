@@ -59,17 +59,6 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     private int backups = 1;
 
     /** Test backup filter. */
-    protected static final IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter =
-        new IgniteBiPredicate<ClusterNode, ClusterNode>() {
-            @Override public boolean apply(ClusterNode primary, ClusterNode backup) {
-                assert primary != null : "primary is null";
-                assert backup != null : "backup is null";
-
-                return !F.eq(primary.attribute(SPLIT_ATTRIBUTE_NAME), backup.attribute(SPLIT_ATTRIBUTE_NAME));
-            }
-        };
-
-    /** Test backup filter. */
     protected static final IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter =
         new IgniteBiPredicate<ClusterNode, List<ClusterNode>>() {
             @Override public boolean apply(ClusterNode node, List<ClusterNode> assigned) {
@@ -121,10 +110,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(backups);
 
-        if (backups < 2)
-            cacheCfg.setAffinity(affinityFunction());
-        else
-            cacheCfg.setAffinity(affinityFunctionWithAffinityBackupFilter());
+        cacheCfg.setAffinity(affinityFunctionWithAffinityBackupFilter());
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
@@ -145,37 +131,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     /**
      * @return Affinity function for test.
      */
-    protected abstract AffinityFunction affinityFunction();
-
-    /**
-     * @return Affinity function for test.
-     */
     protected abstract AffinityFunction affinityFunctionWithAffinityBackupFilter();
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionDistribution() throws Exception {
-        backups = 1;
-        try {
-            for (int i = 0; i < 3; i++) {
-                splitAttrVal = "A";
-
-                startGrid(2 * i);
-
-                splitAttrVal = "B";
-
-                startGrid(2 * i + 1);
-
-                awaitPartitionMapExchange();
-
-                checkPartitions();
-            }
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
 
     /**
      * @throws Exception If failed.

@@ -26,7 +26,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 public class RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest extends AbstractAffinityFunctionSelfTest {
     /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunction() {
-        AffinityFunction aff = new RendezvousAffinityFunction(512, null);
+        AffinityFunction aff = new RendezvousAffinityFunction(false, 512);
 
         return aff;
     }

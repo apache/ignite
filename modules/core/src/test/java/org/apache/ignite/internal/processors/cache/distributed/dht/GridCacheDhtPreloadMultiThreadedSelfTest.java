@@ -165,7 +165,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
 
         for (CacheConfiguration cCfg : cfg.getCacheConfiguration()) {
             if (cCfg.getCacheMode() == CacheMode.PARTITIONED) {
-                cCfg.setAffinity(new RendezvousAffinityFunction(2048, null));
+                cCfg.setAffinity(new RendezvousAffinityFunction(false, 2048));
                 cCfg.setBackups(1);
             }
         }
