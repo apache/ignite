@@ -622,6 +622,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 default:
                     assert false;
             }
+
+            if (cctx.localNode().isClient()) {
+                StartSnapshotOperationAckDiscoveryMessage snapshotOperationMsg = getSnapshotOperationMessage();
+
+                // If it's a snapshot operation request, synchronously wait for backup start.
+                if (snapshotOperationMsg != null)
+                    startLocalSnasphotOperation(snapshotOperationMsg);
+            }
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -906,12 +914,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         // If it's a snapshot operation request, synchronously wait for backup start.
         if (snapshotOperationMsg != null) {
-            if (!cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
-                SnapshotOperation op = snapshotOperationMsg.snapshotOperation();
+            SnapshotOperation op = snapshotOperationMsg.snapshotOperation();
 
-                if (op.type() != SnapshotOperationType.RESTORE)
-                    startLocalSnasphotOperation(snapshotOperationMsg);
-            }
+            if (op.type() != SnapshotOperationType.RESTORE)
+                startLocalSnasphotOperation(snapshotOperationMsg);
         }
 
         if (crd.isLocal()) {
@@ -1281,7 +1287,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         StartSnapshotOperationAckDiscoveryMessage snapshotOperationMsg = getSnapshotOperationMessage();
 
-        if (snapshotOperationMsg != null && !cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
+        if (snapshotOperationMsg != null) {
             SnapshotOperation op = snapshotOperationMsg.snapshotOperation();
 
             if (op.type() == SnapshotOperationType.RESTORE)
