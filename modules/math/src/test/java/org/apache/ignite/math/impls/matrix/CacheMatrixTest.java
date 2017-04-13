@@ -303,6 +303,39 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testMinMax(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        final CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        for(int i = 0; i < rows; i++)
+            for(int j = 0; j < cols; j++)
+              cacheMatrix.set(i ,j ,i * rows + j);
+
+        assertEquals(0.0, cacheMatrix.minValue(), 0.0);
+        assertEquals(rows * cols - 1, cacheMatrix.maxValue(), 0.0);
+    }
+
+    /** */
+    public void testMap(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        final CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        initMatrix(cacheMatrix);
+
+        cacheMatrix.map(value -> value + 10);
+
+        for(int i = 0; i < rows; i++)
+            for(int j = 0; j < cols; j++)
+              assertEquals(10.0, cacheMatrix.getX(i, j), 0.0);
+    }
+
+    /** */
     private IgniteCache<Integer, Double> getCache() {
         assert ignite != null;
 
