@@ -40,16 +40,27 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("System.Int32", mapper.GetTypeName(typeof(int).FullName));
 
             // Array.
-            Assert.AreEqual("String[]", mapper.GetTypeName(typeof(string).AssemblyQualifiedName));
-            Assert.AreEqual("String[]", mapper.GetTypeName(typeof(string).FullName));
+            Assert.AreEqual("System.String[]", mapper.GetTypeName(typeof(string[]).AssemblyQualifiedName));
+            Assert.AreEqual("System.String[]", mapper.GetTypeName(typeof(string[]).FullName));
 
             // Generics.
-            Assert.AreEqual("List`1[[String]]", mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
-            Assert.AreEqual("Dictionary`2[[Int32],[String]]", 
+            Assert.AreEqual("System.Collections.Generic.List`1[[System.String]]", 
+                mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
+            
+            Assert.AreEqual("System.Collections.Generic.Dictionary`2[[System.Int32],[System.String]]", 
                 mapper.GetTypeName(typeof(Dictionary<int, string>).AssemblyQualifiedName));
-            Assert.AreEqual("Bar`1[[Foo]]", mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
-            Assert.AreEqual("Bar`1[[Foo]][]", mapper.GetTypeName(typeof(Bar<Foo>[]).AssemblyQualifiedName));
-            Assert.AreEqual("Bar`1[[Foo[]]][]", mapper.GetTypeName(typeof(Bar<Foo[]>[]).AssemblyQualifiedName));
+            
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.BinaryNameMapperTest+Bar`1[[Apache.Ignite.Core." +
+                            "Tests.Binary.BinaryNameMapperTest+Foo]]", 
+                            mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
+
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.BinaryNameMapperTest+Bar`1[[Apache.Ignite.Core.Tests" +
+                            ".Binary.BinaryNameMapperTest+Foo]][]", 
+                            mapper.GetTypeName(typeof(Bar<Foo>[]).AssemblyQualifiedName));
+            
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Binary.BinaryNameMapperTest+Bar`1[[Apache.Ignite.Core.Tests." +
+                            "Binary.BinaryNameMapperTest+Foo[]]][]", 
+                            mapper.GetTypeName(typeof(Bar<Foo[]>[]).AssemblyQualifiedName));
         }
 
         /// <summary>
@@ -65,8 +76,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("Int32", mapper.GetTypeName(typeof(int).FullName));
 
             // Array.
-            Assert.AreEqual("String[]", mapper.GetTypeName(typeof(string).AssemblyQualifiedName));
-            Assert.AreEqual("String[]", mapper.GetTypeName(typeof(string).FullName));
+            Assert.AreEqual("String[]", mapper.GetTypeName(typeof(string[]).AssemblyQualifiedName));
+            Assert.AreEqual("String[]", mapper.GetTypeName(typeof(string[]).FullName));
 
             // Generics.
             Assert.AreEqual("List`1[[String]]", mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
