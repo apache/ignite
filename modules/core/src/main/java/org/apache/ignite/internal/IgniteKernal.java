@@ -2140,6 +2140,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     unregisterMBean(locNodeMBean) &
                     unregisterMBean(restExecSvcMBean) &
                     unregisterMBean(qryExecSvcMBean) &
+                    unregisterMBean(schemaExecSvcMBean) &
                     unregisterMBean(stripedExecSvcMBean)
             ))
                 errOnStop = false;
