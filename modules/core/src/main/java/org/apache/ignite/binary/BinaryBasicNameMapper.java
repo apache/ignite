@@ -110,7 +110,8 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
             }
         }
 
-        idx = clsName.lastIndexOf('+');  // .NET inner class.
+        if (idx < 0)
+            idx = clsName.lastIndexOf('+');   // .NET inner class.
 
         if (idx < 0)
             idx = clsName.lastIndexOf('.');
