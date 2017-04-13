@@ -22,29 +22,23 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.RunnableGraph;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.javadsl.Tcp;
-import akka.util.ByteString;
-import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -53,14 +47,15 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
  */
 public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
     /** Cache entries count. */
-    private static final int CACHE_ENTRY_COUNT = 4;
+    private static final int CACHE_ENTRY_COUNT = 1000;
 
-    /** */
-    private static final String CACHE_NAME = null;
+    /** Cache name. */
+    private static final String CACHE_NAME = "akka";
 
-    /** */
+    /** Actor system. */
     private final ActorSystem system = ActorSystem.create("AkkaStreamIgnite");
 
+    /** Actor materializer. */
     private final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     /** Constructor. */
@@ -75,20 +70,57 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
-        grid().getOrCreateCache(defaultCacheConfiguration());
+        grid().getOrCreateCache(new CacheConfiguration<>(CACHE_NAME));
     }
 
-    /** */
-    public void testExecuteStreamer() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
 
+        materializer.shutdown();
+    }
+
+    /**
+     * @throws Exception Test exception.
+     */
+    public void testStreamer1() throws Exception {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(CACHE_NAME)) {
+            IgniteAkkaStreamer streamer = newStreamerInstance(dataStreamer);
+            executeStreamer(streamer.foreach());
+        }
+    }
+
+    /**
+     * @throws Exception Test exception.
+     */
+    public void testStreamer2() throws Exception {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(CACHE_NAME)) {
+            IgniteAkkaStreamer streamer = newStreamerInstance(dataStreamer);
+            executeStreamer(streamer.foreachParallel(5, system.dispatcher()));
+        }
+    }
+
+    /**
+     * @throws Exception Test exception.
+     */
+    public void testStreamer3() throws Exception {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(CACHE_NAME)) {
+            IgniteAkkaStreamer streamer = newStreamerInstance(dataStreamer);
+            executeStreamer(streamer.onComplete());
+        }
+    }
+
+    /**
+     * Execute akka streamer.
+     */
+    private void executeStreamer(Sink sink) throws Exception {
         IgniteCache<Integer, Integer> cache = grid().cache(CACHE_NAME);
 
         CacheListener listener = subscribeToPutEvents();
 
         assertEquals(0, cache.size(CachePeekMode.PRIMARY));
 
-        // TODO impl
-        akkaStreamer();
+        buildAkkaStreamer(sink);
 
         CountDownLatch latch = listener.getLatch();
 
@@ -96,37 +128,24 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
 
         unsubscribeToPutEvents(listener);
 
-        // Last element.
-        int testId = CACHE_ENTRY_COUNT - 1;
+        assertTrue(cache.get(CACHE_ENTRY_COUNT - 1) instanceof Integer);
 
-        Integer cachedValue = cache.get(testId);
-
-        System.out.println(cachedValue);
-
-        // Akka message successfully put to cache.
-        assertTrue(cachedValue.equals(24));
-
-        assertTrue(cache.size() == CACHE_ENTRY_COUNT);
+        assertTrue(cache.size(CachePeekMode.PRIMARY) == CACHE_ENTRY_COUNT);
 
         cache.clear();
-
-        materializer.shutdown();
     }
 
     /**
      * @return Akka Streamer.
      */
-    private IgniteAkkaStreamer newAkkaStreamerInstance() {
-        IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(CACHE_NAME);
+    private IgniteAkkaStreamer newStreamerInstance(IgniteDataStreamer<Integer, String> dataStreamer) {
+        final AtomicInteger count = new AtomicInteger(0);
 
         IgniteAkkaStreamer streamer = new IgniteAkkaStreamer();
 
-        final AtomicInteger count = new AtomicInteger();
-        count.set(0);
-
-        streamer.setSingleTupleExtractor(new StreamSingleTupleExtractor<Integer, Integer, Integer>() {
-            @Override public Map.Entry extract(Integer msg) {
-                return new IgniteBiTuple<>(count.getAndIncrement(), msg);
+        streamer.setSingleTupleExtractor(new StreamSingleTupleExtractor<Object, Integer, Integer>() {
+            @Override public Map.Entry extract(Object msg) {
+                return new IgniteBiTuple<>(count.getAndIncrement(), (Integer) msg);
             }
         });
 
@@ -139,16 +158,20 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
         return streamer;
     }
 
-    /** */
-    private void akkaStreamer() {
+    /**
+     * Build testing env for akka-stream as source, flow, sink.
+     *
+     * @param sink Sink object.
+     */
+    private void buildAkkaStreamer(Sink sink) {
         // Starting from a Source
-        final Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 2, 3, 4));
+        final Source<Integer, NotUsed> source = Source.from(getSourceData(CACHE_ENTRY_COUNT));
 
         final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).map(elem -> elem + 20);
 
-        RunnableGraph<NotUsed> r1 = source.via(flow).to(newAkkaStreamerInstance().sink());
+        RunnableGraph<NotUsed> rg = source.via(flow).to(sink);
 
-        r1.run(materializer);
+        rg.run(materializer);
     }
 
     /**
@@ -199,5 +222,20 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
 
             return true;
         }
+    }
+
+    /**
+     * Data generator.
+     *
+     * @param size Size source list.
+     * @return List data.
+     */
+    private List getSourceData(int size) {
+        Integer[] list = new Integer[size];
+        for (int i = 0; i < size; i++) {
+            list[i] = (int)(Math.random() * 9 + size);
+        }
+
+        return Arrays.asList(list);
     }
 }
