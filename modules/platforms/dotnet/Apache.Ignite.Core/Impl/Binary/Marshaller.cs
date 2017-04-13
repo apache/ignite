@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             foreach (BinaryTypeConfiguration typeCfg in _cfg.TypeConfigurations)
             {
-                if (String.IsNullOrEmpty(typeCfg.TypeName))
+                if (string.IsNullOrEmpty(typeCfg.TypeName))
                     throw new BinaryObjectException("Type name cannot be null or empty: " + typeCfg);
             }
 
@@ -533,7 +533,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static void ThrowConflictingTypeError(object type1, object type2, int typeId)
         {
-            throw new BinaryObjectException(String.Format("Conflicting type IDs [type1='{0}', " +
+            throw new BinaryObjectException(string.Format("Conflicting type IDs [type1='{0}', " +
                                                           "type2='{1}', typeId={2}]", type1, type2, typeId));
         }
 
@@ -563,7 +563,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (typeCfg.IsEnum != type.IsEnum)
                 {
                     throw new BinaryObjectException(
-                        String.Format(
+                        string.Format(
                             "Invalid IsEnum flag in binary type configuration. " +
                             "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
                             typeCfg.IsEnum, type.IsEnum));
@@ -633,7 +633,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (res.Length > 1)
             {
-                throw new BinaryObjectException(String.Format("Multiple '{0}' attributes found on type '{1}'. " +
+                throw new BinaryObjectException(string.Format("Multiple '{0}' attributes found on type '{1}'. " +
                     "There can be only one affinity field.", typeof (AffinityKeyMappedAttribute).Name, type));
             }
 
