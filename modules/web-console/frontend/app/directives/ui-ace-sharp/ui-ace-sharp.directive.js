@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import templateUrl from './ui-ace-sharp.jade';
+import template from './ui-ace-sharp.pug';
 import controller from './ui-ace-sharp.controller';
 
 export default ['igniteUiAceSharp', ['IgniteSharpTransformer', (generator) => {
@@ -125,7 +125,7 @@ export default ['igniteUiAceSharp', ['IgniteSharpTransformer', (generator) => {
             data: '=?ngModel'
         },
         link,
-        templateUrl,
+        template,
         controller,
         controllerAs: 'ctrl',
         require: ['igniteUiAceSharp', '?^igniteUiAceTabs', '?^form', '?ngModel']

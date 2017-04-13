@@ -415,7 +415,7 @@ public class GridSqlQueryParser {
         res.distinct(select.isDistinct());
 
         Expression where = CONDITION.get(select);
-        res.where(parseExpression(where, false));
+        res.where(parseExpression(where, true));
 
         ArrayList<TableFilter> tableFilters = new ArrayList<>();
 
@@ -447,7 +447,7 @@ public class GridSqlQueryParser {
             GridSqlElement gridFilter = parseTableFilter(f);
 
             from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter, f.isJoinOuter(),
-                parseExpression(f.getJoinCondition(), false));
+                parseExpression(f.getJoinCondition(), true));
         }
 
         res.from(from);
