@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +31,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -221,10 +223,14 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
                     if (withExpiryPlc)
                         srvCache = srvCache.withExpiryPolicy(ModifiedExpiryPolicy.factoryOf(Duration.FIVE_MINUTES).create());
 
-                    if (getAll)
+                    if (getAll) {
                         assertEquals(data, srvCache.getAll(data.keySet()));
-                    else
+                        assertEquals(data.size(), srvCache.getEntries(data.keySet()).size());
+                    }
+                    else {
                         assertEquals(1, srvCache.get(1));
+                        assertEquals(1, srvCache.getEntry(1).getValue());
+                    }
 
                     hangLatch.countDown();
 
@@ -324,7 +330,13 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
             if (withExpiryPlc)
                 cache = cache.withExpiryPolicy(ModifiedExpiryPolicy.factoryOf(Duration.FIVE_MINUTES).create());
 
-            return cache.get(key);
+            Object val = cache.get(key);
+
+            CacheEntry e = cache.getEntry(key);
+
+            assertEquals(val, e.getValue());
+
+            return val;
         }
     }
 
@@ -363,7 +375,19 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
             if (withExpiryPlc)
                 cache = cache.withExpiryPolicy(ModifiedExpiryPolicy.factoryOf(Duration.FIVE_MINUTES).create());
 
-            return cache.getAll(keys);
+            Map vals = cache.getAll(keys);
+
+            Collection<CacheEntry> entries = cache.getEntries(keys);
+
+            assertEquals(vals.size(), entries.size());
+
+            for (CacheEntry entry : entries) {
+                Object val = vals.get(entry.getKey());
+
+                assertEquals(val, entry.getValue());
+            }
+
+            return vals;
         }
     }
 }
