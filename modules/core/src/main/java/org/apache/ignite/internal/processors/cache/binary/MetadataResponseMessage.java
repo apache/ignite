@@ -63,22 +63,23 @@ public class MetadataResponseMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("typeId", typeId))
+                if (!writer.writeByteArray("binaryMetadataBytes", binaryMetadataBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("status", status.ordinal()))
+                if (!writer.writeByte("status", status != null ? (byte)status.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByteArray("binMetaBytes", binaryMetadataBytes))
+                if (!writer.writeInt("typeId", typeId))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -93,7 +94,7 @@ public class MetadataResponseMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                typeId = reader.readInt("typeId");
+                binaryMetadataBytes = reader.readByteArray("binaryMetadataBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -101,18 +102,25 @@ public class MetadataResponseMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                status = ClientResponseStatus.values()[reader.readInt("status")];
+                byte statusOrd;
+
+                statusOrd = reader.readByte("status");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                status = ClientResponseStatus.fromOrdinal(statusOrd);
+
+                reader.incrementState();
+
+            case 2:
+                typeId = reader.readInt("typeId");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 2:
-                binaryMetadataBytes = reader.readByteArray("binMetaBytes");
-
-                if (!reader.isLastRead())
-                    return false;
         }
 
         return reader.afterMessageRead(MetadataResponseMessage.class);
@@ -131,7 +139,6 @@ public class MetadataResponseMessage implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-
     }
 
     /**
@@ -185,7 +192,20 @@ public class MetadataResponseMessage implements Message {
         METADATA_NOT_FOUND,
 
         /** */
-        ERROR
+        ERROR;
+
+        /** Enumerated values. */
+        private static final ClientResponseStatus[] VALS = values();
+
+        /**
+         * Efficiently gets enumerated value from its ordinal.
+         *
+         * @param ord Ordinal value.
+         * @return Enumerated value.
+         */
+        public static ClientResponseStatus fromOrdinal(byte ord) {
+            return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+        }
     }
 
     /** {@inheritDoc} */
