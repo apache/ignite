@@ -15,32 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.util.lang.gridfunc;
+
+import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
- * this exception can contain {@link TransactionDeadlockException} as cause.
+ * UUID equals predicate.
  */
-public class TransactionTimeoutException extends TransactionException {
+public class EqualsUuidPredicate implements IgnitePredicate<UUID> {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = -5664060422647374863L;
+
+    /** */
+    private final UUID nodeId;
 
     /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
+     * @param nodeId Node ID for which returning predicate will evaluate to {@code true}.
      */
-    public TransactionTimeoutException(String msg) {
-        super(msg);
+    public EqualsUuidPredicate(UUID nodeId) {
+        this.nodeId = nodeId;
     }
 
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
-     */
-    public TransactionTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
+    /** {@inheritDoc} */
+    @Override public boolean apply(UUID id) {
+        return id.equals(nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(EqualsUuidPredicate.class, this);
     }
 }

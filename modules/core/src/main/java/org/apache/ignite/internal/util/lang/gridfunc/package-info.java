@@ -15,31 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
-
 /**
- * Exception thrown whenever grid transactions has been automatically rolled back.
+ * <!-- Package description. -->
+ * Contains utilities classes for {@link org.apache.ignite.internal.util.lang.GridFunc}.
  */
-public class TransactionRollbackException extends TransactionException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Creates new rollback exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public TransactionRollbackException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * Creates new rollback exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public TransactionRollbackException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
-}
+package org.apache.ignite.internal.util.lang.gridfunc;

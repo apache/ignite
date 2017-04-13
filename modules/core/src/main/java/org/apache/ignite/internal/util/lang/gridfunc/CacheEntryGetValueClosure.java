@@ -15,32 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.util.lang.gridfunc;
+
+import javax.cache.Cache;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteClosure;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
- * this exception can contain {@link TransactionDeadlockException} as cause.
+ * Cache entry to get-value transformer closure.
  */
-public class TransactionTimeoutException extends TransactionException {
+public class CacheEntryGetValueClosure implements IgniteClosure {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public TransactionTimeoutException(String msg) {
-        super(msg);
+    /** {@inheritDoc} */
+    @SuppressWarnings({"unchecked"})
+    @Nullable @Override public Object apply(Object o) {
+        return ((Cache.Entry)o).getValue();
     }
 
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
-     */
-    public TransactionTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheEntryGetValueClosure.class, this);
     }
 }

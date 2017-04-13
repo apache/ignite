@@ -15,32 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.util.lang.gridfunc;
+
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
- * this exception can contain {@link TransactionDeadlockException} as cause.
+ * Closure that wraps given runnable.
+ * Note that wrapping closure always returns {@code null}.
  */
-public class TransactionTimeoutException extends TransactionException {
+public class RunnableWrapperClosure extends GridAbsClosure {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public TransactionTimeoutException(String msg) {
-        super(msg);
-    }
+    /** */
+    private final Runnable r;
 
     /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
+     * @param r Runnable to convert to closure. If {@code null} - no-op closure is returned.
      */
-    public TransactionTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
+    public RunnableWrapperClosure(Runnable r) {
+        this.r = r;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void apply() {
+        if (r != null)
+            r.run();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RunnableWrapperClosure.class, this);
     }
 }

@@ -15,32 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.util.lang.gridfunc;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
- * this exception can contain {@link TransactionDeadlockException} as cause.
+ * Defines a predicate which accepts a parameter and always returns {@code false}
+ *
+ * @param <E> Type of predicate parameter.
  */
-public class TransactionTimeoutException extends TransactionException {
+public class AlwaysFalsePredicate<E> implements IgnitePredicate<E> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new timeout exception with given error message.
+     * Predicate body.
      *
-     * @param msg Error message.
+     * @param e Predicate parameter.
+     * @return Always <code>false</code>
      */
-    public TransactionTimeoutException(String msg) {
-        super(msg);
+    @Override public boolean apply(E e) {
+        return false;
     }
 
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
-     */
-    public TransactionTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(AlwaysFalsePredicate.class, this);
     }
 }

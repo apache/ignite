@@ -15,32 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.util.lang.gridfunc;
+
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
- * this exception can contain {@link TransactionDeadlockException} as cause.
+ * Predicate which returns {@code true} if it receives an element that is contained in the passed in
+ * collection.
+ *
+ * @param <T> Type of the free variable for the predicate and type of the collection elements.
  */
-public class TransactionTimeoutException extends TransactionException {
+public class ContainsPredicate<T> implements IgnitePredicate<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public TransactionTimeoutException(String msg) {
-        super(msg);
-    }
+    /** */
+    private final Collection<? extends T> c;
 
     /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
+     * @param c Collection to check for containment.
      */
-    public TransactionTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
+    public ContainsPredicate(Collection<? extends T> c) {
+        this.c = c;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean apply(T t) {
+        assert c != null;
+
+        return c.contains(t);
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return S.toString(ContainsPredicate.class, this);
     }
 }

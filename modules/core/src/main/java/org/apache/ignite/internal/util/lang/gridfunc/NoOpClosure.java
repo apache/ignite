@@ -15,32 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
+package org.apache.ignite.internal.util.lang.gridfunc;
+
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
- * this exception can contain {@link TransactionDeadlockException} as cause.
+ * Absolute closure that does nothing.
  */
-public class TransactionTimeoutException extends TransactionException {
+public class NoOpClosure extends GridAbsClosure {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public TransactionTimeoutException(String msg) {
-        super(msg);
+    /** {@inheritDoc} */
+    @Override public void apply() {
+        // No-op.
     }
 
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
-     */
-    public TransactionTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NoOpClosure.class, this);
     }
 }
