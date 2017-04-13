@@ -58,8 +58,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     TypeConfigurations = GetTypeConfigurations(),
                     DefaultIdMapper = new IdMapper(),
-                    DefaultNameMapper = new NameMapper(),
-                    CompactFooter = GetCompactFooter()
+                    DefaultNameMapper = new NameMapper(GetNameMapper()),
+                    CompactFooter = GetCompactFooter(),
                 }
             };
 
@@ -111,6 +111,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         protected virtual bool GetCompactFooter()
         {
             return true;
+        }
+                
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>
@@ -2060,10 +2068,22 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class NameMapper : IBinaryNameMapper
     {
         /** */
+        private readonly IBinaryNameMapper _baseMapper;
+
+        /** */
         public const string TestTypeName = "NameMapperTestType";
 
         /** */
         public const string TestFieldName = "NameMapperTestField";
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NameMapper" /> class.
+        /// </summary>
+        /// <param name="baseMapper">The base mapper.</param>
+        public NameMapper(IBinaryNameMapper baseMapper)
+        {
+            _baseMapper = baseMapper;
+        }
 
         /** <inheritdoc /> */
         public string GetTypeName(string name)
@@ -2071,7 +2091,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             if (name == typeof(NameMapperTestType).AssemblyQualifiedName)
                 return TestTypeName + "_";
 
-            return BinaryBasicNameMapper.SimpleNameInstance.GetTypeName(name);
+            return _baseMapper.GetTypeName(name);
         }
 
         /** <inheritdoc /> */

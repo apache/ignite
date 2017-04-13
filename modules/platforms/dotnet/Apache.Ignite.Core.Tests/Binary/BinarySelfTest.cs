@@ -63,16 +63,27 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TestFixtureSetUp]
         public void BeforeTest()
         {
-            _marsh = new Marshaller(new BinaryConfiguration{CompactFooter = GetCompactFooter()});
+            _marsh = new Marshaller(new BinaryConfiguration
+            {
+                CompactFooter = GetCompactFooter(),
+                DefaultNameMapper = GetNameMapper()
+            });
         }
 
         /// <summary>
         /// Gets the binary configuration.
         /// </summary>
-        /// <returns></returns>
         protected virtual bool GetCompactFooter()
         {
             return true;
+        }
+
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
         
         /**
