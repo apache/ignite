@@ -65,6 +65,9 @@ public class SchemaOperationManager {
     /** Whether coordinator state is mapped. */
     private boolean crdMapped;
 
+    /** Coordinator finished flag. */
+    private boolean crdFinished;
+
     /**
      * Constructor.
      *
@@ -210,6 +213,9 @@ public class SchemaOperationManager {
         assert Thread.holdsLock(mux);
 
         if (isLocalCoordinator()) {
+            if (crdFinished)
+                return;
+
             if (nodeIds.size() == nodeRess.size()) {
                 // Initiate finish request.
                 SchemaOperationException err = null;
@@ -225,6 +231,8 @@ public class SchemaOperationManager {
                 if (log.isDebugEnabled())
                     log.debug("Collected all results, about to send finish message [opId=" + operationId() +
                         ", err=" + err + ']');
+
+                crdFinished = true;
 
                 qryProc.onCoordinatorFinished(worker.operation(), err);
             }

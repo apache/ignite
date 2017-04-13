@@ -453,6 +453,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (disconnected)
                 return false;
 
+            boolean completedOpAdded = completedOpIds.add(opId);
+
+            assert completedOpAdded;
+
+//            if (!completedOpIds.add(opId)) {
+//                if (log.isDebugEnabled())
+//                    log.debug("Duplicate schema finish message [opId=" + opId + ']');
+//
+//                return false;
+//            }
+
             // Remove propose message so that it will not be shared with joining nodes.
             SchemaProposeDiscoveryMessage proposeMsg = activeProposals.remove(opId);
 
@@ -469,13 +480,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // Propose message will be used from exchange thread to
             msg.proposeMessage(proposeMsg);
 
-            if (exchangeReady) {
-
+            if (exchangeReady)
+                // Process from exchange thread as usual.
                 res = true;
+            else {
+                // Set next operation as top-level one.
+                SchemaKey schemaKey = proposeMsg.schemaKey();
+
+                SchemaOperation op = schemaOps.remove(schemaKey);
+
+                assert op != null;
+                assert F.eq(op.id(), opId);
+
+                // Chain to the next operation (if any).
+                SchemaOperation nextOp = op.next();
+
+                if (nextOp != null)
+                    schemaOps.put(schemaKey, nextOp);
             }
-            else
-                // Process message in discovery thread as no real index change will happen and no caches are registered.
-                onSchemaFinish(msg);
 
             // Clean stale IO messages from just-joined nodes.
             cleanStaleStatusMessages(opId);
@@ -511,13 +533,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (disconnected)
                 return;
 
+            assert exchangeReady;
+
             final SchemaKey key = msg.proposeMessage().schemaKey();
 
             final SchemaOperation op = schemaOps.get(key);
 
             assert op != null;
+            assert F.eq(opId, op.id()); // TODO: Assertion fails here: received finish on non-top operation
             assert op.started();
-            assert F.eq(opId, op.id());
 
             // Operation might be still in progress on client nodes which are not tracked by coordinator,
             // so we chain to operation future instead of doing synchronous unwind.
@@ -1077,8 +1101,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param opId Operation ID.
      */
     private void cleanStaleStatusMessages(UUID opId) {
-        completedOpIds.add(opId);
-
         Iterator<SchemaOperationStatusMessage> it = pendingMsgs.iterator();
 
         while (it.hasNext()) {

@@ -399,8 +399,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (task instanceof SchemaExchangeWorkerTask) {
             SchemaAbstractDiscoveryMessage msg = ((SchemaExchangeWorkerTask)task).message();
 
-            UUID opId = msg.operation().id();
-
             if (msg instanceof SchemaProposeDiscoveryMessage) {
                 SchemaProposeDiscoveryMessage msg0 = (SchemaProposeDiscoveryMessage)msg;
 
