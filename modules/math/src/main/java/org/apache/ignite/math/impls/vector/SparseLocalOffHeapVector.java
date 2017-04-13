@@ -22,21 +22,26 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.vector.SparseLocalOffHeapVectorStorage;
 
 /**
- * TODO: add description.
+ * Implementation for {@link Vector} assuming sparse logic and local offheap JVM storage.
+ * It is suitable for data sets where local, non-distributed execution is satisfactory and on-heap JVM storage
+ * is not enough to keep the entire data set.
+ * <p>See also: <a href="https://en.wikipedia.org/wiki/Sparse_array">Wikipedia article</a>.</p>
  */
 public class SparseLocalOffHeapVector extends AbstractVector {
-
-    /** */
+    /**
+     *
+     * @param crd Vector cardinality.
+     */
     public SparseLocalOffHeapVector(int crd){
         setStorage(new SparseLocalOffHeapVectorStorage(crd));
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         return new SparseLocalOffHeapVector(crd);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
         return null;
     }

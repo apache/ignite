@@ -20,7 +20,7 @@ package org.apache.ignite.math;
 import java.io.Serializable;
 
 /**
- * TODO: add description.
+ * Maps key objects to index in {@link Vector} or {@link Matrix}.
  */
 public interface KeyMapper<K> extends Serializable {
     /**

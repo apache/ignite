@@ -27,7 +27,7 @@ import org.apache.ignite.math.impls.storage.vector.FunctionVectorStorage;
 import java.util.*;
 
 /**
- * TODO: add description.
+ *  Implementation of {@link Vector} that maps vector element index to {@link java.util.function} interfaces.
  */
 public class FunctionVector extends AbstractVector {
     /**
@@ -39,8 +39,8 @@ public class FunctionVector extends AbstractVector {
 
     /**
      * Creates read-write or read-only function vector.
-     * @param size
-     * @param getFunc
+     * @param size Vector size.
+     * @param getFunc Function that returns value corresponding to given element index.
      * @param setFunc Set function. If {@code null} - this will be a read-only vector.
      */
     public FunctionVector(int size, IgniteFunction<Integer, Double> getFunc, IntDoubleToVoidFunction setFunc) {
@@ -50,20 +50,21 @@ public class FunctionVector extends AbstractVector {
     /**
      * Creates read-only function vector.
      *
-     * @param size
-     * @param getFunc
+     * @param size Vector size.
+     * @param getFunc Function that returns value corresponding to given element index.
      */
     public FunctionVector(int size, IgniteFunction<Integer, Double> getFunc) {
         setStorage(new FunctionVectorStorage(size, getFunc));
     }
 
     /**
-     * @param args
+     * @param args Arguments for vector constructor.
      */
     public FunctionVector(Map<String, Object> args) {
         assert args != null;
 
         if (args.containsKey("size") && args.containsKey("getFunc") && args.containsKey("setFunc")) {
+            @SuppressWarnings("unchecked")
             IgniteFunction<Integer, Double> getFunc = (IgniteFunction<Integer, Double>)args.get("getFunc");
             IntDoubleToVoidFunction setFunc = (IntDoubleToVoidFunction)args.get("setFunc");
             int size = (int)args.get("size");
@@ -71,6 +72,7 @@ public class FunctionVector extends AbstractVector {
             setStorage(new FunctionVectorStorage(size, getFunc, setFunc));
         }
         else if (args.containsKey("size") && args.containsKey("getFunc")) {
+            @SuppressWarnings("unchecked")
             IgniteFunction<Integer, Double> getFunc = (IgniteFunction<Integer, Double>)args.get("getFunc");
             int size = (int)args.get("size");
 

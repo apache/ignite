@@ -26,7 +26,7 @@ import org.apache.ignite.math.Vector;
 import java.io.*;
 
 /**
- * TODO: add description.
+ * Implements the partial view into the parent {@link Vector}.
  */
 public class VectorView extends AbstractVector {
     /**
@@ -38,9 +38,9 @@ public class VectorView extends AbstractVector {
 
     /**
      *
-     * @param parent
-     * @param off
-     * @param len
+     * @param parent Backing parent {@link Vector}.
+     * @param off Offset to parent vector.
+     * @param len Size of the view.
      */
     public VectorView(Vector parent, int off, int len) {
         super(new DelegateVectorStorage(parent.getStorage(), off, len));
@@ -48,15 +48,15 @@ public class VectorView extends AbstractVector {
 
     /**
      *
-     * @param sto
-     * @param off
-     * @param len
+     * @param sto Backing parent {@link VectorStorage}.
+     * @param off Offset to parent vector.
+     * @param len Size of the view.
      */
     public VectorView(VectorStorage sto, int off, int len) {
         super(new DelegateVectorStorage(sto, off, len));
     }
 
-    private DelegateVectorStorage storage() {
+    /** */ private DelegateVectorStorage storage() {
         return (DelegateVectorStorage)getStorage();
     }
 

@@ -32,18 +32,18 @@ import java.util.*;
  */
 public class CacheUtils {
     /**
-     * TODO: add description.
+     * Cache entry support.
      * @param <K>
      * @param <V>
      */
     public static class CacheEntry<K, V> {
-        private Cache.Entry<K, V> entry;
-        private IgniteCache<K, V> cache;
+        /** */ private Cache.Entry<K, V> entry;
+        /** */ private IgniteCache<K, V> cache;
 
         /**
          *
-         * @param entry
-         * @param cache
+         * @param entry Original cache entry.
+         * @param cache Cache instance.
          */
         CacheEntry(Cache.Entry<K, V> entry, IgniteCache<K, V> cache) {
             this.entry = entry;
@@ -75,10 +75,10 @@ public class CacheUtils {
     }
 
     /**
-     * 
-     * @param cacheName
-     * @param k
-     * @param <K>
+     *
+     * @param cacheName Cache name.
+     * @param k Key into the cache.
+     * @param <K> Key type.
      *
      */
     public static <K> ClusterGroup groupForKey(String cacheName, K k) {
@@ -87,12 +87,11 @@ public class CacheUtils {
 
     /**
      *
-     * @param cacheName
-     * @param keyMapper
-     * @param valMapper
-     * @param <K>
-     * @param <V>
-     *
+     * @param cacheName Cache name.
+     * @param keyMapper {@link KeyMapper} to validate cache key.
+     * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
      */
     public static <K, V> double sum(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         Collection<Double> subSums = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
@@ -110,7 +109,7 @@ public class CacheUtils {
 
     /**
      *
-     * @param cacheName
+     * @param cacheName Cache name.
      *
      */
     public static <K, V> double sparseSum(String cacheName) {
@@ -127,7 +126,7 @@ public class CacheUtils {
 
     /**
      *
-     * @param c
+     * @param c {@link Collection} of double values to sum.
      *
      */
     private static double sum(Collection<Double> c) {
@@ -141,12 +140,11 @@ public class CacheUtils {
 
     /**
      *
-     * @param cacheName
-     * @param keyMapper
-     * @param valMapper
-     * @param <K>
-     * @param <V>
-     *
+     * @param cacheName Cache name.
+     * @param keyMapper {@link KeyMapper} to validate cache key.
+     * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
      */
     public static <K, V> double min(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         Collection<Double> mins = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
@@ -167,7 +165,7 @@ public class CacheUtils {
 
     /**
      *
-     * @param cacheName
+     * @param cacheName Cache name.
      *
      */
     public static <K, V> double sparseMin(String cacheName) {
@@ -187,7 +185,7 @@ public class CacheUtils {
 
     /**
      *
-     * @param cacheName
+     * @param cacheName Cache name.
      *
      */
     public static <K, V> double sparseMax(String cacheName) {
@@ -207,12 +205,11 @@ public class CacheUtils {
 
     /**
      *
-     * @param cacheName
-     * @param keyMapper
-     * @param valMapper
-     * @param <K>
-     * @param <V>
-     *
+     * @param cacheName Cache name.
+     * @param keyMapper {@link KeyMapper} to validate cache key.
+     * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
      */
     public static <K, V> double max(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         Collection<Double> maxes = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
@@ -233,12 +230,12 @@ public class CacheUtils {
 
     /**
      *
-     * @param cacheName
-     * @param keyMapper
-     * @param valMapper
-     * @param mapper
-     * @param <K>
-     * @param <V>
+     * @param cacheName Cache name.
+     * @param keyMapper {@link KeyMapper} to validate cache key.
+     * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
+     * @param mapper Mapping {@link IgniteFunction}.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
      */
     public static <K, V> void map(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper,
         IgniteFunction<Double, Double> mapper) {
@@ -253,8 +250,8 @@ public class CacheUtils {
 
     /**
      *
-     * @param cacheName
-     * @param mapper
+     * @param cacheName Cache name.
+     * @param mapper Mapping {@link IgniteFunction}.
      */
     public static <K, V> void sparseMap(String cacheName, IgniteFunction<Double, Double> mapper) {
         foreach(cacheName, (CacheEntry<Integer, Map<Integer, Double>> ce) -> {
@@ -269,11 +266,11 @@ public class CacheUtils {
     }
 
     /**
-     * 
-     * @param cacheName
-     * @param fun
-     * @param <K>
-     * @param <V>
+     *
+     * @param cacheName Cache name.
+     * @param fun An operation that accepts a cache entry and processes it.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
      */
     public static <K, V> void foreach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun) {
         bcast(cacheName, () -> {
@@ -284,7 +281,7 @@ public class CacheUtils {
 
             // Use affinity in filter for scan query. Otherwise we accept consumer in each node which is wrong.
             Affinity affinity = ignite.affinity(cacheName);
-            ClusterNode localNode = ignite.cluster().localNode();
+            ClusterNode locNode = ignite.cluster().localNode();
 
             // Iterate over all partitions. Some of them will be stored on that local node.
             for (int part = 0; part < partsCnt; part++){
@@ -293,7 +290,7 @@ public class CacheUtils {
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
-                    (k, v) -> affinity.mapPartitionToNode(p) == localNode)))
+                    (k, v) -> affinity.mapPartitionToNode(p) == locNode)))
                     fun.accept(new CacheEntry<K, V>(entry, cache));
             }
         });
@@ -301,11 +298,11 @@ public class CacheUtils {
 
     /**
      * <b>Currently fold supports only commutative operations.<b/>
-     * @param cacheName
-     * @param folder
-     * @param <K>
-     * @param <V>
-     * @param <A>
+     * @param cacheName Cache name.
+     * @param folder Fold function operating over cache entries.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
+     * @param <A> Fold result type.
      *
      */
     public static <K, V, A> Collection<A> fold(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
@@ -317,7 +314,7 @@ public class CacheUtils {
 
             // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
             Affinity affinity = ignite.affinity(cacheName);
-            ClusterNode localNode = ignite.cluster().localNode();
+            ClusterNode locNode = ignite.cluster().localNode();
 
             A a = null;
 
@@ -328,7 +325,7 @@ public class CacheUtils {
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
-                    (k, v) -> affinity.mapPartitionToNode(p) == localNode)))
+                    (k, v) -> affinity.mapPartitionToNode(p) == locNode)))
                     a = folder.apply(new CacheEntry<K, V>(entry, cache), a);
             }
 
@@ -338,18 +335,18 @@ public class CacheUtils {
 
     /**
      *
-     * @param cacheName
-     * @param run
+     * @param cacheName Cache name.
+     * @param run {@link Runnable} to broadcast to cache nodes for given cache name.
      */
     public static void bcast(String cacheName, IgniteRunnable run) {
         ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(run);
     }
 
     /**
-     * 
-     * @param cacheName
-     * @param call
-     * @param <A>
+     *
+     * @param cacheName Cache name.
+     * @param call {@link IgniteCallable} to broadcast to cache nodes for given cache name.
+     * @param <A> Type returned by the callable.
      *
      */
     public static <A> Collection<A> bcast(String cacheName, IgniteCallable<A> call) {

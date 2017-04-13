@@ -25,7 +25,7 @@ import org.apache.ignite.math.functions.IntIntToDoubleFunction;
 import org.apache.ignite.math.impls.storage.matrix.FunctionMatrixStorage;
 
 /**
- * Implementation of {@link Matrix} that maps roq and column index to {@link java.util.function} interfaces.
+ * Implementation of {@link Matrix} that maps row and column index to {@link java.util.function} interfaces.
  */
 public class FunctionMatrix extends AbstractMatrix {
     /**

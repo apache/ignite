@@ -24,7 +24,9 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
 
 /**
- * TODO: add description.
+ * Implementation for {@link Vector} assuming dense logic and local offheap JVM storage.
+ * It is suitable for data sets where local, non-distributed execution is satisfactory and on-heap JVM storage
+ * is not enough to keep the entire data set.
  */
 public class DenseLocalOffHeapVector extends AbstractVector {
     /** */
