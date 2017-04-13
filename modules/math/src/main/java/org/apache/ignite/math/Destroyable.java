@@ -18,7 +18,7 @@
 package org.apache.ignite.math;
 
 /**
- * TODO add description
+ * Support for destroying objects that are managed outside of JVM.
  */
 public interface Destroyable {
     /**
