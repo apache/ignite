@@ -171,7 +171,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes,
         IgniteUuid keyClsLdrId) throws IgniteCheckedException {
         if (ctx.addDeploymentInfo() && type != CacheObject.TYPE_BYTE_ARR) {
-            GridCacheDeploymentManager<Object, Object> deploy = ctx.kernalContext().cache().context().deploy();
+            GridCacheDeploymentManager deploy = ctx.kernalContext().cache().context().deploy();
 
             ClassLoader ldr = keyClsLdrId != null ? deploy.getClassLoader(keyClsLdrId) : deploy.localLoader();
 
@@ -206,7 +206,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes,
         IgniteUuid valClsLdrId) throws IgniteCheckedException {
         if (ctx.addDeploymentInfo() && type != CacheObject.TYPE_BYTE_ARR) {
-            GridCacheDeploymentManager<Object, Object> deploy = ctx.kernalContext().cache().context().deploy();
+            GridCacheDeploymentManager deploy = ctx.kernalContext().cache().context().deploy();
 
             ClassLoader ldr = valClsLdrId != null ? deploy.getClassLoader(valClsLdrId) : deploy.localLoader();
 

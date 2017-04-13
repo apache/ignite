@@ -587,7 +587,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         return keyLen + valLen + CacheVersionIO.size(row.version(), false)
             + 8                                                                                                        // Expire Time
             + (row.cacheId() == 0 ? 0 : 4)                                                                             // Cache Id
-            + (row.deploymentEnabled() ? PageUtils.sizeIgniteUuids(row.keyClassLoader(), row.valueClassLoader()) : 0); // UUID class loaders for key and value
+            + (row.deploymentEnabled() ? PageUtils.sizeIgniteUuids(row.keyClassLoaderId(), row.valueClassLoaderId()) : 0); // UUID class loaders for key and value
     }
 
     /** {@inheritDoc} */

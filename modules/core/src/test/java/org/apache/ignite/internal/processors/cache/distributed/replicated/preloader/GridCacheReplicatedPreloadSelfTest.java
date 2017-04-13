@@ -302,10 +302,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testDeployment() throws Exception {
-        // TODO GG-11141.
-        if (true)
-            return;
-
         preloadMode = SYNC;
 
         try {
@@ -359,7 +355,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, Object> cache3 = g3.cache(null);
 
-            Object v3 = cache3.localPeek(1, CachePeekMode.ONHEAP);
+            Object v3 = cache3.localPeek(1, CachePeekMode.OFFHEAP);
 
             assert v3 != null;
 

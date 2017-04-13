@@ -114,12 +114,12 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid keyClassLoader() {
+    @Override public IgniteUuid keyClassLoaderId() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid valueClassLoader() {
+    @Override public IgniteUuid valueClassLoaderId() {
         return null;
     }
 

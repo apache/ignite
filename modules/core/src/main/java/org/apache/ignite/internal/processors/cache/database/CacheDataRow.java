@@ -54,12 +54,12 @@ public interface CacheDataRow extends CacheSearchRow {
     /**
      * @return Key class loader ID.
      */
-    public IgniteUuid keyClassLoader();
+    public IgniteUuid keyClassLoaderId();
 
     /**
      * @return Value class loader ID.
      */
-    public IgniteUuid valueClassLoader();
+    public IgniteUuid valueClassLoaderId();
 
     /**
      * @return Partition for this key.

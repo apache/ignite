@@ -268,7 +268,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             cacheCtx.near().dht().clearLocally(keys, true);
 
         // Examine swap for entries to undeploy.
-        int swapUndeployCnt = cacheCtx.offheap().onUndeploy(ldr);
+        int swapUndeployCnt = cacheCtx.isNear() ?
+            cacheCtx.near().dht().context().offheap().onUndeploy(ldr) :
+            cacheCtx.offheap().onUndeploy(ldr);
 
         if (cacheCtx.userCache() && (!keys.isEmpty() || swapUndeployCnt != 0)) {
             U.quietAndWarn(log, "");

@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -288,6 +289,8 @@ class GridDhtPartitionSupplier {
                         else
                             iter = (IgniteRebalanceIterator)sctx.entryIt;
 
+                        boolean prepared = false;
+
                         while (iter.hasNext()) {
                             if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
                                 // Demander no longer needs this partition,
@@ -361,23 +364,22 @@ class GridDhtPartitionSupplier {
                             }
 
                             // Need to manually prepare cache message.
-// TODO GG-11141.
-//                                if (depEnabled && !prepared) {
-//                                    ClassLoader ldr = swapEntry.keyClassLoaderId() != null ?
-//                                        cctx.deploy().getClassLoader(swapEntry.keyClassLoaderId()) :
-//                                        swapEntry.valueClassLoaderId() != null ?
-//                                            cctx.deploy().getClassLoader(swapEntry.valueClassLoaderId()) :
-//                                            null;
-//
-//                                    if (ldr == null)
-//                                        continue;
-//
-//                                    if (ldr instanceof GridDeploymentInfo) {
-//                                        s.prepare((GridDeploymentInfo)ldr);
-//
-//                                        prepared = true;
-//                                    }
-//                                }
+                            if (depEnabled && !prepared) {
+                                ClassLoader ldr = row.keyClassLoaderId() != null ?
+                                    cctx.deploy().getClassLoader(row.keyClassLoaderId()) :
+                                    row.valueClassLoaderId() != null ?
+                                        cctx.deploy().getClassLoader(row.valueClassLoaderId()) :
+                                        null;
+
+                                if (ldr == null)
+                                    continue;
+
+                                if (ldr instanceof GridDeploymentInfo) {
+                                    s.prepare((GridDeploymentInfo)ldr);
+
+                                    prepared = true;
+                                }
+                            }
                         }
 
                         if (partMissing)

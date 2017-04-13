@@ -517,12 +517,12 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteUuid keyClassLoader() {
+        @Override public IgniteUuid keyClassLoaderId() {
             return keyClsLdr;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteUuid valueClassLoader() {
+        @Override public IgniteUuid valueClassLoaderId() {
             return valClsLdr;
         }
 

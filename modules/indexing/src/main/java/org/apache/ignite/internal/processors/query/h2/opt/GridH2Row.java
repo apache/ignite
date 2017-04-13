@@ -182,12 +182,12 @@ public abstract class GridH2Row extends Row implements GridSearchRowPointer, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid keyClassLoader() {
+    @Override public IgniteUuid keyClassLoaderId() {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid valueClassLoader() {
+    @Override public IgniteUuid valueClassLoaderId() {
         throw new UnsupportedOperationException();
     }
 

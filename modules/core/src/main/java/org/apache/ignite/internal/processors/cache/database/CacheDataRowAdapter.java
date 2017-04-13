@@ -66,9 +66,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
     protected long expireTime = -1;
 
     /** Class loader for the key. If peer-classloading disabled then {@code null}, otherwise classloader UUID. */
+    @GridToStringInclude
     protected IgniteUuid keyClsLdrId;
 
     /** Class loader for the val. If peer-classloading disabled then {@code null}, otherwise classloader UUID. */
+    @GridToStringInclude
     protected IgniteUuid valClsLdrId;
 
     /** Deployment enabled flag. */
@@ -455,7 +457,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         ByteBuffer buf,
         IncompleteCacheObject incomplete
     ) throws IgniteCheckedException {
-        incomplete = coctx.processor().toCacheObject(coctx, buf, incomplete, valueClassLoader());
+        incomplete = coctx.processor().toCacheObject(coctx, buf, incomplete, valueClassLoaderId());
 
         if (incomplete.isReady()) {
             val = incomplete.object();
@@ -718,7 +720,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public CacheObject value() {
-        assert val != null : "Value is not ready: " + this;
+        assert val != null || depEnabled : "Value is not ready: " + this;
 
         return val;
     }
@@ -731,12 +733,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid keyClassLoader() {
+    @Override public IgniteUuid keyClassLoaderId() {
         return keyClsLdrId == NULL_OBJECT ? null : keyClsLdrId;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid valueClassLoader() {
+    @Override public IgniteUuid valueClassLoaderId() {
         return valClsLdrId == NULL_OBJECT ? null : valClsLdrId;
     }
 

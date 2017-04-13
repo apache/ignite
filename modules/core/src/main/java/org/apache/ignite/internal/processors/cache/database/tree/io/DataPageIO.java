@@ -1032,8 +1032,8 @@ public class DataPageIO extends PageIO {
     ) throws IgniteCheckedException {
         final int keySize = row.key().valueBytesLength(null);
         final int valSize = row.value().valueBytesLength(null);
-        final int keyClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUuid(row.keyClassLoader()) : 0;
-        final int valClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUuid(row.valueClassLoader()) : 0;
+        final int keyClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUuid(row.keyClassLoaderId()) : 0;
+        final int valClsLdrSize = row.deploymentEnabled() ? PageUtils.sizeIgniteUuid(row.valueClassLoaderId()) : 0;
 
         int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.CACHE_ID, keySize, valSize, keyClsLdrSize, valClsLdrSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.KEY, keySize, valSize, keyClsLdrSize, valClsLdrSize);
@@ -1135,7 +1135,7 @@ public class DataPageIO extends PageIO {
         if (type == EntryPart.EXPIRE_TIME)
             writeExpireTimeFragment(buf, row.expireTime(), rowOff, len, prevLen);
         else if (type == EntryPart.KEY_CLS_LDR_ID || type == EntryPart.VAL_CLS_LDR_ID)
-            writeUuidFragment(buf, (type == EntryPart.KEY_CLS_LDR_ID ? row.keyClassLoader() : row.valueClassLoader()),
+            writeUuidFragment(buf, (type == EntryPart.KEY_CLS_LDR_ID ? row.keyClassLoaderId() : row.valueClassLoaderId()),
                 rowOff, len, prevLen);
         else if (type == EntryPart.CACHE_ID)
             writeCacheIdFragment(buf, row.cacheId(), rowOff, len, prevLen);
@@ -1478,19 +1478,19 @@ public class DataPageIO extends PageIO {
             addr += row.key().putValue(addr);
 
             if (row.deploymentEnabled())
-                addr += PageUtils.putIgniteUuid(addr, row.keyClassLoader());
+                addr += PageUtils.putIgniteUuid(addr, row.keyClassLoaderId());
         }
         else {
             addr += (2 + cacheIdSize + row.key().valueBytesLength(null));
 
             if (row.deploymentEnabled())
-                addr += PageUtils.sizeIgniteUuid(row.keyClassLoader());
+                addr += PageUtils.sizeIgniteUuid(row.keyClassLoaderId());
         }
 
         addr += row.value().putValue(addr);
 
         if (row.deploymentEnabled())
-            addr += PageUtils.putIgniteUuid(addr, row.valueClassLoader());
+            addr += PageUtils.putIgniteUuid(addr, row.valueClassLoaderId());
 
         CacheVersionIO.write(addr, row.version(), false);
         addr += CacheVersionIO.size(row.version(), false);

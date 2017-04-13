@@ -30,7 +30,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -54,9 +53,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     private static final String TEST_VALUE = "org.apache.ignite.tests.p2p.GridCacheDeploymentTestValue3";
 
     /** */
-    private static final long OFFHEAP = 0;// 4 * 1024 * 1024;
-
-    /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
@@ -64,9 +60,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
     /** */
     private CacheRebalanceMode mode = SYNC;
-
-    /** */
-    private boolean offheap;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -90,12 +83,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         repCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         repCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        // TODO GG-10884.
-//        if (offheap)
-//            repCacheCfg.setOffHeapMaxMemory(OFFHEAP);
-//        else
-//            repCacheCfg.setSwapEnabled(true);
-
         CacheConfiguration partCacheCfg = defaultCacheConfiguration();
 
         partCacheCfg.setName("partitioned");
@@ -104,12 +91,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(11, 1));
         partCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
-
-        // TODO GG-10884.
-//        if (offheap)
-//            partCacheCfg.setOffHeapMaxMemory(OFFHEAP);
-//        else
-//            partCacheCfg.setSwapEnabled(true);
 
         cfg.setCacheConfiguration(repCacheCfg, partCacheCfg);
 
@@ -122,61 +103,25 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void testSwapP2PReplicated() throws Exception {
-        offheap = false;
-
+    public void testP2PReplicated() throws Exception {
         checkP2PUndeploy("replicated");
     }
 
     /** @throws Exception If failed. */
-    public void testOffHeapP2PReplicated() throws Exception {
-        offheap = true;
-
-        checkP2PUndeploy("replicated");
-    }
-
-    /** @throws Exception If failed. */
-    public void testSwapP2PPartitioned() throws Exception {
-        offheap = false;
-
+    public void testP2PPartitioned() throws Exception {
         checkP2PUndeploy("partitioned");
     }
 
     /** @throws Exception If failed. */
-    public void testOffheapP2PPartitioned() throws Exception {
-        offheap = true;
-
-        checkP2PUndeploy("partitioned");
-    }
-
-    /** @throws Exception If failed. */
-    public void testSwapP2PReplicatedNoPreloading() throws Exception {
+    public void testP2PReplicatedNoPreloading() throws Exception {
         mode = NONE;
-        offheap = false;
 
         checkP2PUndeploy("replicated");
     }
 
     /** @throws Exception If failed. */
-    public void testOffHeapP2PReplicatedNoPreloading() throws Exception {
+    public void testP2PPartitionedNoPreloading() throws Exception {
         mode = NONE;
-        offheap = true;
-
-        checkP2PUndeploy("replicated");
-    }
-
-    /** @throws Exception If failed. */
-    public void testSwapP2PPartitionedNoPreloading() throws Exception {
-        mode = NONE;
-        offheap = false;
-
-        checkP2PUndeploy("partitioned");
-    }
-
-    /** @throws Exception If failed. */
-    public void testOffHeapP2PPartitionedNoPreloading() throws Exception {
-        mode = NONE;
-        offheap = true;
 
         checkP2PUndeploy("partitioned");
     }
@@ -188,12 +133,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private long size(String cacheName, IgniteKernal g) throws IgniteCheckedException {
-        if (offheap)
-            return ((IgniteKernal)g).getCache(cacheName).offHeapEntriesCount();
-
-        return 0;
-        // TODO GG-10884.
-        // return g.context().swap().swapSize(swapSpaceName(cacheName, g));
+        return g.getCache(cacheName).offHeapEntriesCount();
     }
 
     /**
@@ -229,7 +169,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
             info("Read value from cache2 [v=" + v2 + ", ldr=" + v2.getClass().getClassLoader() + ']');
 
-            assert v2 != null;
             assert v2.toString().equals(v1.toString());
             assert !v2.getClass().getClassLoader().equals(getClass().getClassLoader());
             assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader");
@@ -278,25 +217,13 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @param grid Kernal.
-     * @return Name for swap space.
-     */
-    private String swapSpaceName(String cacheName, IgniteKernal grid) {
-        GridCacheContext<Object, Object> cctx = grid.internalCache(cacheName).context();
-
-        return CU.swapSpaceName(cctx.isNear() ? cctx.near().dht().context() : cctx);
-    }
-
-    /**
      * @param cache Cache.
      * @param timeout Timeout.
      * @return {@code True} if success.
      * @throws InterruptedException If thread was interrupted.
      */
     @SuppressWarnings({"BusyWait"})
-    private boolean waitCacheEmpty(IgniteCache<Integer, Object> cache, long timeout)
-        throws InterruptedException {
+    private boolean waitCacheEmpty(IgniteCache<Integer, Object> cache, long timeout) throws InterruptedException {
         assert cache != null;
         assert timeout >= 0;
 

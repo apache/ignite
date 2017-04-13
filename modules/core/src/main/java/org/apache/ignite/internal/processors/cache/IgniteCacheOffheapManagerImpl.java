@@ -31,7 +31,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -54,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -422,8 +420,52 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public int onUndeploy(ClassLoader ldr) {
-        // TODO: GG-11141.
-        return 0;
+        IgniteUuid ldrId = cctx.deploy().getClassLoaderId(ldr);
+
+        assert ldrId != null;
+
+        int undeployCnt = 0;
+
+        Iterator<CacheDataStore> dataStores = cacheData(true, true, null);
+
+        while (dataStores.hasNext()) {
+            CacheDataStore store = dataStores.next();
+
+            try {
+                GridCursor<? extends CacheDataRow> cur = store.cursor();
+
+                while (cur.next()) {
+                    CacheDataRow row = cur.get();
+
+                    IgniteUuid valLdrId = row.valueClassLoaderId();
+                    IgniteUuid keyLdrId = row.keyClassLoaderId();
+
+                    if (keyLdrId != null && ldrId.equals(keyLdrId)) {
+                        if (log.isTraceEnabled())
+                            log.trace("onUndeploy remove key [ldrId=" + ldrId + ']');
+
+                        store.remove(row.key(), store.partId());
+
+                        undeployCnt++;
+                    }
+                    else {
+                        if (valLdrId != null && ldrId.equals(valLdrId)) {
+                            store.remove(row.key(), store.partId());
+
+                            if (log.isTraceEnabled())
+                                log.trace("onUndeploy remove value [ldrId=" + ldrId + ']');
+
+                            undeployCnt++;
+                        }
+                    }
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to clear cache swap space on undeploy.", e);
+            }
+        }
+
+        return undeployCnt;
     }
 
     /** {@inheritDoc} */
@@ -1149,7 +1191,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             GridCacheQueryManager qryMgr = cctx.queries();
 
-            if (qryMgr.enabled())
+            if (qryMgr.enabled() && val != null)
                 qryMgr.remove(key, partId, val, ver);
 
             if (oldRow != null)
