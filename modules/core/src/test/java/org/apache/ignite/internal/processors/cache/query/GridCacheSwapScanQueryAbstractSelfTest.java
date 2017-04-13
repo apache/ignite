@@ -37,7 +37,6 @@ import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
@@ -94,8 +93,6 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         ccfg.setCacheMode(PARTITIONED);
 
         ccfg.setAtomicityMode(atomicityMode);
-
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 

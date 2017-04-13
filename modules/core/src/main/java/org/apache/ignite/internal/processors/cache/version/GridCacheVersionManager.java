@@ -79,7 +79,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
+        last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
 
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
     }
@@ -103,7 +103,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     public void dataCenterId(byte dataCenterId) {
         this.dataCenterId = dataCenterId;
 
-        last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
+        last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
     }
 
     /**
@@ -185,7 +185,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
             topVer += (gridStartTime - TOP_VER_BASE_TIME) / 1000;
 
-            ISOLATED_STREAMER_VER = new GridCacheVersion((int)topVer, 0, 0, 1, dataCenterId);
+            ISOLATED_STREAMER_VER = new GridCacheVersion((int)topVer, 0, 1, dataCenterId);
         }
 
         return ISOLATED_STREAMER_VER;
@@ -271,8 +271,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         if (topVer == -1)
             topVer = cctx.kernalContext().discovery().topologyVersion();
 
-        long globalTime = cctx.kernalContext().clockSync().adjustedTime(topVer);
-
         if (addTime) {
             if (gridStartTime == 0)
                 gridStartTime = cctx.kernalContext().discovery().gridStartTime();
@@ -286,7 +284,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
         GridCacheVersion next = new GridCacheVersion(
             (int)topVer,
-            globalTime,
             ord,
             locNodeOrder,
             dataCenterId);

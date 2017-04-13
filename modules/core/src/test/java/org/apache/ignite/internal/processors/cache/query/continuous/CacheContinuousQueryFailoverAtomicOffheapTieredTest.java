@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheMemoryMode;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 
 /**
- * Test for atomic cache with primary write order mode.
+ *
  */
-public class GridCacheAtomicPrimaryWriteOrderFullApiSelfTest extends GridCacheAtomicFullApiSelfTest {
+public class CacheContinuousQueryFailoverAtomicOffheapTieredTest
+    extends CacheContinuousQueryFailoverAtomicSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
+    @Override protected CacheMemoryMode memoryMode() {
+        return OFFHEAP_TIERED;
     }
 }

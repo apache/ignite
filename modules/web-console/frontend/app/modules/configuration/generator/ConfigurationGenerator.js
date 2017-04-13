@@ -1285,9 +1285,7 @@ export default class IgniteConfigurationGenerator {
 
     // Generate time group.
     static clusterTime(cluster, cfg = this.igniteConfigurationBean(cluster)) {
-        cfg.intProperty('clockSyncSamples')
-            .intProperty('clockSyncFrequency')
-            .intProperty('timeServerPortBase')
+        cfg.intProperty('timeServerPortBase')
             .intProperty('timeServerPortRange');
 
         return cfg;
@@ -1639,7 +1637,6 @@ export default class IgniteConfigurationGenerator {
     static cacheConcurrency(cache, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.intProperty('maxConcurrentAsyncOperations')
             .intProperty('defaultLockTimeout')
-            .enumProperty('atomicWriteOrderMode')
             .enumProperty('writeSynchronizationMode');
 
         return ccfg;

@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
@@ -30,13 +27,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
  */
 public class GridCacheAtomicMultiNodeP2PDisabledFullApiSelfTest
     extends GridCachePartitionedMultiNodeP2PDisabledFullApiSelfTest {
-    /**
-     * @return Write order mode for atomic cache.
-     */
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
@@ -55,14 +45,5 @@ public class GridCacheAtomicMultiNodeP2PDisabledFullApiSelfTest
     /** {@inheritDoc} */
     @Override protected boolean txEnabled() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
-
-        ccfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
-
-        return ccfg;
     }
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.Parameter;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -63,10 +62,6 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-ncs", "--nearCacheSize"}, description = "Near cache size")
     private int nearCacheSize;
-
-    /** */
-    @Parameter(names = {"-wom", "--writeOrderMode"}, description = "Write ordering mode")
-    private CacheAtomicWriteOrderMode orderMode;
 
     /** */
     @Parameter(names = {"-txc", "--txConcurrency"}, description = "Transaction concurrency")
@@ -246,13 +241,6 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
-     * @return Cache write ordering mode.
-     */
-    public CacheAtomicWriteOrderMode orderMode() {
-        return orderMode;
-    }
-
-    /**
      * @return Backups.
      */
     public int backups() {
@@ -418,8 +406,7 @@ public class IgniteBenchmarkArguments {
      */
     public String description() {
         return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
-            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency + "-rd=" + restartDelay +
-            "-rs=" + restartSleep;
+            "-txc=" + txConcurrency + "-rd=" + restartDelay + "-rs=" + restartSleep;
     }
 
     /** {@inheritDoc} */
