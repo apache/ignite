@@ -44,7 +44,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -90,15 +89,6 @@ public class IgniteCacheNoSyncForGetTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         super.afterTestsStopped();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicGet() throws Exception {
-        doGet(ATOMIC, ONHEAP_TIERED, false);
-
-        doGet(ATOMIC, ONHEAP_TIERED, true);
     }
 
     /**

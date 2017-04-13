@@ -140,7 +140,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** Value. */
     @GridToStringInclude
-    protected volatile CacheObject val;
+    protected CacheObject val;
 
     /** Start version. */
     @GridToStringInclude
@@ -371,15 +371,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isNewLocked() throws GridCacheEntryRemovedException {
-        if (val != null)
-            return false;
+    @Override public synchronized boolean isNewLocked() throws GridCacheEntryRemovedException {
+        checkObsolete();
 
-        synchronized (this) {
-            checkObsolete();
-
-            return isStartVersion();
-        }
+        return isStartVersion();
     }
 
     /**
@@ -472,8 +467,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     clearIndex(val);
                 }
-
-                value(null);
             }
             else {
                 obsolete = false;
@@ -873,41 +866,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridCacheVersion ver0 = null;
 
         Object res = null;
-
-        if (readerArgs == null &&
-            (expiryPlc == null || !expiryPlc.hasAccessTtl()) &&
-            !isNear() &&
-            !retVer &&
-            cctx.config().isEagerTtl()) {
-            // Fast heap get without 'synchronized'.
-            CacheObject val0 = this.val;
-
-            if (val0 != null) {
-                if (updateMetrics && cctx.cache().configuration().isStatisticsEnabled())
-                    cctx.cache().metrics0().onRead(true);
-
-                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
-                    transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
-
-                    cctx.events().addEvent(
-                        partition(),
-                        key,
-                        tx,
-                        null,
-                        EVT_CACHE_OBJECT_READ,
-                        val0,
-                        true,
-                        val0,
-                        true,
-                        subjId,
-                        transformClo != null ? transformClo.getClass().getName() : null,
-                        taskName,
-                        keepBinary);
-                }
-
-                return val0;
-            }
-        }
 
         synchronized (this) {
             checkObsolete();
@@ -2951,9 +2909,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException {
-        if (val != null)
-            return false;
-
         boolean obsolete = false;
         boolean deferred = false;
         GridCacheVersion ver0 = null;
@@ -3094,13 +3049,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public final boolean obsolete() {
-        if (val != null)
-            return false;
-
-        synchronized (this) {
-            return obsoleteVersionExtras() != null;
-        }
+    @Override public final synchronized boolean obsolete() {
+        return obsoleteVersionExtras() != null;
     }
 
     /** {@inheritDoc} */

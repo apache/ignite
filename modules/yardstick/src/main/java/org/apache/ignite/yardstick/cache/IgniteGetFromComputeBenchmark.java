@@ -115,7 +115,7 @@ public class IgniteGetFromComputeBenchmark extends IgniteCacheAbstractBenchmark<
      * @return Cache name.
      */
     protected String cacheName() {
-        return "atomic";
+        return "atomic-offheap";
     }
 
     /**
