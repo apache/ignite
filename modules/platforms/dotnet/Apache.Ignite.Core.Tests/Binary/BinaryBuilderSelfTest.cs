@@ -122,6 +122,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        private string GetTypeName(Type type)
+        {
+            return GetNameMapper().GetTypeName(type.AssemblyQualifiedName);
+        }
+
+        /// <summary>
         /// Tear down routine.
         /// </summary>
         [TestFixtureTearDown]
