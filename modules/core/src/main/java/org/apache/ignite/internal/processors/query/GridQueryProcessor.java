@@ -77,6 +77,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -97,6 +98,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_SCHEMA;
@@ -442,20 +444,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Process schema finish message from discovery thread.
      *
      * @param msg Message.
-     * @return {@code True} if exchange is needed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private boolean onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
+    private void onSchemaFinishDiscovery(SchemaFinishDiscoveryMessage msg) {
         UUID opId = msg.operation().id();
 
         if (log.isDebugEnabled())
             log.debug("Received schema finish message (discovery) [opId=" + opId + ", msg=" + msg + ']');
 
-        boolean res = false;
-
         synchronized (stateMux) {
             if (disconnected)
-                return false;
+                return;
 
             boolean completedOpAdded = completedOpIds.add(opId);
 
@@ -481,10 +480,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 SchemaOperation op = schemaOps.get(proposeMsg.schemaKey());
 
                 if (F.eq(op.id(), opId)) {
-                    // Completed top operation, process from exchange thread as usual.
+                    // Completed top operation.
                     op.finishMessage(msg);
 
-                    res = true;
+                    if (op.started())
+                        op.doFinish();
                 }
                 else {
                     // Completed operation in the middle, will schedule completion later.
@@ -496,6 +496,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
 
                     assert op != null;
+                    assert !op.started();
 
                     op.finishMessage(msg);
                 }
@@ -528,39 +529,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 cliFut.onDone(msg.error());
             else
                 cliFut.onDone();
-        }
-
-        return res;
-    }
-
-    /**
-     * Handle schema change finish message.
-     *
-     * @param msg Message.
-     */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    public void onSchemaFinish(SchemaFinishDiscoveryMessage msg) {
-        final UUID opId = msg.operation().id();
-
-        if (log.isDebugEnabled())
-            log.debug("Processing schema finish message (exchange) [opId=" + opId + ", msg=" + msg+ ']');
-
-        // Complete distributed operations.
-        synchronized (stateMux) {
-            if (disconnected)
-                return;
-
-            assert exchangeReady;
-
-            final SchemaKey key = msg.proposeMessage().schemaKey();
-
-            final SchemaOperation op = schemaOps.get(key);
-
-            assert op != null;
-            assert F.eq(opId, op.id()); // TODO: Assertion fails here: received finish on non-top operation
-            assert op.started();
-
-            op.onFinish();
         }
     }
 
@@ -635,8 +603,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             unwindPendingMessages(schemaOp.id(), mgr);
 
         // Schedule operation finish handling if needed.
-        if (schemaOp.isFinished())
-            schemaOp.onFinish();
+        if (schemaOp.hasFinishMessage())
+            schemaOp.doFinish();
     }
 
     /**
@@ -860,9 +828,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         else if (msg instanceof SchemaFinishDiscoveryMessage) {
             SchemaFinishDiscoveryMessage msg0 = (SchemaFinishDiscoveryMessage)msg;
 
-            boolean exchange = onSchemaFinishDiscovery(msg0);
-
-            msg0.exchange(exchange);
+            onSchemaFinishDiscovery(msg0);
         }
         else
             U.warn(log, "Received unsupported schema custom discovery message (will ignore) [opId=" +
@@ -2222,6 +2188,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Finish message. */
         private SchemaFinishDiscoveryMessage finishMsg;
 
+        /** Finish guard. */
+        private final AtomicBoolean finishGuard = new AtomicBoolean();
+
         /**
          * Constructor.
          *
@@ -2269,7 +2238,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /**
          * @return {@code True} if finish request already received.
          */
-        public boolean isFinished() {
+        public boolean hasFinishMessage() {
             return finishMsg != null;
         }
 
@@ -2277,9 +2246,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * Handle finish message.
          */
         @SuppressWarnings("unchecked")
-        public void onFinish() {
+        public void doFinish() {
             assert started();
 
+            if (!finishGuard.compareAndSet(false, true))
+                return;
+
+            final UUID opId = id();
             final SchemaKey key = proposeMsg.schemaKey();
 
             // Operation might be still in progress on client nodes which are not tracked by coordinator,
@@ -2290,9 +2263,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         SchemaOperation op = schemaOps.remove(key);
 
                         assert op != null;
+                        assert F.eq(op.id(), opId);
 
                         // Chain to the next operation (if any).
-                        SchemaOperation nextOp = op.next();
+                        final SchemaOperation nextOp = op.next();
 
                         if (nextOp != null) {
                             schemaOps.put(key, nextOp);
@@ -2302,7 +2276,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                             assert !nextOp.started();
 
-                            startSchemaChange(nextOp);
+                            // Cannot execute operation synchronously because it may cause starvation in exchange
+                            // thread under load. Hence, moving short-lived operation to separate worker.
+                            new IgniteThread(ctx.igniteInstanceName(), "schema-circuit-breaker-" + op.id(),
+                                new Runnable() {
+                                @Override public void run() {
+                                    onSchemaPropose(nextOp.proposeMessage());
+                                }
+                            }).start();
                         }
                     }
                 }

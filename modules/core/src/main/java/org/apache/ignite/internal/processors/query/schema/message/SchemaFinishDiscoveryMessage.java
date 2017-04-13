@@ -33,9 +33,6 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
     /** Error. */
     private final SchemaOperationException err;
 
-    /** Whether exchange should be triggered by this message. */
-    private transient boolean exchange;
-
     /** Original propose message. */
     private transient SchemaProposeDiscoveryMessage proposeMsg;
 
@@ -63,14 +60,7 @@ public class SchemaFinishDiscoveryMessage extends SchemaAbstractDiscoveryMessage
 
     /** {@inheritDoc} */
     @Override public boolean exchange() {
-        return exchange;
-    }
-
-    /**
-     * @param exchnage Exchange flag.
-     */
-    public void exchange(boolean exchnage) {
-        this.exchange = exchnage;
+        return false;
     }
 
     /**
