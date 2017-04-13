@@ -278,6 +278,8 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         Ignite cli = Ignition.start(clientConfiguration(4));
 
+        IgniteCache cache = cli.createCache(cacheConfiguration());
+
         final AtomicBoolean stopped = new AtomicBoolean();
 
         // Start several threads which will mess around indexes.
@@ -325,9 +327,6 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         // Make sure nothing hanged.
         idxFut.get();
-
-        // Make sure cache is operational at this point.
-        cli.getOrCreateCache(cacheConfiguration());
 
         queryProcessor(cli).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true).get();
         queryProcessor(cli).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();

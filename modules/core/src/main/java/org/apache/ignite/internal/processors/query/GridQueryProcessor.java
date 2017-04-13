@@ -74,6 +74,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
@@ -114,6 +115,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
+
+    /** JDK marshaller to serialize errors. */
+    private final JdkMarshaller marsh = new JdkMarshaller();
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -2150,14 +2154,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return null;
 
         try {
-            return U.marshal(ctx, err);
+            return U.marshal(marsh, err);
         }
         catch (Exception e) {
             U.warn(log, "Failed to marshal schema operation error [opId=" + opId + ", err=" + err + ']', e);
 
             try {
-                return U.marshal(ctx, new SchemaOperationException("Operation failed, but error cannot be serialized " +
-                    "(see local node log for more details) [opId=" + opId + ", nodeId=" + ctx.localNodeId() + ']'));
+                return U.marshal(marsh, new SchemaOperationException("Operation failed, but error cannot be " +
+                    "serialized (see local node log for more details) [opId=" + opId + ", nodeId=" +
+                    ctx.localNodeId() + ']'));
             }
             catch (Exception e0) {
                 assert false; // Impossible situation.
@@ -2178,7 +2183,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return null;
 
         try {
-            return U.unmarshal(ctx, errBytes, U.resolveClassLoader(ctx.config()));
+            return U.unmarshal(marsh, errBytes, U.resolveClassLoader(ctx.config()));
         }
         catch (Exception e) {
             return new SchemaOperationException("Operation failed, but error cannot be deserialized.");
