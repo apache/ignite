@@ -406,17 +406,17 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            boolean skipEntry;
+            boolean skipEntry = false;
 
             if (offheapRead) {
-                skipEntry = true;
-
                 GridCacheSwapEntry swapEntry = ctx.swap().readSwapEntry(cacheKey);
 
                 if (swapEntry != null) {
                     long expireTime = swapEntry.expireTime();
 
                     if (expireTime == 0 || expireTime < U.currentTimeMillis()) {
+                        skipEntry = true;
+
                         ctx.addResult(vals,
                             cacheKey,
                             swapEntry.value(),
@@ -442,14 +442,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 !deserializeBinary);
                         }
                     }
-                    else
-                        skipEntry = false;
                 }
                 else
                     success = false;
-
-                if (skipEntry && !success && !storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
-                    metrics0().onRead(false);
             }
             else
                 skipEntry = false;

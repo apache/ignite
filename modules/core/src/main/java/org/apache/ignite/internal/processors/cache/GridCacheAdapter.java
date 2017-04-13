@@ -1920,14 +1920,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                             GridCacheEntryEx entry = null;
 
-                            boolean skipEntry;
+                            boolean skipEntry = false;
 
                             if (offheapRead) {
                                 GridCacheSwapEntry swapEntry = ctx.swap().readSwapEntry(key);
 
                                 if (swapEntry != null) {
-                                    skipEntry = true;
-
                                     long expireTime = swapEntry.expireTime();
 
                                     if (expireTime != 0) {
@@ -1938,31 +1936,27 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                 expireTime,
                                                 swapEntry.ttl());
                                         }
-                                        else
-                                            skipEntry = false; // Do not skip entry if need process expiration.
                                     }
                                     else
                                         res = new EntryGetResult(swapEntry.value(), swapEntry.version(), false);
                                 }
-                                else
-                                    skipEntry = !storeEnabled;
 
-                                if (skipEntry) {
+                                if (res != null) {
+                                    skipEntry = true;
+
                                     if (evt) {
                                         ctx.events().readEvent(key,
                                             null,
-                                            swapEntry != null ? swapEntry.value() : null,
+                                            swapEntry.value(),
                                             subjId,
                                             taskName,
                                             !deserializeBinary);
                                     }
 
                                     if (updateMetrics && ctx.cache().configuration().isStatisticsEnabled())
-                                        ctx.cache().metrics0().onRead(swapEntry != null);
+                                        ctx.cache().metrics0().onRead(true);
                                 }
                             }
-                            else
-                                skipEntry = false;
 
                             if (!skipEntry) {
                                 entry = needEntry ? entryEx(key) : peekEx(key);

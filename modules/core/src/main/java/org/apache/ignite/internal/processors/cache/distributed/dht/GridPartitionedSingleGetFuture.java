@@ -369,37 +369,35 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 CacheObject v = null;
                 GridCacheVersion ver = null;
 
-                boolean skipEntry;
+                boolean skipEntry = false;
 
                 if (offheapRead) {
-                    skipEntry = true;
-
                     GridCacheSwapEntry swapEntry = cctx.swap().readSwapEntry(key);
 
                     if (swapEntry != null) {
                         long expireTime = swapEntry.expireTime();
 
                         if (expireTime == 0 || expireTime < U.currentTimeMillis()) {
+                            skipEntry = true;
+
                             v = swapEntry.value();
 
                             if (needVer)
                                 ver = swapEntry.version();
+
+                            if (evt) {
+                                cctx.events().readEvent(key,
+                                    null,
+                                    swapEntry.value(),
+                                    subjId,
+                                    taskName,
+                                    !deserializeBinary);
+                            }
                         }
                         else
                             skipEntry = false;
                     }
-
-                    if (skipEntry && evt) {
-                        cctx.events().readEvent(key,
-                            null,
-                            swapEntry != null ? swapEntry.value() : null,
-                            subjId,
-                            taskName,
-                            !deserializeBinary);
-                    }
                 }
-                else
-                    skipEntry = false;
 
                 if (!skipEntry) {
                     GridCacheEntryEx entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
