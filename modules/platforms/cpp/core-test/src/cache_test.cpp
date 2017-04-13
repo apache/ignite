@@ -50,25 +50,23 @@ namespace ignite
     namespace binary
     {
         IGNITE_BINARY_TYPE_START(Person)
-        IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
-        IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
-        IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-        IGNITE_BINARY_IS_NULL_FALSE(Person)
-        IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(Person)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
 
-        void Write(BinaryWriter& writer, Person obj)
-        {
-            writer.WriteString("name", obj.name);
-            writer.WriteInt32("age", obj.age);            
-        }
+            static void Write(BinaryWriter& writer, const Person& obj)
+            {
+                writer.WriteString("name", obj.name);
+                writer.WriteInt32("age", obj.age);
+            }
 
-        Person Read(BinaryReader& reader)
-        {
-            std::string name = reader.ReadString("name");
-            int age = reader.ReadInt32("age");
-            
-            return Person(name, age);
-        }
+            static void Read(BinaryReader& reader, Person& dst)
+            {
+                dst.name = reader.ReadString("name");
+                dst.age = reader.ReadInt32("age");
+            }
 
         IGNITE_BINARY_TYPE_END
     }

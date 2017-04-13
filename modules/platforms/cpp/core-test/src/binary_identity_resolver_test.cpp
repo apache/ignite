@@ -147,18 +147,14 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(DefaultHashing)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(DefaultHashing)
 
-            void Write(BinaryWriter& writer, const DefaultHashing& obj)
+            static void Write(BinaryWriter& writer, const DefaultHashing& obj)
             {
                 writer.WriteInt32("field", obj.field);
             }
 
-            DefaultHashing Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, DefaultHashing& dst)
             {
-                DefaultHashing val;
-
-                val.field = reader.ReadInt32("field");
-
-                return val;
+                dst.field = reader.ReadInt32("field");
             }
         };
 
@@ -174,22 +170,18 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(CompositeKey)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CompositeKey)
 
-            void Write(BinaryWriter& writer, const CompositeKey& obj)
+            static void Write(BinaryWriter& writer, const CompositeKey& obj)
             {
                 writer.WriteString("str", obj.str);
                 writer.WriteTimestamp("ts", obj.ts);
                 writer.WriteGuid("guid", obj.guid);
             }
 
-            CompositeKey Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, CompositeKey& dst)
             {
-                CompositeKey val;
-
-                val.str = reader.ReadString("str");
-                val.ts = reader.ReadTimestamp("ts");
-                val.guid = reader.ReadGuid("guid");
-
-                return val;
+                dst.str = reader.ReadString("str");
+                dst.ts = reader.ReadTimestamp("ts");
+                dst.guid = reader.ReadGuid("guid");
             }
         };
 
@@ -205,22 +197,18 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(CompositeKeySimple)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CompositeKeySimple)
 
-            void Write(BinaryWriter& writer, const CompositeKeySimple& obj)
+            static void Write(BinaryWriter& writer, const CompositeKeySimple& obj)
             {
                 writer.WriteString("str", obj.str);
                 writer.WriteTimestamp("ts", obj.ts);
                 writer.WriteInt64("i64", obj.i64);
             }
 
-            CompositeKeySimple Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, CompositeKeySimple& dst)
             {
-                CompositeKeySimple val;
-
-                val.str = reader.ReadString("str");
-                val.ts = reader.ReadTimestamp("ts");
-                val.i64 = reader.ReadInt64("i64");
-
-                return val;
+                dst.str = reader.ReadString("str");
+                dst.ts = reader.ReadTimestamp("ts");
+                dst.i64 = reader.ReadInt64("i64");
             }
         };
     }

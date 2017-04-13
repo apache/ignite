@@ -86,9 +86,7 @@ void GetObjectData(const T& obj, common::FixedSizeArray<int8_t>& data)
     BinaryWriterImpl writerImpl(&stream, &idResolver, 0, 0, 0);
     BinaryWriter writer(&writerImpl);
 
-    BinaryType<T> bt;
-
-    bt.Write(writer, obj);
+    BinaryType<T>::Write(writer, obj);
 
     data.Assign(mem.Data(), stream.Position());
 }
