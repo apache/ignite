@@ -151,7 +151,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             assert oldFreeSpace > 0 : oldFreeSpace;
 
             // If the full row does not fit into this page write only a fragment.
-            written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(pageId, page, pageAddr, io, row, rowSize) :
+            written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(pageId, page, pageAddr, io, row, rowSize):
                 addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
 
             // Reread free space after update.
@@ -251,6 +251,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         }
     }
 
+
     /** */
     private final PageHandler<Void, Long> rmvRow = new RemoveRowHandler();
 
@@ -273,7 +274,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
-            assert oldFreeSpace >= 0 : oldFreeSpace;
+            assert oldFreeSpace >= 0: oldFreeSpace;
 
             long nextLink = io.removeRow(pageAddr, itemId, pageSize());
 
@@ -374,7 +375,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             totalSize += pages * pageSize;
         }
 
-        return totalSize == 0 ? -1L : ((float)loadSize / totalSize);
+        return totalSize == 0 ? -1L : ((float) loadSize / totalSize);
     }
 
     /** {@inheritDoc} */

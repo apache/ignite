@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheNearTxStoreException
 import org.apache.ignite.internal.processors.cache.GridCacheObjectToStringSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapMultiThreadedUpdateSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheP2PUndeploySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheReplicatedTxStoreExceptionSelfTest;
@@ -219,8 +220,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCacheMvccSelfTest.class, ignoredTests);
         suite.addTestSuite(GridCacheMvccPartitionedSelfTest.class);
         suite.addTestSuite(GridCacheMvccManagerSelfTest.class);
-        // TODO GG-11141.
-        // suite.addTestSuite(GridCacheP2PUndeploySelfTest.class);
+        suite.addTestSuite(GridCacheP2PUndeploySelfTest.class);
         suite.addTestSuite(GridCacheConfigurationValidationSelfTest.class);
         suite.addTestSuite(GridCacheConfigurationConsistencySelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreSelfTest.class);
