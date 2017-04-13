@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.NotNull(meta);
 
-            Assert.AreEqual("Value", meta.TypeName);
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Cache.Store.Value", meta.TypeName);
         }
 
         /// <summary>
