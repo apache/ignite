@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// LINQ test with simple name mapper.
     /// </summary>
-    public class CacheLinqTestSimpleNameMapper : CacheLinqTest
+    public class CacheLinqTestSimpleName : CacheLinqTest
     {
         /** <inheritdoc /> */
         protected override IBinaryNameMapper GetNameMapper()

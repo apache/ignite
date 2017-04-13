@@ -68,6 +68,7 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
     <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestDynamicRegistration.cs" />
     <Compile Include="Binary\BinaryNameMapperTest.cs" />
@@ -91,7 +92,7 @@
     <Compile Include="Cache\CacheSwapSpaceTest.cs" />
     <Compile Include="Cache\Query\CacheDmlQueriesTest.cs" />
     <Compile Include="Cache\CacheAbstractTransactionalTest.cs" />
-    <Compile Include="Cache\Query\CacheLinqTestSimpleNameMapper.cs" />
+    <Compile Include="Cache\Query\CacheLinqTestSimpleName.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
     <Compile Include="Cache\Store\NamedNodeCacheStoreTest.cs" />
     <Compile Include="Collections\MultiValueDictionaryTest.cs" />
