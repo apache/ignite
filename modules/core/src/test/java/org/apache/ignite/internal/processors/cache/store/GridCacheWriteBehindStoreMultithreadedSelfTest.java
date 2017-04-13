@@ -30,7 +30,6 @@ import org.junit.Test;
  * Multithreaded tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
 public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWriteBehindStoreAbstractSelfTest {
-
     /**
      * This test performs complex set of operations on store with coalescing from multiple threads.
      *

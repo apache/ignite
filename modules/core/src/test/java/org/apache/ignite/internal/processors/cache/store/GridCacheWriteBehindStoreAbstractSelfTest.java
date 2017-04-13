@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.store;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -97,8 +98,11 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
      */
     protected void shutdownStore() throws Exception {
         store.stop();
-
-        assertTrue("Store cache must be empty after shutdown", store.writeCache().isEmpty());
+        if (store.getWriteCoalescing())
+            assertTrue("Store cache must be empty after shutdown", store.writeCache().isEmpty());
+        else
+            for (Map<?,?> fMap : store.flusherMaps())
+                assertTrue("Store flusher cache must be empty after shutdown", fMap.isEmpty());
     }
 
     /**

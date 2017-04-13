@@ -34,8 +34,6 @@ import org.jsr166.ConcurrentLinkedHashMap;
  * This class provides basic tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
 public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStoreAbstractSelfTest {
-
-
     /**
      * Tests correct store (with write coalescing) shutdown when underlying store fails.
      *
