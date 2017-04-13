@@ -3946,7 +3946,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     private <T> IgniteInternalFuture<T> nonInterruptable(IgniteInternalFuture<T> fut) {
         // Safety.
         if (fut instanceof GridFutureAdapter)
-            ((GridFutureAdapter)fut).ignoreInterrupts(true);
+            ((GridFutureAdapter)fut).ignoreInterrupts();
 
         return fut;
     }

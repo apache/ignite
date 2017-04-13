@@ -70,8 +70,9 @@ namespace Apache.Ignite.Core.Tests
         {
             var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml'>
                             <localhost>127.1.1.1</localhost>
-                            <binaryConfiguration compactFooter='false'>
-                                <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
+                            <binaryConfiguration compactFooter='false' keepDeserialized='true'>
+                                <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
+                                <idMapper type='Apache.Ignite.Core.Tests.Binary.IdMapper' />
                                 <types>
                                     <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
                                 </types>
@@ -155,7 +156,7 @@ namespace Apache.Ignite.Core.Tests
                 ((TcpDiscoveryMulticastIpFinder) ((TcpDiscoverySpi) cfg.DiscoverySpi).IpFinder).AddressRequestAttempts);
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
             Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
-            Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.DefaultNameMapper).Bar);
+            Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.NameMapper).Bar);
             Assert.AreEqual(
                 "Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests",
                 cfg.BinaryConfiguration.Types.Single());
@@ -615,10 +616,10 @@ namespace Apache.Ignite.Core.Tests
                         }
                     },
                     Types = new[] {typeof (string).FullName},
-                    DefaultIdMapper = new IdMapper(),
-                    DefaultKeepDeserialized = true,
-                    DefaultNameMapper = new NameMapper(),
-                    DefaultSerializer = new TestSerializer()
+                    IdMapper = new IdMapper(),
+                    KeepDeserialized = true,
+                    NameMapper = new NameMapper(),
+                    Serializer = new TestSerializer()
                 },
                 CacheConfiguration = new[]
                 {

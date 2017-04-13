@@ -171,9 +171,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     @GridToStringInclude
     private volatile IgniteInternalFuture<?> partReleaseFut;
 
-    /** */
-    private final Object mux = new Object();
-
     /** Logger. */
     private IgniteLogger log;
 
@@ -1087,7 +1084,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
-                    "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
+                    ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
             initFut.onDone(err == null);
 
@@ -1201,7 +1198,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         boolean allReceived = false;
         boolean updateSingleMap = false;
 
-        synchronized (mux) {
+        synchronized (this) {
             assert crd != null;
 
             if (crd.isLocal()) {
@@ -1222,13 +1219,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 updatePartitionSingleMap(msg);
             }
             finally {
-                synchronized (mux) {
+                synchronized (this) {
                     assert pendingSingleUpdates > 0;
 
                     pendingSingleUpdates--;
 
                     if (pendingSingleUpdates == 0)
-                        mux.notifyAll();
+                        notifyAll();
                 }
             }
         }
@@ -1243,15 +1240,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /**
      *
      */
-    private void awaitSingleMapUpdates() {
-        synchronized (mux) {
-            try {
-                while (pendingSingleUpdates > 0)
-                    U.wait(mux);
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                U.warn(log, "Failed to wait for partition map updates, thread was interrupted: " + e);
-            }
+    private synchronized void awaitSingleMapUpdates() {
+        try {
+            while (pendingSingleUpdates > 0)
+                U.wait(this);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            U.warn(log, "Failed to wait for partition map updates, thread was interrupted: " + e);
         }
     }
 
@@ -1316,7 +1311,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             else {
                 List<ClusterNode> nodes;
 
-                synchronized (mux) {
+                synchronized (this) {
                     srvNodes.remove(cctx.localNode());
 
                     nodes = new ArrayList<>(srvNodes);
@@ -1423,7 +1418,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert msg.exchangeId().equals(exchId) : msg;
         assert msg.lastVersion() != null : msg;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (crd == null)
                 return;
 
@@ -1605,7 +1600,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                         discoCache.updateAlives(node);
 
-                        synchronized (mux) {
+                        synchronized (this) {
                             if (!srvNodes.remove(node))
                                 return;
 
@@ -1755,7 +1750,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         Set<UUID> remaining;
         List<ClusterNode> srvNodes;
 
-        synchronized (mux) {
+        synchronized (this) {
             remaining = new HashSet<>(this.remaining);
             srvNodes = this.srvNodes != null ? new ArrayList<>(this.srvNodes) : null;
         }
