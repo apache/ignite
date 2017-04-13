@@ -295,7 +295,7 @@ namespace ignite
 
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
 
-            bool IsNull(const RangeFilter<K,V>&)
+            static bool IsNull(const RangeFilter<K,V>&)
             {
                 return false;
             }
