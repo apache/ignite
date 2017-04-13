@@ -21,10 +21,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using NUnit.Framework;
 
     /// <summary>
-    /// LINQ test with simple name mapper.
+    /// Test with simple name mapper.
     /// </summary>
     [TestFixture]
-    public class CacheLinqTestSimpleName : CacheLinqTest
+    public class CacheDmlQueriesTestSimpleName : CacheDmlQueriesTest
     {
         /** <inheritdoc /> */
         protected override IBinaryNameMapper GetNameMapper()

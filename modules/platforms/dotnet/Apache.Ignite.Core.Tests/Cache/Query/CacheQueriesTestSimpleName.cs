@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using Apache.Ignite.Core.Binary;
+    using NUnit.Framework;
 
     /// <summary>
     /// Test with simple name mapper.
     /// </summary>
+    [TestFixture]
     public class CacheQueriesTestSimpleName : CacheQueriesTest
     {
         /** <inheritdoc /> */
