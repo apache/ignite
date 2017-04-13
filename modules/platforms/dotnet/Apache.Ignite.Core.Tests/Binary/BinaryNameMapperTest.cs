@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
@@ -36,9 +37,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.IsFalse(mapper.IsSimpleName);
 
-            // TODO: More tests.
-
-            foreach (var type in new[] {GetType(), typeof(Foo)})
+            foreach (var type in GetTestTypes())
             {
                 Assert.AreEqual(type.FullName, mapper.GetTypeName(type.AssemblyQualifiedName));
                 Assert.AreEqual(type.FullName, mapper.GetTypeName(type.FullName));
@@ -56,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.IsTrue(mapper.IsSimpleName);
 
-            foreach (var type in new[] {GetType(), typeof(Foo), typeof(int)})
+            foreach (var type in GetTestTypes())
             {
                 Assert.AreEqual(type.Name, mapper.GetTypeName(type.AssemblyQualifiedName));
                 Assert.AreEqual(type.Name, mapper.GetTypeName(type.FullName));
@@ -68,6 +67,22 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("Dictionary`2[[Int32],[String]]", 
                 mapper.GetTypeName(typeof(Dictionary<int, string>).AssemblyQualifiedName));
             Assert.AreEqual("Bar`1[[Foo]]", mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
+        }
+
+        /// <summary>
+        /// Gets the test types.
+        /// </summary>
+        private IEnumerable<Type> GetTestTypes()
+        {
+            return new[]
+            {
+                GetType(),
+                typeof(Foo),
+                typeof(int),
+                typeof(Bar<int>),
+                typeof(Dictionary<string, Bar<Foo>>),
+                typeof(List<Bar<int>>)
+            };
         }
 
         /// <summary>
