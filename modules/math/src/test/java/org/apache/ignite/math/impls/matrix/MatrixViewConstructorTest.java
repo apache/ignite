@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.impls.storage.matrix.MatrixDelegateStorage;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -80,5 +81,30 @@ public class MatrixViewConstructorTest {
             for (int col = 0; col < cols; col++)
                 assertEquals("Unexpected value set at " + row + "x" + col,
                     0d, parent.get(row + rowOff, col + colOff), 0d);
+    }
+
+    /** */
+    @Test
+    public void attributeTest(){
+        for (Matrix m : new Matrix[] {new DenseLocalOnHeapMatrix(3, 3),
+            new DenseLocalOnHeapMatrix(3, 4), new DenseLocalOnHeapMatrix(4, 3)}){
+            MatrixView matrixView = new MatrixView(m, 0, 0, m.rowSize(), m.columnSize());
+
+            MatrixDelegateStorage delegateStorage = (MatrixDelegateStorage)matrixView.getStorage();
+
+            assertEquals(m.rowSize(), matrixView.rowSize());
+            assertEquals(m.columnSize(), matrixView.columnSize());
+
+            assertEquals(m.rowSize(), (delegateStorage).rowsLength());
+            assertEquals(m.columnSize(), (delegateStorage).columnsLength());
+
+            assertEquals(m.isSequentialAccess(), delegateStorage.isSequentialAccess());
+            assertEquals(m.isRandomAccess(), delegateStorage.isRandomAccess());
+            assertEquals(m.isDistributed(), delegateStorage.isDistributed());
+            assertEquals(m.isDense(), delegateStorage.isDense());
+            assertEquals(m.isArrayBased(), delegateStorage.isArrayBased());
+
+            assertArrayEquals(m.getStorage().data(), delegateStorage.data());
+        }
     }
 }
