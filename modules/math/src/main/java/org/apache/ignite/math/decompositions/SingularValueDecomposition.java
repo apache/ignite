@@ -21,7 +21,17 @@ import org.apache.ignite.math.Algebra;
 import org.apache.ignite.math.Matrix;
 
 /**
- * TODO: add description.
+ * Compute a singular value decomposition (SVD) of {@code (l x k)} matrix {@code m}.
+ * <p>This decomposition can be thought
+ * as an extension of {@link EigenDecomposition} to rectangular matrices. The factorization we get is following:</p>
+ * <p>{@code m = u * s * v^{*}}, where</p>
+ * <ul><li>{@code u} is a real or complex unitary matrix.</li>
+ * <li>{@code s} is a rectangular diagonal matrix with non-negative real numbers on diagonal
+ * (these numbers are singular values of {@code m}).</li>
+ * <li>{@code v} is a real or complex unitary matrix.</li></ul>
+ * <p>If {@code m} is real then {@code u} and {@code v} are also real.</p>
+ * <p>See also: <a href="https://en.wikipedia.org/wiki/Singular_value_decomposition">Wikipedia article on SVD</a>.</p>
+ * <p>Note: complex case is currently not supported.</p>
  */
 public class SingularValueDecomposition extends DecompositionSupport {
     // U and V.
@@ -266,7 +276,7 @@ public class SingularValueDecomposition extends DecompositionSupport {
                 if (k == -1)
                     break;
 
-                if (Math.abs(e[k]) <= tiny +eps * (Math.abs(s[k]) + Math.abs(s[k + 1]))) {
+                if (Math.abs(e[k]) <= tiny + eps * (Math.abs(s[k]) + Math.abs(s[k + 1]))) {
                     e[k] = 0.0;
 
                     break;
@@ -512,17 +522,17 @@ public class SingularValueDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Gets the diagonal of {@code S} , which is a one-dimensional array of
+     * Gets the diagonal of {@code S}, which is a one-dimensional array of
      * singular values.
      *
-     * @return diagonal of {@code S} .
+     * @return diagonal of {@code S}.
      */
     public double[] getSingularValues() {
         return s;
     }
 
     /**
-     * Gets the left singular vectors {@code U} .
+     * Gets the left singular vectors {@code U}.
      *
      * @return {@code U}
      */
@@ -543,7 +553,7 @@ public class SingularValueDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Gets the right singular vectors {@code V} .
+     * Gets the right singular vectors {@code V}.
      *
      * @return {@code V}
      */
@@ -564,7 +574,7 @@ public class SingularValueDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Gets the two norm, which is {@code max(S)} .
+     * Gets the two norm, which is {@code max(S)}.
      */
     public double norm2() {
         return s[0];

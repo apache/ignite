@@ -3,17 +3,18 @@ package org.apache.ignite.math.exceptions;
 import org.apache.ignite.IgniteException;
 
 /**
- * TODO: add description.
+ * This exception is used to indicate error condition of matrix elements failing the positivity check.
  */
 public class NonPositiveDefiniteMatrixException extends IgniteException {
     /**
      * Construct an exception.
      *
      * @param wrong Value that fails the positivity check.
-     * @param index Row (and column) index.
+     * @param idx Row (and column) index.
      * @param threshold Absolute positivity threshold.
      */
-    public NonPositiveDefiniteMatrixException(double wrong, int index, double threshold) {
-        super("Matrix must be positive, wrong element located on diagonal with index " + index+ " and have value " + wrong + " with this threshold " + threshold);
+    public NonPositiveDefiniteMatrixException(double wrong, int idx, double threshold) {
+        super("Matrix must be positive, wrong element located on diagonal with index "
+            + idx + " and has value " + wrong + " with this threshold " + threshold);
     }
 }

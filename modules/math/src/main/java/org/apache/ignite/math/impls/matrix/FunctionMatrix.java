@@ -25,7 +25,7 @@ import org.apache.ignite.math.functions.IntIntToDoubleFunction;
 import org.apache.ignite.math.impls.storage.matrix.FunctionMatrixStorage;
 
 /**
- * TODO: add description.
+ * Implementation of {@link Matrix} that maps roq and column index to {@link java.util.function} interfaces.
  */
 public class FunctionMatrix extends AbstractMatrix {
     /**
@@ -38,9 +38,9 @@ public class FunctionMatrix extends AbstractMatrix {
     /**
      * Creates read-write or read-only function matrix.
      *
-     * @param rows
-     * @param cols
-     * @param getFunc
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     * @param getFunc Function that returns value corresponding to given row and column index.
      * @param setFunc Set function. If {@code null} - this will be a read-only matrix.
      */
     public FunctionMatrix(int rows, int cols, IntIntToDoubleFunction getFunc, IntIntDoubleToVoidFunction setFunc) {
@@ -54,9 +54,9 @@ public class FunctionMatrix extends AbstractMatrix {
     /**
      * Creates read-only function matrix.
      *
-     * @param rows
-     * @param cols
-     * @param getFunc
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     * @param getFunc Function that returns value corresponding to given row and column index.
      */
     public FunctionMatrix(int rows, int cols, IntIntToDoubleFunction getFunc) {
         assert rows > 0;

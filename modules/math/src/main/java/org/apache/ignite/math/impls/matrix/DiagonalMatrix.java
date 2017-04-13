@@ -25,7 +25,9 @@ import org.apache.ignite.math.impls.storage.matrix.DiagonalMatrixStorage;
 import org.apache.ignite.math.impls.vector.SingleElementVectorView;
 
 /**
- * TODO: add description.
+ * Implementation of diagonal view of the {@link Matrix}.
+ *
+ * <p>See also: <a href="https://en.wikipedia.org/wiki/Diagonal_matrix">Wikipedia article</a>.</p>
  */
 public class DiagonalMatrix extends AbstractMatrix {
     /**
@@ -37,7 +39,7 @@ public class DiagonalMatrix extends AbstractMatrix {
 
     /**
      *
-     * @param diagonal
+     * @param diagonal Backing {@link Vector}.
      */
     public DiagonalMatrix(Vector diagonal) {
         super(new DiagonalMatrixStorage(diagonal));
@@ -45,7 +47,7 @@ public class DiagonalMatrix extends AbstractMatrix {
 
     /**
      *
-     * @param mtx
+     * @param mtx Backing {@link Matrix}.
      */
     public DiagonalMatrix(Matrix mtx) {
         super(new DiagonalMatrixStorage(mtx == null ? null : mtx.viewDiagonal()));
@@ -53,7 +55,7 @@ public class DiagonalMatrix extends AbstractMatrix {
 
     /**
      *
-     * @param vals
+     * @param vals Backing array of values at diagonal.
      */
     public DiagonalMatrix(double[] vals) {
         super(new DiagonalMatrixStorage(new DenseLocalOnHeapVector(vals)));
@@ -69,29 +71,34 @@ public class DiagonalMatrix extends AbstractMatrix {
 
     /**
      *
-     * @param size
-     * @param val
+     * @param size Size of diagonal.
+     * @param val Constant value at diagonal.
      */
     public DiagonalMatrix(int size, double val) {
         super(new DiagonalMatrixStorage(new ConstantVector(size, val)));
     }
 
+    /** {@inheritDoc} */
     @Override public Vector viewRow(int row) {
         return new SingleElementVectorView(storage().diagonal(), row);
     }
 
+    /** {@inheritDoc} */
     @Override public Vector viewColumn(int col) {
         return new SingleElementVectorView(storage().diagonal(), col);
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix copy() {
         return new DiagonalMatrix(storage().diagonal());
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
         return storage().diagonal().likeMatrix(rows, cols);
     }
 
+    /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
         return storage().diagonal().like(crd);
     }

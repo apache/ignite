@@ -24,7 +24,7 @@ import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.matrix.MatrixDelegateStorage;
 
 /**
- * TODO: add description.
+ * Implements transposed view of the parent {@link Matrix}.
  */
 public class TransposedMatrixView extends AbstractMatrix {
     /** */
@@ -34,6 +34,7 @@ public class TransposedMatrixView extends AbstractMatrix {
 
     /**
      *
+     * @param mtx Parent matrix.
      */
     public TransposedMatrixView(Matrix mtx){
         this(mtx == null ? null : mtx.getStorage());

@@ -28,32 +28,37 @@ import java.io.*;
 import java.util.*;
 
 /**
- * TODO: add description.
+ * This class provides a helper implementation of the {@link Matrix}
+ * interface to minimize the effort required to implement it.
+ * Subclasses may override some of the implemented methods if a more
+ * specific or optimized implementation is desirable.
  *
  * TODO: add row/column optimization.
  */
 public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.
-    private static final double Z95 = 1.959964;
-    private static final double Z80 = 1.281552;
-    private static final int MAX_SAMPLES = 500;
-    private static final int MIN_SAMPLES = 15;
+    /** */ private static final double Z95 = 1.959964;
+    /** */ private static final double Z80 = 1.281552;
+    /** */ private static final int MAX_SAMPLES = 500;
+    /** */ private static final int MIN_SAMPLES = 15;
 
-    // Cached maximum and minimum elements.
-    private Element minElm, maxElm = null;
+    /** Cached minimum element. */
+    private Element minElm;
+    /** Cached maximum element. */
+    private Element maxElm = null;
 
-    // Matrix storage implementation.
+    /** Matrix storage implementation. */
     private MatrixStorage sto;
 
-    // Meta attribute storage.
+    /** Meta attributes storage. */
     private Map<String, Object> meta = new HashMap<>();
 
-    // Matrix's GUID.
+    /** Matrix's GUID. */
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /**
      *
-     * @param sto
+     * @param sto Backing {@link MatrixStorage}.
      */
     public AbstractMatrix(MatrixStorage sto) {
         this.sto = sto;
@@ -68,7 +73,7 @@ public abstract class AbstractMatrix implements Matrix {
 
     /**
      *
-     * @param sto
+     * @param sto Backing {@link MatrixStorage}.
      */
     protected void setStorage(MatrixStorage sto) {
         assert sto != null;
@@ -78,9 +83,9 @@ public abstract class AbstractMatrix implements Matrix {
 
     /**
      *
-     * @param row
-     * @param col
-     * @param v
+     * @param row Row index in the matrix.
+     * @param col Column index in the matrix.
+     * @param v Value to set.
      */
     protected void storageSet(int row, int col, double v) {
         sto.set(row, col, v);
@@ -91,8 +96,8 @@ public abstract class AbstractMatrix implements Matrix {
 
     /**
      *
-     * @param row
-     * @param col
+     * @param row Row index in the matrix.
+     * @param col Column index in the matrix.
      *
      */
     protected double storageGet(int row, int col) {
@@ -163,29 +168,29 @@ public abstract class AbstractMatrix implements Matrix {
 
     /**
      *
-     * @param row
-     * @param col
+     * @param row Row index in the matrix.
+     * @param col Column index in the matrix.
      *
      */
     private Element mkElement(int row, int col) {
         return new Element() {
-            @Override
-            public double get() {
+            /** {@inheritDoc} */
+            @Override public double get() {
                 return storageGet(row, col);
             }
 
-            @Override
-            public int row() {
+            /** {@inheritDoc} */
+            @Override public int row() {
                 return row;
             }
 
-            @Override
-            public int column() {
+            /** {@inheritDoc} */
+            @Override public int column() {
                 return col;
             }
 
-            @Override
-            public void set(double d) {
+            /** {@inheritDoc} */
+            @Override public void set(double d) {
                 storageSet(row, col, d);
             }
         };
