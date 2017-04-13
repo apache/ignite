@@ -144,8 +144,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      */
     private static class Hook extends GridTestUtils.DiscoveryHook {
         @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
-            if (msg != null)
-                System.out.println("DISCO: " + msg);
+//            if (msg != null)
+//                System.out.println("DISCO: " + msg);
         }
     }
 

@@ -457,13 +457,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             assert completedOpAdded;
 
-//            if (!completedOpIds.add(opId)) {
-//                if (log.isDebugEnabled())
-//                    log.debug("Duplicate schema finish message [opId=" + opId + ']');
-//
-//                return false;
-//            }
-
             // Remove propose message so that it will not be shared with joining nodes.
             SchemaProposeDiscoveryMessage proposeMsg = activeProposals.remove(opId);
 
@@ -480,9 +473,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // Propose message will be used from exchange thread to
             msg.proposeMessage(proposeMsg);
 
-            if (exchangeReady)
-                // Process from exchange thread as usual.
-                res = true;
+            if (exchangeReady) {
+                SchemaOperation op = schemaOps.get(proposeMsg.schemaKey());
+
+                if (F.eq(op.id(), opId)) {
+                    // Completed top operation, process from exchange thread as usual.
+                    op.finishMessage(msg);
+
+                    res = true;
+                }
+                else {
+                    // Completed operation in the middle, will schedule completion later.
+                    while (op != null) {
+                        if (F.eq(op.id(), opId))
+                            break;
+
+                        op = op.next();
+                    }
+
+                    assert op != null;
+
+                    op.finishMessage(msg);
+                }
+            }
             else {
                 // Set next operation as top-level one.
                 SchemaKey schemaKey = proposeMsg.schemaKey();
@@ -543,31 +556,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             assert F.eq(opId, op.id()); // TODO: Assertion fails here: received finish on non-top operation
             assert op.started();
 
-            // Operation might be still in progress on client nodes which are not tracked by coordinator,
-            // so we chain to operation future instead of doing synchronous unwind.
-            op.manager().worker().future().listen(new IgniteInClosure<IgniteInternalFuture>() {
-                @Override public void apply(IgniteInternalFuture fut) {
-                    synchronized (stateMux) {
-                        SchemaOperation op = schemaOps.remove(key);
-
-                        assert op != null;
-
-                        // Chain to the next operation (if any).
-                        SchemaOperation nextOp = op.next();
-
-                        if (nextOp != null) {
-                            schemaOps.put(key, nextOp);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Next schema change operation started [opId=" + opId +
-                                    ", nextOpId=" + nextOp.id() + ']');
-
-                            if (!nextOp.started())
-                                startSchemaChange(nextOp);
-                        }
-                    }
-                }
-            });
+            op.onFinish();
         }
     }
 
@@ -637,8 +626,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         mgr.start();
 
+        // Unwind pending IO messages.
         if (!ctx.clientNode() && coordinator().isLocal())
             unwindPendingMessages(schemaOp.id(), mgr);
+
+        // Schedule operation finish handling if needed.
+        if (schemaOp.isFinished())
+            schemaOp.onFinish();
     }
 
     /**
@@ -1141,7 +1135,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             try {
                 if (op instanceof SchemaIndexCreateOperation) {
-                    SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation) op;
+                    SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 
                     QueryUtils.processDynamicIndexChange(op0.indexName(), op0.index(), type);
 
@@ -2218,6 +2212,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Operation manager. */
         private SchemaOperationManager mgr;
 
+        /** Finish message. */
+        private SchemaFinishDiscoveryMessage finishMsg;
+
         /**
          * Constructor.
          *
@@ -2253,6 +2250,56 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          */
         public void next(SchemaOperation next) {
             this.next = next;
+        }
+
+        /**
+         * @param finishMsg Finish message.
+         */
+        public void finishMessage(SchemaFinishDiscoveryMessage finishMsg) {
+            this.finishMsg = finishMsg;
+        }
+
+        /**
+         * @return {@code True} if finish request already received.
+         */
+        public boolean isFinished() {
+            return finishMsg != null;
+        }
+
+        /**
+         * Handle finish message.
+         */
+        @SuppressWarnings("unchecked")
+        public void onFinish() {
+            assert started();
+
+            final SchemaKey key = proposeMsg.schemaKey();
+
+            // Operation might be still in progress on client nodes which are not tracked by coordinator,
+            // so we chain to operation future instead of doing synchronous unwind.
+            mgr.worker().future().listen(new IgniteInClosure<IgniteInternalFuture>() {
+                @Override public void apply(IgniteInternalFuture fut) {
+                    synchronized (stateMux) {
+                        SchemaOperation op = schemaOps.remove(key);
+
+                        assert op != null;
+
+                        // Chain to the next operation (if any).
+                        SchemaOperation nextOp = op.next();
+
+                        if (nextOp != null) {
+                            schemaOps.put(key, nextOp);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Next schema change operation started [opId=" + nextOp.id() + ']');
+
+                            assert !nextOp.started();
+
+                            startSchemaChange(nextOp);
+                        }
+                    }
+                }
+            });
         }
 
         /**
