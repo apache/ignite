@@ -1216,7 +1216,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                     IBinaryType meta = val.GetBinaryType();
 
-                    Assert.AreEqual(typeof(BinarizableEntry).Name, meta.TypeName);
+                    Assert.AreEqual(typeof(BinarizableEntry).FullName, meta.TypeName);
                 }
 
                 countDown.Signal();
