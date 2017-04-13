@@ -100,4 +100,10 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>math</id>
+        </profile>
+    </profiles>
 </project>

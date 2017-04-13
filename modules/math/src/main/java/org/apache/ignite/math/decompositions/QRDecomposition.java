@@ -132,14 +132,14 @@ public class QRDecomposition extends DecompositionSupport {
     /**
      * Returns whether the matrix {@code A} has full rank.
      *
-     * @return true if {@code R}, and hence {@code A{@code , has full rank.
+     * @return true if {@code R}, and hence {@code A} , has full rank.
      */
     public boolean hasFullRank() {
         return fullRank;
     }
 
     /**
-     * Least squares solution of {@code A*X = B}; {@code returns X{@code .
+     * Least squares solution of {@code A*X = B}; {@code returns X}.
      *
      * @param mtx A matrix with as many rows as {@code A} and any number of cols.
      * @return {@code X<} that minimizes the two norm of {@code Q*R*X - B}.

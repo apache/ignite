@@ -288,6 +288,8 @@ public class Tracer {
      * @throws IOException
      */
     private static String fileToString(String fileName) throws IOException {
+        assert Tracer.class.getResourceAsStream(fileName) != null : "Can't get resource: " + fileName;
+
         InputStreamReader is = new InputStreamReader(Tracer.class.getResourceAsStream(fileName));
 
         String str = new BufferedReader(is).lines().collect(Collectors.joining("\n"));
