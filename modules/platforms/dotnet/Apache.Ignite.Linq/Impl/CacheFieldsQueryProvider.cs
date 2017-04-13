@@ -231,18 +231,13 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Escapes the name of the table: strips namespace and replaces nested class qualifiers.
+        /// Escapes the name of the table: strips namespace and nested class qualifiers.
         /// </summary>
         private static string EscapeTableName(string valueTypeName)
         {
-            var nsIndex = valueTypeName.LastIndexOf('.');
+            var nsIndex = Math.Max(valueTypeName.LastIndexOf('.'), valueTypeName.LastIndexOf('+'));
 
-            if (nsIndex > 0)
-            {
-                valueTypeName = valueTypeName.Substring(nsIndex + 1);
-            }
-
-            return valueTypeName.Replace('+', '_');
+            return nsIndex > 0 ? valueTypeName.Substring(nsIndex + 1) : valueTypeName;
         }
 
         /// <summary>
