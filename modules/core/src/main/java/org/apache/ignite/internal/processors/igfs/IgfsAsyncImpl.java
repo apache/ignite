@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import com.sun.javafx.beans.annotations.NonNull;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
@@ -220,7 +221,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String name() {
+    @NonNull @Override public String name() {
         return igfs.name();
     }
 

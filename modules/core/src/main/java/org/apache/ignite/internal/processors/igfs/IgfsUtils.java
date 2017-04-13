@@ -467,6 +467,9 @@ public class IgfsUtils {
         for (FileSystemConfiguration cfg : igniteCfg.getFileSystemConfiguration()) {
             String name = cfg.getName();
 
+            if (name == null)
+                throw new IgniteCheckedException("IGFS name mustn't be null");
+
             if (cfgNames.contains(name))
                 throw new IgniteCheckedException("Duplicate IGFS name found (check configuration and " +
                     "assign unique name to each): " + name);

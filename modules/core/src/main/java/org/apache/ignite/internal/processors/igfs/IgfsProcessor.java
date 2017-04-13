@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteClosure;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -57,9 +58,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
  * Fully operational Ignite file system processor.
  */
 public class IgfsProcessor extends IgfsProcessorAdapter {
-    /** Null IGFS name. */
-    private static final String NULL_NAME = UUID.randomUUID().toString();
-
     /** Converts context to IGFS. */
     private static final IgniteClosure<IgfsContext,IgniteFileSystem> CTX_TO_IGFS = new C1<IgfsContext, IgniteFileSystem>() {
         @Override public IgniteFileSystem apply(IgfsContext igfsCtx) {
@@ -124,7 +122,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             for (IgfsManager mgr : igfsCtx.managers())
                 mgr.start(igfsCtx);
 
-            igfsCache.put(maskName(cfg0.getName()), igfsCtx);
+            igfsCache.put(cfg0.getName(), igfsCtx);
         }
 
         if (log.isDebugEnabled())
@@ -250,15 +248,15 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteFileSystem igfs(@Nullable String name) {
-        IgfsContext igfsCtx = igfsCache.get(maskName(name));
+    @Override @Nullable public IgniteFileSystem igfs(@NotNull String name) {
+        IgfsContext igfsCtx = igfsCache.get(name);
 
         return igfsCtx == null ? null : igfsCtx.igfs();
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
-        IgfsContext igfsCtx = igfsCache.get(maskName(name));
+    @Override @Nullable public Collection<IpcServerEndpoint> endpoints(@NotNull String name) {
+        IgfsContext igfsCtx = igfsCache.get(name);
 
         return igfsCtx == null ? Collections.<IpcServerEndpoint>emptyList() : igfsCtx.server().endpoints();
     }
@@ -267,14 +265,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
         long start, long len, IgfsRecordResolver recRslv) {
         return new IgfsJobImpl(job, igfsName, path, start, len, recRslv);
-    }
-
-    /**
-     * @param name Cache name.
-     * @return Masked name accounting for {@code nulls}.
-     */
-    private String maskName(@Nullable String name) {
-        return name == null ? NULL_NAME : name;
     }
 
     /**

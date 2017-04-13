@@ -26,6 +26,7 @@ import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -54,7 +55,7 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter {
      * @param name (Nullable) IGFS name.
      * @return IGFS instance.
      */
-    @Nullable public abstract IgniteFileSystem igfs(@Nullable String name);
+    @Nullable public abstract IgniteFileSystem igfs(@NotNull String name);
 
     /**
      * Gets server endpoints for particular IGFS.
@@ -62,7 +63,7 @@ public abstract class IgfsProcessorAdapter extends GridProcessorAdapter {
      * @param name IGFS name.
      * @return Collection of endpoints or {@code null} in case IGFS is not defined.
      */
-    public abstract Collection<IpcServerEndpoint> endpoints(@Nullable String name);
+    public abstract Collection<IpcServerEndpoint> endpoints(@NotNull String name);
 
     /**
      * Create compute job for the given IGFS job.

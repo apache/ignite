@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -420,7 +421,7 @@ public interface Ignite extends AutoCloseable {
      * @return IGFS instance.
      * @throws IllegalArgumentException If IGFS with such name is not configured.
      */
-    public IgniteFileSystem fileSystem(String name) throws IllegalArgumentException;
+    public IgniteFileSystem fileSystem(@NotNull String name) throws IllegalArgumentException;
 
     /**
      * Gets all instances of IGFS (Ignite In-Memory File System).

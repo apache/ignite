@@ -30,6 +30,7 @@ import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -96,7 +97,7 @@ public class HadoopIgfsEndpoint {
         IgniteBiTuple<String, Integer> hostPort;
 
         if (tokens.length == 1) {
-            igfsName = null;
+            igfsName = "";
 
             hostPort = hostPort(connStr, connStr);
         }
@@ -104,7 +105,7 @@ public class HadoopIgfsEndpoint {
             String authStr = tokens[0];
 
             if (authStr.isEmpty())
-                igfsName = null;
+                igfsName = "";
             else {
                 String[] authTokens = authStr.split(":", -1);
 
@@ -172,7 +173,7 @@ public class HadoopIgfsEndpoint {
     /**
      * @return IGFS name.
      */
-    @Nullable public String igfs() {
+    @NotNull public String igfs() {
         return igfsName;
     }
 

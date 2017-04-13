@@ -57,6 +57,9 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
     /** Second node name. */
     private static final String NODE_2_NAME = "node2";
 
+    /** IGFS name. */
+    private static final String IGFS_NAME = "test";
+
     /** Key in data caceh we will use to reproduce the issue. */
     private static final Integer DATA_KEY = 1;
 
@@ -183,7 +186,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
     private IgniteInternalFuture<Void> createFileAsync(final IgfsPath path, final CountDownLatch writeStartLatch) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                IgniteFileSystem igfs = attacker.fileSystem(null);
+                IgniteFileSystem igfs = attacker.fileSystem(IGFS_NAME);
 
                 try (IgfsOutputStream out = igfs.create(path, true)) {
                     writeStartLatch.await();
@@ -206,7 +209,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
      * @throws Exception If failed.
      */
     private GridCacheAdapter dataCache(Ignite node) throws Exception  {
-        return ((IgniteKernal)node).internalCache(((IgniteKernal)node).igfsx(null).configuration()
+        return ((IgniteKernal)node).internalCache(((IgniteKernal)node).igfsx(IGFS_NAME).configuration()
             .getDataCacheConfiguration().getName());
     }
 
@@ -243,6 +246,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         igfsCfg.setBlockSize(1024);
         igfsCfg.setDataCacheConfiguration(dataCcfg);
         igfsCfg.setMetaCacheConfiguration(metaCcfg);
+        igfsCfg.setName(IGFS_NAME);
 
         // Ignite configuration.
         IgniteConfiguration cfg = getConfiguration(name);

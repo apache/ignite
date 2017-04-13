@@ -24,6 +24,7 @@ import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -236,12 +237,11 @@ public class FileSystemConfiguration {
     }
 
     /**
-     * Gets IGFS instance name. If {@code null}, then instance with default
-     * name will be used.
+     * Gets IGFS instance name.
      *
      * @return IGFS instance name.
      */
-    @Nullable public String getName() {
+    @NotNull public String getName() {
         return name;
     }
 
@@ -251,7 +251,7 @@ public class FileSystemConfiguration {
      * @param name IGFS instance name.
      * @return {@code this} for chaining.
      */
-    public FileSystemConfiguration setName(String name) {
+    public FileSystemConfiguration setName(@NotNull String name) {
         this.name = name;
 
         return this;
@@ -662,7 +662,6 @@ public class FileSystemConfiguration {
      * Gets throttle delay for fragmentizer.
      *
      * @return Throttle delay in milliseconds.
-     * @return {@code this} for chaining.
      */
     public long getFragmentizerThrottlingDelay() {
         return fragmentizerThrottlingDelay;
@@ -672,6 +671,7 @@ public class FileSystemConfiguration {
      * Sets delay in milliseconds for which fragmentizer is paused.
      *
      * @param fragmentizerThrottlingDelay Delay in milliseconds.
+     * @return {@code this} for chaining.
      */
     public FileSystemConfiguration setFragmentizerThrottlingDelay(long fragmentizerThrottlingDelay) {
         this.fragmentizerThrottlingDelay = fragmentizerThrottlingDelay;
@@ -683,7 +683,6 @@ public class FileSystemConfiguration {
      * Gets number of files that can be processed by fragmentizer concurrently.
      *
      * @return Number of files to process concurrently.
-     * @return {@code this} for chaining.
      */
     public int getFragmentizerConcurrentFiles() {
         return fragmentizerConcurrentFiles;

@@ -164,10 +164,16 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("NullableProblems")
-    public void testLocalNullIgfsNameIsSupported() throws Exception {
-        g1IgfsCfg1.setName(null);
+    public void testLocalNullIgfsNameIsNotSupported() throws Exception {
+        try{
+            g1IgfsCfg1.setName(null);
 
-        assertFalse(G.start(g1Cfg).cluster().nodes().isEmpty());
+            assertFalse(G.start(g1Cfg).cluster().nodes().isEmpty());
+
+            fail("IGFS name mustn't be null");
+        } catch (IllegalArgumentException e) {
+            // No-op.
+        }
     }
 
     /**
