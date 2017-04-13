@@ -53,14 +53,11 @@ public class IgniteFramework {
     public static void main(String[] args) throws Exception {
         final int frameworkFailoverTimeout = 0;
 
-        String userName = System.getenv(MESOS_USER_NAME);
-        String mesosRole = System.getenv(MESOS_ROLE);
-
         // Have Mesos fill in the current user.
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
             .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser(userName != null ? userName : "")
-            .setRole(mesosRole != null ? mesosRole : "")
+            .setUser(getUser(MESOS_USER_NAME))
+            .setRole(getRole(MESOS_ROLE))
             .setFailoverTimeout(frameworkFailoverTimeout);
 
         if (System.getenv("MESOS_CHECKPOINT") != null) {
@@ -136,14 +133,16 @@ public class IgniteFramework {
     /**
      * @return Mesos user name value.
      */
-    public String getUser() {
-        return System.getenv(MESOS_USER_NAME);
+    public static String getUser(String mesosUserName) {
+        String userName = System.getenv(mesosUserName);
+        return userName != null ? userName : "";
     }
 
     /**
      * @return Mesos role value.
      */
-    public String getRole() {
-        return System.getenv(MESOS_ROLE);
+    public static String getRole(String mesosRoleFramework) {
+        String mesosRole = System.getenv(mesosRoleFramework);
+        return mesosRole != null ? mesosRole : "*";
     }
 }

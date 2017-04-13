@@ -328,8 +328,8 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         igniteFWThread.sleep(500);
 
-        assertEquals(mesosUserValue, igniteFWThread.getIgniteFramework().getUser());
-        assertEquals(mesosRoleValue, igniteFWThread.getIgniteFramework().getRole());
+        assertEquals(mesosUserValue, igniteFWThread.getIgniteFramework().getUser(MESOS_USER_NAME));
+        assertEquals(mesosRoleValue, igniteFWThread.getIgniteFramework().getRole(MESOS_ROLE));
     }
 
     /**
