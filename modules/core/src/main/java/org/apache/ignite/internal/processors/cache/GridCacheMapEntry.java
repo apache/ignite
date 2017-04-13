@@ -876,6 +876,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         if (readerArgs == null &&
             (expiryPlc == null || !expiryPlc.hasAccessTtl()) &&
+            !isNear() &&
             !retVer &&
             cctx.config().isEagerTtl()) {
             // Fast heap get without 'synchronized'.
@@ -888,13 +889,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                     transformClo = EntryProcessorResourceInjectorProxy.unwrap(transformClo);
 
-                    GridCacheMvcc mvcc = mvccExtras();
-
                     cctx.events().addEvent(
                         partition(),
                         key,
                         tx,
-                        mvcc != null ? mvcc.anyOwner() : null,
+                        null,
                         EVT_CACHE_OBJECT_READ,
                         val0,
                         true,
