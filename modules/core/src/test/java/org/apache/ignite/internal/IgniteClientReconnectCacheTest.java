@@ -101,6 +101,9 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     private static final String STATIC_CACHE = "static-cache";
 
     /** */
+    private static final int CACHE_PUTS_CNT = 3;
+
+    /** */
     private UUID nodeId;
 
     /** {@inheritDoc} */
@@ -580,17 +583,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             new CI1<IgniteCache<Object, Object>>() {
                 @Override public void apply(IgniteCache<Object, Object> cache) {
                     try (Transaction tx = client.transactions().txStart(txConcurrency, REPEATABLE_READ)) {
-                        log.info("Put1: " + key);
-
-                        cache.put(key, key);
-
-                        Integer key2 = key + 1;
-
-                        log.info("Put2: " + key2);
-
-                        cache.put(key2, key2);
-
-                        log.info("Commit [key1=" + key + ", key2=" + key2 + ']');
+                        for (int i = 0; i < CACHE_PUTS_CNT; ++i)
+                            cache.put(key + i, key + i);
 
                         tx.commit();
                     }
