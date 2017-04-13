@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.IdentityValueMapper;
 import org.apache.ignite.math.MatrixKeyMapper;
 import org.apache.ignite.math.Matrix;
@@ -30,7 +31,7 @@ import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
-import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.*;
 
 /**
  * Tests for {@link CacheMatrix}.
@@ -41,6 +42,8 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 3;
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
+    /** */
+    private static final String UNEXPECTED_ATTRIBUTE_VALUE = "Unexpected attribute value.";
     /** Grid instance. */
     private Ignite ignite;
     /** Matrix rows */
@@ -108,7 +111,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         try {
             cacheMatrix.copy();
 
-            TestCase.fail("UnsupportedOperationException expected");
+            fail("UnsupportedOperationException expected");
         } catch (UnsupportedOperationException e){
             // No-op.
         }
@@ -123,7 +126,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         try {
             cacheMatrix.like(rows, cols);
 
-            TestCase.fail("UnsupportedOperationException expected");
+            fail("UnsupportedOperationException expected");
         } catch (UnsupportedOperationException e){
             // No-op.
         }
@@ -138,7 +141,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         try {
             cacheMatrix.likeVector(cols);
 
-            TestCase.fail("UnsupportedOperationException expected");
+            fail("UnsupportedOperationException expected");
         } catch (UnsupportedOperationException e){
             // No-op.
         }
@@ -267,6 +270,72 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testAttributes(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        assertFalse(UNEXPECTED_ATTRIBUTE_VALUE, cacheMatrix.isSequentialAccess());
+        assertFalse(UNEXPECTED_ATTRIBUTE_VALUE, cacheMatrix.isDense());
+        assertFalse(UNEXPECTED_ATTRIBUTE_VALUE, cacheMatrix.isArrayBased());
+        assertTrue(UNEXPECTED_ATTRIBUTE_VALUE, cacheMatrix.isRandomAccess());
+        assertTrue(UNEXPECTED_ATTRIBUTE_VALUE, cacheMatrix.isDistributed());
+    }
+
+    /** */
+    public void testExternalization(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        final CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        ExternalizeTest<CacheMatrix<Integer, Double>> externalizeTest = new ExternalizeTest<CacheMatrix<Integer, Double>>() {
+
+            @Override public void externalizeTest() {
+                super.externalizeTest(cacheMatrix);
+            }
+        };
+
+        externalizeTest.externalizeTest();
+    }
+
+    /** */
+    public void testMinMax(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        final CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        for(int i = 0; i < rows; i++)
+            for(int j = 0; j < cols; j++)
+              cacheMatrix.set(i ,j ,i * rows + j);
+
+        assertEquals(0.0, cacheMatrix.minValue(), 0.0);
+        assertEquals(rows * cols - 1, cacheMatrix.maxValue(), 0.0);
+    }
+
+    /** */
+    public void testMap(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        final CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        initMatrix(cacheMatrix);
+
+        cacheMatrix.map(value -> value + 10);
+
+        for(int i = 0; i < rows; i++)
+            for(int j = 0; j < cols; j++)
+              assertEquals(10.0, cacheMatrix.getX(i, j), 0.0);
+    }
+
+    /** */
     private IgniteCache<Integer, Double> getCache() {
         assert ignite != null;
 
@@ -281,15 +350,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     private MatrixKeyMapper<Integer> getKeyMapper(final int rows, final int cols) {
-        return new MatrixKeyMapper<Integer>() {
-            @Override public Integer apply(int x, int y) {
-                return x * cols + y;
-            }
-
-            @Override public boolean isValid(Integer integer) {
-                return (rows * cols) > integer;
-            }
-        };
+        return new MatrixKeyMapperForTests(rows, cols);
     }
 
     /** Init the given matrix by random values. */

@@ -20,6 +20,7 @@ package org.apache.ignite.math;
 import org.apache.ignite.math.decompositions.*;
 import org.apache.ignite.math.impls.matrix.*;
 import org.apache.ignite.math.impls.storage.matrix.MatrixArrayStorageTest;
+import org.apache.ignite.math.impls.storage.vector.SparseLocalOffHeapVectorStorageTest;
 import org.apache.ignite.math.impls.vector.SingleElementVectorViewConstructorTest;
 import org.apache.ignite.math.impls.storage.matrix.MatrixOffHeapStorageTest;
 import org.apache.ignite.math.impls.storage.matrix.MatrixStorageImplementationTest;
@@ -78,6 +79,7 @@ import org.junit.runners.Suite;
     VectorArrayStorageTest.class,
     VectorOffheapStorageTest.class,
     RandomAccessSparseVectorStorageTest.class,
+    SparseLocalOffHeapVectorStorageTest.class,
     // Matrix storage tests.
     MatrixStorageImplementationTest.class,
     MatrixOffHeapStorageTest.class,
