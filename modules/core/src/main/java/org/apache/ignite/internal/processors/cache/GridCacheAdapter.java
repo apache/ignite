@@ -1990,38 +1990,19 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     }
                                 }
                                 else {
-                                    if (needVer || readerArgs != null) {
-                                        res = entry.innerGetVersioned(
-                                            null,
-                                            null,
-                                            ctx.isSwapOrOffheapEnabled(),
-                                            /*unmarshal*/true,
-                                            updateMetrics,
-                                            evt,
-                                            subjId,
-                                            null,
-                                            taskName,
-                                            expiry,
-                                            !deserializeBinary,
-                                            readerArgs);
-                                    }
-                                    else {
-                                        CacheObject val = entry.innerGet(
-                                            null,
-                                            null,
-                                            ctx.isSwapOrOffheapEnabled(),
-                                            false,
-                                            updateMetrics,
-                                            evt,
-                                            false,
-                                            subjId,
-                                            null,
-                                            taskName,
-                                            expiry,
-                                            !deserializeBinary);
-
-                                        res = val != null ? new EntryGetResult(val, null) : null;
-                                    }
+                                    res = entry.innerGetVersioned(
+                                        null,
+                                        null,
+                                        ctx.isSwapOrOffheapEnabled(),
+                                    /*unmarshal*/true,
+                                        updateMetrics,
+                                        evt,
+                                        subjId,
+                                        null,
+                                        taskName,
+                                        expiry,
+                                        !deserializeBinary,
+                                        readerArgs);
 
                                     if (res == null)
                                         ctx.evicts().touch(entry, topVer);
