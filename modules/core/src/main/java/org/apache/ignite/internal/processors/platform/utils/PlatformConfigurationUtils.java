@@ -1062,6 +1062,8 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(true);  // binary config exists
             w.writeBoolean(true);  // compact footer is set
             w.writeBoolean(bc.isCompactFooter());
+            w.writeBoolean(bc.getNameMapper() instanceof BinaryBasicNameMapper &&
+                    ((BinaryBasicNameMapper)(bc.getNameMapper())).isSimpleName());
 
             Collection<BinaryTypeConfiguration> types = bc.getTypeConfigurations();
 

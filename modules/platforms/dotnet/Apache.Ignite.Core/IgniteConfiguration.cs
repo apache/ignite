@@ -463,7 +463,14 @@
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
 
                 if (r.ReadBoolean())
+                {
                     BinaryConfiguration.CompactFooter = r.ReadBoolean();
+                }
+
+                if (r.ReadBoolean())
+                {
+                    BinaryConfiguration.DefaultNameMapper = BinaryBasicNameMapper.SimpleNameInstance;
+                }
 
                 var typeCount = r.ReadInt();
 
