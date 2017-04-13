@@ -700,7 +700,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             serializer = serializer ?? new BinarySystemTypeSerializer<T>(ctor);
                             
-            var typeName = type.FullName;
+            // System types always use simple name mapper.
+            var typeName = type.Name;
 
             if (typeId == 0)
             {
