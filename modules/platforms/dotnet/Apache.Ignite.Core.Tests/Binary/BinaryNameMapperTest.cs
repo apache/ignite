@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
-    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
@@ -34,15 +33,23 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestFullName()
         {
             var mapper = new BinaryBasicNameMapper();
-
             Assert.IsFalse(mapper.IsSimpleName);
 
-            foreach (var type in GetTestTypes())
-            {
-                Assert.AreEqual(type.FullName, mapper.GetTypeName(type.AssemblyQualifiedName));
-                Assert.AreEqual(type.FullName, mapper.GetTypeName(type.FullName));
-                Assert.AreEqual(type.Name, mapper.GetTypeName(type.Name));
-            }
+            // Simple type.
+            Assert.AreEqual("System.Int32", mapper.GetTypeName(typeof(int).AssemblyQualifiedName));
+            Assert.AreEqual("System.Int32", mapper.GetTypeName(typeof(int).FullName));
+
+            // Array.
+            Assert.AreEqual("String[]", mapper.GetTypeName(typeof(string).AssemblyQualifiedName));
+            Assert.AreEqual("String[]", mapper.GetTypeName(typeof(string).FullName));
+
+            // Generics.
+            Assert.AreEqual("List`1[[String]]", mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
+            Assert.AreEqual("Dictionary`2[[Int32],[String]]", 
+                mapper.GetTypeName(typeof(Dictionary<int, string>).AssemblyQualifiedName));
+            Assert.AreEqual("Bar`1[[Foo]]", mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
+            Assert.AreEqual("Bar`1[[Foo]][]", mapper.GetTypeName(typeof(Bar<Foo>[]).AssemblyQualifiedName));
+            Assert.AreEqual("Bar`1[[Foo[]]][]", mapper.GetTypeName(typeof(Bar<Foo[]>[]).AssemblyQualifiedName));
         }
 
         /// <summary>
@@ -52,37 +59,22 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestSimpleName()
         {
             var mapper = new BinaryBasicNameMapper {IsSimpleName = true};
+                        
+            // Simple type.
+            Assert.AreEqual("Int32", mapper.GetTypeName(typeof(int).AssemblyQualifiedName));
+            Assert.AreEqual("Int32", mapper.GetTypeName(typeof(int).FullName));
 
-            Assert.IsTrue(mapper.IsSimpleName);
-
-            foreach (var type in GetTestTypes())
-            {
-                Assert.AreEqual(type.Name, mapper.GetTypeName(type.AssemblyQualifiedName));
-                Assert.AreEqual(type.Name, mapper.GetTypeName(type.FullName));
-                Assert.AreEqual(type.Name, mapper.GetTypeName(type.Name));
-            }
+            // Array.
+            Assert.AreEqual("String[]", mapper.GetTypeName(typeof(string).AssemblyQualifiedName));
+            Assert.AreEqual("String[]", mapper.GetTypeName(typeof(string).FullName));
 
             // Generics.
             Assert.AreEqual("List`1[[String]]", mapper.GetTypeName(typeof(List<string>).AssemblyQualifiedName));
             Assert.AreEqual("Dictionary`2[[Int32],[String]]", 
                 mapper.GetTypeName(typeof(Dictionary<int, string>).AssemblyQualifiedName));
             Assert.AreEqual("Bar`1[[Foo]]", mapper.GetTypeName(typeof(Bar<Foo>).AssemblyQualifiedName));
-        }
-
-        /// <summary>
-        /// Gets the test types.
-        /// </summary>
-        private IEnumerable<Type> GetTestTypes()
-        {
-            return new[]
-            {
-                GetType(),
-                typeof(Foo),
-                typeof(int),
-                typeof(Bar<int>),
-                typeof(Dictionary<string, Bar<Foo>>),
-                typeof(List<Bar<int>>)
-            };
+            Assert.AreEqual("Bar`1[[Foo]][]", mapper.GetTypeName(typeof(Bar<Foo>[]).AssemblyQualifiedName));
+            Assert.AreEqual("Bar`1[[Foo[]]][]", mapper.GetTypeName(typeof(Bar<Foo[]>[]).AssemblyQualifiedName));
         }
 
         /// <summary>
