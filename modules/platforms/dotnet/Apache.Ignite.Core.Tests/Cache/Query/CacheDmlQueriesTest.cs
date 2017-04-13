@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
 
             // Test insert.
-            var res = cache.QueryFields(new SqlFieldsQuery("insert into CacheDmlQueriesTest_foo(_key, id, name) " +
+            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) " +
                                                            "values (?, ?, ?), (?, ?, ?)",
                 1, 2, "John", 3, 4, "Mary")).GetAll();
 
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<Key, Foo>(cfg);
 
             // Test insert.
-            var res = cache.QueryFields(new SqlFieldsQuery("insert into CacheDmlQueriesTest_foo(hi, lo, id, name) " +
+            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(hi, lo, id, name) " +
                                                "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")).GetAll();
 
             Assert.AreEqual(1, res.Count);
@@ -155,9 +155,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Ignition.GetIgnite().CreateCache<Key2, Foo>(cfg);
 
             // Test insert.
-            var res = cache.QueryFields(new SqlFieldsQuery(
-                "insert into CacheDmlQueriesTest_foo(hi, lo, str, id, name) values (1, 2, 'Foo', 3, 'John'), " +
-                "(4, 5, 'Bar', 6, 'Mary')")).GetAll();
+            var res = cache.QueryFields(new SqlFieldsQuery("insert into foo(hi, lo, str, id, name) " +
+                                               "values (1, 2, 'Foo', 3, 'John'), (4, 5, 'Bar', 6, 'Mary')")).GetAll();
 
             Assert.AreEqual(1, res.Count);
             Assert.AreEqual(1, res[0].Count);
