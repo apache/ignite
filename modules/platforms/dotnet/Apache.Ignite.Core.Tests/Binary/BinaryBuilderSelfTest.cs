@@ -1620,11 +1620,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             var binary = _grid.GetBinary();
 
             binary.ToBinary<IBinaryObject>(new DecimalHolder());
-
+            
+            var typeName = GetTypeName(typeof(DecimalHolder));
+            
             // All meta
             var allMetas = binary.GetBinaryTypes();
 
-            var decimalMeta = allMetas.Single(x => x.TypeName == GetTypeName(typeof(DecimalHolder)));
+            var decimalMeta = allMetas.Single(x => x.TypeName == typeName);
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
 
@@ -1634,12 +1636,12 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
             
             // By type id
-            decimalMeta = binary.GetBinaryType(binary.GetTypeId("DecimalHolder"));
+            decimalMeta = binary.GetBinaryType(binary.GetTypeId(typeName));
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
 
             // By type name
-            decimalMeta = binary.GetBinaryType("DecimalHolder");
+            decimalMeta = binary.GetBinaryType(typeName);
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
         }
