@@ -46,7 +46,7 @@ public interface IgniteCacheExpiryPolicy {
     public long forAccess();
 
     /**
-     * @return {@code True}
+     * @return {@code True} if expiry policy change ttl on entry read.
      */
     public boolean hasAccessTtl();
 

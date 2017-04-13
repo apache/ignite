@@ -2058,6 +2058,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * Checks if it is possible to directly read offheap memory without entry creation (this
+     * is optimization to avoid unnecessary blocking synchronization on cache entry).
+     *
      * @param expiryPlc Expiry policy for read operation.
      * @param readers {@code True} if need update entry readers.
      * @return {@code True} if it is possible directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.

@@ -35,7 +35,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- *
+ * Benchmark created to verify that slow EntryProcessor does not affect 'get' performance.
  */
 public class IgniteGetFromComputeBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
