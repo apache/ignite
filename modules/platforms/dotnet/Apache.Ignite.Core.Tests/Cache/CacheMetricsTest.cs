@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void FixtureSetUp()
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = SecondGridName });
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = SecondGridName });
         }
 
         /// <summary>

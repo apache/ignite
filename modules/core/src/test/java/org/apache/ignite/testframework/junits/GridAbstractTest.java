@@ -57,20 +57,25 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
@@ -85,6 +90,7 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
@@ -135,6 +141,9 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     private static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
+
+    /** */
+    private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
@@ -828,6 +837,68 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Starts new grid with given name.
+     *
+     * @param gridName Grid name.
+     * @param client Client mode.
+     * @param cfgUrl Config URL.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected Ignite startGridWithSpringCtx(String gridName, boolean client, String cfgUrl) throws Exception {
+        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap =
+                IgnitionEx.loadConfigurations(cfgUrl);
+
+        IgniteConfiguration cfg = F.first(cfgMap.get1());
+
+        cfg.setIgniteInstanceName(gridName);
+        cfg.setClientMode(client);
+
+        return IgnitionEx.start(cfg, cfgMap.getValue());
+    }
+
+    /**
+     * Starts new node with given index.
+     *
+     * @param idx Index of the node to start.
+     * @param client Client mode.
+     * @param cfgUrl Config URL.
+     * @return Started node.
+     * @throws Exception If failed.
+     */
+    protected Ignite startGridWithSpringCtx(int idx, boolean client, String cfgUrl) throws Exception {
+        return startGridWithSpringCtx(getTestIgniteInstanceName(idx), client, cfgUrl);
+    }
+
+    /**
+     * Start specified amount of nodes.
+     *
+     * @param cnt Nodes count.
+     * @param client Client mode.
+     * @param cfgUrl Config URL.
+     * @return First started node.
+     * @throws Exception If failed.
+     */
+    protected Ignite startGridsWithSpringCtx(int cnt, boolean client, String cfgUrl) throws Exception {
+        assert cnt > 0;
+
+        Ignite ignite = null;
+
+        for (int i = 0; i < cnt; i++) {
+            if (ignite == null)
+                ignite = startGridWithSpringCtx(i, client, cfgUrl);
+            else
+                startGridWithSpringCtx(i, client, cfgUrl);
+        }
+
+        checkTopology(cnt);
+
+        assert ignite != null;
+
+        return ignite;
+    }
+
+    /**
      * Starts new grid at another JVM with given name.
      *
      * @param igniteInstanceName Ignite instance name.
@@ -890,6 +961,16 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel) {
+        stopGrid(igniteInstanceName, cancel, true);
+    }
+
+    /**
+     * @param igniteInstanceName Ignite instance name.
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     */
+    @SuppressWarnings({"deprecation"})
+    protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
         try {
             Ignite ignite = grid(igniteInstanceName);
 
@@ -902,6 +983,9 @@ public abstract class GridAbstractTest extends TestCase {
                 G.stop(igniteInstanceName, cancel);
             else
                 IgniteProcessProxy.stop(igniteInstanceName, cancel);
+
+            if (awaitTop)
+                awaitTopologyChange();
         }
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
@@ -936,10 +1020,10 @@ public abstract class GridAbstractTest extends TestCase {
             }
 
             for (Ignite g : clients)
-                stopGrid(g.name(), cancel);
+                stopGrid(g.name(), cancel, false);
 
             for (Ignite g : srvs)
-                stopGrid(g.name(), cancel);
+                stopGrid(g.name(), cancel, false);
 
             assert G.allGrids().isEmpty();
         }
@@ -1415,6 +1499,8 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setCheckpointSpi(cpSpi);
 
+        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
+
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
@@ -1859,7 +1945,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param store Store.
      */
     protected <T> Factory<T> singletonFactory(T store) {
-        return notSerializableProxy(new FactoryBuilder.SingletonFactory<T>(store), Factory.class);
+        return notSerializableProxy(new FactoryBuilder.SingletonFactory<>(store), Factory.class);
     }
 
     /**
@@ -1928,6 +2014,35 @@ public abstract class GridAbstractTest extends TestCase {
                 return IgniteNodeRunner.startedInstance();
             else
                 return IgniteProcessProxy.ignite(name);
+        }
+    }
+
+    /**
+     *
+     * @throws IgniteInterruptedCheckedException
+     */
+    public void awaitTopologyChange() throws IgniteInterruptedCheckedException {
+        for (Ignite g : G.allGrids()) {
+            final GridKernalContext ctx = ((IgniteKernal)g).context();
+
+            if (ctx.isStopping())
+                continue;
+
+            AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+            AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+            if (! topVer.equals(exchVer)) {
+                info("topology version mismatch: node "  + g.name() + " " + exchVer + ", " + topVer);
+
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+                        AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+                        return exchVer.equals(topVer);
+                    }
+                }, DFLT_TOP_WAIT_TIMEOUT);
+            }
         }
     }
 
@@ -2179,7 +2294,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /** */
-    public static abstract class TestIgniteIdxCallable<R> implements Serializable {
+    public abstract static class TestIgniteIdxCallable<R> implements Serializable {
+        /** */
         @IgniteInstanceResource
         protected Ignite ignite;
 

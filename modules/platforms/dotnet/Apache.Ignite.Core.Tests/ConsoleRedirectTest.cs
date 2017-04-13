@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Tests
                 var outTxt = _outSb.ToString();
 
                 // Check output from another domain (2 started + 2 stopped = 4)
-                Assert.AreEqual(4, Regex.Matches(outTxt, ">>> Grid name: newDomainGrid").Count);
+                Assert.AreEqual(4, Regex.Matches(outTxt, ">>> Ignite instance name: newDomainGrid").Count);
 
                 // Both domains produce the topology snapshot on node enter
                 Assert.AreEqual(2, Regex.Matches(outTxt, "ver=2, servers=2, clients=0,").Count);
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    GridName = "newDomainGrid"
+                    IgniteInstanceName = "newDomainGrid"
                 });
                 Ignition.Stop(ignite.Name, true);
             }

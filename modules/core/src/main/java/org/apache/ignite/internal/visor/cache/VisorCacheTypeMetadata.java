@@ -23,8 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.ignite.cache.CacheTypeFieldMetadata;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
@@ -39,7 +37,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import javax.cache.configuration.Factory;
 
 /**
- * Data transfer object for {@link CacheTypeMetadata}.
+ * Data transfer object for {@link JdbcType}.
  */
 public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
     /** */
@@ -88,11 +86,9 @@ public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
     /**
      * @param qryEntities Collection of query entities.
      * @param factory Store factory to extract JDBC types info.
-     * @param types Cache types metadata configurations.
      * @return Data transfer object for cache type metadata configurations.
      */
-    public static Collection<VisorCacheTypeMetadata> list(Collection<QueryEntity> qryEntities, Factory factory,
-        Collection<CacheTypeMetadata> types) {
+    public static Collection<VisorCacheTypeMetadata> list(Collection<QueryEntity> qryEntities, Factory factory) {
         final Collection<VisorCacheTypeMetadata> metas = new ArrayList<>();
 
         Map<String, VisorCacheTypeMetadata> metaMap =
@@ -164,11 +160,6 @@ public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
             }
         }
 
-        // Add old deprecated CacheTypeMetadata for compatibility.
-        if (types != null)
-            for (CacheTypeMetadata type : types)
-                metas.add(from(type));
-
         return metas;
     }
 
@@ -217,84 +208,6 @@ public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
         }
 
         return metadata;
-    }
-
-    /**
-     * @param m Actual cache type metadata.
-     * @return Data transfer object for given cache type metadata.
-     */
-    public static VisorCacheTypeMetadata from(CacheTypeMetadata m) {
-        assert m != null;
-
-        VisorCacheTypeMetadata metadata = new VisorCacheTypeMetadata();
-
-        metadata.dbSchema = m.getDatabaseSchema();
-        metadata.dbTbl = m.getDatabaseTable();
-        metadata.keyType = m.getKeyType();
-        metadata.valType = m.getValueType();
-
-        ArrayList<VisorCacheTypeFieldMetadata> fields = new ArrayList<>(m.getKeyFields().size());
-
-        for (CacheTypeFieldMetadata field : m.getKeyFields())
-            fields.add(VisorCacheTypeFieldMetadata.from(field));
-
-        metadata.keyFields = fields;
-
-        fields = new ArrayList<>(m.getValueFields().size());
-
-        for (CacheTypeFieldMetadata field : m.getValueFields())
-            fields.add(VisorCacheTypeFieldMetadata.from(field));
-
-        metadata.valFields = fields;
-
-        metadata.qryFlds = convertFieldsMap(m.getQueryFields());
-        metadata.ascFlds = convertFieldsMap(m.getAscendingFields());
-        metadata.descFlds = convertFieldsMap(m.getDescendingFields());
-        metadata.txtFlds = m.getTextFields();
-        metadata.grps = convertGrpsMap(m.getGroups());
-
-        return metadata;
-    }
-
-    /**
-     * Convert class object to string class name in the fields map.
-     *
-     * @param base Map with class object.
-     * @return Map with string class name.
-     */
-    private static Map<String, String> convertFieldsMap(Map<String, Class<?>> base) {
-        Map<String, String> res = new LinkedHashMap<>(base.size());
-
-        for (Map.Entry<String, Class<?>> e : base.entrySet())
-            res.put(e.getKey(), U.compact(e.getValue().getName()));
-
-        return res;
-    }
-
-    /**
-     * Convert class object to string class name in the  groups map.
-     *
-     * @param base Map with class object.
-     * @return Map with string class name.
-     */
-    private static Map<String, LinkedHashMap<String, IgniteBiTuple<String, Boolean>>> convertGrpsMap(
-        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> base) {
-        Map<String, LinkedHashMap<String, IgniteBiTuple<String, Boolean>>> res = new LinkedHashMap<>(base.size());
-
-        for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> e : base.entrySet()) {
-            LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> intBase = e.getValue();
-            LinkedHashMap<String, IgniteBiTuple<String, Boolean>> intRes = new LinkedHashMap<>(intBase.size());
-
-            for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> intE : intBase.entrySet()) {
-                IgniteBiTuple<Class<?>, Boolean> val = intE.getValue();
-
-                intRes.put(intE.getKey(), new IgniteBiTuple<>(U.compact(val.get1().getName()), val.get2()));
-            }
-
-            res.put(e.getKey(), intRes);
-        }
-
-        return res;
     }
 
     /**

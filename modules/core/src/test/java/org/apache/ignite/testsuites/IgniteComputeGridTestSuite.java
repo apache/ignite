@@ -30,6 +30,7 @@ import org.apache.ignite.internal.GridCollisionJobsContextSelfTest;
 import org.apache.ignite.internal.GridDeploymentMultiThreadedSelfTest;
 import org.apache.ignite.internal.GridDeploymentSelfTest;
 import org.apache.ignite.internal.GridEventStorageCheckAllEventsSelfTest;
+import org.apache.ignite.internal.GridEventStorageDefaultExceptionTest;
 import org.apache.ignite.internal.GridEventStorageRuntimeConfigurationSelfTest;
 import org.apache.ignite.internal.GridEventStorageSelfTest;
 import org.apache.ignite.internal.GridFailoverCustomTopologySelfTest;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.GridProjectionLocalJobMultipleArgumentsSelfTes
 import org.apache.ignite.internal.GridStopWithWaitSelfTest;
 import org.apache.ignite.internal.GridTaskCancelSingleNodeSelfTest;
 import org.apache.ignite.internal.GridTaskExecutionSelfTest;
+import org.apache.ignite.internal.GridTaskExecutionWithoutPeerClassLoadingSelfTest;
 import org.apache.ignite.internal.GridTaskFailoverAffinityRunTest;
 import org.apache.ignite.internal.GridTaskFailoverSelfTest;
 import org.apache.ignite.internal.GridTaskFutureImplStopGridSelfTest;
@@ -102,6 +104,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridCancelUnusedJobSelfTest.class);
         suite.addTestSuite(GridTaskJobRejectSelfTest.class);
         suite.addTestSuite(GridTaskExecutionSelfTest.class);
+        suite.addTestSuite(GridTaskExecutionWithoutPeerClassLoadingSelfTest.class);
         suite.addTestSuite(GridFailoverSelfTest.class);
         suite.addTestSuite(GridTaskListenerSelfTest.class);
         suite.addTestSuite(GridFailoverTopologySelfTest.class);
@@ -139,6 +142,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridTaskNameAnnotationSelfTest.class);
         suite.addTestSuite(GridJobCheckpointCleanupSelfTest.class);
         suite.addTestSuite(GridEventStorageSelfTest.class);
+        suite.addTestSuite(GridEventStorageDefaultExceptionTest.class);
         suite.addTestSuite(GridFailoverTaskWithPredicateSelfTest.class);
         suite.addTestSuite(GridProjectionLocalJobMultipleArgumentsSelfTest.class);
         suite.addTestSuite(GridAffinitySelfTest.class);

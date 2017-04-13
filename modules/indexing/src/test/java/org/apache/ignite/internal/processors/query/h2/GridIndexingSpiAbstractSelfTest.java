@@ -454,8 +454,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
             String res = log.toString();
 
-            F.println(res);
-
             assertTrue(res.contains("/* PUBLIC.RANGE_INDEX */"));
         }
         finally {
@@ -707,7 +705,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             throw new UnsupportedOperationException();
         }
 

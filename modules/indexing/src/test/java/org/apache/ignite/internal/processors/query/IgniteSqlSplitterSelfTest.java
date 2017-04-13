@@ -21,9 +21,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
@@ -149,6 +151,86 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
         finally {
             c.destroy();
+        }
+    }
+
+    /**
+     */
+    public void testReplicatedOnlyTables() {
+        doTestReplicatedOnlyTables(1);
+    }
+
+    /**
+     */
+    public void testReplicatedOnlyTablesSegmented() {
+        doTestReplicatedOnlyTables(5);
+    }
+
+    /**
+     */
+    private void doTestReplicatedOnlyTables(int segments) {
+        IgniteCache<Integer,Value> p = ignite(0).getOrCreateCache(cacheConfig("p", true,
+            Integer.class, Value.class).setQueryParallelism(segments));
+        IgniteCache<Integer,Value> r = ignite(0).getOrCreateCache(cacheConfig("r", false,
+            Integer.class, Value.class));
+
+        try {
+            int cnt = 1000;
+
+            for (int i = 0; i < cnt; i++)
+                r.put(i, new Value(i, -i));
+
+            // Query data from replicated table using partitioned cache.
+            assertEquals(cnt, p.query(new SqlFieldsQuery("select 1 from \"r\".Value")).getAll().size());
+
+            List<List<?>> res = p.query(new SqlFieldsQuery("select count(1) from \"r\".Value")).getAll();
+            assertEquals(1, res.size());
+            assertEquals(cnt, ((Number)res.get(0).get(0)).intValue());
+        }
+        finally {
+            p.destroy();
+            r.destroy();
+        }
+    }
+
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public void testExists() {
+        IgniteCache<Integer,Person2> x = ignite(0).getOrCreateCache(cacheConfig("x", true,
+            Integer.class, Person2.class));
+        IgniteCache<Integer,Person2> y = ignite(0).getOrCreateCache(cacheConfig("y", true,
+            Integer.class, Person2.class));
+
+        try {
+            GridRandom rnd = new GridRandom();
+
+            Set<Integer> intersects = new HashSet<>();
+
+            for (int i = 0; i < 3000; i++) {
+                int r = rnd.nextInt(3);
+
+                if (r != 0)
+                    x.put(i, new Person2(i, "pers_x_" + i));
+
+                if (r != 1)
+                    y.put(i, new Person2(i, "pers_y_" + i));
+
+                if (r == 2)
+                    intersects.add(i);
+            }
+
+            assertFalse(intersects.isEmpty());
+
+            List<List<?>> res = x.query(new SqlFieldsQuery("select _key from \"x\".Person2 px " +
+                "where exists(select 1 from \"y\".Person2 py where px._key = py._key)")).getAll();
+
+            assertEquals(intersects.size(), res.size());
+
+            for (List<?> row : res)
+                assertTrue(intersects.contains(row.get(0)));
+        }
+        finally {
+            x.destroy();
+            y.destroy();
         }
     }
 

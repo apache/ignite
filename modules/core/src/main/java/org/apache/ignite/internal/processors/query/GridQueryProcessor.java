@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -158,15 +157,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!F.isEmpty(ccfg.getTypeMetadata())) {
-            for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
-                QueryTypeCandidate cand = QueryUtils.typeForCacheMetadata(space, cctx, meta, mustDeserializeClss);
-
-                if (cand != null)
-                    cands.add(cand);
-            }
-        }
-
         // Register candidates.
         idx.registerCache(space, cctx, cctx.config());
 
@@ -185,7 +175,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (altTypeId != null)
                     types.put(altTypeId, desc);
 
-                desc.registered(idx.registerType(space, desc));
+                idx.registerType(space, desc);
             }
         }
         catch (IgniteCheckedException | RuntimeException e) {
@@ -362,7 +352,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             QueryTypeDescriptorImpl desc = types.get(id);
 
-            if (desc == null || !desc.registered())
+            if (desc == null)
                 return;
 
             if (!binaryVal && !desc.valueClass().isAssignableFrom(valCls))
@@ -764,47 +754,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Removes index tables for all classes belonging to given class loader.
-     *
-     * @param space Space name.
-     * @param ldr Class loader to undeploy.
-     * @throws IgniteCheckedException If undeploy failed.
-     */
-    public void onUndeploy(@Nullable String space, ClassLoader ldr) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Undeploy [space=" + space + "]");
-
-        if (idx == null)
-            return;
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to process undeploy event (grid is stopping).");
-
-        try {
-            Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
-
-            while (it.hasNext()) {
-                Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e = it.next();
-
-                if (!F.eq(e.getKey().space(), space))
-                    continue;
-
-                QueryTypeDescriptorImpl desc = e.getValue();
-
-                if (ldr.equals(U.detectClassLoader(desc.valueClass())) ||
-                    ldr.equals(U.detectClassLoader(desc.keyClass()))) {
-                    idx.unregisterType(e.getKey().space(), desc);
-
-                    it.remove();
-                }
-            }
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
      * Gets types for space.
      *
      * @param space Space name.
@@ -816,7 +765,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
             QueryTypeDescriptorImpl desc = e.getValue();
 
-            if (desc.registered() && F.eq(e.getKey().space(), space))
+            if (F.eq(e.getKey().space(), space))
                 spaceTypes.add(desc);
         }
 
@@ -834,7 +783,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public QueryTypeDescriptorImpl type(@Nullable String space, String typeName) throws IgniteCheckedException {
         QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, typeName));
 
-        if (type == null || !type.registered())
+        if (type == null)
             throw new IgniteCheckedException("Failed to find SQL table for type: " + typeName);
 
         return type;
