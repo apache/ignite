@@ -414,7 +414,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                 if (swapEntry != null) {
                     long expireTime = swapEntry.expireTime();
 
-                    if (expireTime == 0 || expireTime < U.currentTimeMillis()) {
+                    if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
                         skipEntry = true;
 
                         ctx.addResult(vals,

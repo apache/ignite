@@ -455,7 +455,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     if (swapEntry != null) {
                         long expireTime = swapEntry.expireTime();
 
-                        if (expireTime == 0 || expireTime < U.currentTimeMillis()) {
+                        if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
                             skipEntry = true;
 
                             v = swapEntry.value();

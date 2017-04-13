@@ -467,7 +467,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         if (swapEntry != null) {
                             long expireTime = swapEntry.expireTime();
 
-                            if (expireTime == 0 || expireTime < U.currentTimeMillis()) {
+                            if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
                                 if (locVals == null)
                                     locVals = U.newHashMap(keys.size());
 

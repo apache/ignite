@@ -1929,7 +1929,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     long expireTime = swapEntry.expireTime();
 
                                     if (expireTime != 0) {
-                                        if (expireTime - U.currentTimeMillis() > 0) {
+                                        if (expireTime  >  U.currentTimeMillis()) {
                                             res = new EntryGetWithTtlResult(swapEntry.value(),
                                                 swapEntry.version(),
                                                 false,

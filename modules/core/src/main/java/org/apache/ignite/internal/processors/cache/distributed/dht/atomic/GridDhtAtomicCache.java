@@ -1584,7 +1584,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (swapEntry != null) {
                             long expireTime = swapEntry.expireTime();
 
-                            if (expireTime == 0 || expireTime < U.currentTimeMillis()) {
+                            if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
                                 ctx.addResult(locVals,
                                     key,
                                     swapEntry.value(),

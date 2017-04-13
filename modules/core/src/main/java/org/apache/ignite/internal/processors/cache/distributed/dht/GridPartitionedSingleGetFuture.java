@@ -377,7 +377,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     if (swapEntry != null) {
                         long expireTime = swapEntry.expireTime();
 
-                        if (expireTime == 0 || expireTime < U.currentTimeMillis()) {
+                        if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
                             skipEntry = true;
 
                             v = swapEntry.value();
