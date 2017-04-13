@@ -24,16 +24,23 @@ import java.io.*;
 import java.nio.*;
 
 /**
- * TODO: add description.
+ * {@link MatrixStorage} implementation with random values in the matrix elements.
  */
 public class RandomMatrixStorage implements MatrixStorage {
-    private static final int PRIME1 = 104047;
-    private static final int PRIME2 = 101377;
-    private static final int PRIME3 = 64661;
-    private static final long SCALE = 1L << 32;
+    /** */ private static final int PRIME1 = 104047;
+    /** */ private static final int PRIME2 = 101377;
+    /** */ private static final int PRIME3 = 64661;
+    /** */ private static final long SCALE = 1L << 32;
 
+    /** Random generation seed. */
     private int seed;
-    private int rows, cols;
+
+    /** Amount of rows in the matrix. */
+    private int rows;
+    /** Amount of columns in the matrix. */
+    private int cols;
+
+    /** Whether fast hash is used, in {@link #get(int, int)}. */
     private boolean fastHash;
 
     /**
@@ -45,9 +52,9 @@ public class RandomMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param rows
-     * @param cols
-     * @param fastHash
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     * @param fastHash Whether fast hash is used.
      */
     public RandomMatrixStorage(int rows, int cols, boolean fastHash) {
         assert rows > 0;
@@ -138,14 +145,14 @@ public class RandomMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 1;
+        int res = 1;
 
-        result = result * 37 + Boolean.hashCode(fastHash);
-        result = result * 37 + seed;
-        result = result * 37 + cols;
-        result = result * 37 + rows;
+        res = res * 37 + Boolean.hashCode(fastHash);
+        res = res * 37 + seed;
+        res = res * 37 + cols;
+        res = res * 37 + rows;
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */

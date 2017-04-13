@@ -22,11 +22,15 @@ import java.util.*;
 import org.apache.ignite.math.MatrixStorage;
 
 /**
- * TODO: add description.
+ * Array based {@link MatrixStorage} implementation.
  */
 public class ArrayMatrixStorage implements MatrixStorage {
+    /** Backing data array. */
     private double[][] data;
-    private int rows, cols;
+    /** Amount of rows in the matrix. */
+    private int rows;
+    /** Amount of columns in the matrix. */
+    private int cols;
 
     /**
      *
@@ -37,8 +41,8 @@ public class ArrayMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param rows
-     * @param cols
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
      */
     public ArrayMatrixStorage(int rows, int cols) {
         assert rows > 0;
@@ -51,7 +55,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param data
+     * @param data Backing data array.
      */
     public ArrayMatrixStorage(double[][] data) {
         assert data != null;

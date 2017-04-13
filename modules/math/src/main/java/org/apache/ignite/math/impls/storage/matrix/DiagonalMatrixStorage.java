@@ -23,10 +23,10 @@ import org.apache.ignite.math.Vector;
 import java.io.*;
 
 /**
- * TODO: add description.
+ *  {@link MatrixStorage} implementation for diagonal Matrix view.
  */
 public class DiagonalMatrixStorage implements MatrixStorage {
-    private Vector diagonal;
+    /** Backing vector for matrix diagonal. */ private Vector diagonal;
 
     /**
      *
@@ -37,7 +37,7 @@ public class DiagonalMatrixStorage implements MatrixStorage {
 
     /**
      *
-     * @param diagonal
+     * @param diagonal Backing {@link Vector} for matrix diagonal.
      */
     public DiagonalMatrixStorage(Vector diagonal) {
         assert diagonal != null;
@@ -46,7 +46,7 @@ public class DiagonalMatrixStorage implements MatrixStorage {
     }
 
     /**
-     * 
+     *
      */
     public Vector diagonal() {
         return diagonal;

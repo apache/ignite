@@ -20,11 +20,18 @@ import java.io.*;
 import java.util.*;
 
 /**
- * TODO: add description.
+ * {@link MatrixStorage} implementation for {@link org.apache.ignite.math.impls.matrix.SparseDistributedMatrix}.
  */
 public class SparseDistributedMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants {
-    private int rows, cols;
-    private int stoMode, acsMode;
+    /** Amount of rows in the matrix. */
+    private int rows;
+    /** Amount of columns in the matrix. */
+    private int cols;
+
+    /** Row or column based storage mode. */
+    private int stoMode;
+    /** Random or sequential access mode. */
+    private int acsMode;
 
     /** Actual distributed storage. */
     private IgniteCache<
@@ -41,10 +48,10 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /**
      *
-     * @param rows
-     * @param cols
-     * @param stoMode
-     * @param acsMode
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     * @param stoMode Row or column based storage mode.
+     * @param acsMode Random or sequential access mode.
      */
     public SparseDistributedMatrixStorage(int rows, int cols, int stoMode, int acsMode) {
         assert rows > 0;
@@ -93,7 +100,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     }
 
     /**
-     * 
+     *
      *
      */
     public IgniteCache<Integer, Map<Integer, Double>> cache() {
@@ -109,7 +116,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     }
 
     /**
-     * 
+     *
      *
      */
     public int storageMode() {
@@ -231,7 +238,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
-        return false; 
+        return false;
     }
 
     /** Destroy underlying cache. */

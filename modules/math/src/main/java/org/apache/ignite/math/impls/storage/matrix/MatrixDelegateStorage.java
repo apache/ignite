@@ -21,12 +21,21 @@ import java.io.*;
 import org.apache.ignite.math.MatrixStorage;
 
 /**
- * TODO: add description.
+ * {@link MatrixStorage} implementation that delegates to parent matrix.
  */
 public class MatrixDelegateStorage implements MatrixStorage {
+    /** parent matrix storage */
     private MatrixStorage sto;
-    private int rowOff, colOff;
-    private int rows, cols;
+
+    /** Row offset in the parent matrix. */
+    private int rowOff;
+    /** Column offset in the parent matrix. */
+    private int colOff;
+
+    /** Amount of rows in the matrix. */
+    private int rows;
+    /** Amount of columns in the matrix. */
+    private int cols;
 
     /**
      *
@@ -37,11 +46,11 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
     /**
      *
-     * @param sto
-     * @param rowOff
-     * @param colOff
-     * @param rows
-     * @param cols
+     * @param sto Backing parent storage.
+     * @param rowOff Row offset to parent matrix.
+     * @param colOff Column offset to parent matrix.
+     * @param rows Amount of rows in the view.
+     * @param cols Amount of columns in the view.
      */
     public MatrixDelegateStorage(MatrixStorage sto, int rowOff, int colOff, int rows, int cols) {
         assert sto != null;
@@ -49,7 +58,7 @@ public class MatrixDelegateStorage implements MatrixStorage {
         assert colOff >= 0;
         assert rows > 0;
         assert cols > 0;
-        
+
         this.sto = sto;
 
         this.rowOff = rowOff;
@@ -60,7 +69,7 @@ public class MatrixDelegateStorage implements MatrixStorage {
     }
 
     /**
-     * 
+     *
      */
     public MatrixStorage delegate() {
         return sto;
