@@ -217,6 +217,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * @return {@code True} if partition is marked for transfer to renting state.
+     */
+    public boolean shouldBeRenting() {
+        return shouldBeRenting;
+    }
+
+    /**
      * @return Reservations.
      */
     public int reservations() {
@@ -458,12 +465,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 if (reservations == 0 && shouldBeRenting)
                     rent(true);
 
-                try {
-                    tryEvict();
-                }
-                catch (NodeStoppingException ignore) {
-                    // Node is stopping.
-                }
+                tryEvictAsync(false);
 
                 break;
             }
@@ -622,7 +624,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (markForDestroy())
                 finishDestroy(updateSeq);
         }
-        else
+        else if (partState == RENTING || shouldBeRenting())
             cctx.preloader().evictPartitionAsync(this);
     }
 

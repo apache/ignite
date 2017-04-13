@@ -3201,29 +3201,30 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (log.isDebugEnabled())
                                 log.debug("Got removed entry while updating backup value (will retry): " + key);
 
-                        entry = null;
-                    }
-                    finally {
-                        if (entry != null)
-                            ctx.evicts().touch(entry, req.topologyVersion());
+                            entry = null;
+                        }
+                        finally {
+                            if (entry != null)
+                                ctx.evicts().touch(entry, req.topologyVersion());
+                        }
                     }
                 }
-            }
-            catch (NodeStoppingException e){
-                U.error(log, "Failed to update key on backup (local node is stopping):" + key, e);
+                catch (NodeStoppingException e){
+                    U.error(log, "Failed to update key on backup (local node is stopping):" + key, e);
 
-                return;
-            }
-            catch (GridDhtInvalidPartitionException ignored) {
-                // Ignore.
-            }
-            catch (IgniteCheckedException e) {
-                IgniteCheckedException err = new IgniteCheckedException("Failed to update key on backup node: " + key, e);
+                    return;
+                }
+                catch (GridDhtInvalidPartitionException ignored) {
+                    // Ignore.
+                }
+                catch (IgniteCheckedException e) {
+                    IgniteCheckedException err = new IgniteCheckedException("Failed to update key on backup node: " + key, e);
 
-                if (nearRes != null)
-                    nearRes.addFailedKey(key, err);
+                    if (nearRes != null)
+                        nearRes.addFailedKey(key, err);
 
-                U.error(log, "Failed to update key on backup node: " + key, e);}
+                    U.error(log, "Failed to update key on backup node: " + key, e);
+                }
             }
         }
         finally {

@@ -71,7 +71,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         assert mgr != null;
 
-        synchronized (mux) {
+        synchronized (this) {
             for (ClusterNode node : nodes)
                 subgrid.add(node.id());
         }
@@ -87,7 +87,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
             Collection<ClusterNode> allNodes = cctx.discovery().allNodes();
             Collection<ClusterNode> nodes;
 
-            synchronized (mux) {
+            synchronized (this) {
                 nodes = F.retain(allNodes, true,
                     new P1<ClusterNode>() {
                         @Override public boolean apply(ClusterNode node) {
@@ -139,7 +139,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     @Override protected void onNodeLeft(UUID nodeId) {
         boolean callOnPage;
 
-        synchronized (mux) {
+        synchronized (this) {
             callOnPage = !loc && subgrid.contains(nodeId);
         }
 
@@ -166,7 +166,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override protected boolean onPage(UUID nodeId, boolean last) {
-        assert Thread.holdsLock(mux);
+        assert Thread.holdsLock(this);
 
         if (!loc) {
             rcvd.add(nodeId);
@@ -192,11 +192,11 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     /** {@inheritDoc} */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     @Override protected void loadPage() {
-        assert !Thread.holdsLock(mux);
+        assert !Thread.holdsLock(this);
 
         Collection<ClusterNode> nodes = null;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (!isDone() && rcvd.containsAll(subgrid)) {
                 rcvd.clear();
 
@@ -211,13 +211,13 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     /** {@inheritDoc} */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
     @Override protected void loadAllPages() throws IgniteInterruptedCheckedException {
-        assert !Thread.holdsLock(mux);
+        assert !Thread.holdsLock(this);
 
         U.await(firstPageLatch);
 
         Collection<ClusterNode> nodes = null;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (!isDone() && !subgrid.isEmpty())
                 nodes = nodes();
         }
@@ -230,7 +230,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      * @return Nodes to send requests to.
      */
     private Collection<ClusterNode> nodes() {
-        assert Thread.holdsLock(mux);
+        assert Thread.holdsLock(this);
 
         Collection<ClusterNode> nodes = new ArrayList<>(subgrid.size());
 
