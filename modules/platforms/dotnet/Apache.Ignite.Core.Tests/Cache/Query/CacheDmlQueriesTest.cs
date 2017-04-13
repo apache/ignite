@@ -48,11 +48,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         {
                             EqualityComparer = new BinaryFieldEqualityComparer("Hi", "Lo")
                         }
-                    }
+                    },
+                    DefaultNameMapper = GetNameMapper()
                 }
             };
 
             Ignition.Start(cfg);
+        }
+                
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>

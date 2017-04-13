@@ -23,9 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
@@ -156,7 +154,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.NotNull(meta);
 
-            Assert.AreEqual("Value", meta.TypeName);
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Cache.Store.Value", meta.TypeName);
         }
 
         /// <summary>

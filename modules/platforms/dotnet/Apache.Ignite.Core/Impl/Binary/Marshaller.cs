@@ -407,7 +407,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return _typeNameToDesc.TryGetValue(typeName, out desc)
                 ? (IBinaryTypeDescriptor) desc
-                : new BinarySurrogateTypeDescriptor(_cfg, typeName);
+                : new BinarySurrogateTypeDescriptor(_cfg,
+                    GetTypeId(typeName, _cfg.DefaultIdMapper), typeName);
         }
 
         /// <summary>
@@ -444,7 +445,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var type = _ignite == null ? null : _ignite.BinaryProcessor.GetType(typeId);
 
                 if (type != null)
-                    return AddUserType(type, typeId, BinaryUtils.GetTypeName(type), true, desc);
+                    return AddUserType(type, typeId, GetTypeName(type), true, desc);
             }
 
             var meta = GetBinaryType(typeId);
@@ -471,8 +472,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(type != null);
 
-            var typeName = BinaryUtils.GetTypeName(type);
-            var typeId = BinaryUtils.TypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
+            var typeName = GetTypeName(type);
+            var typeId = GetTypeId(typeName, _cfg.DefaultIdMapper);
 
             var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, type);
 
@@ -546,7 +547,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private void AddUserType(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
         {
             // Get converter/mapper/serializer.
-            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.DefaultNameMapper;
+            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.DefaultNameMapper ?? GetDefaultNameMapper();
 
             IBinaryIdMapper idMapper = typeCfg.IdMapper ?? _cfg.DefaultIdMapper;
 
@@ -569,8 +570,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 // Type is found.
-                var typeName = BinaryUtils.GetTypeName(type);
-                int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
+                var typeName = GetTypeName(type, nameMapper);
+                int typeId = GetTypeId(typeName, idMapper);
                 var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
                 var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper, _log);
 
@@ -580,9 +581,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 // Type is not found.
-                string typeName = BinaryUtils.SimpleTypeName(typeCfg.TypeName);
+                string typeName = GetTypeName(typeCfg.TypeName, nameMapper);
 
-                int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
+                int typeId = GetTypeId(typeName, idMapper);
 
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName, typeCfg.IsEnum, typeCfg.EqualityComparer);
@@ -698,12 +699,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             var type = typeof(T);
 
             serializer = serializer ?? new BinarySystemTypeSerializer<T>(ctor);
+                            
+            // System types always use simple name mapper.
+            var typeName = type.Name;
 
             if (typeId == 0)
-                typeId = BinaryUtils.TypeId(type.Name, null, null);
+            {
+                typeId = BinaryUtils.GetStringHashCode(typeName);
+            }
 
-            AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, affKeyFldName,
-                false, null);
+            AddType(type, typeId, typeName, false, false, null, null, serializer, affKeyFldName, false, null);
         }
 
         /// <summary>
@@ -766,6 +771,72 @@ namespace Apache.Ignite.Core.Impl.Binary
                     "Abstract types and interfaces are not allowed in BinaryConfiguration: " +
                     type.AssemblyQualifiedName);
             }
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        private string GetTypeName(Type type, IBinaryNameMapper mapper = null)
+        {
+            return GetTypeName(type.AssemblyQualifiedName, mapper);
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        private string GetTypeName(string fullTypeName, IBinaryNameMapper mapper = null)
+        {
+            mapper = mapper ?? _cfg.DefaultNameMapper ?? GetDefaultNameMapper();
+
+            var typeName = mapper.GetTypeName(fullTypeName);
+
+            if (typeName == null)
+            {
+                throw new BinaryObjectException("IBinaryNameMapper returned null name for type [typeName=" +
+                                                fullTypeName + ", mapper=" + mapper + "]");
+            }
+
+            return typeName;
+        }
+
+        /// <summary>
+        /// Resolve type ID.
+        /// </summary>
+        /// <param name="typeName">Type name.</param>
+        /// <param name="idMapper">ID mapper.</param>
+        private static int GetTypeId(string typeName, IBinaryIdMapper idMapper)
+        {
+            Debug.Assert(typeName != null);
+
+            int id = 0;
+
+            if (idMapper != null)
+            {
+                try
+                {
+                    id = idMapper.GetTypeId(typeName);
+                }
+                catch (Exception e)
+                {
+                    throw new BinaryObjectException("Failed to resolve type ID due to ID mapper exception " +
+                                                    "[typeName=" + typeName + ", idMapper=" + idMapper + ']', e);
+                }
+            }
+
+            if (id == 0)
+            {
+                id = BinaryUtils.GetStringHashCode(typeName);
+            }
+
+            return id;
+        }
+
+        /// <summary>
+        /// Gets the default name mapper.
+        /// </summary>
+        private static IBinaryNameMapper GetDefaultNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
     }
 }

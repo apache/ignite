@@ -69,7 +69,7 @@
                 </property>
                 <property name="nameMapper">
                     <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
-                        <constructor-arg value="true"/>
+                        <!--<constructor-arg value="true"/>-->
                     </bean>
                 </property>
             </bean>
