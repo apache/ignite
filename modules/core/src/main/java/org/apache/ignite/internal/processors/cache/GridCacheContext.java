@@ -2058,9 +2058,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param expiryPlc
-     * @param readers
-     * @return
+     * @param expiryPlc Expiry policy for read operation.
+     * @param readers {@code True} if need update entry readers.
+     * @return {@code True} if it is possible directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
      */
     public boolean offheapRead(IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
         return offheapTiered() &&
