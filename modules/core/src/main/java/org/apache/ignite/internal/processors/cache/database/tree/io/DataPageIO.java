@@ -1397,10 +1397,11 @@ public class DataPageIO extends PageIO {
             PageUtils.putShort(addr, 0, (short)payloadSize);
             addr += 2;
 
-            if (cacheIdSize != 0)
+            if (cacheIdSize != 0) {
                 PageUtils.putInt(addr, 0, row.cacheId());
 
-            addr += cacheIdSize;
+                addr += cacheIdSize;
+            }
 
             addr += row.key().putValue(addr);
         }
