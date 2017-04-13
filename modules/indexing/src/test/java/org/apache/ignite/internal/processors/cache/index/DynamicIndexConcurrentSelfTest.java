@@ -470,6 +470,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    // TODO: Something is wrong here!
     public void testConcurrentOperationsAndCacheStartStopMultithreaded() throws Exception {
         // Start complex topology.
         Ignition.start(serverConfiguration(1));

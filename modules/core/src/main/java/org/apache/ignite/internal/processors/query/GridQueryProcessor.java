@@ -44,14 +44,14 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationClientFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
+import org.apache.ignite.internal.processors.query.schema.SchemaKey;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationClientFuture;
+import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationWorker;
-import org.apache.ignite.internal.processors.query.schema.SchemaKey;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
@@ -101,7 +101,7 @@ import java.util.concurrent.ConcurrentMap;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
 
 /**
  * Indexing processor.
@@ -2069,7 +2069,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             SchemaOperationStatusMessage msg = new SchemaOperationStatusMessage(opId, errBytes);
 
-            ctx.io().sendToGridTopic(destNodeId, TOPIC_CACHE_SCHEMA, msg, QUERY_POOL);
+            // Messages must go to dedicated schema pool. We cannot push them to query pool because in this case
+            // they could be blocked with other query requests.
+            ctx.io().sendToGridTopic(destNodeId, TOPIC_CACHE_SCHEMA, msg, SCHEMA_POOL);
         }
         catch (IgniteCheckedException e) {
             if (log.isDebugEnabled())
