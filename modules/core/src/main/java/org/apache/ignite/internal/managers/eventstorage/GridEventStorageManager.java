@@ -746,6 +746,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Returns {@code true} if removed.
      */
     public boolean removeLocalEventListener(IgnitePredicate<? extends Event> lsnr, @Nullable int... types) {
+        assert lsnr != null;
+
         return removeEventListener(new UserListenerWrapper(lsnr), types);
     }
 
@@ -758,7 +760,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Returns {@code true} if removed.
      */
     public boolean removeLocalEventListener(GridLocalEventListener lsnr, @Nullable int... types) {
-        return removeEventListener(lsnr, types);
+        assert lsnr != null;
+
+        return removeEventListener(new LocalListenerWrapper(lsnr), types);
     }
 
     /**
@@ -770,7 +774,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Returns {@code true} if removed.
      */
     public boolean removeDiscoveryEventListener(DiscoveryEventListener lsnr, @Nullable int... types) {
-        return removeEventListener(lsnr, types);
+        assert lsnr != null;
+
+        return removeEventListener(new DiscoveryListenerWrapper(lsnr), types);
     }
 
     /**
@@ -1308,7 +1314,15 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return lsnr.equals(o);
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            LocalListenerWrapper wrapper = (LocalListenerWrapper)o;
+
+            return lsnr.equals(wrapper.lsnr);
         }
 
         /** {@inheritDoc} */
@@ -1340,7 +1354,15 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return lsnr.equals(o);
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            DiscoveryListenerWrapper wrapper = (DiscoveryListenerWrapper)o;
+
+            return lsnr.equals(wrapper.lsnr);
         }
 
         /** {@inheritDoc} */
