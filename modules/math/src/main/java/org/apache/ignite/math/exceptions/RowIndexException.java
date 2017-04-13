@@ -20,7 +20,7 @@ package org.apache.ignite.math.exceptions;
 import org.apache.ignite.*;
 
 /**
- * TODO: add description.
+ * This exception is used to indicate any error condition accessing matrix elements by invalid row index.
  */
 public class RowIndexException extends IgniteException {
     /** */

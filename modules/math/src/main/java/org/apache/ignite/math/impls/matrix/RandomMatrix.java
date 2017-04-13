@@ -25,15 +25,16 @@ import org.apache.ignite.math.impls.storage.matrix.RandomMatrixStorage;
 import org.apache.ignite.math.impls.vector.RandomVector;
 
 /**
- * TODO: add description.
+ * Implementation of {@link Matrix} with random values in the elements.
  */
 public class RandomMatrix extends AbstractMatrix {
+    /** Whether fast hash is used, see {@link RandomMatrixStorage}. */
     private boolean fastHash;
 
     /**
-     * @param rows
-     * @oaram cols
-     * @param fastHash
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     * @param fastHash Whether fast hash is used.
      */
     private MatrixStorage mkStorage(int rows, int cols, boolean fastHash) {
         this.fastHash = fastHash;
@@ -43,9 +44,9 @@ public class RandomMatrix extends AbstractMatrix {
 
     /**
      *
-     * @param rows
-     * @param cols
-     * @param fastHash
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     * @param fastHash Whether fast hash is used.
      */
     public RandomMatrix(int rows, int cols, boolean fastHash) {
         setStorage(mkStorage(rows, cols, fastHash));
@@ -53,8 +54,8 @@ public class RandomMatrix extends AbstractMatrix {
 
     /**
      *
-     * @param rows
-     * @param cols
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
      */
     public RandomMatrix(int rows, int cols) {
         this(rows, cols, true);

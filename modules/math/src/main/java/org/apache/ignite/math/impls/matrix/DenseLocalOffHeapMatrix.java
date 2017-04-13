@@ -23,7 +23,7 @@ import org.apache.ignite.math.impls.storage.matrix.DenseOffHeapMatrixStorage;
 import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
 
 /**
- * TODO add description
+ * Dense local off-heap implementation of the {@link Matrix} interface.
  */
 public class DenseLocalOffHeapMatrix extends AbstractMatrix {
     /** */
@@ -33,7 +33,7 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
 
     /**
      *
-     * @param data
+     * @param data Backing data array.
      */
     public DenseLocalOffHeapMatrix(double[][] data){
         assert data != null;
@@ -43,8 +43,8 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
 
     /**
      *
-     * @param rows
-     * @param cols
+     * @param rows Amount of rows in matrix.
+     * @param cols Amount of columns in matrix.
      */
     public DenseLocalOffHeapMatrix(int rows, int cols){
         assert rows > 0;
@@ -55,11 +55,11 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
 
     /** {@inheritDoc} */
     @Override public Matrix copy() {
-        DenseLocalOffHeapMatrix copy = new DenseLocalOffHeapMatrix(getStorage().rowSize(), getStorage().columnSize());
+        DenseLocalOffHeapMatrix cp = new DenseLocalOffHeapMatrix(getStorage().rowSize(), getStorage().columnSize());
 
-        copy.assign(this);
+        cp.assign(this);
 
-        return copy;
+        return cp;
     }
 
     /** {@inheritDoc} */

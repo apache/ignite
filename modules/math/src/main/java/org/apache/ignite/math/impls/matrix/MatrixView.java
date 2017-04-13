@@ -26,7 +26,7 @@ import org.apache.ignite.math.MatrixStorage;
 import java.io.*;
 
 /**
- * TODO: add description.
+ * Implements the rectangular view into the parent {@link Matrix}.
  */
 public class MatrixView extends AbstractMatrix {
     /**
@@ -38,11 +38,11 @@ public class MatrixView extends AbstractMatrix {
 
     /**
      *
-     * @param parent
-     * @param rowOff
-     * @param colOff
-     * @param rows
-     * @param cols
+     * @param parent Backing parent {@link Matrix}.
+     * @param rowOff Row offset to parent matrix.
+     * @param colOff Column offset to parent matrix.
+     * @param rows Amount of rows in the view.
+     * @param cols Amount of columns in the view.
      */
     public MatrixView(Matrix parent, int rowOff, int colOff, int rows, int cols) {
         this(parent == null ? null : parent.getStorage(), rowOff, colOff, rows, cols);
@@ -50,11 +50,11 @@ public class MatrixView extends AbstractMatrix {
 
     /**
      *
-     * @param sto
-     * @param rowOff
-     * @param colOff
-     * @param rows
-     * @param cols
+     * @param sto Backing parent {@link MatrixStorage}.
+     * @param rowOff Row offset to parent storage.
+     * @param colOff Column offset to parent storage.
+     * @param rows Amount of rows in the view.
+     * @param cols Amount of columns in the view.
      */
     public MatrixView(MatrixStorage sto, int rowOff, int colOff, int rows, int cols) {
         super(new MatrixDelegateStorage(sto, rowOff, colOff, rows, cols));
