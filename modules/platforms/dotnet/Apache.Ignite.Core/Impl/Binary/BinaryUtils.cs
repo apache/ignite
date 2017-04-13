@@ -1972,10 +1972,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 // Read the rest.
-                cfg.DefaultNameMapper = CreateInstance<IBinaryNameMapper>(reader);
-                cfg.DefaultIdMapper = CreateInstance<IBinaryIdMapper>(reader);
-                cfg.DefaultSerializer = CreateInstance<IBinarySerializer>(reader);
-                cfg.DefaultKeepDeserialized = reader.ReadBoolean();
+                cfg.NameMapper = CreateInstance<IBinaryNameMapper>(reader);
+                cfg.IdMapper = CreateInstance<IBinaryIdMapper>(reader);
+                cfg.Serializer = CreateInstance<IBinarySerializer>(reader);
+                cfg.KeepDeserialized = reader.ReadBoolean();
             }
             else
                 cfg = null;

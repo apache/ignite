@@ -17,33 +17,16 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.AbstractAffinityFunctionSelfTest;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Tests for {@link RendezvousAffinityFunction}.
  */
 public class RendezvousAffinityFunctionStandardHashSelfTest extends AbstractAffinityFunctionSelfTest {
-    /** Ignite. */
-    private static Ignite ignite;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        ignite = startGrid();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunction() {
         AffinityFunction aff = new RendezvousAffinityFunction(513, null);
-
-        GridTestUtils.setFieldValue(aff, "ignite", ignite);
 
         return aff;
     }
