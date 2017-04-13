@@ -20,7 +20,7 @@ package org.apache.ignite.math;
 import java.io.*;
 
 /**
- * TODO: add description.
+ * Data storage support for {@link Vector}.
  */
 public interface VectorStorage extends Externalizable, StorageOpsMetrics, Destroyable {
     /**
@@ -31,15 +31,15 @@ public interface VectorStorage extends Externalizable, StorageOpsMetrics, Destro
 
     /**
      *
-     * @param i
-     *
+     * @param i Vector element index.
+     * @return Value obtained for given element index.
      */
     public double get(int i);
 
     /**
-     * 
-     * @param i
-     * @param v
+     *
+     * @param i Vector element index.
+     * @param v Value to set at given index.
      */
     public void set(int i, double v);
 

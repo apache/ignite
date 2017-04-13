@@ -27,7 +27,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 /**
- * TODO: add description.
+ * Utility methods to support output of {@link Vector} and {@link Matrix} instances to plain text or HTML.
  */
 public class Tracer {
     /**
@@ -35,13 +35,13 @@ public class Tracer {
      */
     public interface ColorMapper extends Function<Double, Color> {}
 
-    // Continues red-to-blue color mapping.
+    /** Continuous red-to-blue color mapping. */
     static private ColorMapper defaultColorMapper(double min, double max) {
         double range = max - min;
 
         return new ColorMapper() {
-            @Override
-            public Color apply(Double d) {
+            /** {@inheritDoc} */
+            @Override public Color apply(Double d) {
                 int r = (int)Math.round(255 * d);
                 int g = 0;
                 int b = (int)Math.round(255 * (1 - d));
@@ -51,8 +51,13 @@ public class Tracer {
         };
     }
 
-    // Default vector color mapper implementation that map given double value
-    // to continues red-blue (R_B) specter.
+    /**
+     * Default vector color mapper implementation that map given double value
+     * to continuous red-blue (R_B) specter.
+     *
+     * @param vec Vector to map.
+     * @return {@link ColorMapper} for the given vector.
+     */
     static private ColorMapper mkVectorColorMapper(Vector vec) {
         return defaultColorMapper(vec.minValue(), vec.maxValue());
     }
@@ -65,9 +70,9 @@ public class Tracer {
 
     /**
      *
-     * @param vec
-     * @param log
-     * @param fmt
+     * @param vec Vector to show.
+     * @param log {@link IgniteLogger} instance for output.
+     * @param fmt Format string for vector elements.
      */
     public static void showAscii(Vector vec, IgniteLogger log, String fmt) {
         String cls = vec.getClass().getSimpleName();
@@ -77,7 +82,8 @@ public class Tracer {
 
     /**
      *
-     * @param vec
+     * @param vec Vector to show as plain text.
+     * @param log {@link IgniteLogger} instance for output.
      */
     public static void showAscii(Vector vec, IgniteLogger log) {
         showAscii(vec, log, "%4f");
@@ -85,7 +91,8 @@ public class Tracer {
 
     /**
      *
-     * @param vec
+     * @param vec Vector to show as plain text.
+     * @param fmt Format string for vector elements.
      */
     public static void showAscii(Vector vec, String fmt) {
         String cls = vec.getClass().getSimpleName();
@@ -95,7 +102,7 @@ public class Tracer {
 
     /**
      *
-     * @param mtx
+     * @param mtx Matrix to show as plain text.
      */
     public static void showAscii(Matrix mtx) {
         showAscii(mtx, "%4f");
@@ -103,9 +110,10 @@ public class Tracer {
 
     /**
      *
-     * @param mtx
-     * @param row
-     * @param fmt
+     * @param mtx Matrix to show.
+     * @param row Matrix row to output.
+     * @param fmt Format string for matrix elements in the row.
+     * @return String representation of given matrix row according to given format.
      */
     static private String rowStr(Matrix mtx, int row, String fmt) {
         StringBuilder buf = new StringBuilder();
@@ -130,8 +138,8 @@ public class Tracer {
 
     /**
      *
-     * @param mtx
-     * @param fmt
+     * @param mtx {@link Matrix} object to show as a plain text.
+     * @param fmt Format string for matrix rows.
      */
     public static void showAscii(Matrix mtx, String fmt) {
         String cls = mtx.getClass().getSimpleName();
@@ -147,9 +155,9 @@ public class Tracer {
 
     /**
      *
-     * @param mtx
-     * @param log
-     * @param fmt
+     * @param mtx {@link Matrix} object to show as a plain text.
+     * @param log {@link IgniteLogger} instance to output the logged matrix.
+     * @param fmt Format string for matrix rows.
      */
     public static void showAscii(Matrix mtx, IgniteLogger log, String fmt) {
         String cls = mtx.getClass().getSimpleName();
@@ -165,7 +173,7 @@ public class Tracer {
 
     /**
      *
-     * @param vec
+     * @param vec {@link Vector} object to show as a plain text.
      */
     public static void showAscii(Vector vec) {
         showAscii(vec, "%4f");
@@ -243,9 +251,9 @@ public class Tracer {
 
     /**
      *
-     * @param d
-     * @param clr
-     *
+     * @param d Value of {@link Matrix} or {@link Vector} element.
+     * @param clr {@link Color} to paint.
+     * @return JSON representation for given value and color.
      */
     static private String dataColorJson(double d, Color clr) {
         return "{" +
@@ -285,7 +293,7 @@ public class Tracer {
      *
      * @param fileName Name of the file (on classpath) to read.
      * @return Content of the file.
-     * @throws IOException
+     * @throws IOException If an I/O error of some sort has occurred.
      */
     private static String fileToString(String fileName) throws IOException {
         assert Tracer.class.getResourceAsStream(fileName) != null : "Can't get resource: " + fileName;
@@ -419,9 +427,9 @@ public class Tracer {
 
     /**
      *
-     * @param mtx
-     * @param fmt
-     *
+     * @param mtx Matrix to log.
+     * @param fmt Output format.
+     * @return Formatted representation of a matrix.
      */
     private static String mkString(Matrix mtx, String fmt) {
         StringBuilder buf = new StringBuilder();

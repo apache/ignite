@@ -18,12 +18,13 @@
 package org.apache.ignite.math;
 
 /**
- * TODO: add description.
+ * Maps {@link Vector} element index to cache key.
  */
 public interface VectorKeyMapper<K> extends KeyMapper<K> {
     /**
      *
-     * @param i
+     * @param i Vector element index.
+     * @return Cache key for given element index.
      */
     public K apply(int i);
 }

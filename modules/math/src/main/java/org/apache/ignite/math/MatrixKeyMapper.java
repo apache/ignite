@@ -18,14 +18,14 @@
 package org.apache.ignite.math;
 
 /**
- * TODO: add description.
+ * Maps {@link Matrix} row and column index to cache key.
  */
 public interface MatrixKeyMapper<K> extends KeyMapper<K> {
     /**
-     * 
-     * @param x
-     * @param y
      *
+     * @param x Matrix row index.
+     * @param y Matrix column index.
+     * @return Cache key for given row and column.
      */
     public K apply(int x, int y);
 }

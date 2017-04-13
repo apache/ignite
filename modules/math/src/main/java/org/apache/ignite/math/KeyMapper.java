@@ -27,6 +27,7 @@ public interface KeyMapper<K> extends Serializable {
      * Checks given cache key corresponds to a valid index in vector or matrix.
      *
      * @param k Key to check.
+     * @return {@code true} if there is a valid index, {@code false} otherwise.
      */
     public boolean isValid(K k);
 }

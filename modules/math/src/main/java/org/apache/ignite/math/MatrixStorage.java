@@ -20,21 +20,22 @@ package org.apache.ignite.math;
 import java.io.*;
 
 /**
- * TODO: add description.
+ * Data storage support for {@link Matrix}.
  */
 public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destroyable {
     /**
      *
-     * @param x
-     * @param y
+     * @param x Matrix row index.
+     * @param y Matrix column index.
+     * @return Value corresponding to given row and column.
      */
     public double get(int x, int y);
 
     /**
      *
-     * @param x
-     * @param y
-     * @param v
+     * @param x Matrix row index.
+     * @param y Matrix column index.
+     * @param v Value to set at given row and column.
      */
     public void set(int x, int y, double v);
 
@@ -44,7 +45,7 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destro
     public int columnSize();
 
     /**
-     * 
+     *
      */
     public int rowSize();
 

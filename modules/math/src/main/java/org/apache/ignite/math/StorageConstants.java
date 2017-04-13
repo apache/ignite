@@ -18,7 +18,7 @@
 package org.apache.ignite.math;
 
 /**
- * TODO: add description.
+ * Support for different modes of accessing data storage.
  */
 public interface StorageConstants {
     /** Storage mode optimized for sequential access. */
@@ -35,7 +35,7 @@ public interface StorageConstants {
 
     /**
      *
-     * @param mode
+     * @param mode Access mode to verify.
      */
     default void assertAccessMode(int mode) {
         assert mode == SEQUENTIAL_ACCESS_MODE || mode == RANDOM_ACCESS_MODE;
@@ -43,7 +43,7 @@ public interface StorageConstants {
 
     /**
      *
-     * @param mode
+     * @param mode Storage mode to verify.
      */
     default void assertStorageMode(int mode) {
         assert mode == ROW_STORAGE_MODE || mode == COLUMN_STORAGE_MODE;
