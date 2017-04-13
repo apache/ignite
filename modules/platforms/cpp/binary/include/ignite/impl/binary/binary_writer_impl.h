@@ -531,7 +531,7 @@ namespace ignite
                  * @param typ Collection type.
                  * @return Session ID.
                  */
-                int32_t WriteCollection(ignite::binary::CollectionType typ);
+                int32_t WriteCollection(ignite::binary::CollectionType::Type typ);
 
                 /**
                  * Start collection write.
@@ -540,7 +540,7 @@ namespace ignite
                  * @param typ Collection type.
                  * @return Session ID.
                  */
-                int32_t WriteCollection(const char* fieldName, ignite::binary::CollectionType typ);
+                int32_t WriteCollection(const char* fieldName, ignite::binary::CollectionType::Type typ);
 
                 /**
                  * Write values in interval [first, last).
@@ -550,7 +550,7 @@ namespace ignite
                  * @param typ Collection type.
                  */
                 template<typename InputIterator>
-                void WriteCollection(InputIterator first, InputIterator last, ignite::binary::CollectionType typ)
+                void WriteCollection(InputIterator first, InputIterator last, ignite::binary::CollectionType::Type typ)
                 {
                     StartContainerSession(true);
 
@@ -567,7 +567,7 @@ namespace ignite
                  */
                 template<typename InputIterator>
                 void WriteCollection(const char* fieldName, InputIterator first, InputIterator last,
-                    ignite::binary::CollectionType typ)
+                    ignite::binary::CollectionType::Type typ)
                 {
                     StartContainerSession(false);
 
@@ -582,7 +582,7 @@ namespace ignite
                  * @param typ Map type.
                  * @return Session ID.
                  */
-                int32_t WriteMap(ignite::binary::MapType typ);
+                int32_t WriteMap(ignite::binary::MapType::Type typ);
 
                 /**
                  * Start map write.
@@ -591,7 +591,7 @@ namespace ignite
                  * @param typ Map type.
                  * @return Session ID.
                  */
-                int32_t WriteMap(const char* fieldName, ignite::binary::MapType typ);
+                int32_t WriteMap(const char* fieldName, ignite::binary::MapType::Type typ);
 
                 /**
                  * Write collection element.
@@ -755,10 +755,10 @@ namespace ignite
                  *
                  * @return Stream.
                  */
-                impl::interop::InteropOutputStream* GetStream();
+                interop::InteropOutputStream* GetStream();
             private:
                 /** Underlying stream. */
-                ignite::impl::interop::InteropOutputStream* stream; 
+                interop::InteropOutputStream* stream; 
                 
                 /** ID resolver. */
                 BinaryIdResolver* idRslvr;
@@ -916,7 +916,7 @@ namespace ignite
                  */
                 template<typename InputIterator>
                 void WriteCollectionWithinSession(InputIterator first, InputIterator last,
-                    ignite::binary::CollectionType typ)
+                    ignite::binary::CollectionType::Type typ)
                 {
                     stream->WriteInt8(IGNITE_TYPE_COLLECTION);
                     stream->Position(stream->Position() + 4);

@@ -385,7 +385,7 @@ namespace ignite
             template<typename T>
             BinaryCollectionReader<T> ReadCollection(const char* fieldName)
             {
-                CollectionType typ;
+                CollectionType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadCollection(fieldName, &typ, &size);
@@ -415,7 +415,7 @@ namespace ignite
             template<typename K, typename V>
             BinaryMapReader<K, V> ReadMap(const char* fieldName)
             {
-                MapType typ;
+                MapType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadMap(fieldName, &typ, &size);
@@ -429,7 +429,7 @@ namespace ignite
              * @param fieldName Field name.
              * @return Collection type.
              */
-            CollectionType ReadCollectionType(const char* fieldName);
+            CollectionType::Type ReadCollectionType(const char* fieldName);
 
             /**
              * Read type of the collection.
