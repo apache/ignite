@@ -24,10 +24,7 @@ import org.apache.ignite.stream.StreamAdapter;
 import org.jetbrains.annotations.NotNull;
 import scala.concurrent.ExecutionContext;
 
-public class IgniteAkkaStreamer<K, V> extends StreamAdapter<Object, K, V> {
-    /** Logger. */
-    protected IgniteLogger log;
-
+public class IgniteAkkaStreamer<T, K, V> extends StreamAdapter<T, K, V> {
     /**
      * Create {@link Sink} foreach method.
      *
@@ -38,14 +35,14 @@ public class IgniteAkkaStreamer<K, V> extends StreamAdapter<Object, K, V> {
             "the extractor must be initialize.");
 
         return Sink.foreach(e -> {
-            addMessage(e);
+            addMessage((T) e);
         });
     }
 
     /**
      * Create {@link Sink} foreachParallel method.
      *
-     * @param threads Threads on sink.
+     * @param threads Threads.
      * @param ec {@link ExecutionContext} object.
      * @return {@link Sink} akka object.
      */
@@ -55,7 +52,7 @@ public class IgniteAkkaStreamer<K, V> extends StreamAdapter<Object, K, V> {
             "the extractor must be initialize.");
 
         return Sink.foreachParallel(threads, e -> {
-            addMessage(e);
+            addMessage((T) e);
         }, ec);
     }
 }

@@ -133,9 +133,9 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
 
         IgniteAkkaStreamer streamer = new IgniteAkkaStreamer();
 
-        streamer.setSingleTupleExtractor(new StreamSingleTupleExtractor<Object, Integer, Integer>() {
-            @Override public Map.Entry extract(Object msg) {
-                return new IgniteBiTuple<>(count.getAndIncrement(), (Integer) msg);
+        streamer.setSingleTupleExtractor(new StreamSingleTupleExtractor<Integer, Integer, Integer>() {
+            @Override public Map.Entry extract(Integer msg) {
+                return new IgniteBiTuple<>(count.getAndIncrement(), msg);
             }
         });
 
