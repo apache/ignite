@@ -418,7 +418,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             stopGrid(NEW_GRID_NAME);
 
-            assertEquals(10, semaphore.availablePermits());
+            assertEquals(20, semaphore.availablePermits());
         }
     }
 
