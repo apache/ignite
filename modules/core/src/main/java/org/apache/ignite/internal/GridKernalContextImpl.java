@@ -45,7 +45,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -56,6 +55,7 @@ import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.clock.GridJvmClockSource;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -68,7 +68,6 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
-import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -155,10 +154,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSwapSpaceManager swapspaceMgr;
-
-    /** */
-    @GridToStringExclude
     private GridIndexingManager indexingMgr;
 
     /*
@@ -210,6 +205,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringInclude
     private GridCacheProcessor cacheProc;
 
+    /** Cluster state process. */
+    @GridToStringInclude
+    private GridClusterStateProcessor stateProc;
+
     /** */
     @GridToStringInclude
     private GridTaskSessionProcessor sesProc;
@@ -217,10 +216,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridPortProcessor portProc;
-
-    /** */
-    @GridToStringInclude
-    private GridOffHeapProcessor offheapProc;
 
     /** */
     @GridToStringInclude
@@ -517,8 +512,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             authProc = (GridSecurityProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
-        else if (comp instanceof GridSwapSpaceManager)
-            swapspaceMgr = (GridSwapSpaceManager)comp;
         else if (comp instanceof GridIndexingManager)
             indexingMgr = (GridIndexingManager)comp;
 
@@ -541,6 +534,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             metricsProc = (GridJobMetricsProcessor)comp;
         else if (comp instanceof GridCacheProcessor)
             cacheProc = (GridCacheProcessor)comp;
+        else if (comp instanceof GridClusterStateProcessor)
+            stateProc =(GridClusterStateProcessor)comp;
         else if (comp instanceof GridTaskSessionProcessor)
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
@@ -561,8 +556,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             dataLdrProc = (DataStreamProcessor)comp;
         else if (comp instanceof IgfsProcessorAdapter)
             igfsProc = (IgfsProcessorAdapter)comp;
-        else if (comp instanceof GridOffHeapProcessor)
-            offheapProc = (GridOffHeapProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
         else if (comp instanceof HadoopProcessorAdapter)
@@ -679,6 +672,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public GridClusterStateProcessor state() {
+        return stateProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridTaskSessionProcessor session() {
         return sesProc;
     }
@@ -696,11 +694,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPortProcessor ports() {
         return portProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridOffHeapProcessor offheap() {
-        return offheapProc;
     }
 
     /** {@inheritDoc} */
@@ -751,11 +744,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridLoadBalancerManager loadBalancing() {
         return loadMgr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSwapSpaceManager swap() {
-        return swapspaceMgr;
     }
 
     /** {@inheritDoc} */

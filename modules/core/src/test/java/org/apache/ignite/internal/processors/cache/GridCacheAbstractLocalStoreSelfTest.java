@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -64,7 +63,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -194,11 +192,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);
         cacheCfg.setBackups(backups);
-        cacheCfg.setOffHeapMaxMemory(0);
-        cacheCfg.setSwapEnabled(true);
-
-        if (isOffHeapTieredMode())
-            cacheCfg.setMemoryMode(OFFHEAP_TIERED);
 
         return cacheCfg;
     }
@@ -219,13 +212,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @return Cache mode.
      */
     protected abstract CacheMode getCacheMode();
-
-    /**
-     * @return {@code True} if {@link CacheMemoryMode#OFFHEAP_TIERED} memory mode should be used.
-     */
-    protected boolean isOffHeapTieredMode() {
-        return false;
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -331,7 +317,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         awaitPartitionMapExchange();
 
-        String name = BACKUP_CACHE_2;
+        final String name = BACKUP_CACHE_2;
 
         int key1 = -1;
         int key2 = -1;
@@ -388,10 +374,14 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         for (int i = KEYS; i < KEYS + 100; i++)
             assertEquals(i, ignite2.cache(name).get(i));
 
-        assertEquals(102, ignite2.cache(name).size());
-
         assertEquals(102, LOCAL_STORE_1.map.size());
         assertEquals(102, LOCAL_STORE_2.map.size());
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ignite(2).cache(name).size() == 102;
+            }
+        }, 5000);
 
         stopGrid(2);
 

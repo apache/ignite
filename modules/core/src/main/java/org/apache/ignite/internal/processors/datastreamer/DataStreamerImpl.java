@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +79,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -1920,22 +1923,57 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             ExpiryPolicy plc = cctx.expiry();
 
-            for (Entry<KeyCacheObject, CacheObject> e : entries) {
-                try {
-                    e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+            Collection<Integer> reservedParts = new HashSet<>();
+            Collection<Integer> ignoredParts = new HashSet<>();
 
-                    GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
+            try {
+                for (Entry<KeyCacheObject, CacheObject> e : entries) {
+                    cctx.shared().database().checkpointReadLock();
 
-                    if (plc != null) {
-                        ttl = CU.toTtl(plc.getExpiryForCreation());
+                    try {
+                        e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
-                        if (ttl == CU.TTL_ZERO)
-                            continue;
-                        else if (ttl == CU.TTL_NOT_CHANGED)
-                            ttl = 0;
+                        if (!cctx.isLocal()) {
+                            int p = cctx.affinity().partition(e.getKey());
 
-                        expiryTime = CU.toExpireTime(ttl);
-                    }
+                            if (ignoredParts.contains(p))
+                                continue;
+
+                            if (!reservedParts.contains(p)) {
+                                GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, true);
+
+                                if (!part.reserve()) {
+                                    ignoredParts.add(p);
+
+                                    continue;
+                                }
+                                else {
+                                    // We must not allow to read from RENTING partitions.
+                                    if (part.state() == GridDhtPartitionState.RENTING) {
+                                        part.release();
+
+                                        ignoredParts.add(p);
+
+                                        continue;
+                                    }
+
+                                    reservedParts.add(p);
+                                }
+                            }
+                        }
+
+                        GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
+
+                        if (plc != null) {
+                            ttl = CU.toTtl(plc.getExpiryForCreation());
+
+                            if (ttl == CU.TTL_ZERO)
+                                continue;
+                            else if (ttl == CU.TTL_NOT_CHANGED)
+                                ttl = 0;
+
+                            expiryTime = CU.toExpireTime(ttl);
+                        }
 
                     boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
@@ -1948,19 +1986,43 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
                         false);
 
-                    cctx.evicts().touch(entry, topVer);
+                        cctx.evicts().touch(entry, topVer);
 
-                    CU.unwindEvicts(cctx);
+                        CU.unwindEvicts(cctx);
 
-                    entry.onUnlock();
+                        entry.onUnlock();
+                    }
+                    catch (GridDhtInvalidPartitionException ignored) {
+                        ignoredParts.add(cctx.affinity().partition(e.getKey()));
+                    }
+                    catch (GridCacheEntryRemovedException ignored) {
+                        // No-op.
+                    }
+                    catch (IgniteCheckedException ex) {
+                        IgniteLogger log = cache.unwrap(Ignite.class).log();
+
+                        U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
+                    }
                 }
-                catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
-                    // No-op.
-                }
-                catch (IgniteCheckedException ex) {
-                    IgniteLogger log = cache.unwrap(Ignite.class).log();
+            }
+            finally {
+                for (Integer part : reservedParts) {
+                    GridDhtLocalPartition locPart = cctx.topology().localPartition(part, topVer, false);
 
-                    U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                    assert locPart != null : "Evicted reserved partition: " + locPart;
+
+                    locPart.release();
+                }
+
+                try {
+                    if (!cctx.isNear() && cctx.shared().wal() != null)
+                        cctx.shared().wal().fsync(null);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);
                 }
             }
         }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Externalizable;
 import java.util.Collection;
-import org.apache.ignite.internal.LessNamingBean;
 
 /**
  * Ignite index descriptor.
@@ -28,7 +27,7 @@ import org.apache.ignite.internal.LessNamingBean;
  * {@link GridCacheSqlMetadata#indexes(String)} method.
  * @see GridCacheSqlMetadata
  */
-public interface GridCacheSqlIndexMetadata extends Externalizable, LessNamingBean {
+public interface GridCacheSqlIndexMetadata extends Externalizable {
     /**
      * Gets name of the index.
      *

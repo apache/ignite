@@ -32,7 +32,7 @@ namespace ignite
                 const std::string& primaryCatalog, const std::string& primarySchema,
                 const std::string& primaryTable, const std::string& foreignCatalog,
                 const std::string& foreignSchema, const std::string& foreignTable) :
-                Query(diag, FOREIGN_KEYS),
+                Query(diag, QueryType::FOREIGN_KEYS),
                 connection(connection),
                 primaryCatalog(primaryCatalog),
                 primarySchema(primarySchema),
@@ -74,11 +74,11 @@ namespace ignite
                 // No-op.
             }
 
-            SqlResult ForeignKeysQuery::Execute()
+            SqlResult::Type ForeignKeysQuery::Execute()
             {
                 executed = true;
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
             const meta::ColumnMetaVector & ForeignKeysQuery::GetMeta() const
@@ -86,35 +86,35 @@ namespace ignite
                 return columnsMeta;
             }
 
-            SqlResult ForeignKeysQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
+            SqlResult::Type ForeignKeysQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
             {
                 if (!executed)
                 {
-                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
-                return SQL_RESULT_NO_DATA;
+                return SqlResult::AI_NO_DATA;
             }
 
-            SqlResult ForeignKeysQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
+            SqlResult::Type ForeignKeysQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
             {
                 if (!executed)
                 {
-                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
-                return SQL_RESULT_NO_DATA;
+                return SqlResult::AI_NO_DATA;
             }
 
-            SqlResult ForeignKeysQuery::Close()
+            SqlResult::Type ForeignKeysQuery::Close()
             {
                 executed = false;
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
             bool ForeignKeysQuery::DataAvailable() const

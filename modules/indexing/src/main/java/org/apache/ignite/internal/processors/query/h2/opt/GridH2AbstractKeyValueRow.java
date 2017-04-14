@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /** */
-    private static final int DEFAULT_COLUMNS_COUNT = 2;
+    public static final int DEFAULT_COLUMNS_COUNT = 2;
 
     /** Key column. */
     public static final int KEY_COL = 0;
@@ -100,10 +100,8 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
         this.desc = desc;
     }
 
-    /**
-     * @return Expiration time of respective cache entry.
-     */
-    public long expirationTime() {
+    /** {@inheritDoc} */
+    @Override public long expireTime() {
         return expirationTime;
     }
 

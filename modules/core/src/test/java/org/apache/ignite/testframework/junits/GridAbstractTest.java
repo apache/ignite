@@ -90,6 +90,7 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
@@ -652,11 +653,19 @@ public abstract class GridAbstractTest extends TestCase {
             else
                 startGrid(i);
 
-        checkTopology(cnt);
+        if (checkTopology())
+            checkTopology(cnt);
 
         assert ignite != null;
 
         return ignite;
+    }
+
+    /**
+     * Check or not topology after grids start
+     */
+    protected boolean checkTopology() {
+        return true;
     }
 
     /**
@@ -934,7 +943,7 @@ public abstract class GridAbstractTest extends TestCase {
                 cfg.setLocalHost("127.0.0.1");
 
                 if (((TcpDiscoverySpi)cfg.getDiscoverySpi()).getJoinTimeout() == 0)
-                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(8000);
+                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(10000);
             }
             else
                 cfg.setLocalHost(getTestResources().getLocalHost());
@@ -1497,6 +1506,8 @@ public abstract class GridAbstractTest extends TestCase {
         cpSpi.setDirectoryPaths(paths);
 
         cfg.setCheckpointSpi(cpSpi);
+
+        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 

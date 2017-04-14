@@ -109,6 +109,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Skip values flag. */
     private boolean skipVals;
 
+    /** */
+    private final boolean recovery;
+
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -131,7 +134,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean skipVals
+        boolean skipVals,
+        boolean recovery
     ) {
         super(CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
 
@@ -148,6 +152,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.taskNameHash = taskNameHash;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
+        this.recovery = recovery;
 
         futId = IgniteUuid.randomUuid();
 
@@ -401,7 +406,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 taskName,
                 expiryPlc,
                 skipVals,
-                /*can remap*/true);
+                /*can remap*/true,
+                recovery);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -424,7 +430,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             taskName,
                             expiryPlc,
                             skipVals,
-                            /*can remap*/true);
+                            /*can remap*/true,
+                            recovery);
                     }
                 }
             );

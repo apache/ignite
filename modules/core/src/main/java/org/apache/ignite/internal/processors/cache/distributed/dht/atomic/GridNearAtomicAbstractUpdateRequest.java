@@ -63,6 +63,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     /** Return value flag. */
     private static final int RET_VAL_FLAG_MASK = 0x10;
 
+    /** Recovery value flag. */
+    private static final int RECOVERY_FLAG_MASK = 0x20;
+
     /** Target node ID. */
     @GridDirectTransient
     protected UUID nodeId;
@@ -132,6 +135,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
         boolean needPrimaryRes,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         boolean addDepInfo
     ) {
         this.cacheId = cacheId;
@@ -154,6 +158,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
             skipStore(true);
         if (keepBinary)
             keepBinary(true);
+        if (recovery)
+            recovery(true);
     }
 
     /** {@inheritDoc} */
@@ -337,6 +343,20 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      */
     public void keepBinary(boolean val) {
         setFlag(val, KEEP_BINARY_FLAG_MASK);
+    }
+
+    /**
+     * @return Keep binary flag.
+     */
+    public final boolean recovery() {
+        return isFlag(RECOVERY_FLAG_MASK);
+    }
+
+    /**
+     * @param val Keep binary flag.
+     */
+    public void recovery(boolean val) {
+        setFlag(val, RECOVERY_FLAG_MASK);
     }
 
     /**

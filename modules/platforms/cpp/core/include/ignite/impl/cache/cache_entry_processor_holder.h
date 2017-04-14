@@ -31,22 +31,25 @@ namespace ignite
             /**
              * Mutable Cache entry state.
              */
-            enum MutableCacheEntryState
+            struct MutableCacheEntryState
             {
-                /** No changes have been committed to entry. */
-                ENTRY_STATE_INTACT = 0,
+                enum Type
+                {
+                    /** No changes have been committed to entry. */
+                    INTACT = 0,
 
-                /** Value of the entry has been changed. */
-                ENTRY_STATE_VALUE_SET = 1,
+                    /** Value of the entry has been changed. */
+                    VALUE_SET = 1,
 
-                /** Entry has been removed from cache. */
-                ENTRY_STATE_VALUE_REMOVED = 2,
+                    /** Entry has been removed from cache. */
+                    VALUE_REMOVED = 2,
 
-                /** Error occured. Represented in portable form. */
-                ENTRY_STATE_ERR_PORTABLE = 3,
+                    /** Error occured. Represented in binary form. */
+                    ERR_BINARY = 3,
 
-                /** Error occured. Represented in string form. */
-                ENTRY_STATE_ERR_STRING = 4
+                    /** Error occured. Represented in string form. */
+                    ERR_STRING = 4
+                };
             };
 
             /**
@@ -59,17 +62,17 @@ namespace ignite
              * @return Cache entry state.
              */
             template<typename V>
-            MutableCacheEntryState GetMutableCacheEntryState(const V& valueBefore, bool existsBefore,
-                                                             const V& valueAfter, bool existsAfter)
+            MutableCacheEntryState::Type GetMutableCacheEntryState(const V& valueBefore, bool existsBefore,
+                                                                   const V& valueAfter, bool existsAfter)
             {
                 if ((!existsBefore && existsAfter) ||
                     (existsBefore && existsAfter && !(valueBefore == valueAfter)))
-                    return ENTRY_STATE_VALUE_SET;
+                    return MutableCacheEntryState::VALUE_SET;
 
                 if (existsBefore && !existsAfter)
-                    return ENTRY_STATE_VALUE_REMOVED;
+                    return MutableCacheEntryState::VALUE_REMOVED;
 
-                return ENTRY_STATE_INTACT;
+                return MutableCacheEntryState::INTACT;
             }
 
             /**
@@ -147,7 +150,7 @@ namespace ignite
                  * @return Result of the processing.
                  */
                 template<typename R, typename K, typename V>
-                R Process(const K& key, V& value, bool exists, MutableCacheEntryState &state)
+                R Process(const K& key, V& value, bool exists, MutableCacheEntryState::Type &state)
                 {
                     typedef ignite::cache::MutableCacheEntry<K, V> Entry;
 
@@ -191,7 +194,7 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(UnderlyingType)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(UnderlyingType)
 
-            int32_t GetTypeId()
+            static int32_t GetTypeId()
             {
                 static bool typeIdInited = false;
                 static int32_t typeId;
@@ -205,13 +208,16 @@ namespace ignite
                 if (typeIdInited)
                     return typeId;
 
-                typeId = GetBinaryStringHashCode(GetTypeName().c_str());
+                std::string typeName;
+                GetTypeName(typeName);
+
+                typeId = GetBinaryStringHashCode(typeName.c_str());
                 typeIdInited = true;
 
                 return typeId;
             }
 
-            std::string GetTypeName()
+            static void GetTypeName(std::string& dst)
             {
                 // Using static variable and only initialize it once for better
                 // performance. Type name can't change in the course of the
@@ -221,17 +227,25 @@ namespace ignite
 
                 // Name has been constructed already. Return it.
                 if (!name.empty())
-                    return name;
+                {
+                    dst = name;
+
+                    return;
+                }
 
                 common::concurrent::CsLockGuard guard(initLock);
 
                 if (!name.empty())
-                    return name;
+                {
+                    dst = name;
+
+                    return;
+                }
 
                 // Constructing name here.
-                BinaryType<P> p;
+                std::string procName;
 
-                std::string procName = p.GetTypeName();
+                BinaryType<P>::GetTypeName(procName);
 
                 // -1 is for unnessecary null byte at the end of the C-string.
                 name.reserve(sizeof("CacheEntryProcessorHolder<>") - 1 + procName.size());
@@ -240,10 +254,10 @@ namespace ignite
                 // forbidden to register the same processor type several times.
                 name.append("CacheEntryProcessorHolder<").append(procName).push_back('>');
 
-                return name;
+                dst = name;
             }
 
-            void Write(BinaryWriter& writer, UnderlyingType obj)
+            static void Write(BinaryWriter& writer, const UnderlyingType& obj)
             {
                 BinaryRawWriter raw = writer.RawWriter();
 
@@ -251,14 +265,14 @@ namespace ignite
                 raw.WriteObject(obj.getArgument());
             }
 
-            UnderlyingType Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, UnderlyingType& dst)
             {
                 BinaryRawReader raw = reader.RawReader();
 
                 const P& proc = raw.ReadObject<P>();
                 const A& arg = raw.ReadObject<A>();
 
-                return UnderlyingType(proc, arg);
+                dst = UnderlyingType(proc, arg);
             }
         };
     }

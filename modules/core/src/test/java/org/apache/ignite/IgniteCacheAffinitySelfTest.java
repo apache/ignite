@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -45,9 +44,6 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     private int GRID_CNT = 3;
 
     /** Cache name */
-    private final String CACHE1 = "Fair";
-
-    /** Cache name */
     private final String CACHE2 = "Rendezvous";
 
     /** {@inheritDoc} */
@@ -61,10 +57,6 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
         CacheConfiguration cache0 = cacheConfiguration(null);
 
-        CacheConfiguration cache1 = cacheConfiguration(null);
-        cache1.setName(CACHE1);
-        cache1.setAffinity(new FairAffinityFunction());
-
         CacheConfiguration cache2 = cacheConfiguration(null);
         cache2.setName(CACHE2);
         cache2.setAffinity(new RendezvousAffinityFunction());
@@ -72,7 +64,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
         if (igniteInstanceName.contains("0"))
             cfg.setCacheConfiguration(cache0);
         else
-            cfg.setCacheConfiguration(cache0, cache1, cache2);
+            cfg.setCacheConfiguration(cache0, cache2);
 
         return cfg;
     }
@@ -113,8 +105,6 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
      */
     private void checkAffinity() {
         checkAffinity(grid(0).affinity(null), internalCache(1, null).affinity());
-        checkAffinity(grid(0).affinity(CACHE1), internalCache(1, CACHE1).affinity());
-        checkAffinity(grid(0).affinity(CACHE1), internalCache(1, CACHE1).affinity());
         checkAffinity(grid(0).affinity(CACHE2), internalCache(1, CACHE2).affinity());
     }
 

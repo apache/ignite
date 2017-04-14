@@ -24,7 +24,6 @@ import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -64,8 +63,8 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     private boolean h2DataInserted;
 
     /** {@inheritDoc} */
-    @Override protected void setIndexedTypes(CacheConfiguration<?, ?> cc, CacheMode mode) {
-        // No-op.
+    @Override protected void createCaches() {
+
     }
 
     /** {@inheritDoc} */

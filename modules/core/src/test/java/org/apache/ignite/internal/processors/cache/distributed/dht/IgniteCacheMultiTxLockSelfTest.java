@@ -86,6 +86,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
         plc.setMaxSize(100000);
 
         ccfg.setEvictionPolicy(plc);
+        ccfg.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(ccfg);
 
@@ -117,6 +118,8 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExplicitLockManyKeysWithClient() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-3950");
+
         checkExplicitLock(4, true);
     }
 

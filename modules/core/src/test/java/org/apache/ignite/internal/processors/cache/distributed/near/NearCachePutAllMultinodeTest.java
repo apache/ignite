@@ -73,7 +73,6 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
 
             cc.setCacheMode(PARTITIONED);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setSwapEnabled(false);
             cc.setAtomicityMode(TRANSACTIONAL);
             cc.setBackups(1);
 

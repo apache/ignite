@@ -265,7 +265,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 using (var ignite2 = Ignition.Start(cfg))
                 {
-                    var cache = ignite2.CreateCache<int, Foo>("foos");
+                    var cache = ignite2.CreateCache<int, Foo>(new CacheConfiguration("foos")
+                    {
+                        CacheMode = CacheMode.Replicated
+                    });
 
                     cache[1] = new Foo();
                 }
@@ -322,15 +325,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void Test(IIgnite ignite1, IIgnite ignite2)
         {
-            const string cacheName = "cache";
+            var cfg = new CacheConfiguration("cache") {CacheMode = CacheMode.Partitioned};
 
             // Put on one grid.
-            var cache1 = ignite1.GetOrCreateCache<int, object>(cacheName);
+            var cache1 = ignite1.GetOrCreateCache<int, object>(cfg);
             cache1[1] = new Foo {Int = 1, Str = "1"};
             cache1[2] = ignite1.GetBinary().GetBuilder(typeof (Bar)).SetField("Int", 5).SetField("Str", "s").Build();
 
             // Get on another grid.
-            var cache2 = ignite2.GetOrCreateCache<int, Foo>(cacheName);
+            var cache2 = ignite2.GetOrCreateCache<int, Foo>(cfg);
             var foo = cache2[1];
 
             Assert.AreEqual(1, foo.Int);

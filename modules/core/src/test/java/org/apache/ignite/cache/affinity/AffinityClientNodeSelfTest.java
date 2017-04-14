@@ -20,7 +20,6 @@ package org.apache.ignite.cache.affinity;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -52,9 +51,6 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
     private static final String CACHE2 = "cache2";
 
     /** */
-    private static final String CACHE3 = "cache3";
-
-    /** */
     private static final String CACHE4 = "cache4";
 
     /** */
@@ -79,13 +75,6 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         ccfg2.setName(CACHE2);
         ccfg2.setAffinity(new RendezvousAffinityFunction());
 
-        CacheConfiguration ccfg3 = new CacheConfiguration();
-
-        ccfg3.setBackups(1);
-        ccfg3.setName(CACHE3);
-        ccfg3.setAffinity(new FairAffinityFunction());
-        ccfg3.setNodeFilter(new TestNodesFilter());
-
         CacheConfiguration ccfg4 = new CacheConfiguration();
 
         ccfg4.setCacheMode(REPLICATED);
@@ -103,7 +92,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration(ccfg5);
         }
         else
-            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3, ccfg4);
+            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg4);
 
         return cfg;
     }
@@ -129,8 +118,6 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         checkCache(CACHE1, 2);
 
         checkCache(CACHE2, 2);
-
-        checkCache(CACHE3, 2);
 
         checkCache(CACHE4, 3);
 

@@ -75,6 +75,12 @@ const DFLT_CLUSTER = {
             Forever: {
                 retryIntervalMs: 1000
             }
+        },
+        Kubernetes: {
+            serviceName: 'ignite',
+            namespace: 'default',
+            masterUrl: 'https://kubernetes.default.svc.cluster.local:443',
+            accountToken: '/var/run/secrets/kubernetes.io/serviceaccount/token'
         }
     },
     atomics: {
@@ -177,7 +183,6 @@ const DFLT_CLUSTER = {
         }
     },
     marshalLocalJobs: false,
-    marshallerCacheKeepAliveTime: 10000,
     metricsHistorySize: 10000,
     metricsLogFrequency: 60000,
     metricsUpdateFrequency: 2000,
