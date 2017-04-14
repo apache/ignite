@@ -87,7 +87,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         return cfg;
     }
 
-    /**
+    /*
      * Fields initialization.
      */
     static {
@@ -376,7 +376,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         // Text queries
         Iterator<IgniteBiTuple<Integer, BinaryObjectImpl>> txtRes = spi.queryLocalText(typeAB.space(), "good",
-            typeAB, null);
+            typeAB.name(), null);
 
         assertTrue(txtRes.hasNext());
         assertEquals(ab(4, "Vitalya", 20, "Very Good guy").build(), value(txtRes.next()));
@@ -435,7 +435,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         spi.unregisterType(typeBA.space(), typeBA.name());
 
-        assertEquals(-1, spi.size(typeAA.space(), typeAA));
+        assertEquals(-1, spi.size(typeAA.space(), typeAA.name()));
     }
 
     /**

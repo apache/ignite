@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.schema;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Index closure accepting current entry state.
@@ -29,9 +30,12 @@ public interface SchemaIndexCacheVisitorClosure {
      * Apply closure.
      *
      * @param key Key.
+     * @param part Partition.
      * @param val Value.
+     * @param ver Version.
      * @param expiration Expiration.
      * @throws IgniteCheckedException If failed.
      */
-    public void apply(KeyCacheObject key, CacheObject val, long expiration) throws IgniteCheckedException;
+    public void apply(KeyCacheObject key, int part, CacheObject val, GridCacheVersion ver, long expiration)
+        throws IgniteCheckedException;
 }

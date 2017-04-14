@@ -362,7 +362,7 @@ public class QueryUtils {
                 if (alias != null)
                     field = alias;
 
-                idxDesc.addField(field, i++, idx.getInlineSize(), !asc);
+                idxDesc.addField(field, i++, !asc);
             }
 
             d.addIndex(idxDesc);

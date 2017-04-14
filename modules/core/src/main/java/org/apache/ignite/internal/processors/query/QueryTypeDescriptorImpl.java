@@ -276,7 +276,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void addFieldToTextIndex(String field) throws IgniteCheckedException {
         if (fullTextIdx == null)
-            fullTextIdx = new QueryIndexDescriptorImpl(this, null, QueryIndexType.FULLTEXT);
+            fullTextIdx = new QueryIndexDescriptorImpl(this, null, QueryIndexType.FULLTEXT, 0);
 
         fullTextIdx.addField(field, 0, false);
     }

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -203,9 +204,10 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(KeyCacheObject key, CacheObject val, long expiration) throws IgniteCheckedException {
+        @Override public void apply(KeyCacheObject key, int part, CacheObject val, GridCacheVersion ver,
+            long expiration) throws IgniteCheckedException {
             if (qryProc.belongsToTable(cctx, spaceName, tblName, key, val))
-                target.apply(key, val, expiration);
+                target.apply(key, part, val, ver, expiration);
         }
     }
 }

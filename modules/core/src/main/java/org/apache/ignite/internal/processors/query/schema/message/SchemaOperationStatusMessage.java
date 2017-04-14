@@ -148,7 +148,7 @@ public class SchemaOperationStatusMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -49;
+        return -52;
     }
 
     /** {@inheritDoc} */

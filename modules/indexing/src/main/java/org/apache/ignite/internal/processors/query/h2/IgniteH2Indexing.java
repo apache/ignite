@@ -59,7 +59,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryCancelledException;
@@ -81,12 +80,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
@@ -710,7 +706,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
 
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
+        TableDescriptor tbl = tableDescriptor(type.name(), spaceName);
 
         if (tbl == null)
             return;
@@ -845,12 +841,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
 
         SchemaIndexCacheVisitorClosure clo = new SchemaIndexCacheVisitorClosure() {
-            @Override public void apply(KeyCacheObject key, CacheObject val, long expTime)
-                throws IgniteCheckedException {
+            @Override public void apply(KeyCacheObject key, int part, CacheObject val, GridCacheVersion ver,
+                long expTime) throws IgniteCheckedException {
                 if (expTime == 0L)
                     expTime = Long.MAX_VALUE;
 
-                GridH2Row row = rowDesc.createRow(key, val, expTime);
+                GridH2Row row = rowDesc.createRow(key, part, val, ver, expTime);
 
                 idx0.put(row);
             }
@@ -2059,7 +2055,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     @Override public void rebuildIndexesFromHash(@Nullable String spaceName,
         GridQueryTypeDescriptor type) throws IgniteCheckedException {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
+        TableDescriptor tbl = tableDescriptor(type.name(), spaceName);
 
         if (tbl == null)
             return;
@@ -2117,7 +2113,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void markForRebuildFromHash(@Nullable String spaceName, GridQueryTypeDescriptor type) {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
+        TableDescriptor tbl = tableDescriptor(type.name(), spaceName);
 
         if (tbl == null)
             return;

@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -3391,7 +3390,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             unswap(false);
 
             if (val != null)
-                proc.apply(key, val, expireTimeUnlocked());
+                proc.apply(key, partition(), val, ver, expireTimeUnlocked());
         }
     }
 
