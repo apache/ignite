@@ -29,6 +29,7 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
+import java.security.PrivateKey;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -100,6 +102,8 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -1191,12 +1195,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 sysPoolQSize = exec.getQueue().size();
                             }
 
-                            int loadedPages = 0;
+                            HashSet<PageMemory> allocators = U.newHashSet(ctx.cache().context().cacheContexts().size());
 
                             for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
                                 MemoryPolicy memPlc = cctx.memoryPolicy();
+                                if (memPlc != null)
+                                    allocators.add(memPlc.pageMemory());
+                            }
 
-                                loadedPages += memPlc != null ? memPlc.pageMemory().loadedPages() : 0;
+                            int loadedPages = 0;
+
+                            for (PageMemory allocator : allocators) {
+                                loadedPages += allocator.loadedPages();
                             }
 
                             String id = U.id8(localNode().id());
