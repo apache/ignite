@@ -68,7 +68,14 @@ public class VisorServiceDescriptor implements Serializable {
      */
     public VisorServiceDescriptor(ServiceDescriptor srvc) {
         name = srvc.name();
-        srvcCls = VisorTaskUtils.compactClass(srvc.serviceClass());
+
+        try {
+            srvcCls = VisorTaskUtils.compactClass(srvc.serviceClass());
+        }
+        catch (Throwable e) {
+            srvcCls = e.getClass().getName() + ": " + e.getMessage();
+        }
+
         totalCnt = srvc.totalCount();
         maxPerNodeCnt = srvc.maxPerNodeCount();
         cacheName = srvc.cacheName();
