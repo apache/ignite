@@ -150,11 +150,6 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.clusterSsl(cluster));
     }
 
-    // Generate swap group.
-    static clusterSwap(cluster) {
-        return this.toSection(this.generator.clusterSwap(cluster));
-    }
-
     // Generate time group.
     static clusterTime(cluster) {
         return this.toSection(this.generator.clusterTime(cluster));

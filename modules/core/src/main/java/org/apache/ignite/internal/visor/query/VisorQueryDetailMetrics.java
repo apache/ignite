@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.visor.query;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.cache.query.QueryDetailMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for cache query detail metrics.
  */
-public class VisorCacheQueryDetailMetrics implements Serializable {
+public class VisorQueryDetailMetrics extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -62,10 +66,16 @@ public class VisorCacheQueryDetailMetrics implements Serializable {
     private long lastStartTime;
 
     /**
-     * @param m Cache query metrics.
-     * @return Data transfer object for given cache metrics.
+     * Default constructor
      */
-    public VisorCacheQueryDetailMetrics from(QueryDetailMetrics m) {
+    public VisorQueryDetailMetrics() {
+        // No-op.
+    }
+
+    /**
+     * @param m Cache query metrics.
+     */
+    public VisorQueryDetailMetrics(QueryDetailMetrics m) {
         qryType = m.queryType();
         qry = m.query();
         cache = m.cache();
@@ -79,8 +89,6 @@ public class VisorCacheQueryDetailMetrics implements Serializable {
         avgTime = m.averageTime();
         totalTime = m.totalTime();
         lastStartTime = m.lastStartTime();
-
-        return this;
     }
 
     /**
@@ -161,7 +169,37 @@ public class VisorCacheQueryDetailMetrics implements Serializable {
     }
 
     /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, qryType);
+        U.writeString(out, qry);
+        U.writeString(out, cache);
+        out.writeInt(execs);
+        out.writeInt(completions);
+        out.writeInt(failures);
+        out.writeLong(minTime);
+        out.writeLong(maxTime);
+        out.writeDouble(avgTime);
+        out.writeLong(totalTime);
+        out.writeLong(lastStartTime);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        qryType = U.readString(in);
+        qry = U.readString(in);
+        cache = U.readString(in);
+        execs = in.readInt();
+        completions = in.readInt();
+        failures = in.readInt();
+        minTime = in.readLong();
+        maxTime = in.readLong();
+        avgTime = in.readDouble();
+        totalTime = in.readLong();
+        lastStartTime = in.readLong();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheQueryDetailMetrics.class, this);
+        return S.toString(VisorQueryDetailMetrics.class, this);
     }
 }

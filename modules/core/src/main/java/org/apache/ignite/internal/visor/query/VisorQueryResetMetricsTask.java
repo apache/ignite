@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -27,19 +27,19 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Reset compute grid query metrics.
  */
 @GridInternal
-public class VisorCacheResetQueryMetricsTask extends VisorOneNodeTask<String, Void> {
+public class VisorQueryResetMetricsTask extends VisorOneNodeTask<String, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheResetQueryMetricsJob job(String arg) {
-        return new VisorCacheResetQueryMetricsJob(arg, debug);
+    @Override protected VisorQueryResetMetricsJob job(String arg) {
+        return new VisorQueryResetMetricsJob(arg, debug);
     }
 
     /**
      * Job that reset cache query metrics.
      */
-    private static class VisorCacheResetQueryMetricsJob extends VisorJob<String, Void> {
+    private static class VisorQueryResetMetricsJob extends VisorJob<String, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -47,7 +47,7 @@ public class VisorCacheResetQueryMetricsTask extends VisorOneNodeTask<String, Vo
          * @param arg Cache name to reset query metrics for.
          * @param debug Debug flag.
          */
-        private VisorCacheResetQueryMetricsJob(String arg, boolean debug) {
+        private VisorQueryResetMetricsJob(String arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -63,7 +63,7 @@ public class VisorCacheResetQueryMetricsTask extends VisorOneNodeTask<String, Vo
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorCacheResetQueryMetricsJob.class, this);
+            return S.toString(VisorQueryResetMetricsJob.class, this);
         }
     }
 }
