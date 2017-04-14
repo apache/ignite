@@ -21,10 +21,6 @@
 #include <stdint.h>
 #include "system/odbc_constants.h"
 
-#include <ignite/odbc/system/odbc_constants.h>
-
-#include <ignite/odbc/system/odbc_constants.h>
-
 namespace ignite
 {
     namespace odbc
@@ -35,206 +31,218 @@ namespace ignite
         /**
          * SQL result.
          */
-        enum SqlResult
+        struct SqlResult
         {
-            /** Success. */
-            SQL_RESULT_SUCCESS,
+            enum Type
+            {
+                /** Success. */
+                AI_SUCCESS,
 
-            /** Success with info. */
-            SQL_RESULT_SUCCESS_WITH_INFO,
+                /** Success with info. */
+                AI_SUCCESS_WITH_INFO,
 
-            /** Error. */
-            SQL_RESULT_ERROR,
+                /** Error. */
+                AI_ERROR,
 
-            /** No more data. */
-            SQL_RESULT_NO_DATA,
+                /** No more data. */
+                AI_NO_DATA,
 
-            /** No more data. */
-            SQL_RESULT_NEED_DATA
+                /** No more data. */
+                AI_NEED_DATA
+            };
         };
 
         /**
          * Provides detailed information about the cause of a warning or error.
          */
-        enum SqlState
+        struct SqlState
         {
-            /** Undefined state. Internal, should never be exposed to user. */
-            SQL_STATE_UNKNOWN,
+            enum Type
+            {
+                /** Undefined state. Internal, should never be exposed to user. */
+                UNKNOWN,
 
-            /** Output data has been truncated. */
-            SQL_STATE_01004_DATA_TRUNCATED,
+                /** Output data has been truncated. */
+                S01004_DATA_TRUNCATED,
 
-            /** Invalid connection string attribute. */
-            SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE,
+                /** Invalid connection string attribute. */
+                S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE,
 
-            /** Error in row. */
-            SQL_STATE_01S01_ERROR_IN_ROW,
+                /** Error in row. */
+                S01S01_ERROR_IN_ROW,
 
-            /**
-             * The driver did not support the specified value and
-             * substituted a similar value.
-             */
-            SQL_STATE_01S02_OPTION_VALUE_CHANGED,
+                /**
+                 * The driver did not support the specified value and
+                 * substituted a similar value.
+                 */
+                S01S02_OPTION_VALUE_CHANGED,
 
-            /** String data, length mismatch. */
-            SQL_STATE_22026_DATA_LENGTH_MISMATCH,
+                /** String data, length mismatch. */
+                S22026_DATA_LENGTH_MISMATCH,
 
-            /** Invalid cursor state. */
-            SQL_STATE_24000_INVALID_CURSOR_STATE,
+                /** Invalid cursor state. */
+                S24000_INVALID_CURSOR_STATE,
 
-            /** Invalid descriptor index. */
-            SQL_STATE_07009_INVALID_DESCRIPTOR_INDEX,
+                /** Invalid descriptor index. */
+                S07009_INVALID_DESCRIPTOR_INDEX,
 
-            /**
-             * The driver was unable to establish a connection with the data
-             * source.
-             */
-            SQL_STATE_08001_CANNOT_CONNECT,
+                /**
+                 * The driver was unable to establish a connection with the data
+                 * source.
+                 */
+                S08001_CANNOT_CONNECT,
 
-            /**
-             * The specified ConnectionHandle had already been used
-             * to establish a connection with a data source, and the connection
-             * was still open.
-             */
-            SQL_STATE_08002_ALREADY_CONNECTED,
+                /**
+                 * The specified ConnectionHandle had already been used
+                 * to establish a connection with a data source, and the connection
+                 * was still open.
+                 */
+                S08002_ALREADY_CONNECTED,
 
-            /** The connection specified was not open. */
-            SQL_STATE_08003_NOT_CONNECTED,
+                /** The connection specified was not open. */
+                S08003_NOT_CONNECTED,
 
-            /**
-             * An error occurred for which there was no specific SQLSTATE
-             * and for which no implementation-specific SQLSTATE was defined.
-             */
-            SQL_STATE_HY000_GENERAL_ERROR,
+                /**
+                 * An error occurred for which there was no specific SQLSTATE
+                 * and for which no implementation-specific SQLSTATE was defined.
+                 */
+                SHY000_GENERAL_ERROR,
 
-            /**
-             * The driver was unable to allocate memory for the specified
-             * handle.
-             */
-            SQL_STATE_HY001_MEMORY_ALLOCATION,
+                /**
+                 * The driver was unable to allocate memory for the specified
+                 * handle.
+                 */
+                SHY001_MEMORY_ALLOCATION,
 
-            /**
-             * The argument TargetType was neither a valid data type
-             * nor SQL_C_DEFAULT
-             */
-            SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE,
+                /**
+                 * The argument TargetType was neither a valid data type
+                 * nor SQL_C_DEFAULT
+                 */
+                SHY003_INVALID_APPLICATION_BUFFER_TYPE,
 
-            /** Invalid use of null pointer. */
-            SQL_STATE_HY009_INVALID_USE_OF_NULL_POINTER,
+                /** Invalid use of null pointer. */
+                SHY009_INVALID_USE_OF_NULL_POINTER,
 
-            /** Function sequence error. */
-            SQL_STATE_HY010_SEQUENCE_ERROR,
+                /** Function sequence error. */
+                SHY010_SEQUENCE_ERROR,
 
-            /**
-             * Invalid string or buffer length
-             */
-            SQL_STATE_HY090_INVALID_STRING_OR_BUFFER_LENGTH,
+                /**
+                 * Invalid string or buffer length
+                 */
+                SHY090_INVALID_STRING_OR_BUFFER_LENGTH,
 
-            /**
-             * Option type was out of range.
-             */
-            SQL_STATE_HY092_OPTION_TYPE_OUT_OF_RANGE,
+                /**
+                 * Option type was out of range.
+                 */
+                SHY092_OPTION_TYPE_OUT_OF_RANGE,
 
-            /** Column type out of range. */
-            SQL_STATE_HY097_COLUMN_TYPE_OUT_OF_RANGE,
+                /** Column type out of range. */
+                SHY097_COLUMN_TYPE_OUT_OF_RANGE,
 
-            /** The value specified for the argument InputOutputType was invalid. */
-            SQL_STATE_HY105_INVALID_PARAMETER_TYPE,
+                /** The value specified for the argument InputOutputType was invalid. */
+                SHY105_INVALID_PARAMETER_TYPE,
 
-            /** The value specified for the argument FetchOrientation was invalid. */
-            SQL_STATE_HY106_FETCH_TYPE_OUT_OF_RANGE,
+                /** The value specified for the argument FetchOrientation was invalid. */
+                SHY106_FETCH_TYPE_OUT_OF_RANGE,
 
-            /**
-             * The driver does not support the feature of ODBC behavior that
-             * the application requested.
-             */
-            SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                /**
+                 * The driver does not support the feature of ODBC behavior that
+                 * the application requested.
+                 */
+                SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
 
-            /**
-             * The connection timeout period expired before the data source
-             * responded to the request.
-             */
-            SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT,
+                /**
+                 * The connection timeout period expired before the data source
+                 * responded to the request.
+                 */
+                SHYT01_CONNECTIOIN_TIMEOUT,
 
-            /**
-             * Driver does not support this function.
-             */
-            SQL_STATE_IM001_FUNCTION_NOT_SUPPORTED
+                /**
+                 * Driver does not support this function.
+                 */
+                SIM001_FUNCTION_NOT_SUPPORTED
+            };
         };
 
         /**
          * Diagnostic field type.
          */
-        enum DiagnosticField
+        struct DiagnosticField
         {
-            /** Field type is unknown to the driver. */
-            IGNITE_SQL_DIAG_UNKNOWN,
+            enum Type
+            {
+                /** Field type is unknown to the driver. */
+                UNKNOWN,
 
-            /** Header record field: Count of rows in the cursor. */
-            IGNITE_SQL_DIAG_HEADER_CURSOR_ROW_COUNT,
+                /** Header record field: Count of rows in the cursor. */
+                HEADER_CURSOR_ROW_COUNT,
 
-            /**
-            * Header record field: String that describes the SQL statement
-            * that the underlying function executed.
-            */
-            IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION,
+                /**
+                 * Header record field: String that describes the SQL statement
+                 * that the underlying function executed.
+                 */
+                HEADER_DYNAMIC_FUNCTION,
 
-            /**
-            * Header record field: Numeric code that describes the SQL
-            * statement that was executed by the underlying function.
-            */
-            IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION_CODE,
+                /**
+                 * Header record field: Numeric code that describes the SQL
+                 * statement that was executed by the underlying function.
+                 */
+                HEADER_DYNAMIC_FUNCTION_CODE,
 
-            /** Header record field: Number of status records. */
-            IGNITE_SQL_DIAG_HEADER_NUMBER,
+                /** Header record field: Number of status records. */
+                HEADER_NUMBER,
 
-            /** Header record field: Last operation return code. */
-            IGNITE_SQL_DIAG_HEADER_RETURNCODE,
+                /** Header record field: Last operation return code. */
+                HEADER_RETURNCODE,
 
-            /** Header record field: Row count. */
-            IGNITE_SQL_DIAG_HEADER_ROW_COUNT,
+                /** Header record field: Row count. */
+                HEADER_ROW_COUNT,
 
-            /** Status record field: Class origin. */
-            IGNITE_SQL_DIAG_STATUS_CLASS_ORIGIN,
+                /** Status record field: Class origin. */
+                STATUS_CLASS_ORIGIN,
 
-            /** Status record field: Column number. */
-            IGNITE_SQL_DIAG_STATUS_COLUMN_NUMBER,
+                /** Status record field: Column number. */
+                STATUS_COLUMN_NUMBER,
 
-            /** Status record field: Connection name. */
-            IGNITE_SQL_DIAG_STATUS_CONNECTION_NAME,
+                /** Status record field: Connection name. */
+                STATUS_CONNECTION_NAME,
 
-            /** Status record field: Message text. */
-            IGNITE_SQL_DIAG_STATUS_MESSAGE_TEXT,
+                /** Status record field: Message text. */
+                STATUS_MESSAGE_TEXT,
 
-            /** Status record field: Native result code. */
-            IGNITE_SQL_DIAG_STATUS_NATIVE,
+                /** Status record field: Native result code. */
+                STATUS_NATIVE,
 
-            /** Status record field: Row number. */
-            IGNITE_SQL_DIAG_STATUS_ROW_NUMBER,
+                /** Status record field: Row number. */
+                STATUS_ROW_NUMBER,
 
-            /** Status record field: Server name. */
-            IGNITE_SQL_DIAG_STATUS_SERVER_NAME,
+                /** Status record field: Server name. */
+                STATUS_SERVER_NAME,
 
-            /** Status record field: SQLSTATE. */
-            IGNITE_SQL_DIAG_STATUS_SQLSTATE,
+                /** Status record field: SQLSTATE. */
+                STATUS_SQLSTATE,
 
-            /** Status record field: Subclass origin. */
-            IGNITE_SQL_DIAG_STATUS_SUBCLASS_ORIGIN
+                /** Status record field: Subclass origin. */
+                STATUS_SUBCLASS_ORIGIN
+            };
         };
 
         /**
          * Environment attribute.
          */
-        enum EnvironmentAttribute
+        struct EnvironmentAttribute
         {
-            /** ODBC attribute is unknown to the driver. */
-            IGNITE_SQL_ENV_ATTR_UNKNOWN,
+            enum Type
+            {
+                /** ODBC attribute is unknown to the driver. */
+                UNKNOWN,
 
-            /** ODBC version. */
-            IGNITE_SQL_ENV_ATTR_ODBC_VERSION,
+                /** ODBC version. */
+                ODBC_VERSION,
 
-            /** Null-termination of strings. */
-            IGNITE_SQL_ENV_ATTR_OUTPUT_NTS
+                /** Null-termination of strings. */
+                OUTPUT_NTS
+            };
         };
 
         /**
@@ -243,23 +251,23 @@ namespace ignite
          * @param result Internal result type.
          * @return ODBC result type.
          */
-        int SqlResultToReturnCode(SqlResult result);
+        int SqlResultToReturnCode(SqlResult::Type result);
 
         /**
-         * Convert ODBC field type to internal DiagnosticField type value.
+         * Convert ODBC field type to internal DiagnosticField::Type type value.
          *
          * @param field ODBC field type.
-         * @return Internal DiagnosticField type value.
+         * @return Internal DiagnosticField::Type type value.
          */
-        DiagnosticField DiagnosticFieldToInternal(int16_t field);
+        DiagnosticField::Type DiagnosticFieldToInternal(int16_t field);
 
         /**
-         * Convert environment attribute to internal EnvironmentAttribute type value.
+         * Convert environment attribute to internal EnvironmentAttribute::Type type value.
          *
          * @param attr Environment attribute.
-         * @return Internal EnvironmentAttribute type value.
+         * @return Internal EnvironmentAttribute::Type type value.
          */
-        EnvironmentAttribute EnvironmentAttributeToInternal(int32_t attr);
+        EnvironmentAttribute::Type EnvironmentAttributeToInternal(int32_t attr);
 
 
     }

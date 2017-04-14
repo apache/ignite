@@ -52,7 +52,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyMBean;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
@@ -66,6 +65,7 @@ import org.apache.ignite.internal.visor.file.VisorFileBlock;
 import org.apache.ignite.internal.visor.log.VisorLogFile;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
@@ -138,7 +138,7 @@ public class VisorTaskUtils {
     /** Comparator for log files by last modified date. */
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
         @Override public int compare(VisorLogFile f1, VisorLogFile f2) {
-            return Long.compare(f2.lastModified(), f1.lastModified());
+            return Long.compare(f2.getLastModified(), f1.getLastModified());
         }
     };
 
@@ -255,7 +255,7 @@ public class VisorTaskUtils {
                     sb.append(", ");
             }
 
-            sb.append("]");
+            sb.append(']');
 
             return sb.toString();
         }
@@ -287,6 +287,26 @@ public class VisorTaskUtils {
             return null;
 
         return compactClass(obj.getClass());
+    }
+
+    /**
+     * Compact classes names.
+
+     * @param clss Classes to compact.
+     * @return Compacted string.
+     */
+    @Nullable public static List<String> compactClasses(Class<?>[] clss) {
+        if (clss == null)
+            return null;
+
+        int len = clss.length;
+
+        List<String> res = new ArrayList<>(len);
+
+        for (Class<?> cls: clss)
+            res.add(U.compact(cls.getName()));
+
+        return res;
     }
 
     /**
@@ -417,7 +437,7 @@ public class VisorTaskUtils {
      * @param evtMapper Closure to map grid events to Visor data transfer objects.
      * @return Collections of node events
      */
-    public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
+    public static List<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
         int[] evtTypes, IgniteClosure<Event, VisorGridEvent> evtMapper) {
         assert ignite != null;
         assert evtTypes != null && evtTypes.length > 0;
@@ -449,7 +469,9 @@ public class VisorTaskUtils {
             }
         };
 
-        Collection<Event> evts = ignite.events().localQuery(p, evtTypes);
+        Collection<Event> evts = ignite.configuration().getEventStorageSpi() instanceof NoopEventStorageSpi
+            ? Collections.<Event>emptyList()
+            : ignite.events().localQuery(p, evtTypes);
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {
@@ -464,7 +486,7 @@ public class VisorTaskUtils {
 
         boolean lost = !lastFound.get() && throttle == 0;
 
-        Collection<VisorGridEvent> res = new ArrayList<>(evts.size() + (lost ? 1 : 0));
+        List<VisorGridEvent> res = new ArrayList<>(evts.size() + (lost ? 1 : 0));
 
         if (lost)
             res.add(new VisorGridEventsLost(ignite.cluster().localNode().id()));
@@ -630,6 +652,7 @@ public class VisorTaskUtils {
                 raf.seek(pos);
 
                 byte[] buf = new byte[toRead];
+
                 int cntRead = raf.read(buf, 0, toRead);
 
                 if (cntRead != toRead)
@@ -680,9 +703,6 @@ public class VisorTaskUtils {
 
         if (plc instanceof FifoEvictionPolicyMBean)
             return ((FifoEvictionPolicyMBean)plc).getMaxSize();
-
-        if (plc instanceof SortedEvictionPolicyMBean)
-            return ((SortedEvictionPolicyMBean)plc).getMaxSize();
 
         return null;
     }

@@ -734,13 +734,13 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="lifecycleBeans" minOccurs="0">
+                <xs:element name="lifecycleHandlers" minOccurs="0">
                     <xs:annotation>
-                        <xs:documentation>Lifecycle beans.</xs:documentation>
+                        <xs:documentation>Lifecycle event handlers.</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element maxOccurs="unbounded" name="iLifecycleBean">
+                            <xs:element maxOccurs="unbounded" name="iLifecycleHandler">
                                 <xs:complexType>
                                     <xs:attribute name="type" type="xs:string" use="required">
                                         <xs:annotation>

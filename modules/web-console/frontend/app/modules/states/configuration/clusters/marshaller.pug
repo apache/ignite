@@ -66,11 +66,5 @@ include /app/helpers/jade/mixins
                                 'Whether marshaller should require Serializable interface or not')
                 .settings-row
                     +checkbox('Marshal local jobs', `${model}.marshalLocalJobs`, '"marshalLocalJobs"', 'If this flag is enabled, jobs mapped to local node will be marshalled as if it was remote node')
-                .settings-row
-                    +number('Keep alive time:', `${model}.marshallerCacheKeepAliveTime`, '"marshallerCacheKeepAliveTime"', 'true', '10000', '0',
-                        'Keep alive time of thread pool that is in charge of processing marshaller messages')
-                .settings-row
-                    +number('Pool size:', `${model}.marshallerCacheThreadPoolSize`, '"marshallerCacheThreadPoolSize"', 'true', 'max(8, availableProcessors) * 2', '1',
-                        'Default size of thread pool that is in charge of processing marshaller messages')
             .col-sm-6
                 +preview-xml-java(model, 'clusterMarshaller')

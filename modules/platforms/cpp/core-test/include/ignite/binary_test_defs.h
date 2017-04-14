@@ -158,7 +158,7 @@ namespace ignite
                 return GetBinaryStringHashCode(name);
             }
 
-            bool IsNull(const gt::BinaryInner& obj)
+            static bool IsNull(const gt::BinaryInner& obj)
             {
                 return false;
             }
@@ -197,7 +197,7 @@ namespace ignite
                 return GetBinaryStringHashCode(name); 
             }
 
-            bool IsNull(const gt::BinaryInner& obj)
+            static bool IsNull(const gt::BinaryInner& obj)
             {
                 return obj.GetValue() == 0;
             }
@@ -238,7 +238,7 @@ namespace ignite
                 return GetBinaryStringHashCode(name);
             }
 
-            bool IsNull(const gt::BinaryOuter& obj)
+            static bool IsNull(const gt::BinaryOuter& obj)
             {
                 return obj.GetValue() == 0 && obj.GetInner().GetValue();
             }
@@ -281,7 +281,7 @@ namespace ignite
                 return GetBinaryStringHashCode(name);
             }
 
-            bool IsNull(const gt::BinaryFields& obj)
+            static bool IsNull(const gt::BinaryFields& obj)
             {
                 return false;
             }
@@ -334,7 +334,7 @@ namespace ignite
                 return GetBinaryStringHashCode(name);
             }
 
-            bool IsNull(const gt::PureRaw& obj)
+            static bool IsNull(const gt::PureRaw& obj)
             {
                 return false;
             }

@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.visor.event;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObjectInput;
+import org.apache.ignite.internal.visor.VisorDataTransferObjectOutput;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,16 +36,23 @@ public class VisorGridTaskEvent extends VisorGridEvent {
     private static final long serialVersionUID = 0L;
 
     /** Name of the task that triggered the event. */
-    private final String taskName;
+    private String taskName;
 
     /** Name of task class that triggered the event. */
-    private final String taskClsName;
+    private String taskClsName;
 
     /** Task session ID. */
-    private final IgniteUuid taskSesId;
+    private IgniteUuid taskSesId;
 
     /** Whether task was created for system needs. */
-    private final boolean internal;
+    private boolean internal;
+
+    /**
+     * Default constructor.
+     */
+    public VisorGridTaskEvent() {
+        // No-op.
+    }
 
     /**
      * Create event with given parameters.
@@ -80,29 +93,59 @@ public class VisorGridTaskEvent extends VisorGridEvent {
     /**
      * @return Name of the task that triggered the event.
      */
-    public String taskName() {
+    public String getTaskName() {
         return taskName;
     }
 
     /**
      * @return Name of task class that triggered the event.
      */
-    public String taskClassName() {
+    public String getTaskClassName() {
         return taskClsName;
     }
 
     /**
      * @return Task session ID.
      */
-    public IgniteUuid taskSessionId() {
+    public IgniteUuid getTaskSessionId() {
         return taskSesId;
     }
 
     /**
      * @return Whether task was created for system needs.
      */
-    public boolean internal() {
+    public boolean isInternal() {
         return internal;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        try (VisorDataTransferObjectOutput dtout = new VisorDataTransferObjectOutput(out)) {
+            dtout.writeByte(super.getProtocolVersion());
+            super.writeExternalData(dtout);
+        }
+
+        U.writeString(out, taskName);
+        U.writeString(out, taskClsName);
+        U.writeGridUuid(out, taskSesId);
+        out.writeBoolean(internal);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        try (VisorDataTransferObjectInput dtin = new VisorDataTransferObjectInput(in)) {
+            super.readExternalData(dtin.readByte(), dtin);
+        }
+
+        taskName = U.readString(in);
+        taskClsName = U.readString(in);
+        taskSesId = U.readGridUuid(in);
+        internal = in.readBoolean();
     }
 
     /** {@inheritDoc} */

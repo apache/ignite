@@ -150,38 +150,14 @@ public class IgniteConfiguration {
     /** Default size of data streamer thread pool. */
     public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
-    /** Default keep alive time for public thread pool. */
-    @Deprecated
-    public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
-
     /** Default limit of threads used for rebalance. */
     public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
-
-    /** Default max queue capacity of public thread pool. */
-    @Deprecated
-    public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default size of system thread pool. */
     public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
-    /** Default max size of system thread pool. */
-    @Deprecated
-    public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
-
     /** Default size of query thread pool. */
     public static final int DFLT_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
-
-    /** Default keep alive time for system thread pool. */
-    @Deprecated
-    public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
-
-    /** Default keep alive time for utility thread pool. */
-    @Deprecated
-    public static final long DFLT_UTILITY_KEEP_ALIVE_TIME = 10_000;
-
-    /** Default max queue capacity of system thread pool. */
-    @Deprecated
-    public static final int DFLT_SYSTEM_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default Ignite thread keep alive time. */
     public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
@@ -220,7 +196,7 @@ public class IgniteConfiguration {
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
     /** Default value for late affinity assignment flag. */
-    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = false;
+    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
 
     /** Default value for active on start flag. */
     public static final boolean DFLT_ACTIVE_ON_START = true;
