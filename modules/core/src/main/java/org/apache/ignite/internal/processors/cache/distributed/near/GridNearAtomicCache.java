@@ -383,7 +383,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             }
         }
 
-        for (int i=0; i<req.obsoleteSize(); i++) {
+        for (int i = 0; i < req.obsoleteSize(); i++) {
             KeyCacheObject key = req.obsoleteKey(i);
 
             GridCacheEntryEx entry = peekEx(key);

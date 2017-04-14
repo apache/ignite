@@ -164,6 +164,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
         if (this.key != null) {
             obsolete(true);
+
             return;
         }
 
