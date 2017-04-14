@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.integration.CacheWriterException;
@@ -339,7 +340,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             for (int i = 0; i < flushThreads.length; i++) {
                 flushThreads[i] = new Flusher(gridName, "flusher-" + i, log);
 
-                new IgniteThread(flushThreads[i]).start();
+                flushThreads[i].start();
             }
         }
     }
@@ -675,7 +676,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
 
                 if (!batch.isEmpty()) {
-                    applyBatch(batch, false);
+                    applyBatch(batch, false, null);
 
                     cacheTotalOverflowCntr.incrementAndGet();
 
@@ -693,9 +694,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      *
      * @param valMap Batch map.
      * @param initSes {@code True} if need to initialize session.
+     * @param flusher Flusher, assotiated with all keys in batch (have sense in write coalescing = false mode)
      * @return {@code True} if batch was successfully applied, {@code False} otherwise.
      */
-    private boolean applyBatch(Map<K, StatefulValue<K, V>> valMap, boolean initSes) {
+    private boolean applyBatch(Map<K, StatefulValue<K, V>> valMap, boolean initSes, Flusher flusher) {
         assert valMap.size() <= batchSize;
         assert !valMap.isEmpty();
 
@@ -715,7 +717,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             batch.put(e.getKey(), e.getValue().entry());
         }
 
-        boolean result = updateStore(operation, batch, initSes);
+        boolean result = updateStore(operation, batch, initSes, flusher);
 
         if (result) {
             for (Map.Entry<K, StatefulValue<K, V>> e : valMap.entrySet()) {
@@ -782,12 +784,14 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * @param operation Status indicating operation that should be performed.
      * @param vals Key-Value map.
      * @param initSes {@code True} if need to initialize session.
+     * @param flusher Flusher, assotiated with vals keys (in writeCoalescing=false mode)
      * @return {@code true} if value may be deleted from the write cache,
      *         {@code false} otherwise
      */
     private boolean updateStore(StoreOperation operation,
         Map<K, Entry<? extends K, ? extends  V>> vals,
-        boolean initSes) {
+        boolean initSes,
+        Flusher flusher) {
 
         try {
             if (initSes && storeMgr != null)
@@ -822,14 +826,19 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
         catch (Exception e) {
             LT.error(log, e, "Unable to update underlying store: " + store);
+            boolean overflow;
+            if (writeCoalescing)
+                overflow = writeCache.sizex() > cacheCriticalSize || stopping.get();
+            else
+                overflow = flusher.isOverflowed() || stopping.get();
 
-            if (getWriteBehindBufferSize() > cacheCriticalSize || stopping.get()) {
+            if (overflow) {
                 for (Map.Entry<K, Entry<? extends K, ? extends  V>> entry : vals.entrySet()) {
                     Object val = entry.getValue() != null ? entry.getValue().getValue() : null;
 
                     log.warning("Failed to update store (value will be lost as current buffer size is greater " +
-                        "than 'cacheCriticalSize' or node has been stopped before store was repaired) [key=" +
-                        entry.getKey() + ", val=" + val + ", op=" + operation + "]");
+                            "than 'cacheCriticalSize' or node has been stopped before store was repaired) [key=" +
+                            entry.getKey() + ", val=" + val + ", op=" + operation + "]");
                 }
 
                 return true;
@@ -866,11 +875,20 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         /** Critical size of flusher local queue. */
         private final int flusherCacheCriticalSize;
 
-        /** Flush lock. */
-        private final Lock flusherFlushLock = new ReentrantLock();
+        /** Flusher parked flag. */
+        private volatile boolean parked;
 
-        /** Condition to determine records available for flush. */
-        private Condition flusherCanFlush = flusherFlushLock.newCondition();
+        /** Flusher thread. */
+        protected Thread thread;
+
+        /** Cache flushing frequence in nanos. */
+        protected long cacheFlushFreqNanos = cacheFlushFreq * 1000;
+
+        /** Writer lock. */
+        private final Lock flusherWriterLock = new ReentrantLock();
+
+        /** Confition to determine available space for flush. */
+        private Condition flusherWriterCanWrite = flusherWriterLock.newCondition();
 
         /** {@inheritDoc */
         protected Flusher(String gridName,
@@ -884,6 +902,12 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             queue = new ConcurrentLinkedDeque8<>();
             flusherWriteMap = new ConcurrentHashMap<>(initCap, 0.75f, concurLvl);
+        }
+
+        /** Start flusher thread */
+        protected void start() {
+            thread = new IgniteThread(this);
+            thread.start();
         }
 
         /**
@@ -900,44 +924,51 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             assert !writeCoalescing : "Unexpected write coalescing.";
 
+            if (queue.sizex() > flusherCacheCriticalSize) {
+                while (queue.sizex() > flusherCacheCriticalSize) {
+                    wakeUp();
+                    flusherWriterLock.lock();
+
+                    try {
+
+                        // Wait for free space in flusher queue
+                        while (queue.sizex() >= flusherCacheCriticalSize && !stopping.get()) {
+
+                            if (cacheFlushFreq > 0)
+                                flusherWriterCanWrite.await(cacheFlushFreq, TimeUnit.MILLISECONDS);
+                            else
+                                flusherWriterCanWrite.await();
+                        }
+
+                        cacheTotalOverflowCntr.incrementAndGet();
+
+                    }
+                    catch (InterruptedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Caught interrupted exception: " + e);
+
+                        Thread.currentThread().interrupt();
+                    }
+                    finally {
+                        flusherWriterLock.unlock();
+                    }
+                }
+                cacheTotalOverflowCntr.incrementAndGet();
+            }
+
             queue.add(F.t(key, newVal));
 
             flusherWriteMap.put(key, newVal);
+        }
 
-            if (queue.sizex() > flusherCacheCriticalSize) {
-
-                wakeUp();
-
-                flusherFlushLock.lock();
-
-                try {
-
-                    // Wait for free space in flusher queue
-                    while (queue.sizex() >= flusherCacheCriticalSize && !stopping.get()) {
-
-                        if (cacheFlushFreq > 0)
-                            flusherCanFlush.await(cacheFlushFreq, TimeUnit.MILLISECONDS);
-                        else
-                            flusherCanFlush.await();
-                    }
-
-                    cacheTotalOverflowCntr.incrementAndGet();
-
-                }
-                catch (InterruptedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Caught interrupted exception: " + e);
-
-                    Thread.currentThread().interrupt();
-                }
-                finally {
-                    flusherFlushLock.unlock();
-                }
-
-            }
-            else if (queue.sizex() > batchSize)
-                wakeUp();
-
+        /**
+         * Get overflowed flag.
+         *
+         * @return {@code True} if flusher write behind queue is overflowed,
+         *         {@code False} otherwise.
+         */
+        public boolean isOverflowed() {
+            return queue.sizex() > flusherCacheCriticalSize;
         }
 
         /**
@@ -1007,34 +1038,50 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          * @throws InterruptedException If awaiting was interrupted.
          */
         private void awaitOperationsAvailableNonCoalescing() throws InterruptedException {
-            flusherFlushLock.lock();
+
+            if (queue.sizex() > cacheCriticalSize)
+                return;
+
+            if (cacheMaxSize != 0) {
+                for (int i = 0; i < 2048; i++) {
+                    if (queue.sizex() > batchSize)
+                        return;
+                }
+            }
+
+            parked = true;
 
             try {
-                do {
-                    if (queue.sizex() <= batchSize || cacheMaxSize == 0) {
-                        if (cacheFlushFreq > 0)
-                            flusherCanFlush.await(cacheFlushFreq, TimeUnit.MILLISECONDS);
-                        else
-                            flusherCanFlush.await();
-                    }
+                for (;;) {
+                    if (cacheMaxSize != 0 && queue.sizex() >= batchSize)
+                        return;
+
+                    if (cacheFlushFreq > 0)
+                        LockSupport.parkNanos(cacheFlushFreqNanos);
+                    else
+                        LockSupport.park();
+
+                    if (queue.sizex() > 0)
+                        return;
+
+                    if (Thread.interrupted())
+                        throw new InterruptedException();
+
+                    if (stopping.get())
+                        return;
                 }
-                while (queue.sizex() == 0 && !stopping.get());
             }
             finally {
-                flusherFlushLock.unlock();
+                parked = false;
             }
         }
 
-        public void wakeUp(){
-            flusherFlushLock.lock();
-
-            try {
-                // Need to call signalAll becouse write threads can wait same condition.
-                flusherCanFlush.signalAll();
-            }
-            finally {
-                flusherFlushLock.unlock();
-            }
+        /**
+         * Wake up flusher thread.
+         */
+        public void wakeUp() {
+            if (parked)
+                LockSupport.unpark(thread);
         }
 
         /**
@@ -1059,7 +1106,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
                     switch (addRes) {
                         case NEW_BATCH:
-                            applyBatch(pending, true);
+                            applyBatch(pending, true, null);
 
                             pending = U.newLinkedHashMap(batchSize);
 
@@ -1086,7 +1133,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             // Process the remainder.
             if (!pending.isEmpty())
-                applyBatch(pending, true);
+                applyBatch(pending, true, null);
         }
 
         /**
@@ -1136,12 +1183,18 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
 
                 // Process collected batch
-                applied = applyBatch(pending, true);
+                applied = applyBatch(pending, true, this);
 
                 if (applied) {
 
                     // Wake up awaiting writers
-                    wakeUp();
+                    flusherWriterLock.lock();
+
+                    try {
+                        flusherWriterCanWrite.signalAll();
+                    } finally {
+                        flusherWriterLock.unlock();
+                    }
 
                 } else {
 
