@@ -163,6 +163,8 @@ public class IgfsModeResolver implements Externalizable {
 
                 modes.add(new T2<>(path, IgfsMode.fromOrdinal(in.readByte())));
             }
+
+            modesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
         }
     }
 }
