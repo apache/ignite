@@ -17,7 +17,6 @@ import java.io.ObjectOutput;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -86,7 +85,6 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         cfg.setStartSize(Math.max(1024, (rows * cols) / 10));
 
         // Write to primary.
-        cfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
         // Atomic transactions only.
