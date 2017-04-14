@@ -62,7 +62,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     private static final int ORPHAN_ROWS = 10;
 
     /** */
-    private static int QRY_PARALLELISM_LVL = 29;
+    private static int QRY_PARALLELISM_LVL = 97;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
