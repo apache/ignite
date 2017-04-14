@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithR
 import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTest;
+import org.apache.ignite.testframework.IgniteTestSuite;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
@@ -36,8 +38,10 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+        IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
-        TestSuite suite = IgniteCacheQuerySelfTestSuite.suite();
+        suite.addTestSuite(IgniteSqlSegmentedIndexSelfTest.class);
+     /*   TestSuite suite = IgniteCacheQuerySelfTestSuite.suite();
 
         // Serialization.
         suite.addTestSuite(BinarySerializationQuerySelfTest.class);
@@ -51,7 +55,7 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest.class);
 
         //TODO: the following tests= was never tested with binary. Exclude or pass?
-//        suite.addTestSuite(IgniteSqlSchemaIndexingTest.class);
+//        suite.addTestSuite(IgniteSqlSchemaIndexingTest.class);*/
 
         return suite;
     }
