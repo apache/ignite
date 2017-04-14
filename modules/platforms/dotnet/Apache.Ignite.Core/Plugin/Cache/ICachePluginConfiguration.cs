@@ -24,24 +24,6 @@ namespace Apache.Ignite.Core.Plugin.Cache
     /// <summary>
     /// Cache plugin configuration marker interface. Starting point to extend <see cref="CacheConfiguration"/>
     /// and extend existing cache functionality.
-    /// <para />
-    /// Implementations should be linked to corresponding <see cref="ICachePluginProvider{TConfig}"/>
-    /// via <see cref="CachePluginProviderTypeAttribute"/>.
-    /// <example>
-    /// Example plugin implementation:
-    /// <code>
-    /// [CachePluginProviderType(typeof(MyCachePluginProvider))]
-    /// class MyCachePluginConfig : ICachePluginConfiguration
-    /// {
-    ///     int CustomProperty { get; set; }
-    /// }
-    /// 
-    /// class MyCachePluginProvider : ICachePluginProvider&lt;MyCachePluginConfig&gt;
-    /// {
-    ///     ...
-    /// }
-    /// </code>
-    /// </example>
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface ICachePluginConfiguration
@@ -49,9 +31,6 @@ namespace Apache.Ignite.Core.Plugin.Cache
         /// <summary>
         /// Gets the id to locate PlatformCachePluginConfigurationClosureFactory on Java side
         /// and read the data written by <see cref="WriteBinary"/> method.
-        /// <para />
-        /// When this property is not null, all cache plugin functionality is delegated to Java part.
-        /// <see cref="ICachePluginProvider{TConfig}"/> won't be invoked.
         /// </summary>
         int? CachePluginConfigurationClosureFactoryId { get; }
 
