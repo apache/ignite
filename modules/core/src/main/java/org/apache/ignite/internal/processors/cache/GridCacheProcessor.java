@@ -2858,12 +2858,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         req.startCacheConfiguration(cfg);
-
         req.template(cfg.getName() != null && cfg.getName().endsWith("*"));
-
         req.nearCacheConfiguration(cfg.getNearConfiguration());
-
         req.deploymentId(IgniteUuid.randomUuid());
+        req.schema(new QuerySchema(cfg.getQueryEntities()));
 
         if (CU.isUtilityCache(cacheName))
             req.cacheType(CacheType.UTILITY);
