@@ -228,7 +228,8 @@ export default ['clustersController', [
             {value: 'GoogleStorage', label: 'Google cloud storage'},
             {value: 'Jdbc', label: 'JDBC'},
             {value: 'SharedFs', label: 'Shared filesystem'},
-            {value: 'ZooKeeper', label: 'Apache ZooKeeper'}
+            {value: 'ZooKeeper', label: 'Apache ZooKeeper'},
+            {value: 'Kubernetes', label: 'Kubernetes'}
         ];
 
         $scope.swapSpaceSpis = [

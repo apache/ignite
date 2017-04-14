@@ -203,6 +203,12 @@ mixin text(lbl, model, name, required, placeholder, tip)
         if  block
             block
 
+//- Mixin for text field.
+mixin url(lbl, model, name, required, placeholder, tip)
+    +ignite-form-field-url(lbl, model, name, required, placeholder, tip)
+        if  block
+            block
+
 //- Mixin for password field.
 mixin password(lbl, model, name, required, placeholder, tip)
     +ignite-form-field-password(lbl, model, name, false, required, placeholder, tip)
@@ -354,7 +360,7 @@ mixin table-java-package-field(name, model, items, valid, save, newItem)
                 ignite-on-escape=onEscape
             )
 
-//- Mixin for table java package field.
+//- Mixin for table url field.
 mixin table-url-field(name, model, items, valid, save, newItem)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = `${valid} && (${save}); ${valid} && ${resetOnEnter};`
