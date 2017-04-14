@@ -511,11 +511,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         topValidator = cc.getTopologyValidator();
         typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
+        writeBehindCoalescing = cc.getWriteBehindCoalescing();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
-        writeBehindCoalescing = cc.getWriteBehindCoalescing();
         writeSync = cc.getWriteSynchronizationMode();
     }
 

@@ -141,7 +141,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     /** Store manager. */
     private final CacheStoreManager storeMgr;
 
-
     /** Flush lock. */
     private final Lock flushLock = new ReentrantLock();
 
@@ -341,8 +340,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
                 new IgniteThread(flushThreads[i]).start();
             }
-
-
         }
     }
 
@@ -675,7 +672,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     return;
                 }
             }
-
         }
         finally {
             cacheOverflowCntr.decrementAndGet();
@@ -1087,8 +1083,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             // Process the remainder.
             if (!pending.isEmpty())
                 applyBatch(pending, true, null);
-
-
         }
 
         /**
@@ -1151,7 +1145,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             // Wake up awaiting writers
             wakeUp();
-
         }
 
         /**
@@ -1168,8 +1161,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             Map<K, StatefulValue<K, V>> pending,
             StoreOperation prevOperation,
             K key,
-            StatefulValue<K, V> val
-        ) {
+            StatefulValue<K, V> val) {
             ValueStatus status = val.status();
 
             assert !(pending.isEmpty() && prevOperation != null) : "prev operation cannot be " + prevOperation
@@ -1220,8 +1212,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     Map<K, StatefulValue<K,V>>[] flusherMaps() {
         Map<K, StatefulValue<K,V>>[] result = new Map[flushThreadCnt];
+
         for (int i=0; i < flushThreadCnt; i++)
             result[i] = flushThreads[i].flusherWriteMap;
+
         return result;
     }
 
