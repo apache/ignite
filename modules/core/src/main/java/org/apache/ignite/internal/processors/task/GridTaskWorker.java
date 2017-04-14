@@ -1375,7 +1375,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         affCacheIds,
                         affPartId,
                         mapTopVer,
-                        ses.getExecutorName());
+                        ses.executorName());
 
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
@@ -1393,12 +1393,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                                 plc = PUBLIC_POOL;
                         }
 
-                        if (ses.getExecutorName() != null) {
+                        if (ses.executorName() != null) {
                             Set<String> execs = node.attribute(ATTR_CUSTOM_EXECUTORS);
 
-                            if (execs == null || !execs.contains(ses.getExecutorName())) {
+                            if (execs == null || !execs.contains(ses.executorName())) {
                                 throw new IgniteCheckedException("Target node doesn't contain executor [node=" + node +
-                                    ", executorName=" + ses.getExecutorName() + ']');
+                                    ", executorName=" + ses.executorName() + ']');
                             }
                         }
                         // Send job execution request.

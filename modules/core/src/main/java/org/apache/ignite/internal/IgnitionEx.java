@@ -1530,7 +1530,7 @@ public class IgnitionEx {
         private ThreadPoolExecutor qryExecSvc;
 
         /** Executor service. */
-        private Map<String, ThreadPoolExecutor> customNamedExecSvcs;
+        private Map<String, ThreadPoolExecutor> customExecSvcs;
 
         /** Grid state. */
         private volatile IgniteState state = STOPPED;
@@ -1853,7 +1853,7 @@ public class IgnitionEx {
             if (!F.isEmpty(cfg.getExecutorConfiguration())) {
                 validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
 
-                customNamedExecSvcs = new HashMap<>();
+                customExecSvcs = new HashMap<>();
 
                 for(ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
                     ThreadPoolExecutor exec = new IgniteThreadPoolExecutor(
@@ -1864,7 +1864,7 @@ public class IgnitionEx {
                         DFLT_THREAD_KEEP_ALIVE_TIME,
                         new LinkedBlockingQueue<Runnable>());
 
-                    customNamedExecSvcs.put(execCfg.getName(), exec);
+                    customExecSvcs.put(execCfg.getName(), exec);
                 }
             }
 
@@ -1895,7 +1895,7 @@ public class IgnitionEx {
                     idxExecSvc,
                     callbackExecSvc,
                     qryExecSvc,
-                    customNamedExecSvcs,
+                    customExecSvcs,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();

@@ -695,7 +695,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param idxExecSvc Indexing executor service.
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
-     * @param customNamedExecSvcs Custom named executors.
+     * @param customExecSvcs Custom named executors.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
@@ -716,7 +716,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
-        Map<String, ? extends ExecutorService> customNamedExecSvcs,
+        Map<String, ? extends ExecutorService> customExecSvcs,
         GridAbsClosure errHnd
     )
         throws IgniteCheckedException
@@ -831,7 +831,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 idxExecSvc,
                 callbackExecSvc,
                 qryExecSvc,
-                customNamedExecSvcs,
+                customExecSvcs,
                 plugins
             );
 

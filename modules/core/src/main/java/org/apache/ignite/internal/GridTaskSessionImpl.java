@@ -882,7 +882,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /**
      * @return Custom executor name.
      */
-    @Nullable public String getExecutorName() {
+    @Nullable public String executorName() {
         return execName;
     }
 
