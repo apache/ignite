@@ -47,16 +47,16 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    public static final String ORG_CACHE_NAME = "org";
+    private static final String ORG_CACHE_NAME = "org";
 
     /** */
-    public static final String PERSON_CAHE_NAME = "pers";
+    private static final String PERSON_CAHE_NAME = "pers";
 
     /** */
-    public static final int ORG_CACHE_SIZE = 500;
+    private static final int ORG_CACHE_SIZE = 500;
 
     /** */
-    public static final int PERSON_CACHE_SIZE = 1000;
+    private static final int PERSON_CACHE_SIZE = 1000;
 
     /** */
     private static final int ORPHAN_ROWS = 10;
