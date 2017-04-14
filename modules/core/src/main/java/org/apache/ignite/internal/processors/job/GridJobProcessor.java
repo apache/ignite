@@ -1059,7 +1059,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.isSessionFullSupport(),
                             req.isInternal(),
                             req.getSubjectId(),
-                            req.getExecutorName());
+                            req.executorName());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
                         taskSes.setClassLoader(dep.classLoader());
@@ -1100,7 +1100,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         holdLsnr,
                         partsReservation,
                         req.getTopVer(),
-                        req.getExecutorName());
+                        req.executorName());
 
                     jobCtx.job(job);
 

@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Job execution request.
  */
-public class GridJobExecuteRequest implements CustomExecutorAwareMessage {
+public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -255,7 +255,7 @@ public class GridJobExecuteRequest implements CustomExecutorAwareMessage {
         this.idsOfCaches = cacheIds;
         this.part = part;
         this.topVer = topVer;
-        this.execName= execName;
+        this.execName = execName;
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
     }
@@ -460,7 +460,7 @@ public class GridJobExecuteRequest implements CustomExecutorAwareMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String getExecutorName() {
+    @Override public String executorName() {
         return execName;
     }
 

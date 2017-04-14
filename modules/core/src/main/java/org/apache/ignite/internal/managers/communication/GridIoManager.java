@@ -43,7 +43,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.CustomExecutorAwareMessage;
+import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -840,8 +840,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         try {
             Message msg0 = msg.message();
 
-            if (msg0 instanceof CustomExecutorAwareMessage) {
-                String execName = ((CustomExecutorAwareMessage)msg0).getExecutorName();
+            if (msg0 instanceof ExecutorAwareMessage) {
+                String execName = ((ExecutorAwareMessage)msg0).executorName();
 
                 if (!F.isEmpty(execName))
                     pools.customPoolByName(execName).execute(c);

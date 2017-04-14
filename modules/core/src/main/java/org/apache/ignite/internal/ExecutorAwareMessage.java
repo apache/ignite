@@ -23,11 +23,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message with specified custom executor must be processed in the appropriate thread pool.
  */
-public interface CustomExecutorAwareMessage extends Message {
+public interface ExecutorAwareMessage extends Message {
     /**
-     * Gets custom executor name
-     *
-     * @return Custom executor name. {@code null} In case the custom executor doesn't specified.
+     * @return Custom executor name. {@code null} In case the custom executor is not provided.
      */
-    @Nullable public String getExecutorName();
+    @Nullable public String executorName();
 }
