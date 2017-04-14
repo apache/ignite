@@ -228,25 +228,6 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testInvalidExecutorName() throws Exception {
-        IgniteCompute comp = grid(0).compute().withExecutor("invalid_name");
-
-        try {
-            comp.run(new IgniteRunnable() {
-                @Override public void run() {
-                }
-            });
-
-            fail("Run must be failed");
-        }
-        catch(Exception e) {
-            assertTrue(e.getMessage().contains("Target node doesn't contain executor"));
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testStarvation() throws Exception {
         IgniteCompute comp = grid(0).compute();
 

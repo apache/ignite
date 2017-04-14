@@ -30,8 +30,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.jetbrains.annotations.NotNull;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CUSTOM_EXECUTORS;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Processor which abstracts out thread pool management.
@@ -83,9 +82,6 @@ public class PoolProcessor extends GridProcessorAdapter {
         }
 
         customExecs = ctx.customExecutors();
-
-        if (customExecs != null)
-            ctx.addNodeAttribute(ATTR_CUSTOM_EXECUTORS, new HashSet<>(customExecs.keySet()));
     }
 
     /** {@inheritDoc} */
@@ -180,16 +176,12 @@ public class PoolProcessor extends GridProcessorAdapter {
      *
      * @param name Executor name.
      * @return Executor service.
-     * @throws IgniteCheckedException If failed.
      */
-    public Executor customExecutor(@NotNull String name) throws IgniteCheckedException {
+    @Nullable public Executor customExecutor(@NotNull String name) {
         Executor exec = null;
 
         if (customExecs != null)
             exec = customExecs.get(name);
-
-        if (exec == null)
-            throw new IgniteCheckedException("Custom executor is not configured: " + name);
 
         return exec;
     }

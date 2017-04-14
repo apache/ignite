@@ -2561,6 +2561,11 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), callbackExecSvc, log);
 
             callbackExecSvc = null;
+
+            if (!F.isEmpty(customExecSvcs)) {
+                for (ThreadPoolExecutor exec : customExecSvcs.values())
+                    U.shutdownNow(getClass(), exec, log);
+            }
         }
 
         /**

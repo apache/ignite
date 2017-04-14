@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -1276,15 +1277,18 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private boolean executeAsync(GridJobWorker jobWorker) {
         try {
-            if (jobWorker.executorName() != null)
-                try {
-                    ctx.pools().customExecutor(jobWorker.executorName()).execute(jobWorker);
+            if (jobWorker.executorName() != null) {
+                Executor customExec = ctx.pools().customExecutor(jobWorker.executorName());
+
+                if (customExec != null)
+                    customExec.execute(jobWorker);
+                else {
+                    U.warn(log, "Custom executor '" + jobWorker.executorName() + "' doesn't exist. " +
+                        "The job will be submit to public pool: " + jobWorker.getJobId());
+
+                    ctx.getExecutorService().execute(jobWorker);
                 }
-                catch (IgniteCheckedException e) {
-                    // TODO: ???
-                    throw new RejectedExecutionException("Cannot execute job by the custom executor: " +
-                        jobWorker.executorName(), e);
-                }
+            }
             else
                 ctx.getExecutorService().execute(jobWorker);
 

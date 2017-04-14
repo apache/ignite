@@ -100,7 +100,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CUSTOM_EXECUTORS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
@@ -1393,14 +1392,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                                 plc = PUBLIC_POOL;
                         }
 
-                        if (ses.executorName() != null) {
-                            Set<String> execs = node.attribute(ATTR_CUSTOM_EXECUTORS);
-
-                            if (execs == null || !execs.contains(ses.executorName())) {
-                                throw new IgniteCheckedException("Target node doesn't contain executor [node=" + node +
-                                    ", executorName=" + ses.executorName() + ']');
-                            }
-                        }
                         // Send job execution request.
                         ctx.io().sendToGridTopic(node, TOPIC_JOB, req, plc);
 
