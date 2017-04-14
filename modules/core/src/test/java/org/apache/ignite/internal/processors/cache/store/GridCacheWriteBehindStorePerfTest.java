@@ -102,11 +102,11 @@ public class GridCacheWriteBehindStorePerfTest extends GridCacheWriteBehindStore
     protected Set<Integer> runPutGetRemoveMultithreaded(int threadCnt, final int keysPerThread) throws Exception {
         final ConcurrentMap<String, Set<Integer>> perThread = new ConcurrentHashMap<>();
 
-
-
         final AtomicInteger cntr = new AtomicInteger();
 
         final AtomicInteger operations = new AtomicInteger();
+
+        final ConcurrentHashMap<Integer, Integer> globalKeys = new ConcurrentHashMap<>();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings({"NullableProblems"})
@@ -123,9 +123,16 @@ public class GridCacheWriteBehindStorePerfTest extends GridCacheWriteBehindStore
 
                 Random rnd = new Random();
 
-                for (int i = 0; i < keysPerThread; i++)
-                    //original.add(cntr.getAndIncrement());
-                    original.add(rnd.nextInt());
+                for (int i = 0; i < keysPerThread; i++) {
+                    int nextKey;
+
+                    do {
+                        nextKey = rnd.nextInt();
+                    } while (globalKeys.putIfAbsent(nextKey, nextKey) != null);
+
+                    original.add(nextKey);
+                }
+
                 int i=0;
                 int BATCH_SIZE = 1000;
                 try {
@@ -198,11 +205,8 @@ public class GridCacheWriteBehindStorePerfTest extends GridCacheWriteBehindStore
                 processedInMinute = 0;
             }
 
-
             System.out.println("Processed: " + processed + " time: " + new Date());
         }
-
-
     }
 
     private void testPutGetRemoveWithCoalescing() throws Exception {
@@ -240,6 +244,5 @@ public class GridCacheWriteBehindStorePerfTest extends GridCacheWriteBehindStore
             shutdownStore();
         }
     }
-
 
 }

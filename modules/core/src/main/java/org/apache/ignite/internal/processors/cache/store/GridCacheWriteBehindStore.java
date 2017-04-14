@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +37,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -70,6 +68,8 @@ import static javax.cache.Cache.Entry;
  * <p/>
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
+ * <p/>
+ * {@link GridCacheWriteBehindStore} doesn't support concurrent modifications of the same key.
  */
 public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** Default write cache initial capacity. */
@@ -454,7 +454,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         // For items that were not found in queue.
-        if (!remaining.isEmpty()) {
+        if (remaining != null && !remaining.isEmpty()) {
             Map<K, V> loaded0 = store.loadAll(remaining);
 
             if (loaded0 != null)
@@ -675,7 +675,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
 
                 if (!batch.isEmpty()) {
-                    applyBatch(batch, false, null);
+                    applyBatch(batch, false);
 
                     cacheTotalOverflowCntr.incrementAndGet();
 
@@ -693,10 +693,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      *
      * @param valMap Batch map.
      * @param initSes {@code True} if need to initialize session.
-     * @param lock Lock, assotiated with all valMap keys.
      * @return {@code True} if batch was successfully applied, {@code False} otherwise.
      */
-    private boolean applyBatch(Map<K, StatefulValue<K, V>> valMap, boolean initSes, GridStripedLock lock) {
+    private boolean applyBatch(Map<K, StatefulValue<K, V>> valMap, boolean initSes) {
         assert valMap.size() <= batchSize;
         assert !valMap.isEmpty();
 
@@ -738,19 +737,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     else {
                         Flusher f = flusher(e.getKey());
 
-                        Lock keyLock = f.lock.getLock(e.getKey());
+                        StatefulValue<K,V> lastSV = f.flusherWriteMap.get(e.getKey());
 
-                        keyLock.lock();
-
-                        try {
-                            StatefulValue<K,V> lastSV = f.flusherWriteMap.get(e.getKey());
-
-                            if (lastSV == e.getValue())
-                                f.flusherWriteMap.remove(e.getKey());
-                        }
-                        finally {
-                            keyLock.unlock();
-                        }
+                        if (lastSV == e.getValue())
+                            f.flusherWriteMap.remove(e.getKey());
 
                         val.signalFlushed();
                     }
@@ -867,17 +857,16 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * Thread that performs time/size-based flushing of written values to the underlying storage.
      */
     private class Flusher extends GridWorker {
-        /** Queue to flush */
+        /** Queue to flush. */
         private final ConcurrentLinkedDeque8<IgniteBiTuple<K, StatefulValue<K,V>>> queue;
 
-        /** Lock, associated with all value in queue */
-        private final GridStripedLock lock;
-
-        /** Flusher write map */
+        /** Flusher write map. */
         private final ConcurrentHashMap<K, StatefulValue<K,V>> flusherWriteMap;
 
+        /** Max size of flusher local write queue. */
         private final int flusherCacheMaxSize;
 
+        /** Critical size of flusher local queue. */
         private final int flusherCacheCriticalSize;
 
         /** Flush lock. */
@@ -895,7 +884,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             flusherCacheMaxSize = cacheMaxSize/flushThreadCnt;
             flusherCacheCriticalSize = cacheCriticalSize/flushThreadCnt;
 
-            lock = new GridStripedLock(concurLvl);
             queue = new ConcurrentLinkedDeque8<>();
             flusherWriteMap = new ConcurrentHashMap<>(initCap, 0.75f, concurLvl);
         }
@@ -914,19 +902,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             assert !writeCoalescing : "Unexpected write coalescing.";
 
-            // Lock queue to guarantee that sequence in flush queue is the same
-            // as sequence of put into writeCache.
-            Lock keyLock = lock.getLock(key.hashCode());
+            queue.add(F.t(key, newVal));
 
-            keyLock.lock();
-            try {
-                queue.add(F.t(key, newVal));
-
-                flusherWriteMap.put(key, newVal);
-            }
-            finally {
-                keyLock.unlock();
-            }
+            flusherWriteMap.put(key, newVal);
 
             if (queue.sizex() > cacheCriticalSize) {
                 wakeUp();
@@ -1062,16 +1040,20 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             Map<K, StatefulValue<K, V>> pending = U.newLinkedHashMap(batchSize);
             Iterator<Map.Entry<K, StatefulValue<K, V>>> it = writeCache.entrySet().iterator();
+
             while (it.hasNext()) {
                 Map.Entry<K, StatefulValue<K, V>> e = it.next();
                 StatefulValue<K, V> val = e.getValue();
+
                 val.writeLock().lock();
+
                 try {
 
                     BatchingResult addRes = tryAddStatefulValue(pending, prevOperation, e.getKey(), val);
+
                     switch (addRes) {
                         case NEW_BATCH:
-                            applyBatch(pending, true, null);
+                            applyBatch(pending, true);
 
                             pending = U.newLinkedHashMap(batchSize);
 
@@ -1098,7 +1080,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             // Process the remainder.
             if (!pending.isEmpty())
-                applyBatch(pending, true, null);
+                applyBatch(pending, true);
         }
 
         /**
@@ -1148,7 +1130,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
 
                 // Process collected batch and truncate queue
-                applied = applyBatch(pending, true, lock);
+                applied = applyBatch(pending, true);
                 if (!applied) {
                     // Return values to queue
                     ArrayList<Map.Entry<K, StatefulValue<K,V>>> pendingList = new ArrayList(pending.entrySet());
