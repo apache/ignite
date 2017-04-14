@@ -300,9 +300,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             return writeCache.sizex();
         else {
             int size = 0;
-            for (Flusher f : flushThreads) {
+
+            for (Flusher f : flushThreads)
                 size += f.size();
-            }
+
             return size;
         }
     }
@@ -383,9 +384,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             if (log.isDebugEnabled())
                 log.debug("Stopping write-behind store for cache '" + cacheName + '\'');
 
-            for (Flusher f : flushThreads)
+            for (Flusher f : flushThreads) {
                 if (!f.isEmpty())
                     f.wakeUp();
+            }
 
             boolean graceful = true;
 
@@ -393,7 +395,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 graceful &= U.join(worker, log);
 
             if (!graceful)
-                log.warning("Shutdown was aborted");
+                log.warning("Write behind store shutdown was aborted.");
         }
     }
 
@@ -402,9 +404,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * @throws IgniteCheckedException If failed.
      */
     public void forceFlush() throws IgniteCheckedException {
-        for (Flusher f : flushThreads)
+        for (Flusher f : flushThreads) {
             if (!f.isEmpty())
                 f.wakeUp();
+        }
     }
 
     /** {@inheritDoc} */
@@ -419,10 +422,11 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
         Map<K, V> loaded = new HashMap<>();
 
-        Collection<K> remaining = new LinkedList<>();
+        Collection<K> remaining = null;
 
         for (K key : keys) {
             StatefulValue<K, V> val;
+
             if (writeCoalescing)
                 val = writeCache.get(key);
             else
@@ -441,8 +445,12 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     val.readLock().unlock();
                 }
             }
-            else
+            else {
+                if (remaining == null)
+                    remaining = new ArrayList<>();
+
                 remaining.add(key);
+            }
         }
 
         // For items that were not found in queue.
@@ -462,6 +470,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             log.debug("Store load [key=" + key + ']');
 
         StatefulValue<K, V> val;
+
         if (writeCoalescing)
             val = writeCache.get(key);
         else
@@ -620,8 +629,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     private Flusher flusher(K key) {
         int h, idx;
+
         if (flushThreadCntIsPowerOfTwo)
-            idx = ((h = key.hashCode()) ^ (h >>> 16)) & (flushThreadCnt-1);
+            idx = ((h = key.hashCode()) ^ (h >>> 16)) & (flushThreadCnt - 1);
         else
             idx = ((h = key.hashCode()) ^ (h >>> 16)) % flushThreadCnt;
 
@@ -727,16 +737,21 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     }
                     else {
                         Flusher f = flusher(e.getKey());
+
                         Lock keyLock = f.lock.getLock(e.getKey());
+
                         keyLock.lock();
+
                         try {
                             StatefulValue<K,V> lastSV = f.flusherWriteMap.get(e.getKey());
+
                             if (lastSV == e.getValue())
                                 f.flusherWriteMap.remove(e.getKey());
                         }
                         finally {
                             keyLock.unlock();
                         }
+
                         val.signalFlushed();
                     }
                 }
@@ -879,6 +894,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             flusherCacheMaxSize = cacheMaxSize/flushThreadCnt;
             flusherCacheCriticalSize = cacheCriticalSize/flushThreadCnt;
+
             lock = new GridStripedLock(concurLvl);
             queue = new ConcurrentLinkedDeque8<>();
             flusherWriteMap = new ConcurrentHashMap<>(initCap, 0.75f, concurLvl);
