@@ -23,21 +23,25 @@ import static org.junit.Assert.assertEquals;
 
 /** */
 public class ConstantVectorConstructorTest {
-    /** */ private static final int IMPOSSIBLE_SIZE = -1;
+    /** */
+    private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new ConstantVector(-1, 1).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void zeroSizeTest() {
         assertEquals("Zero size.", IMPOSSIBLE_SIZE,
             new ConstantVector(0, 1).size());
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void primitiveTest() {
         assertEquals("1 size.", 1,
             new ConstantVector(1, 1).size());

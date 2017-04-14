@@ -29,18 +29,23 @@ import static org.junit.Assert.assertEquals;
 
 /** */
 public class FunctionVectorConstructorTest {
-    /** */ private static final int IMPOSSIBLE_SIZE = -1;
+    /** */
+    private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ @Test(expected = org.apache.ignite.math.exceptions.UnsupportedOperationException.class)
+    /** */
+    @Test(expected = org.apache.ignite.math.exceptions.UnsupportedOperationException.class)
     public void mapInvalidArgsTest() {
         assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
-            new FunctionVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
+            new FunctionVector(new HashMap<String, Object>() {{
+                put("invalid", 99);
+            }}).size());
     }
 
-    /** */ @Test(expected = UnsupportedOperationException.class)
+    /** */
+    @Test(expected = UnsupportedOperationException.class)
     public void mapMissingArgsTest() {
-        final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("size",  1);
+        final Map<String, Object> test = new HashMap<String, Object>() {{
+            put("size", 1);
             put("paramMissing", "whatever");
         }};
 
@@ -48,57 +53,64 @@ public class FunctionVectorConstructorTest {
             -1, new FunctionVector(test).size());
     }
 
-    /** */ @Test(expected = ClassCastException.class)
+    /** */
+    @Test(expected = ClassCastException.class)
     public void mapInvalidParamTypeTest() {
-        final Map<String, Object> test = new HashMap<String, Object>(){{
+        final Map<String, Object> test = new HashMap<String, Object>() {{
             put("size", "whatever");
 
-            put("getFunc", (IntToDoubleFunction) i -> i);
+            put("getFunc", (IntToDoubleFunction)i -> i);
         }};
 
         assertEquals("Expect exception due to invalid param type.", IMPOSSIBLE_SIZE,
             new FunctionVector(test).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void mapNullTest() {
         //noinspection ConstantConditions
         assertEquals("Null map args.", IMPOSSIBLE_SIZE,
             new FunctionVector(null).size());
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void mapTest() {
         assertEquals("Size from args.", 99,
-            new FunctionVector(new HashMap<String, Object>(){{
+            new FunctionVector(new HashMap<String, Object>() {{
                 put("size", 99);
 
-                put("getFunc", (IgniteFunction<Integer, Double>) i -> (double)i);
+                put("getFunc", (IgniteFunction<Integer, Double>)i -> (double)i);
             }}).size());
 
         assertEquals("Size from args with setFunc.", 99,
-            new FunctionVector(new HashMap<String, Object>(){{
+            new FunctionVector(new HashMap<String, Object>() {{
                 put("size", 99);
 
-                put("getFunc", (IgniteFunction<Integer, Double>) i -> (double)i);
+                put("getFunc", (IgniteFunction<Integer, Double>)i -> (double)i);
 
-                put("setFunc", (IntDoubleToVoidFunction) (integer, aDouble) -> { });
+                put("setFunc", (IntDoubleToVoidFunction)(integer, aDouble) -> {
+                });
             }}).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new FunctionVector(-1, (i) -> (double)i).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void zeroSizeTest() {
         assertEquals("0 size.", IMPOSSIBLE_SIZE,
             new FunctionVector(0, (i) -> (double)i).size());
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void primitiveTest() {
         assertEquals("1 size.", 1,
             new FunctionVector(1, (i) -> (double)i).size());

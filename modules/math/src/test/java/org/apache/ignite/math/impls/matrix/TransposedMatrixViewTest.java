@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Tests for {@link TransposedMatrixView}.
  */
-public class TransposedMatrixViewTest extends ExternalizeTest<TransposedMatrixView>{
+public class TransposedMatrixViewTest extends ExternalizeTest<TransposedMatrixView> {
     /** */
     private static final String UNEXPECTED_VALUE = "Unexpected value";
     /** */
@@ -52,7 +52,7 @@ public class TransposedMatrixViewTest extends ExternalizeTest<TransposedMatrixVi
 
     /** */
     @Test
-    public void testView(){
+    public void testView() {
         assertEquals(UNEXPECTED_VALUE, parent.rowSize(), testMatrix.columnSize());
         assertEquals(UNEXPECTED_VALUE, parent.columnSize(), testMatrix.rowSize());
 
@@ -69,13 +69,13 @@ public class TransposedMatrixViewTest extends ExternalizeTest<TransposedMatrixVi
 
     /** */
     @Test(expected = UnsupportedOperationException.class)
-    public void testLike(){
-        testMatrix.like(0,0);
+    public void testLike() {
+        testMatrix.like(0, 0);
     }
 
     /** */
     @Test(expected = UnsupportedOperationException.class)
-    public void testLikeVector(){
+    public void testLikeVector() {
         testMatrix.likeVector(0);
     }
 

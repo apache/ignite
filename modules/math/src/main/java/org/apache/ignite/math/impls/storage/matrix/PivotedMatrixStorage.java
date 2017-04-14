@@ -30,10 +30,14 @@ public class PivotedMatrixStorage implements MatrixStorage {
     /** Matrix storage. */
     private MatrixStorage sto;
 
-    /** */ private int[] rowPivot;
-    /** */ private int[] colPivot;
-    /** */ private int[] rowUnpivot;
-    /** */ private int[] colUnpivot;
+    /** */
+    private int[] rowPivot;
+    /** */
+    private int[] colPivot;
+    /** */
+    private int[] rowUnpivot;
+    /** */
+    private int[] colUnpivot;
 
     /**
      *
@@ -43,7 +47,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param sto Matrix storage.
      * @param rowPivot Pivot array for rows.
      * @param colPivot Pivot array for columns.
@@ -90,7 +93,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param sto Matrix storage.
      * @param pivot Pivot array.
      */
@@ -99,7 +101,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param sto Matrix storage.
      */
     public PivotedMatrixStorage(MatrixStorage sto) {
@@ -107,7 +108,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param i First row index to swap.
      * @param j Second row index to swap.
      */
@@ -124,7 +124,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param i First column index to swap.
      * @param j Second column index to swap.
      */
@@ -232,7 +231,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param n Pivot array length.
      */
     private static int[] identityPivot(int n) {
@@ -245,7 +243,6 @@ public class PivotedMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param pivot Pivot array to be inverted.
      */
     private static int[] invert(int[] pivot) {

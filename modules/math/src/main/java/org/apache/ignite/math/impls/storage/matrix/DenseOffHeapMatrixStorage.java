@@ -33,12 +33,12 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     private int ptrInitialHash;
 
     /** */
-    public DenseOffHeapMatrixStorage(){
+    public DenseOffHeapMatrixStorage() {
         // No-op.
     }
 
     /** */
-    public DenseOffHeapMatrixStorage(int rows, int cols){
+    public DenseOffHeapMatrixStorage(int rows, int cols) {
         assert rows > 0;
         assert cols > 0;
 
@@ -63,7 +63,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                set(i,j,data[i][j]);
+                set(i, j, data[i][j]);
     }
 
     /** {@inheritDoc} */
@@ -146,17 +146,17 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    private long pointerOffset(int x, int y){
+    private long pointerOffset(int x, int y) {
         return ptr + x * cols * Double.BYTES + y * Double.BYTES;
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         return obj != null &&
-                getClass().equals(obj.getClass()) &&
-                (rows == ((DenseOffHeapMatrixStorage)obj).rows) &&
-                (cols == ((DenseOffHeapMatrixStorage)obj).cols) &&
-                (rows == 0 || cols == 0 || ptr == ((DenseOffHeapMatrixStorage)obj).ptr || isMemoryEquals((DenseOffHeapMatrixStorage)obj));
+            getClass().equals(obj.getClass()) &&
+            (rows == ((DenseOffHeapMatrixStorage)obj).rows) &&
+            (cols == ((DenseOffHeapMatrixStorage)obj).cols) &&
+            (rows == 0 || cols == 0 || ptr == ((DenseOffHeapMatrixStorage)obj).ptr || isMemoryEquals((DenseOffHeapMatrixStorage)obj));
     }
 
     /** {@inheritDoc} */
@@ -171,11 +171,11 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /** */
-    private boolean isMemoryEquals(DenseOffHeapMatrixStorage otherStorage){
+    private boolean isMemoryEquals(DenseOffHeapMatrixStorage otherStorage) {
         boolean result = true;
         for (int i = 0; i < otherStorage.rows; i++) {
             for (int j = 0; j < otherStorage.cols; j++) {
-                if (Double.compare(get(i,j),otherStorage.get(i,j)) != 0){
+                if (Double.compare(get(i, j), otherStorage.get(i, j)) != 0) {
                     result = false;
                     break;
                 }

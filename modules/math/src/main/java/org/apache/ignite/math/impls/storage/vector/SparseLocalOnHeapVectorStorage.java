@@ -44,7 +44,6 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
     }
 
     /**
-     *
      * @param size
      * @param acsMode
      */
@@ -52,7 +51,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         assert size > 0;
         assertAccessMode(acsMode);
 
-        this.size  = size;
+        this.size = size;
         this.acsMode = acsMode;
 
         if (acsMode == SEQUENTIAL_ACCESS_MODE)
@@ -136,7 +135,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SparseLocalOnHeapVectorStorage that = (SparseLocalOnHeapVectorStorage) o;
+        SparseLocalOnHeapVectorStorage that = (SparseLocalOnHeapVectorStorage)o;
 
         return size == that.size && acsMode == that.acsMode && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }

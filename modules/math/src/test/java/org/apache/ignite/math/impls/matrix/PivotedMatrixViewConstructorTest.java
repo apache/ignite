@@ -27,7 +27,8 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class PivotedMatrixViewConstructorTest {
-    /** */ @Test
+    /** */
+    @Test
     public void invalidArgsTest() {
         Matrix m = new DenseLocalOnHeapMatrix(1, 1);
 
@@ -49,7 +50,8 @@ public class PivotedMatrixViewConstructorTest {
             "Null col pivot.");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicTest() {
         Matrix m = new DenseLocalOnHeapMatrix(2, 2);
 
@@ -84,11 +86,13 @@ public class PivotedMatrixViewConstructorTest {
         assertFalse("View is expected to be not equal to null.", view.equals(null));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void pivotTest() {
         int[] pivot = new int[] {2, 1, 0, 3};
 
-        for (Matrix m : new Matrix[] {new DenseLocalOnHeapMatrix(3, 3),
+        for (Matrix m : new Matrix[] {
+            new DenseLocalOnHeapMatrix(3, 3),
             new DenseLocalOnHeapMatrix(3, 4), new DenseLocalOnHeapMatrix(4, 3)})
             pivotTest(m, pivot);
     }

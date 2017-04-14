@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Unit tests for {@link ArrayMatrixStorage}.
  */
-public class MatrixArrayStorageTest extends MatrixBaseStorageTest<ArrayMatrixStorage>{
+public class MatrixArrayStorageTest extends MatrixBaseStorageTest<ArrayMatrixStorage> {
     /** {@inheritDoc} */
     @Override public void setUp() {
         storage = new ArrayMatrixStorage(MathTestConstants.STORAGE_SIZE, MathTestConstants.STORAGE_SIZE);

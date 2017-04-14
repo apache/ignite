@@ -77,7 +77,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     *
      * @param sto Storage.
      */
     public AbstractVector(VectorStorage sto) {
@@ -112,7 +111,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     *
      * @param i Index.
      * @param v Value.
      */
@@ -127,7 +125,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     *
      * @param i Index.
      * @return Value.
      */
@@ -217,7 +214,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     *
      * @param idx Index.
      * @return Value.
      */
@@ -374,7 +370,8 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal) {
+    @Override public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun,
+        T zeroVal) {
         T res = zeroVal;
         int len = size();
 
@@ -385,7 +382,8 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun, IgniteBiFunction<Double, Double, Double> combFun, T zeroVal) {
+    @Override public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun,
+        IgniteBiFunction<Double, Double, Double> combFun, T zeroVal) {
         checkCardinality(vec);
 
         T res = zeroVal;
@@ -831,7 +829,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     *
      * @return Result of dot with self.
      */
     protected double dotSelf() {
@@ -878,7 +875,7 @@ public abstract class AbstractVector implements Vector {
     @Override public int hashCode() {
         int res = 1;
         res += res * 37 + guid.hashCode();
-        res += sto == null ? 0: res * 37 + sto.hashCode();
+        res += sto == null ? 0 : res * 37 + sto.hashCode();
         return res;
     }
 

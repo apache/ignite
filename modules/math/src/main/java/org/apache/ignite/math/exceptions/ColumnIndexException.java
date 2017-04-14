@@ -27,7 +27,6 @@ public class ColumnIndexException extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /**
-     *
      * @param idx Index value that caused this exception.
      */
     public ColumnIndexException(int idx) {

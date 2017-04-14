@@ -29,7 +29,6 @@ public class UnsupportedOperationException extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /**
-     *
      * @param errMsg Error message.
      */
     public UnsupportedOperationException(String errMsg) {

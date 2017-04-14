@@ -26,7 +26,8 @@ import static org.junit.Assert.assertEquals;
 
 /** */
 public class MatrixViewConstructorTest {
-    /** */ @Test
+    /** */
+    @Test
     public void invalidArgsTest() {
         Matrix m = new DenseLocalOnHeapMatrix(1, 1);
 
@@ -46,9 +47,11 @@ public class MatrixViewConstructorTest {
             "Invalid cols.");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicTest() {
-        for (Matrix m : new Matrix[] {new DenseLocalOnHeapMatrix(3, 3),
+        for (Matrix m : new Matrix[] {
+            new DenseLocalOnHeapMatrix(3, 3),
             new DenseLocalOnHeapMatrix(3, 4), new DenseLocalOnHeapMatrix(4, 3)})
             for (int rowOff : new int[] {0, 1})
                 for (int colOff : new int[] {0, 1})
@@ -73,7 +76,6 @@ public class MatrixViewConstructorTest {
                 assertEquals("Unexpected value at " + row + "x" + col,
                     parent.get(row + rowOff, col + colOff), view.get(row, col), 0d);
 
-
         for (int row = 0; row < rows; row++)
             for (int col = 0; col < cols; col++)
                 view.set(row, col, 0d);
@@ -86,9 +88,10 @@ public class MatrixViewConstructorTest {
 
     /** */
     @Test
-    public void attributeTest(){
-        for (Matrix m : new Matrix[] {new DenseLocalOnHeapMatrix(3, 3),
-            new DenseLocalOnHeapMatrix(3, 4), new DenseLocalOnHeapMatrix(4, 3)}){
+    public void attributeTest() {
+        for (Matrix m : new Matrix[] {
+            new DenseLocalOnHeapMatrix(3, 3),
+            new DenseLocalOnHeapMatrix(3, 4), new DenseLocalOnHeapMatrix(4, 3)}) {
             MatrixView matrixView = new MatrixView(m, 0, 0, m.rowSize(), m.columnSize());
 
             MatrixDelegateStorage delegateStorage = (MatrixDelegateStorage)matrixView.getStorage();

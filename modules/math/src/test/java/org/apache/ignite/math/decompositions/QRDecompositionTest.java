@@ -31,9 +31,9 @@ public class QRDecompositionTest {
     /** */
     @Test
     public void basicTest() {
-        basicTest(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        basicTest(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         }));
     }
@@ -43,9 +43,9 @@ public class QRDecompositionTest {
      */
     @Test
     public void decompositionSupportTest() {
-        basicTest(new PivotedMatrixView(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        basicTest(new PivotedMatrixView(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         })));
     }
@@ -59,9 +59,9 @@ public class QRDecompositionTest {
     /** */
     @Test(expected = IllegalArgumentException.class)
     public void solveWrongMatrixSizeTest() {
-        new QRDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        new QRDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         })).solve(new DenseLocalOnHeapMatrix(2, 3));
     }
@@ -111,8 +111,8 @@ public class QRDecompositionTest {
 
         dec.destroy();
 
-        QRDecomposition dec1 = new QRDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d},
+        QRDecomposition dec1 = new QRDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d},
             {-1.0d, 2.0d},
             {0.0d, -1.0d}
         }));
@@ -121,9 +121,9 @@ public class QRDecompositionTest {
 
         dec1.destroy();
 
-        QRDecomposition dec2 = new QRDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d, 0.0d},
-            {-1.0d, 2.0d,  -1.0d, 0.0d},
+        QRDecomposition dec2 = new QRDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d, 0.0d},
             {0.0d, -1.0d, 2.0d, 0.0d}
         }));
 

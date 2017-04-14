@@ -33,7 +33,6 @@ public class PivotedVectorView extends AbstractVector {
     private Vector vec;
 
     /**
-     *
      * @param vec
      * @param pivot Mapping from external index to internal.
      * @param unpivot Mapping from internal index to external.
@@ -48,7 +47,6 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     *
      * @param vec
      * @param pivot
      */
@@ -84,27 +82,21 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     *
      * @param i
-     *
      */
     public int pivot(int i) {
         return storage().pivot()[i];
     }
 
     /**
-     *
      * @param i
-     *
      */
     public int unpivot(int i) {
         return storage().unpivot()[i];
     }
 
     /**
-     *
      * @param idx
-     *
      */
     protected Vector.Element makeElement(int idx) {
         checkIndex(idx);

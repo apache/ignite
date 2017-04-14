@@ -57,9 +57,7 @@ public class CacheVector<K, V> extends AbstractVector {
     }
 
     /**
-     *
      * @param mapper
-     *
      */
     private Vector mapOverCache(IgniteFunction<Double, Double> mapper) {
         CacheVectorStorage<K, V> sto = storage();
@@ -93,7 +91,7 @@ public class CacheVector<K, V> extends AbstractVector {
         // TODO: provide cache-optimized implementation.
         return super.map(fun, y); // TODO
     }
-    
+
     /** {@inheritDoc} */
     @Override public double sum() {
         CacheVectorStorage<K, V> sto = storage();

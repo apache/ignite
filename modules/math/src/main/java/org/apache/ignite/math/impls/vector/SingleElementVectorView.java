@@ -35,7 +35,6 @@ public class SingleElementVectorView extends AbstractVector {
     }
 
     /**
-     *
      * @param vec
      * @param idx
      */

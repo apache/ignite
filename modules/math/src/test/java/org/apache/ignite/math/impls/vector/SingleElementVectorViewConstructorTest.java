@@ -26,35 +26,42 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class SingleElementVectorViewConstructorTest {
-    /** */ private static final int IMPOSSIBLE_SIZE = -1;
+    /** */
+    private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ private static final SampleHelper helper = new SampleHelper();
+    /** */
+    private static final SampleHelper helper = new SampleHelper();
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void nullVecParamTest() {
         assertEquals("Expect exception due to null vector param.", IMPOSSIBLE_SIZE,
             new SingleElementVectorView(null, helper.idx).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void negativeIdxParamTest() {
         assertEquals("Expect exception due to negative index param.", IMPOSSIBLE_SIZE,
             new SingleElementVectorView(helper.vec, -1).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void tooLargeIdxParamTest() {
         assertEquals("Expect exception due to too large index param.", IMPOSSIBLE_SIZE,
             new SingleElementVectorView(helper.vec, helper.vec.size()).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void emptyVecParamTest() {
         assertEquals("Expect exception due to empty vector param.", IMPOSSIBLE_SIZE,
             new SingleElementVectorView(helper.vecEmpty, 0).size());
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicTest() {
         final int[] sizes = new int[] {1, 4, 8};
 
@@ -65,7 +72,7 @@ public class SingleElementVectorViewConstructorTest {
 
     /** */
     private void basicTest(int size, int idx) {
-        final Double expVal = (double) (size - idx);
+        final Double expVal = (double)(size - idx);
 
         Vector orig = helper.newSample(size, idx, expVal);
 
@@ -96,7 +103,8 @@ public class SingleElementVectorViewConstructorTest {
 
             try {
                 svv.set(i, 1.0);
-            } catch (UnsupportedOperationException uoe) {
+            }
+            catch (UnsupportedOperationException uoe) {
                 eCaught = true;
             }
 
@@ -107,10 +115,14 @@ public class SingleElementVectorViewConstructorTest {
 
     /** */
     private static class SampleHelper {
-        /** */ final double[] data = new double[] {0, 1};
-        /** */ final Vector vec = new DenseLocalOnHeapVector(data);
-        /** */ final Vector vecEmpty = new DenseLocalOnHeapVector(new double[] {});
-        /** */ final int idx = 0;
+        /** */
+        final double[] data = new double[] {0, 1};
+        /** */
+        final Vector vec = new DenseLocalOnHeapVector(data);
+        /** */
+        final Vector vecEmpty = new DenseLocalOnHeapVector(new double[] {});
+        /** */
+        final int idx = 0;
 
         /** */
         Vector newSample(int size, int idx, double expVal) {

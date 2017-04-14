@@ -31,12 +31,11 @@ public class MatrixView extends AbstractMatrix {
     /**
      * Constructor for {@link Externalizable} interface.
      */
-    public MatrixView(){
+    public MatrixView() {
         // No-op.
     }
 
     /**
-     *
      * @param parent Backing parent {@link Matrix}.
      * @param rowOff Row offset to parent matrix.
      * @param colOff Column offset to parent matrix.
@@ -48,7 +47,6 @@ public class MatrixView extends AbstractMatrix {
     }
 
     /**
-     *
      * @param sto Backing parent {@link MatrixStorage}.
      * @param rowOff Row offset to parent storage.
      * @param colOff Column offset to parent storage.

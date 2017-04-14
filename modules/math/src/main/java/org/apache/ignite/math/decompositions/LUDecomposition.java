@@ -88,7 +88,7 @@ public class LUDecomposition extends DecompositionSupport {
         for (int i = 0; i < pivot.size(); i++)
             pivot.setX(i, i);
 
-        even     = true;
+        even = true;
         singular = false;
 
         cachedL = null;
@@ -123,7 +123,7 @@ public class LUDecomposition extends DecompositionSupport {
 
                 luRow.setX(col, sum);
 
-                if (Math.abs(sum) > largest){
+                if (Math.abs(sum) > largest) {
                     largest = Math.abs(sum);
                     max = row;
                 }
@@ -157,7 +157,7 @@ public class LUDecomposition extends DecompositionSupport {
             // Divide the lower elements by the "winning" diagonal elt.
             final double luDiag = lu.getX(col, col);
 
-            for (int row = col + 1; row < cols; row++){
+            for (int row = col + 1; row < cols; row++) {
                 double val = lu.getX(row, col) / luDiag;
                 lu.setX(row, col, val);
             }
@@ -180,6 +180,7 @@ public class LUDecomposition extends DecompositionSupport {
     /**
      * Returns the matrix L of the decomposition.
      * <p>L is a lower-triangular matrix</p>
+     *
      * @return the L matrix (or null if decomposed matrix is singular).
      */
     public Matrix getL() {
@@ -203,6 +204,7 @@ public class LUDecomposition extends DecompositionSupport {
     /**
      * Returns the matrix U of the decomposition.
      * <p>U is an upper-triangular matrix</p>
+     *
      * @return the U matrix (or null if decomposed matrix is singular).
      */
     public Matrix getU() {
@@ -226,10 +228,11 @@ public class LUDecomposition extends DecompositionSupport {
      * each row and each column, all other elements being set to 0.0.</p>
      * <p>The positions of the 1 elements are given by the {@link #getPivot()
      * pivot permutation vector}.</p>
+     *
      * @return the P rows permutation matrix (or null if decomposed matrix is singular).
      * @see #getPivot()
      */
-    public Matrix getP(){
+    public Matrix getP() {
         if ((cachedP == null) && !singular) {
             final int m = pivot.size();
 
@@ -245,6 +248,7 @@ public class LUDecomposition extends DecompositionSupport {
 
     /**
      * Returns the pivot permutation vector.
+     *
      * @return the pivot permutation vector.
      * @see #getP()
      */
@@ -254,23 +258,24 @@ public class LUDecomposition extends DecompositionSupport {
 
     /**
      * Return the determinant of the matrix.
+     *
      * @return determinant of the matrix.
      */
-    public double determinant(){
+    public double determinant() {
         if (singular)
             return 0;
 
         final int m = pivot.size();
         double determinant = even ? 1 : -1;
 
-            for (int i = 0; i < m; i++)
-                determinant *= lu.getX(i, i);
+        for (int i = 0; i < m; i++)
+            determinant *= lu.getX(i, i);
 
         return determinant;
     }
 
     /** */
-    public Vector solve(Vector b){
+    public Vector solve(Vector b) {
         final int m = pivot.size();
 
         if (b.size() != m)
@@ -306,7 +311,7 @@ public class LUDecomposition extends DecompositionSupport {
     }
 
     /** */
-    public Matrix solve(Matrix b){
+    public Matrix solve(Matrix b) {
         final int m = pivot.size();
 
         if (b.rowSize() != m)
@@ -349,7 +354,7 @@ public class LUDecomposition extends DecompositionSupport {
 
             for (int i = 0; i < col; i++) {
                 final double[] bpI = bp[i];
-                final double luICol = lu.get(i,col);
+                final double luICol = lu.get(i, col);
 
                 for (int j = 0; j < nColB; j++)
                     bpI[j] -= bpCol[j] * luICol;

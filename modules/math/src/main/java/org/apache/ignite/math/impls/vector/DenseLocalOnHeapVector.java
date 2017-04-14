@@ -58,7 +58,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
         assert args != null;
 
         if (args.containsKey("size"))
-            setStorage(mkStorage((int) args.get("size")));
+            setStorage(mkStorage((int)args.get("size")));
         else if (args.containsKey("arr") && args.containsKey("copy"))
             setStorage(mkStorage((double[])args.get("arr"), (boolean)args.get("copy")));
         else

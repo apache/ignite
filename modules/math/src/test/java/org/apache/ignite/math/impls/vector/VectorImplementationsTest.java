@@ -39,12 +39,14 @@ import static org.junit.Assert.fail;
 
 /** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
 public class VectorImplementationsTest { // todo split this to smaller cohesive test classes
-    /** */ @Test
+    /** */
+    @Test
     public void vectorImplementationsFixturesTest() {
         new VectorImplementationsFixtures().selfTest();
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void setGetTest() {
         consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
             vec.set(idx, val);
@@ -53,7 +55,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         }));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void setXTest() {
         consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
             vec.setX(idx, val);
@@ -62,7 +65,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         }));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void incrementTest() {
         consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
             double old = vec.get(idx);
@@ -73,7 +77,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         }));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void incrementXTest() {
         consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
             double old = vec.getX(idx);
@@ -84,7 +89,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         }));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void operateXOutOfBoundsTest() {
         consumeSampleVectors((v, desc) -> {
             if (v instanceof DenseLocalOffHeapVector || v instanceof SparseLocalVector || v instanceof SparseLocalOffHeapVector)
@@ -94,7 +100,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
             try {
                 v.getX(-1);
-            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+            }
+            catch (ArrayIndexOutOfBoundsException | IgniteException e) {
                 expECaught = true;
             }
 
@@ -105,7 +112,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
             try {
                 v.setX(-1, 0);
-            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+            }
+            catch (ArrayIndexOutOfBoundsException | IgniteException e) {
                 expECaught = true;
             }
 
@@ -115,7 +123,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
             try {
                 v.incrementX(-1, 1);
-            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+            }
+            catch (ArrayIndexOutOfBoundsException | IgniteException e) {
                 expECaught = true;
             }
 
@@ -125,7 +134,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
             try {
                 v.getX(v.size());
-            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+            }
+            catch (ArrayIndexOutOfBoundsException | IgniteException e) {
                 expECaught = true;
             }
 
@@ -136,7 +146,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
             try {
                 v.setX(v.size(), 1);
-            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+            }
+            catch (ArrayIndexOutOfBoundsException | IgniteException e) {
                 expECaught = true;
             }
 
@@ -146,7 +157,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
             try {
                 v.incrementX(v.size(), 1);
-            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+            }
+            catch (ArrayIndexOutOfBoundsException | IgniteException e) {
                 expECaught = true;
             }
 
@@ -154,33 +166,38 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void sizeTest() {
         final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
         consumeSampleVectors(
             expSize::set,
             (v, desc) -> assertEquals("Expected size for " + desc,
-                (int) expSize.get(), v.size())
+                (int)expSize.get(), v.size())
         );
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void getElementTest() {
         consumeSampleVectors((v, desc) -> new ElementsChecker(v, desc).assertCloseEnough(v));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void copyTest() {
         consumeSampleVectors((v, desc) -> new ElementsChecker(v, desc).assertCloseEnough(v.copy()));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void divideTest() {
         operationTest((val, operand) -> val / operand, Vector::divide);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void likeTest() {
         for (int card : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
             consumeSampleVectors((v, desc) -> {
@@ -189,7 +206,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
                 if (expType == null) {
                     try {
                         v.like(card);
-                    } catch (UnsupportedOperationException uoe) {
+                    }
+                    catch (UnsupportedOperationException uoe) {
                         return;
                     }
 
@@ -208,35 +226,41 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
                 assertTrue("Actual vector type " + actualType.getSimpleName()
                         + " should be assignable from expected type " + expType.getSimpleName() + " in " + desc,
                     actualType.isAssignableFrom(expType));
-        });
+            });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void minusTest() {
         operationVectorTest((operand1, operand2) -> operand1 - operand2, Vector::minus);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void plusVectorTest() {
         operationVectorTest((operand1, operand2) -> operand1 + operand2, Vector::plus);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void plusDoubleTest() {
         operationTest((val, operand) -> val + operand, Vector::plus);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void timesVectorTest() {
         operationVectorTest((operand1, operand2) -> operand1 * operand2, Vector::times);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void timesDoubleTest() {
         operationTest((val, operand) -> val * operand, Vector::times);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void viewPartTest() {
         consumeSampleVectors((v, desc) -> {
             final int size = v.size();
@@ -251,36 +275,41 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void sumTest() {
         toDoubleTest(
             ref -> Arrays.stream(ref).sum(),
             Vector::sum);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void minValueTest() {
         toDoubleTest(
             ref -> Arrays.stream(ref).min().getAsDouble(),
             Vector::minValue);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void maxValueTest() {
         toDoubleTest(
             ref -> Arrays.stream(ref).max().getAsDouble(),
             Vector::maxValue);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void sortTest() {
         consumeSampleVectors((v, desc) -> {
-            if(readOnly(v) || !v.isArrayBased()) {
+            if (readOnly(v) || !v.isArrayBased()) {
                 boolean expECaught = false;
 
                 try {
                     v.sort();
-                } catch (UnsupportedOperationException uoe) {
+                }
+                catch (UnsupportedOperationException uoe) {
                     expECaught = true;
                 }
 
@@ -296,7 +325,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void metaAttributesTest() {
         consumeSampleVectors((v, desc) -> {
             assertNotNull("Null meta storage in " + desc, v.getMetaStorage());
@@ -315,7 +345,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void assignDoubleTest() {
         consumeSampleVectors((v, desc) -> {
             if (readOnly(v))
@@ -334,7 +365,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void assignDoubleArrTest() {
         consumeSampleVectors((v, desc) -> {
             if (readOnly(v))
@@ -356,7 +388,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void assignVectorTest() {
         consumeSampleVectors((v, desc) -> {
             if (readOnly(v))
@@ -378,7 +411,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void assignFunctionTest() {
         consumeSampleVectors((v, desc) -> {
             if (readOnly(v))
@@ -398,7 +432,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void minElementTest() {
         consumeSampleVectors((v, desc) -> {
             final ElementsChecker checker = new ElementsChecker(v, desc);
@@ -419,7 +454,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void maxElementTest() {
         consumeSampleVectors((v, desc) -> {
             final ElementsChecker checker = new ElementsChecker(v, desc);
@@ -458,8 +494,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
     /** */
     @Test
-    public void hashCodeTest(){
-        consumeSampleVectors((v, desc)-> assertTrue("Zero hash code for " + desc, v.hashCode() != 0));
+    public void hashCodeTest() {
+        consumeSampleVectors((v, desc) -> assertTrue("Zero hash code for " + desc, v.hashCode() != 0));
     }
 
     /** */
@@ -479,7 +515,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
             try {
                 operation.apply(v, 0, 1);
-            } catch (UnsupportedOperationException uoe) {
+            }
+            catch (UnsupportedOperationException uoe) {
                 expECaught = true;
             }
 
@@ -500,10 +537,10 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     }
 
     /** */
-    private Class<?extends Vector> expLikeType(Vector v) {
-        Class<?extends Vector> clazz = v.getClass();
+    private Class<? extends Vector> expLikeType(Vector v) {
+        Class<? extends Vector> clazz = v.getClass();
 
-        if(clazz.isAssignableFrom(PivotedVectorView.class) || clazz.isAssignableFrom(SingleElementVectorView.class))
+        if (clazz.isAssignableFrom(PivotedVectorView.class) || clazz.isAssignableFrom(SingleElementVectorView.class))
             return null;
 
         if (clazz.isAssignableFrom(MatrixVectorView.class) || clazz.isAssignableFrom(DelegatingVector.class))
@@ -553,7 +590,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
         try {
             v.assign(new double[v.size() + 1]);
-        } catch (CardinalityException ce) {
+        }
+        catch (CardinalityException ce) {
             expECaught = true;
         }
 
@@ -566,7 +604,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
         try {
             v.assign(new double[v.size() - 1]);
-        } catch (CardinalityException ce) {
+        }
+        catch (CardinalityException ce) {
             expECaught = true;
         }
 
@@ -579,7 +618,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
         try {
             v.assign(new DenseLocalOnHeapVector(v.size() + 1));
-        } catch (CardinalityException ce) {
+        }
+        catch (CardinalityException ce) {
             expECaught = true;
         }
 
@@ -592,7 +632,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
         try {
             v.assign(new DenseLocalOnHeapVector(v.size() - 1));
-        } catch (CardinalityException ce) {
+        }
+        catch (CardinalityException ce) {
             expECaught = true;
         }
 
@@ -606,7 +647,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
         try {
             vecOperation.apply(v, new DenseLocalOnHeapVector(v.size() + 1));
-        } catch (CardinalityException ce) {
+        }
+        catch (CardinalityException ce) {
             expECaught = true;
         }
 
@@ -619,7 +661,8 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
         try {
             vecOperation.apply(v, new DenseLocalOnHeapVector(v.size() - 1));
-        } catch (CardinalityException ce) {
+        }
+        catch (CardinalityException ce) {
             expECaught = true;
         }
 

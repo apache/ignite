@@ -35,18 +35,24 @@ import org.apache.ignite.math.Matrix;
  */
 public class SingularValueDecomposition extends DecompositionSupport {
     // U and V.
-    /** */ private final double[][] u;
-    /** */ private final double[][] v;
+    /** */
+    private final double[][] u;
+    /** */
+    private final double[][] v;
 
     /** Singular values. */
     private final double[] s;
 
-    /** Row dimension. */ private final int m;
-    /** Column dimension. */ private final int n;
+    /** Row dimension. */
+    private final int m;
+    /** Column dimension. */
+    private final int n;
 
-    /** */ private Matrix arg;
+    /** */
+    private Matrix arg;
 
-    /** */ private boolean transpositionNeeded;
+    /** */
+    private boolean transpositionNeeded;
 
     /**
      * Singular value decomposition object.
@@ -73,7 +79,8 @@ public class SingularValueDecomposition extends DecompositionSupport {
             for (int i = 0; i < m; i++)
                 for (int j = 0; j < n; j++)
                     a[i][j] = arg.get(j, i);
-        } else {
+        }
+        else {
             m = arg.rowSize();
             n = arg.columnSize();
 
@@ -212,7 +219,7 @@ public class SingularValueDecomposition extends DecompositionSupport {
         }
 
         for (int k = nct - 1; k >= 0; k--) {
-           if (s[k] != 0.0) {
+            if (s[k] != 0.0) {
                 for (int j = k + 1; j < nu; j++) {
                     double t = 0;
 
@@ -232,7 +239,8 @@ public class SingularValueDecomposition extends DecompositionSupport {
 
                 for (int i = 0; i < k - 1; i++)
                     u[i][k] = 0.0;
-            } else {
+            }
+            else {
                 for (int i = 0; i < m; i++)
                     u[i][k] = 0.0;
 
@@ -267,7 +275,7 @@ public class SingularValueDecomposition extends DecompositionSupport {
         int iter = 0;
 
         double eps = Math.pow(2.0, -52.0);
-        double tiny = Math.pow(2.0,-966.0);
+        double tiny = Math.pow(2.0, -966.0);
 
         while (p > 0) {
             int k;
@@ -295,8 +303,8 @@ public class SingularValueDecomposition extends DecompositionSupport {
                         break;
 
                     double t =
-                        (ks != p ?  Math.abs(e[ks]) : 0.) +
-                            (ks != k + 1 ?  Math.abs(e[ks-1]) : 0.);
+                        (ks != p ? Math.abs(e[ks]) : 0.) +
+                            (ks != k + 1 ? Math.abs(e[ks - 1]) : 0.);
 
                     if (Math.abs(s[ks]) <= tiny + eps * t) {
                         s[ks] = 0.0;
@@ -601,7 +609,7 @@ public class SingularValueDecomposition extends DecompositionSupport {
      * @param minSingularVal Value below which singular values are ignored.
      */
     Matrix getCovariance(double minSingularVal) {
-        Matrix j = like(arg, s.length,s.length);
+        Matrix j = like(arg, s.length, s.length);
         Matrix vMat = like(arg, v.length, v.length).assign(v);
 
         for (int i = 0; i < s.length; i++)

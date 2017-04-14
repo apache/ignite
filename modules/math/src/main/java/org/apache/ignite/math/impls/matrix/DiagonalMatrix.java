@@ -38,7 +38,6 @@ public class DiagonalMatrix extends AbstractMatrix {
     }
 
     /**
-     *
      * @param diagonal Backing {@link Vector}.
      */
     public DiagonalMatrix(Vector diagonal) {
@@ -46,7 +45,6 @@ public class DiagonalMatrix extends AbstractMatrix {
     }
 
     /**
-     *
      * @param mtx Backing {@link Matrix}.
      */
     public DiagonalMatrix(Matrix mtx) {
@@ -54,7 +52,6 @@ public class DiagonalMatrix extends AbstractMatrix {
     }
 
     /**
-     *
      * @param vals Backing array of values at diagonal.
      */
     public DiagonalMatrix(double[] vals) {
@@ -70,7 +67,6 @@ public class DiagonalMatrix extends AbstractMatrix {
     }
 
     /**
-     *
      * @param size Size of diagonal.
      * @param val Constant value at diagonal.
      */

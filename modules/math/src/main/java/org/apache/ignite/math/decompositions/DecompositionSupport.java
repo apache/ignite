@@ -36,7 +36,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @param matrix Matrix for like.
      * @return Like matrix.
      */
-    protected Matrix like(Matrix matrix){
+    protected Matrix like(Matrix matrix) {
         if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
         else
@@ -49,7 +49,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @param matrix Matrix for like.
      * @return Like matrix.
      */
-    protected Matrix like(Matrix matrix, int rows, int cols){
+    protected Matrix like(Matrix matrix, int rows, int cols) {
         if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapMatrix(rows, cols);
         else
@@ -63,7 +63,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @param crd Cardinality of the vector.
      * @return Like vector.
      */
-    protected Vector likeVector(Matrix matrix, int crd){
+    protected Vector likeVector(Matrix matrix, int crd) {
         if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapVector(crd);
         else
@@ -76,7 +76,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @param matrix Matrix for like.
      * @return Like vector.
      */
-    protected Vector likeVector(Matrix matrix){
+    protected Vector likeVector(Matrix matrix) {
         return likeVector(matrix, matrix.rowSize());
     }
 
@@ -86,14 +86,15 @@ public abstract class DecompositionSupport implements Destroyable {
      * @param matrix Matrix for copy.
      * @return Copy.
      */
-    protected Matrix copy(Matrix matrix){
-        if (isCopyLikeSupport(matrix)){
+    protected Matrix copy(Matrix matrix) {
+        if (isCopyLikeSupport(matrix)) {
             DenseLocalOnHeapMatrix cp = new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
 
             cp.assign(matrix);
 
             return cp;
-        } else
+        }
+        else
             return matrix.copy();
     }
 

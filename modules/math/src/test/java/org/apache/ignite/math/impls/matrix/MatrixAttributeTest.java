@@ -26,9 +26,9 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 /**
- *  Attribute tests for matrices.
+ * Attribute tests for matrices.
  *
- *  TODO: WIP
+ * TODO: WIP
  */
 public class MatrixAttributeTest {
     /** */
@@ -43,35 +43,40 @@ public class MatrixAttributeTest {
 
     /** */
     private final List<MatrixAttributeTest.Specification> specFixture = Arrays.asList(
-        new Specification(new DenseLocalOnHeapMatrix(1,1)),
-        new Specification(new DenseLocalOffHeapMatrix(1,1)),
-        new Specification(new RandomMatrix(1,1)),
+        new Specification(new DenseLocalOnHeapMatrix(1, 1)),
+        new Specification(new DenseLocalOffHeapMatrix(1, 1)),
+        new Specification(new RandomMatrix(1, 1)),
         new Specification(new DiagonalMatrix(new double[] {1.0})),
-        new Specification(new FunctionMatrix(1,1,(x, y) -> 1.0)),
-        new Specification(new SparseLocalOnHeapMatrix(1,1))
+        new Specification(new FunctionMatrix(1, 1, (x, y) -> 1.0)),
+        new Specification(new SparseLocalOnHeapMatrix(1, 1))
     );
 
-    /** */ @Test
+    /** */
+    @Test
     public void isDenseTest() {
         assertAttribute("isDense");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void isArrayBasedTest() {
         assertAttribute("isArrayBased");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void isSequentialAccessTest() {
         assertAttribute("isSequentialAccess");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void isRandomAccessTest() {
         assertAttribute("isRandomAccess");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void isDistributedTest() {
         assertAttribute("isDistributed");
     }
@@ -95,10 +100,14 @@ public class MatrixAttributeTest {
 
     /** See http://en.wikipedia.org/wiki/Specification_pattern */
     private static class Specification {
-        /** */ private final Matrix m;
-        /** */ private final Class<? extends Matrix> underlyingType;
-        /** */ private final List<String> attrsFromUnderlying;
-        /** */ final String desc;
+        /** */
+        private final Matrix m;
+        /** */
+        private final Class<? extends Matrix> underlyingType;
+        /** */
+        private final List<String> attrsFromUnderlying;
+        /** */
+        final String desc;
 
         /** */
         Specification(Matrix m, Class<? extends Matrix> underlyingType, String... attrsFromUnderlying) {
@@ -130,9 +139,12 @@ public class MatrixAttributeTest {
 
     /** */
     private static class AttrCfg {
-        /** */ final String name;
-        /** */ final Function<Matrix, Boolean> obtain;
-        /** */ final List<Class> trueInTypes;
+        /** */
+        final String name;
+        /** */
+        final Function<Matrix, Boolean> obtain;
+        /** */
+        final List<Class> trueInTypes;
 
         /** */
         AttrCfg(String name, Function<Matrix, Boolean> obtain, Class... trueInTypes) {

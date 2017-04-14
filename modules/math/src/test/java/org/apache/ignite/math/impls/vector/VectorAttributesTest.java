@@ -80,32 +80,38 @@ public class VectorAttributesTest {
             DenseLocalOffHeapVector.class, "isDense",
             "isRandomAccess", "isDistributed"));
 
-    /** */ @Test
+    /** */
+    @Test
     public void isDenseTest() {
         assertAttribute("isDense");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void isArrayBasedTest() {
         assertAttribute("isArrayBased");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void isSequentialAccessTest() {
         assertAttribute("isSequentialAccess");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void guidTest() {
         assertAttribute("guidNotNull");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void isRandomAccessTest() {
         assertAttribute("isRandomAccess");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void isDistributedTest() {
         assertAttribute("isDistributed");
     }
@@ -129,10 +135,14 @@ public class VectorAttributesTest {
 
     /** See http://en.wikipedia.org/wiki/Specification_pattern */
     private static class Specification {
-        /** */ private final Vector v;
-        /** */ private final Class<? extends Vector> underlyingType;
-        /** */ private final List<String> attrsFromUnderlying;
-        /** */ final String desc;
+        /** */
+        private final Vector v;
+        /** */
+        private final Class<? extends Vector> underlyingType;
+        /** */
+        private final List<String> attrsFromUnderlying;
+        /** */
+        final String desc;
 
         /** */
         Specification(Vector v, Class<? extends Vector> underlyingType, String... attrsFromUnderlying) {
@@ -164,9 +174,12 @@ public class VectorAttributesTest {
 
     /** */
     private static class AttrCfg {
-        /** */ final String name;
-        /** */ final Function<Vector, Boolean> obtain;
-        /** */ final List<Class> trueInTypes;
+        /** */
+        final String name;
+        /** */
+        final Function<Vector, Boolean> obtain;
+        /** */
+        final List<Class> trueInTypes;
 
         /** */
         AttrCfg(String name, Function<Vector, Boolean> obtain, Class... trueInTypes) {

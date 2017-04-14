@@ -27,7 +27,8 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class FunctionMatrixConstructorTest {
-    /** */ @Test
+    /** */
+    @Test
     public void invalidArgsTest() {
         DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new FunctionMatrix(0, 1, (i, j) -> 0.0),
             "Invalid row parameter.");
@@ -48,7 +49,8 @@ public class FunctionMatrixConstructorTest {
             "Invalid func parameter, with setter func.");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicTest() {
         for (int rows : new int[] {1, 2, 3})
             for (int cols : new int[] {1, 2, 3})
@@ -63,7 +65,7 @@ public class FunctionMatrixConstructorTest {
 
     /** */
     private void basicTest(int rows, int cols) {
-        double [][] data = new double[rows][cols];
+        double[][] data = new double[rows][cols];
 
         for (int row = 0; row < rows; row++)
             for (int col = 0; col < cols; col++)
@@ -82,7 +84,8 @@ public class FunctionMatrixConstructorTest {
 
                 try {
                     mReadOnly.set(row, col, 0.0);
-                } catch (UnsupportedOperationException uoe) {
+                }
+                catch (UnsupportedOperationException uoe) {
                     expECaught = true;
                 }
 

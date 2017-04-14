@@ -58,19 +58,19 @@ public final class Functions {
     public static final IgniteBiFunction<Double, Double, Double> LG = (a, b) -> Math.log(a) / Math.log(b);
 
     /** Function that returns {@code a + b}. */
-    public static final IgniteBiFunction<Double, Double, Double> PLUS = (a, b) ->  a + b;
+    public static final IgniteBiFunction<Double, Double, Double> PLUS = (a, b) -> a + b;
 
     /** Function that returns {@code a - b}. */
-    public static final IgniteBiFunction<Double, Double, Double> MINUS = (a, b) ->  a - b;
+    public static final IgniteBiFunction<Double, Double, Double> MINUS = (a, b) -> a - b;
 
     /** Function that returns {@code abs(a - b)}. */
-    public static final IgniteBiFunction<Double, Double, Double> MINUS_ABS = (a, b) ->  Math.abs(a - b);
+    public static final IgniteBiFunction<Double, Double, Double> MINUS_ABS = (a, b) -> Math.abs(a - b);
 
     /** Function that returns {@code max(abs(a), abs(b))}. */
-    public static final IgniteBiFunction<Double, Double, Double> MAX_ABS = (a, b) ->  Math.max(Math.abs(a), Math.abs(b));
+    public static final IgniteBiFunction<Double, Double, Double> MAX_ABS = (a, b) -> Math.max(Math.abs(a), Math.abs(b));
 
     /** Function that returns {@code min(abs(a), abs(b))}. */
-    public static final IgniteBiFunction<Double, Double, Double> MIN_ABS = (a, b) ->  Math.min(Math.abs(a), Math.abs(b));
+    public static final IgniteBiFunction<Double, Double, Double> MIN_ABS = (a, b) -> Math.min(Math.abs(a), Math.abs(b));
 
     /** Function that returns {@code Math.abs(a) + Math.abs(b)}. */
     public static final IgniteBiFunction<Double, Double, Double> PLUS_ABS = (a, b) -> Math.abs(a) + Math.abs(b);
@@ -89,7 +89,6 @@ public final class Functions {
      * Function that returns {@code a + b}. {@code a} is a variable, {@code b} is fixed.
      *
      * @param b
-     *
      */
     public static IgniteDoubleFunction<Double> plus(final double b) {
         return (a) -> a + b;
@@ -99,7 +98,6 @@ public final class Functions {
      * Function that returns {@code a * b}. {@code a} is a variable, {@code b} is fixed.
      *
      * @param b
-     *
      */
     public static IgniteDoubleFunction<Double> mult(final double b) {
         return (a) -> a * b;
@@ -127,9 +125,7 @@ public final class Functions {
     }
 
     /**
-     *
      * @param b
-     *
      */
     public static IgniteDoubleFunction<Double> pow(final double b) {
         return (a) -> {

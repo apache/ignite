@@ -46,7 +46,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     private IgniteCache<
         Integer /* Row or column index. */,
         Map<Integer, Double> /* Map-based row or column. */
-    > cache = null;
+        > cache = null;
 
     /**
      *
@@ -56,7 +56,6 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     }
 
     /**
-     *
      * @param rows Amount of rows in the matrix.
      * @param cols Amount of columns in the matrix.
      * @param stoMode Row or column based storage mode.
@@ -276,7 +275,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        SparseDistributedMatrixStorage that = (SparseDistributedMatrixStorage) obj;
+        SparseDistributedMatrixStorage that = (SparseDistributedMatrixStorage)obj;
 
         return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
             && (cache != null ? cache.equals(that.cache) : that.cache == null);

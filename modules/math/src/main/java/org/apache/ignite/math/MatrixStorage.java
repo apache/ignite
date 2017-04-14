@@ -24,7 +24,6 @@ import java.io.Externalizable;
  */
 public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destroyable {
     /**
-     *
      * @param x Matrix row index.
      * @param y Matrix column index.
      * @return Value corresponding to given row and column.
@@ -32,7 +31,6 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destro
     public double get(int x, int y);
 
     /**
-     *
      * @param x Matrix row index.
      * @param y Matrix column index.
      * @param v Value to set at given row and column.

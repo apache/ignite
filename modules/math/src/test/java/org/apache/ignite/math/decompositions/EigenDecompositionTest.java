@@ -30,23 +30,24 @@ import static org.junit.Assert.assertTrue;
  * Tests for {@link EigenDecomposition}
  */
 public class EigenDecompositionTest {
-    /** */ private static final double EPSILON = 1e-11;
+    /** */
+    private static final double EPSILON = 1e-11;
 
     /** */
     @Test
     public void testMatrixWithRealEigenvalues() {
         test(new double[][] {
-            {1.0d, 0.0d, 0.0d, 0.0d},
-            {0.0d, 1.0d, 0.0d, 0.0d},
-            {0.0d, 0.0d, 2.0d, 0.0d},
-            {1.0d, 1.0d, 0.0d, 2.0d}},
+                {1.0d, 0.0d, 0.0d, 0.0d},
+                {0.0d, 1.0d, 0.0d, 0.0d},
+                {0.0d, 0.0d, 2.0d, 0.0d},
+                {1.0d, 1.0d, 0.0d, 2.0d}},
             new double[] {1, 2, 2, 1});
     }
 
     /** */
     @Test
     public void testSymmetricMatrix() {
-        EigenDecomposition decomposition = new EigenDecomposition( new DenseLocalOnHeapMatrix(new double[][] {
+        EigenDecomposition decomposition = new EigenDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
             {1.0d, 0.0d, 0.0d, 1.0d},
             {0.0d, 1.0d, 0.0d, 1.0d},
             {0.0d, 0.0d, 2.0d, 0.0d},

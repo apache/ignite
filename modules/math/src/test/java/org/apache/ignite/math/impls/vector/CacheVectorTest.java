@@ -39,7 +39,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     /**
      * Default constructor.
      */
-    public CacheVectorTest(){
+    public CacheVectorTest() {
         super(false);
     }
 
@@ -79,7 +79,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testMap(){
+    public void testMap() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -94,7 +94,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testMapBiFunc(){
+    public void testMapBiFunc() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -109,7 +109,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testSum(){
+    public void testSum() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -125,7 +125,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testSumNegative(){
+    public void testSumNegative() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -134,13 +134,14 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             double d = cacheVector.sum();
             fail();
-        } catch (NullPointerException e){
+        }
+        catch (NullPointerException e) {
             // No-op.
         }
     }
 
     /** */
-    public void testAssign(){
+    public void testAssign() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -155,7 +156,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testAssignRange(){
+    public void testAssignRange() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -168,7 +169,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testAssignVector(){
+    public void testAssignVector() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -183,7 +184,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testAssignFunc(){
+    public void testAssignFunc() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -196,7 +197,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testPlus(){
+    public void testPlus() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -211,7 +212,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testPlusVec(){
+    public void testPlusVec() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -222,13 +223,14 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             cacheVector.plus(testVec);
             TestCase.fail();
-        } catch (UnsupportedOperationException ignored){
+        }
+        catch (UnsupportedOperationException ignored) {
 
         }
     }
 
     /** */
-    public void testDivide(){
+    public void testDivide() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int size = MathTestConstants.STORAGE_SIZE;
@@ -242,11 +244,11 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         cacheVector.divide(2d);
 
         for (int i = 0; i < size; i++)
-            assertEquals("Unexpected value.", cacheVector.get(i), 1d/2d, 0d);
+            assertEquals("Unexpected value.", cacheVector.get(i), 1d / 2d, 0d);
     }
 
     /** */
-    public void testTimes(){
+    public void testTimes() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int size = MathTestConstants.STORAGE_SIZE;
@@ -264,7 +266,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testTimesVector(){
+    public void testTimesVector() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -276,15 +278,15 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             cacheVector.times(testVec);
             TestCase.fail();
-        } catch (UnsupportedOperationException ignored){
+        }
+        catch (UnsupportedOperationException ignored) {
 
         }
-
 
     }
 
     /** */
-    public void testMin(){
+    public void testMin() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -298,7 +300,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testMax(){
+    public void testMax() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -308,11 +310,11 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
         cacheVector.assign(testVec);
 
-        assertEquals("Unexpected value.", cacheVector.maxValue(), testVec.get(size -1), 0d);
+        assertEquals("Unexpected value.", cacheVector.maxValue(), testVec.get(size - 1), 0d);
     }
 
     /** */
-    public void testLike(){
+    public void testLike() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -321,13 +323,14 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             cacheVector.like(size);
             TestCase.fail("Unsupported case");
-        } catch (UnsupportedOperationException ignored){
+        }
+        catch (UnsupportedOperationException ignored) {
 
         }
     }
 
     /** */
-    public void testLikeMatrix(){
+    public void testLikeMatrix() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -336,13 +339,14 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             cacheVector.likeMatrix(size, size);
             TestCase.fail("Unsupported case");
-        } catch (UnsupportedOperationException ignored){
+        }
+        catch (UnsupportedOperationException ignored) {
 
         }
     }
 
     /** */
-    public void testCopy(){
+    public void testCopy() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
@@ -351,7 +355,8 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             cacheVector.copy();
             TestCase.fail("Unsupported case");
-        } catch (UnsupportedOperationException ignored){
+        }
+        catch (UnsupportedOperationException ignored) {
 
         }
     }
@@ -373,14 +378,14 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         ByteArrayInputStream byteArrInputStream = new ByteArrayInputStream(byteArrOutputStream.toByteArray());
         ObjectInputStream objInputStream = new ObjectInputStream(byteArrInputStream);
 
-        CacheVector objRestored = (CacheVector) objInputStream.readObject();
+        CacheVector objRestored = (CacheVector)objInputStream.readObject();
 
         assertTrue(MathTestConstants.VALUE_NOT_EQUALS, cacheVector.equals(objRestored));
         assertEquals(MathTestConstants.VALUE_NOT_EQUALS, objRestored.get(1), 1.0, 0.0);
     }
 
     /** */
-    private void initVector(CacheVector cacheVector){
+    private void initVector(CacheVector cacheVector) {
         for (int i = 0; i < cacheVector.size(); i++)
             cacheVector.set(i, 0d);
     }
@@ -398,7 +403,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         return cache;
     }
 
-    private static class TestKeyMapper implements VectorKeyMapper<Integer>{
+    private static class TestKeyMapper implements VectorKeyMapper<Integer> {
         @Override public Integer apply(int i) {
             return i;
         }

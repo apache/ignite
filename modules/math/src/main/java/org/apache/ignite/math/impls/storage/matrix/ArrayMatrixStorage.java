@@ -42,7 +42,6 @@ public class ArrayMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param rows Amount of rows in the matrix.
      * @param cols Amount of columns in the matrix.
      */
@@ -56,7 +55,6 @@ public class ArrayMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param data Backing data array.
      */
     public ArrayMatrixStorage(double[][] data) {

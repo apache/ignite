@@ -45,7 +45,6 @@ public class RandomMatrix extends AbstractMatrix {
     }
 
     /**
-     *
      * @param rows Amount of rows in the matrix.
      * @param cols Amount of columns in the matrix.
      * @param fastHash Whether fast hash is used.
@@ -55,7 +54,6 @@ public class RandomMatrix extends AbstractMatrix {
     }
 
     /**
-     *
      * @param rows Amount of rows in the matrix.
      * @param cols Amount of columns in the matrix.
      */

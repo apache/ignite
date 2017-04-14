@@ -41,7 +41,6 @@ public class MatrixVectorView extends AbstractVector {
     }
 
     /**
-     *
      * @param parent
      * @param row
      * @param col
@@ -125,12 +124,12 @@ public class MatrixVectorView extends AbstractVector {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        MatrixVectorView that = (MatrixVectorView) o;
+        MatrixVectorView that = (MatrixVectorView)o;
 
         return (parent != null ? parent.equals(that.parent) : that.parent == null) &&
             row == that.row &&
             col == that.col &&
-            rowStride == that.rowStride&&
+            rowStride == that.rowStride &&
             colStride == that.colStride;
     }
 }

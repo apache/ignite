@@ -226,11 +226,11 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * Folds this matrix into a single value.
      *
      * @param foldFun Folding function that takes two parameters: accumulator and the current value.
-     * @param mapFun Mapping function that is called on each matrix cell before its passed to the accumulator
-     *      (as its second parameter).
-     * @return Folded value of this matrix.
+     * @param mapFun Mapping function that is called on each matrix cell before its passed to the accumulator (as its
+     * second parameter).
      * @param <T> Type of the folded value.
      * @param zeroVal Zero value for fold function.
+     * @return Folded value of this matrix.
      */
     <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal);
 
@@ -238,8 +238,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * Calculates the density of the matrix based on supplied criteria.
      * Returns {@code true} if this matrix is denser than threshold with at least 80% confidence.
      *
-     * @param threshold the threshold value [0, 1] of non-zero elements above
-     *      which the matrix is considered dense.
+     * @param threshold the threshold value [0, 1] of non-zero elements above which the matrix is considered dense.
      */
     boolean density(double threshold);
 
@@ -376,7 +375,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param col Column index.
      * @param val Value to set.
      * @return This matrix.
-     * @throws IndexException  Thrown in case of either index is out of bound.
+     * @throws IndexException Thrown in case of either index is out of bound.
      */
     Matrix set(int row, int col, double val);
 
@@ -386,7 +385,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param row Row index.
      * @param data Row data to set.
      * @return This matrix.
-     * @throws IndexException  Thrown in case of index is out of bound.
+     * @throws IndexException Thrown in case of index is out of bound.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     Matrix setRow(int row, double[] data);
@@ -397,7 +396,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param col Column index.
      * @param data Column data to set.
      * @return This matrix.
-     * @throws IndexException  Thrown in case of index is out of bound.
+     * @throws IndexException Thrown in case of index is out of bound.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     Matrix setColumn(int col, double[] data);
@@ -423,7 +422,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Creates new matrix that is the product of multiplying this matrix and the argument matrix.
-     * 
+     *
      * @param mtx Argument matrix.
      * @return New matrix.
      * @throws CardinalityException Thrown if cardinalities mismatch.
@@ -513,7 +512,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Destroys matrix if managed outside of JVM. It's a no-op in all other cases.
      */
-    default void destroy(){
+    default void destroy() {
         // No-op.
     }
 }

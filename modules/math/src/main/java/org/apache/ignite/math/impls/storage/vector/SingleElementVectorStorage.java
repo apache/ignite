@@ -39,7 +39,6 @@ public class SingleElementVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param size
      * @param idx
      * @param val
@@ -114,7 +113,7 @@ public class SingleElementVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SingleElementVectorStorage that = (SingleElementVectorStorage) o;
+        SingleElementVectorStorage that = (SingleElementVectorStorage)o;
 
         return idx == that.idx && Double.compare(that.val, val) == 0 && size == that.size;
     }
@@ -124,7 +123,7 @@ public class SingleElementVectorStorage implements VectorStorage {
         int res = idx;
         long temp = Double.doubleToLongBits(val);
 
-        res = 31 * res + (int) (temp ^ (temp >>> 32));
+        res = 31 * res + (int)(temp ^ (temp >>> 32));
         res = 31 * res + size;
 
         return res;

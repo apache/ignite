@@ -24,9 +24,11 @@ import static org.junit.Assert.assertEquals;
 
 /** */
 public class DelegatingVectorConstructorTest {
-    /** */ private static final int IMPOSSIBLE_SIZE = -1;
+    /** */
+    private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicTest() {
         final Vector parent = new DenseLocalOnHeapVector(new double[] {0, 1});
 

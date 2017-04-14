@@ -40,7 +40,7 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix implements StorageCo
      *
      * By default storage sets in row optimized mode and in random access mode.
      */
-    public SparseLocalOnHeapMatrix(int rows, int cols){
+    public SparseLocalOnHeapMatrix(int rows, int cols) {
         setStorage(mkStorage(rows, cols));
     }
 
@@ -67,6 +67,6 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix implements StorageCo
 
         cp.assign(this);
 
-        return  cp;
+        return cp;
     }
 }

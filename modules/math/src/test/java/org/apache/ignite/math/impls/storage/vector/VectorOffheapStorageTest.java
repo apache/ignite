@@ -64,7 +64,7 @@ public class VectorOffheapStorageTest extends VectorBaseStorageTest<DenseLocalOf
 
     /** */
     @Test
-    public void equalsTest(){
+    public void equalsTest() {
         assertTrue(MathTestConstants.VALUE_NOT_EQUALS, storage.equals(storage));
 
         assertFalse(MathTestConstants.VALUES_SHOULD_BE_NOT_EQUALS, storage.equals(new ArrayVectorStorage(MathTestConstants.STORAGE_SIZE)));

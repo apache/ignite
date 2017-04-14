@@ -24,7 +24,8 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class MathBenchmarkSelfTest {
-    /** */ @Test
+    /** */
+    @Test
     @Ignore("Benchmark tests are intended only for manual execution")
     public void demoTest() throws Exception {
         for (int i = 0; i < 2; i++)
@@ -43,7 +44,8 @@ public class MathBenchmarkSelfTest {
                 });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     @Ignore("Benchmark tests are intended only for manual execution")
     public void configTest() throws Exception {
         new MathBenchmark("demo config test")
@@ -55,7 +57,8 @@ public class MathBenchmarkSelfTest {
             .execute(() -> System.out.println("config test"));
     }
 
-    /** */ @Test(expected = IllegalArgumentException.class)
+    /** */
+    @Test(expected = IllegalArgumentException.class)
     @Ignore("Benchmark tests are intended only for manual execution")
     public void emptyNameTest() throws Exception {
         new MathBenchmark("")
@@ -67,25 +70,29 @@ public class MathBenchmarkSelfTest {
             .execute(() -> System.out.println("empty name test"));
     }
 
-    /** */ @Test(expected = IllegalArgumentException.class)
+    /** */
+    @Test(expected = IllegalArgumentException.class)
     @Ignore("Benchmark tests are intended only for manual execution")
     public void nullDropboxPathTest() throws Exception {
         new ResultsWriter(null, "whatever", "whatever");
     }
 
-    /** */ @Test(expected = IllegalArgumentException.class)
+    /** */
+    @Test(expected = IllegalArgumentException.class)
     @Ignore("Benchmark tests are intended only for manual execution")
     public void nullDropboxUrlTest() throws Exception {
         new ResultsWriter("whatever", null, "whatever");
     }
 
-    /** */ @Test(expected = IllegalArgumentException.class)
+    /** */
+    @Test(expected = IllegalArgumentException.class)
     @Ignore("Benchmark tests are intended only for manual execution")
     public void nullDropboxTokenTest() throws Exception {
         new ResultsWriter("whatever", "whatever", null);
     }
 
-    /** */ @Test(expected = IllegalArgumentException.class)
+    /** */
+    @Test(expected = IllegalArgumentException.class)
     @Ignore("Benchmark tests are intended only for manual execution")
     public void nullResultsTest() throws Exception {
         new ResultsWriter("whatever", "whatever", "whatever").append(null);

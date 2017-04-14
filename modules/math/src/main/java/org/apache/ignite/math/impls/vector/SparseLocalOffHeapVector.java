@@ -29,10 +29,9 @@ import org.apache.ignite.math.impls.storage.vector.SparseLocalOffHeapVectorStora
  */
 public class SparseLocalOffHeapVector extends AbstractVector {
     /**
-     *
      * @param crd Vector cardinality.
      */
-    public SparseLocalOffHeapVector(int crd){
+    public SparseLocalOffHeapVector(int crd) {
         setStorage(new SparseLocalOffHeapVectorStorage(crd));
     }
 

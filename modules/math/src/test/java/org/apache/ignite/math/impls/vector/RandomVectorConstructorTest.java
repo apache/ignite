@@ -29,17 +29,22 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class RandomVectorConstructorTest {
-    /** */ private static final int IMPOSSIBLE_SIZE = -1;
+    /** */
+    private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ @Test(expected = org.apache.ignite.math.exceptions.UnsupportedOperationException.class)
+    /** */
+    @Test(expected = org.apache.ignite.math.exceptions.UnsupportedOperationException.class)
     public void mapInvalidArgsTest() {
         assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
-            new RandomVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
+            new RandomVector(new HashMap<String, Object>() {{
+                put("invalid", 99);
+            }}).size());
     }
 
-    /** */ @Test(expected = UnsupportedOperationException.class)
+    /** */
+    @Test(expected = UnsupportedOperationException.class)
     public void mapMissingArgsTest() {
-        final Map<String, Object> test = new HashMap<String, Object>(){{
+        final Map<String, Object> test = new HashMap<String, Object>() {{
             put("paramMissing", "whatever");
         }};
 
@@ -47,9 +52,10 @@ public class RandomVectorConstructorTest {
             -1, new RandomVector(test).size());
     }
 
-    /** */ @Test(expected = ClassCastException.class)
+    /** */
+    @Test(expected = ClassCastException.class)
     public void mapInvalidParamTypeTest() {
-        final Map<String, Object> test = new HashMap<String, Object>(){{
+        final Map<String, Object> test = new HashMap<String, Object>() {{
             put("size", "whatever");
             put("fastHash", true);
         }};
@@ -58,40 +64,46 @@ public class RandomVectorConstructorTest {
             new RandomVector(test).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void mapNullTest() {
         //noinspection ConstantConditions
         assertEquals("Null map args.", IMPOSSIBLE_SIZE,
             new RandomVector(null).size());
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void mapTest() {
         assertEquals("Size from args.", 99,
-            new RandomVector(new HashMap<String, Object>(){{ put("size", 99); }}).size());
+            new RandomVector(new HashMap<String, Object>() {{
+                put("size", 99);
+            }}).size());
 
         final int test = 99;
 
         assertEquals("Size from args with fastHash false.", test,
-            new RandomVector(new HashMap<String, Object>(){{
+            new RandomVector(new HashMap<String, Object>() {{
                 put("size", test);
                 put("fastHash", false);
             }}).size());
 
         assertEquals("Size from args with fastHash true.", test,
-            new RandomVector(new HashMap<String, Object>(){{
+            new RandomVector(new HashMap<String, Object>() {{
                 put("size", test);
                 put("fastHash", true);
             }}).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new RandomVector(-1).size());
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicTest() {
         final int basicSize = 3;
 

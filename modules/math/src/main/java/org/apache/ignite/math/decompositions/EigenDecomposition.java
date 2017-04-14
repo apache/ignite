@@ -61,7 +61,8 @@ public class EigenDecomposition extends DecompositionSupport {
             // Diagonalize.
             tql2();
 
-        } else
+        }
+        else
             // Reduce to Hessenberg form.
             // Reduce Hessenberg to real Schur form.
             hqr2(orthes(matrix));
@@ -373,7 +374,8 @@ public class EigenDecomposition extends DecompositionSupport {
 
                     // Check for convergence.
 
-                } while (Math.abs(e.getX(l)) > eps * tst1);
+                }
+                while (Math.abs(e.getX(l)) > eps * tst1);
             }
 
             d.setX(l, d.getX(l) + f);
@@ -521,7 +523,8 @@ public class EigenDecomposition extends DecompositionSupport {
 
                     // Complex pair
 
-                } else {
+                }
+                else {
                     d.setX(n - 1, x + p);
                     d.setX(n, x + p);
                     e.setX(n - 1, z);
@@ -533,7 +536,8 @@ public class EigenDecomposition extends DecompositionSupport {
 
                 // No convergence yet
 
-            } else {
+            }
+            else {
                 // Form shift
                 x = h.getX(n, n);
                 y = 0.0;
@@ -879,7 +883,7 @@ public class EigenDecomposition extends DecompositionSupport {
     /** */
     private static boolean isSymmetric(Matrix matrix) {
         int cols = matrix.columnSize();
-        int rows  = matrix.rowSize();
+        int rows = matrix.rowSize();
 
         if (cols != rows)
             return false;

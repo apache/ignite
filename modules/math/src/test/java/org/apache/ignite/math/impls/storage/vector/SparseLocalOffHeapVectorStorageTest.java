@@ -37,26 +37,28 @@ public class SparseLocalOffHeapVectorStorageTest extends ExternalizeTest<SparseL
 
     /** */
     @Before
-    public void setup(){
+    public void setup() {
         testVectorStorage = new SparseLocalOffHeapVectorStorage(STORAGE_SIZE);
     }
 
     /** */
     @After
-    public void teardown(){
+    public void teardown() {
         testVectorStorage.destroy();
         testVectorStorage = null;
     }
 
     /** */
     @Test
-    public void testBasic(){
+    public void testBasic() {
         for (int i = 0; i < STORAGE_SIZE; i++) {
             double testVal = Math.random();
             testVectorStorage.set(i, testVal);
-            assertEquals(UNEXPECTED_VALUE,testVal, testVectorStorage.get(i), 0d);
+            assertEquals(UNEXPECTED_VALUE, testVal, testVectorStorage.get(i), 0d);
         }
-    };
+    }
+
+    ;
 
     /** */
     @Override
@@ -67,7 +69,7 @@ public class SparseLocalOffHeapVectorStorageTest extends ExternalizeTest<SparseL
 
     /** */
     @Test
-    public void testAttributes(){
+    public void testAttributes() {
         SparseLocalOffHeapVectorStorage testVectorStorage = new SparseLocalOffHeapVectorStorage(STORAGE_SIZE);
 
         assertTrue(UNEXPECTED_VALUE, testVectorStorage.isRandomAccess());

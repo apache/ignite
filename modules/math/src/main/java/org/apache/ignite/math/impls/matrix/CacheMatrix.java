@@ -38,10 +38,10 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     public CacheMatrix() {
         // No-op.
     }
-    
+
     /**
      * Creates new matrix over existing cache.
-     * 
+     *
      * @param rows
      * @param cols
      * @param cache
@@ -59,7 +59,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         assert cache != null;
         assert keyMapper != null;
         assert valMapper != null;
-        
+
         setStorage(new CacheMatrixStorage<K, V>(rows, cols, cache, keyMapper, valMapper));
     }
 
@@ -91,7 +91,6 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * Return the same matrix with updates values (broken contract).
      *
      * @param d
-     *
      */
     @Override public Matrix divide(double d) {
         return mapOverValues((Double v) -> v / d);
@@ -101,7 +100,6 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * Return the same matrix with updates values (broken contract).
      *
      * @param x
-     *
      */
     @Override public Matrix plus(double x) {
         return mapOverValues((Double v) -> v + x);
@@ -111,7 +109,6 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * Return the same matrix with updates values (broken contract).
      *
      * @param x
-     *
      */
     @Override public Matrix times(double x) {
         return mapOverValues((Double v) -> v * x);
@@ -149,9 +146,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     }
 
     /**
-     * 
      * @param mapper
-     *
      */
     private Matrix mapOverValues(IgniteFunction<Double, Double> mapper) {
         CacheMatrixStorage<K, V> sto = storage();

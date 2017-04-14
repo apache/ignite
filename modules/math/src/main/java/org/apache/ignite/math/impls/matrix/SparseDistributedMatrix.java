@@ -55,7 +55,6 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     }
 
     /**
-     *
      * @param rows
      * @param cols
      * @param stoMode
@@ -82,7 +81,6 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      * Return the same matrix with updates values (broken contract).
      *
      * @param d
-     *
      */
     @Override public Matrix divide(double d) {
         return mapOverValues((Double v) -> v / d);
@@ -92,7 +90,6 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      * Return the same matrix with updates values (broken contract).
      *
      * @param x
-     *
      */
     @Override public Matrix plus(double x) {
         return mapOverValues((Double v) -> v + x);
@@ -102,7 +99,6 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      * Return the same matrix with updates values (broken contract).
      *
      * @param x
-     *
      */
     @Override public Matrix times(double x) {
         return mapOverValues((Double v) -> v * x);
@@ -119,9 +115,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     }
 
     /**
-     *
      * @param mapper
-     *
      */
     private Matrix mapOverValues(IgniteFunction<Double, Double> mapper) {
         CacheUtils.sparseMap(storage().cache().getName(), mapper);

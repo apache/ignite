@@ -46,18 +46,18 @@ import static org.junit.Assert.assertNotNull;
 class VectorImplementationsFixtures {
     /** */
     private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
-        (Supplier<Iterable<Vector>>) DenseLocalOnHeapVectorFixture::new,
-        (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
-        (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
-        (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
-        (Supplier<Iterable<Vector>>) ConstantVectorFixture::new,
-        (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new,
-        (Supplier<Iterable<Vector>>) FunctionVectorFixture::new,
-        (Supplier<Iterable<Vector>>) SingleElementVectorFixture::new,
-        (Supplier<Iterable<Vector>>) PivotedVectorViewFixture::new,
-        (Supplier<Iterable<Vector>>) SingleElementVectorViewFixture::new,
-        (Supplier<Iterable<Vector>>) MatrixVectorViewFixture::new,
-        (Supplier<Iterable<Vector>>) SparseLocalOffHeapVectorFixture::new
+        (Supplier<Iterable<Vector>>)DenseLocalOnHeapVectorFixture::new,
+        (Supplier<Iterable<Vector>>)DenseLocalOffHeapVectorFixture::new,
+        (Supplier<Iterable<Vector>>)SparseLocalVectorFixture::new,
+        (Supplier<Iterable<Vector>>)RandomVectorFixture::new,
+        (Supplier<Iterable<Vector>>)ConstantVectorFixture::new,
+        (Supplier<Iterable<Vector>>)DelegatingVectorFixture::new,
+        (Supplier<Iterable<Vector>>)FunctionVectorFixture::new,
+        (Supplier<Iterable<Vector>>)SingleElementVectorFixture::new,
+        (Supplier<Iterable<Vector>>)PivotedVectorViewFixture::new,
+        (Supplier<Iterable<Vector>>)SingleElementVectorViewFixture::new,
+        (Supplier<Iterable<Vector>>)MatrixVectorViewFixture::new,
+        (Supplier<Iterable<Vector>>)SparseLocalOffHeapVectorFixture::new
     );
 
     /** */
@@ -102,7 +102,7 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class SparseLocalVectorFixture  extends VectorSizesExtraFixture<Integer> {
+    private static class SparseLocalVectorFixture extends VectorSizesExtraFixture<Integer> {
         /** */
         SparseLocalVectorFixture() {
             super("SparseLocalVector", SparseLocalVector::new, "access mode",
@@ -142,7 +142,8 @@ class VectorImplementationsFixtures {
         /** */
         private final Supplier<TwoParamsIterator<Integer, Double>> iter;
 
-        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+        /** */
+        private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
         /** */
         SingleElementVectorFixture() {
@@ -208,7 +209,8 @@ class VectorImplementationsFixtures {
         /** */
         private final Supplier<TwoParamsIterator<Integer, Double>> iter;
 
-        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+        /** */
+        private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
         /** */
         SingleElementVectorViewFixture() {
@@ -259,7 +261,8 @@ class VectorImplementationsFixtures {
         /** */
         private final Supplier<VectorSizesExtraIterator<T>> iter;
 
-        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+        /** */
+        private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
         /** */
         VectorSizesExtraFixture(String vectorKind, BiFunction<Integer, T, Vector> ctor, String extraParamName,
@@ -282,9 +285,11 @@ class VectorImplementationsFixtures {
 
     /** */
     private static abstract class VectorSizesFixture implements Iterable<Vector> {
-        /** */ private final Supplier<VectorSizesIterator> iter;
+        /** */
+        private final Supplier<VectorSizesIterator> iter;
 
-        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+        /** */
+        private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
         /** */
         VectorSizesFixture(String vectorKind, Function<Integer, Vector> ctor) {
@@ -306,13 +311,17 @@ class VectorImplementationsFixtures {
 
     /** */
     private static class VectorSizesExtraIterator<T> extends VectorSizesIterator {
-        /** */ private final T[] extras;
-        /** */ private int extraIdx = 0;
-        /** */ private final BiFunction<Integer, T, Vector> ctor;
-        /** */ private final String extraParamName;
+        /** */
+        private final T[] extras;
+        /** */
+        private int extraIdx = 0;
+        /** */
+        private final BiFunction<Integer, T, Vector> ctor;
+        /** */
+        private final String extraParamName;
 
         /**
-         *  @param vectorKind Descriptive name to use for context logging.
+         * @param vectorKind Descriptive name to use for context logging.
          * @param ctor Constructor for objects to iterate over.
          * @param ctxDescrConsumer Context logging consumer.
          * @param extraParamName Name of extra parameter to iterate over.
@@ -390,7 +399,8 @@ class VectorImplementationsFixtures {
 
     /** */
     private static class VectorSizesIterator extends TwoParamsIterator<Integer, Integer> {
-        /** */ private final Function<Integer, Vector> ctor;
+        /** */
+        private final Function<Integer, Vector> ctor;
 
         /** */
         VectorSizesIterator(String vectorKind, Function<Integer, Vector> ctor, Consumer<String> ctxDescrConsumer) {
@@ -402,28 +412,39 @@ class VectorImplementationsFixtures {
         }
 
         /** {@inheritDoc} */
-        @Override BiFunction<Integer, Integer, Vector> ctor() { return (size, delta) -> ctor.apply(size + delta); }
+        @Override BiFunction<Integer, Integer, Vector> ctor() {
+            return (size, delta) -> ctor.apply(size + delta);
+        }
     }
 
     /** */
     private static class TwoParamsIterator<T, U> implements Iterator<Vector> {
-        /** */ private final T params1[];
+        /** */
+        private final T params1[];
 
-        /** */ private final U params2[];
+        /** */
+        private final U params2[];
 
-        /** */ private final String vectorKind;
+        /** */
+        private final String vectorKind;
 
-        /** */ private final String param1Name;
+        /** */
+        private final String param1Name;
 
-        /** */ private final String param2Name;
+        /** */
+        private final String param2Name;
 
-        /** */ private final BiFunction<T, U, Vector> ctor;
+        /** */
+        private final BiFunction<T, U, Vector> ctor;
 
-        /** */ private final Consumer<String> ctxDescrConsumer;
+        /** */
+        private final Consumer<String> ctxDescrConsumer;
 
-        /** */ private int param1Idx = 0;
+        /** */
+        private int param1Idx = 0;
 
-        /** */ private int param2Idx = 0;
+        /** */
+        private int param2Idx = 0;
 
         /** */
         TwoParamsIterator(String vectorKind, BiFunction<T, U, Vector> ctor,
@@ -512,7 +533,9 @@ class VectorImplementationsFixtures {
         }
 
         /** IMPL NOTE override in subclasses if needed */
-        BiFunction<T, U, Vector> ctor() { return ctor; }
+        BiFunction<T, U, Vector> ctor() {
+            return ctor;
+        }
 
         /** */
         private boolean hasNextParam1(int idx) {
@@ -528,9 +551,11 @@ class VectorImplementationsFixtures {
     /** Delegating vector with dense local onheap vector */
     private static class DelegatingVectorFixture implements Iterable<Vector> {
 
-        /** */ private final Supplier<VectorSizesExtraIterator<Boolean>> iter;
+        /** */
+        private final Supplier<VectorSizesExtraIterator<Boolean>> iter;
 
-        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+        /** */
+        private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
         /** */
         DelegatingVectorFixture() {
@@ -554,9 +579,11 @@ class VectorImplementationsFixtures {
 
     /** Subclass tweaked for serialization */
     private static class FunctionVectorForTest extends FunctionVector {
-        /** */ double[] arr;
+        /** */
+        double[] arr;
 
-        /** */ double scale;
+        /** */
+        double scale;
 
         /** */
         public FunctionVectorForTest() {
@@ -610,7 +637,7 @@ class VectorImplementationsFixtures {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            FunctionVectorForTest that = (FunctionVectorForTest) o;
+            FunctionVectorForTest that = (FunctionVectorForTest)o;
 
             return new Double(scale).equals(that.scale)
                 && (arr != null ? Arrays.equals(arr, that.arr) : that.arr == null);
@@ -618,7 +645,7 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class SparseLocalOffHeapVectorFixture extends VectorSizesFixture{
+    private static class SparseLocalOffHeapVectorFixture extends VectorSizesFixture {
 
         /** */
         SparseLocalOffHeapVectorFixture() {

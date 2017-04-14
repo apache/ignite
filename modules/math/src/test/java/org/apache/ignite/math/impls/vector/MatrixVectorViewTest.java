@@ -14,21 +14,25 @@ import static org.junit.Assert.assertTrue;
  * Tests for {@link MatrixVectorView}.
  */
 public class MatrixVectorViewTest {
-    /** */ private static final String UNEXPECTED_VALUE = "Unexpected value";
-    /** */ private static final int SMALL_SIZE = 3;
-    /** */ private static final int IMPOSSIBLE_SIZE = -1;
+    /** */
+    private static final String UNEXPECTED_VALUE = "Unexpected value";
+    /** */
+    private static final int SMALL_SIZE = 3;
+    /** */
+    private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ private Matrix parent;
+    /** */
+    private Matrix parent;
 
     /** */
     @Before
-    public void setup(){
+    public void setup() {
         parent = newMatrix(SMALL_SIZE, SMALL_SIZE);
     }
 
     /** */
     @Test
-    public void testDiagonal(){
+    public void testDiagonal() {
         Vector vector = parent.viewDiagonal();
 
         for (int i = 0; i < SMALL_SIZE; i++)
@@ -37,7 +41,7 @@ public class MatrixVectorViewTest {
 
     /** */
     @Test
-    public void testRow(){
+    public void testRow() {
         for (int i = 0; i < SMALL_SIZE; i++) {
             Vector viewRow = parent.viewRow(i);
 
@@ -48,7 +52,7 @@ public class MatrixVectorViewTest {
 
     /** */
     @Test
-    public void testCols(){
+    public void testCols() {
         for (int i = 0; i < SMALL_SIZE; i++) {
             Vector viewCol = parent.viewColumn(i);
 
@@ -67,73 +71,83 @@ public class MatrixVectorViewTest {
                         for (int rowStride = 0; rowStride < rowSize; rowStride++)
                             for (int colStride = 0; colStride < colSize; colStride++)
                                 if (rowStride != 0 || colStride != 0)
-                                    assertMatrixVectorView(newMatrix(rowSize,colSize), row, col, rowStride, colStride);
+                                    assertMatrixVectorView(newMatrix(rowSize, colSize), row, col, rowStride, colStride);
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void parentNullTest() {
         //noinspection ConstantConditions
         assertEquals(IMPOSSIBLE_SIZE,
             new MatrixVectorView(null, 1, 1, 1, 1).size());
     }
 
-    /** */ @Test(expected = IndexException.class)
+    /** */
+    @Test(expected = IndexException.class)
     public void rowNegativeTest() {
         //noinspection ConstantConditions
         assertEquals(IMPOSSIBLE_SIZE,
             new MatrixVectorView(parent, -1, 1, 1, 1).size());
     }
 
-    /** */ @Test(expected = IndexException.class)
+    /** */
+    @Test(expected = IndexException.class)
     public void colNegativeTest() {
         //noinspection ConstantConditions
         assertEquals(IMPOSSIBLE_SIZE,
             new MatrixVectorView(parent, 1, -1, 1, 1).size());
     }
 
-    /** */ @Test(expected = IndexException.class)
+    /** */
+    @Test(expected = IndexException.class)
     public void rowTooLargeTest() {
         //noinspection ConstantConditions
         assertEquals(IMPOSSIBLE_SIZE,
             new MatrixVectorView(parent, parent.rowSize() + 1, 1, 1, 1).size());
     }
 
-    /** */ @Test(expected = IndexException.class)
+    /** */
+    @Test(expected = IndexException.class)
     public void colTooLargeTest() {
         //noinspection ConstantConditions
         assertEquals(IMPOSSIBLE_SIZE,
             new MatrixVectorView(parent, 1, parent.columnSize() + 1, 1, 1).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void rowStrideNegativeTest() {
         //noinspection ConstantConditions
         assertEquals(IMPOSSIBLE_SIZE,
             new MatrixVectorView(parent, 1, 1, -1, 1).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void colStrideNegativeTest() {
         //noinspection ConstantConditions
         assertEquals(IMPOSSIBLE_SIZE,
             new MatrixVectorView(parent, 1, 1, 1, -1).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void rowStrideTooLargeTest() {
         //noinspection ConstantConditions
         assertEquals(IMPOSSIBLE_SIZE,
             new MatrixVectorView(parent, 1, 1, parent.rowSize() + 1, 1).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void colStrideTooLargeTest() {
         //noinspection ConstantConditions
         assertEquals(IMPOSSIBLE_SIZE,
             new MatrixVectorView(parent, 1, 1, 1, parent.columnSize() + 1).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void bothStridesZeroTest() {
         //noinspection ConstantConditions
         assertEquals(IMPOSSIBLE_SIZE,
@@ -168,8 +182,8 @@ public class MatrixVectorViewTest {
     private Matrix newMatrix(int rowSize, int colSize) {
         Matrix res = new DenseLocalOnHeapMatrix(rowSize, colSize);
 
-        for(int i = 0; i < res.rowSize(); i++)
-            for(int j = 0; j < res.columnSize(); j++)
+        for (int i = 0; i < res.rowSize(); i++)
+            for (int j = 0; j < res.columnSize(); j++)
                 res.set(i, j, i * res.rowSize() + j);
 
         return res;

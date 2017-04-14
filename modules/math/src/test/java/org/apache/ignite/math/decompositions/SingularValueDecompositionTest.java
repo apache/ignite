@@ -31,9 +31,9 @@ public class SingularValueDecompositionTest {
     /** */
     @Test
     public void basicTest() {
-        basicTest(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        basicTest(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         }));
     }
@@ -43,9 +43,9 @@ public class SingularValueDecompositionTest {
      */
     @Test
     public void decompositionSupportTest() {
-        basicTest(new PivotedMatrixView(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        basicTest(new PivotedMatrixView(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         })));
     }
@@ -53,9 +53,9 @@ public class SingularValueDecompositionTest {
     /** */
     @Test
     public void rowsLessThanColumnsTest() {
-        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d}
+        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d}
         });
 
         SingularValueDecomposition dec = new SingularValueDecomposition(m);

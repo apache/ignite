@@ -30,14 +30,12 @@ public interface VectorStorage extends Externalizable, StorageOpsMetrics, Destro
     public int size();
 
     /**
-     *
      * @param i Vector element index.
      * @return Value obtained for given element index.
      */
     public double get(int i);
 
     /**
-     *
      * @param i Vector element index.
      * @param v Value to set at given index.
      */

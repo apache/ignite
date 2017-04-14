@@ -35,7 +35,6 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
     }
 
     /**
-     *
      * @param size
      * @param acsMode
      */

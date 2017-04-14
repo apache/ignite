@@ -41,7 +41,8 @@ public class Tracer {
     /**
      * Double to color mapper.
      */
-    public interface ColorMapper extends Function<Double, Color> {}
+    public interface ColorMapper extends Function<Double, Color> {
+    }
 
     /** Continuous red-to-blue color mapping. */
     static private ColorMapper defaultColorMapper(double min, double max) {
@@ -77,7 +78,6 @@ public class Tracer {
     }
 
     /**
-     *
      * @param vec Vector to show.
      * @param log {@link IgniteLogger} instance for output.
      * @param fmt Format string for vector elements.
@@ -89,7 +89,6 @@ public class Tracer {
     }
 
     /**
-     *
      * @param vec Vector to show as plain text.
      * @param log {@link IgniteLogger} instance for output.
      */
@@ -98,7 +97,6 @@ public class Tracer {
     }
 
     /**
-     *
      * @param vec Vector to show as plain text.
      * @param fmt Format string for vector elements.
      */
@@ -109,7 +107,6 @@ public class Tracer {
     }
 
     /**
-     *
      * @param mtx Matrix to show as plain text.
      */
     public static void showAscii(Matrix mtx) {
@@ -117,7 +114,6 @@ public class Tracer {
     }
 
     /**
-     *
      * @param mtx Matrix to show.
      * @param row Matrix row to output.
      * @param fmt Format string for matrix elements in the row.
@@ -145,7 +141,6 @@ public class Tracer {
     }
 
     /**
-     *
      * @param mtx {@link Matrix} object to show as a plain text.
      * @param fmt Format string for matrix rows.
      */
@@ -162,7 +157,6 @@ public class Tracer {
     }
 
     /**
-     *
      * @param mtx {@link Matrix} object to show as a plain text.
      * @param log {@link IgniteLogger} instance to output the logged matrix.
      * @param fmt Format string for matrix rows.
@@ -180,7 +174,6 @@ public class Tracer {
     }
 
     /**
-     *
      * @param vec {@link Vector} object to show as a plain text.
      */
     public static void showAscii(Vector vec) {
@@ -197,7 +190,7 @@ public class Tracer {
     public static void saveAsCsv(Vector vec, String fmt, String filePath) throws IOException {
         String s = mkString(vec, fmt);
 
-        Files.write(Paths.get(filePath),s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        Files.write(Paths.get(filePath), s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
     }
 
     /**
@@ -210,7 +203,7 @@ public class Tracer {
     public static void saveAsCsv(Matrix mtx, String fmt, String filePath) throws IOException {
         String s = mkString(mtx, fmt);
 
-        Files.write(Paths.get(filePath),s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        Files.write(Paths.get(filePath), s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
     }
 
     /**
@@ -241,8 +234,8 @@ public class Tracer {
 
         openHtmlFile(tmpl.
             replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
-            replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min))+ ";\n").
-            replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max))+ ";\n").
+            replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min)) + ";\n").
+            replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max)) + ";\n").
             replaceAll("/\\*@DATA@\\*/.*\n", "var data = " + mkJsArrayString(mtx, cm) + ";\n")
         );
     }
@@ -258,7 +251,6 @@ public class Tracer {
     }
 
     /**
-     *
      * @param d Value of {@link Matrix} or {@link Vector} element.
      * @param clr {@link Color} to paint.
      * @return JSON representation for given value and color.
@@ -290,8 +282,8 @@ public class Tracer {
 
         openHtmlFile(tmpl.
             replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
-            replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min))+ ";\n").
-            replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max))+ ";\n").
+            replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min)) + ";\n").
+            replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max)) + ";\n").
             replaceAll("/\\*@DATA@\\*/.*\n", "var data = " + mkJsArrayString(vec, cm) + ";\n")
         );
     }
@@ -338,7 +330,6 @@ public class Tracer {
      *
      * @param vec Vector to string-ify.
      * @param fmt {@link String#format(Locale, String, Object...)} format.
-     *
      */
     private static String mkString(Vector vec, String fmt) {
         boolean first = true;
@@ -366,7 +357,6 @@ public class Tracer {
      *
      * @param vec Vector to JavaScript-ify.
      * @param cm Color mapper to user.
-     *
      */
     private static String mkJsArrayString(Vector vec, ColorMapper cm) {
         boolean first = true;
@@ -394,7 +384,6 @@ public class Tracer {
      *
      * @param mtx Matrix to JavaScript-ify.
      * @param cm Color mapper to user.
-     *
      */
     private static String mkJsArrayString(Matrix mtx, ColorMapper cm) {
         boolean first = true;
@@ -434,7 +423,6 @@ public class Tracer {
     }
 
     /**
-     *
      * @param mtx Matrix to log.
      * @param fmt Output format.
      * @return Formatted representation of a matrix.
@@ -445,7 +433,7 @@ public class Tracer {
         int rows = mtx.rowSize();
         int cols = mtx.columnSize();
 
-        for(int row = 0; row < rows; row++) {
+        for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
                 String s = String.format(Locale.US, fmt, mtx.get(row, col));
 

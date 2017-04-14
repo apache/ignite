@@ -29,10 +29,14 @@ import org.apache.ignite.math.exceptions.UnsupportedOperationException;
  * {@link MatrixStorage} implementation with random values in the matrix elements.
  */
 public class RandomMatrixStorage implements MatrixStorage {
-    /** */ private static final int PRIME1 = 104047;
-    /** */ private static final int PRIME2 = 101377;
-    /** */ private static final int PRIME3 = 64661;
-    /** */ private static final long SCALE = 1L << 32;
+    /** */
+    private static final int PRIME1 = 104047;
+    /** */
+    private static final int PRIME2 = 101377;
+    /** */
+    private static final int PRIME3 = 64661;
+    /** */
+    private static final long SCALE = 1L << 32;
 
     /** Random generation seed. */
     private int seed;
@@ -48,12 +52,11 @@ public class RandomMatrixStorage implements MatrixStorage {
     /**
      * For externalization.
      */
-    public RandomMatrixStorage(){
+    public RandomMatrixStorage() {
         // No-op.
     }
 
     /**
-     *
      * @param rows Amount of rows in the matrix.
      * @param cols Amount of columns in the matrix.
      * @param fastHash Whether fast hash is used.
@@ -76,8 +79,9 @@ public class RandomMatrixStorage implements MatrixStorage {
             buf.putInt(y);
             buf.flip();
 
-            return (MurmurHash.hash64A(buf, seed) & (SCALE - 1)) / (double) SCALE;
-        } else
+            return (MurmurHash.hash64A(buf, seed) & (SCALE - 1)) / (double)SCALE;
+        }
+        else
             // This isn't a fantastic random number generator, but it is just fine for random projections.
             return ((((x * PRIME1) + y * PRIME2 + x * y * PRIME3) & 8) * 0.25) - 1;
     }
@@ -165,7 +169,7 @@ public class RandomMatrixStorage implements MatrixStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        RandomMatrixStorage that = (RandomMatrixStorage) o;
+        RandomMatrixStorage that = (RandomMatrixStorage)o;
 
         return rows == that.rows && cols == that.cols && seed == that.seed && fastHash == that.fastHash;
     }

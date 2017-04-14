@@ -22,7 +22,6 @@ package org.apache.ignite.math;
  */
 public interface VectorKeyMapper<K> extends KeyMapper<K> {
     /**
-     *
      * @param i Vector element index.
      * @return Cache key for given element index.
      */

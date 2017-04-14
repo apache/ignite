@@ -28,20 +28,19 @@ import org.apache.ignite.math.impls.storage.matrix.MatrixDelegateStorage;
  */
 public class TransposedMatrixView extends AbstractMatrix {
     /** */
-    public TransposedMatrixView(){
+    public TransposedMatrixView() {
         //No-op.
     }
 
     /**
-     *
      * @param mtx Parent matrix.
      */
-    public TransposedMatrixView(Matrix mtx){
+    public TransposedMatrixView(Matrix mtx) {
         this(mtx == null ? null : mtx.getStorage());
     }
 
     /** */
-    private TransposedMatrixView(MatrixStorage sto){
+    private TransposedMatrixView(MatrixStorage sto) {
         super(new MatrixDelegateStorage(sto, 0, 0,
             sto == null ? 0 : sto.rowSize(), sto == null ? 0 : sto.columnSize()));
     }

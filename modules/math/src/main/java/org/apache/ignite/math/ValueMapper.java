@@ -16,16 +16,12 @@ import java.io.Serializable;
  */
 public interface ValueMapper<V> extends Serializable {
     /**
-     *
      * @param v
-     *
      */
     public V fromDouble(double v);
 
     /**
-     *
      * @param v
-     *
      */
-    public double toDouble(V  v);
+    public double toDouble(V v);
 }

@@ -47,7 +47,7 @@ class MatrixImplementationFixtures {
     );
 
     /** */
-    void consumeSampleMatrix(BiConsumer<Matrix, String> consumer){
+    void consumeSampleMatrix(BiConsumer<Matrix, String> consumer) {
         for (Supplier<Iterable<Matrix>> fixtureSupplier : suppliers) {
             final Iterable<Matrix> fixture = fixtureSupplier.get();
 
@@ -60,7 +60,7 @@ class MatrixImplementationFixtures {
     }
 
     /** */
-    private static class DenseLocalOnHeapMatrixFixture extends MatrixSizeIterator{
+    private static class DenseLocalOnHeapMatrixFixture extends MatrixSizeIterator {
         /** */
         DenseLocalOnHeapMatrixFixture() {
             super(DenseLocalOnHeapMatrix::new, "DenseLocalOnHeapMatrix");
@@ -68,7 +68,7 @@ class MatrixImplementationFixtures {
     }
 
     /** */
-    private static class DenseLocalOffHeapMatrixFixture extends MatrixSizeIterator{
+    private static class DenseLocalOffHeapMatrixFixture extends MatrixSizeIterator {
         /** */
         DenseLocalOffHeapMatrixFixture() {
             super(DenseLocalOffHeapMatrix::new, "DenseLocalOffHeapMatrix");
@@ -76,7 +76,7 @@ class MatrixImplementationFixtures {
     }
 
     /** */
-    private static class RandomMatrixFixture extends MatrixSizeIterator{
+    private static class RandomMatrixFixture extends MatrixSizeIterator {
         /** */
         RandomMatrixFixture() {
             super(RandomMatrix::new, "RandomMatrix");
@@ -84,7 +84,7 @@ class MatrixImplementationFixtures {
     }
 
     /** */
-    private static class SparseLocalOnHeapMatrixFixture extends MatrixSizeIterator{
+    private static class SparseLocalOnHeapMatrixFixture extends MatrixSizeIterator {
         /** */
         SparseLocalOnHeapMatrixFixture() {
             super(SparseLocalOnHeapMatrix::new, "SparseLocalOnHeapMatrix");
@@ -167,7 +167,7 @@ class MatrixImplementationFixtures {
         private String desc;
 
         /** */
-        DiagonalIterator(BiFunction<Integer,Integer, ? extends Matrix> constructor, String desc){
+        DiagonalIterator(BiFunction<Integer, Integer, ? extends Matrix> constructor, String desc) {
             this.constructor = constructor;
             this.desc = desc;
         }
@@ -188,12 +188,12 @@ class MatrixImplementationFixtures {
         }
 
         /** */
-        boolean hasNextSize(int idx){
+        boolean hasNextSize(int idx) {
             return sizes[idx] != null;
         }
 
         /** */
-        Integer getSize(int idx){
+        Integer getSize(int idx) {
             return sizes[idx];
         }
 
@@ -251,7 +251,7 @@ class MatrixImplementationFixtures {
         private String desc;
 
         /** */
-        MatrixSizeIterator(BiFunction<Integer,Integer, ? extends Matrix> constructor, String desc){
+        MatrixSizeIterator(BiFunction<Integer, Integer, ? extends Matrix> constructor, String desc) {
             this.constructor = constructor;
             this.desc = desc;
         }
@@ -272,22 +272,22 @@ class MatrixImplementationFixtures {
         }
 
         /** */
-        boolean hasNextRow(int idx){
+        boolean hasNextRow(int idx) {
             return rows[idx] != null;
         }
 
         /** */
-        boolean hasNextCol(int idx){
+        boolean hasNextCol(int idx) {
             return cols[idx] != null;
         }
 
         /** */
-        Integer getRow(int idx){
+        Integer getRow(int idx) {
             return rows[idx];
         }
 
         /** */
-        int getCol(int idx){
+        int getCol(int idx) {
             return cols[idx];
         }
 
@@ -319,7 +319,8 @@ class MatrixImplementationFixtures {
 
     /** Subclass tweaked for serialization */
     private static class FunctionMatrixForTest extends FunctionMatrix {
-        /** */ Matrix underlying;
+        /** */
+        Matrix underlying;
 
         /** */
         public FunctionMatrixForTest() {
@@ -372,7 +373,7 @@ class MatrixImplementationFixtures {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            FunctionMatrixForTest that = (FunctionMatrixForTest) o;
+            FunctionMatrixForTest that = (FunctionMatrixForTest)o;
 
             return underlying != null ? underlying.equals(that.underlying) : that.underlying == null;
         }

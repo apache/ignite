@@ -42,15 +42,17 @@ import org.apache.ignite.math.functions.IgniteFunction;
 public class CacheUtils {
     /**
      * Cache entry support.
+     *
      * @param <K>
      * @param <V>
      */
     public static class CacheEntry<K, V> {
-        /** */ private Cache.Entry<K, V> entry;
-        /** */ private IgniteCache<K, V> cache;
+        /** */
+        private Cache.Entry<K, V> entry;
+        /** */
+        private IgniteCache<K, V> cache;
 
         /**
-         *
          * @param entry Original cache entry.
          * @param cache Cache instance.
          */
@@ -84,7 +86,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @param k Key into the cache.
      * @param <K> Key type.
@@ -95,7 +96,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @param keyMapper {@link KeyMapper} to validate cache key.
      * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
@@ -118,7 +118,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @return Sum obtained using sparse logic.
      */
@@ -135,7 +134,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param c {@link Collection} of double values to sum.
      * @return Sum of the values.
      */
@@ -149,7 +147,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @param keyMapper {@link KeyMapper} to validate cache key.
      * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
@@ -175,7 +172,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @return Minimum value obtained using sparse logic.
      */
@@ -195,7 +191,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @return Maximum value obtained using sparse logic.
      */
@@ -215,7 +210,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @param keyMapper {@link KeyMapper} to validate cache key.
      * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
@@ -241,7 +235,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @param keyMapper {@link KeyMapper} to validate cache key.
      * @param valMapper {@link ValueMapper} to obtain double value for given cache key.
@@ -261,7 +254,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @param mapper Mapping {@link IgniteFunction}.
      */
@@ -278,7 +270,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @param fun An operation that accepts a cache entry and processes it.
      * @param <K> Cache key object type.
@@ -296,7 +287,7 @@ public class CacheUtils {
             ClusterNode locNode = ignite.cluster().localNode();
 
             // Iterate over all partitions. Some of them will be stored on that local node.
-            for (int part = 0; part < partsCnt; part++){
+            for (int part = 0; part < partsCnt; part++) {
                 int p = part;
 
                 // Iterate over given partition.
@@ -310,13 +301,13 @@ public class CacheUtils {
 
     /**
      * <b>Currently fold supports only commutative operations.<b/>
+     *
      * @param cacheName Cache name.
      * @param folder Fold function operating over cache entries.
      * @param <K> Cache key object type.
      * @param <V> Cache value object type.
      * @param <A> Fold result type.
      * @return Fold operation result.
-     *
      */
     public static <K, V, A> Collection<A> fold(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
         return bcast(cacheName, () -> {
@@ -347,7 +338,6 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @param run {@link Runnable} to broadcast to cache nodes for given cache name.
      */
@@ -356,11 +346,9 @@ public class CacheUtils {
     }
 
     /**
-     *
      * @param cacheName Cache name.
      * @param call {@link IgniteCallable} to broadcast to cache nodes for given cache name.
      * @param <A> Type returned by the callable.
-     *
      */
     public static <A> Collection<A> bcast(String cacheName, IgniteCallable<A> call) {
         return ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(call);

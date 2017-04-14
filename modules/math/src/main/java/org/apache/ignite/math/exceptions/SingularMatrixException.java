@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteException;
  */
 public class SingularMatrixException extends IgniteException {
     /** */
-    public SingularMatrixException(){
+    public SingularMatrixException() {
         super("Regular (or non-singular) matrix expected.");
     }
 }

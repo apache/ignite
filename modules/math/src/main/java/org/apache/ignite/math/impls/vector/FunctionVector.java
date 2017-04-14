@@ -26,7 +26,7 @@ import org.apache.ignite.math.functions.IntDoubleToVoidFunction;
 import org.apache.ignite.math.impls.storage.vector.FunctionVectorStorage;
 
 /**
- *  Implementation of {@link Vector} that maps vector element index to {@link java.util.function} interfaces.
+ * Implementation of {@link Vector} that maps vector element index to {@link java.util.function} interfaces.
  */
 public class FunctionVector extends AbstractVector {
     /**
@@ -38,6 +38,7 @@ public class FunctionVector extends AbstractVector {
 
     /**
      * Creates read-write or read-only function vector.
+     *
      * @param size Vector size.
      * @param getFunc Function that returns value corresponding to given element index.
      * @param setFunc Set function. If {@code null} - this will be a read-only vector.

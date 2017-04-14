@@ -27,7 +27,6 @@ public class UnknownProviderException extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /**
-     *
      * @param flavor Flavor (a.k.a. operation performance hints) that has no registered provider for.
      */
     public UnknownProviderException(String flavor) {

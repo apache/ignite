@@ -64,7 +64,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     /**
      * Default constructor.
      */
-    public SparseDistributedMatrixTest(){
+    public SparseDistributedMatrixTest() {
         super(false);
     }
 
@@ -80,7 +80,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     }
 
     /**
-     *  {@inheritDoc}
+     * {@inheritDoc}
      */
     @Override protected void beforeTest() throws Exception {
         ignite = grid(NODE_COUNT);
@@ -92,7 +92,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         ignite.destroyCache(CACHE_NAME);
 
-        if (cacheMatrix != null){
+        if (cacheMatrix != null) {
             cacheMatrix.destroy();
             cacheMatrix = null;
         }
@@ -130,14 +130,14 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         ByteArrayInputStream byteArrInputStream = new ByteArrayInputStream(byteArrOutputStream.toByteArray());
         ObjectInputStream objInputStream = new ObjectInputStream(byteArrInputStream);
 
-        SparseDistributedMatrix objRestored = (SparseDistributedMatrix) objInputStream.readObject();
+        SparseDistributedMatrix objRestored = (SparseDistributedMatrix)objInputStream.readObject();
 
         assertTrue(MathTestConstants.VALUE_NOT_EQUALS, cacheMatrix.equals(objRestored));
         assertEquals(MathTestConstants.VALUE_NOT_EQUALS, objRestored.get(1, 1), 1.0, 0.0);
     }
 
     /** Test simple math. */
-    public void testMath(){
+    public void testMath() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
@@ -167,7 +167,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testMinMax(){
+    public void testMinMax() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
@@ -183,8 +183,8 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
                 cacheMatrix.set(i, j, -1.0 * (i * cols + j + 1));
 
-        assertEquals(UNEXPECTED_VALUE, - rows * cols, cacheMatrix.minValue(), PRESITION);
-        assertEquals(UNEXPECTED_VALUE, - 1.0, cacheMatrix.maxValue(), PRESITION);
+        assertEquals(UNEXPECTED_VALUE, -rows * cols, cacheMatrix.minValue(), PRESITION);
+        assertEquals(UNEXPECTED_VALUE, -1.0, cacheMatrix.maxValue(), PRESITION);
 
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
@@ -195,7 +195,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testMap(){
+    public void testMap() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
@@ -208,7 +208,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testCopy(){
+    public void testCopy() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
@@ -216,14 +216,15 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         try {
             cacheMatrix.copy();
             fail("UnsupportedOperationException expected.");
-        } catch (UnsupportedOperationException e){
+        }
+        catch (UnsupportedOperationException e) {
             return;
         }
         fail("UnsupportedOperationException expected.");
     }
 
     /** */
-    public void testLike(){
+    public void testLike() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
@@ -231,14 +232,15 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         try {
             cacheMatrix.like(1, 1);
             fail("UnsupportedOperationException expected.");
-        } catch (UnsupportedOperationException e){
+        }
+        catch (UnsupportedOperationException e) {
             return;
         }
         fail("UnsupportedOperationException expected.");
     }
 
     /** */
-    public void testLikeVector(){
+    public void testLikeVector() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
@@ -246,14 +248,15 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         try {
             cacheMatrix.likeVector(1);
             fail("UnsupportedOperationException expected.");
-        } catch (UnsupportedOperationException e){
+        }
+        catch (UnsupportedOperationException e) {
             return;
         }
         fail("UnsupportedOperationException expected.");
     }
 
     /** */
-    private void initMtx(Matrix m){
+    private void initMtx(Matrix m) {
         for (int i = 0; i < m.rowSize(); i++)
             for (int j = 0; j < m.columnSize(); j++)
                 m.set(i, j, 1.0);

@@ -21,12 +21,15 @@ import static org.junit.Assert.assertTrue;
 
 /** Tests for methods of Vector that involve Matrix. */
 public class VectorToMatrixTest {
-    /** */ private static final Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap = typesMap();
+    /** */
+    private static final Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap = typesMap();
 
-    /** */ private static final List<Class<? extends Vector>> likeMatrixUnsupported = Arrays.asList(FunctionVector.class,
+    /** */
+    private static final List<Class<? extends Vector>> likeMatrixUnsupported = Arrays.asList(FunctionVector.class,
         SingleElementVector.class, SingleElementVectorView.class, ConstantVector.class);
 
-    /** */ @Test
+    /** */
+    @Test
     public void testHaveLikeMatrix() throws InstantiationException, IllegalAccessException {
         for (Class<? extends Vector> key : typesMap.keySet()) {
             Class<? extends Matrix> val = typesMap.get(key);
@@ -47,7 +50,8 @@ public class VectorToMatrixTest {
 
             try {
                 assertNull("Null view instead of exception in " + desc, v.likeMatrix(1, 1));
-            } catch (UnsupportedOperationException uoe) {
+            }
+            catch (UnsupportedOperationException uoe) {
                 expECaught = true;
             }
 
@@ -73,7 +77,7 @@ public class VectorToMatrixTest {
             Class<? extends Matrix> actualMatrixType = matrix.getClass();
 
             assertTrue("Expected matrix type " + expMatrixType.getSimpleName()
-                + " should be assignable from actual type " + actualMatrixType.getSimpleName() + " in " + desc,
+                    + " should be assignable from actual type " + actualMatrixType.getSimpleName() + " in " + desc,
                 expMatrixType.isAssignableFrom(actualMatrixType));
 
             for (int rows : new int[] {1, 2})
@@ -92,7 +96,8 @@ public class VectorToMatrixTest {
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void testToMatrix() {
         consumeSampleVectors((v, desc) -> {
             if (!availableForTesting(v))
@@ -109,7 +114,8 @@ public class VectorToMatrixTest {
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void testToMatrixPlusOne() {
         consumeSampleVectors((v, desc) -> {
             if (!availableForTesting(v))
@@ -138,7 +144,8 @@ public class VectorToMatrixTest {
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void testCross() {
         consumeSampleVectors((v, desc) -> {
             if (!availableForTesting(v))
@@ -224,7 +231,7 @@ public class VectorToMatrixTest {
     }
 
     /** Ignore test for given vector type. */
-    private boolean likeMatrixSupported(Class<? extends Vector> clazz){
+    private boolean likeMatrixSupported(Class<? extends Vector> clazz) {
         for (Class<? extends Vector> ignoredClass : likeMatrixUnsupported)
             if (ignoredClass.isAssignableFrom(clazz))
                 return false;
@@ -239,7 +246,7 @@ public class VectorToMatrixTest {
 
     /** */
     private static Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap() {
-        return new LinkedHashMap<Class<? extends Vector>, Class<? extends Matrix>> () {{
+        return new LinkedHashMap<Class<? extends Vector>, Class<? extends Matrix>>() {{
             put(DenseLocalOnHeapVector.class, DenseLocalOnHeapMatrix.class);
             put(DenseLocalOffHeapVector.class, DenseLocalOffHeapMatrix.class);
             put(RandomVector.class, RandomMatrix.class);

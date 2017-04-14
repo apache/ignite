@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteException;
 public class CardinalityException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
-    
+
     /**
      * Creates new cardinality violation exception.
      *

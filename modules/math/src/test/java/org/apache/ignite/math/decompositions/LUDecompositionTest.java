@@ -46,7 +46,7 @@ public class LUDecompositionTest {
 
     /** */
     @Before
-    public void setUp(){
+    public void setUp() {
         double[][] rawMatrix = new double[][] {
             {2.0d, 1.0d, 1.0d, 0.0d},
             {4.0d, 3.0d, 3.0d, 1.0d},
@@ -54,14 +54,14 @@ public class LUDecompositionTest {
             {6.0d, 7.0d, 9.0d, 8.0d}};
         double[][] rawL = {
             {1.0d, 0.0d, 0.0d, 0.0d},
-            {3.0d/4.0d, 1.0d, 0.0d, 0.0d},
-            {1.0d/2.0d, -2.0d/7.0d, 1.0d, 0.0d},
-            {1.0d/4.0d, -3.0d/7.0d, 1.0d/3.0d, 1.0d}};
+            {3.0d / 4.0d, 1.0d, 0.0d, 0.0d},
+            {1.0d / 2.0d, -2.0d / 7.0d, 1.0d, 0.0d},
+            {1.0d / 4.0d, -3.0d / 7.0d, 1.0d / 3.0d, 1.0d}};
         double[][] rawU = {
             {8.0d, 7.0d, 9.0d, 5.0d},
-            {0.0d, 7.0d/4.0d, 9.0d/4.0d, 17.0d/4.0d},
-            {0.0d, 0.0d, -6.0d/7.0d, -2.0d/7.0d},
-            {0.0d, 0.0d, 0.0d, 2.0d/3.0d}};
+            {0.0d, 7.0d / 4.0d, 9.0d / 4.0d, 17.0d / 4.0d},
+            {0.0d, 0.0d, -6.0d / 7.0d, -2.0d / 7.0d},
+            {0.0d, 0.0d, 0.0d, 2.0d / 3.0d}};
         double[][] rawP = new double[][] {
             {0, 0, 1.0d, 0},
             {0, 0, 0, 1.0d},
@@ -186,6 +186,7 @@ public class LUDecompositionTest {
     public void solveVecWrongSize() throws Exception {
         new LUDecomposition(testMatrix).solve(new DenseLocalOnHeapVector(testMatrix.rowSize() + 1));
     }
+
     /** */
     @Test(expected = SingularMatrixException.class)
     public void solveVecSingularMatrix() throws Exception {
@@ -211,6 +212,7 @@ public class LUDecompositionTest {
         new LUDecomposition(testMatrix).solve(
             new DenseLocalOnHeapMatrix(testMatrix.rowSize() + 1, testMatrix.rowSize()));
     }
+
     /** */
     @Test(expected = SingularMatrixException.class)
     public void solveMtxSingularMatrix() throws Exception {

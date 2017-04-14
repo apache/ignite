@@ -27,7 +27,8 @@ import static org.junit.Assert.fail;
 
 /** */
 public class DenseLocalOnHeapMatrixConstructorTest {
-    /** */ @Test
+    /** */
+    @Test
     public void invalidArgsTest() {
         verifyAssertionError(() -> new DenseLocalOnHeapMatrix(0, 1), "invalid row parameter");
 
@@ -40,7 +41,8 @@ public class DenseLocalOnHeapMatrixConstructorTest {
             "null row in matrix");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicTest() {
         assertEquals("Expected number of rows, int parameters.", 1,
             new DenseLocalOnHeapMatrix(1, 2).rowSize());
@@ -59,7 +61,8 @@ public class DenseLocalOnHeapMatrixConstructorTest {
     static void verifyAssertionError(Supplier<Matrix> ctor, String desc) {
         try {
             assertNotNull("Unexpected null matrix in " + desc, ctor.get());
-        } catch (AssertionError ae) {
+        }
+        catch (AssertionError ae) {
             return;
         }
 

@@ -35,18 +35,21 @@ public class MatrixStorageImplementationTest extends ExternalizeTest<MatrixStora
      * The columnSize() and the rowSize() test.
      */
     @Test
-    public void sizeTest(){
+    public void sizeTest() {
         final AtomicReference<Integer> expRowSize = new AtomicReference<>(0);
         final AtomicReference<Integer> expColSize = new AtomicReference<>(0);
 
-        consumeSampleStorages((x,y) -> {expRowSize.set(x); expColSize.set(y);},
+        consumeSampleStorages((x, y) -> {
+                expRowSize.set(x);
+                expColSize.set(y);
+            },
             (ms, desc) -> assertTrue("Expected size for " + desc, expColSize.get().equals(ms.columnSize()) && expRowSize.get().equals(ms.rowSize())));
     }
 
     /** */
     @Test
-    public void getSetTest(){
-        consumeSampleStorages(null, (ms,desc) -> {
+    public void getSetTest() {
+        consumeSampleStorages(null, (ms, desc) -> {
             for (int i = 0; i < ms.rowSize(); i++) {
                 for (int j = 0; j < ms.columnSize(); j++) {
                     double random = Math.random();
@@ -65,7 +68,8 @@ public class MatrixStorageImplementationTest extends ExternalizeTest<MatrixStora
     }
 
     /** */
-    private void consumeSampleStorages(BiConsumer<Integer, Integer> paramsConsumer, BiConsumer<MatrixStorage, String> consumer) {
+    private void consumeSampleStorages(BiConsumer<Integer, Integer> paramsConsumer,
+        BiConsumer<MatrixStorage, String> consumer) {
         new MatrixStorageFixtures().consumeSampleStorages(paramsConsumer, consumer);
     }
 }

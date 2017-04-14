@@ -42,13 +42,13 @@ public class FunctionMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param rows
      * @param cols
      * @param getFunc
      * @param setFunc
      */
-    public FunctionMatrixStorage(int rows, int cols, IntIntToDoubleFunction getFunc, IntIntDoubleToVoidFunction setFunc) {
+    public FunctionMatrixStorage(int rows, int cols, IntIntToDoubleFunction getFunc,
+        IntIntDoubleToVoidFunction setFunc) {
         assert rows > 0;
         assert cols > 0;
         assert getFunc != null;
@@ -60,7 +60,6 @@ public class FunctionMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param rows
      * @param cols
      * @param getFunc
@@ -155,7 +154,7 @@ public class FunctionMatrixStorage implements MatrixStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        FunctionMatrixStorage that = (FunctionMatrixStorage) o;
+        FunctionMatrixStorage that = (FunctionMatrixStorage)o;
 
         return rows == that.rows && cols == that.cols
             && (getFunc != null ? getFunc.equals(that.getFunc) : that.getFunc == null)

@@ -27,77 +27,91 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class PivotedVectorViewConstructorTest {
-    /** */ private static final int IMPOSSIBLE_SIZE = -1;
+    /** */
+    private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ private static final SampleParams sampleParams = new SampleParams();
+    /** */
+    private static final SampleParams sampleParams = new SampleParams();
 
-    /** */ @Test(expected = NullPointerException.class)
+    /** */
+    @Test(expected = NullPointerException.class)
     public void nullVecParamTest() {
         assertEquals("Expect exception due to null vector param.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(null, sampleParams.pivot).size());
     }
 
-    /** */ @Test(expected = NullPointerException.class)
+    /** */
+    @Test(expected = NullPointerException.class)
     public void nullVecParam2Test() {
         assertEquals("Expect exception due to null vector param, with unpivot.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(null, sampleParams.pivot, sampleParams.unpivot).size());
     }
 
-    /** */ @Test(expected = NullPointerException.class)
+    /** */
+    @Test(expected = NullPointerException.class)
     public void nullPivotParamTest() {
         assertEquals("Expect exception due to null pivot param.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(sampleParams.vec, null).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void nullPivotParam2Test() {
         assertEquals("Expect exception due to null pivot param, with unpivot.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(sampleParams.vec, null, sampleParams.unpivot).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void nullUnpivotParam2Test() {
         assertEquals("Expect exception due to null unpivot param.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(sampleParams.vec, sampleParams.pivot, null).size());
     }
 
-    /** */ @Test(expected = CardinalityException.class)
+    /** */
+    @Test(expected = CardinalityException.class)
     public void emptyPivotTest() {
         assertEquals("Expect exception due to empty pivot param.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(sampleParams.vec, new int[] {}).size());
     }
 
-    /** */ @Test(expected = CardinalityException.class)
+    /** */
+    @Test(expected = CardinalityException.class)
     public void emptyPivot2Test() {
         assertEquals("Expect exception due to empty pivot param, with unpivot.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(sampleParams.vec, new int[] {}, sampleParams.unpivot).size());
     }
 
-    /** */ @Test(expected = CardinalityException.class)
+    /** */
+    @Test(expected = CardinalityException.class)
     public void wrongPivotTest() {
         assertEquals("Expect exception due to wrong pivot param.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(sampleParams.vec, new int[] {0}).size());
     }
 
-    /** */ @Test(expected = CardinalityException.class)
+    /** */
+    @Test(expected = CardinalityException.class)
     public void wrongPivot2Test() {
         assertEquals("Expect exception due to wrong pivot param, with unpivot.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(sampleParams.vec, new int[] {0}, sampleParams.unpivot).size());
     }
 
-    /** */ @Test(expected = CardinalityException.class)
+    /** */
+    @Test(expected = CardinalityException.class)
     public void emptyUnpivotTest() {
         assertEquals("Expect exception due to empty unpivot param.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(sampleParams.vec, sampleParams.pivot, new int[] {}).size());
     }
 
-    /** */ @Test(expected = CardinalityException.class)
+    /** */
+    @Test(expected = CardinalityException.class)
     public void wrongUnpivotTest() {
         assertEquals("Expect exception due to wrong unpivot param, with unpivot.", IMPOSSIBLE_SIZE,
             new PivotedVectorView(sampleParams.vec, sampleParams.pivot, new int[] {0}).size());
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicPivotTest() {
         final PivotedVectorView pvv = new PivotedVectorView(sampleParams.vec, sampleParams.pivot);
 
@@ -131,7 +145,8 @@ public class PivotedVectorViewConstructorTest {
         }
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicUnpivotTest() {
         final PivotedVectorView pvv = new PivotedVectorView(sampleParams.vec, sampleParams.pivot, sampleParams.unpivot);
 
@@ -151,10 +166,14 @@ public class PivotedVectorViewConstructorTest {
 
     /** */
     private static class SampleParams {
-        /** */ final double[] data = new double[] {0, 1};
-        /** */ final Vector vec = new DenseLocalOnHeapVector(data);
-        /** */ final int[] pivot = new int[] {1, 0};
-        /** */ final int[] unpivot = new int[] {1, 0};
+        /** */
+        final double[] data = new double[] {0, 1};
+        /** */
+        final Vector vec = new DenseLocalOnHeapVector(data);
+        /** */
+        final int[] pivot = new int[] {1, 0};
+        /** */
+        final int[] unpivot = new int[] {1, 0};
     }
 
     /** */

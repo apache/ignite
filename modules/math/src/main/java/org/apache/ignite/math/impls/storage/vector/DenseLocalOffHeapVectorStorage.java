@@ -31,22 +31,23 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     /** Vector size. */
     private int size;
 
-    /** */ private transient long ptr;
+    /** */
+    private transient long ptr;
     //TODO: temp solution.
-    /** */ private int ptrInitHash;
+    /** */
+    private int ptrInitHash;
 
     /**
      *
      */
-    public DenseLocalOffHeapVectorStorage(){
+    public DenseLocalOffHeapVectorStorage() {
         // No-op.
     }
 
     /**
-     *
      * @param size Vector size.
      */
-    public DenseLocalOffHeapVectorStorage(int size){
+    public DenseLocalOffHeapVectorStorage(int size) {
         assert size > 0;
 
         this.size = size;
@@ -143,13 +144,13 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        DenseLocalOffHeapVectorStorage that = (DenseLocalOffHeapVectorStorage) o;
+        DenseLocalOffHeapVectorStorage that = (DenseLocalOffHeapVectorStorage)o;
 
         return size == that.size && isMemoryEquals(that);
     }
 
     /** */
-    private boolean isMemoryEquals(DenseLocalOffHeapVectorStorage otherStorage){
+    private boolean isMemoryEquals(DenseLocalOffHeapVectorStorage otherStorage) {
         return IntStream.range(0, size).parallel().noneMatch(idx -> Double.compare(get(idx), otherStorage.get(idx)) != 0);
     }
 

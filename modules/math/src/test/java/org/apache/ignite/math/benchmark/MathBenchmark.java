@@ -22,19 +22,25 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-/** Refer {@link MathBenchmarkSelfTest} for usage examples.*/
+/** Refer {@link MathBenchmarkSelfTest} for usage examples. */
 class MathBenchmark {
-    /** */ private final boolean outputToConsole;
+    /** */
+    private final boolean outputToConsole;
 
-    /** */ private final String benchmarkName;
+    /** */
+    private final String benchmarkName;
 
-    /** */ private final int measurementTimes;
+    /** */
+    private final int measurementTimes;
 
-    /** */ private final int warmUpTimes;
+    /** */
+    private final int warmUpTimes;
 
-    /** */ private final String tag;
+    /** */
+    private final String tag;
 
-    /** */ private final String comments;
+    /** */
+    private final String comments;
 
     /** Constructor strictly for use within this class. */
     private MathBenchmark(String benchmarkName, boolean outputToConsole, int measurementTimes, int warmUpTimes,
@@ -50,6 +56,7 @@ class MathBenchmark {
 
     /**
      * Benchmark with specified name and default parameters, in particular, default output file.
+     *
      * @param benchmarkName name
      */
     MathBenchmark(String benchmarkName) {
@@ -58,6 +65,7 @@ class MathBenchmark {
 
     /**
      * Executes the code using config of this benchmark.
+     *
      * @param code code to execute
      * @throws Exception if something goes wrong
      */
@@ -81,6 +89,7 @@ class MathBenchmark {
 
     /**
      * Set optional output mode for using stdout.
+     *
      * @return configured benchmark
      */
     MathBenchmark outputToConsole() {
@@ -89,6 +98,7 @@ class MathBenchmark {
 
     /**
      * Set optional measurement times.
+     *
      * @param param times
      * @return configured benchmark
      */
@@ -98,6 +108,7 @@ class MathBenchmark {
 
     /**
      * Set optional warm-up times.
+     *
      * @param param times
      * @return configured benchmark
      */
@@ -107,6 +118,7 @@ class MathBenchmark {
 
     /**
      * Set optional tag to help filtering specific kind of benchmark results.
+     *
      * @param param name
      * @return configured benchmark
      */
@@ -116,6 +128,7 @@ class MathBenchmark {
 
     /**
      * Set optional comments.
+     *
      * @param param name
      * @return configured benchmark
      */
@@ -185,6 +198,8 @@ class MathBenchmark {
     /** */
     interface BenchmarkCode {
         // todo find out why Callable<Void> failed to work here
-        /** */ void call() throws Exception;
+
+        /** */
+        void call() throws Exception;
     }
 }

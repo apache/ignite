@@ -24,21 +24,25 @@ import static org.junit.Assert.assertEquals;
 
 /** */
 public class SparseLocalVectorConstructorTest {
-    /** */ private static final int IMPOSSIBLE_SIZE = -1;
+    /** */
+    private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new SparseLocalVector(-1, 1).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void zeroSizeTest() {
         assertEquals("0 size.", IMPOSSIBLE_SIZE,
             new SparseLocalVector(0, 1).size());
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void primitiveTest() {
         assertEquals("1 size, random access.", 1,
             new SparseLocalVector(1, StorageConstants.RANDOM_ACCESS_MODE).size());

@@ -35,9 +35,9 @@ public class CholeskyDecompositionTest {
     /** */
     @Test
     public void basicTest() {
-        basicTest(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        basicTest(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         }));
     }
@@ -47,9 +47,9 @@ public class CholeskyDecompositionTest {
      */
     @Test
     public void decompositionSupportTest() {
-        basicTest(new PivotedMatrixView(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        basicTest(new PivotedMatrixView(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         })));
     }
@@ -69,9 +69,9 @@ public class CholeskyDecompositionTest {
     /** */
     @Test(expected = NonSymmetricMatrixException.class)
     public void nonSymmetricMatrixTest() {
-        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  10.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 10.0d},
+            {-1.0d, 2.0d, -1.0d},
             {-10.0d, -1.0d, 2.0d}
         }));
     }
@@ -79,9 +79,9 @@ public class CholeskyDecompositionTest {
     /** */
     @Test(expected = NonPositiveDefiniteMatrixException.class)
     public void nonAbsPositiveMatrixTest() {
-        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 0.0d,  -1.0d},
+        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 0.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         }));
     }
@@ -89,9 +89,9 @@ public class CholeskyDecompositionTest {
     /** */
     @Test(expected = CardinalityException.class)
     public void solveWrongVectorSizeTest() {
-        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         })).solve(new DenseLocalOnHeapVector(2));
     }
@@ -99,15 +99,15 @@ public class CholeskyDecompositionTest {
     /** */
     @Test(expected = CardinalityException.class)
     public void solveWrongMatrixSizeTest() {
-        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        new CholeskyDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         })).solve(new DenseLocalOnHeapMatrix(2, 3));
     }
 
     /** */
-    private  void basicTest(Matrix m) {
+    private void basicTest(Matrix m) {
         // This decomposition is useful when dealing with systems of linear equations of the form
         // m x = b where m is a Hermitian matrix.
         // For such systems Cholesky decomposition provides
@@ -133,7 +133,7 @@ public class CholeskyDecompositionTest {
                 assertEquals("Unexpected value transposed matrix at (" + row + "," + col + ").",
                     l.get(row, col), lt.get(col, row), 0d);
 
-        Matrix bs = new DenseLocalOnHeapMatrix(new double[][]{
+        Matrix bs = new DenseLocalOnHeapMatrix(new double[][] {
             {4.0, -6.0, 7.0},
             {1.0, 1.0, 1.0}
         }).transpose();

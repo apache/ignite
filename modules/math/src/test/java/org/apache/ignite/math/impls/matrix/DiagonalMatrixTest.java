@@ -35,9 +35,11 @@ import static org.junit.Assert.fail;
  * Tests for {@link DiagonalMatrix}.
  */
 public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
-    /** */ public static final String UNEXPECTED_VALUE = "Unexpected value";
+    /** */
+    public static final String UNEXPECTED_VALUE = "Unexpected value";
 
-    /** */ private DiagonalMatrix testMatrix;
+    /** */
+    private DiagonalMatrix testMatrix;
 
     /** */
     @Before
@@ -174,7 +176,8 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
 
                 try {
                     m.set(i, j, exp);
-                } catch (UnsupportedOperationException uoe) {
+                }
+                catch (UnsupportedOperationException uoe) {
                     if (diagonal && !readonly)
                         throw uoe;
 
@@ -194,7 +197,7 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
     }
 
     /** */
-    private void fillMatrix(Matrix m){
+    private void fillMatrix(Matrix m) {
         final int rows = m.rowSize(), cols = m.columnSize();
 
         boolean negative = false;

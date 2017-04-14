@@ -30,31 +30,36 @@ import static org.junit.Assert.assertTrue;
 
 /** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
 public class VectorFoldMapTest {
-    /** */ @Test
+    /** */
+    @Test
     public void mapVectorTest() {
         operationVectorTest((operand1, operand2) -> operand1 + operand2, (Vector v1, Vector v2) -> v1.map(v2, Functions.PLUS));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void mapDoubleFunctionTest() {
         consumeSampleVectors((v, desc) -> operatorTest(v, desc,
             (vec) -> vec.map(Functions.INV), (val) -> 1.0 / val));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void mapBiFunctionTest() {
         consumeSampleVectors((v, desc) -> operatorTest(v, desc,
             (vec) -> vec.map(Functions.PLUS, 1.0), (val) -> 1.0 + val));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void foldMapTest() {
         toDoubleTest(
             ref -> Arrays.stream(ref).map(identity()).sum(),
             (v) -> v.foldMap(Functions.PLUS, Functions.IDENTITY, 0.0));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void foldMapVectorTest() {
         toDoubleTest(
             ref -> 2.0 * Arrays.stream(ref).sum(),
@@ -88,7 +93,7 @@ public class VectorFoldMapTest {
             final VectorImplementationsTest.Metric metric = new VectorImplementationsTest.Metric(calcRef.apply(ref), calcVec.apply(v));
 
             assertTrue("Not close enough at " + desc
-                 + ", " + metric, metric.closeEnough());
+                + ", " + metric, metric.closeEnough());
         });
     }
 

@@ -269,7 +269,7 @@ public class Algebra extends Constants {
         double b = 1;
         double binomial = 1;
 
-        for (long i = k; i-- > 0;)
+        for (long i = k; i-- > 0; )
             binomial *= (a++) / (b++);
 
         return binomial;
@@ -301,7 +301,7 @@ public class Algebra extends Constants {
             if (n < max) {
                 double nFac = factorial((int)n);
                 double kFac = factorial((int)k);
-                double nMinusKFac = factorial((int) (n - k));
+                double nMinusKFac = factorial((int)(n - k));
                 double nk = nMinusKFac * kFac;
 
                 if (nk != Double.POSITIVE_INFINITY) // No numeric overflow?
@@ -317,8 +317,8 @@ public class Algebra extends Constants {
         long b = 1;
         double binomial = 1;
 
-        for (long i = k; i-- > 0;)
-            binomial *= (double) a++ / (b++);
+        for (long i = k; i-- > 0; )
+            binomial *= (double)a++ / (b++);
 
         return binomial;
     }
@@ -344,12 +344,13 @@ public class Algebra extends Constants {
      *        i=0
      * </pre>
      * Coefficients are stored in reverse order, i.e. the zero order term is last in the array.  Note N is the number of
-     * coefficients, not the order. <p> If coefficients are for the interval a to b, x must have been transformed to x -&lt;
-     * 2(2x - b - a)/(b-a) before entering the routine.  This maps x from (a, b) to (-1, 1), over which the Chebyshev
-     * polynomials are defined. <p> If the coefficients are for the inverted interval, in which (a, b) is mapped to (1/b,
-     * 1/a), the transformation required is {@code x -> 2(2ab/x - b - a)/(b-a)}.  If b is infinity, this becomes {@code x -> 4a/x - 1}.
-     * <p> SPEED: <p> Taking advantage of the recurrence properties of the Chebyshev polynomials, the routine requires one
-     * more addition per loop than evaluating a nested polynomial of the same degree.
+     * coefficients, not the order. <p> If coefficients are for the interval a to b, x must have been transformed to x
+     * -&lt; 2(2x - b - a)/(b-a) before entering the routine.  This maps x from (a, b) to (-1, 1), over which the
+     * Chebyshev polynomials are defined. <p> If the coefficients are for the inverted interval, in which (a, b) is
+     * mapped to (1/b, 1/a), the transformation required is {@code x -> 2(2ab/x - b - a)/(b-a)}.  If b is infinity, this
+     * becomes {@code x -> 4a/x - 1}. <p> SPEED: <p> Taking advantage of the recurrence properties of the Chebyshev
+     * polynomials, the routine requires one more addition per loop than evaluating a nested polynomial of the same
+     * degree.
      *
      * @param x Argument to the polynomial.
      * @param coef Coefficients of the polynomial.
@@ -368,7 +369,8 @@ public class Algebra extends Constants {
             b2 = b1;
             b1 = b0;
             b0 = x * b1 - b2 + coef[p++];
-        } while (--i > 0);
+        }
+        while (--i > 0);
 
         return 0.5 * (b0 - b2);
     }
@@ -441,7 +443,8 @@ public class Algebra extends Constants {
             double C0 = 9.18938533204672742e-01;
 
             return (k + 0.5) * Math.log(k) - k + C0 + r * (C1 + rr * (C3 + rr * (C5 + rr * C7)));
-        } else
+        }
+        else
             return LOG_FACTORIALS[k];
     }
 
@@ -478,7 +481,8 @@ public class Algebra extends Constants {
             double C1 = 8.33333333333333333e-02;
 
             return r * (C1 + rr * (C3 + rr * (C5 + rr * C7)));
-        } else
+        }
+        else
             return STIRLING_CORRECTION[k];
     }
 
@@ -554,10 +558,12 @@ public class Algebra extends Constants {
         if (Math.abs(a) > Math.abs(b)) {
             r = b / a;
             r = Math.abs(a) * Math.sqrt(1 + r * r);
-        } else if (b != 0) {
+        }
+        else if (b != 0) {
             r = a / b;
             r = Math.abs(b) * Math.sqrt(1 + r * r);
-        } else
+        }
+        else
             r = 0.0;
 
         return r;

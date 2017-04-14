@@ -38,7 +38,8 @@ class MatrixStorageFixtures {
         (Supplier<Iterable<MatrixStorage>>)SparseLocalMatrixStorageFixture::new
     );
 
-    void consumeSampleStorages(BiConsumer<Integer, Integer> paramsConsumer, BiConsumer<MatrixStorage, String> consumer){
+    void consumeSampleStorages(BiConsumer<Integer, Integer> paramsConsumer,
+        BiConsumer<MatrixStorage, String> consumer) {
         for (Supplier<Iterable<MatrixStorage>> fixtureSupplier : suppliers) {
             final Iterable<MatrixStorage> fixture = fixtureSupplier.get();
 
@@ -51,7 +52,7 @@ class MatrixStorageFixtures {
         }
     }
 
-    private static class SparseLocalMatrixStorageFixture implements Iterable<MatrixStorage>{
+    private static class SparseLocalMatrixStorageFixture implements Iterable<MatrixStorage> {
         private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
         private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
         private final Integer[] randomAccess = new Integer[] {SEQUENTIAL_ACCESS_MODE, RANDOM_ACCESS_MODE, null};
@@ -79,8 +80,8 @@ class MatrixStorageFixtures {
                     return storage;
                 }
 
-                private void nextIdx(){
-                    if (hasNextStoMode(stoModeIdx + 1)){
+                private void nextIdx() {
+                    if (hasNextStoMode(stoModeIdx + 1)) {
                         stoModeIdx++;
 
                         return;
@@ -88,7 +89,7 @@ class MatrixStorageFixtures {
 
                     stoModeIdx = 0;
 
-                    if (hasNextAcsMode(acsModeIdx + 1)){
+                    if (hasNextAcsMode(acsModeIdx + 1)) {
                         acsModeIdx++;
 
                         return;
@@ -105,19 +106,19 @@ class MatrixStorageFixtures {
                 ", access mode=" + randomAccess[acsModeIdx] + ", storage mode=" + rowStorage[stoModeIdx] + "}";
         }
 
-        private boolean hasNextRow(int idx){
+        private boolean hasNextRow(int idx) {
             return rows[idx] != null;
         }
 
-        private boolean hasNextCol(int idx){
+        private boolean hasNextCol(int idx) {
             return cols[idx] != null;
         }
 
-        private boolean hasNextAcsMode(int idx){
+        private boolean hasNextAcsMode(int idx) {
             return randomAccess[idx] != null;
         }
 
-        private boolean hasNextStoMode(int idx){
+        private boolean hasNextStoMode(int idx) {
             return rowStorage[idx] != null;
         }
     }

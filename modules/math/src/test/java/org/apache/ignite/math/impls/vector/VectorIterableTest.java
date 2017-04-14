@@ -36,7 +36,8 @@ import static org.junit.Assert.fail;
 
 /** */
 public class VectorIterableTest {
-    /** */ @Test
+    /** */
+    @Test
     public void allTest() {
         consumeSampleVectors(
             (v, desc) -> {
@@ -57,14 +58,16 @@ public class VectorIterableTest {
         );
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void allTestBound() {
         consumeSampleVectors(
             (v, desc) -> iteratorTestBound(v.all().iterator(), desc)
         );
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void nonZeroesTestBasic() {
         final int size = 5;
 
@@ -142,7 +145,8 @@ public class VectorIterableTest {
         assertEquals("Unexpected nonZeroElements of even", nonZeroesEvenExp, nonZeroesOddVec.nonZeroElements());
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void nonZeroesTest() {
         // todo make RandomVector constructor that accepts a function and use it here
         //  in order to *reliably* test non-zeroes in there
@@ -161,14 +165,16 @@ public class VectorIterableTest {
             }));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void nonZeroesTestBound() {
         consumeSampleVectors(
             (v, desc) -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
                 -> iteratorTestBound(vec.nonZeroes().iterator(), desc)));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void nonZeroElementsTest() {
         consumeSampleVectors(
             (v, desc) -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
@@ -176,7 +182,8 @@ public class VectorIterableTest {
                 (int)numZeroes, vec.size() - vec.nonZeroElements())));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void allSpliteratorTest() {
         consumeSampleVectors(
             (v, desc) -> {
@@ -213,7 +220,8 @@ public class VectorIterableTest {
         );
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void nonZeroSpliteratorTest() {
         consumeSampleVectors(
             (v, desc) -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
@@ -278,7 +286,8 @@ public class VectorIterableTest {
 
         try {
             it.next();
-        } catch (NoSuchElementException e) {
+        }
+        catch (NoSuchElementException e) {
             expECaught = true;
         }
 

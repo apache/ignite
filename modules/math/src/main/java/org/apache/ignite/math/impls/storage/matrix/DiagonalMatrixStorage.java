@@ -25,10 +25,11 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 
 /**
- *  {@link MatrixStorage} implementation for diagonal Matrix view.
+ * {@link MatrixStorage} implementation for diagonal Matrix view.
  */
 public class DiagonalMatrixStorage implements MatrixStorage {
-    /** Backing vector for matrix diagonal. */ private Vector diagonal;
+    /** Backing vector for matrix diagonal. */
+    private Vector diagonal;
 
     /**
      *
@@ -38,7 +39,6 @@ public class DiagonalMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param diagonal Backing {@link Vector} for matrix diagonal.
      */
     public DiagonalMatrixStorage(Vector diagonal) {
@@ -79,7 +79,7 @@ public class DiagonalMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-       out.writeObject(diagonal);
+        out.writeObject(diagonal);
     }
 
     /** {@inheritDoc} */
@@ -129,7 +129,7 @@ public class DiagonalMatrixStorage implements MatrixStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        DiagonalMatrixStorage that = (DiagonalMatrixStorage) o;
+        DiagonalMatrixStorage that = (DiagonalMatrixStorage)o;
 
         return diagonal.equals(that.diagonal);
     }

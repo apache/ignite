@@ -33,18 +33,24 @@ import java.util.UUID;
 
 /** */
 class ResultsWriter {
-    /** */ private static final String DROPBOX_PATH
+    /** */
+    private static final String DROPBOX_PATH
         = "/benchmarks/math.benchmark.results.csv";
 
-    /** */ private static final String DROPBOX_URL
+    /** */
+    private static final String DROPBOX_URL
         = "https://www.dropbox.com/s/r7tcle31r7gaty8/math.benchmark.results.csv";
 
-    /** */ private static final String ACCESS_TOKEN
+    /** */
+    private static final String ACCESS_TOKEN
         = "1MMmQjEyzGAAAAAAAAAAfDFrQ6oBPPi4NX-iU_VrgmXB2JDXqRHGa125cTkkEQ0V";
 
-    /** */ private final String dropboxPath;
-    /** */ private final String dropboxUrl;
-    /** */ private final String accessTok;
+    /** */
+    private final String dropboxPath;
+    /** */
+    private final String dropboxUrl;
+    /** */
+    private final String accessTok;
 
     /** */
     ResultsWriter(String dropboxPath, String dropboxUrl, String accessTok) {

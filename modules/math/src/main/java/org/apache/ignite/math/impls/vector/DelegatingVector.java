@@ -46,12 +46,11 @@ public class DelegatingVector implements Vector {
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /** */
-    public DelegatingVector(){
+    public DelegatingVector() {
         // No-op.
     }
 
     /**
-     *
      * @param dlg
      */
     public DelegatingVector(Vector dlg) {
@@ -326,12 +325,14 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal) {
+    @Override public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun,
+        T zeroVal) {
         return dlg.foldMap(foldFun, mapFun, zeroVal);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun, IgniteBiFunction<Double, Double, Double> combFun, T zeroVal) {
+    @Override public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun,
+        IgniteBiFunction<Double, Double, Double> combFun, T zeroVal) {
         return dlg.foldMap(vec, foldFun, combFun, zeroVal);
     }
 
@@ -383,7 +384,7 @@ public class DelegatingVector implements Vector {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        DelegatingVector that = (DelegatingVector) o;
+        DelegatingVector that = (DelegatingVector)o;
 
         return meta.equals(that.meta) && dlg.equals(that.dlg);
     }

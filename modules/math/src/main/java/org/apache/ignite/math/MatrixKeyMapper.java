@@ -22,7 +22,6 @@ package org.apache.ignite.math;
  */
 public interface MatrixKeyMapper<K> extends KeyMapper<K> {
     /**
-     *
      * @param x Matrix row index.
      * @param y Matrix column index.
      * @return Cache key for given row and column.

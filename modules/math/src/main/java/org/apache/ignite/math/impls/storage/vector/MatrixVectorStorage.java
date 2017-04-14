@@ -43,7 +43,6 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param parent
      * @param row
      * @param col

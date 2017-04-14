@@ -326,7 +326,7 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void getStorage(){
+    public void getStorage() {
         assertNotNull(MathTestConstants.NULL_VALUE, getAbstractVector(createEmptyStorage()));
         assertNotNull(MathTestConstants.NULL_VALUE, getAbstractVector(createStorage()));
         testVector.setStorage(createStorage());

@@ -27,7 +27,8 @@ import java.nio.ByteOrder;
  */
 public class MurmurHash {
     // Hide it.
-    private MurmurHash() {}
+    private MurmurHash() {
+    }
 
     /**
      * This produces exactly the same hash values as the final C+ version of MurmurHash3 and is
@@ -68,7 +69,7 @@ public class MurmurHash {
         // Tail.
         int k1 = 0;
 
-        switch(len & 0x03) {
+        switch (len & 0x03) {
             case 3:
                 k1 = (data[roundedEnd + 2] & 0xff) << 16;
                 // Fallthrough - WTF?
@@ -169,7 +170,7 @@ public class MurmurHash {
             ByteBuffer finish = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
 
             finish.put(buf).rewind();
-            
+
             h ^= finish.getInt();
             h *= m;
         }
@@ -179,37 +180,31 @@ public class MurmurHash {
         h ^= h >>> 15;
 
         buf.order(byteOrder);
-        
+
         return h;
     }
 
     /**
-     *
      * @param data
      * @param seed
-     *
      */
     public static long hash64A(byte[] data, int seed) {
         return hash64A(ByteBuffer.wrap(data), seed);
     }
 
     /**
-     *
      * @param data
      * @param offset
      * @param length
      * @param seed
-     *
      */
     public static long hash64A(byte[] data, int offset, int length, int seed) {
         return hash64A(ByteBuffer.wrap(data, offset, length), seed);
     }
 
     /**
-     *
      * @param buf
      * @param seed
-     *
      */
     public static long hash64A(ByteBuffer buf, int seed) {
         ByteOrder byteOrder = buf.order();

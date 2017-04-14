@@ -31,12 +31,11 @@ public class VectorView extends AbstractVector {
     /**
      * Constructor for {@link Externalizable} interface.
      */
-    public VectorView(){
+    public VectorView() {
         // No-op.
     }
 
     /**
-     *
      * @param parent Backing parent {@link Vector}.
      * @param off Offset to parent vector.
      * @param len Size of the view.
@@ -46,7 +45,6 @@ public class VectorView extends AbstractVector {
     }
 
     /**
-     *
      * @param sto Backing parent {@link VectorStorage}.
      * @param off Offset to parent vector.
      * @param len Size of the view.
@@ -55,7 +53,8 @@ public class VectorView extends AbstractVector {
         super(new DelegateVectorStorage(sto, off, len));
     }
 
-    /** */ private DelegateVectorStorage storage() {
+    /** */
+    private DelegateVectorStorage storage() {
         return (DelegateVectorStorage)getStorage();
     }
 
@@ -79,7 +78,7 @@ public class VectorView extends AbstractVector {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this == o ||
-            ((o!=null)
+            ((o != null)
                 && o.getClass() == getClass()
                 && (getStorage().equals(((VectorView)o).getStorage())));
     }

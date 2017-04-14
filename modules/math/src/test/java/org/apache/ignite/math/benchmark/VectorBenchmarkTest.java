@@ -31,7 +31,9 @@ import static org.junit.Assert.assertNotNull;
 /** */
 public class VectorBenchmarkTest {
     // todo add benchmarks for other methods in Vector and for other types of Vector and Matrix
-    /** */ @Test
+
+    /** */
+    @Test
     @Ignore("Benchmark tests are intended only for manual execution")
     public void testDenseLocalOnHeapVector() throws Exception {
         benchmark("DenseLocalOnHeapVector basic mix", DenseLocalOnHeapVector::new, this::basicMix);
@@ -39,7 +41,8 @@ public class VectorBenchmarkTest {
         benchmark("DenseLocalOnHeapVector fold map", DenseLocalOnHeapVector::new, this::foldMapMix);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     @Ignore("Benchmark tests are intended only for manual execution")
     public void testDenseLocalOffHeapVector() throws Exception {
         benchmark("DenseLocalOffHeapVector basic mix", DenseLocalOffHeapVector::new, this::basicMix);
@@ -53,16 +56,17 @@ public class VectorBenchmarkTest {
         assertNotNull(namePrefix);
 
         new MathBenchmark(namePrefix + " small sizes").execute(() -> {
-            for (int size: new int[] {2, 3, 4, 5, 6, 7}) consumer.accept(size, constructor);
+            for (int size : new int[] {2, 3, 4, 5, 6, 7})
+                consumer.accept(size, constructor);
         });
 
         new MathBenchmark(namePrefix + " sizes powers of 2").execute(() -> {
-            for (int power: new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14})
+            for (int power : new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14})
                 consumer.accept(1 << power, constructor);
         });
 
         new MathBenchmark(namePrefix + " large sizes").execute(() -> {
-            for (int power: new int[] {10, 12, 14, 16})
+            for (int power : new int[] {10, 12, 14, 16})
                 for (int delta : new int[] {-1, 0, 1})
                     consumer.accept((1 << power) + delta, constructor);
         });

@@ -34,7 +34,6 @@ public interface StorageConstants {
     static final int COLUMN_STORAGE_MODE = 2002;
 
     /**
-     *
      * @param mode Access mode to verify.
      */
     default void assertAccessMode(int mode) {
@@ -42,7 +41,6 @@ public interface StorageConstants {
     }
 
     /**
-     *
      * @param mode Storage mode to verify.
      */
     default void assertStorageMode(int mode) {

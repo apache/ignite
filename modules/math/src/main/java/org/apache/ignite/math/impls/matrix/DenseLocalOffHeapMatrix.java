@@ -27,26 +27,24 @@ import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
  */
 public class DenseLocalOffHeapMatrix extends AbstractMatrix {
     /** */
-    public DenseLocalOffHeapMatrix(){
+    public DenseLocalOffHeapMatrix() {
         // No-op.
     }
 
     /**
-     *
      * @param data Backing data array.
      */
-    public DenseLocalOffHeapMatrix(double[][] data){
+    public DenseLocalOffHeapMatrix(double[][] data) {
         assert data != null;
 
         setStorage(new DenseOffHeapMatrixStorage(data));
     }
 
     /**
-     *
      * @param rows Amount of rows in matrix.
      * @param cols Amount of columns in matrix.
      */
-    public DenseLocalOffHeapMatrix(int rows, int cols){
+    public DenseLocalOffHeapMatrix(int rows, int cols) {
         assert rows > 0;
         assert cols > 0;
 

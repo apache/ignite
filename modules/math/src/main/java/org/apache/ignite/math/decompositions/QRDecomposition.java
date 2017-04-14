@@ -27,17 +27,22 @@ import org.apache.ignite.math.functions.Functions;
  * triangular matrix {@code R} so that {@code A = Q*R}.
  */
 public class QRDecomposition extends DecompositionSupport {
-    /** */ private final Matrix q;
-    /** */ private final Matrix r;
+    /** */
+    private final Matrix q;
+    /** */
+    private final Matrix r;
 
-    /** */ private final Matrix mType;
-    /** */ private final boolean fullRank;
+    /** */
+    private final Matrix mType;
+    /** */
+    private final boolean fullRank;
 
-    /** */ private final int rows;
-    /** */ private final int cols;
+    /** */
+    private final int rows;
+    /** */
+    private final int cols;
 
     /**
-     *
      * @param v Value to be checked for being an ordinary double.
      */
     private void checkDouble(double v) {

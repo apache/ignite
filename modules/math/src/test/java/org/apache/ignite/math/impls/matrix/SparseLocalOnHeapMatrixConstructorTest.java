@@ -25,7 +25,8 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class SparseLocalOnHeapMatrixConstructorTest {
-    /** */ @Test
+    /** */
+    @Test
     public void invalidArgsTest() {
         DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new SparseLocalOnHeapMatrix(0, 1),
             "invalid row parameter");
@@ -34,7 +35,8 @@ public class SparseLocalOnHeapMatrixConstructorTest {
             "invalid col parameter");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicTest() {
         assertEquals("Expected number of rows.", 1,
             new SparseLocalOnHeapMatrix(1, 2).rowSize());

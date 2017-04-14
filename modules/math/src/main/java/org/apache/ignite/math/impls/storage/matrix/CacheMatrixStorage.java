@@ -43,14 +43,14 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
     }
 
     /**
-     * 
      * @param rows
      * @param cols
      * @param cache
      * @param keyMapper
      * @param valMapper
      */
-    public CacheMatrixStorage(int rows, int cols, IgniteCache<K, V> cache, MatrixKeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+    public CacheMatrixStorage(int rows, int cols, IgniteCache<K, V> cache, MatrixKeyMapper<K> keyMapper,
+        ValueMapper<V> valMapper) {
         assert rows > 0;
         assert cols > 0;
         assert cache != null;
@@ -65,7 +65,6 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
     }
 
     /**
-     *
      * @return Ignite cache.
      */
     public IgniteCache<K, V> cache() {
@@ -73,7 +72,6 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
     }
 
     /**
-     *
      * @return Key mapper.
      */
     public MatrixKeyMapper<K> keyMapper() {
@@ -81,7 +79,6 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
     }
 
     /**
-     *
      * @return Value mapper.
      */
     public ValueMapper<V> valueMapper() {
@@ -173,7 +170,7 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        CacheMatrixStorage that = (CacheMatrixStorage) o;
+        CacheMatrixStorage that = (CacheMatrixStorage)o;
 
         return (cache != null ? cache.equals(that.cache) : that.cache == null) &&
             (keyMapper != null ? keyMapper.equals(that.keyMapper) : that.keyMapper == null) &&

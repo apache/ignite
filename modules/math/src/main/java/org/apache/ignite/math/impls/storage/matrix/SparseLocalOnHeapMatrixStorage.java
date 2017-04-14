@@ -119,7 +119,8 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
 
                 col.put(x, v);
             }
-        } else {
+        }
+        else {
             if (stoMode == ROW_STORAGE_MODE) {
                 if (sto.containsKey(x)) {
                     Map<Integer, Double> row = sto.get(x);
@@ -128,7 +129,8 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
                         row.remove(y);
                 }
 
-            } else {
+            }
+            else {
                 if (sto.containsKey(y)) {
                     Map<Integer, Double> col = sto.get(y);
 
@@ -212,7 +214,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SparseLocalOnHeapMatrixStorage that = (SparseLocalOnHeapMatrixStorage) o;
+        SparseLocalOnHeapMatrixStorage that = (SparseLocalOnHeapMatrixStorage)o;
 
         return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
             && (sto != null ? sto.equals(that.sto) : that.sto == null);

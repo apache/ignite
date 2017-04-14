@@ -47,7 +47,6 @@ public class MatrixDelegateStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param sto Backing parent storage.
      * @param rowOff Row offset to parent matrix.
      * @param colOff Column offset to parent matrix.
@@ -198,7 +197,7 @@ public class MatrixDelegateStorage implements MatrixStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        MatrixDelegateStorage that = (MatrixDelegateStorage) o;
+        MatrixDelegateStorage that = (MatrixDelegateStorage)o;
 
         return rows == that.rows && cols == that.cols && rowOff == that.rowOff && colOff == that.colOff &&
             (sto != null ? sto.equals(that.sto) : that.sto == null);

@@ -64,7 +64,7 @@ public class VectorViewTest {
 
     /** */
     @Before
-    public void setup(){
+    public void setup() {
         parentVector = new DenseLocalOnHeapVector(MathTestConstants.STORAGE_SIZE);
 
         IntStream.range(0, MathTestConstants.STORAGE_SIZE).forEach(idx -> parentVector.set(idx, Math.random()));
@@ -118,7 +118,8 @@ public class VectorViewTest {
 
             try {
                 assertNull("Null view instead of exception in " + desc, new VectorView(v, 0, 1).likeMatrix(1, 1));
-            } catch (UnsupportedOperationException uoe) {
+            }
+            catch (UnsupportedOperationException uoe) {
                 expECaught = true;
             }
 
@@ -142,12 +143,13 @@ public class VectorViewTest {
 
             ObjectInputStream objInputStream = new ObjectInputStream(new FileInputStream(f));
 
-            VectorView readVector = (VectorView) objInputStream.readObject();
+            VectorView readVector = (VectorView)objInputStream.readObject();
 
             objInputStream.close();
 
             assertTrue(MathTestConstants.VALUE_NOT_EQUALS, testVector.equals(readVector));
-        } catch (ClassNotFoundException | IOException e) {
+        }
+        catch (ClassNotFoundException | IOException e) {
             fail(e.getMessage());
         }
     }

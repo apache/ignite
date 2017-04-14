@@ -30,8 +30,10 @@ import org.apache.ignite.math.exceptions.UnsupportedOperationException;
  * {@link VectorStorage} implementation with random values in the vector elements.
  */
 public class RandomVectorStorage implements VectorStorage {
-    /** */ private static final long SCALE = 1L << 32;
-    /** */ private static final int PRIME = 104047;
+    /** */
+    private static final long SCALE = 1L << 32;
+    /** */
+    private static final int PRIME = 104047;
 
     /** Random generation seed. */
     private int seed;
@@ -43,12 +45,11 @@ public class RandomVectorStorage implements VectorStorage {
     private boolean fastHash;
 
     /** */
-    public RandomVectorStorage(){
+    public RandomVectorStorage() {
         // No-op.
     }
 
     /**
-     *
      * @param size Size of the storage.
      * @param fastHash Whether or not to use fast hashing or Murmur hashing.
      */
@@ -75,7 +76,8 @@ public class RandomVectorStorage implements VectorStorage {
             buf.flip();
 
             return (MurmurHash.hash64A(buf, seed) & (SCALE - 1)) / (double)SCALE;
-        } else
+        }
+        else
             // This isn't a fantastic random number generator, but it is just fine for random projections.
             return (((i * PRIME) & 8) * 0.25) - 1;
     }
@@ -143,7 +145,7 @@ public class RandomVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        RandomVectorStorage that = (RandomVectorStorage) o;
+        RandomVectorStorage that = (RandomVectorStorage)o;
 
         return size == that.size && seed == that.seed && fastHash == that.fastHash;
     }

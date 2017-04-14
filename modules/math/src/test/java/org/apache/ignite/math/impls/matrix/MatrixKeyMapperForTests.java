@@ -24,7 +24,7 @@ public class MatrixKeyMapperForTests implements MatrixKeyMapper<Integer> {
     private int cols;
 
     /** */
-    public MatrixKeyMapperForTests(){
+    public MatrixKeyMapperForTests() {
         // No-op.
     }
 
@@ -62,7 +62,7 @@ public class MatrixKeyMapperForTests implements MatrixKeyMapper<Integer> {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        MatrixKeyMapperForTests that = (MatrixKeyMapperForTests) obj;
+        MatrixKeyMapperForTests that = (MatrixKeyMapperForTests)obj;
 
         return rows == that.rows && cols == that.cols;
     }

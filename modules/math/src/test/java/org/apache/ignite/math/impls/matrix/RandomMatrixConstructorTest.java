@@ -25,7 +25,8 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class RandomMatrixConstructorTest {
-    /** */ @Test
+    /** */
+    @Test
     public void invalidArgsTest() {
         DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new RandomMatrix(0, 1), "invalid row parameter");
 
@@ -40,7 +41,8 @@ public class RandomMatrixConstructorTest {
         DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new RandomMatrix(1, 0, false), "invalid col parameter, fastHash false");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicTest() {
         assertEquals("Expected number of rows, int parameters.", 1,
             new RandomMatrix(1, 2).rowSize());

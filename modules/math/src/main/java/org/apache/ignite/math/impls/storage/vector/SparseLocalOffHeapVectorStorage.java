@@ -30,20 +30,20 @@ import org.apache.ignite.math.exceptions.UnsupportedOperationException;
  * {@link VectorStorage} implementation for {@link org.apache.ignite.math.impls.vector.SparseLocalOffHeapVector}.
  */
 public class SparseLocalOffHeapVectorStorage implements VectorStorage {
-    /** Assume 10% density.*/
+    /** Assume 10% density. */
     private static final int INIT_DENSITY = 10;
     /** Storage capacity. */
     private int size;
-    /** Local off heap map.*/
+    /** Local off heap map. */
     private GridOffHeapMap gridOffHeapMap;
 
     /** */
-    public SparseLocalOffHeapVectorStorage(){
+    public SparseLocalOffHeapVectorStorage() {
         //No-op.
     }
 
     /** */
-    public SparseLocalOffHeapVectorStorage(int cap){
+    public SparseLocalOffHeapVectorStorage(int cap) {
         assert cap > 0;
 
         gridOffHeapMap = GridOffHeapMapFactory.unsafeMap(cap / INIT_DENSITY);
@@ -110,7 +110,7 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
     }
 
     /** */
-    private int hash(int h){
+    private int hash(int h) {
         // Apply base step of MurmurHash; see http://code.google.com/p/smhasher/
         // Despite two multiplies, this is often faster than others
         // with comparable bit-spread properties.
@@ -125,24 +125,24 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
     /** */
     private byte[] intToByteArray(int val) {
         return new byte[] {
-                (byte)(val >>> 24),
-                (byte)(val >>> 16),
-                (byte)(val >>> 8),
-                (byte) val};
+            (byte)(val >>> 24),
+            (byte)(val >>> 16),
+            (byte)(val >>> 8),
+            (byte)val};
     }
 
     /** */
-    private byte[] doubleToByteArray(double val){
+    private byte[] doubleToByteArray(double val) {
         long l = Double.doubleToRawLongBits(val);
         return new byte[] {
-                (byte)((l >> 56) & 0xff),
-                (byte)((l >> 48) & 0xff),
-                (byte)((l >> 40) & 0xff),
-                (byte)((l >> 32) & 0xff),
-                (byte)((l >> 24) & 0xff),
-                (byte)((l >> 16) & 0xff),
-                (byte)((l >> 8) & 0xff),
-                (byte)((l) & 0xff),
+            (byte)((l >> 56) & 0xff),
+            (byte)((l >> 48) & 0xff),
+            (byte)((l >> 40) & 0xff),
+            (byte)((l >> 32) & 0xff),
+            (byte)((l >> 24) & 0xff),
+            (byte)((l >> 16) & 0xff),
+            (byte)((l >> 8) & 0xff),
+            (byte)((l) & 0xff),
         };
     }
 }

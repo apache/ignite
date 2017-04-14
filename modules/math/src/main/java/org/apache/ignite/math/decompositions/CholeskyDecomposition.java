@@ -74,13 +74,16 @@ public class CholeskyDecomposition extends DecompositionSupport {
      * Calculates the Cholesky decomposition of the given matrix.
      *
      * @param mtx the matrix to decompose.
-     * @param relSymmetryThreshold threshold above which off-diagonal elements are considered too different and matrix not symmetric
-     * @param absPositivityThreshold threshold below which diagonal elements are considered null and matrix not positive definite
+     * @param relSymmetryThreshold threshold above which off-diagonal elements are considered too different and matrix
+     * not symmetric
+     * @param absPositivityThreshold threshold below which diagonal elements are considered null and matrix not positive
+     * definite
      * @see #CholeskyDecomposition(Matrix)
      * @see #DFLT_REL_SYMMETRY_THRESHOLD
      * @see #DFLT_ABS_POSITIVITY_THRESHOLD
      */
-    public CholeskyDecomposition(final Matrix mtx, final double relSymmetryThreshold, final double absPositivityThreshold) {
+    public CholeskyDecomposition(final Matrix mtx, final double relSymmetryThreshold,
+        final double absPositivityThreshold) {
         assert mtx != null;
 
         if (mtx.columnSize() != mtx.rowSize())
@@ -177,6 +180,7 @@ public class CholeskyDecomposition extends DecompositionSupport {
 
     /**
      * Return the determinant of the matrix
+     *
      * @return determinant of the matrix
      */
     public double getDeterminant() {
@@ -197,7 +201,7 @@ public class CholeskyDecomposition extends DecompositionSupport {
      * @return a vector X that minimizes the two norm of A &times; X - B
      * @throws CardinalityException if the vectors dimensions do not match
      */
-    public Vector solve(final Vector b){
+    public Vector solve(final Vector b) {
         final int m = lTData.length;
 
         if (b.size() != m)
@@ -237,7 +241,7 @@ public class CholeskyDecomposition extends DecompositionSupport {
      * @return a matrix X that minimizes the two norm of A &times; X - B
      * @throws CardinalityException if the matrices dimensions do not match
      */
-    public Matrix solve(final Matrix b){
+    public Matrix solve(final Matrix b) {
         final int m = lTData.length;
 
         if (b.rowSize() != m)
@@ -284,7 +288,8 @@ public class CholeskyDecomposition extends DecompositionSupport {
         return like(origin, m, b.columnSize()).assign(x);
     }
 
-    /** */private double[][] toDoubleArr(Matrix mtx) {
+    /** */
+    private double[][] toDoubleArr(Matrix mtx) {
         if (mtx.isArrayBased())
             return mtx.getStorage().data();
 

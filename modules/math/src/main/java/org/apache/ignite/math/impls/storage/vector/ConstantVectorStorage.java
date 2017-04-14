@@ -38,7 +38,6 @@ public class ConstantVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param size
      * @param val
      */
@@ -50,7 +49,7 @@ public class ConstantVectorStorage implements VectorStorage {
     }
 
     /**
-     * 
+     *
      *
      */
     public double constant() {
@@ -117,7 +116,7 @@ public class ConstantVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ConstantVectorStorage that = (ConstantVectorStorage) o;
+        ConstantVectorStorage that = (ConstantVectorStorage)o;
 
         return size == that.size && val == that.val;
     }

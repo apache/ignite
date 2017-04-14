@@ -35,7 +35,6 @@ public class ConstantVector extends AbstractReadOnlyVector {
     }
 
     /**
-     *
      * @param size
      * @param val
      */
@@ -76,7 +75,7 @@ public class ConstantVector extends AbstractReadOnlyVector {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ConstantVector that = (ConstantVector) o;
+        ConstantVector that = (ConstantVector)o;
 
         VectorStorage sto = getStorage();
 

@@ -25,7 +25,8 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class DenseLocalOffHeapMatrixConstructorTest {
-    /** */ @Test
+    /** */
+    @Test
     public void invalidArgsTest() {
         DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new DenseLocalOffHeapMatrix(0, 1), "invalid row parameter");
 
@@ -38,7 +39,8 @@ public class DenseLocalOffHeapMatrixConstructorTest {
             "null row in matrix");
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void basicTest() {
         assertEquals("Expected number of rows, int parameters.", 1,
             new DenseLocalOffHeapMatrix(1, 2).rowSize());

@@ -43,7 +43,6 @@ public class DelegateVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param sto Vector storage to delegate to.
      * @param off Offset in the parent vector.
      * @param len Size of the vector.
@@ -132,7 +131,6 @@ public class DelegateVectorStorage implements VectorStorage {
         len = in.readInt();
     }
 
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -141,7 +139,7 @@ public class DelegateVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        DelegateVectorStorage that = (DelegateVectorStorage) o;
+        DelegateVectorStorage that = (DelegateVectorStorage)o;
 
         return len == that.len && off == that.off && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }

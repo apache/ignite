@@ -27,29 +27,34 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class VectorNormTest {
-    /** */ @Test
+    /** */
+    @Test
     public void normalizeTest() {
         normalizeTest(2, (val, len) -> val / len, Vector::normalize);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void normalizePowerTest() {
         for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
             normalizeTest(pow, (val, norm) -> val / norm, (v) -> v.normalize(pow));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void logNormalizeTest() {
         normalizeTest(2, (val, len) -> Math.log1p(val) / (len * Math.log(2)), Vector::logNormalize);
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void logNormalizePowerTest() {
         for (double pow : new double[] {1.1, 2, 2.5})
             normalizeTest(pow, (val, norm) -> Math.log1p(val) / (norm * Math.log(pow)), (v) -> v.logNormalize(pow));
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void kNormTest() {
         for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
             toDoubleTest(pow, ref -> new Norm(ref, pow).calculate(), v -> v.kNorm(pow));

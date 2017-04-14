@@ -145,8 +145,8 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * Assigns values from given array to this vector.
      *
      * @param vals Values to assign.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
      * @return This vector.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     Vector assign(double[] vals);
 
@@ -283,7 +283,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     Vector normalize();
 
     /**
-     * Creates new vector containing the normalized (L_power norm) values of this vector. 
+     * Creates new vector containing the normalized (L_power norm) values of this vector.
      * See http://en.wikipedia.org/wiki/Lp_space for details.
      *
      * @param power The power to use. Must be >= 0. May also be {@link Double#POSITIVE_INFINITY}.
@@ -354,8 +354,8 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * Creates new vector containing element by element sum from both vectors.
      *
      * @param vec Other argument vector to add.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
      * @return New vector.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     Vector plus(Vector vec);
 
@@ -364,8 +364,8 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param idx Vector index to set value at.
      * @param val Value to set.
-     * @throws IndexException Throw if index is out of bounds.
      * @return This vector.
+     * @throws IndexException Throw if index is out of bounds.
      */
     Vector set(int idx, double val);
 
@@ -392,8 +392,8 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param idx Vector index.
      * @param val Increment value.
-     * @throws IndexException Throw if index is out of bounds.
      * @return This vector.
+     * @throws IndexException Throw if index is out of bounds.
      */
     Vector increment(int idx, double val);
 
@@ -406,7 +406,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Gets a new vector that contains product of each element and the argument.
-     * 
+     *
      * @param x Multiply argument.
      * @return New vector.
      */
@@ -422,10 +422,8 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     Vector times(Vector vec);
 
     /**
-     * 
      * @param off
      * @param len
-     *
      */
     Vector viewPart(int off, int len);
 
@@ -453,8 +451,8 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * Folds this vector into a single value.
      *
      * @param foldFun Folding function that takes two parameters: accumulator and the current value.
-     * @param mapFun Mapping function that is called on each vector element before its passed to the accumulator
-     *      (as its second parameter).
+     * @param mapFun Mapping function that is called on each vector element before its passed to the accumulator (as its
+     * second parameter).
      * @param <T> Type of the folded value.
      * @param zeroVal Zero value for fold operation.
      * @return Folded value of this vector.
@@ -472,7 +470,8 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return Folded value of these vectors.
      * @throws CardinalityException Thrown when cardinalities mismatch.
      */
-    <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun, IgniteBiFunction<Double, Double, Double> combFun, T zeroVal);
+    <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun, IgniteBiFunction<Double, Double, Double> combFun,
+        T zeroVal);
 
     /**
      * Gets the sum of squares of all elements in this vector.

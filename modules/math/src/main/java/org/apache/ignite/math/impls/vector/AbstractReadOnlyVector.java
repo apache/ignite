@@ -44,7 +44,7 @@ public abstract class AbstractReadOnlyVector extends AbstractVector {
             if (row == 0 && col == 0)
                 return zeroVal;
 
-            return rowLike ? get(col - 1) : get(row -1);
+            return rowLike ? get(col - 1) : get(row - 1);
         });
     }
 

@@ -29,7 +29,7 @@ import static org.junit.Assert.assertNull;
  */
 public class RandomAccessSparseVectorStorageTest extends VectorBaseStorageTest<SparseLocalOnHeapVectorStorage> {
     /** */
-    @Override public void setUp(){
+    @Override public void setUp() {
         storage = new SparseLocalOnHeapVectorStorage(MathTestConstants.STORAGE_SIZE, StorageConstants.RANDOM_ACCESS_MODE);
     }
 

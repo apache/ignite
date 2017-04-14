@@ -39,7 +39,6 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param vec
      * @param idx
      */
@@ -122,7 +121,7 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SingleElementVectorDelegateStorage that = (SingleElementVectorDelegateStorage) o;
+        SingleElementVectorDelegateStorage that = (SingleElementVectorDelegateStorage)o;
 
         return idx == that.idx && (vec != null ? vec.equals(that.vec) : that.vec == null);
     }

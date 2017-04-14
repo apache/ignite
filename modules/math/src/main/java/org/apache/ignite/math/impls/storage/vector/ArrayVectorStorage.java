@@ -39,7 +39,6 @@ public class ArrayVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param size Vector size.
      */
     public ArrayVectorStorage(int size) {
@@ -49,7 +48,6 @@ public class ArrayVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param data Backing data array.
      */
     public ArrayVectorStorage(double[] data) {

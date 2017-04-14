@@ -47,7 +47,8 @@ import static org.junit.Assert.fail;
  * Tests for {@link Matrix} implementations.
  */
 public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
-    /** */ private static final double DEFAULT_DELTA = 0.000000001d;
+    /** */
+    private static final double DEFAULT_DELTA = 0.000000001d;
 
     /** */
     private void consumeSampleMatrix(BiConsumer<Matrix, String> consumer) {
@@ -73,7 +74,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 assertEquals("Wrong \"like\" matrix for " + desc + "; Unexpected columns.", like.columnSize(), m.columnSize());
 
                 assertEquals("Wrong \"like\" matrix for " + desc
-                    + "; Unexpected class: " + like.getClass().toString(),
+                        + "; Unexpected class: " + like.getClass().toString(),
                     cls,
                     like.getClass());
 
@@ -84,7 +85,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             try {
                 m.like(1, 1);
-            } catch (UnsupportedOperationException uoe) {
+            }
+            catch (UnsupportedOperationException uoe) {
                 expECaught = true;
             }
 
@@ -108,7 +110,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         });
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void testHaveLikeVector() throws InstantiationException, IllegalAccessException {
         for (Class<? extends Matrix> key : likeVectorTypesMap().keySet()) {
             Class<? extends Vector> val = likeVectorTypesMap().get(key);
@@ -135,7 +138,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             try {
                 m.likeVector(1);
-            } catch (UnsupportedOperationException uoe) {
+            }
+            catch (UnsupportedOperationException uoe) {
                 expECaught = true;
             }
 
@@ -146,7 +150,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     /** */
     @Test
     public void testAssignSingleElement() {
-        consumeSampleMatrix((m,desc) -> {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -164,7 +168,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     /** */
     @Test
     public void testAssignArray() {
-        consumeSampleMatrix((m,desc) -> {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
@@ -187,16 +191,16 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     /** */
     @Test
     public void testAssignFunction() {
-        consumeSampleMatrix((m,desc) -> {
+        consumeSampleMatrix((m, desc) -> {
             if (ignore(m.getClass()))
                 return;
 
-            m.assign((i, j) -> (double) (i * m.columnSize() + j));
+            m.assign((i, j) -> (double)(i * m.columnSize() + j));
 
             for (int i = 0; i < m.rowSize(); i++) {
                 for (int j = 0; j < m.columnSize(); j++)
                     assertEquals("Unexpected value for " + desc + " at (" + i + "," + j + ")",
-                        (double) (i * m.columnSize() + j), m.get(i, j), 0d);
+                        (double)(i * m.columnSize() + j), m.get(i, j), 0d);
             }
         });
     }
@@ -419,7 +423,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             try {
                 assertEquals("Unexpected value " + desc, det, diagMtx.determinant(), DEFAULT_DELTA);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 System.out.println(desc);
                 throw e;
             }
@@ -666,7 +671,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
                     try {
                         e.set(newVal);
-                    } catch (UnsupportedOperationException uoe) {
+                    }
+                    catch (UnsupportedOperationException uoe) {
                         if (!(readOnly(m)))
                             throw uoe;
 
@@ -944,7 +950,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     private void testInvalidRowIndex(Supplier<Matrix> supplier, String desc) {
         try {
             supplier.get();
-        } catch (RowIndexException | IndexException ie) {
+        }
+        catch (RowIndexException | IndexException ie) {
             return;
         }
 
@@ -955,7 +962,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     private void testInvalidColIndex(Supplier<Matrix> supplier, String desc) {
         try {
             supplier.get();
-        } catch (ColumnIndexException | IndexException ie) {
+        }
+        catch (ColumnIndexException | IndexException ie) {
             return;
         }
 
@@ -984,7 +992,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     private void testInvalidCardinality(Supplier<Object> supplier, String desc) {
         try {
             supplier.get();
-        } catch (CardinalityException ce) {
+        }
+        catch (CardinalityException ce) {
             return;
         }
 
@@ -1005,7 +1014,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 for (int j = 0; j < m.columnSize(); j++)
                     data[i][j] = m.get(i, j);
 
-        } else {
+        }
+        else {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
                     data[i][j] = i * m.rowSize() + j + 1;
@@ -1024,7 +1034,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 for (int j = 0; j < m.columnSize(); j++)
                     data[i][j] = m.get(i, j);
 
-        } else {
+        }
+        else {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
                     data[i][j] = -0.5d + Math.random();

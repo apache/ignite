@@ -23,27 +23,32 @@ import static org.junit.Assert.assertEquals;
 
 /** */
 public class DenseLocalOffHeapVectorConstructorTest {
-    /** */ private static final int IMPOSSIBLE_SIZE = -1;
+    /** */
+    private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new DenseLocalOffHeapVector(-1).size());
     }
 
-    /** */ @Test(expected = NullPointerException.class)
+    /** */
+    @Test(expected = NullPointerException.class)
     public void nullArrayTest() {
         assertEquals("Null array.", IMPOSSIBLE_SIZE,
             new DenseLocalOffHeapVector((double[])null).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */
+    @Test(expected = AssertionError.class)
     public void zeroSizeTest() {
         assertEquals("0 size.", IMPOSSIBLE_SIZE,
             new DenseLocalOffHeapVector(new double[0]).size());
     }
 
-    /** */ @Test
+    /** */
+    @Test
     public void primitiveTest() {
         assertEquals("1 size.", 1,
             new DenseLocalOffHeapVector(new double[1]).size());

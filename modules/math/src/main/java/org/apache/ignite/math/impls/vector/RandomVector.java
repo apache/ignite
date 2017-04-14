@@ -45,7 +45,6 @@ public class RandomVector extends AbstractReadOnlyVector {
     }
 
     /**
-     *
      * @param size
      * @param fastHash
      */
@@ -54,7 +53,6 @@ public class RandomVector extends AbstractReadOnlyVector {
     }
 
     /**
-     *
      * @param size
      */
     public RandomVector(int size) {
@@ -68,9 +66,9 @@ public class RandomVector extends AbstractReadOnlyVector {
         assert args != null;
 
         if (args.containsKey("size") && args.containsKey("fastHash"))
-            setStorage(mkStorage((int) args.get("size"), (boolean) args.get("fastHash")));
+            setStorage(mkStorage((int)args.get("size"), (boolean)args.get("fastHash")));
         else if (args.containsKey("size"))
-            setStorage(mkStorage((int) args.get("size"), true));
+            setStorage(mkStorage((int)args.get("size"), true));
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
@@ -122,7 +120,7 @@ public class RandomVector extends AbstractReadOnlyVector {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        RandomVector that = (RandomVector) o;
+        RandomVector that = (RandomVector)o;
         VectorStorage sto = getStorage();
 
         return fastHash == that.fastHash && (sto != null ? sto.equals(that.getStorage()) : that.getStorage() == null);

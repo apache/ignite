@@ -32,9 +32,7 @@ public class PivotedVectorStorage implements VectorStorage {
     private int[] unpivot;
 
     /**
-     *
      * @param pivot
-     *
      */
     private static int[] reverse(int[] pivot) {
         int[] res = new int[pivot.length];
@@ -62,7 +60,6 @@ public class PivotedVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param sto
      * @param pivot Mapping from external index to internal.
      * @param unpivot Mapping from internal index to external.
@@ -78,7 +75,6 @@ public class PivotedVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param sto
      * @param pivot Mapping from external index to internal.
      */
@@ -152,7 +148,7 @@ public class PivotedVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        PivotedVectorStorage that = (PivotedVectorStorage) o;
+        PivotedVectorStorage that = (PivotedVectorStorage)o;
 
         return (sto != null ? sto.equals(that.sto) : that.sto == null) && Arrays.equals(pivot, that.pivot)
             && Arrays.equals(unpivot, that.unpivot);

@@ -49,10 +49,14 @@ import org.apache.ignite.math.impls.vector.MatrixVectorView;
  */
 public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.
-    /** */ private static final double Z95 = 1.959964;
-    /** */ private static final double Z80 = 1.281552;
-    /** */ private static final int MAX_SAMPLES = 500;
-    /** */ private static final int MIN_SAMPLES = 15;
+    /** */
+    private static final double Z95 = 1.959964;
+    /** */
+    private static final double Z80 = 1.281552;
+    /** */
+    private static final int MAX_SAMPLES = 500;
+    /** */
+    private static final int MIN_SAMPLES = 15;
 
     /** Cached minimum element. */
     private Element minElm;
@@ -69,7 +73,6 @@ public abstract class AbstractMatrix implements Matrix {
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /**
-     *
      * @param sto Backing {@link MatrixStorage}.
      */
     public AbstractMatrix(MatrixStorage sto) {
@@ -80,11 +83,10 @@ public abstract class AbstractMatrix implements Matrix {
      *
      */
     public AbstractMatrix() {
-       // No-op.
+        // No-op.
     }
 
     /**
-     *
      * @param sto Backing {@link MatrixStorage}.
      */
     protected void setStorage(MatrixStorage sto) {
@@ -94,7 +96,6 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /**
-     *
      * @param row Row index in the matrix.
      * @param col Column index in the matrix.
      * @param v Value to set.
@@ -107,10 +108,8 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /**
-     *
      * @param row Row index in the matrix.
      * @param col Column index in the matrix.
-     *
      */
     protected double storageGet(int row, int col) {
         return sto.get(row, col);
@@ -179,10 +178,8 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /**
-     *
      * @param row Row index in the matrix.
      * @param col Column index in the matrix.
-     *
      */
     private Element mkElement(int row, int col) {
         return new Element() {
@@ -480,7 +477,8 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal) {
+    @Override public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun,
+        T zeroVal) {
         T res = zeroVal;
 
         int rows = rowSize();
@@ -791,13 +789,14 @@ public abstract class AbstractMatrix implements Matrix {
             double stdErr = ivX / Z80;
             double nX = Math.min(Math.max((int)Math.ceil(pq / (stdErr * stdErr)), n), MAX_SAMPLES) - n;
 
-            if(nX < 1.0) // IMPL NOTE this can happen with threshold 1.0
+            if (nX < 1.0) // IMPL NOTE this can happen with threshold 1.0
                 nX = 1.0;
 
             double meanNext = 0.0;
 
             for (int i = 0; i < nX; i++)
-                if (getX(rnd.nextInt(rows), rnd.nextInt(cols)) != 0.0) meanNext++;
+                if (getX(rnd.nextInt(rows), rnd.nextInt(cols)) != 0.0)
+                    meanNext++;
 
             mean = (n * mean + meanNext) / (n + nX);
 
@@ -822,7 +821,7 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public Matrix viewPart(int rowOff, int rows, int colOff, int cols) {
-        return viewPart(new int[] { rowOff, colOff}, new int[] {rows, cols});
+        return viewPart(new int[] {rowOff, colOff}, new int[] {rows, cols});
     }
 
     /** {@inheritDoc} */
@@ -860,7 +859,6 @@ public abstract class AbstractMatrix implements Matrix {
         return res;
     }
 
-
     /**
      * {@inheritDoc}
      *
@@ -873,7 +871,7 @@ public abstract class AbstractMatrix implements Matrix {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        AbstractMatrix that = (AbstractMatrix) o;
+        AbstractMatrix that = (AbstractMatrix)o;
 
         MatrixStorage sto = getStorage();
 

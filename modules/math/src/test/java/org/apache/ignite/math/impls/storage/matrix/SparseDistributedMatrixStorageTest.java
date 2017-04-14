@@ -41,7 +41,7 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
     /**
      * Default constructor.
      */
-    public SparseDistributedMatrixStorageTest(){
+    public SparseDistributedMatrixStorageTest() {
         super(false);
     }
 
@@ -57,7 +57,7 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
     }
 
     /**
-     *  {@inheritDoc}
+     * {@inheritDoc}
      */
     @Override protected void beforeTest() throws Exception {
         ignite = grid(NODE_COUNT);
@@ -97,13 +97,13 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
                 storage.set(i, j, v);
 
                 assert Double.compare(v, storage.get(i, j)) == 0;
-                assert Double.compare(v, storage.get(i,j)) == 0;
+                assert Double.compare(v, storage.get(i, j)) == 0;
             }
         }
     }
 
     /** */
-    public void testAttibutes(){
+    public void testAttibutes() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;

@@ -54,9 +54,7 @@ public class TracerTest {
     };
 
     /**
-     *
      * @param size
-     *
      */
     private Vector makeRandomVector(int size) {
         DenseLocalOnHeapVector vec = new DenseLocalOnHeapVector(size);
@@ -67,10 +65,8 @@ public class TracerTest {
     }
 
     /**
-     *
      * @param rows
      * @param cols
-     *
      */
     private Matrix makeRandomMatrix(int rows, int cols) {
         DenseLocalOnHeapMatrix mtx = new DenseLocalOnHeapMatrix(rows, cols);
@@ -128,7 +124,7 @@ public class TracerTest {
     @Test
     public void testHtmlMatrixTracer() throws IOException {
         Matrix mtx1 = makeRandomMatrix(100, 100);
-        
+
         // Custom color mapping.
         Tracer.showHtml(mtx1, COLOR_MAPPER);
 
@@ -146,8 +142,8 @@ public class TracerTest {
     public void testWriteVectorToCSVFile() throws IOException {
         DenseLocalOnHeapVector vector = new DenseLocalOnHeapVector(MathTestConstants.STORAGE_SIZE);
 
-        for(int i = 0; i < vector.size(); i++)
-            vector.set(i,Math.random());
+        for (int i = 0; i < vector.size(); i++)
+            vector.set(i, Math.random());
 
         Path file = createTempFile("vector", ".csv");
 
@@ -173,13 +169,13 @@ public class TracerTest {
     public void testWriteMatrixToCSVFile() throws IOException {
         DenseLocalOnHeapMatrix matrix = new DenseLocalOnHeapMatrix(MathTestConstants.STORAGE_SIZE, MathTestConstants.STORAGE_SIZE);
 
-        for(int i = 0; i < matrix.rowSize(); i++)
-            for(int j = 0; j < matrix.columnSize(); j++)
+        for (int i = 0; i < matrix.rowSize(); i++)
+            for (int j = 0; j < matrix.columnSize(); j++)
                 matrix.set(i, j, Math.random());
 
         Path file = createTempFile("matrix", ".csv");
 
-        Tracer.saveAsCsv(matrix, DEFAULT_FORMAT,file.toString());
+        Tracer.saveAsCsv(matrix, DEFAULT_FORMAT, file.toString());
 
         System.out.println("Matrix exported: " + file.getFileName());
 
@@ -187,8 +183,8 @@ public class TracerTest {
         Optional<String> reduce = strings.stream().reduce((s1, s2) -> s1 + s2);
         String[] csvVals = reduce.get().split(",");
 
-        for(int i = 0; i < matrix.rowSize(); i++)
-            for(int j = 0; j < matrix.columnSize(); j++) {
+        for (int i = 0; i < matrix.rowSize(); i++)
+            for (int j = 0; j < matrix.columnSize(); j++) {
                 Double csvVal = Double.valueOf(csvVals[i * matrix.rowSize() + j]);
 
                 assertEquals("Unexpected value.", csvVal, matrix.get(i, j), DEFAULT_DELTA);

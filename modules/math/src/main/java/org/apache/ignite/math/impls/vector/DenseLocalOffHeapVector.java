@@ -30,20 +30,19 @@ import org.apache.ignite.math.impls.storage.vector.DenseLocalOffHeapVectorStorag
  */
 public class DenseLocalOffHeapVector extends AbstractVector {
     /** */
-    public DenseLocalOffHeapVector(){
+    public DenseLocalOffHeapVector() {
         // No-op.
     }
 
     /** */
-    private void makeOffheapStorage(int size){
+    private void makeOffheapStorage(int size) {
         setStorage(new DenseLocalOffHeapVectorStorage(size));
     }
 
     /**
-     *
      * @param arr Array to copy to offheap storage.
      */
-    public DenseLocalOffHeapVector(double[] arr){
+    public DenseLocalOffHeapVector(double[] arr) {
         makeOffheapStorage(arr.length);
 
         assign(arr);
@@ -52,7 +51,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
     /**
      * @param size Vector cardinality.
      */
-    public DenseLocalOffHeapVector(int size){
+    public DenseLocalOffHeapVector(int size) {
         makeOffheapStorage(size);
     }
 

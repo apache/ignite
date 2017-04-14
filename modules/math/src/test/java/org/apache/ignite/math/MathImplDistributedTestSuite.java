@@ -34,6 +34,6 @@ import org.junit.runners.Suite;
     SparseDistributedMatrixStorageTest.class,
     SparseDistributedMatrixTest.class,
 })
-public class MathImplDistributedTestSuite{
+public class MathImplDistributedTestSuite {
     // No-op.
 }
