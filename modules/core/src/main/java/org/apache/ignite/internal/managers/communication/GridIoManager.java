@@ -837,20 +837,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
 
-        try {
-            Message msg0 = msg.message();
+        String execName = msg.executorName();
 
-            if (msg0 instanceof ExecutorAwareMessage) {
-                String execName = ((ExecutorAwareMessage)msg0).executorName();
-
-                if (!F.isEmpty(execName))
-                    pools.customPoolByName(execName).execute(c);
-                else
-                    pools.poolForPolicy(plc).execute(c);
-
+        if (execName != null) {
+            try {
+                pools.customPoolByName(execName).execute(c);
             }
-            else
-                pools.poolForPolicy(plc).execute(c);
+            catch (RejectedExecutionException e) {
+                U.error(log, "Failed to process regular message due to rejected execution. Increase the upper bound " +
+                    "of custom executor \"" + execName + "\" queue size. Will attempt to process message in the " +
+                    "listener thread instead.");
+
+                c.run();
+            }
+
+            return;
+        }
+
+        try {
+            pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process regular message due to execution rejection. Increase the upper bound " +
