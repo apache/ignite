@@ -164,6 +164,15 @@ public class IgfsModeResolver implements Externalizable {
                 modes.add(new T2<>(path, IgfsMode.fromOrdinal(in.readByte())));
             }
 
+            dualParentsWithPrimaryChildren = new HashSet<>();
+
+            try {
+                modes = IgfsUtils.preparePathModes(dfltMode, modes, dualParentsWithPrimaryChildren);
+            }
+            catch (IgniteCheckedException e) {
+                // No-op.
+            }
+
             modesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
         }
     }
