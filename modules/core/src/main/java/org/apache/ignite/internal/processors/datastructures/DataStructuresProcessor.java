@@ -1041,7 +1041,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     hdr.id(),
                     name,
                     hdr.collocated(),
-                    cctx.binaryMarshaller(),
                     hdr.head(),
                     hdr.tail(),
                     0);
