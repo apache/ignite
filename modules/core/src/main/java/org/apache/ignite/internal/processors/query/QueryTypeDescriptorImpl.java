@@ -85,6 +85,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private boolean valTextIdx;
 
     /** */
+    private int typeId;
+
+    /** */
     private String affKey;
 
     /** Obsolete. */
@@ -124,7 +127,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * Gets table name for type.
      * @return Table name.
      */
-    public String tableName() {
+    @Override public String tableName() {
         return tblName != null ? tblName : name;
     }
 
@@ -191,6 +194,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         synchronized (idxMux) {
             return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(idxs);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return typeId;
+    }
+
+    /**
+     * @param typeId Type ID.
+     */
+    public void typeId(int typeId) {
+        this.typeId = typeId;
     }
 
     /**

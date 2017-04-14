@@ -84,20 +84,20 @@ void CheckRowData(Row& row, size_t rowIdx)
     char bitBuf;
     int* offset = 0;
 
-    ApplicationDataBuffer appLongBuf(type_traits::IGNITE_ODBC_C_TYPE_SIGNED_LONG, &longBuf, sizeof(longBuf), &reslen, &offset);
-    ApplicationDataBuffer appStrBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, &offset);
-    ApplicationDataBuffer appGuidBuf(type_traits::IGNITE_ODBC_C_TYPE_GUID, &guidBuf, sizeof(guidBuf), &reslen, &offset);
-    ApplicationDataBuffer appBitBuf(type_traits::IGNITE_ODBC_C_TYPE_BIT, &bitBuf, sizeof(bitBuf), &reslen, &offset);
+    ApplicationDataBuffer appLongBuf(type_traits::OdbcNativeType::AI_SIGNED_LONG, &longBuf, sizeof(longBuf), &reslen, &offset);
+    ApplicationDataBuffer appStrBuf(type_traits::OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen, &offset);
+    ApplicationDataBuffer appGuidBuf(type_traits::OdbcNativeType::AI_GUID, &guidBuf, sizeof(guidBuf), &reslen, &offset);
+    ApplicationDataBuffer appBitBuf(type_traits::OdbcNativeType::AI_BIT, &bitBuf, sizeof(bitBuf), &reslen, &offset);
 
     // Checking size.
     BOOST_REQUIRE(row.GetSize() == 4);
 
     // Checking 1st column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(1, appLongBuf) == SQL_RESULT_SUCCESS);
+    BOOST_REQUIRE(row.ReadColumnToBuffer(1, appLongBuf) == SqlResult::AI_SUCCESS);
     BOOST_REQUIRE(longBuf == rowIdx * 10);
 
     // Checking 2nd column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(2, appStrBuf) == SQL_RESULT_SUCCESS);
+    BOOST_REQUIRE(row.ReadColumnToBuffer(2, appStrBuf) == SqlResult::AI_SUCCESS);
 
     std::string strReal(strBuf, static_cast<size_t>(reslen));
     std::string strExpected(GetStrColumnValue(rowIdx));
@@ -105,7 +105,7 @@ void CheckRowData(Row& row, size_t rowIdx)
     BOOST_REQUIRE(strReal == strExpected);
 
     // Checking 3rd column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(3, appGuidBuf) == SQL_RESULT_SUCCESS);
+    BOOST_REQUIRE(row.ReadColumnToBuffer(3, appGuidBuf) == SqlResult::AI_SUCCESS);
 
     BOOST_REQUIRE(guidBuf.Data1 == 0x2b218f63UL);
     BOOST_REQUIRE(guidBuf.Data2 == 0x642aU);
@@ -121,7 +121,7 @@ void CheckRowData(Row& row, size_t rowIdx)
     BOOST_REQUIRE(guidBuf.Data4[7] == 0x98 + rowIdx);
 
     // Checking 4th column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(4, appBitBuf) == SQL_RESULT_SUCCESS);
+    BOOST_REQUIRE(row.ReadColumnToBuffer(4, appBitBuf) == SqlResult::AI_SUCCESS);
     BOOST_REQUIRE(bitBuf == rowIdx % 2);
 }
 

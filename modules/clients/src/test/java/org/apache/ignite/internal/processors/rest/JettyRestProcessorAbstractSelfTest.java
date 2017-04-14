@@ -41,7 +41,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -73,7 +72,6 @@ import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStartTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeResetMetricsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTask;
@@ -684,7 +682,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Put command result: " + ret);
 
-        assertEquals("putVal", jcache().localPeek("putKey", CachePeekMode.ONHEAP));
+        assertEquals("putVal", jcache().localPeek("putKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -716,8 +714,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertCacheOperation(ret, true);
 
-        assertEquals("addVal1", jcache().localPeek("addKey1", CachePeekMode.ONHEAP));
-        assertEquals("addVal2", jcache().localPeek("addKey2", CachePeekMode.ONHEAP));
+        assertEquals("addVal1", jcache().localPeek("addKey1"));
+        assertEquals("addVal2", jcache().localPeek("addKey2"));
     }
 
     /**
@@ -746,8 +744,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Put all command result: " + ret);
 
-        assertEquals("putVal1", jcache().localPeek("putKey1", CachePeekMode.ONHEAP));
-        assertEquals("putVal2", jcache().localPeek("putKey2", CachePeekMode.ONHEAP));
+        assertEquals("putVal1", jcache().localPeek("putKey1"));
+        assertEquals("putVal2", jcache().localPeek("putKey2"));
 
         assertCacheBulkOperation(ret, true);
     }
@@ -758,14 +756,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testRemove() throws Exception {
         jcache().put("rmvKey", "rmvVal");
 
-        assertEquals("rmvVal", jcache().localPeek("rmvKey", CachePeekMode.ONHEAP));
+        assertEquals("rmvVal", jcache().localPeek("rmvKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE.key(),
             "key", "rmvKey"));
 
         info("Remove command result: " + ret);
 
-        assertNull(jcache().localPeek("rmvKey", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("rmvKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -779,20 +777,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jcache().put("rmvKey3", "rmvVal3");
         jcache().put("rmvKey4", "rmvVal4");
 
-        assertEquals("rmvVal1", jcache().localPeek("rmvKey1", CachePeekMode.ONHEAP));
-        assertEquals("rmvVal2", jcache().localPeek("rmvKey2", CachePeekMode.ONHEAP));
-        assertEquals("rmvVal3", jcache().localPeek("rmvKey3", CachePeekMode.ONHEAP));
-        assertEquals("rmvVal4", jcache().localPeek("rmvKey4", CachePeekMode.ONHEAP));
+        assertEquals("rmvVal1", jcache().localPeek("rmvKey1"));
+        assertEquals("rmvVal2", jcache().localPeek("rmvKey2"));
+        assertEquals("rmvVal3", jcache().localPeek("rmvKey3"));
+        assertEquals("rmvVal4", jcache().localPeek("rmvKey4"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE_ALL.key(),
             "k1", "rmvKey1", "k2", "rmvKey2"));
 
         info("Remove all command result: " + ret);
 
-        assertNull(jcache().localPeek("rmvKey1", CachePeekMode.ONHEAP));
-        assertNull(jcache().localPeek("rmvKey2", CachePeekMode.ONHEAP));
-        assertEquals("rmvVal3", jcache().localPeek("rmvKey3", CachePeekMode.ONHEAP));
-        assertEquals("rmvVal4", jcache().localPeek("rmvKey4", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("rmvKey1"));
+        assertNull(jcache().localPeek("rmvKey2"));
+        assertEquals("rmvVal3", jcache().localPeek("rmvKey3"));
+        assertEquals("rmvVal4", jcache().localPeek("rmvKey4"));
 
         assertCacheBulkOperation(ret, true);
 
@@ -800,10 +798,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Remove all command result: " + ret);
 
-        assertNull(jcache().localPeek("rmvKey1", CachePeekMode.ONHEAP));
-        assertNull(jcache().localPeek("rmvKey2", CachePeekMode.ONHEAP));
-        assertNull(jcache().localPeek("rmvKey3", CachePeekMode.ONHEAP));
-        assertNull(jcache().localPeek("rmvKey4", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("rmvKey1"));
+        assertNull(jcache().localPeek("rmvKey2"));
+        assertNull(jcache().localPeek("rmvKey3"));
+        assertNull(jcache().localPeek("rmvKey4"));
         assertTrue(jcache().localSize() == 0);
 
         assertCacheBulkOperation(ret, true);
@@ -815,14 +813,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testCas() throws Exception {
         jcache().put("casKey", "casOldVal");
 
-        assertEquals("casOldVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertEquals("casOldVal", jcache().localPeek("casKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(),
             "key", "casKey", "val2", "casOldVal", "val1", "casNewVal"));
 
         info("CAS command result: " + ret);
 
-        assertEquals("casNewVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertEquals("casNewVal", jcache().localPeek("casKey"));
 
         assertCacheOperation(ret, true);
 
@@ -835,14 +833,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testReplace() throws Exception {
         jcache().put("repKey", "repOldVal");
 
-        assertEquals("repOldVal", jcache().localPeek("repKey", CachePeekMode.ONHEAP));
+        assertEquals("repOldVal", jcache().localPeek("repKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REPLACE.key(),
             "key", "repKey", "val", "repVal"));
 
         info("Replace command result: " + ret);
 
-        assertEquals("repVal", jcache().localPeek("repKey", CachePeekMode.ONHEAP));
+        assertEquals("repVal", jcache().localPeek("repKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -943,14 +941,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testCar() throws Exception {
         jcache().put("casKey", "casOldVal");
 
-        assertEquals("casOldVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertEquals("casOldVal", jcache().localPeek("casKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(),
             "key", "casKey", "val2", "casOldVal"));
 
         info("CAR command result: " + ret);
 
-        assertNull(jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("casKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -959,14 +957,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testPutIfAbsent() throws Exception {
-        assertNull(jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("casKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(),
             "key", "casKey", "val1", "casNewVal"));
 
         info("PutIfAbsent command result: " + ret);
 
-        assertEquals("casNewVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertEquals("casNewVal", jcache().localPeek("casKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -977,13 +975,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testCasRemove() throws Exception {
         jcache().put("casKey", "casVal");
 
-        assertEquals("casVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertEquals("casVal", jcache().localPeek("casKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(), "key", "casKey"));
 
         info("CAS Remove command result: " + ret);
 
-        assertNull(jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("casKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -1287,14 +1285,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonTaskResult(ret);
 
-        ret = content(new VisorGatewayArgument(VisorCacheSwapBackupsTask.class)
-            .forNode(locNode)
-            .set(String.class, "person"));
-
-        info("VisorCacheSwapBackupsTask result: " + ret);
-
-        jsonTaskResult(ret);
-
         ret = content(new VisorGatewayArgument(VisorCacheRebalanceTask.class)
             .forNode(locNode)
             .set(String.class, "person"));
@@ -1523,7 +1513,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonTaskResult(ret);
 
-        /** Spring XML to start cache via Visor task. */
+        // Spring XML to start cache via Visor task.
         final String START_CACHE =
             "<beans xmlns=\"http://www.springframework.org/schema/beans\"\n" +
                     "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +

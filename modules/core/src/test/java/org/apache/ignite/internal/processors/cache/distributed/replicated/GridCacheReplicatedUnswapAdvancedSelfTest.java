@@ -30,7 +30,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -57,11 +56,8 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setSwapEnabled(true);
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         if (getTestIgniteInstanceName(1).equals(igniteInstanceName) || cfg.getMarshaller() instanceof BinaryMarshaller)
             cfg.setClassLoader(getExternalClassLoader());
@@ -73,6 +69,8 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testUnswapAdvanced() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4551");
+
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 

@@ -65,6 +65,8 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -81,7 +83,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -1416,6 +1417,31 @@ public class GridReduceQueryExecutor {
          */
         void disconnected(CacheException e) {
             state(e, null);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Iter extends GridH2ResultSetIterator<List<?>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param data Data array.
+         * @throws IgniteCheckedException If failed.
+         */
+        protected Iter(ResultSet data) throws IgniteCheckedException {
+            super(data, true, false);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected List<?> createRow() {
+            ArrayList<Object> res = new ArrayList<>(row.length);
+
+            Collections.addAll(res, row);
+
+            return res;
         }
     }
 }

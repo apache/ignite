@@ -48,13 +48,6 @@ public class VisorCacheQueryConfiguration implements Serializable, LessNamingBea
     private String sqlSchema;
 
     /**
-     * @return Schema name, which is used by SQL engine for SQL statements generation.
-     */
-    public String sqlSchema() {
-        return sqlSchema;
-    }
-
-    /**
      * @param clss Classes to compact.
      */
     private static String[] compactClasses(Class<?>[] clss) {
@@ -80,7 +73,6 @@ public class VisorCacheQueryConfiguration implements Serializable, LessNamingBea
         longQryWarnTimeout = ccfg.getLongQueryWarningTimeout();
         sqlEscapeAll = ccfg.isSqlEscapeAll();
         indexedTypes = compactClasses(ccfg.getIndexedTypes());
-        sqlOnheapRowCacheSize = ccfg.getSqlOnheapRowCacheSize();
         sqlSchema = ccfg.getSqlSchema();
 
         return this;
@@ -119,5 +111,12 @@ public class VisorCacheQueryConfiguration implements Serializable, LessNamingBea
      */
     public int sqlOnheapRowCacheSize() {
         return sqlOnheapRowCacheSize;
+    }
+
+    /**
+     * @return Schema name, which is used by SQL engine for SQL statements generation.
+     */
+    public String sqlSchema() {
+        return sqlSchema;
     }
 }

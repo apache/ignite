@@ -25,7 +25,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -50,9 +49,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
 
     /** */
     private static final String WRONG_AFFINITY_MAPPER_IGNITE_INSTANCE_NAME = "cacheAffinityMapperCheckFails";
-
-    /** */
-    private static final String WRONG_OFF_HEAP_IGNITE_INSTANCE_NAME = "cacheOhhHeapCheckFails";
 
     /** */
     private static final String DUP_CACHES_IGNITE_INSTANCE_NAME = "duplicateCachesCheckFails";
@@ -109,8 +105,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             dfltCacheCfg.setAffinity(new TestRendezvousAffinityFunction());
         else if (igniteInstanceName.contains(WRONG_AFFINITY_MAPPER_IGNITE_INSTANCE_NAME))
             dfltCacheCfg.setAffinityMapper(new TestCacheDefaultAffinityKeyMapper());
-        else if (igniteInstanceName.contains(WRONG_OFF_HEAP_IGNITE_INSTANCE_NAME))
-            dfltCacheCfg.setMemoryMode(OFFHEAP_VALUES);
 
         if (igniteInstanceName.contains(DUP_CACHES_IGNITE_INSTANCE_NAME))
             cfg.setCacheConfiguration(namedCacheCfg, namedCacheCfg);
@@ -168,13 +162,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         finally {
             stopAllGrids();
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvalidOffHeapConfiguration() throws Exception {
-        startInvalidGrid(WRONG_OFF_HEAP_IGNITE_INSTANCE_NAME);
     }
 
     /**

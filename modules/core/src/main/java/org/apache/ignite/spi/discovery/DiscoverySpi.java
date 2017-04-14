@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -47,6 +48,14 @@ import org.jetbrains.annotations.Nullable;
  * to undefined behavior and explicitly not supported.
  */
 public interface DiscoverySpi extends IgniteSpi {
+    /**
+     * Gets consistent ID.
+     *
+     * @return Consistent ID of this Ignite instance or {@code null} if not applicable.
+     * @throws IgniteSpiException If failed.
+     */
+    @Nullable public Serializable consistentId() throws IgniteSpiException;
+
     /**
      * Gets collection of remote nodes in grid or empty collection if no remote nodes found.
      *
@@ -147,7 +156,7 @@ public interface DiscoverySpi extends IgniteSpi {
     /**
      * Sends custom message across the ring.
      * @param msg Custom message.
-     * @throws IgniteException if failed to marshal evt.
+     * @throws IgniteException if failed to sent the event message.
      */
     public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException;
 

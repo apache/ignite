@@ -138,7 +138,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final Collection<GridDisconnectListener> disconnectLsnrs = new ConcurrentLinkedQueue<>();
 
     /** Pool processor. */
-    private PoolProcessor pools;
+    private final PoolProcessor pools;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -249,7 +249,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         assertParameter(discoDelay > 0, "discoveryStartupDelay > 0");
 
         startSpi();
@@ -746,7 +746,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
-                    threadProcessingMessage(true);
+                    threadProcessingMessage(true, msgC);
 
                     GridMessageListener lsnr = listenerGet0(msg.topic());
 
@@ -760,7 +760,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     invokeListener(msg.policy(), lsnr, nodeId, obj);
                 }
                 finally {
-                    threadProcessingMessage(false);
+                    threadProcessingMessage(false, null);
 
                     msgC.run();
                 }
@@ -795,12 +795,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
-                    threadProcessingMessage(true);
+                    threadProcessingMessage(true, msgC);
 
                     processRegularMessage0(msg, nodeId);
                 }
                 finally {
-                    threadProcessingMessage(false);
+                    threadProcessingMessage(false, null);
 
                     msgC.run();
                 }
@@ -826,6 +826,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             ctx.getStripedExecutorService().execute(msg.partition(), c);
 
             return;
+        }
+
+        if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
+            IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
+
+            if (msg0.processFromNioThread()) {
+                c.run();
+
+                return;
+            }
         }
 
         try {
@@ -1154,12 +1164,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Runnable c = new Runnable() {
             @Override public void run() {
                 try {
-                    threadProcessingMessage(true);
+                    threadProcessingMessage(true, msgC);
 
                     unwindMessageSet(msgSet0, lsnr);
                 }
                 finally {
-                    threadProcessingMessage(false);
+                    threadProcessingMessage(false, null);
                 }
             }
         };

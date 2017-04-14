@@ -34,7 +34,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -94,6 +102,12 @@ public class GridH2Table extends TableBase {
     /** */
     private final boolean snapshotEnabled;
 
+    /** */
+    private final H2RowFactory rowFactory;
+
+    /** */
+    private volatile boolean rebuildFromHashInProgress;
+
     /**
      * Creates table.
      *
@@ -137,13 +151,17 @@ public class GridH2Table extends TableBase {
         }
 
         // Indexes must be created in the end when everything is ready.
+        rowFactory = idxsFactory.createRowFactory(this);
         idxs = idxsFactory.createIndexes(this);
 
         assert idxs != null;
-        assert idxs.size() >= 1;
 
         // Add scan index at 0 which is required by H2.
-        idxs.add(0, new ScanIndex(index(0)));
+        if (idxs.size() >= 2
+                && index(0).getIndexType().isHash())
+            idxs.add(0, new ScanIndex(index(1), index(0)));
+        else
+            idxs.add(0, new ScanIndex(index(0), null));
 
         snapshotEnabled = desc == null || desc.snapshotableIndex();
 
@@ -183,8 +201,8 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If row was found.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean onSwap(CacheObject key) throws IgniteCheckedException {
-        return onSwapUnswap(key, null);
+    public boolean onSwap(KeyCacheObject key, int partId) throws IgniteCheckedException {
+        return onSwapUnswap(key, partId, null);
     }
 
     /**
@@ -195,10 +213,10 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If row was found.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean onUnswap(CacheObject key, CacheObject val) throws IgniteCheckedException {
+    public boolean onUnswap(KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException {
         assert val != null : "Key=" + key;
 
-        return onSwapUnswap(key, val);
+        return onSwapUnswap(key, partId, val);
     }
 
     /**
@@ -210,14 +228,14 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean onSwapUnswap(CacheObject key, @Nullable CacheObject val) throws IgniteCheckedException {
+    private boolean onSwapUnswap(KeyCacheObject key, int partId, @Nullable CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
-        GridH2TreeIndex pk = pk();
+        GridH2IndexBase pk = pk();
 
         assert desc != null;
 
-        GridH2Row searchRow = desc.createRow(key, null, 0);
+        GridH2Row searchRow = desc.createRow(key, partId, null, null, 0);
 
         GridUnsafeMemory mem = desc.memory();
 
@@ -250,7 +268,7 @@ public class GridH2Table extends TableBase {
     /**
      * @return Space name.
      */
-    @Nullable String spaceName() {
+    @Nullable public String spaceName() {
         return spaceName;
     }
 
@@ -411,11 +429,11 @@ public class GridH2Table extends TableBase {
         assert snapshotEnabled;
 
         if (snapshots == null) // Nothing to reuse, create new snapshots.
-            snapshots = new Object[idxs.size() - 1];
+            snapshots = new Object[idxs.size() - 2];
 
-        // Take snapshots on all except first which is scan.
-        for (int i = 1, len = idxs.size(); i < len; i++) {
-            Object s = snapshots[i - 1];
+        // Take snapshots on all except first which is scan and second which is hash.
+        for (int i = 2, len = idxs.size(); i < len; i++) {
+            Object s = snapshots[i - 2];
 
             boolean reuseExisting = s != null;
 
@@ -426,7 +444,7 @@ public class GridH2Table extends TableBase {
                 if (qctx != null)
                     qctx.clearSnapshots();
 
-                for (int j = 1; j < i; j++)
+                for (int j = 2; j < i; j++)
                     index(j).releaseSnapshot();
 
                 // Drop invalidated snapshot.
@@ -435,7 +453,7 @@ public class GridH2Table extends TableBase {
                 return null;
             }
 
-            snapshots[i - 1] = s;
+            snapshots[i - 2] = s;
         }
 
         return snapshots;
@@ -490,8 +508,8 @@ public class GridH2Table extends TableBase {
      * @param idxs Indexes.
      */
     private void releaseSnapshots0(ArrayList<Index> idxs) {
-        // Release snapshots on all except first which is scan.
-        for (int i = 1, len = idxs.size(); i < len; i++)
+        // Release snapshots on all except first which is scan and second which is hash.
+        for (int i = 2, len = idxs.size(); i < len; i++)
             ((GridH2IndexBase)idxs.get(i)).releaseSnapshot();
     }
 
@@ -506,11 +524,19 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(CacheObject key, CacheObject val, long expirationTime, boolean rmv)
+    public boolean update(KeyCacheObject key,
+        int partId,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expirationTime,
+        boolean rmv,
+        long link)
         throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2Row row = desc.createRow(key, val, expirationTime);
+        GridH2Row row = desc.createRow(key, partId, val, ver, expirationTime);
+
+        row.link = link;
 
         if (!rmv)
             ((GridH2AbstractKeyValueRow)row).valuesCache(new Value[getColumns().length]);
@@ -522,6 +548,27 @@ public class GridH2Table extends TableBase {
             if (!rmv)
                 ((GridH2AbstractKeyValueRow)row).valuesCache(null);
         }
+    }
+
+    /**
+     * @param key Key to read.
+     * @return Read value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public IgniteBiTuple<CacheObject, GridCacheVersion> read(
+        GridCacheContext cctx,
+        KeyCacheObject key,
+        int partId
+    ) throws IgniteCheckedException {
+        assert desc != null;
+
+        GridH2Row row = desc.createRow(key, partId, null, null, 0);
+
+        GridH2IndexBase primaryIdx = pk();
+
+        GridH2Row res = primaryIdx.findOne(row);
+
+        return res != null ? F.t(res.val, res.ver) : null;
     }
 
     /**
@@ -539,8 +586,8 @@ public class GridH2Table extends TableBase {
      *
      * @return Primary key.
      */
-    private GridH2TreeIndex pk() {
-        return (GridH2TreeIndex)idxs.get(1);
+    private GridH2IndexBase pk() {
+        return (GridH2IndexBase)idxs.get(2);
     }
 
     /**
@@ -563,9 +610,11 @@ public class GridH2Table extends TableBase {
             desc.guard().begin();
 
         try {
-            GridH2TreeIndex pk = pk();
+            GridH2IndexBase pk = pk();
 
             if (!del) {
+                assert rowFactory == null || row.link != 0 : row;
+
                 GridH2Row old = pk.put(row); // Put to PK.
 
                 if (old instanceof GridH2AbstractKeyValueRow) { // Unswap value on replace.
@@ -578,10 +627,10 @@ public class GridH2Table extends TableBase {
 
                 int len = idxs.size();
 
-                int i = 1;
+                int i = 2;
 
                 // Put row if absent to all indexes sequentially.
-                // Start from 2 because 0 - Scan (don't need to update), 1 - PK (already updated).
+                // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
                 while (++i < len) {
                     GridH2IndexBase idx = index(i);
 
@@ -603,14 +652,12 @@ public class GridH2Table extends TableBase {
                 }
 
                 if (old != null) {
-                    size.decrement();
-
                     // Remove row from all indexes.
-                    // Start from 2 because 0 - Scan (don't need to update), 1 - PK (already updated).
-                    for (int i = 2, len = idxs.size(); i < len; i++) {
+                    // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
+                    for (int i = 3, len = idxs.size(); i < len; i++) {
                         Row res = index(i).remove(old);
 
-                        assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
+                        assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
                     }
 
                     for (GridH2IndexBase idx : tmpIdxs.values()) {
@@ -618,6 +665,8 @@ public class GridH2Table extends TableBase {
 
                         assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + " -> " + idx.getName();
                     }
+
+                    size.decrement();
                 }
                 else
                     return false;
@@ -652,10 +701,10 @@ public class GridH2Table extends TableBase {
         if (old2 != null) { // Row was replaced in index.
             if (!eq(pk, old2, old))
                 throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
-                    "not supported.");
+                    "not supported [idx=" + idx + ", old=" + old + ", old2=" + old2 + ']');
         }
         else if (old != null) // Row was not replaced, need to remove manually.
-            idx.remove(old);
+            idx.removex(old);
     }
 
     /**
@@ -676,12 +725,26 @@ public class GridH2Table extends TableBase {
      * @return Indexes.
      */
     ArrayList<GridH2IndexBase> indexes() {
-        ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 1);
+        ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 2);
 
-        for (int i = 1, len = idxs.size(); i < len ; i++)
+        for (int i = 2, len = idxs.size(); i < len; i++)
             res.add(index(i));
 
         return res;
+    }
+
+    /**
+     *
+     */
+    public void markRebuildFromHashInProgress(boolean value) {
+        rebuildFromHashInProgress = value;
+    }
+
+    /**
+     *
+     */
+    public boolean rebuildFromHashInProgress() {
+        return rebuildFromHashInProgress;
     }
 
     /** {@inheritDoc} */
@@ -851,11 +914,29 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public Index getUniqueIndex() {
-        return getIndexes().get(1); // PK index is always second.
+        if (rebuildFromHashInProgress)
+            return index(1);
+        else
+            return index(2);
     }
 
     /** {@inheritDoc} */
     @Override public ArrayList<Index> getIndexes() {
+        if (!rebuildFromHashInProgress)
+            return idxs;
+
+        ArrayList<Index> idxs = new ArrayList<>(2);
+
+        idxs.add(this.idxs.get(0));
+        idxs.add(this.idxs.get(1));
+
+        return idxs;
+    }
+
+    /**
+     * @return All indexes, even marked for rebuild.
+     */
+    public ArrayList<Index> getAllIndexes() {
         return idxs;
     }
 
@@ -919,6 +1000,13 @@ public class GridH2Table extends TableBase {
         res.sortType = sorting;
 
         return res;
+    }
+
+    /**
+     * @return Data store.
+     */
+    public H2RowFactory rowFactory() {
+        return rowFactory;
     }
 
     /**
@@ -986,27 +1074,51 @@ public class GridH2Table extends TableBase {
         /**
          * Create list of indexes. First must be primary key, after that all unique indexes and
          * only then non-unique indexes.
-         * All indexes must be subtypes of {@link GridH2TreeIndex}.
+         * All indexes must be subtypes of {@link H2TreeIndex}.
          *
          * @param tbl Table to create indexes for.
          * @return List of indexes.
          */
         ArrayList<Index> createIndexes(GridH2Table tbl);
+
+        /**
+         * @param tbl Table.
+         * @return Data store.
+         */
+        H2RowFactory createRowFactory(GridH2Table tbl);
     }
 
     /**
      * Wrapper type for primary key.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class ScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
+    class ScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
         /** */
         static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
 
+        /** */
+        private final GridH2IndexBase hashIdx;
+
         /**
-         * @param delegate Delegate.
+         * Constructor.
          */
-        public ScanIndex(GridH2IndexBase delegate) {
-            super(delegate);
+        private ScanIndex(GridH2IndexBase treeIdx, GridH2IndexBase hashIdx) {
+            super(treeIdx);
+
+            this.hashIdx = hashIdx;
+        }
+
+        /**
+         *
+         */
+        @Override protected GridH2IndexBase delegate() {
+            if (hashIdx != null)
+                return rebuildFromHashInProgress ? hashIdx : super.delegate();
+            else {
+                assert !rebuildFromHashInProgress;
+
+                return super.delegate();
+            }
         }
 
         /** {@inheritDoc} */
@@ -1014,19 +1126,19 @@ public class GridH2Table extends TableBase {
             SortOrder sortOrder) {
             long rows = getRowCountApproximation();
             double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true);
-            int mul = delegate.getDistributedMultiplier(ses, filters, filter);
+            int mul = delegate().getDistributedMultiplier(ses, filters, filter);
 
-            return  mul * baseCost;
+            return mul * baseCost;
         }
 
         /** {@inheritDoc} */
         @Override public String getPlanSQL() {
-            return delegate.getTable().getSQL() + "." + SCAN_INDEX_NAME_SUFFIX;
+            return delegate().getTable().getSQL() + "." + SCAN_INDEX_NAME_SUFFIX;
         }
 
         /** {@inheritDoc} */
         @Override public String getName() {
-            return delegate.getName() + SCAN_INDEX_NAME_SUFFIX;
+            return delegate().getName() + SCAN_INDEX_NAME_SUFFIX;
         }
     }
 }

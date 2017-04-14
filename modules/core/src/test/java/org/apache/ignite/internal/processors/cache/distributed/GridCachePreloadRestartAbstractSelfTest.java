@@ -212,11 +212,13 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @param c Cache projection.
      */
     private void affinityBeforeStop(IgniteCache<Integer, String> c) {
-        for (int key = 0; key < keyCnt; key++) {
-            int part = affinity(c).partition(key);
+        if (DEBUG) {
+            for (int key = 0; key < keyCnt; key++) {
+                int part = affinity(c).partition(key);
 
-            info("Affinity nodes before stop [key=" + key + ", partition" + part + ", nodes=" +
-                U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
+                info("Affinity nodes before stop [key=" + key + ", partition" + part + ", nodes=" +
+                    U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
+            }
         }
     }
 
@@ -228,7 +230,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
             for (int key = 0; key < keyCnt; key++) {
                 int part = affinity(c).partition(key);
 
-                info("Affinity odes after start [key=" + key + ", partition" + part + ", nodes=" +
+                info("Affinity nodes after start [key=" + key + ", partition" + part + ", nodes=" +
                     U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
             }
         }

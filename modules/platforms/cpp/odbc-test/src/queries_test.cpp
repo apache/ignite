@@ -116,7 +116,11 @@ struct QueriesTestSuiteFixture
 
     static Ignite StartAdditionalNode(const char* name)
     {
+#ifdef IGNITE_TESTS_32
+        return StartNode("queries-test-noodbc-32.xml", name);
+#else
         return StartNode("queries-test-noodbc.xml", name);
+#endif
     }
 
     /**
@@ -129,7 +133,11 @@ struct QueriesTestSuiteFixture
         dbc(NULL),
         stmt(NULL)
     {
+#ifdef IGNITE_TESTS_32
+        grid = StartNode("queries-test-32.xml", "NodeMain");
+#else
         grid = StartNode("queries-test.xml", "NodeMain");
+#endif
 
         cache1 = grid.GetCache<int64_t, TestType>("cache");
         cache2 = grid.GetCache<int64_t, ComplexType>("cache2");

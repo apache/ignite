@@ -175,128 +175,78 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
 
         /** {@inheritDoc} */
-        @Override public long getOverflowSize() {
+        @Override public long getOffHeapGets() {
             return 16;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapGets() {
+        @Override public long getOffHeapPuts() {
             return 17;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapPuts() {
+        @Override public long getOffHeapRemovals() {
             return 18;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapRemovals() {
+        @Override public long getOffHeapEvictions() {
             return 19;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapEvictions() {
+        @Override public long getOffHeapHits() {
             return 20;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapHits() {
+        @Override public float getOffHeapHitPercentage() {
             return 21;
         }
 
         /** {@inheritDoc} */
-        @Override public float getOffHeapHitPercentage() {
+        @Override public long getOffHeapMisses() {
             return 22;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapMisses() {
+        @Override public float getOffHeapMissPercentage() {
             return 23;
         }
 
         /** {@inheritDoc} */
-        @Override public float getOffHeapMissPercentage() {
+        @Override public long getOffHeapEntriesCount() {
             return 24;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapEntriesCount() {
+        @Override public long getOffHeapPrimaryEntriesCount() {
             return 25;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapPrimaryEntriesCount() {
+        @Override public long getOffHeapBackupEntriesCount() {
             return 26;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapBackupEntriesCount() {
+        @Override public long getOffHeapAllocatedSize() {
             return 27;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapAllocatedSize() {
+        @Override public long getOffHeapMaxSize() {
             return 28;
         }
 
         /** {@inheritDoc} */
-        @Override public long getOffHeapMaxSize() {
+        @Override public int getSize() {
             return 29;
         }
 
         /** {@inheritDoc} */
-        @Override public long getSwapGets() {
-            return 30;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getSwapPuts() {
-            return 31;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getSwapRemovals() {
-            return 32;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getSwapHits() {
-            return 33;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getSwapMisses() {
-            return 34;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getSwapEntriesCount() {
-            return 35;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getSwapSize() {
-            return 36;
-        }
-
-        /** {@inheritDoc} */
-        @Override public float getSwapHitPercentage() {
-            return 37;
-        }
-
-        /** {@inheritDoc} */
-        @Override public float getSwapMissPercentage() {
-            return 38;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getSize() {
-            return 39;
-        }
-
-        /** {@inheritDoc} */
         @Override public int getKeySize() {
-            return 40;
+            return 30;
         }
 
         /** {@inheritDoc} */
@@ -306,77 +256,77 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
 
         /** {@inheritDoc} */
         @Override public int getDhtEvictQueueCurrentSize() {
-            return 41;
+            return 31;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxThreadMapSize() {
-            return 42;
+            return 32;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxXidMapSize() {
-            return 43;
+            return 33;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxCommitQueueSize() {
-            return 44;
+            return 34;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxPrepareQueueSize() {
-            return 45;
+            return 35;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxStartVersionCountsSize() {
-            return 46;
+            return 36;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxCommittedVersionsSize() {
-            return 47;
+            return 37;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxRolledbackVersionsSize() {
-            return 48;
+            return 38;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtThreadMapSize() {
-            return 49;
+            return 39;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtXidMapSize() {
-            return 50;
+            return 40;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtCommitQueueSize() {
-            return 51;
+            return 41;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtPrepareQueueSize() {
-            return 52;
+            return 42;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtStartVersionCountsSize() {
-            return 53;
+            return 43;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtCommittedVersionsSize() {
-            return 54;
+            return 44;
         }
 
         /** {@inheritDoc} */
         @Override public int getTxDhtRolledbackVersionsSize() {
-            return 55;
+            return 45;
         }
 
         /** {@inheritDoc} */
@@ -386,42 +336,42 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindFlushSize() {
-            return 56;
+            return 46;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindFlushThreadCount() {
-            return 57;
+            return 47;
         }
 
         /** {@inheritDoc} */
         @Override public long getWriteBehindFlushFrequency() {
-            return 58;
+            return 48;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindStoreBatchSize() {
-            return 59;
+            return 49;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindTotalCriticalOverflowCount() {
-            return 60;
+            return 50;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindCriticalOverflowCount() {
-            return 61;
+            return 51;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindErrorRetryCount() {
-            return 62;
+            return 52;
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBehindBufferSize() {
-            return 63;
+            return 53;
         }
 
         /** {@inheritDoc} */

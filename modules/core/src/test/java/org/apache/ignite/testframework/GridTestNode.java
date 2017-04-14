@@ -53,8 +53,8 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     /** */
     private UUID id;
 
-    /** */
-    private Object consistentId = consistentIdCtr.incrementAndGet();
+    /** String objects as a consistent Id is closer to real case than Integer */
+    private Object consistentId = "Node_" + consistentIdCtr.incrementAndGet();
 
     /** */
     private ClusterMetrics metrics;
@@ -247,13 +247,5 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     /** {@inheritDoc} */
     @Override public String toString() {
         return id.toString();
-//        StringBuilder buf = new StringBuilder();
-//
-//        buf.append(getClass().getSimpleName());
-//        buf.append(" [attrs=").append(attrs);
-//        buf.append(", id=").append(id);
-//        buf.append(']');
-//
-//        return buf.toString();
     }
 }

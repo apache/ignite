@@ -57,19 +57,24 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
     /** */
     private final QueryIndexType type;
 
+    /** */
+    private int inlineSize;
+
     /**
      * Constructor.
      *
      * @param typDesc Type descriptor.
      * @param name Index name.
      * @param type Type.
+     * @param inlineSize Inline size.
      */
-    public QueryIndexDescriptorImpl(QueryTypeDescriptorImpl typDesc, String name, QueryIndexType type) {
+    public QueryIndexDescriptorImpl(QueryTypeDescriptorImpl typDesc, String name, QueryIndexType type, int inlineSize) {
         assert type != null;
 
         this.typDesc = typDesc;
         this.name = name;
         this.type = type;
+        this.inlineSize = inlineSize;
     }
 
     /**
@@ -94,6 +99,11 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
             res.add(t.get1());
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int inlineSize() {
+        return inlineSize;
     }
 
     /** {@inheritDoc} */

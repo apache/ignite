@@ -282,6 +282,11 @@ public class GridH2MetaTable extends TableBase {
                     throw new IllegalStateException("Index: " + idx);
             }
         }
+
+        /** {@inheritDoc} */
+        @Override public long expireTime() {
+            return 0;
+        }
     }
 
     /**

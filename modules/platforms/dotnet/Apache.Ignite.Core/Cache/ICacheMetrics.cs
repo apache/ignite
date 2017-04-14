@@ -153,14 +153,6 @@ namespace Apache.Ignite.Core.Cache
         string CacheName { get; }
 
         /// <summary>
-        /// Gets number of entries that was swapped to disk.
-        /// </summary>
-        /// <returns>
-        /// Number of entries that was swapped to disk.
-        /// </returns>
-        long OverflowSize { get; }
-
-        /// <summary>
         /// The total number of get requests to the off-heap memory.
         /// </summary>
         /// <returns>
@@ -263,78 +255,6 @@ namespace Apache.Ignite.Core.Cache
         /// Off-heap memory maximum size.
         /// </returns>
         long OffHeapMaxSize { get; }
-
-        /// <summary>
-        /// The total number of get requests to the swap.
-        /// </summary>
-        /// <returns>
-        /// The number of gets from the swap.
-        /// </returns>
-        long SwapGets { get; }
-
-        /// <summary>
-        /// The total number of put requests to the swap.
-        /// </summary>
-        /// <returns>
-        /// The number of puts to the swap.
-        /// </returns>
-        long SwapPuts { get; }
-
-        /// <summary>
-        /// The total number of removals from the swap.
-        /// </summary>
-        /// <returns>
-        /// The number of removals from the swap.
-        /// </returns>
-        long SwapRemovals { get; }
-
-        /// <summary>
-        /// The number of get requests that were satisfied by the swap.
-        /// </summary>
-        /// <returns>
-        /// The swap hits number.
-        /// </returns>
-        long SwapHits { get; }
-
-        /// <summary>
-        /// A number of get requests to that were not satisfied by the swap.
-        /// </summary>
-        /// <returns>
-        /// The swap misses number.
-        /// </returns>
-        long SwapMisses { get; }
-
-        /// <summary>
-        /// Gets number of entries stored in swap.
-        /// </summary>
-        /// <returns>
-        /// Number of entries stored in swap.
-        /// </returns>
-        long SwapEntriesCount { get; }
-
-        /// <summary>
-        /// Gets size of swap, in bytes.
-        /// </summary>
-        /// <returns>
-        /// Size of swap, in bytes.
-        /// </returns>
-        long SwapSize { get; }
-
-        /// <summary>
-        /// Gets the percentage of hits on swap.
-        /// </summary>
-        /// <returns>
-        /// The percentage of hits on swap.
-        /// </returns>
-        float SwapHitPercentage { get; }
-
-        /// <summary>
-        /// Gets the percentage of misses on swap.
-        /// </summary>
-        /// <returns>
-        /// The percentage of misses on swap.
-        /// </returns>
-        float SwapMissPercentage { get; }
 
         /// <summary>
         /// Gets number of non-null values in the cache.

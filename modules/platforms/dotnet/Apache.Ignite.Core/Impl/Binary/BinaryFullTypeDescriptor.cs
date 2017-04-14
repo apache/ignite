@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.Structure;
 
     /// <summary>
@@ -67,9 +66,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Enum flag. */
         private readonly bool _isEnum;
 
-        /** Comparer. */
-        private readonly IBinaryEqualityComparer _equalityComparer;
-
         /** Register flag. */
         private readonly bool _isRegistered;
 
@@ -86,7 +82,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="keepDeserialized">Whether to cache deserialized value in IBinaryObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
         /// <param name="isEnum">Enum flag.</param>
-        /// <param name="comparer">Equality comparer.</param>
         /// <param name="isRegistered">Registered flag.</param>
         public BinaryFullTypeDescriptor(
             Type type, 
@@ -99,7 +94,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             bool keepDeserialized, 
             string affKeyFieldName,
             bool isEnum,
-            IEqualityComparer<IBinaryObject> comparer,
             bool isRegistered = true)
         {
             _type = type;
@@ -112,13 +106,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             _keepDeserialized = keepDeserialized;
             _affKeyFieldName = affKeyFieldName;
             _isEnum = isEnum;
-
-            _equalityComparer = comparer as IBinaryEqualityComparer;
-
-            if (comparer != null && _equalityComparer == null)
-                throw new IgniteException(string.Format("Unsupported IEqualityComparer<IBinaryObject> " +
-                                                        "implementation: {0}. Only predefined implementations " +
-                                                        "are supported.", comparer.GetType()));
 
             _isRegistered = isRegistered;
             _schema = new BinaryObjectSchema();
@@ -145,7 +132,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             _keepDeserialized = desc._keepDeserialized;
             _affKeyFieldName = desc._affKeyFieldName;
             _isEnum = desc._isEnum;
-            _equalityComparer = desc._equalityComparer;
             _isRegistered = isRegistered;
 
             _schema = desc._schema;
@@ -229,12 +215,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool IsEnum
         {
             get { return _isEnum; }
-        }
-
-        /** <inheritdoc/> */
-        public IBinaryEqualityComparer EqualityComparer
-        {
-            get { return _equalityComparer; }
         }
 
         /** <inheritDoc /> */

@@ -36,6 +36,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private UUID reqId;
+
     /** Start ID. */
     private IgniteUuid deploymentId;
 
@@ -61,6 +64,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Stop flag. */
     private boolean stop;
 
+    /** Destroy. */
+    private boolean destroy;
+
     /** Close flag. */
     private boolean close;
 
@@ -72,6 +78,12 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** */
     private UUID rcvdFrom;
+
+    /** Cache state. Set to non-null when global state is changed. */
+    private ClusterState state;
+
+    /** Reset lost partitions flag. */
+    private boolean resetLostPartitions;
 
     /** Dynamic schema. */
     private QuerySchema schema;
@@ -88,9 +100,17 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @param cacheName Cache stop name.
      * @param initiatingNodeId Initiating node ID.
      */
-    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
+    public DynamicCacheChangeRequest(UUID reqId, String cacheName, UUID initiatingNodeId) {
+        this.reqId = reqId;
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
+    }
+
+    /**
+     * @return Request ID.
+     */
+    public UUID requestId() {
+        return reqId;
     }
 
     /**
@@ -98,6 +118,27 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean exchangeNeeded() {
         return exchangeNeeded;
+    }
+
+    /**
+     * @return State.
+     */
+    public ClusterState state() {
+        return state;
+    }
+
+    /**
+     * @param state State.
+     */
+    public void state(ClusterState state) {
+        this.state = state;
+    }
+
+    /**
+     * @return {@code True} if global caches state is changes.
+     */
+    public boolean globalStateChange() {
+        return state != null;
     }
 
     /**
@@ -157,10 +198,38 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     * Set resetLostPartitions flag.
+     */
+    public void markResetLostPartitions() {
+        resetLostPartitions = true;
+    }
+
+    /**
+     * @return Reset lost partitions flag.
+     */
+    public boolean resetLostPartitions() {
+        return resetLostPartitions;
+    }
+
+    /**
      * @return {@code True} if this is a stop request.
      */
     public boolean stop() {
         return stop;
+    }
+
+    /**
+     *
+     */
+    public boolean destroy(){
+        return destroy;
+    }
+
+    /**
+     * @param destroy Destroy.
+     */
+    public void destroy(boolean destroy) {
+        this.destroy = destroy;
     }
 
     /**

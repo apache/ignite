@@ -44,5 +44,42 @@ public class GridCacheQueryEmbeddedValue implements Serializable {
         /** */
         @QuerySqlField
         private Long x = 3L;
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Val val = (Val)o;
+
+            return x != null ? x.equals(val.x) : val.x == null;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return x != null ? x.hashCode() : 0;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        GridCacheQueryEmbeddedValue that = (GridCacheQueryEmbeddedValue) o;
+
+        if (embeddedField1 != that.embeddedField1) return false;
+        if (embeddedField2 != that.embeddedField2) return false;
+        return embeddedField3 != null ? embeddedField3.equals(that.embeddedField3) : that.embeddedField3 == null;
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = embeddedField1;
+        res = 31 * res + embeddedField2;
+        res = 31 * res + (embeddedField3 != null ? embeddedField3.hashCode() : 0);
+        return res;
     }
 }
