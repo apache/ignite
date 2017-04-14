@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityNodeIdHashResolver;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -537,19 +536,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 return startGrid(2);
             }
         }, IgniteCheckedException.class, "Affinity partitions count mismatch");
-
-        // Different hash ID resolver.
-        RendezvousAffinityFunction aff0 = new RendezvousAffinityFunction(false, 100);
-
-        aff0.setHashIdResolver(new AffinityNodeIdHashResolver());
-
-        aff = aff0;
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return startGrid(2);
-            }
-        }, IgniteCheckedException.class, "Partitioned cache affinity hash ID resolver class mismatch");
     }
 
     /**
