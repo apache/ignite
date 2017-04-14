@@ -17,56 +17,55 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import java.util.Collection;
-import java.util.List;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Task to cancel queries.
+ * Reset query detail metrics.
  */
 @GridInternal
-public class VisorCancelQueriesTask extends VisorOneNodeTask<Collection<Long>, Void> {
+public class VisorQueryResetDetailMetricsTask extends VisorOneNodeTask<Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCancelQueriesJob job(Collection<Long> arg) {
-        return new VisorCancelQueriesJob(arg, debug);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteException {
-        return null;
+    @Override protected VisorCacheResetQueryDetailMetricsJob job(Void arg) {
+        return new VisorCacheResetQueryDetailMetricsJob(arg, debug);
     }
 
     /**
-     * Job to cancel queries on node.
+     * Job that reset query detail metrics.
      */
-    private static class VisorCancelQueriesJob extends VisorJob<Collection<Long>, Void> {
+    private static class VisorCacheResetQueryDetailMetricsJob extends VisorJob<Void, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
-         * Create job with specified argument.
-         *
-         * @param arg Job argument.
-         * @param debug Flag indicating whether debug information should be printed into node log.
+         * @param arg Task argument.
+         * @param debug Debug flag.
          */
-        protected VisorCancelQueriesJob(@Nullable Collection<Long> arg, boolean debug) {
+        private VisorCacheResetQueryDetailMetricsJob(Void arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable Collection<Long> queries) throws IgniteException {
-            ignite.context().query().cancelQueries(queries);
+        @Override protected Void run(Void arg) {
+            for (String cacheName : ignite.cacheNames()) {
+                IgniteCache cache = ignite.cache(cacheName);
+
+                if (cache != null)
+                    cache.resetQueryDetailMetrics();
+            }
 
             return null;
         }
-    }
 
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorCacheResetQueryDetailMetricsJob.class, this);
+        }
+    }
 }

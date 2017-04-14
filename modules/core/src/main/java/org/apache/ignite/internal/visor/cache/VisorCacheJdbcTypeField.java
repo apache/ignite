@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
-import org.apache.ignite.internal.LessNamingBean;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for {@link JdbcTypeField}.
  */
-public class VisorCacheTypeFieldMetadata implements Serializable, LessNamingBean {
+public class VisorCacheJdbcTypeField extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +47,7 @@ public class VisorCacheTypeFieldMetadata implements Serializable, LessNamingBean
     /**
      * Empty constructor.
      */
-    public VisorCacheTypeFieldMetadata() {
+    public VisorCacheJdbcTypeField() {
         // No-op.
     }
 
@@ -55,7 +59,7 @@ public class VisorCacheTypeFieldMetadata implements Serializable, LessNamingBean
      * @param javaName Field name in java object.
      * @param javaType Corresponding java type.
      */
-    public VisorCacheTypeFieldMetadata(String dbName, int dbType, String javaName, String javaType) {
+    public VisorCacheJdbcTypeField(String dbName, int dbType, String javaName, String javaType) {
         this.dbName = dbName;
         this.dbType = dbType;
         this.javaName = javaName;
@@ -65,28 +69,49 @@ public class VisorCacheTypeFieldMetadata implements Serializable, LessNamingBean
     /**
      * @return Column name in database.
      */
-    public String dbName() {
+    public String getDatabaseName() {
         return dbName;
     }
 
     /**
      * @return Column JDBC type in database.
      */
-    public int dbType() {
+    public int getDatabaseType() {
         return dbType;
     }
 
     /**
      * @return Field name in java object.
      */
-    public String javaName() {
+    public String getJavaName() {
         return javaName;
     }
 
     /**
      * @return Corresponding java type.
      */
-    public String javaType() {
+    public String getJavaType() {
         return javaType;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, dbName);
+        out.writeInt(dbType);
+        U.writeString(out, javaName);
+        U.writeString(out, javaType);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        dbName = U.readString(in);
+        dbType = in.readInt();
+        javaName = U.readString(in);
+        javaType = U.readString(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorCacheJdbcTypeField.class, this);
     }
 }

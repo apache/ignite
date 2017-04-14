@@ -183,7 +183,6 @@ const DFLT_CLUSTER = {
         }
     },
     marshalLocalJobs: false,
-    marshallerCacheKeepAliveTime: 10000,
     metricsHistorySize: 10000,
     metricsLogFrequency: 60000,
     metricsUpdateFrequency: 2000,
