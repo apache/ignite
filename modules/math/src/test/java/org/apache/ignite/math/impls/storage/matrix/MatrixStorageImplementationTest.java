@@ -62,9 +62,7 @@ public class MatrixStorageImplementationTest extends ExternalizeTest<MatrixStora
 
     /** */
     @Override public void externalizeTest() {
-        consumeSampleStorages(null, (ms, desc) -> {
-            externalizeTest(ms);
-        });
+        consumeSampleStorages(null, (ms, desc) -> externalizeTest(ms));
     }
 
     /** */

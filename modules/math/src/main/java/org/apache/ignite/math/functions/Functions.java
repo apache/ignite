@@ -81,9 +81,7 @@ public final class Functions {
     /**
      * Function that returns {@code a &lt; b ? -1 : a &gt; b ? 1 : 0}.
      */
-    public static final IgniteBiFunction<Double, Double, Double> COMPARE = (a, b) -> {
-        return a < b ? -1.0 : a > b ? 1.0 : 0.0;
-    };
+    public static final IgniteBiFunction<Double, Double, Double> COMPARE = (a, b) -> a < b ? -1.0 : a > b ? 1.0 : 0.0;
 
     /**
      * Function that returns {@code a + b}. {@code a} is a variable, {@code b} is fixed.
