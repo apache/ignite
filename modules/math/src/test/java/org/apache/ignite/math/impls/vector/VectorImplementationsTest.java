@@ -19,7 +19,10 @@ package org.apache.ignite.math.impls.vector;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.Vector;
@@ -27,8 +30,12 @@ import org.apache.ignite.math.exceptions.CardinalityException;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Test;
 
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
 public class VectorImplementationsTest { // todo split this to smaller cohesive test classes

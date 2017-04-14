@@ -17,14 +17,13 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.functions.IgniteFunction;
-import org.apache.ignite.math.functions.IntDoubleToVoidFunction;
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.junit.Test;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.IntToDoubleFunction;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.functions.IgniteFunction;
+import org.apache.ignite.math.functions.IntDoubleToVoidFunction;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 

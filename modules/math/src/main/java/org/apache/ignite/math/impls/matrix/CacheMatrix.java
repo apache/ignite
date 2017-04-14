@@ -23,10 +23,10 @@ import org.apache.ignite.math.MatrixKeyMapper;
 import org.apache.ignite.math.ValueMapper;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.functions.IgniteFunction;
-import org.apache.ignite.math.impls.*;
-import org.apache.ignite.math.impls.storage.matrix.CacheMatrixStorage;
 import org.apache.ignite.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.math.functions.IgniteFunction;
+import org.apache.ignite.math.impls.CacheUtils;
+import org.apache.ignite.math.impls.storage.matrix.CacheMatrixStorage;
 
 /**
  * Matrix based on existing cache and key and value mapping functions.

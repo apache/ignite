@@ -17,21 +17,18 @@
 
 package org.apache.ignite.math.impls.matrix;
 
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.IdentityValueMapper;
-import org.apache.ignite.math.MatrixKeyMapper;
 import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.impls.MathTestConstants;
+import org.apache.ignite.math.MatrixKeyMapper;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-
-import static junit.framework.TestCase.*;
 
 /**
  * Tests for {@link CacheMatrix}.

@@ -20,17 +20,16 @@ package org.apache.ignite.math.impls.matrix;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.function.BiFunction;
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.impls.storage.matrix.FunctionMatrixStorage;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.impls.storage.matrix.FunctionMatrixStorage;
+import org.jetbrains.annotations.NotNull;
 
 /** */
 class MatrixImplementationFixtures {

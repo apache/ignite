@@ -17,8 +17,8 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.storage.vector.SparseLocalOnHeapVectorStorage;

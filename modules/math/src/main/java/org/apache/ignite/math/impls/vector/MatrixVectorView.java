@@ -17,12 +17,13 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.IndexException;
 import org.apache.ignite.math.impls.storage.vector.MatrixVectorStorage;
-
-import java.io.*;
 
 /**
  * Row or column vector view off the matrix.

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.math.impls.storage.matrix;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.functions.IntIntDoubleToVoidFunction;
-import org.apache.ignite.math.MatrixStorage;
-import java.io.*;
 import org.apache.ignite.math.functions.IntIntToDoubleFunction;
 
 /**

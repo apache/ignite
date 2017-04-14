@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math.exceptions;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * Indicates that no provider has been found for a given vector or matrix flavor.

@@ -26,11 +26,14 @@
 
 package org.apache.ignite.math.impls.matrix;
 
-import org.apache.ignite.math.*;
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.StorageConstants;
+import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.functions.*;
-import org.apache.ignite.math.impls.*;
-import org.apache.ignite.math.impls.storage.matrix.*;
+import org.apache.ignite.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.math.functions.IgniteFunction;
+import org.apache.ignite.math.impls.CacheUtils;
+import org.apache.ignite.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 
 /**
  * Sparse distributed matrix implementation based on data grid.

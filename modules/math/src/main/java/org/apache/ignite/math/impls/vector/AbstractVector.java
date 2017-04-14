@@ -17,16 +17,28 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.math.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Spliterator;
+import java.util.function.Consumer;
+import java.util.function.IntToDoubleFunction;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.exceptions.*;
+import org.apache.ignite.math.VectorStorage;
+import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.exceptions.IndexException;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.functions.*;
-import org.apache.ignite.math.impls.matrix.*;
-import java.io.*;
-import java.util.*;
-import java.util.function.*;
+import org.apache.ignite.math.functions.Functions;
+import org.apache.ignite.math.functions.IgniteBiFunction;
+import org.apache.ignite.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.math.impls.matrix.MatrixView;
 
 /**
  * This class provides a helper implementation of the {@link Vector}

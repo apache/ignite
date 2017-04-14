@@ -17,11 +17,10 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.junit.Test;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 

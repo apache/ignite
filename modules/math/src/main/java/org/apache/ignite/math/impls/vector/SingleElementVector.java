@@ -17,12 +17,11 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import java.util.Map;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.vector.SingleElementVectorStorage;
-
-import java.util.*;
 
 /**
  * Read-write vector holding a single non-zero value at some index.

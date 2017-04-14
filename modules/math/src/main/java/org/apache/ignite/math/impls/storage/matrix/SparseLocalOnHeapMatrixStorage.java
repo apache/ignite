@@ -17,11 +17,15 @@
 
 package org.apache.ignite.math.impls.storage.matrix;
 
-import it.unimi.dsi.fastutil.ints.*;
-import java.io.*;
-import java.util.*;
-import org.apache.ignite.math.StorageConstants;
+import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.math.MatrixStorage;
+import org.apache.ignite.math.StorageConstants;
 
 /**
  * Storage for sparse, local, on-heap matrix.

@@ -4,8 +4,8 @@ import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.functions.IgniteBiFunction;
-import org.apache.ignite.math.impls.matrix.FunctionMatrix;
 import org.apache.ignite.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.math.impls.matrix.FunctionMatrix;
 
 /**
  * This class provides a helper implementation of the read-only implementation of {@link Vector}

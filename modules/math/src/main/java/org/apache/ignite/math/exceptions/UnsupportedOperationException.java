@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math.exceptions;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * Indicate that a specific operation is not supported by the underlying implementation.

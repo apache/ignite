@@ -21,7 +21,8 @@ import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 
 /**
  * Unit tests for {@link SparseLocalOnHeapVectorStorage}.

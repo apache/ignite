@@ -21,7 +21,8 @@ import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.impls.storage.matrix.MatrixDelegateStorage;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /** */
 public class MatrixViewConstructorTest {

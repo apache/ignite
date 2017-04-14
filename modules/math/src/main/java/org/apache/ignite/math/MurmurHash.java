@@ -17,7 +17,8 @@
 
 package org.apache.ignite.math;
 
-import java.nio.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * This is a very fast, non-cryptographic hash suitable for general hash-based lookup.

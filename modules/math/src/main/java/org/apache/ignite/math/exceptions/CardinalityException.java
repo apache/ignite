@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math.exceptions;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * Indicates a cardinality mismatch in matrix or vector operations.

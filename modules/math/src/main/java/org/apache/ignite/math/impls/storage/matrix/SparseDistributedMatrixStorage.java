@@ -9,15 +9,24 @@
 
 package org.apache.ignite.math.impls.storage.matrix;
 
-import it.unimi.dsi.fastutil.ints.*;
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.math.*;
-import org.apache.ignite.math.impls.*;
-import java.io.*;
-import java.util.*;
+import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.math.MatrixStorage;
+import org.apache.ignite.math.StorageConstants;
+import org.apache.ignite.math.impls.CacheUtils;
 
 /**
  * {@link MatrixStorage} implementation for {@link org.apache.ignite.math.impls.matrix.SparseDistributedMatrix}.

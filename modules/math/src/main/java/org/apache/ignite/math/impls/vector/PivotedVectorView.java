@@ -17,13 +17,14 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.functions.Functions;
 import org.apache.ignite.math.impls.storage.vector.PivotedVectorStorage;
-
-import java.io.*;
 
 /**
  * Pivoted (index mapped) view over another vector.

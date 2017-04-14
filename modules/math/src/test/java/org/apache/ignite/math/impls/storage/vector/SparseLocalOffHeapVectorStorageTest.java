@@ -19,7 +19,6 @@ package org.apache.ignite.math.impls.storage.vector;
 
 import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.impls.MathTestConstants;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

@@ -17,14 +17,15 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.junit.*;
-import java.util.*;
-import java.util.function.*;
+import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /** */
 public class VectorAttributesTest {

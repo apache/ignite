@@ -1,21 +1,23 @@
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.math.impls.matrix.RandomMatrix;
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.impls.matrix.SparseLocalOnHeapMatrix;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
+import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.math.impls.matrix.RandomMatrix;
+import org.apache.ignite.math.impls.matrix.SparseLocalOnHeapMatrix;
+import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /** Tests for methods of Vector that involve Matrix. */
 public class VectorToMatrixTest {

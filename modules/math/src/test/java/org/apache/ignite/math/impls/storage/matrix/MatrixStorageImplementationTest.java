@@ -23,7 +23,6 @@ import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.MatrixStorage;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**

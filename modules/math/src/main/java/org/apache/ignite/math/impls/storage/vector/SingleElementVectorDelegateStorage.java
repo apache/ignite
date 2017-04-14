@@ -17,10 +17,12 @@
 
 package org.apache.ignite.math.impls.storage.vector;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import java.io.*;
 
 /**
  * Single value view storage over another vector.

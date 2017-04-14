@@ -17,15 +17,16 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import java.util.Arrays;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.functions.Functions;
 import org.junit.Test;
 
-import org.apache.ignite.math.Vector;
-import java.util.*;
-import java.util.function.*;
-
 import static java.util.function.DoubleUnaryOperator.identity;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 /** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
 public class VectorFoldMapTest {

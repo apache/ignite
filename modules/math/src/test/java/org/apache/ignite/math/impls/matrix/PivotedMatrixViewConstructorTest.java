@@ -17,12 +17,13 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import java.util.Arrays;
 import org.apache.ignite.math.Matrix;
 import org.junit.Test;
 
-import java.util.Arrays;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /** */
 public class PivotedMatrixViewConstructorTest {

@@ -23,14 +23,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-
-import org.apache.ignite.math.*;
-import org.apache.ignite.math.exceptions.*;
+import org.apache.ignite.math.ExternalizeTest;
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.exceptions.ColumnIndexException;
+import org.apache.ignite.math.exceptions.IndexException;
+import org.apache.ignite.math.exceptions.RowIndexException;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.impls.vector.*;
-import org.junit.*;
+import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
+import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.RandomVector;
+import org.apache.ignite.math.impls.vector.SparseLocalVector;
+import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Tests for {@link Matrix} implementations.

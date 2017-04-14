@@ -17,10 +17,9 @@
 
 package org.apache.ignite.examples.java8.math.vector;
 
+import java.util.Arrays;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.vector.SparseLocalVector;
-
-import java.util.Arrays;
 
 import static org.apache.ignite.math.StorageConstants.RANDOM_ACCESS_MODE;
 

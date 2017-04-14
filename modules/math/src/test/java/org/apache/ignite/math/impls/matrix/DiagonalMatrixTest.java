@@ -18,10 +18,10 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.ExternalizeTest;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Before;
 import org.junit.Test;

@@ -17,19 +17,27 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.storage.vector.FunctionVectorStorage;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

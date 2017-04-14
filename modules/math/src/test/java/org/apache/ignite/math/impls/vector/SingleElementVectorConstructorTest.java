@@ -17,14 +17,14 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** */
 public class SingleElementVectorConstructorTest {

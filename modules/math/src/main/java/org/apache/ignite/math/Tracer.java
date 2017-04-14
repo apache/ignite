@@ -17,14 +17,22 @@
 
 package org.apache.ignite.math;
 
+import java.awt.Color;
+import java.awt.Desktop;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Locale;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.lang.*;
-import java.awt.*;
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
-import java.util.function.*;
-import java.util.stream.*;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Utility methods to support output of {@link Vector} and {@link Matrix} instances to plain text or HTML.

@@ -25,7 +25,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.apache.ignite.math.MatrixStorage;
 
-import static org.apache.ignite.math.StorageConstants.*;
+import static org.apache.ignite.math.StorageConstants.COLUMN_STORAGE_MODE;
+import static org.apache.ignite.math.StorageConstants.RANDOM_ACCESS_MODE;
+import static org.apache.ignite.math.StorageConstants.ROW_STORAGE_MODE;
+import static org.apache.ignite.math.StorageConstants.SEQUENTIAL_ACCESS_MODE;
 
 /**
  *

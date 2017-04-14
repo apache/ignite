@@ -17,12 +17,13 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import java.util.function.Supplier;
 import org.apache.ignite.math.Matrix;
 import org.junit.Test;
 
-import java.util.function.Supplier;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /** */
 public class DenseLocalOnHeapMatrixConstructorTest {

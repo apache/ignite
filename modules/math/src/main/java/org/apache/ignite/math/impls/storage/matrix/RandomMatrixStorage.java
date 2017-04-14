@@ -17,11 +17,13 @@
 
 package org.apache.ignite.math.impls.storage.matrix;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.MurmurHash;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.MatrixStorage;
-import java.io.*;
-import java.nio.*;
 
 /**
  * {@link MatrixStorage} implementation with random values in the matrix elements.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math;
 
-import java.io.*;
+import java.io.Externalizable;
 
 /**
  * Data storage support for {@link Matrix}.

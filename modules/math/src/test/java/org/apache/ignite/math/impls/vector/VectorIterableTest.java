@@ -17,19 +17,22 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.MathTestConstants;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.function.BiConsumer;
+import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.MathTestConstants;
+import org.junit.Test;
 
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterator.SIZED;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /** */
 public class VectorIterableTest {

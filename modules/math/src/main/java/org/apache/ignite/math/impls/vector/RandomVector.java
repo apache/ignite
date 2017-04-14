@@ -17,13 +17,15 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Map;
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.math.impls.storage.vector.RandomVectorStorage;
-
-import java.io.*;
-import java.util.*;
 
 /**
  * Random vector. Each value is taken from {-1,0,1} with roughly equal probability. Note

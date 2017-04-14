@@ -17,12 +17,14 @@
 
 package org.apache.ignite.math.impls.storage.vector;
 
+import java.util.Arrays;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.junit.Test;
 
-import java.util.Arrays;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit test for {@link ArrayVectorStorage}.

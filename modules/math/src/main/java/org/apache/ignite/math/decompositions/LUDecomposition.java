@@ -17,8 +17,10 @@
 
 package org.apache.ignite.math.decompositions;
 
-import org.apache.ignite.math.*;
-import org.apache.ignite.math.exceptions.*;
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.exceptions.SingularMatrixException;
 
 /**
  * Calculates the LU-decomposition of a square matrix.

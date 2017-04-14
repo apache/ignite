@@ -17,12 +17,14 @@
 
 package org.apache.ignite.math.impls.storage.vector;
 
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import java.util.Random;
 import org.apache.ignite.math.MurmurHash;
 import org.apache.ignite.math.VectorStorage;
-import java.io.*;
-import java.nio.*;
-import java.util.*;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 
 /**
  * {@link VectorStorage} implementation with random values in the vector elements.

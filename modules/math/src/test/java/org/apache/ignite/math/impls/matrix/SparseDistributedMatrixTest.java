@@ -31,8 +31,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.stream.IntStream;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.Matrix;
@@ -42,7 +40,6 @@ import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
-import static org.apache.ignite.math.impls.MathTestConstants.STORAGE_SIZE;
 import static org.apache.ignite.math.impls.MathTestConstants.UNEXPECTED_VALUE;
 
 /**

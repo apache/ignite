@@ -17,11 +17,11 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import java.util.stream.*;
-import org.apache.ignite.math.impls.storage.vector.DenseLocalOffHeapVectorStorage;
+import java.util.stream.IntStream;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
+import org.apache.ignite.math.impls.storage.vector.DenseLocalOffHeapVectorStorage;
 
 /**
  * Implementation for {@link Vector} assuming dense logic and local offheap JVM storage.

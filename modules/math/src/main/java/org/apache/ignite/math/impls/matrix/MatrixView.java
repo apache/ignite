@@ -17,13 +17,12 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import java.io.Externalizable;
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.matrix.MatrixDelegateStorage;
-import org.apache.ignite.math.MatrixStorage;
-
-import java.io.*;
 
 /**
  * Implements the rectangular view into the parent {@link Matrix}.

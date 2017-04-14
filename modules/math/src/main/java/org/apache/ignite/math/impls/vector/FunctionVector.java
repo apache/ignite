@@ -17,14 +17,13 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.*;
+import java.util.Map;
+import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.functions.IgniteFunction;
 import org.apache.ignite.math.functions.IntDoubleToVoidFunction;
 import org.apache.ignite.math.impls.storage.vector.FunctionVectorStorage;
-
-import java.util.*;
 
 /**
  *  Implementation of {@link Vector} that maps vector element index to {@link java.util.function} interfaces.

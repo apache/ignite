@@ -17,12 +17,13 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.apache.ignite.math.Vector;
 import org.junit.Test;
 
-import java.util.function.*;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 /** */
 public class VectorNormTest {

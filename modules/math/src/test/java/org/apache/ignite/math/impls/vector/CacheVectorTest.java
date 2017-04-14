@@ -1,19 +1,24 @@
 package org.apache.ignite.math.impls.vector;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.stream.IntStream;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.IdentityValueMapper;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorKeyMapper;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.functions.Functions;
 import org.apache.ignite.math.impls.MathTestConstants;
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.testframework.junits.common.*;
-import java.util.stream.*;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Tests for {@link CacheVector}.

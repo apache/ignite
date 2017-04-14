@@ -27,15 +27,18 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
-
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.impls.MathTestConstants;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Unit tests for {@link VectorView}.

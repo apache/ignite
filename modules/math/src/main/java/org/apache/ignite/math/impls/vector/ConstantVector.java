@@ -17,11 +17,11 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.impls.storage.vector.ConstantVectorStorage;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.impls.storage.vector.ConstantVectorStorage;
 
 /**
  * Constant value, read-only vector.

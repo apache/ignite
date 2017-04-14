@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math.exceptions;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * This exception is used to indicate any error condition accessing matrix elements by invalid column index.

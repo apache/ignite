@@ -17,12 +17,17 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.*;
-import org.apache.ignite.math.*;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.ValueMapper;
+import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.VectorKeyMapper;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.functions.*;
-import org.apache.ignite.math.impls.*;
-import org.apache.ignite.math.impls.storage.vector.*;
+import org.apache.ignite.math.functions.IgniteBiFunction;
+import org.apache.ignite.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.math.functions.IgniteFunction;
+import org.apache.ignite.math.impls.CacheUtils;
+import org.apache.ignite.math.impls.storage.vector.CacheVectorStorage;
 
 /**
  * Vector based on existing cache and index and value mapping functions.

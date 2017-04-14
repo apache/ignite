@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math.exceptions;
 
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteException;
 
 /**
  * Indicates an invalid, i.e. out of bound, index on matrix or vector operations.

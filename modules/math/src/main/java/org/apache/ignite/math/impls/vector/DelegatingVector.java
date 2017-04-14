@@ -17,14 +17,18 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.lang.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Spliterator;
+import java.util.function.IntToDoubleFunction;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.functions.IgniteBiFunction;
-import org.apache.ignite.math.Vector;
-import java.io.*;
-import java.util.*;
-import java.util.function.*;
 import org.apache.ignite.math.functions.IgniteDoubleFunction;
 
 /**

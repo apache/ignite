@@ -17,7 +17,8 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.lang.*;
+import java.util.Arrays;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
@@ -25,11 +26,14 @@ import org.apache.ignite.math.exceptions.IndexException;
 import org.apache.ignite.math.functions.Functions;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.impls.storage.vector.ArrayVectorStorage;
-import org.junit.*;
-import java.util.*;
-import java.util.stream.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit test for {@link AbstractVector}.

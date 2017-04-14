@@ -17,17 +17,18 @@
 
 package org.apache.ignite.math;
 
+import java.awt.Color;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
-import org.junit.*;
-import java.awt.*;
-import java.io.*;
-import java.nio.file.*;
-import java.util.List;
-import java.util.*;
+import org.junit.Test;
 
-import static java.nio.file.Files.*;
+import static java.nio.file.Files.createTempFile;
 import static org.junit.Assert.assertEquals;
 
 /**

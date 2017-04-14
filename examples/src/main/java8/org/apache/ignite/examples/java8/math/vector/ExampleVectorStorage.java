@@ -17,8 +17,6 @@
 
 package org.apache.ignite.examples.java8.math.vector;
 
-import java.io.*;
-import java.util.*;
 import org.apache.ignite.math.VectorStorage;
 
 /**

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.examples.java8.math.vector;
 
+import java.util.Arrays;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.vector.AbstractVector;
-
-import java.util.Arrays;
 
 /**
  * This example shows how to use {@link Vector} based on custom {@link VectorStorage}.

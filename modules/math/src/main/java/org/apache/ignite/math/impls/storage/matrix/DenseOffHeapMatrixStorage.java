@@ -17,8 +17,10 @@
 
 package org.apache.ignite.math.impls.storage.matrix;
 
-import org.apache.ignite.internal.util.*;
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.math.MatrixStorage;
 
 /**

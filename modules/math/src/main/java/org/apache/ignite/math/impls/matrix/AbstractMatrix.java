@@ -17,15 +17,27 @@
 
 package org.apache.ignite.math.impls.matrix;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.math.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.decompositions.*;
-import org.apache.ignite.math.exceptions.*;
-import org.apache.ignite.math.functions.*;
-import org.apache.ignite.math.impls.vector.*;
-import java.io.*;
-import java.util.*;
+import org.apache.ignite.math.decompositions.LUDecomposition;
+import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.exceptions.ColumnIndexException;
+import org.apache.ignite.math.exceptions.RowIndexException;
+import org.apache.ignite.math.functions.Functions;
+import org.apache.ignite.math.functions.IgniteBiFunction;
+import org.apache.ignite.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.math.functions.IgniteFunction;
+import org.apache.ignite.math.functions.IntIntToDoubleFunction;
+import org.apache.ignite.math.impls.vector.MatrixVectorView;
 
 /**
  * This class provides a helper implementation of the {@link Matrix}

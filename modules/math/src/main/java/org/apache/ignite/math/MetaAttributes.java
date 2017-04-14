@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math;
 
-import java.util.*;
+import java.util.Map;
 
 /**
  * Interface provides support for meta attributes on vectors and matrices.

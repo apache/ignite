@@ -20,7 +20,7 @@ package org.apache.ignite.math.impls.storage.matrix;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
 
 /**
  * Unit tests for {@link DenseOffHeapMatrixStorage}.

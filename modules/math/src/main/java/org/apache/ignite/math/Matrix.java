@@ -17,11 +17,11 @@
 
 package org.apache.ignite.math;
 
-import org.apache.ignite.lang.*;
+import java.io.Externalizable;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.math.exceptions.CardinalityException;
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.exceptions.IndexException;
-import java.io.*;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.functions.IgniteBiFunction;
 import org.apache.ignite.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.math.functions.IgniteFunction;

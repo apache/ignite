@@ -17,11 +17,11 @@
 
 package org.apache.ignite.math.impls.matrix;
 
-import org.apache.ignite.math.impls.vector.ConstantVector;
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.matrix.DiagonalMatrixStorage;
+import org.apache.ignite.math.impls.vector.ConstantVector;
+import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.math.impls.vector.SingleElementVectorView;
 
 /**

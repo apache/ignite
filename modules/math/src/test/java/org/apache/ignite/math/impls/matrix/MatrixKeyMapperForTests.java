@@ -17,7 +17,6 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.MatrixKeyMapper;
-import org.apache.ignite.math.impls.storage.matrix.CacheMatrixStorage;
 
 /** */
 public class MatrixKeyMapperForTests implements MatrixKeyMapper<Integer> {

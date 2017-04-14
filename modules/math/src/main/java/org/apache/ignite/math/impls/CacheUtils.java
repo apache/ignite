@@ -17,15 +17,24 @@
 
 package org.apache.ignite.math.impls;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.math.*;
-import org.apache.ignite.math.functions.*;
-import javax.cache.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.math.KeyMapper;
+import org.apache.ignite.math.ValueMapper;
+import org.apache.ignite.math.functions.IgniteBiFunction;
+import org.apache.ignite.math.functions.IgniteConsumer;
+import org.apache.ignite.math.functions.IgniteFunction;
 
 /**
  * Distribution-related misc. support.

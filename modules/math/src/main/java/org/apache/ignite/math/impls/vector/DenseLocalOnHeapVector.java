@@ -17,14 +17,13 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import java.util.Map;
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.storage.vector.ArrayVectorStorage;
-
-import java.util.*;
 
 /**
  * Basic implementation for vector.

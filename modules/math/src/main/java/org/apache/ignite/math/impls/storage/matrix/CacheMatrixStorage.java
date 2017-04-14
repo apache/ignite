@@ -17,10 +17,11 @@
 
 package org.apache.ignite.math.impls.storage.matrix;
 
-import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.ignite.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.math.MatrixKeyMapper;
 import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.ValueMapper;
