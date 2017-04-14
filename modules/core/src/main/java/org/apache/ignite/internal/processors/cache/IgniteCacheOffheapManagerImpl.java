@@ -1191,7 +1191,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             GridCacheQueryManager qryMgr = cctx.queries();
 
-            if (qryMgr.enabled() && val != null)
+            if (qryMgr.enabled())
                 qryMgr.remove(key, partId, val, ver);
 
             if (oldRow != null)
