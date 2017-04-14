@@ -135,10 +135,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert conflictVer == null : conflictVer;
         assert key.partition() >= 0 : key;
 
-        assert this.key == null || F.eq(this.key, key);
-        assert this.val == null || F.eq(this.val, val);
-
-        primary(true);
+        assert this.key == null;
 
         this.key = key;
         this.val = val;
@@ -165,8 +162,10 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert ttl <= 0 : ttl;
         assert key.partition() >= 0 : key;
 
-        assert this.key == null || F.eq(this.key, key);
-        assert this.val == null || F.eq(this.val, val);
+        if (this.key != null) {
+            obsolete(true);
+            return;
+        }
 
         near(true);
 
@@ -181,7 +180,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return key != null ? primary() ? 1 : 0 : 0;
+        return key != null ? near() ? 0 : 1 : 0;
     }
 
     /** {@inheritDoc} */
@@ -191,14 +190,26 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public boolean hasKey(KeyCacheObject key) {
-        return primary() && F.eq(this.key, key);
+        return !near() && F.eq(this.key, key);
     }
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject key(int idx) {
         assert idx == 0 : idx;
 
-        return primary() ? key : null;
+        return near() ? null : key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int obsoleteSize() {
+        return obsolete() ? 1 : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject obsoleteKey(int idx) {
+        assert obsolete() && idx == 0 : idx;
+
+        return key;
     }
 
     /** {@inheritDoc} */
@@ -228,7 +239,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     @Override @Nullable public CacheObject value(int idx) {
         assert idx == 0 : idx;
 
-        return primary() ? val : null;
+        return near() ? null : val;
     }
 
     /** {@inheritDoc} */
