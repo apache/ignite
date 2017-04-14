@@ -106,6 +106,7 @@ import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfT
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2TableSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
+import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
@@ -214,6 +215,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // Ignite cache and H2 comparison.
         suite.addTestSuite(BaseH2CompareQueryTest.class);
         suite.addTestSuite(H2CompareBigQueryTest.class);
+        suite.addTestSuite(H2CompareBigQueryDistributedJoinsTest.class);
 
         // Cache query metrics.
         suite.addTestSuite(CacheLocalQueryMetricsSelfTest.class);
