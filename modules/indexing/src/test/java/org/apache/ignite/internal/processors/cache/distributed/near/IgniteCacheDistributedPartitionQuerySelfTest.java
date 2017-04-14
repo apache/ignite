@@ -70,9 +70,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     /** Grids count. */
     private static final int GRIDS_COUNT = 10;
 
-    /** Restarting grids count. */
-    private static final int RESTARTING_GRIDS_COUNT = 2;
-
     /** Region node attribute name. */
     private static final String REGION_ATTR_NAME = "reg";
 
@@ -439,10 +436,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         }
     }
 
-    public void testRestarts() throws Exception {
-        doRestarts();
-    }
-
     /**
      * @param orig Originator.
      */
@@ -584,43 +577,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
                     fail();
             }
         }
-    }
-
-    /** */
-    protected void doRestarts() throws Exception {
-        final AtomicBoolean stop = new AtomicBoolean();
-
-        final GridRandom r = new GridRandom();
-
-        final AtomicIntegerArray states = new AtomicIntegerArray(GRIDS_COUNT);
-
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                while(!stop.get()) {
-                    int grid = r.nextInt(GRIDS_COUNT);
-
-                    if (states.compareAndSet(grid, 0, 1)) {
-                        stopGrid(grid);
-
-                        Thread.sleep(r.nextInt(3_000) + 1_000);
-
-                        startGrid(grid);
-
-                        states.set(grid, 1);
-                    }
-                }
-
-                return null;
-            }
-        }, RESTARTING_GRIDS_COUNT);
-
-        grid(0).scheduler().runLocal(new Runnable() {
-            @Override public void run() {
-                stop.set(true);
-            }
-        }, 10, TimeUnit.SECONDS);
-
-        fut.get();
     }
 
     /**
