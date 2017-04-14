@@ -18,7 +18,6 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.ExternalizeTest;
-import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.junit.Before;
@@ -64,7 +63,7 @@ public class TransposedMatrixViewTest extends ExternalizeTest<TransposedMatrixVi
     /** */
     @Test
     public void testNullParams() {
-        DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new TransposedMatrixView((Matrix)null), "Null Matrix parameter");
+        DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new TransposedMatrixView(null), "Null Matrix parameter");
     }
 
     /** */

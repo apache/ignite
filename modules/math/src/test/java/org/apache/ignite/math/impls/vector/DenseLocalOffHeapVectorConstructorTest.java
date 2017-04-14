@@ -37,7 +37,7 @@ public class DenseLocalOffHeapVectorConstructorTest {
     @Test(expected = NullPointerException.class)
     public void nullArrayTest() {
         assertEquals("Null array.", IMPOSSIBLE_SIZE,
-            new DenseLocalOffHeapVector((double[])null).size());
+            new DenseLocalOffHeapVector(null).size());
     }
 
     /** */
