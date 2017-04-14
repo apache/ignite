@@ -34,7 +34,7 @@ public final class OffHeapMatrixExample {
         System.out.println(">>> Off-heap matrix API usage example started.");
 
         System.out.println("\n>>> Creating a matrix to be transposed.");
-        double[][] data = new double[][]{{1, 2, 3}, {4, 5, 6}};
+        double[][] data = new double[][] {{1, 2, 3}, {4, 5, 6}};
         Matrix m = new DenseLocalOffHeapMatrix(data.length, data[0].length);
         m.assign(data);
         Matrix transposed = m.transpose();
@@ -47,8 +47,8 @@ public final class OffHeapMatrixExample {
         MatrixExampleUtil.verifyTransposition(m, transposed);
 
         System.out.println("\n>>> Creating matrices to be multiplied.");
-        double[][] data1 = new double[][]{{1, 2}, {3, 4}};
-        double[][] data2 = new double[][]{{5, 6}, {7, 8}};
+        double[][] data1 = new double[][] {{1, 2}, {3, 4}};
+        double[][] data2 = new double[][] {{5, 6}, {7, 8}};
 
         Matrix m1 = new DenseLocalOffHeapMatrix(data1.length, data1[0].length);
         Matrix m2 = new DenseLocalOffHeapMatrix(data2.length, data2[0].length);

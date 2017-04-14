@@ -37,7 +37,7 @@ public final class MatrixCustomStorageExample {
         System.out.println(">>> Matrix API usage example started.");
 
         System.out.println("\n>>> Creating a matrix to be transposed.");
-        double[][] data = new double[][]{{1, 2, 3}, {4, 5, 6}};
+        double[][] data = new double[][] {{1, 2, 3}, {4, 5, 6}};
         Matrix m = new MatrixCustomStorage(data);
         Matrix transposed = m.transpose();
 
@@ -49,8 +49,8 @@ public final class MatrixCustomStorageExample {
         MatrixExampleUtil.verifyTransposition(m, transposed);
 
         System.out.println("\n>>> Creating matrices to be multiplied.");
-        double[][] data1 = new double[][]{{1, 2}, {3, 4}};
-        double[][] data2 = new double[][]{{5, 6}, {7, 8}};
+        double[][] data1 = new double[][] {{1, 2}, {3, 4}};
+        double[][] data2 = new double[][] {{5, 6}, {7, 8}};
 
         Matrix m1 = new MatrixCustomStorage(data1);
         Matrix m2 = new MatrixCustomStorage(data2);
@@ -93,7 +93,6 @@ public final class MatrixCustomStorageExample {
         }
 
         /**
-         *
          * @param rows Amount of rows in a matrix.
          * @param cols Amount of columns in a matrix.
          */
@@ -105,7 +104,6 @@ public final class MatrixCustomStorageExample {
         }
 
         /**
-         *
          * @param mtx Source matrix.
          */
         MatrixCustomStorage(double[][] mtx) {
@@ -115,7 +113,6 @@ public final class MatrixCustomStorageExample {
         }
 
         /**
-         *
          * @param orig original matrix to be copied.
          */
         private MatrixCustomStorage(MatrixCustomStorage orig) {

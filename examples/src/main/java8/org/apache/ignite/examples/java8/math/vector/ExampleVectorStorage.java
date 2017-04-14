@@ -34,7 +34,6 @@ class ExampleVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param data backing data array.
      */
     ExampleVectorStorage(double[] data) {

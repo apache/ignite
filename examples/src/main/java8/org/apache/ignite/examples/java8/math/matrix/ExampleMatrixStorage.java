@@ -38,7 +38,6 @@ class ExampleMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param rows Amount of rows in a matrix storage.
      * @param cols Amount of columns in a matrix storage.
      */
@@ -52,7 +51,6 @@ class ExampleMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param data Backing data array.
      */
     ExampleMatrixStorage(double[][] data) {

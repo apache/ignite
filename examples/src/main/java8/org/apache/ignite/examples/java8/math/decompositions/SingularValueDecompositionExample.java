@@ -41,11 +41,11 @@ public class SingularValueDecompositionExample {
         // v is a real or complex unitary matrix
         // If m is real then u and v are also real.
         // Complex case is not supported for the moment.
-        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][]{
-            {1.0d,  0.0d,  0.0d, 0.0d, 2.0d},
-            {0.0d,  0.0d,  3.0d, 0.0d, 0.0d},
-            {0.0d,  0.0d,  0.0d, 0.0d, 0.0d},
-            {0.0d,  2.0d,  0.0d, 0.0d, 0.0d}
+        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][] {
+            {1.0d, 0.0d, 0.0d, 0.0d, 2.0d},
+            {0.0d, 0.0d, 3.0d, 0.0d, 0.0d},
+            {0.0d, 0.0d, 0.0d, 0.0d, 0.0d},
+            {0.0d, 2.0d, 0.0d, 0.0d, 0.0d}
         });
         System.out.println("\n>>> Matrix m for decomposition: ");
         Tracer.showAscii(m);

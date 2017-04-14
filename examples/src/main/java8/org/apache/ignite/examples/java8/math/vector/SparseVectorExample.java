@@ -37,8 +37,8 @@ public final class SparseVectorExample {
         System.out.println(">>> Sparse vector API usage example started.");
 
         System.out.println("\n>>> Creating perpendicular sparse vectors.");
-        double[] data1 = new double[]{1, 0, 3, 0, 5, 0};
-        double[] data2 = new double[]{0, 2, 0, 4, 0, 6};
+        double[] data1 = new double[] {1, 0, 3, 0, 5, 0};
+        double[] data2 = new double[] {0, 2, 0, 4, 0, 6};
 
         Vector v1 = new SparseLocalVector(data1.length, RANDOM_ACCESS_MODE);
         Vector v2 = new SparseLocalVector(data2.length, RANDOM_ACCESS_MODE);

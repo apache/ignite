@@ -34,7 +34,7 @@ public final class MatrixExample {
         System.out.println(">>> Basic Matrix API usage example started.");
 
         System.out.println("\n>>> Creating a matrix to be transposed.");
-        double[][] data = new double[][]{{1, 2, 3}, {4, 5, 6}};
+        double[][] data = new double[][] {{1, 2, 3}, {4, 5, 6}};
         Matrix m = new DenseLocalOnHeapMatrix(data);
         Matrix transposed = m.transpose();
 
@@ -46,8 +46,8 @@ public final class MatrixExample {
         MatrixExampleUtil.verifyTransposition(m, transposed);
 
         System.out.println("\n>>> Creating matrices to be multiplied.");
-        double[][] data1 = new double[][]{{1, 2}, {3, 4}};
-        double[][] data2 = new double[][]{{5, 6}, {7, 8}};
+        double[][] data1 = new double[][] {{1, 2}, {3, 4}};
+        double[][] data2 = new double[][] {{5, 6}, {7, 8}};
 
         Matrix m1 = new DenseLocalOnHeapMatrix(data1);
         Matrix m2 = new DenseLocalOnHeapMatrix(data2);

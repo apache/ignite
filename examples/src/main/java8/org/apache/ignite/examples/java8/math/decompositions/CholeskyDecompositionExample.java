@@ -38,9 +38,9 @@ public class CholeskyDecompositionExample {
         // l is a lower triangular matrix
         // l^{*} is its conjugate transpose
 
-        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][]{
-            {2.0d,  -1.0d,  0.0d},
-            {-1.0d, 2.0d,  -1.0d},
+        DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][] {
+            {2.0d, -1.0d, 0.0d},
+            {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
         });
         System.out.println("\n>>> Matrix m for decomposition: ");
@@ -63,7 +63,7 @@ public class CholeskyDecompositionExample {
         System.out.println(">>> Matrix l^{*} is ");
         Tracer.showAscii(dec.getLT());
 
-        Matrix bs = new DenseLocalOnHeapMatrix(new double[][]{
+        Matrix bs = new DenseLocalOnHeapMatrix(new double[][] {
             {4.0, -6.0, 7.0},
             {1.0, 1.0, 1.0}
         }).transpose();

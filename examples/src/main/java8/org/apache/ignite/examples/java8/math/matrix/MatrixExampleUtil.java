@@ -43,6 +43,7 @@ class MatrixExampleUtil {
 
     /**
      * Prints matrix values to console.
+     *
      * @param m Matrix to print.
      */
     static void print(Matrix m) {

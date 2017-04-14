@@ -35,8 +35,8 @@ public final class VectorExample {
         System.out.println(">>> Basic Vector API usage example started.");
 
         System.out.println("\n>>> Creating perpendicular vectors.");
-        double[] data1 = new double[]{1, 0, 3, 0, 5, 0};
-        double[] data2 = new double[]{0, 2, 0, 4, 0, 6};
+        double[] data1 = new double[] {1, 0, 3, 0, 5, 0};
+        double[] data2 = new double[] {0, 2, 0, 4, 0, 6};
 
         Vector v1 = new DenseLocalOnHeapVector(data1);
         Vector v2 = new DenseLocalOnHeapVector(data2);
