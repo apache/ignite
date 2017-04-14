@@ -75,13 +75,13 @@ namespace ignite
                 V value;
                 bool exists = reader.TryReadObject<V>(value);
 
-                cache::MutableCacheEntryState entryState;
+                cache::MutableCacheEntryState::Type entryState;
 
                 R res = procHolder.template Process<R, K, V>(key, value, exists, entryState);
 
                 writer.WriteInt8(static_cast<int8_t>(entryState));
 
-                if (entryState == cache::ENTRY_STATE_VALUE_SET)
+                if (entryState == cache::MutableCacheEntryState::VALUE_SET)
                     writer.WriteTopObject(value);
 
                 writer.WriteTopObject(res);
