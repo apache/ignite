@@ -39,6 +39,9 @@ import static org.yardstickframework.BenchmarkUtils.println;
  */
 public class IgniteGetFromComputeBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
+    private static final String CACHE_NAME = "atomic-offheap";
+
+    /** */
     private IgniteCompute compute;
 
     /** */
@@ -79,8 +82,6 @@ public class IgniteGetFromComputeBenchmark extends IgniteCacheAbstractBenchmark<
 
         compute = ignite().compute();
 
-        GetClosure.cacheName = cacheName;
-
         asyncCache = cache().withAsync();
     }
 
@@ -101,30 +102,20 @@ public class IgniteGetFromComputeBenchmark extends IgniteCacheAbstractBenchmark<
 
         int key = nextRandom(args.range());
 
-        compute.affinityCall(cacheName(), key, new GetClosure(key));
+        compute.affinityCall(CACHE_NAME, key, new GetClosure(key));
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache(cacheName());
-    }
-
-    /**
-     * @return Cache name.
-     */
-    protected String cacheName() {
-        return "atomic-offheap";
+        return ignite().cache(CACHE_NAME);
     }
 
     /**
      *
      */
     public static class GetClosure implements IgniteCallable<Object> {
-        /** */
-        static String cacheName;
-
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -141,7 +132,7 @@ public class IgniteGetFromComputeBenchmark extends IgniteCacheAbstractBenchmark<
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return ignite.cache(cacheName).get(key);
+            return ignite.cache(CACHE_NAME).get(key);
         }
     }
 
