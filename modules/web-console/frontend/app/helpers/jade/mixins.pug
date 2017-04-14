@@ -16,6 +16,7 @@
 
 include ./form
 include ../../primitives/tooltip/index
+include ../../primitives/btn-group/index
 include ../../primitives/datepicker/index
 include ../../primitives/dropdown/index
 include ../../primitives/ui-grid-settings/index
@@ -53,7 +54,7 @@ mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
 
 //- Mixin with save, remove, clone and undo buttons.
 mixin save-remove-clone-undo-buttons(objectName)
-    -var removeTip = '"Remove current ' + objectName + '"'
+    -var removeTip = 'Remove current ' + objectName
     -var cloneTip = '"Clone current ' + objectName + '"'
     -var undoTip = '"Undo all changes for current ' + objectName + '"'
 
@@ -64,10 +65,11 @@ mixin save-remove-clone-undo-buttons(objectName)
             a.btn.btn-primary(id='save-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && saveItem()' bs-tooltip='' data-title=`{{saveBtnTipText(ui.inputForm.$dirty, '${objectName}')}}` data-placement='bottom' data-trigger='hover') Save
         .panel-tip-container(ng-show='backupItem._id')
             a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
-        .btn-group.panel-tip-container(ng-show='backupItem._id')
-            button.btn.btn-primary(id='remove-item' ng-click='removeItem()' bs-tooltip=removeTip data-placement='bottom' data-trigger='hover') Remove
-            button.btn.dropdown-toggle.btn-primary(id='remove-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='[{ text: "Remove All", click: "removeAllItems()" }]' data-placement='bottom-right')
-                span.caret
+
+        -var actions = [{ text: "Remove", click: "removeItem()" }, { text: "Remove All", click: "removeAllItems()" }]
+
+        +btn-group(actions, removeTip)(ng-show='backupItem._id')
+
         .panel-tip-container(ng-show='backupItem')
             i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
 
