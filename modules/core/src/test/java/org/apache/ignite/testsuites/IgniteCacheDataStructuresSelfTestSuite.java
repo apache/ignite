@@ -24,10 +24,8 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDa
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDiscoveryDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureUniqueNameTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureWithJobTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicOffheapSetSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicSetSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalOffheapQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalSequenceApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalSetSelfTest;
@@ -35,9 +33,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLo
 import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalCountDownLatchSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalLockSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalSemaphoreSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicOffheapQueueApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicOffheapQueueCreateMultiNodeSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicOffheapQueueMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest;
@@ -51,10 +46,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Gr
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicStampedApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedDataStructuresFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedNodeRestartTxSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedOffHeapValuesQueueApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedOffHeapValuesSetSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedOffheapDataStructuresFailoverSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedOffheapSetFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedQueueCreateMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedQueueEntryMoveSelfTest;
@@ -104,9 +95,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicSetSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLocalAtomicOffheapSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLocalOffheapQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicQueueApiSelfTest.class));
         suite.addTest(new TestSuite(IgniteLocalCountDownLatchSelfTest.class));
         suite.addTest(new TestSuite(IgniteLocalSemaphoreSelfTest.class));
@@ -127,18 +116,13 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSequenceMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedOffHeapValuesQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueApiSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicOffheapQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicOffheapQueueMultiNodeSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedAtomicOffheapQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedOffHeapValuesSetSelfTest.class));
         suite.addTest(new TestSuite(IgnitePartitionedSetNoBackupsSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSetSelfTest.class));
         suite.addTest(new TestSuite(IgnitePartitionedCountDownLatchSelfTest.class));
@@ -150,7 +134,6 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         // suite.addTest(new TestSuite(IgnitePartitionedLockSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedSetFailoverSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedOffheapSetFailoverSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSetFailoverSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedQueueRotativeMultiNodeTest.class));
@@ -160,7 +143,6 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedQueueEntryMoveSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedDataStructuresFailoverSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedOffheapDataStructuresFailoverSelfTest.class));
         suite.addTest(new TestSuite(GridCacheQueueMultiNodeConsistencySelfTest.class));
 
         suite.addTest(new TestSuite(IgniteLocalAtomicLongApiSelfTest.class));

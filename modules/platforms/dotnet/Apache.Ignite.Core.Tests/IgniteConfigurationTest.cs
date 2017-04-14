@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
@@ -34,8 +33,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -76,13 +73,11 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
             CheckDefaultValueAttributes(new TcpCommunicationSpi());
             CheckDefaultValueAttributes(new RendezvousAffinityFunction());
-            CheckDefaultValueAttributes(new FairAffinityFunction());
             CheckDefaultValueAttributes(new NearCacheConfiguration());
             CheckDefaultValueAttributes(new FifoEvictionPolicy());
             CheckDefaultValueAttributes(new LruEvictionPolicy());
             CheckDefaultValueAttributes(new AtomicConfiguration());
             CheckDefaultValueAttributes(new TransactionConfiguration());
-            CheckDefaultValueAttributes(new FileSwapSpaceSpi());
             CheckDefaultValueAttributes(new MemoryEventStorageSpi());
         }
 
@@ -177,14 +172,6 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
 
-                var swap = (FileSwapSpaceSpi) cfg.SwapSpaceSpi;
-                var resSwap = (FileSwapSpaceSpi) resCfg.SwapSpaceSpi;
-                Assert.AreEqual(swap.MaximumSparsity, resSwap.MaximumSparsity);
-                Assert.AreEqual(swap.BaseDirectory, resSwap.BaseDirectory);
-                Assert.AreEqual(swap.MaximumWriteQueueSize, resSwap.MaximumWriteQueueSize);
-                Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
-                Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
-
                 var binCfg = cfg.BinaryConfiguration;
                 Assert.IsFalse(binCfg.CompactFooter);
 
@@ -193,9 +180,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(typ.IsEnum);
                 Assert.AreEqual("affKey", typ.AffinityKeyFieldName);
                 Assert.AreEqual(false, typ.KeepDeserialized);
-
-                CollectionAssert.AreEqual(new[] {"fld1", "fld2"},
-                    ((BinaryFieldEqualityComparer)typ.EqualityComparer).FieldNames);
 
                 Assert.IsNotNull(resCfg.PluginConfigurations);
                 Assert.AreEqual(cfg.PluginConfigurations, resCfg.PluginConfigurations);
@@ -481,7 +465,7 @@ namespace Apache.Ignite.Core.Tests
                     TopologyHistorySize = 1234567
                 },
                 IgniteInstanceName = "gridName1",
-                IncludedEventTypes = EventType.SwapspaceAll,
+                IncludedEventTypes = EventType.DiscoveryAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,
                 MetricsLogFrequency = TimeSpan.FromMinutes(8),
@@ -531,14 +515,6 @@ namespace Apache.Ignite.Core.Tests
                     UnacknowledgedMessagesBufferSize = 3450
                 },
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
-                SwapSpaceSpi = new FileSwapSpaceSpi
-                {
-                    ReadStripesNumber = 64,
-                    MaximumWriteQueueSize = 8,
-                    WriteBufferSize = 9,
-                    BaseDirectory = Path.GetTempPath(),
-                    MaximumSparsity = 0.123f
-                },
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = false,
@@ -549,8 +525,7 @@ namespace Apache.Ignite.Core.Tests
                             TypeName = "myType",
                             IsEnum = true,
                             AffinityKeyFieldName = "affKey",
-                            KeepDeserialized = false,
-                            EqualityComparer = new BinaryFieldEqualityComparer("fld1", "fld2")
+                            KeepDeserialized = false
                         }
                     }
                 },

@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -295,11 +294,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject rawGetOrUnmarshal(boolean tmp) throws IgniteCheckedException {
-        return val;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean hasValue() {
         return val != null;
     }
@@ -374,8 +368,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
-        @Nullable CacheEntryPredicate[] filter) {
+    @Override public boolean evictInternal(GridCacheVersion obsoleteVer,
+        @Nullable CacheEntryPredicate[] filter, boolean evictOffheap) {
         assert false;
 
         return false;
@@ -403,11 +397,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Override public CacheObject innerGet(
         @Nullable GridCacheVersion ver,
         @Nullable IgniteInternalTx tx,
-        boolean readSwap,
         boolean readThrough,
         boolean updateMetrics,
         boolean evt,
-        boolean tmp,
         UUID subjId,
         Object transformClo,
         String taskName,
@@ -423,7 +415,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** @inheritDoc */
     @Override public EntryGetResult innerGetAndReserveForLoad(
-        boolean readSwap,
         boolean updateMetrics,
         boolean evt,
         UUID subjId,
@@ -440,8 +431,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Nullable @Override public EntryGetResult innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
-        boolean readSwap,
-        boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
         UUID subjId,
@@ -854,12 +843,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onOffheapEvict(byte[] vb, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheObject unswap(boolean needVal) throws IgniteCheckedException {
         return null;
     }
@@ -887,7 +870,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject peek(boolean heap,
         boolean offheap,
-        boolean swap,
         AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy plc)
     {
@@ -896,9 +878,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject peek(
-        boolean heap,
-        boolean offheap,
-        boolean swap,
         @Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         return null;

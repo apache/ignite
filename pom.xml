@@ -163,6 +163,7 @@
             <id>lgpl</id>
             <modules>
                 <module>modules/hibernate</module>
+                <module>modules/hibernate5</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>

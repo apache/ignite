@@ -51,10 +51,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
-        cfg.setEvictSynchronized(false);
-
         cfg.setAtomicityMode(atomicityMode());
-        cfg.setSwapEnabled(true);
 
         return cfg;
     }

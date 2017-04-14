@@ -117,7 +117,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setSwapEnabled(false);
         cc.setRebalanceMode(SYNC);
 
         cc.setCacheStoreFactory(singletonFactory(store));
@@ -173,7 +172,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     /**
      * Simulate case where is called
      * {@link org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry#clearInternal(
-     * GridCacheVersion, boolean, GridCacheObsoleteEntryExtras)}
+     * GridCacheVersion, GridCacheObsoleteEntryExtras)}
      *
      * @throws Exception If failed.
      */
@@ -211,11 +210,13 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     }
 
     /**
+     * TODO GG-11148.
+     *
      * Check whether binary objects are stored without unmarshalling via stream API.
      *
      * @throws Exception If failed.
      */
-    public void testBinaryStream() throws Exception {
+    public void _testBinaryStream() throws Exception {
         final Ignite grid = startGrid("binaryGrid");
 
         final IgniteCache<BinaryObject, BinaryObject> cache = grid.createCache(CACHE_NAME).withKeepBinary();
@@ -234,8 +235,8 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         final BinaryObject loaded = cache2.get(key);
 
-        assert loaded == key;
-        assert store.map.containsKey(key);
+        assertSame(loaded, key);
+        assertTrue(store.map.containsKey(key));
     }
 
     /**

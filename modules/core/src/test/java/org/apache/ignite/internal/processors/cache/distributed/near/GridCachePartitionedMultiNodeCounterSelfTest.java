@@ -270,9 +270,11 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assertNull(near(pri).peekEx(CNTR_KEY));
 
-        final GridCacheEntryEx dhtEntry = dht(pri).peekEx(CNTR_KEY);
+        final GridCacheEntryEx dhtEntry = dht(pri).entryEx(CNTR_KEY);
 
         assertNotNull(dhtEntry);
+
+        dhtEntry.unswap();
 
         assertEquals(Integer.valueOf(0), dhtEntry.rawGet().value(dhtEntry.context().cacheObjectContext(), false));
 
@@ -496,7 +498,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
             IgniteCache<String, Integer> cache = grid(i).cache(null);
 
-            int cntr = nearThreads > 0 && nears.contains(g) ? cache.get(CNTR_KEY) : cache.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
+            int cntr = nearThreads > 0 && nears.contains(g) ? cache.get(CNTR_KEY) : cache.localPeek(CNTR_KEY);
 
             X.println("*** Cache counter [igniteInstanceName=" + g.name() + ", cntr=" + cntr + ']');
 
@@ -552,9 +554,11 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         assertNull(near(pri).peekEx(CNTR_KEY));
 
-        GridCacheEntryEx dhtEntry = dht(pri).peekEx(CNTR_KEY);
+        GridCacheEntryEx dhtEntry = dht(pri).entryEx(CNTR_KEY);
 
         assertNotNull(dhtEntry);
+
+        dhtEntry.unswap();
 
         assertEquals(Integer.valueOf(0), dhtEntry.rawGet().value(dhtEntry.context().cacheObjectContext(), false));
 
@@ -574,7 +578,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
             IgniteCache<String, Integer> cache = grid(i).cache(null);
 
-            int cntr = cache.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
+            int cntr = cache.localPeek(CNTR_KEY);
 
             info("*** Cache counter [igniteInstanceName=" + g.name() + ", cntr=" + cntr + ']');
 

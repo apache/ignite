@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -48,8 +47,6 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setNearConfiguration(null);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setOffHeapMaxMemory(0);
-        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
 
         cfg.setCacheConfiguration(ccfg);
 

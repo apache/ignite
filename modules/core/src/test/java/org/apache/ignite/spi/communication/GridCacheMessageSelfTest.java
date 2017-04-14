@@ -409,7 +409,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
      */
     static class TestMessage2 extends GridCacheMessage {
         /** */
-        public static final short DIRECT_TYPE = 205;
+        public static final short DIRECT_TYPE = 201;
 
         /** Node id. */
         private UUID nodeId;

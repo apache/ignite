@@ -84,6 +84,9 @@ public class VisorGridConfiguration implements Serializable, LessNamingBean {
     /** Transactions configuration. */
     private VisorTransactionConfiguration txCfg;
 
+    /** Database configuration. */
+    private VisorMemoryConfiguration memCfg;
+
     /**
      * @param ignite Grid.
      * @return Fill data transfer object with node configuration data.
@@ -109,6 +112,7 @@ public class VisorGridConfiguration implements Serializable, LessNamingBean {
         sysProps = IgniteSystemProperties.snapshot();
         atomic = VisorAtomicConfiguration.from(c.getAtomicConfiguration());
         txCfg = VisorTransactionConfiguration.from(c.getTransactionConfiguration());
+        memCfg = new VisorMemoryConfiguration(c.getMemoryConfiguration());
 
         return this;
     }
@@ -223,6 +227,13 @@ public class VisorGridConfiguration implements Serializable, LessNamingBean {
      */
     public VisorTransactionConfiguration transaction() {
         return txCfg;
+    }
+
+    /**
+     * @return Memory configuration.
+     */
+    public VisorMemoryConfiguration memoryConfiguration() {
+        return memCfg;
     }
 
     /** {@inheritDoc} */

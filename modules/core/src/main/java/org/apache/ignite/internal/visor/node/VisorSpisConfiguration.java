@@ -64,9 +64,6 @@ public class VisorSpisConfiguration implements Serializable, LessNamingBean {
     /** Load balancing SPIs. */
     private IgniteBiTuple<String, Map<String, Object>>[] loadBalancingSpis;
 
-    /** Swap space SPIs. */
-    private IgniteBiTuple<String, Map<String, Object>> swapSpaceSpis;
-
     /** Indexing SPIs. */
     private IgniteBiTuple<String, Map<String, Object>>[] indexingSpis;
 
@@ -154,7 +151,6 @@ public class VisorSpisConfiguration implements Serializable, LessNamingBean {
         cfg.cpSpis = collectSpiInfo(c.getCheckpointSpi());
         cfg.failSpis = collectSpiInfo(c.getFailoverSpi());
         cfg.loadBalancingSpis = collectSpiInfo(c.getLoadBalancingSpi());
-        cfg.swapSpaceSpis = collectSpiInfo(c.getSwapSpaceSpi());
         cfg.indexingSpis = F.asArray(collectSpiInfo(c.getIndexingSpi()));
 
         return cfg;
@@ -214,13 +210,6 @@ public class VisorSpisConfiguration implements Serializable, LessNamingBean {
      */
     public IgniteBiTuple<String, Map<String, Object>>[] loadBalancingSpis() {
         return loadBalancingSpis;
-    }
-
-    /**
-     * @return Swap space SPIs.
-     */
-    public IgniteBiTuple<String, Map<String, Object>> swapSpaceSpi() {
-        return swapSpaceSpis;
     }
 
     /**

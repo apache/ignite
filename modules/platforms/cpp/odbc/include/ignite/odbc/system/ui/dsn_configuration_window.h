@@ -37,23 +37,26 @@ namespace ignite
                     /**
                      * Children windows ids.
                      */
-                    enum ChildId
+                    struct ChildId
                     {
-                        ID_CONNECTION_SETTINGS_GROUP_BOX,
-                        ID_NAME_EDIT,
-                        ID_NAME_LABEL,
-                        ID_ADDRESS_EDIT,
-                        ID_ADDRESS_LABEL,
-                        ID_CACHE_EDIT,
-                        ID_CACHE_LABEL,
-                        ID_PAGE_SIZE_EDIT,
-                        ID_PAGE_SIZE_LABEL,
-                        ID_DISTRIBUTED_JOINS_CHECK_BOX,
-                        ID_ENFORCE_JOIN_ORDER_CHECK_BOX,
-                        ID_PROTOCOL_VERSION_LABEL,
-                        ID_PROTOCOL_VERSION_COMBO_BOX,
-                        ID_OK_BUTTON,
-                        ID_CANCEL_BUTTON
+                        enum Type
+                        {
+                            CONNECTION_SETTINGS_GROUP_BOX,
+                            NAME_EDIT,
+                            NAME_LABEL,
+                            ADDRESS_EDIT,
+                            ADDRESS_LABEL,
+                            CACHE_EDIT,
+                            CACHE_LABEL,
+                            PAGE_SIZE_EDIT,
+                            PAGE_SIZE_LABEL,
+                            DISTRIBUTED_JOINS_CHECK_BOX,
+                            ENFORCE_JOIN_ORDER_CHECK_BOX,
+                            PROTOCOL_VERSION_LABEL,
+                            PROTOCOL_VERSION_COMBO_BOX,
+                            OK_BUTTON,
+                            CANCEL_BUTTON
+                        };
                     };
 
                 public:

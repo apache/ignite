@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -64,8 +63,6 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return cfg;
     }
@@ -115,9 +112,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(1, true);
 
         final IgniteCache<Object, Object> cache = ignite(0).createCache(cacheConfig("org", true, Integer.class, Organization.class)
-            .setOffHeapMaxMemory(-1)
-            .setSwapEnabled(true)
-            .setEvictionPolicy(new FifoEvictionPolicy(10)));
+            .setEvictionPolicy(new FifoEvictionPolicy(10)).setOnheapCacheEnabled(true));
 
         for (int i = 0; i < 20; i++)
             cache.put(i, new Organization("org-" + i));

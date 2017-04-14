@@ -87,16 +87,6 @@ static int32_t GetFieldId(const char* name) \
 }
 
 /**
- * @def IGNITE_BINARY_GET_HASH_CODE_ZERO(T)
- * Implementation of GetHashCode() function which always returns 0.
- */
-#define IGNITE_BINARY_GET_HASH_CODE_ZERO(T) \
-static int32_t GetHashCode(const T& obj) \
-{ \
-    return 0; \
-}
-
-/**
  * @def IGNITE_BINARY_IS_NULL_FALSE(T)
  * Implementation of IsNull() function which always returns false.
  */

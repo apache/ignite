@@ -148,6 +148,8 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
             assertTrue("Service was not deployed", res);
 
+            info("stopping cache: " + cacheName);
+
             ig.destroyCache(cacheName);
 
             res = GridTestUtils.waitForCondition(new PA() {

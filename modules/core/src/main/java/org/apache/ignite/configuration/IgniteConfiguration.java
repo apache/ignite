@@ -72,8 +72,6 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
-import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
@@ -223,6 +221,9 @@ public class IgniteConfiguration {
 
     /** Default value for late affinity assignment flag. */
     public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
+
+    /** Default value for active on start flag. */
+    public static final boolean DFLT_ACTIVE_ON_START = true;
 
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
@@ -375,9 +376,6 @@ public class IgniteConfiguration {
     /** Load balancing SPI. */
     private LoadBalancingSpi[] loadBalancingSpi;
 
-    /** Checkpoint SPI. */
-    private SwapSpaceSpi swapSpaceSpi;
-
     /** Indexing SPI. */
     private IndexingSpi indexingSpi;
 
@@ -478,6 +476,12 @@ public class IgniteConfiguration {
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
+    /** Database configuration. */
+    private MemoryConfiguration dbCfg;
+
+    /** Active on start flag. */
+    private boolean activeOnStart = DFLT_ACTIVE_ON_START;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -504,15 +508,16 @@ public class IgniteConfiguration {
         failSpi = cfg.getFailoverSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
-        swapSpaceSpi = cfg.getSwapSpaceSpi();
 
         /*
          * Order alphabetically for maintenance purposes.
          */
+        activeOnStart = cfg.isActiveOnStart();
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
+        dbCfg = cfg.getMemoryConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -1995,33 +2000,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link SwapSpaceSpi}.
-     *
-     * @param swapSpaceSpi Fully configured instances of {@link SwapSpaceSpi} or
-     *      <tt>null</tt> if no SPI provided.
-     * @see IgniteConfiguration#getSwapSpaceSpi()
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setSwapSpaceSpi(SwapSpaceSpi swapSpaceSpi) {
-        this.swapSpaceSpi = swapSpaceSpi;
-
-        return this;
-    }
-
-    /**
-     * Should return fully configured swap space SPI implementation. If not provided,
-     * {@link FileSwapSpaceSpi} will be used.
-     * <p>
-     * Note that user can provide one or multiple instances of this SPI (and select later which one
-     * is used in a particular context).
-     *
-     * @return Grid swap space SPI implementation or <tt>null</tt> to use default implementation.
-     */
-    public SwapSpaceSpi getSwapSpaceSpi() {
-        return swapSpaceSpi;
-    }
-
-    /**
      * Sets fully configured instances of {@link IndexingSpi}.
      *
      * @param indexingSpi Fully configured instance of {@link IndexingSpi}.
@@ -2192,6 +2170,54 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setBinaryConfiguration(BinaryConfiguration binaryCfg) {
         this.binaryCfg = binaryCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets memory configuration.
+     *
+     * @return Memory configuration.
+     */
+    public MemoryConfiguration getMemoryConfiguration() {
+        return dbCfg;
+    }
+
+    /**
+     * Sets memory configuration.
+     *
+     * @param dbCfg Memory configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration dbCfg) {
+        this.dbCfg = dbCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether the cluster will be active on start. If cluster is not active on start,
+     * there will be no cache partition map exchanges performed until the cluster is activated. This should
+     * significantly speed up large topology startup time.
+     * <p>
+     * Default value is {@link #DFLT_ACTIVE_ON_START}.
+     *
+     * @return Active on start flag value.
+     */
+    public boolean isActiveOnStart() {
+        return activeOnStart;
+    }
+
+    /**
+     * Sets flag indicating whether the cluster will be active on start. This value should be the same on all
+     * nodes in the cluster.
+     *
+     * @param activeOnStart Active on start flag value.
+     * @return {@code this} instance.
+     * @see #isActiveOnStart()
+     */
+    public IgniteConfiguration setActiveOnStart(boolean activeOnStart) {
+        this.activeOnStart = activeOnStart;
 
         return this;
     }

@@ -26,10 +26,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
+import org.hibernate.cache.spi.CacheKey;
 import org.hibernate.cache.spi.CollectionRegion;
 import org.hibernate.cache.spi.EntityRegion;
 import org.hibernate.cache.spi.NaturalIdRegion;
@@ -98,7 +98,7 @@ public class HibernateRegionFactory implements RegionFactory {
     private Ignite ignite;
 
     /** Default cache. */
-    private IgniteInternalCache<Object, Object> dfltCache;
+    private HibernateCacheProxy dfltCache;
 
     /** Default region access type. */
     private AccessType dfltAccessType;
@@ -108,6 +108,23 @@ public class HibernateRegionFactory implements RegionFactory {
 
     /** Map needed to provide the same transaction context for different regions. */
     private final ThreadLocal threadLoc = new ThreadLocal();
+
+    /** Key transformer. */
+    private final HibernateKeyTransformer hibernate4transformer = new HibernateKeyTransformer() {
+        @Override public Object transform(Object key) {
+            if (key instanceof CacheKey) {
+                CacheKey cacheKey = (CacheKey)key;
+
+                return new HibernateKeyWrapper(
+                    cacheKey.getKey(),
+                    cacheKey.getEntityOrRoleName(),
+                    cacheKey.getTenantId()
+                );
+            }
+
+            return key;
+        }
+    };
 
     /** {@inheritDoc} */
     @Override public void start(Settings settings, Properties props) throws CacheException {
@@ -151,10 +168,12 @@ public class HibernateRegionFactory implements RegionFactory {
         String dfltCacheName = props.getProperty(DFLT_CACHE_NAME_PROPERTY);
 
         if (dfltCacheName != null) {
-            dfltCache = ((IgniteKernal)ignite).getCache(dfltCacheName);
+            IgniteInternalCache<Object, Object> dfltCache = ((IgniteKernal)ignite).getCache(dfltCacheName);
 
             if (dfltCache == null)
                 throw new CacheException("Cache specified as default is not configured: " + dfltCacheName);
+
+            this.dfltCache = new HibernateCacheProxy(dfltCache, hibernate4transformer);
         }
 
         IgniteLogger log = ignite.log().getLogger(HibernateRegionFactory.class);
@@ -165,6 +184,7 @@ public class HibernateRegionFactory implements RegionFactory {
 
     /** {@inheritDoc} */
     @Override public void stop() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -226,7 +246,7 @@ public class HibernateRegionFactory implements RegionFactory {
      * @return Cache for given region.
      * @throws CacheException If cache for given region is not configured.
      */
-    private IgniteInternalCache<Object, Object> regionCache(String regionName) throws CacheException {
+    private HibernateCacheProxy regionCache(String regionName) throws CacheException {
         String cacheName = regionCaches.get(regionName);
 
         if (cacheName == null) {
@@ -241,6 +261,6 @@ public class HibernateRegionFactory implements RegionFactory {
         if (cache == null)
             throw new CacheException("Cache '" + cacheName + "' for region '" + regionName + "' is not configured.");
 
-        return cache;
+        return new HibernateCacheProxy(cache, hibernate4transformer);
     }
 }

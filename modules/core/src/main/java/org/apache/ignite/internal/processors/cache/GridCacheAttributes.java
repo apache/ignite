@@ -205,27 +205,6 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return {@code True} if swap enabled.
-     */
-    public boolean swapEnabled() {
-        return ccfg.isSwapEnabled();
-    }
-
-    /**
-     * @return Flag indicating whether eviction is synchronized.
-     */
-    public boolean evictSynchronized() {
-        return ccfg.isEvictSynchronized();
-    }
-
-    /**
-     * @return Maximum eviction overflow ratio.
-     */
-    public float evictMaxOverflowRatio() {
-        return ccfg.getEvictMaxOverflowRatio();
-    }
-
-    /**
      * @return Default lock timeout.
      */
     public long defaultLockTimeout() {
