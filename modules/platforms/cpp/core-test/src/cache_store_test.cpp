@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(LoadCacheSingleNodeNoPredicate)
 
     BOOST_CHECK(!cache.IsEmpty());
 
-    BOOST_CHECK_EQUAL(cache.Size(cache::IGNITE_PEEK_MODE_PRIMARY), entriesNum);
+    BOOST_CHECK_EQUAL(cache.Size(cache::CachePeekMode::PRIMARY), entriesNum);
 
     std::string val42 = cache.Get(42);
 
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(LoadCacheSeveralNodesNoPredicate)
 
     BOOST_CHECK(!cache.IsEmpty());
 
-    BOOST_CHECK_EQUAL(cache.Size(cache::IGNITE_PEEK_MODE_PRIMARY), entriesNum);
+    BOOST_CHECK_EQUAL(cache.Size(cache::CachePeekMode::PRIMARY), entriesNum);
 
     std::string val42 = cache.Get(42);
 
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE(LocalLoadCacheSingleNodeNoPredicate)
 
     BOOST_CHECK(!cache.IsEmpty());
 
-    BOOST_CHECK_EQUAL(cache.Size(cache::IGNITE_PEEK_MODE_PRIMARY), entriesNum);
+    BOOST_CHECK_EQUAL(cache.Size(cache::CachePeekMode::PRIMARY), entriesNum);
 
     std::string val42 = cache.Get(42);
 
