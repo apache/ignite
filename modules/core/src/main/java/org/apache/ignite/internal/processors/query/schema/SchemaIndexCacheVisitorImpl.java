@@ -98,7 +98,6 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         boolean reserved = false;
 
-        // TODO: Check in tests whether we need reservation.
         if (part != null && part.state() != EVICTED)
             reserved = (part.state() == OWNING || part.state() == RENTING) && part.reserve();
 
@@ -135,9 +134,12 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
                 GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
-                entry.updateIndex(clo);
-
-                cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+                try {
+                    entry.updateIndex(clo);
+                }
+                finally {
+                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+                }
 
                 break;
             }

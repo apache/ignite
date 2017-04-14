@@ -175,6 +175,8 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
 
+        Thread.sleep(100);
+
         put(srv1, 0, KEY_AFTER);
 
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
