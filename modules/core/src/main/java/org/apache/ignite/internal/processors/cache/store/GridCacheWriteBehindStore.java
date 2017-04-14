@@ -909,8 +909,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             if (queue.sizex() > cacheCriticalSize) {
                 wakeUp();
 
-
                 flusherFlushLock.lock();
+
                 try {
                     // Wait for free space in flusher queue
                     while (queue.sizex() >= flusherCacheCriticalSize && !stopping.get()) {
@@ -959,18 +959,20 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             ConcurrentHashMap<K, StatefulValue<K,V>> targetMap;
-            if (writeCoalescing)
+            if (writeCoalescing) {
                 while (!stopping.get() || writeCache.sizex() > 0) {
                     awaitOperationsAvailableCoalescing();
 
                     flushCacheCoalescing();
                 }
-            else
+            }
+            else {
                 while (!stopping.get() || queue.sizex() > 0) {
                     awaitOperationsAvailableNonCoalescing();
 
                     flushCacheNonCoalescing();
                 }
+            }
         }
 
         /**
@@ -980,6 +982,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          */
         private void awaitOperationsAvailableCoalescing() throws InterruptedException {
             flushLock.lock();
+
             try {
                 do {
                     if (queue.sizex() <= cacheMaxSize || cacheMaxSize == 0) {
@@ -1003,6 +1006,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          */
         private void awaitOperationsAvailableNonCoalescing() throws InterruptedException {
             flusherFlushLock.lock();
+
             try {
                 do {
                     if (queue.sizex() <= flusherCacheMaxSize || flusherCacheMaxSize == 0) {

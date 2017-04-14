@@ -65,7 +65,13 @@ public class GridCacheWriteBehindStorePerfTest extends GridCacheWriteBehindStore
 
         @Override
         public void writeAll(Collection collection) throws CacheWriterException {
-
+            try {
+                Thread.sleep(10);
+//                System.out.println(collection.size());
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
