@@ -43,10 +43,10 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -152,7 +152,12 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        ignite(0).destroyCache(null);
+        try {
+            checkInternalCleanup();
+        }
+        finally {
+            ignite(0).destroyCache(null);
+        }
     }
 
     /**
@@ -366,22 +371,14 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
                 }
 
                 case PUT_ASYNC: {
-                    IgniteCache<Integer, Integer> cache0 = cache.withAsync();
-
                     while (System.currentTimeMillis() < stopTime) {
                         Integer val = ++iter;
 
-                        for (int i = 0; i < keysCnt; i++) {
-                            cache0.put(i, val);
+                        for (int i = 0; i < keysCnt; i++)
+                            cache.putAsync(i, val).get();
 
-                            cache0.future().get();
-                        }
-
-                        for (int i = 0; i < keysCnt; i++) {
-                            cache0.get(i);
-
-                            assertEquals(val, cache0.future().get());
-                        }
+                        for (int i = 0; i < keysCnt; i++)
+                            assertEquals(val, cache.getAsync(i).get());
                     }
 
                     break;
@@ -456,22 +453,40 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
         for (int i = 0; i < keysCnt; i++)
             assertEquals((Integer)iter, cache.get(i));
+    }
 
-        for (int i = 0; i < GRID_CNT; i++) {
-            IgniteKernal ignite = (IgniteKernal)grid(i);
-
-            Collection<?> futs = ignite.context().cache().context().mvcc().atomicFutures();
-
-            assertTrue("Unexpected atomic futures: " + futs, futs.isEmpty());
-        }
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkInternalCleanup() throws Exception{
+        checkNoAtomicFutures();
 
         checkOnePhaseCommitReturnValuesCleaned();
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
-    protected void checkOnePhaseCommitReturnValuesCleaned() throws IgniteInterruptedCheckedException {
+    void checkNoAtomicFutures() throws Exception {
+        for (int i = 0; i < GRID_CNT; i++) {
+            final IgniteKernal ignite = (IgniteKernal)grid(i);
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ignite.context().cache().context().mvcc().atomicFuturesCount() == 0;
+                }
+            }, 5_000);
+
+            Collection<?> futs = ignite.context().cache().context().mvcc().atomicFutures();
+
+            assertTrue("Unexpected atomic futures: " + futs, futs.isEmpty());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    void checkOnePhaseCommitReturnValuesCleaned() throws Exception {
         U.sleep(DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT);
 
         for (int i = 0; i < GRID_CNT; i++) {
@@ -533,19 +548,13 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
             IgniteCache<Object, Object> cache = ignite(0).cache(null).withNoRetries();
 
-            if (async)
-                cache = cache.withAsync();
-
             long stopTime = System.currentTimeMillis() + 60_000;
 
             while (System.currentTimeMillis() < stopTime) {
                 for (int i = 0; i < keysCnt; i++) {
                     try {
-                        if (async) {
-                            cache.put(i, i);
-
-                            cache.future().get();
-                        }
+                        if (async)
+                            cache.putAsync(i, i).get();
                         else
                             cache.put(i, i);
                     }

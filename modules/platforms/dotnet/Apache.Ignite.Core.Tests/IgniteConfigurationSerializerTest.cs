@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests
                             <cacheConfiguration>
                                 <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true'>
                                     <queryEntities>    
-                                        <queryEntity keyType='System.Int32' valueType='System.String'>    
+                                        <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>    
                                             <fields>
                                                 <queryField name='length' fieldType='System.Int32' isKeyField='true' />
                                             </fields>
@@ -126,7 +126,10 @@ namespace Apache.Ignite.Core.Tests
                                 <int>TaskFailed</int>
                                 <int>JobFinished</int>
                             </includedEventTypes>
-                            <userAttributes><pair key='myNode' value='true' /></userAttributes>
+                            <userAttributes>
+                                <pair key='myNode' value='true' />
+                                <pair key='foo'><value type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests'><bar>Baz</bar></value></pair>
+                            </userAttributes>
                             <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                             <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
@@ -134,6 +137,7 @@ namespace Apache.Ignite.Core.Tests
                             <pluginConfigurations>
                                 <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
                             </pluginConfigurations>
+                            <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -172,6 +176,7 @@ namespace Apache.Ignite.Core.Tests
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
             Assert.AreEqual(typeof(string), queryEntity.ValueType);
+            Assert.AreEqual("myTable", queryEntity.TableName);
             Assert.AreEqual("length", queryEntity.Fields.Single().Name);
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
             Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
@@ -202,7 +207,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(99, af.Partitions);
             Assert.IsTrue(af.ExcludeNeighbors);
 
-            Assert.AreEqual(new Dictionary<string, object> {{"myNode", "true"}}, cfg.UserAttributes);
+            Assert.AreEqual(new Dictionary<string, object>
+            {
+                {"myNode", "true"},
+                {"foo", new FooClass {Bar = "Baz"}}
+            }, cfg.UserAttributes);
 
             var atomicCfg = cfg.AtomicConfiguration;
             Assert.AreEqual(2, atomicCfg.Backups);
@@ -247,6 +256,11 @@ namespace Apache.Ignite.Core.Tests
 
             var cachePlugCfg = cacheCfg.PluginConfigurations.Cast<CachePluginConfiguration>().Single();
             Assert.AreEqual("baz", cachePlugCfg.TestProperty);
+
+            var eventStorage = cfg.EventStorageSpi as MemoryEventStorageSpi;
+            Assert.IsNotNull(eventStorage);
+            Assert.AreEqual(23.45, eventStorage.ExpirationTimeout.TotalSeconds);
+            Assert.AreEqual(129, eventStorage.MaxEventCount);
         }
 
         /// <summary>
@@ -293,6 +307,9 @@ namespace Apache.Ignite.Core.Tests
             {
                 if (!prop.CanWrite)
                     continue;  // Read-only properties are not configured in XML.
+
+                if (prop.GetCustomAttributes(typeof(ObsoleteAttribute), true).Any())
+                    continue;  // Skip deprecated.
 
                 var propType = prop.PropertyType;
 
@@ -348,7 +365,7 @@ namespace Apache.Ignite.Core.Tests
             // Some properties
             var cfg = new IgniteConfiguration
             {
-                GridName = "myGrid",
+                IgniteInstanceName = "myGrid",
                 ClientMode = true,
                 CacheConfiguration = new[]
                 {
@@ -370,7 +387,7 @@ namespace Apache.Ignite.Core.Tests
             };
 
             Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
-<igniteConfiguration clientMode=""true"" gridName=""myGrid"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+<igniteConfiguration clientMode=""true"" igniteInstanceName=""myGrid"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
   <cacheConfiguration>
     <cacheConfiguration cacheMode=""Replicated"" name=""myCache"">
       <queryEntities>
@@ -400,7 +417,7 @@ namespace Apache.Ignite.Core.Tests
             }
 
             Assert.AreEqual(FixLineEndings(@"<?xml version=""1.0"" encoding=""utf-16""?>
-<igCfg clientMode=""true"" gridName=""myGrid"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
+<igCfg clientMode=""true"" igniteInstanceName=""myGrid"" xmlns=""http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"">
  <cacheConfiguration>
   <cacheConfiguration cacheMode=""Replicated"" name=""myCache"">
    <queryEntities>
@@ -431,8 +448,8 @@ namespace Apache.Ignite.Core.Tests
             AssertReflectionEqual(new IgniteConfiguration(), cfg);
 
             // Simple test.
-            cfg = IgniteConfiguration.FromXml(@"<igCfg gridName=""myGrid"" clientMode=""true"" />");
-            AssertReflectionEqual(new IgniteConfiguration {GridName = "myGrid", ClientMode = true}, cfg);
+            cfg = IgniteConfiguration.FromXml(@"<igCfg igniteInstanceName=""myGrid"" clientMode=""true"" />");
+            AssertReflectionEqual(new IgniteConfiguration {IgniteInstanceName = "myGrid", ClientMode = true}, cfg);
 
             // Invalid xml.
             var ex = Assert.Throws<ConfigurationErrorsException>(() =>
@@ -443,11 +460,11 @@ namespace Apache.Ignite.Core.Tests
 
             // Xml reader.
             using (var xmlReader = XmlReader.Create(
-                new StringReader(@"<igCfg gridName=""myGrid"" clientMode=""true"" />")))
+                new StringReader(@"<igCfg igniteInstanceName=""myGrid"" clientMode=""true"" />")))
             {
                 cfg = IgniteConfiguration.FromXml(xmlReader);
             }
-            AssertReflectionEqual(new IgniteConfiguration { GridName = "myGrid", ClientMode = true }, cfg);
+            AssertReflectionEqual(new IgniteConfiguration { IgniteInstanceName = "myGrid", ClientMode = true }, cfg);
         }
 
         /// <summary>
@@ -541,8 +558,9 @@ namespace Apache.Ignite.Core.Tests
                     Assert.IsNull(xVal);
                     Assert.IsNull(yVal);
                 }
-                else if (propType != typeof(string) && propType.IsGenericType 
-                    && propType.GetGenericTypeDefinition() == typeof (ICollection<>))
+                else if (propType != typeof(string) && propType.IsGenericType &&
+                         (propType.GetGenericTypeDefinition() == typeof(ICollection<>) ||
+                          propType.GetGenericTypeDefinition() == typeof(IDictionary<,>) ))
                 {
                     var xCol = ((IEnumerable) xVal).OfType<object>().ToList();
                     var yCol = ((IEnumerable) yVal).OfType<object>().ToList();
@@ -566,7 +584,7 @@ namespace Apache.Ignite.Core.Tests
         {
             return new IgniteConfiguration
             {
-                GridName = "gridName",
+                IgniteInstanceName = "gridName",
                 JvmOptions = new[] {"1", "2"},
                 Localhost = "localhost11",
                 JvmClasspath = "classpath",
@@ -644,7 +662,8 @@ namespace Apache.Ignite.Core.Tests
                                     new QueryAlias("field.field", "fld")
                                 },
                                 KeyType = typeof (string),
-                                ValueType = typeof (long)
+                                ValueType = typeof (long),
+                                TableName = "table-1"
                             },
                         },
                         ReadFromBackup = false,
@@ -735,7 +754,8 @@ namespace Apache.Ignite.Core.Tests
                 SuppressWarnings = true,
                 WorkDirectory = @"c:\work",
                 IsDaemon = true,
-                UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
+                UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(),
+                    x => x%2 == 0 ? (object) x : new FooClass {Bar = x.ToString()}),
                 AtomicConfiguration = new AtomicConfiguration
                 {
                     CacheMode = CacheMode.Replicated,
@@ -782,7 +802,12 @@ namespace Apache.Ignite.Core.Tests
                     ReadStripesNumber = 77,
                     BaseDirectory = "test"
                 },
-                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() }
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
+                EventStorageSpi = new MemoryEventStorageSpi
+                {
+                    ExpirationTimeout = TimeSpan.FromMilliseconds(12345),
+                    MaxEventCount = 257
+                }
             };
         }
 
@@ -901,7 +926,30 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public class FooClass
         {
-            // No-op.
+            public string Bar { get; set; }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+                return string.Equals(Bar, ((FooClass) obj).Bar);
+            }
+
+            public override int GetHashCode()
+            {
+                return Bar != null ? Bar.GetHashCode() : 0;
+            }
+
+            public static bool operator ==(FooClass left, FooClass right)
+            {
+                return Equals(left, right);
+            }
+
+            public static bool operator !=(FooClass left, FooClass right)
+            {
+                return !Equals(left, right);
+            }
         }
 
         /// <summary>

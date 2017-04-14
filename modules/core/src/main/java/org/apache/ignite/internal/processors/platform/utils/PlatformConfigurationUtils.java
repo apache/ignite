@@ -62,15 +62,16 @@ import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosure;
 import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosureFactory;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.EventStorageSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpiMBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -469,6 +470,7 @@ public class PlatformConfigurationUtils {
 
         res.setKeyType(in.readString());
         res.setValueType(in.readString());
+        res.setTableName(in.readString());
 
         // Fields
         int cnt = in.readInt();
@@ -671,6 +673,18 @@ public class PlatformConfigurationUtils {
 
             default:
                 assert swapType == SWAP_TYP_NONE;
+        }
+
+        switch (in.readByte()) {
+            case 1:
+                cfg.setEventStorageSpi(new NoopEventStorageSpi());
+                break;
+
+            case 2:
+                cfg.setEventStorageSpi(new MemoryEventStorageSpi()
+                        .setExpireCount(in.readLong())
+                        .setExpireAgeMs(in.readLong()));
+                break;
         }
 
         readPluginConfiguration(cfg, in);
@@ -899,6 +913,7 @@ public class PlatformConfigurationUtils {
 
         writer.writeString(queryEntity.getKeyType());
         writer.writeString(queryEntity.getValueType());
+        writer.writeString(queryEntity.getTableName());
 
         // Fields
         LinkedHashMap<String, String> fields = queryEntity.getFields();
@@ -1012,7 +1027,7 @@ public class PlatformConfigurationUtils {
 
         if (comm instanceof TcpCommunicationSpi) {
             w.writeBoolean(true);
-            TcpCommunicationSpiMBean tcp = (TcpCommunicationSpiMBean) comm;
+            TcpCommunicationSpi tcp = (TcpCommunicationSpi) comm;
 
             w.writeInt(tcp.getAckSendThreshold());
             w.writeLong(tcp.getConnectTimeout());
@@ -1100,10 +1115,10 @@ public class PlatformConfigurationUtils {
 
         SwapSpaceSpi swap = cfg.getSwapSpaceSpi();
 
-        if (swap instanceof FileSwapSpaceSpiMBean) {
+        if (swap instanceof FileSwapSpaceSpi) {
             w.writeByte(SWAP_TYP_FILE);
 
-            FileSwapSpaceSpiMBean fileSwap = (FileSwapSpaceSpiMBean)swap;
+            FileSwapSpaceSpi fileSwap = (FileSwapSpaceSpi)swap;
 
             w.writeString(fileSwap.getBaseDirectory());
             w.writeFloat(fileSwap.getMaximumSparsity());
@@ -1113,6 +1128,19 @@ public class PlatformConfigurationUtils {
         }
         else {
             w.writeByte(SWAP_TYP_NONE);
+        }
+
+        EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
+
+        if (eventStorageSpi == null) {
+            w.writeByte((byte) 0);
+        } else if (eventStorageSpi instanceof NoopEventStorageSpi) {
+            w.writeByte((byte) 1);
+        } else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
+            w.writeByte((byte) 2);
+
+            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
+            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireAgeMs());
         }
 
         w.writeString(cfg.getIgniteHome());

@@ -84,11 +84,6 @@ namespace ignite
 
                         return new QueryCursorImpl(env, res);
                     }
-
-                    void ContinuousQueryHandleImpl::SetQuery(SP_ContinuousQueryImplBase query)
-                    {
-                        qry = query;
-                    }
                 }
             }
         }

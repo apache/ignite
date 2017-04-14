@@ -345,11 +345,8 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         // Now must check the cache again, to make sure that we didn't miss the key insert while we
         // were busy setting up the cache listener.
         // Check asynchronously.
-        IgniteCache<Integer, String> asyncCache = cache.withAsync();
-        asyncCache.get(key);
-
         // Complete the promise if the key was inserted concurrently.
-        asyncCache.<String>future().listen(new IgniteInClosure<IgniteFuture<String>>() {
+        cache.getAsync(key).listen(new IgniteInClosure<IgniteFuture<String>>() {
             @Override public void apply(IgniteFuture<String> f) {
                 String value = f.get();
 

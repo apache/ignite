@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.visor.cache;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -27,14 +25,14 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.LessNamingBean;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheSwapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -91,11 +89,22 @@ public class VisorCache implements Serializable, LessNamingBean {
     /** Number of partitions. */
     private int partitions;
 
-    /** @deprecated Needed only for backward compatibility. */
-    private Collection<IgnitePair<Integer>> primaryPartitions;
+    /**
+     * Flag indicating that cache has near cache.
+     */
+    private boolean near;
 
-    /** @deprecated Needed only for backward compatibility. */
-    private Collection<IgnitePair<Integer>> backupPartitions;
+    /** Number of primary entries in offheap. */
+    private int offHeapPrimaryEntriesCnt;
+
+    /** Number of backup entries in offheap. */
+    private int offHeapBackupEntriesCnt;
+
+    /** Number of primary entries in swap. */
+    private int swapPrimaryEntriesCnt;
+
+    /** Number of backup entries in swap. */
+    private int swapBackupEntriesCnt;
 
     /** Cache metrics. */
     private VisorCacheMetrics metrics;
@@ -130,9 +139,6 @@ public class VisorCache implements Serializable, LessNamingBean {
             swapKeys = -1;
         }
 
-        primaryPartitions = Collections.emptyList();
-        backupPartitions = Collections.emptyList();
-
         CacheConfiguration cfg = ca.configuration();
 
         mode = cfg.getCacheMode();
@@ -151,11 +157,8 @@ public class VisorCache implements Serializable, LessNamingBean {
             if (dca != null) {
                 GridDhtPartitionTopology top = dca.topology();
 
-                if (cfg.getCacheMode() != CacheMode.LOCAL && cfg.getBackups() > 0) {
-                    GridDhtPartitionMap2 map2 = top.localPartitionMap();
-
-                    partitionsMap = new GridDhtPartitionMap(map2.nodeId(), map2.updateSequence(), map2.map());
-                }
+                if (cfg.getCacheMode() != CacheMode.LOCAL && cfg.getBackups() > 0)
+                    partitionsMap = top.localPartitionMap();
             }
         }
 
@@ -168,6 +171,15 @@ public class VisorCache implements Serializable, LessNamingBean {
         offHeapEntriesCnt = ca.offHeapEntriesCount();
         partitions = ca.affinity().partitions();
         metrics = new VisorCacheMetrics().from(ignite, cacheName);
+        near = ca.context().isNear();
+
+        GridCacheSwapManager swap = ca.context().swap();
+
+        offHeapPrimaryEntriesCnt = swap.offheapEntriesCount(true, false, AffinityTopologyVersion.NONE);
+        offHeapBackupEntriesCnt = swap.offheapEntriesCount(false, true, AffinityTopologyVersion.NONE);
+
+        swapPrimaryEntriesCnt = swap.swapEntriesCount(true, false, AffinityTopologyVersion.NONE);
+        swapBackupEntriesCnt = swap.swapEntriesCount(false, true, AffinityTopologyVersion.NONE);
 
         estimateMemorySize(ignite, ca, sample);
 
@@ -230,9 +242,12 @@ public class VisorCache implements Serializable, LessNamingBean {
             c.swapSize = swapSize;
             c.swapKeys = swapKeys;
             c.partitions = partitions;
-            c.primaryPartitions = Collections.emptyList();
-            c.backupPartitions = Collections.emptyList();
             c.metrics = metrics;
+            c.near = near;
+            c.offHeapPrimaryEntriesCnt = offHeapPrimaryEntriesCnt;
+            c.offHeapBackupEntriesCnt = offHeapBackupEntriesCnt;
+            c.swapPrimaryEntriesCnt = swapPrimaryEntriesCnt;
+            c.swapBackupEntriesCnt = swapBackupEntriesCnt;
         }
 
         return c;
@@ -353,17 +368,38 @@ public class VisorCache implements Serializable, LessNamingBean {
     }
 
     /**
-     * @deprecated Needed only for backward compatibility.
+     * @return {@code true} if cache has near cache.
      */
-    public Collection<IgnitePair<Integer>> primaryPartitions() {
-        return primaryPartitions;
+    public boolean near() {
+        return near;
     }
 
     /**
-     * @deprecated Needed only for backward compatibility.
+     * @return Off-heap heap primary entries count.
      */
-    public Collection<IgnitePair<Integer>> backupPartitions() {
-        return backupPartitions;
+    public int offHeapPrimaryEntriesCount() {
+        return offHeapPrimaryEntriesCnt;
+    }
+
+    /**
+     * @return Off-heap heap backup entries count.
+     */
+    public int offHeapBackupEntriesCount() {
+        return offHeapBackupEntriesCnt;
+    }
+
+    /**
+     * @return Swap primary entries count.
+     */
+    public int swapPrimaryEntriesCount() {
+        return swapPrimaryEntriesCnt;
+    }
+
+    /**
+     * @return Swap backup entries count.
+     */
+    public int swapBackupEntriesCount() {
+        return swapBackupEntriesCnt;
     }
 
     /**

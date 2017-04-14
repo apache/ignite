@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Plugin
 {
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
+    using Apache.Ignite.Core.Resource;
 
     /// <summary>
     /// Plugin execution context.
@@ -64,5 +65,12 @@ namespace Apache.Ignite.Core.Plugin
         /// <param name="callbackId">Callback id.</param>
         /// <param name="callback">Callback delegate.</param>
         void RegisterCallback(long callbackId, PluginCallback callback);
+
+        /// <summary>
+        /// Injects resources into specified target:
+        /// populates members marked with <see cref="InstanceResourceAttribute"/>.
+        /// </summary>
+        /// <param name="target">Target object.</param>
+        void InjectResources(object target);
     }
 }

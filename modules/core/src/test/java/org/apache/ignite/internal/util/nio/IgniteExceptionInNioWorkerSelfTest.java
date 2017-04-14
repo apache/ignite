@@ -92,7 +92,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         private boolean fail = true;
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             if (fail) {
                 fail = false;
 

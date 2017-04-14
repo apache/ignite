@@ -69,7 +69,6 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
@@ -108,6 +107,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1110,12 +1110,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ']');
             }
 
-            boolean rmtLateAssign;
-
-            if (n.version().compareToIgnoreTimestamp(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0)
-                rmtLateAssign = n.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
-            else
-                rmtLateAssign = false;
+            boolean rmtLateAssign = n.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
 
             if (locDelayAssign != rmtLateAssign) {
                 throw new IgniteCheckedException("Remote node has cache affinity assignment mode different from local " +
@@ -1126,26 +1121,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", rmtAddrs=" + U.addressesAsString(n) + ']');
             }
 
-            if (n.version().compareToIgnoreTimestamp(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) >= 0) {
-                Boolean rmtSrvcCompatibilityEnabled = n.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
+            Boolean rmtSrvcCompatibilityEnabled = n.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
-                if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {
-                    throw new IgniteCheckedException("Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
-                        " property value differs from remote node's value " +
-                        "(to make sure all nodes in topology have identical IgniteServices compatibility mode enabled, " +
-                        "configure system property explicitly) " +
-                        "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
-                        ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
-                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", rmtNodeAddrs=" + U.addressesAsString(n) +
-                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ']');
-                }
-            }
-            else if (Boolean.FALSE.equals(locSrvcCompatibilityEnabled)) {
-                throw new IgniteCheckedException("Remote node doesn't support lazy services configuration and " +
-                    "local node cannot join node because local node's "
-                    + IGNITE_SERVICES_COMPATIBILITY_MODE + " property value explicitly set to 'false'" +
-                    "[locNodeAddrs=" + U.addressesAsString(locNode) +
+            if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {
+                throw new IgniteCheckedException("Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
+                    " property value differs from remote node's value " +
+                    "(to make sure all nodes in topology have identical IgniteServices compatibility mode enabled, " +
+                    "configure system property explicitly) " +
+                    "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
+                    ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
+                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
                     ", rmtNodeAddrs=" + U.addressesAsString(n) +
                     ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ']');
             }
@@ -1900,6 +1885,29 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * @return {@code True} if local node client and discovery SPI supports reconnect.
+     */
+    public boolean reconnectSupported() {
+        DiscoverySpi spi = getSpi();
+
+        return ctx.clientNode() && (spi instanceof TcpDiscoverySpi) &&
+            !(((TcpDiscoverySpi) spi).isClientReconnectDisabled());
+    }
+
+    /**
+     * Leave cluster and try to join again.
+     *
+     * @throws IgniteSpiException If failed.
+     */
+    public void reconnect() {
+        assert reconnectSupported();
+
+        DiscoverySpi discoverySpi = getSpi();
+
+        ((TcpDiscoverySpi)discoverySpi).reconnect();
     }
 
     /**

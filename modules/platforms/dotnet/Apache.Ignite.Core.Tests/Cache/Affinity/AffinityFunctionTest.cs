@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             _ignite = Ignition.Start(cfg);
 
-            _ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "grid2"});
+            _ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = "grid2"});
         }
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = "grid3",
+                IgniteInstanceName = "grid3",
             }))
             {
                 expectedNodeId = ignite.GetCluster().GetLocalNode().Id;
@@ -230,21 +230,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             TestUtils.WaitForCondition(() => RemovedNodes.Count > 0, 3000);
             Assert.GreaterOrEqual(RemovedNodes.Count, 6);
             Assert.AreEqual(expectedNodeId, RemovedNodes.Distinct().Single());
-        }
-
-        /// <summary>
-        /// Tests the error on non-serializable function.
-        /// </summary>
-        [Test]
-        public void TestNonSerializableFunction()
-        {
-            var ex = Assert.Throws<IgniteException>(() =>
-                _ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
-                {
-                    AffinityFunction = new NonSerializableAffinityFunction()
-                }));
-
-            Assert.AreEqual(ex.Message, "AffinityFunction should be serializable.");
         }
 
         /// <summary>
@@ -388,12 +373,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
         }
 
-        private class NonSerializableAffinityFunction : SimpleAffinityFunction
-        {
-            // No-op.
-        }
-
-        [Serializable]
         private class FailInGetPartitionAffinityFunction : IAffinityFunction
         {
             public int Partitions

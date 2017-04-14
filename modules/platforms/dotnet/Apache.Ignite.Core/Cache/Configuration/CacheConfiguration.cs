@@ -235,6 +235,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <param name="reader">The reader.</param>
         internal CacheConfiguration(IBinaryRawReader reader)
         {
+            // Make sure system marshaller is used.
+            Debug.Assert(((BinaryReader) reader).Marshaller == BinaryUtils.Marshaller);
+
             AtomicityMode = (CacheAtomicityMode) reader.ReadInt();
             AtomicWriteOrderMode = (CacheAtomicWriteOrderMode) reader.ReadInt();
             Backups = reader.ReadInt();
@@ -297,6 +300,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <param name="writer">The writer.</param>
         internal void Write(IBinaryRawWriter writer)
         {
+            // Make sure system marshaller is used.
+            Debug.Assert(((BinaryWriter) writer).Marshaller == BinaryUtils.Marshaller);
+
             writer.WriteInt((int) AtomicityMode);
             writer.WriteInt((int) AtomicWriteOrderMode);
             writer.WriteInt(Backups);
@@ -602,7 +608,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Maximum batch size for write-behind cache store operations. 
         /// Store operations (get or remove) are combined in a batch of this size to be passed to 
-        /// <see cref="ICacheStore.WriteAll"/> or <see cref="ICacheStore.DeleteAll"/> methods. 
+        /// <see cref="ICacheStore{K, V}.WriteAll"/> or <see cref="ICacheStore{K, V}.DeleteAll"/> methods. 
         /// </summary>
         [DefaultValue(DefaultWriteBehindBatchSize)]
         public int WriteBehindBatchSize { get; set; }
@@ -740,7 +746,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public IAffinityFunction AffinityFunction { get; set; }
 
         /// <summary>
-        /// Gets or sets the factory for <see cref="IExpiryPolicy"/> to be used for all cache operations, 
+        /// Gets or sets the factory for <see cref="IExpiryPolicy"/> to be used for all cache operations,
         /// unless <see cref="ICache{TK,TV}.WithExpiryPolicy"/> is called.
         /// <para />
         /// Default is null, which means no expiration.

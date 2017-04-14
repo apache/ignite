@@ -256,6 +256,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Periodic starvation check interval. */
     private static final long PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
 
+    /** Force complete reconnect future. */
+    private static final Object STOP_RECONNECT = new Object();
+
     /** */
     @GridToStringExclude
     private GridKernalContextImpl ctx;
@@ -340,6 +343,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Stop guard. */
     @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
+
+    /** */
+    private final ReconnectState reconnectState = new ReconnectState();
 
     /**
      * No-arg constructor is required by externalization.
@@ -696,6 +702,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
         final ExecutorService execSvc,
+        final ExecutorService svcExecSvc,
         final ExecutorService sysExecSvc,
         final StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
@@ -806,6 +813,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw,
                 utilityCachePool,
                 execSvc,
+                svcExecSvc,
                 sysExecSvc,
                 stripedExecSvc,
                 p2pExecSvc,
@@ -966,6 +974,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Notify IO manager the second so further components can send and receive messages.
             ctx.io().onKernalStart();
 
+            boolean recon = false;
+
             // Callbacks.
             for (GridComponent comp : ctx) {
                 // Skip discovery manager.
@@ -976,9 +986,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (comp instanceof GridIoManager)
                     continue;
 
-                if (!skipDaemon(comp))
-                    comp.onKernalStart();
+                if (!skipDaemon(comp)) {
+                    try {
+                        comp.onKernalStart();
+                    }
+                    catch (IgniteNeedReconnectException e) {
+                        assert ctx.discovery().reconnectSupported();
+
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to start node components on node start, will wait for reconnect: " + e);
+
+                        recon = true;
+                    }
+                }
             }
+
+            if (recon)
+                reconnectState.waitFirstReconnect();
 
             // Register MBeans.
             registerKernalMBean();
@@ -3373,6 +3397,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     public void onDisconnected() {
         Throwable err = null;
 
+        reconnectState.waitPreviousReconnect();
+
         GridFutureAdapter<?> reconnectFut = ctx.gateway().onDisconnected();
 
         if (reconnectFut == null) {
@@ -3381,9 +3407,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return;
         }
 
-        IgniteFuture<?> userFut = new IgniteFutureImpl<>(reconnectFut);
+        IgniteFutureImpl<?> curFut = (IgniteFutureImpl<?>)ctx.cluster().get().clientReconnectFuture();
 
-        ctx.cluster().get().clientReconnectFuture(userFut);
+        IgniteFuture<?> userFut;
+
+        // In case of previous reconnect did not finish keep reconnect future.
+        if (curFut != null && curFut.internalFuture() == reconnectFut)
+            userFut = curFut;
+        else {
+            userFut = new IgniteFutureImpl<>(reconnectFut);
+
+            ctx.cluster().get().clientReconnectFuture(userFut);
+        }
 
         ctx.disconnected(true);
 
@@ -3436,30 +3471,53 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             ctx.disconnected(false);
 
-            GridCompoundFuture<?, ?> reconnectFut = new GridCompoundFuture<>();
+            GridCompoundFuture curReconnectFut = reconnectState.curReconnectFut = new GridCompoundFuture<>();
+
+            reconnectState.reconnectDone = new GridFutureAdapter<>();
 
             for (GridComponent comp : ctx.components()) {
                 IgniteInternalFuture<?> fut = comp.onReconnected(clusterRestarted);
 
                 if (fut != null)
-                    reconnectFut.add((IgniteInternalFuture)fut);
+                    curReconnectFut.add(fut);
             }
 
-            reconnectFut.add((IgniteInternalFuture)ctx.cache().context().exchange().reconnectExchangeFuture());
+            curReconnectFut.add(ctx.cache().context().exchange().reconnectExchangeFuture());
 
-            reconnectFut.markInitialized();
+            curReconnectFut.markInitialized();
 
-            reconnectFut.listen(new CI1<IgniteInternalFuture<?>>() {
+            final GridFutureAdapter reconnectDone = reconnectState.reconnectDone;
+
+            curReconnectFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     try {
-                        fut.get();
+                        Object res = fut.get();
+
+                        if (res == STOP_RECONNECT)
+                            return;
 
                         ctx.gateway().onReconnected();
+
+                        reconnectState.firstReconnectFut.onDone();
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to reconnect, will stop node", e);
+                        if (!X.hasCause(e, IgniteNeedReconnectException.class,
+                            IgniteClientDisconnectedCheckedException.class)) {
+                            U.error(log, "Failed to reconnect, will stop node.", e);
 
-                        close();
+                            reconnectState.firstReconnectFut.onDone(e);
+
+                            close();
+                        }
+                        else {
+                            assert ctx.discovery().reconnectSupported();
+
+                            U.error(log, "Failed to finish reconnect, will retry [locNodeId=" + ctx.localNodeId() +
+                                ", err=" + e.getMessage() + ']');
+                        }
+                    }
+                    finally {
+                        reconnectDone.onDone();
                     }
                 }
             });
@@ -3637,6 +3695,46 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
         return ctx.io().sendIoTest(nodes, payload, procFromNioThread);
+    }
+
+    /**
+     *
+     */
+    private class ReconnectState {
+        /** */
+        private final GridFutureAdapter firstReconnectFut = new GridFutureAdapter();
+
+        /** */
+        private GridCompoundFuture<?, Object> curReconnectFut;
+
+        /** */
+        private GridFutureAdapter<?> reconnectDone;
+
+        /**
+         * @throws IgniteCheckedException If failed.
+         */
+        void waitFirstReconnect() throws IgniteCheckedException {
+            firstReconnectFut.get();
+        }
+
+        /**
+         *
+         */
+        void waitPreviousReconnect() {
+            if (curReconnectFut != null && !curReconnectFut.isDone()) {
+                assert reconnectDone != null;
+
+                curReconnectFut.onDone(STOP_RECONNECT);
+
+                try {
+                    reconnectDone.get();
+                }
+                catch (IgniteCheckedException ignote) {
+                    // No-op.
+                }
+            }
+
+        }
     }
 
     /** {@inheritDoc} */

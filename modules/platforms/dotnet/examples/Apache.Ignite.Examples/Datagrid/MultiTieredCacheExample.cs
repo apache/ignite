@@ -26,7 +26,7 @@ namespace Apache.Ignite.Examples.Datagrid
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.SwapSpace.File;
 
     /// <summary>
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Examples.Datagrid
             {
                 DiscoverySpi = new TcpDiscoverySpi
                 {
-                    IpFinder = new TcpDiscoveryMulticastIpFinder
+                    IpFinder = new TcpDiscoveryStaticIpFinder
                     {
                         Endpoints = new[] { "127.0.0.1:47500" }
                     }

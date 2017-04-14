@@ -115,7 +115,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             ctx, 
             nodeId, 
             xidVer,
-            commitVer, 
+            commitVer,
             sys, 
             plc, 
             concurrency, 
@@ -289,7 +289,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      *
      * @param key Evicted key.
      */
-    public void addEvicted(IgniteTxKey key) {
+    void addEvicted(IgniteTxKey key) {
         evicted.add(key);
     }
 

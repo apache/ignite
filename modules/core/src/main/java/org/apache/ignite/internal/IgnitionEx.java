@@ -93,7 +93,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
-import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
@@ -1489,6 +1489,9 @@ public class IgnitionEx {
         /** Executor service. */
         private ThreadPoolExecutor execSvc;
 
+        /** Executor service for services. */
+        private ThreadPoolExecutor svcExecSvc;
+
         /** System executor service. */
         private ThreadPoolExecutor sysExecSvc;
 
@@ -1691,6 +1694,18 @@ public class IgnitionEx {
 
             execSvc.allowCoreThreadTimeOut(true);
 
+            validateThreadPoolSize(cfg.getServiceThreadPoolSize(), "service");
+
+            svcExecSvc = new IgniteThreadPoolExecutor(
+                "svc",
+                cfg.getGridName(),
+                cfg.getServiceThreadPoolSize(),
+                cfg.getServiceThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            svcExecSvc.allowCoreThreadTimeOut(true);
+
             validateThreadPoolSize(cfg.getSystemThreadPoolSize(), "system");
 
             sysExecSvc = new IgniteThreadPoolExecutor(
@@ -1703,8 +1718,9 @@ public class IgnitionEx {
 
             sysExecSvc.allowCoreThreadTimeOut(true);
 
-            if (cfg.getStripedPoolSize() > 0)
-                stripedExecSvc = new StripedExecutor(cfg.getStripedPoolSize(), cfg.getIgniteInstanceName(), "sys", log);
+            validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
+
+            stripedExecSvc = new StripedExecutor(cfg.getStripedPoolSize(), cfg.getIgniteInstanceName(), "sys", log);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1846,6 +1862,7 @@ public class IgnitionEx {
                     myCfg,
                     utilityCacheExecSvc,
                     execSvc,
+                    svcExecSvc,
                     sysExecSvc,
                     stripedExecSvc,
                     p2pExecSvc,
@@ -2167,7 +2184,7 @@ public class IgnitionEx {
                 cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
             if (cfg.getEventStorageSpi() == null)
-                cfg.setEventStorageSpi(new MemoryEventStorageSpi());
+                cfg.setEventStorageSpi(new NoopEventStorageSpi());
 
             if (cfg.getCheckpointSpi() == null)
                 cfg.setCheckpointSpi(new NoopCheckpointSpi());

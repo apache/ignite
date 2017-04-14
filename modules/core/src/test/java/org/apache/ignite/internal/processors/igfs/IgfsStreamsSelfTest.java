@@ -108,7 +108,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         fs = grid(0).fileSystem("igfs");
 
         // Cleanup FS.
-        fs.format();
+        fs.clear();
     }
 
     /** {@inheritDoc} */

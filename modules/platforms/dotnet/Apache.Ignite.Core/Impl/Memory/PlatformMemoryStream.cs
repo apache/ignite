@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Memory
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
@@ -28,9 +29,8 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Platform memory stream.
     /// </summary>
-    [CLSCompliant(false)]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public unsafe class PlatformMemoryStream : IBinaryStream
+    internal unsafe class PlatformMemoryStream : IBinaryStream
     {
         /** Length: 1 byte. */
         protected const int Len1 = 1;
@@ -734,8 +734,11 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <summary>
         /// Returns a hash code for the specified byte range.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public T Apply<TArg, T>(IBinaryStreamProcessor<TArg, T> proc, TArg arg)
         {
+            Debug.Assert(proc != null);
+
             return proc.Invoke(_data, arg);
         }
 
