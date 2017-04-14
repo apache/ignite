@@ -21,7 +21,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -51,7 +50,6 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
         ccfg.setBackups(1);
 
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
-        ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
         ccfg.setNodeFilter(new NodeFilter());
