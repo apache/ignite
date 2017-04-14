@@ -335,12 +335,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     }
                     else
                     {
-                        if (!cachePlugin.GetType().IsSerializable)
-                        {
-                            throw new InvalidOperationException("Invalid cache configuration: " +
-                                                                "ICachePluginConfiguration should be Serializable.");
-                        }
-
                         writer.WriteBoolean(false);
                         writer.WriteObject(cachePlugin);
                     }
