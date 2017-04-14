@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -61,7 +60,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
@@ -166,9 +164,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /** Dual mode flag. */
     protected final boolean dual;
 
-    /** Memory mode. */
-    protected final CacheMemoryMode memoryMode;
-
     /** IP finder for primary topology. */
     protected final TcpDiscoveryVmIpFinder primaryIpFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -196,18 +191,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param mode IGFS mode.
      */
     protected IgfsAbstractBaseSelfTest(IgfsMode mode) {
-        this(mode, ONHEAP_TIERED);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param mode IGFS mode.
-     * @param memoryMode Memory mode.
-     */
-    protected IgfsAbstractBaseSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
         this.mode = mode;
-        this.memoryMode = memoryMode;
 
         dual = (mode == DUAL_SYNC || mode == DUAL_ASYNC);
     }
@@ -396,8 +380,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dataCacheCfg.setMemoryMode(memoryMode);
-        dataCacheCfg.setOffHeapMaxMemory(0);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
@@ -990,7 +972,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Clear igfs.
-        igfs.format();
+        igfs.clear();
 
         int prevDifferentSize = Integer.MAX_VALUE; // Previous different size.
         int constCnt = 0, totalCnt = 0;

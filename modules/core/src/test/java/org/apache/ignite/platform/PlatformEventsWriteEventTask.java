@@ -23,6 +23,14 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
+import org.apache.ignite.events.CacheQueryReadEvent;
+import org.apache.ignite.events.CacheRebalancingEvent;
+import org.apache.ignite.events.CheckpointEvent;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.JobEvent;
+import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -75,7 +83,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
          *
          * @param ptr Stream ptr.
          */
-        public Job(long ptr, ClusterNode node) {
+        private Job(long ptr, ClusterNode node) {
             this.ptr = ptr;
             this.node = node;
         }
@@ -88,7 +96,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 PlatformOutputStream out = mem.output();
                 BinaryRawWriterEx writer = ctx.writer(out);
 
-                int evtType = EventType.EVT_SWAP_SPACE_CLEARED;
+                int evtType = EventType.EVT_NODE_FAILED;
                 String msg = "msg";
                 UUID uuid = new UUID(1, 2);
                 IgniteUuid igniteUuid = new IgniteUuid(uuid, 3);
@@ -120,8 +128,6 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 jobEvent.taskSessionId(igniteUuid);
                 jobEvent.taskSubjectId(uuid);
                 ctx.writeEvent(writer, jobEvent);
-
-                ctx.writeEvent(writer, new SwapSpaceEvent(node, msg, evtType, "space"));
 
                 ctx.writeEvent(writer, new TaskEvent(node, msg, evtType, igniteUuid, "taskName", "taskClsName",
                     true, uuid));

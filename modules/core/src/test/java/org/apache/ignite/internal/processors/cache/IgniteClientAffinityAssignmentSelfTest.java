@@ -23,7 +23,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,9 +47,6 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
     /** */
     private boolean cache;
 
-    /** */
-    private int aff;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -66,10 +62,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
 
             ccfg.setNearConfiguration(null);
 
-            if (aff == 0)
-                ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS));
-            else
-                ccfg.setAffinity(new FairAffinityFunction(PARTS));
+            ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS));
 
             cfg.setCacheConfiguration(ccfg);
         }
@@ -83,17 +76,6 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testRendezvousAssignment() throws Exception {
-        aff = 0;
-
-        checkAffinityFunction();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFairAssignment() throws Exception {
-        aff = 1;
-
         checkAffinityFunction();
     }
 

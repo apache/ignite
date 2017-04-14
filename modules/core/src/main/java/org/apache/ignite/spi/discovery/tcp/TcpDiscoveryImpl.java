@@ -238,6 +238,16 @@ abstract class TcpDiscoveryImpl {
     public abstract void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException;
 
     /**
+     * Will start TCP server if applicable and not started yet.
+     *
+     * @return Port this instance bound to.
+     * @throws IgniteSpiException If failed.
+     */
+    public int boundPort() throws IgniteSpiException {
+        return 0;
+    }
+
+    /**
      * @throws IgniteSpiException If failed.
      */
     public abstract void spiStop() throws IgniteSpiException;

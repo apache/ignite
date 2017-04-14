@@ -33,7 +33,10 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotFinishedMessage;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotProgressMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
 import org.apache.ignite.internal.processors.cache.CacheEntrySerializablePredicate;
@@ -42,8 +45,6 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheEvictionRequest;
-import org.apache.ignite.internal.processors.cache.GridCacheEvictionResponse;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
@@ -86,7 +87,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
@@ -178,23 +178,38 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            case -48:
+            case -51:
                 msg = new NearCacheUpdates();
 
                 break;
 
-            case -47:
+            case -50:
                 msg = new GridNearAtomicCheckUpdateRequest();
 
                 break;
 
-            case -46:
+            case -49:
                 msg = new UpdateErrors();
 
                 break;
 
-            case -45:
+            case -48:
                 msg = new GridDhtAtomicNearResponse();
+
+                break;
+
+            case -47:
+                msg = new SnapshotProgressMessage();
+
+                break;
+
+            case -46:
+                msg = new GridChangeGlobalStateMessageResponse();
+
+                break;
+
+            case -45:
+                msg = new SnapshotFinishedMessage();
 
                 break;
 
@@ -353,16 +368,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 14:
-                msg = new GridCacheEvictionRequest();
-
-                break;
-
-            case 15:
-                msg = new GridCacheEvictionResponse();
-
-                break;
-
             case 16:
                 msg = new GridCacheTxRecoveryRequest();
 
@@ -495,11 +500,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 44:
                 msg = new GridDhtPartitionDemandMessage();
-
-                break;
-
-            case 45:
-                msg = new GridDhtPartitionSupplyMessage();
 
                 break;
 
@@ -824,7 +824,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 114:
-                msg = new GridDhtPartitionSupplyMessageV2();
+                msg = new GridDhtPartitionSupplyMessage();
 
                 break;
 
@@ -873,7 +873,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124..127] [-36..-44]- this
+            // [-3..119] [124..127] [-23..-27] [-36..-47]- this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             default:

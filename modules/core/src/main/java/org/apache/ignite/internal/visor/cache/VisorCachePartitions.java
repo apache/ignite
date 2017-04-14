@@ -50,10 +50,9 @@ public class VisorCachePartitions implements Serializable, LessNamingBean {
      * @param part Partition id.
      * @param heap Number of primary keys in heap.
      * @param offheap Number of primary keys in offheap.
-     * @param swap Number of primary keys in swap.
      */
-    public void addPrimary(int part, int heap, long offheap, long swap) {
-       primary.add(new VisorCachePartition(part, heap, offheap, swap));
+    public void addPrimary(int part, int heap, long offheap) {
+       primary.add(new VisorCachePartition(part, heap, offheap));
     }
 
     /**
@@ -62,10 +61,9 @@ public class VisorCachePartitions implements Serializable, LessNamingBean {
      * @param part Partition id.
      * @param heap Number of backup keys in heap.
      * @param offheap Number of backup keys in offheap.
-     * @param swap Number of backup keys in swap.
      */
-    public void addBackup(int part, int heap, long offheap, long swap) {
-       backup.add(new VisorCachePartition(part, heap, offheap, swap));
+    public void addBackup(int part, int heap, long offheap) {
+       backup.add(new VisorCachePartition(part, heap, offheap));
     }
 
     /**

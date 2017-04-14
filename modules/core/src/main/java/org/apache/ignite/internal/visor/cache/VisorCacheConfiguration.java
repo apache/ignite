@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -57,9 +56,6 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSynchronizationMode;
 
-    /** Swap enabled flag. */
-    private boolean swapEnabled;
-
     /** Invalidate. */
     private boolean invalidate;
 
@@ -71,9 +67,6 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
 
     /** Max concurrent async operations. */
     private int maxConcurrentAsyncOps;
-
-    /** Memory mode. */
-    private CacheMemoryMode memoryMode;
 
     /** Cache interceptor. */
     private String interceptor;
@@ -132,14 +125,11 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
         atomicWriteOrderMode = ccfg.getAtomicWriteOrderMode();
         eagerTtl = ccfg.isEagerTtl();
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
-        swapEnabled = ccfg.isSwapEnabled();
         invalidate = ccfg.isInvalidate();
         startSize = ccfg.getStartSize();
-        offHeapMaxMemory = ccfg.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
-        memoryMode = ccfg.getMemoryMode();
         interceptor = compactClass(ccfg.getInterceptor());
-        typeMeta = VisorCacheTypeMetadata.list(ccfg.getQueryEntities(), ccfg.getCacheStoreFactory(), ccfg.getTypeMetadata());
+        typeMeta = VisorCacheTypeMetadata.list(ccfg.getQueryEntities(), ccfg.getCacheStoreFactory());
         statisticsEnabled = ccfg.isStatisticsEnabled();
         mgmtEnabled = ccfg.isManagementEnabled();
         ldrFactory = compactClass(ccfg.getCacheLoaderFactory());
@@ -203,13 +193,6 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
     }
 
     /**
-     * @return Swap enabled flag.
-     */
-    public boolean swapEnabled() {
-        return swapEnabled;
-    }
-
-    /**
      * @return Invalidate.
      */
     public boolean invalidate() {
@@ -235,13 +218,6 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
      */
     public int maxConcurrentAsyncOperations() {
         return maxConcurrentAsyncOps;
-    }
-
-    /**
-     * @return Memory mode.
-     */
-    public CacheMemoryMode memoryMode() {
-        return memoryMode;
     }
 
     /**
