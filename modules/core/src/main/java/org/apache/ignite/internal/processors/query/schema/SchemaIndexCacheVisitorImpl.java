@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -67,10 +68,14 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String spaceName,
         String tblName, SchemaIndexOperationCancellationToken cancel) {
         this.qryProc = qryProc;
-        this.cctx = cctx;
         this.spaceName = spaceName;
         this.tblName = tblName;
         this.cancel = cancel;
+
+        if (cctx.isNear())
+            cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
+
+        this.cctx = cctx;
     }
 
     /** {@inheritDoc} */
