@@ -412,7 +412,7 @@ public class GridReduceQueryExecutor {
      * @param parts Partitions.
      */
     private Map<ClusterNode, IntArray> stableDataNodesMap(AffinityTopologyVersion topVer,
-        final GridCacheContext<?, ?> cctx, @Nullable IntArrayWrapper parts) {
+        final GridCacheContext<?, ?> cctx, @Nullable final int[] parts) {
 
         Map<ClusterNode, IntArray> mapping = new HashMap<>();
 
@@ -424,14 +424,31 @@ public class GridReduceQueryExecutor {
             return mapping;
         }
 
-        boolean needPartFilter = parts != null;
-
-        if (!needPartFilter)
-            parts = new IntArrayWrapper(-1, 0, cctx.affinity().partitions());
-
         List<List<ClusterNode>> assignment = cctx.affinity().assignment(topVer).assignment();
 
-        IntArrayWrapper.Iterator iter = parts.iterator();
+        boolean needPartFilter = parts != null;
+
+        Iterator<Integer> iter = needPartFilter ? new Iterator<Integer>() {
+            int c = 0;
+
+            @Override public boolean hasNext() {
+                return c < parts.length;
+            }
+
+            @Override public Integer next() {
+                return parts[c++];
+            }
+        } : new Iterator<Integer>() {
+            int c = 0;
+
+            @Override public boolean hasNext() {
+                return c < cctx.affinity().partitions();
+            }
+
+            @Override public Integer next() {
+                return c++;
+            }
+        };
 
         while(iter.hasNext()) {
             int partId = iter.next();
@@ -473,7 +490,7 @@ public class GridReduceQueryExecutor {
         AffinityTopologyVersion topVer,
         final GridCacheContext<?, ?> cctx,
             List<Integer> extraSpaces,
-            IntArrayWrapper parts) {
+            int[] parts) {
         Map<ClusterNode, IntArray> map = stableDataNodesMap(topVer, cctx, parts);
 
         Set<ClusterNode> nodes = map.keySet();
@@ -593,16 +610,14 @@ public class GridReduceQueryExecutor {
                     else {
                         partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
 
-                        // If specific partitions are set for a query we must hide nodes not holding these partitions
-                        // and restrict full mapping to given condition.
+                        // If specific partitions are set for a query we must narrow mapping to related nodes.
                         qryNodesMap = parts == null ? partsMap : F.viewReadOnly(partsMap, new ProjectionFilter(parts),
                             new QueryNodesPredicate(parts, partsMap));
 
                         nodes = qryNodesMap == null ? null : qryNodesMap.keySet();
                     }
                 } else {
-                    qryNodesMap = stableDataNodes(topVer, cctx, extraSpaces,
-                            parts == null ? null : new IntArrayWrapper(parts));
+                    qryNodesMap = stableDataNodes(topVer, cctx, extraSpaces, parts);
 
                     if (qryNodesMap != null)
                         nodes = qryNodesMap.keySet();
@@ -1492,88 +1507,6 @@ public class GridReduceQueryExecutor {
         }
     }
 
-    /**
-     *
-     */
-    private static class IntArrayWrapper {
-        /** Values. If first value is negative, then next two values represent start and count. */
-        private final int[] vals;
-
-        /** */
-        IntArrayWrapper(int... vals) {
-            this.vals = vals;
-}
-
-        /** */
-        private boolean isRange() {
-            return vals[0] < 0;
-        }
-
-        /**
-         * Partition iterator.
-         */
-        private Iterator iterator() {
-            if (isRange())
-                return new Iterator() {
-                    int c = 0;
-
-                    @Override public boolean hasNext() {
-                        return c < vals[2];
-                    }
-
-                    @Override public int next() {
-                        return vals[1] + c++;
-                    }
-                };
-            else
-                return new Iterator() {
-                    int c = 0;
-
-                    @Override public boolean hasNext() {
-                        return c < vals.length;
-                    }
-
-                    @Override public int next() {
-                        return vals[c++];
-                    }
-                };
-        }
-
-        /**
-         * Returns a size of partitions set.
-         */
-        private int size() {
-            return isRange() ? vals[2] : vals.length;
-        }
-
-        /**
-         * Check if set contains a value.
-         *
-         * @param val Value.
-         */
-        private boolean contains(int val) {
-            if (isRange())
-                return vals[1] <= val && val < vals[1] + vals[2];
-            else
-                return Arrays.binarySearch(vals, val) >= 0;
-        }
-
-        /**
-         * Primitive int iterator. Values are returned in ascending order.
-         */
-        interface Iterator {
-            /**
-             * @return {@code true} if there is next value.
-             */
-            boolean hasNext();
-
-            /**
-             * @return Next value.
-             */
-            int next();
-        }
-    }
-
     /** */
     private static class QueryNodesPredicate implements IgnitePredicate<ClusterNode> {
         /** Partitions map. */
@@ -1607,9 +1540,14 @@ public class GridReduceQueryExecutor {
         }
     }
 
+    /** */
     private static class ProjectionFilter implements IgniteClosure<IntArray, IntArray> {
+        /** Partitions. */
         private final int[] parts;
 
+        /**
+         * @param parts Partitions.
+         */
         public ProjectionFilter(int[] parts) {
             this.parts = parts;
         }
@@ -1630,9 +1568,14 @@ public class GridReduceQueryExecutor {
         }
     }
 
+    /** */
     private static class ProjectionSpecializer implements IgniteBiClosure<ClusterNode, Message, Message> {
+        /** Partitions map. */
         private final Map<ClusterNode, IntArray> partsMap;
 
+        /**
+         * @param partsMap Partitions map.
+         */
         public ProjectionSpecializer(Map<ClusterNode, IntArray> partsMap) {
             this.partsMap = partsMap;
         }
