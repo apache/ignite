@@ -127,7 +127,8 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
             assertEquals(PERSON_CLS_NAME, entry.getValue().getClass().getName());
         }
 
-        entries = cache.query(new ScanQuery<>(1023)).getAll();
+
+        entries = cache.query(new ScanQuery<>(9)).getAll();
 
         assertFalse(entries.isEmpty());
 
