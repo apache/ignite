@@ -678,7 +678,7 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof (PlatformComputeBinarizable),
                     typeof (BinarizableObject))
                 {
-                    DefaultNameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 }
             };
         }

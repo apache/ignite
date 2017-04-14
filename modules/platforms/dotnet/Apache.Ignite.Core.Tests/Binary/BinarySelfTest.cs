@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             _marsh = new Marshaller(new BinaryConfiguration
             {
                 CompactFooter = GetCompactFooter(),
-                DefaultNameMapper = GetNameMapper()
+                NameMapper = GetNameMapper()
             });
         }
 
@@ -1409,7 +1409,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             BinaryConfiguration cfg = new BinaryConfiguration();
 
-            cfg.DefaultKeepDeserialized = false;
+            cfg.KeepDeserialized = false;
 
             CheckKeepSerialized(cfg, false);
         }
@@ -1441,7 +1441,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             typeCfg.KeepDeserialized = true;
 
             BinaryConfiguration cfg = new BinaryConfiguration();
-            cfg.DefaultKeepDeserialized = false;
+            cfg.KeepDeserialized = false;
 
             cfg.TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg };
 

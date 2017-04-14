@@ -408,7 +408,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             return _typeNameToDesc.TryGetValue(typeName, out desc)
                 ? (IBinaryTypeDescriptor) desc
                 : new BinarySurrogateTypeDescriptor(_cfg,
-                    GetTypeId(typeName, _cfg.DefaultIdMapper), typeName);
+                    GetTypeId(typeName, _cfg.IdMapper), typeName);
         }
 
         /// <summary>
@@ -473,7 +473,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
 
             var typeName = GetTypeName(type);
-            var typeId = GetTypeId(typeName, _cfg.DefaultIdMapper);
+            var typeId = GetTypeId(typeName, _cfg.IdMapper);
 
             var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, type);
 
@@ -506,8 +506,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             var ser = GetSerializer(_cfg, null, type, typeId, null, null, _log);
 
             desc = desc == null
-                ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
-                    _cfg.DefaultIdMapper, ser, false, null, type.IsEnum, null, registered)
+                ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.NameMapper,
+                    _cfg.IdMapper, ser, false, null, type.IsEnum, null, registered)
                 : new BinaryFullTypeDescriptor(desc, type, ser, registered);
 
             if (RegistrationDisabled)
@@ -547,11 +547,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         private void AddUserType(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
         {
             // Get converter/mapper/serializer.
-            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.DefaultNameMapper ?? GetDefaultNameMapper();
+            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.NameMapper ?? GetDefaultNameMapper();
 
-            IBinaryIdMapper idMapper = typeCfg.IdMapper ?? _cfg.DefaultIdMapper;
+            IBinaryIdMapper idMapper = typeCfg.IdMapper ?? _cfg.IdMapper;
 
-            bool keepDeserialized = typeCfg.KeepDeserialized ?? _cfg.DefaultKeepDeserialized;
+            bool keepDeserialized = typeCfg.KeepDeserialized ?? _cfg.KeepDeserialized;
 
             // Try resolving type.
             Type type = typeResolver.ResolveType(typeCfg.TypeName);
@@ -598,7 +598,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinaryIdMapper idMapper, ILogger log)
         {
             var serializer = (typeCfg != null ? typeCfg.Serializer : null) ??
-                             (cfg != null ? cfg.DefaultSerializer : null);
+                             (cfg != null ? cfg.Serializer : null);
 
             if (serializer == null)
             {
@@ -699,7 +699,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var type = typeof(T);
 
             serializer = serializer ?? new BinarySystemTypeSerializer<T>(ctor);
-                            
+
             // System types always use simple name mapper.
             var typeName = type.Name;
 
@@ -786,7 +786,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private string GetTypeName(string fullTypeName, IBinaryNameMapper mapper = null)
         {
-            mapper = mapper ?? _cfg.DefaultNameMapper ?? GetDefaultNameMapper();
+            mapper = mapper ?? _cfg.NameMapper ?? GetDefaultNameMapper();
 
             var typeName = mapper.GetTypeName(fullTypeName);
 

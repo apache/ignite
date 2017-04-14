@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<QueryPerson>)),
                         new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<BinaryObject>))
                     },
-                    DefaultNameMapper = GetNameMapper()
+                    NameMapper = GetNameMapper()
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),

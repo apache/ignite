@@ -206,7 +206,7 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="defaultNameMapper" minOccurs="0">
+                            <xs:element name="nameMapper" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>Default name mapper.</xs:documentation>
                                 </xs:annotation>
@@ -218,7 +218,7 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="defaultIdMapper" minOccurs="0">
+                            <xs:element name="idMapper" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>Default ID mapper.</xs:documentation>
                                 </xs:annotation>
@@ -230,7 +230,7 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="defaultSerializer" minOccurs="0">
+                            <xs:element name="serializer" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>Default serializer.</xs:documentation>
                                 </xs:annotation>
@@ -243,7 +243,7 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:all>
-                        <xs:attribute name="defaultKeepDeserialized" type="xs:boolean">
+                        <xs:attribute name="keepDeserialized" type="xs:boolean">
                             <xs:annotation>
                                 <xs:documentation>Default keep deserialized flag.</xs:documentation>
                             </xs:annotation>

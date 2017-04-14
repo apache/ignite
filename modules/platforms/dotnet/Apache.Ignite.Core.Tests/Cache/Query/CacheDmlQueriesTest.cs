@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             EqualityComparer = new BinaryFieldEqualityComparer("Hi", "Lo")
                         }
                     },
-                    DefaultNameMapper = GetNameMapper()
+                    NameMapper = GetNameMapper()
                 }
             };
 

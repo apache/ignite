@@ -57,8 +57,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = GetTypeConfigurations(),
-                    DefaultIdMapper = new IdMapper(),
-                    DefaultNameMapper = new NameMapper(GetNameMapper()),
+                    IdMapper = new IdMapper(),
+                    NameMapper = new NameMapper(GetNameMapper()),
                     CompactFooter = GetCompactFooter(),
                 }
             };
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             return true;
         }
-                
+
         /// <summary>
         /// Gets the name mapper.
         /// </summary>
@@ -1620,9 +1620,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             var binary = _grid.GetBinary();
 
             binary.ToBinary<IBinaryObject>(new DecimalHolder());
-            
+
             var typeName = GetTypeName(typeof(DecimalHolder));
-            
+
             // All meta
             var allMetas = binary.GetBinaryTypes();
 

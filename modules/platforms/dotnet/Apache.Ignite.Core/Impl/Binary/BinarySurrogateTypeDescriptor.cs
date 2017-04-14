@@ -89,25 +89,25 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritDoc /> */
         public bool KeepDeserialized
         {
-            get { return _cfg.DefaultKeepDeserialized; }
+            get { return _cfg.KeepDeserialized; }
         }
 
         /** <inheritDoc /> */
         public IBinaryNameMapper NameMapper
         {
-            get { return _cfg.DefaultNameMapper; }
+            get { return _cfg.NameMapper; }
         }
 
         /** <inheritDoc /> */
         public IBinaryIdMapper IdMapper
         {
-            get { return _cfg.DefaultIdMapper; }
+            get { return _cfg.IdMapper; }
         }
 
         /** <inheritDoc /> */
         public IBinarySerializerInternal Serializer
         {
-            get { return new UserSerializerProxy(_cfg.DefaultSerializer); }
+            get { return new UserSerializerProxy(_cfg.Serializer); }
         }
 
         /** <inheritDoc /> */

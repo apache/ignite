@@ -276,7 +276,7 @@
                 }
 
                 // Name mapper.
-                var mapper = BinaryConfiguration.DefaultNameMapper as BinaryBasicNameMapper;
+                var mapper = BinaryConfiguration.NameMapper as BinaryBasicNameMapper;
                 writer.WriteBoolean(mapper != null && mapper.IsSimpleName);
 
                 // Send only descriptors with non-null EqualityComparer to preserve old behavior where
@@ -469,7 +469,7 @@
 
                 if (r.ReadBoolean())
                 {
-                    BinaryConfiguration.DefaultNameMapper = BinaryBasicNameMapper.SimpleNameInstance;
+                    BinaryConfiguration.NameMapper = BinaryBasicNameMapper.SimpleNameInstance;
                 }
 
                 var typeCount = r.ReadInt();
