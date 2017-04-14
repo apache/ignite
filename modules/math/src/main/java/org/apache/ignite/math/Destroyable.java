@@ -24,7 +24,7 @@ public interface Destroyable {
     /**
      * Destroys object if managed outside of JVM. It's a no-op in all other cases.
      */
-    default void destroy() {
+    public default void destroy() {
         // No-op.
     }
 }

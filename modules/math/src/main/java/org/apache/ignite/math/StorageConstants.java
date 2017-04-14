@@ -22,28 +22,28 @@ package org.apache.ignite.math;
  */
 public interface StorageConstants {
     /** Storage mode optimized for sequential access. */
-    static final int SEQUENTIAL_ACCESS_MODE = 1001;
+    public static final int SEQUENTIAL_ACCESS_MODE = 1001;
 
     /** Storage mode optimized for random access. */
-    static final int RANDOM_ACCESS_MODE = 1002;
+    public static final int RANDOM_ACCESS_MODE = 1002;
 
     /** Storage mode optimized for row access. */
-    static final int ROW_STORAGE_MODE = 2001;
+    public static final int ROW_STORAGE_MODE = 2001;
 
     /** Storage mode optimized for column access. */
-    static final int COLUMN_STORAGE_MODE = 2002;
+    public static final int COLUMN_STORAGE_MODE = 2002;
 
     /**
      * @param mode Access mode to verify.
      */
-    default void assertAccessMode(int mode) {
+    public default void assertAccessMode(int mode) {
         assert mode == SEQUENTIAL_ACCESS_MODE || mode == RANDOM_ACCESS_MODE;
     }
 
     /**
      * @param mode Storage mode to verify.
      */
-    default void assertStorageMode(int mode) {
+    public default void assertStorageMode(int mode) {
         assert mode == ROW_STORAGE_MODE || mode == COLUMN_STORAGE_MODE;
     }
 }

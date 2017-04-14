@@ -26,7 +26,7 @@ public interface MetaAttributes {
     /**
      * Implementation should return an instance of the map to store meta attributes.
      */
-    Map<String, Object> getMetaStorage();
+    public Map<String, Object> getMetaStorage();
 
     /**
      * Gets meta attribute with given name.
@@ -35,7 +35,7 @@ public interface MetaAttributes {
      * @param <T> Attribute's type.
      */
     @SuppressWarnings("unchecked")
-    default <T> T getAttribute(String name) {
+    public default <T> T getAttribute(String name) {
         return (T)getMetaStorage().get(name);
     }
 
@@ -46,7 +46,7 @@ public interface MetaAttributes {
      * @param val Attribute value.
      * @param <T> Attribute's type.
      */
-    default <T> void setAttribute(String name, T val) {
+    public default <T> void setAttribute(String name, T val) {
         getMetaStorage().put(name, val);
     }
 
@@ -56,7 +56,7 @@ public interface MetaAttributes {
      * @param name Name of the meta attribute.
      * @return {@code true} if attribute was present and was removed, {@code false} otherwise.
      */
-    default boolean removeAttribute(String name) {
+    public default boolean removeAttribute(String name) {
         boolean is = getMetaStorage().containsKey(name);
 
         if (is)
@@ -70,7 +70,7 @@ public interface MetaAttributes {
      *
      * @param name Attribute name to check.
      */
-    default boolean hasAttribute(String name) {
+    public default boolean hasAttribute(String name) {
         return getMetaStorage().containsKey(name);
     }
 }
