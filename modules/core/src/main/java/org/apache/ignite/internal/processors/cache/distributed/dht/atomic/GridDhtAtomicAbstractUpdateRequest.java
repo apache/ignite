@@ -56,6 +56,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
     /** */
     private static final int DHT_ATOMIC_REPLY_WITHOUT_DELAY = 0x10;
 
+    /** Near cache key flag. */
+    private static final int DHT_ATOMIC_PRIMARY_FLAG_MASK = 0x20;
+
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -431,6 +434,20 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
      */
     protected final void near(boolean near) {
         setFlag(near, DHT_ATOMIC_NEAR_FLAG_MASK);
+    }
+
+    /**
+     * @return {@code True} if primary cache update request.
+     */
+    protected final boolean primary() {
+        return isFlag(DHT_ATOMIC_PRIMARY_FLAG_MASK);
+    }
+
+    /**
+     * @param primary Primary cache update flag.
+     */
+    protected final void primary(boolean primary) {
+        setFlag(primary, DHT_ATOMIC_PRIMARY_FLAG_MASK);
     }
 
     /**

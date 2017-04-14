@@ -135,7 +135,10 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert conflictVer == null : conflictVer;
         assert key.partition() >= 0 : key;
 
-        near(false);
+        assert this.key == null || F.eq(this.key, key);
+        assert this.val == null || F.eq(this.val, val);
+
+        primary(true);
 
         this.key = key;
         this.val = val;
@@ -162,6 +165,9 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert ttl <= 0 : ttl;
         assert key.partition() >= 0 : key;
 
+        assert this.key == null || F.eq(this.key, key);
+        assert this.val == null || F.eq(this.val, val);
+
         near(true);
 
         this.key = key;
@@ -175,7 +181,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return key != null ? near() ? 0 : 1 : 0;
+        return key != null ? primary() ? 1 : 0 : 0;
     }
 
     /** {@inheritDoc} */
@@ -185,14 +191,14 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public boolean hasKey(KeyCacheObject key) {
-        return !near() && F.eq(this.key, key);
+        return primary() && F.eq(this.key, key);
     }
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject key(int idx) {
         assert idx == 0 : idx;
 
-        return near() ? null : key;
+        return primary() ? key : null;
     }
 
     /** {@inheritDoc} */
@@ -222,7 +228,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     @Override @Nullable public CacheObject value(int idx) {
         assert idx == 0 : idx;
 
-        return near() ? null : val;
+        return primary() ? val : null;
     }
 
     /** {@inheritDoc} */
@@ -304,7 +310,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         prepareMarshalObject(val, cctx);
 
         prepareMarshalObject(prevVal, cctx);
-
     }
 
     /** {@inheritDoc} */
