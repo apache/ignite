@@ -15,33 +15,8 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Plugin.Cache
-{
-    using Apache.Ignite.Core.Cache.Configuration;
-
-    /// <summary>
-    /// Cache plugin context.
-    /// </summary>
-    public interface ICachePluginContext<out T> where T : ICachePluginConfiguration
-    {
-        /// <summary>
-        /// Gets the Ignite configuration.
-        /// </summary>
-        IgniteConfiguration IgniteConfiguration { get; }
-
-        /// <summary>
-        /// Gets the Ignite cache configuration.
-        /// </summary>
-        CacheConfiguration CacheConfiguration { get; }
-
-        /// <summary>
-        /// Gets the cache plugin configuration.
-        /// </summary>
-        T CachePluginConfiguration { get; }
-
-        /// <summary>
-        /// Gets the Ignite.
-        /// </summary>
-        IIgnite Ignite { get; }
-    }
-}
+/**
+ * <!-- Package description. -->
+ * Contains platform plugins management API.
+ */
+package org.apache.ignite.plugin.platform;

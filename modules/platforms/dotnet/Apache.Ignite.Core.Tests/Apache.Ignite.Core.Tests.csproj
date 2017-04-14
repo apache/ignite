@@ -104,9 +104,6 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
-    <Compile Include="Plugin\Cache\CachePlugin.cs" />
-    <Compile Include="Plugin\Cache\CachePluginConfiguration.cs" />
-    <Compile Include="Plugin\Cache\CachePluginTest.cs" />
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />
