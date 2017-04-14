@@ -19,7 +19,6 @@ package org.apache.ignite.testframework.junits;
 
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import javax.management.MBeanServer;
 import org.apache.ignite.Ignite;
@@ -65,7 +64,6 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -204,11 +202,6 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService(ClusterGroup grp) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Executor localExecutor(@NotNull String name) throws IgniteException {
         return null;
     }
 

@@ -117,9 +117,6 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
      * @throws Exception If fails.
      */
     public void testAllComputeApiByCustomExecutor() throws Exception {
-        assertNotNull(grid(0).localExecutor(EXEC_NAME0));
-        assertNotNull(grid(0).localExecutor(EXEC_NAME1));
-
         IgniteCompute comp = grid(0).compute().withExecutor(EXEC_NAME0);
 
         comp.affinityRun(CACHE_NAME, primaryKey(grid(1).cache(CACHE_NAME)), new IgniteRunnable() {

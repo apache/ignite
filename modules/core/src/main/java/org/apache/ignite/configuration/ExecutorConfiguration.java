@@ -18,12 +18,11 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
 
 /**
- * Configuration for custom thread pool that is used for user compute tasks.
+ * Configuration for custom thread pool for user compute tasks.
  */
 public class ExecutorConfiguration {
     /** Thread pool name. */
@@ -65,7 +64,7 @@ public class ExecutorConfiguration {
      *
      * @return Executor name.
      */
-    @NotNull public String getName() {
+    public String getName() {
         return name;
     }
 
@@ -75,7 +74,7 @@ public class ExecutorConfiguration {
      * @param name Executor name.
      * @return {@code this} for chaining.
      */
-    public ExecutorConfiguration setName(@NotNull String name) {
+    public ExecutorConfiguration setName(String name) {
         this.name = name;
 
         return this;

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -250,13 +249,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         checkIgnite();
 
         return g.executorService(grp);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Executor localExecutor(@NotNull String name) throws IgniteException {
-        checkIgnite();
-
-        return g.localExecutor(name);
     }
 
     /** {@inheritDoc} */

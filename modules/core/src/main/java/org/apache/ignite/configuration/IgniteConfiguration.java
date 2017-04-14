@@ -473,7 +473,7 @@ public class IgniteConfiguration {
     /** */
     private BinaryConfiguration binaryCfg;
 
-    /** Custom executors configurations. */
+    /** Custom executor configurations. */
     private ExecutorConfiguration[] execCfgs;
 
     /** */
@@ -535,6 +535,7 @@ public class IgniteConfiguration {
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
+        execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
         hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
@@ -589,7 +590,6 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        execCfgs = cfg.getExecutorConfiguration();
     }
 
     /**
@@ -2747,7 +2747,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets the custom executors (named thread pools) for user compute tasks.
+     * Gets custom executors for user compute tasks.
      *
      * @return Executor configurations.
      */
@@ -2756,7 +2756,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets custom executors (named thread pools) for user compute tasks.
+     * Sets custom executors for user compute tasks.
      *
      * @param execCfgs Executor configurations.
      * @return {@code this} for chaining.

@@ -42,7 +42,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -183,7 +182,6 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
@@ -429,16 +427,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public ExecutorService executorService(ClusterGroup grp) {
         return ((ClusterGroupAdapter)grp).executorService();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Executor localExecutor(@NotNull String name) throws IgniteException {
-        try {
-            return ctx.pools().customPoolByName(name);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
     }
 
     /** {@inheritDoc} */
