@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Test for atomic cache with primary write order mode.
+ *
  */
-public class GridCacheAtomicPrimaryWriteOrderFullApiSelfTest extends GridCacheAtomicFullApiSelfTest {
+public class GridCacheAtomicLateAffDisabledMultiNodeFullApiSelfTest extends
+    GridCacheAtomicMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setLateAffinityAssignment(false);
+
+        return cfg;
     }
 }

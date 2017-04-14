@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -52,9 +51,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
 
     /** Cache atomicity mode. */
     private CacheAtomicityMode atomicityMode;
-
-    /** Cache atomicity write ordering mode. */
-    private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
     /** Eager ttl flag. */
     private boolean eagerTtl;
@@ -148,7 +144,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         name = ccfg.getName();
         mode = ccfg.getCacheMode();
         atomicityMode = ccfg.getAtomicityMode();
-        atomicWriteOrderMode = ccfg.getAtomicWriteOrderMode();
         eagerTtl = ccfg.isEagerTtl();
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
         invalidate = ccfg.isInvalidate();
@@ -202,10 +197,10 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Cache atomicity write ordering mode.
+     * @return Eager ttl flag
      */
-    public CacheAtomicWriteOrderMode getAtomicWriteOrderMode() {
-        return atomicWriteOrderMode;
+    public boolean eagerTtl() {
+        return eagerTtl;
     }
 
     /**
@@ -395,7 +390,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         U.writeString(out, name);
         U.writeEnum(out, mode);
         U.writeEnum(out, atomicityMode);
-        U.writeEnum(out, atomicWriteOrderMode);
         out.writeBoolean(eagerTtl);
         U.writeEnum(out, writeSynchronizationMode);
         out.writeBoolean(invalidate);
@@ -429,7 +423,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         name = U.readString(in);
         mode = CacheMode.fromOrdinal(in.readByte());
         atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
-        atomicWriteOrderMode = CacheAtomicWriteOrderMode.fromOrdinal(in.readByte());
         eagerTtl = in.readBoolean();
         writeSynchronizationMode = CacheWriteSynchronizationMode.fromOrdinal(in.readByte());
         invalidate = in.readBoolean();

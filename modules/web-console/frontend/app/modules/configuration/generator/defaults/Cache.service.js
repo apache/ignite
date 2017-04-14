@@ -50,9 +50,6 @@ const DFLT_CACHE = {
     writeBehindFlushThreadCount: 1,
     maxConcurrentAsyncOperations: 500,
     defaultLockTimeout: 0,
-    atomicWriteOrderMode: {
-        clsName: 'org.apache.ignite.cache.CacheAtomicWriteOrderMode'
-    },
     writeSynchronizationMode: {
         clsName: 'org.apache.ignite.cache.CacheWriteSynchronizationMode',
         value: 'PRIMARY_SYNC'
