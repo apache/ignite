@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(TestRemoveAllKeys)
     cache.Put(2, 2);
     cache.Put(3, 3);
 
-    int size = cache.Size(cache::IGNITE_PEEK_MODE_ONHEAP);
+    int size = cache.Size(cache::CachePeekMode::PRIMARY);
 
     BOOST_CHECK_EQUAL(3, size);
 
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(TestRemoveAllKeys)
 
     cache.RemoveAll(keySet);
 
-    size = cache.Size(cache::IGNITE_PEEK_MODE_ONHEAP);
+    size = cache.Size(cache::CachePeekMode::PRIMARY);
 
     BOOST_CHECK_EQUAL(1, size);
 }
@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE(TestRemoveAllKeysIterVector)
 
     cache.RemoveAll(keySet.begin(), keySet.end());
 
-    size = cache.Size(cache::IGNITE_PEEK_MODE_ONHEAP);
+    size = cache.Size(cache::CachePeekMode::PRIMARY);
 
     BOOST_CHECK_EQUAL(1, size);
 }
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(TestRemoveAllKeysIterArray)
 
     cache.RemoveAll(keys, keys + 4);
 
-    size = cache.Size(cache::IGNITE_PEEK_MODE_ONHEAP);
+    size = cache.Size(cache::CachePeekMode::PRIMARY);
 
     BOOST_CHECK_EQUAL(1, size);
 }
@@ -459,11 +459,11 @@ BOOST_AUTO_TEST_CASE(TestLocalClear)
 
     cache.Put(0, 2);
 
-    BOOST_REQUIRE(2 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_ALL));
+    BOOST_REQUIRE(2 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
 
     cache.LocalClear(0);
 
-    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_ALL));
+    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
 }
 
 BOOST_AUTO_TEST_CASE(TestLocalClearAll)
@@ -477,13 +477,13 @@ BOOST_AUTO_TEST_CASE(TestLocalClearAll)
 
     std::set<int> keySet(keys, keys + 2);
 
-    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_ALL));
-    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ALL));
+    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
 
     cache.LocalClearAll(keySet);
 
-    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_ALL));
-    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ALL));
+    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
 }
 
 BOOST_AUTO_TEST_CASE(TestLocalClearAllIterList)
@@ -497,13 +497,13 @@ BOOST_AUTO_TEST_CASE(TestLocalClearAllIterList)
 
     std::list<int> keySet(keys, keys + 2);
 
-    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_ALL));
-    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ALL));
+    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
 
     cache.LocalClearAll(keySet.begin(), keySet.end());
 
-    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_ALL));
-    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ALL));
+    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
 }
 
 BOOST_AUTO_TEST_CASE(TestLocalClearAllIterArray)
@@ -515,13 +515,13 @@ BOOST_AUTO_TEST_CASE(TestLocalClearAllIterArray)
 
     int keys[] = { 0, 1 };
 
-    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_ALL));
-    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ALL));
+    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
 
     cache.LocalClearAll(keys, keys + 2);
 
-    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_ALL));
-    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ALL));
+    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
 }
 
 BOOST_AUTO_TEST_CASE(TestSizes)
@@ -535,7 +535,7 @@ BOOST_AUTO_TEST_CASE(TestSizes)
 
     BOOST_REQUIRE(2 <= cache.Size());
 
-    BOOST_REQUIRE(1 <= cache.LocalSize(cache::IGNITE_PEEK_MODE_ALL));
+    BOOST_REQUIRE(1 <= cache.LocalSize(cache::CachePeekMode::ALL));
 }
 
 BOOST_AUTO_TEST_CASE(TestLocalEvict)
