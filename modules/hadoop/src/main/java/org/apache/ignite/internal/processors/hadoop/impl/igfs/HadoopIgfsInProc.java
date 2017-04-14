@@ -213,8 +213,8 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
                 igfs.clientLogDirectory(logDir);
 
                 return new IgfsHandshakeResponse(igfs.name(), igfs.groupBlockSize(), igfs.globalSampling());
-                }
-         });
+            }
+        });
     }
 
     /**
