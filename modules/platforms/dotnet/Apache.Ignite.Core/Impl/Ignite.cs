@@ -78,8 +78,8 @@ namespace Apache.Ignite.Core.Impl
         /** Cached proxy. */
         private readonly IgniteProxy _proxy;
 
-        /** Lifecycle beans. */
-        private readonly IList<LifecycleBeanHolder> _lifecycleBeans;
+        /** Lifecycle handlers. */
+        private readonly IList<LifecycleHandlerHolder> _lifecycleHandlers;
 
         /** Local node. */
         private IClusterNode _locNode;
@@ -108,22 +108,22 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="name">Grid name.</param>
         /// <param name="proc">Interop processor.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="lifecycleBeans">Lifecycle beans.</param>
+        /// <param name="lifecycleHandlers">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
         public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh,
-            IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs)
+            IList<LifecycleHandlerHolder> lifecycleHandlers, UnmanagedCallbacks cbs)
         {
             Debug.Assert(cfg != null);
             Debug.Assert(proc != null);
             Debug.Assert(marsh != null);
-            Debug.Assert(lifecycleBeans != null);
+            Debug.Assert(lifecycleHandlers != null);
             Debug.Assert(cbs != null);
 
             _cfg = cfg;
             _name = name;
             _proc = proc;
             _marsh = marsh;
-            _lifecycleBeans = lifecycleBeans;
+            _lifecycleHandlers = lifecycleHandlers;
             _cbs = cbs;
 
             marsh.Ignite = this;
@@ -173,7 +173,7 @@ namespace Apache.Ignite.Core.Impl
         {
             PluginProcessor.OnIgniteStart();
 
-            foreach (var lifecycleBean in _lifecycleBeans)
+            foreach (var lifecycleBean in _lifecycleHandlers)
                 lifecycleBean.OnStart(this);
         }
 
@@ -389,7 +389,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void AfterNodeStop()
         {
-            foreach (var bean in _lifecycleBeans)
+            foreach (var bean in _lifecycleHandlers)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
 
             var handler = Stopped;
