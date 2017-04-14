@@ -81,7 +81,7 @@ public class HibernateTransactionalDataRegion extends HibernateRegion implements
                     throw new CacheException("Hibernate READ-WRITE access strategy must have Ignite cache with " +
                         "'TRANSACTIONAL' atomicity mode: " + cache.name());
 
-                return new HibernateReadWriteAccessStrategy(ignite, cache, factory.threadLocalForCache(cache.name()));
+                return new HibernateReadWriteAccessStrategy(ignite, cache, factory.threadLocalForCache());
 
             case TRANSACTIONAL:
                 if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
