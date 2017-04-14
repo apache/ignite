@@ -739,10 +739,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     else {
                         Flusher f = flusher(e.getKey());
 
-                        StatefulValue<K,V> lastSV = f.flusherWriteMap.get(e.getKey());
-
-                        if (lastSV == e.getValue())
-                            f.flusherWriteMap.remove(e.getKey());
+                        // Can remove using equal because if map contains another similar value it has different state.
+                        f.flusherWriteMap.remove(e.getKey(), e.getValue());
 
                         val.signalFlushed();
                     }
@@ -903,8 +901,14 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             assert flusherCacheCriticalSize > batchSize;
 
-            queue = new ConcurrentLinkedDeque8<>();
-            flusherWriteMap = new ConcurrentHashMap<>(initCap, 0.75f, concurLvl);
+            if (writeCoalescing) {
+                queue = null;
+                flusherWriteMap = null;
+            }
+            else {
+                queue = new ConcurrentLinkedDeque8<>();
+                flusherWriteMap = new ConcurrentHashMap<>(initCap, 0.75f, concurLvl);
+            }
         }
 
         /** Start flusher thread */
@@ -965,29 +969,32 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         /**
          * Get overflowed flag.
          *
-         * @return {@code True} if flusher write behind queue is overflowed,
+         * @return {@code True} if write behind flusher is overflowed,
          *         {@code False} otherwise.
          */
         public boolean isOverflowed() {
-            return queue.sizex() > flusherCacheCriticalSize;
+            if (writeCoalescing)
+                return writeCache.sizex() > cacheCriticalSize;
+            else
+                return queue.sizex() > flusherCacheCriticalSize;
         }
 
         /**
-         * Get flusher write queue size.
+         * Get write behind flusher size.
          *
-         * @return Flusher write queue size.
+         * @return Flusher write behind size.
          */
         public int size() {
-            return queue.sizex();
+            return writeCoalescing ? writeCache.sizex() : queue.sizex();
         }
 
         /**
-         * Test if flusher write queue is empty
+         * Test if write behind flusher is empty
          *
-         * @return {@code True} if write queue is empty, {@code False} otherwise
+         * @return {@code True} if write behind flusher is empty, {@code False} otherwise
          */
         public boolean isEmpty() {
-            return queue.isEmpty();
+            return writeCoalescing ? writeCache.isEmpty() : queue.isEmpty();
         }
 
         /** {@inheritDoc} */
@@ -1018,7 +1025,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             try {
                 do {
-                    if (queue.sizex() <= cacheMaxSize || cacheMaxSize == 0) {
+                    if (writeCache.sizex() <= cacheMaxSize || cacheMaxSize == 0) {
                         if (cacheFlushFreq > 0)
                             canFlush.await(cacheFlushFreq, TimeUnit.MILLISECONDS);
                         else
@@ -1038,21 +1045,14 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          * @throws InterruptedException If awaiting was interrupted.
          */
         private void awaitOperationsAvailableNonCoalescing() throws InterruptedException {
-            if (queue.sizex() > cacheCriticalSize)
+            if (queue.sizex() >= batchSize)
                 return;
-
-            if (cacheMaxSize != 0) {
-                for (int i = 0; i < 2048; i++) {
-                    if (queue.sizex() > batchSize)
-                        return;
-                }
-            }
 
             parked = true;
 
             try {
                 for (;;) {
-                    if (cacheMaxSize != 0 && queue.sizex() >= batchSize)
+                    if (queue.sizex() >= batchSize)
                         return;
 
                     if (cacheFlushFreq > 0)
