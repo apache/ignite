@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -137,7 +139,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
             if (ctx.clientNode())
                 ctx.event().addLocalEventListener(clientDisconLsnr, EVT_CLIENT_NODE_DISCONNECTED);
@@ -243,8 +245,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
+        super.onKernalStart(activeOnStart);
 
         discoveryStarted = true;
     }
@@ -744,17 +746,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
-        throws IgniteCheckedException {
-        if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).binaryEnabled())
-            return super.toCacheObject(ctx, valPtr, tmp);
+    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException {
+        if (type == BinaryObjectImpl.TYPE_BINARY)
+            return new BinaryObjectImpl(binaryContext(), bytes, 0);
 
-        Object val = unmarshal(valPtr, !tmp);
-
-        if (val instanceof CacheObject)
-            return (CacheObject)val;
-
-        return toCacheObject(ctx.cacheObjectContext(), val, false);
+        return super.toKeyCacheObject(ctx, type, bytes);
     }
 
     /** {@inheritDoc} */

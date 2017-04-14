@@ -40,8 +40,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -73,14 +71,6 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     /** PeerClassLoadingLocalClassPathExclude enable. */
     private boolean excluded;
 
-    /**
-     * Creates a SwapSpaceSpi.
-     * @return the Spi
-     */
-    protected SwapSpaceSpi spi() {
-        return new FileSwapSpaceSpi();
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -93,14 +83,10 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        cfg.setSwapSpaceSpi(spi());
-
         CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setOffHeapMaxMemory(1024L * 1024L * 1024L);
         cacheCfg.setIndexedTypes(Integer.class, CacheValue.class);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -512,7 +498,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         for (int i = lowerBound; i < upperBound; i++) {
             assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
-            CacheValue val = cache.localPeek(i, CachePeekMode.SWAP, CachePeekMode.OFFHEAP);
+            CacheValue val = cache.localPeek(i, CachePeekMode.OFFHEAP);
 
             assert val != null;
             assert val.value() == i;

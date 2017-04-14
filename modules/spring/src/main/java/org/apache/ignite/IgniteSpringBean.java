@@ -44,19 +44,19 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 /**
- * Grid Spring bean allows to bypass {@link Ignition} methods.
+ * Ignite Spring bean allows to bypass {@link Ignition} methods.
  * In other words, this bean class allows to inject new grid instance from
  * Spring configuration file directly without invoking static
  * {@link Ignition} methods. This class can be wired directly from
  * Spring and can be referenced from within other Spring beans.
  * By virtue of implementing {@link DisposableBean} and {@link InitializingBean}
- * interfaces, {@code GridSpringBean} automatically starts and stops underlying
+ * interfaces, {@code IgniteSpringBean} automatically starts and stops underlying
  * grid instance.
  * <p>
  * <h1 class="header">Spring Configuration Example</h1>
  * Here is a typical example of describing it in Spring file:
  * <pre name="code" class="xml">
- * &lt;bean id="mySpringBean" class="org.apache.ignite.GridSpringBean"&gt;
+ * &lt;bean id="mySpringBean" class="org.apache.ignite.IgniteSpringBean"&gt;
  *     &lt;property name="configuration"&gt;
  *         &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *             &lt;property name="igniteInstanceName" value="mySpringGrid"/&gt;
@@ -66,7 +66,7 @@ import org.springframework.context.ApplicationContextAware;
  * </pre>
  * Or use default configuration:
  * <pre name="code" class="xml">
- * &lt;bean id="mySpringBean" class="org.apache.ignite.GridSpringBean"/&gt;
+ * &lt;bean id="mySpringBean" class="org.apache.ignite.IgniteSpringBean"/&gt;
  * </pre>
  * <h1 class="header">Java Example</h1>
  * Here is how you may access this bean from code:
@@ -76,7 +76,7 @@ import org.springframework.context.ApplicationContextAware;
  * // Register Spring hook to destroy bean automatically.
  * ctx.registerShutdownHook();
  *
- * Grid grid = (Grid)ctx.getBean("mySpringBean");
+ * Ignite ignite = (Ignite)ctx.getBean("mySpringBean");
  * </pre>
  * <p>
  */
@@ -271,6 +271,20 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         checkIgnite();
 
         return g.name();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetLostPartitions(Collection<String> cacheNames) {
+        checkIgnite();
+
+        g.resetLostPartitions(cacheNames);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        checkIgnite();
+
+        return g.memoryMetrics();
     }
 
     /** {@inheritDoc} */
@@ -518,6 +532,20 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         return g.affinity(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        checkIgnite();
+
+        return g.active();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        checkIgnite();
+
+        g.active(active);
     }
 
     /** {@inheritDoc} */

@@ -474,6 +474,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 HandshakeMessage msg0 = (HandshakeMessage)msg;
 
+                if (log.isDebugEnabled())
+                    log.debug("Received handshake message [locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId +
+                        ", msg=" + msg0 + ']');
+
                 if (usePairedConnections(rmtNode)) {
                     final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode, connKey);
 
@@ -568,7 +572,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         if (log.isDebugEnabled())
                             log.debug("Received incoming connection from remote node " +
-                                "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved + ']');
+                                "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved +
+                                ", recovery=" + recoveryDesc + ']');
 
                         if (reserved) {
                             try {
@@ -3350,7 +3355,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         }
 
                         if (log.isDebugEnabled())
-                            log.debug("Write handshake message [rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
+                            log.debug("Writing handshake message [locNodeId=" + locNode.id() +
+                                ", rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
 
                         buf = ByteBuffer.allocate(msgSize);
 
@@ -3388,10 +3394,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             assert sslHnd != null;
 
                             buf = ByteBuffer.allocate(1000);
-
-                            ByteBuffer decode = null;
-
                             buf.order(ByteOrder.nativeOrder());
+
+                            ByteBuffer decode = ByteBuffer.allocate(2 * buf.capacity());
+                            decode.order(ByteOrder.nativeOrder());
 
                             for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                                 int read = ch.read(buf);
@@ -3402,12 +3408,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                                 buf.flip();
 
-                                decode = sslHnd.decode(buf);
+                                ByteBuffer decode0 = sslHnd.decode(buf);
 
-                                i += decode.remaining();
+                                i += decode0.remaining();
+
+                                decode = appendAndResizeIfNeeded(decode, decode0);
 
                                 buf.clear();
                             }
+
+                            decode.flip();
 
                             rcvCnt = decode.getLong(Message.DIRECT_TYPE_SIZE);
 
@@ -3497,6 +3507,31 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
+     * @param target Target buffer to append to.
+     * @param src Source buffer to get data.
+     * @return Original or expanded buffer.
+     */
+    private ByteBuffer appendAndResizeIfNeeded(ByteBuffer target, ByteBuffer src) {
+        if (target.remaining() < src.remaining()) {
+            int newSize = Math.max(target.capacity() * 2, target.capacity() + src.remaining());
+
+            ByteBuffer tmp = ByteBuffer.allocate(newSize);
+
+            tmp.order(target.order());
+
+            target.flip();
+
+            tmp.put(target);
+
+            target = tmp;
+        }
+
+        target.put(src);
+
+        return target;
+    }
+
+    /**
      * Stops service threads to simulate node failure.
      *
      * FOR TEST PURPOSES ONLY!!!
@@ -3570,6 +3605,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         GridNioRecoveryDescriptor recovery = recoveryDescs.get(key);
 
         if (recovery == null) {
+            if (log.isDebugEnabled())
+                log.debug("Missing recovery descriptor for the node (will create a new one) " +
+                    "[locNodeId=" + getLocalNode().id() +
+                    ", key=" + key + ", rmtNode=" + node + ']');
+
             int maxSize = Math.max(msgQueueLimit, ackSndThreshold);
 
             int queueLimit = unackedMsgsBufSize != 0 ? unackedMsgsBufSize : (maxSize * 128);
@@ -3577,8 +3617,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             GridNioRecoveryDescriptor old = recoveryDescs.putIfAbsent(key,
                 recovery = new GridNioRecoveryDescriptor(pairedConnections, queueLimit, node, log));
 
-            if (old != null)
+            if (old != null) {
                 recovery = old;
+
+                if (log.isDebugEnabled())
+                    log.debug("Will use existing recovery descriptor: " + recovery);
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Initialized recovery descriptor [desc=" + recovery + ", maxSize=" + maxSize +
+                        ", queueLimit=" + queueLimit + ']');
+            }
         }
 
         return recovery;

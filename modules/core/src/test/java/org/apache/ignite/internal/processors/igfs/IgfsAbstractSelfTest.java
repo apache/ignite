@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
@@ -76,16 +75,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     protected IgfsAbstractSelfTest(IgfsMode mode) {
         super(mode);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param mode IGFS mode.
-     * @param memoryMode Memory mode.
-     */
-    protected IgfsAbstractSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
-        super(mode, memoryMode);
     }
 
     /**

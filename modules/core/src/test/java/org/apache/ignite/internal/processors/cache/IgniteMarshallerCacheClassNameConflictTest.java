@@ -213,6 +213,11 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
                 delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
             }
+
+            /** {@inheritDoc} */
+            @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+                // No-op.
+            }
         }
 
         /** {@inheritDoc} */

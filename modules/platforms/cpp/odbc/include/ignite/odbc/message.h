@@ -34,28 +34,34 @@ namespace ignite
 {
     namespace odbc
     {
-        enum RequestType
+        struct RequestType
         {
-            REQUEST_TYPE_HANDSHAKE = 1,
+            enum Type
+            {
+                HANDSHAKE = 1,
 
-            REQUEST_TYPE_EXECUTE_SQL_QUERY = 2,
+                EXECUTE_SQL_QUERY = 2,
 
-            REQUEST_TYPE_FETCH_SQL_QUERY = 3,
+                FETCH_SQL_QUERY = 3,
 
-            REQUEST_TYPE_CLOSE_SQL_QUERY = 4,
+                CLOSE_SQL_QUERY = 4,
 
-            REQUEST_TYPE_GET_COLUMNS_METADATA = 5,
+                GET_COLUMNS_METADATA = 5,
 
-            REQUEST_TYPE_GET_TABLES_METADATA = 6,
+                GET_TABLES_METADATA = 6,
 
-            REQUEST_TYPE_GET_PARAMS_METADATA = 7
+                GET_PARAMS_METADATA = 7
+            };
         };
 
-        enum ResponseStatus
+        struct ResponseStatus
         {
-            RESPONSE_STATUS_SUCCESS = 0,
+            enum Type
+            {
+                SUCCESS = 0,
 
-            RESPONSE_STATUS_FAILED = 1
+                FAILED = 1
+            };
         };
 
         /**
@@ -93,7 +99,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_HANDSHAKE);
+                writer.WriteInt8(RequestType::HANDSHAKE);
 
                 writer.WriteInt64(version);
 
@@ -148,7 +154,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_EXECUTE_SQL_QUERY);
+                writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY);
                 utility::WriteString(writer, cache);
                 utility::WriteString(writer, sql);
 
@@ -213,7 +219,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_CLOSE_SQL_QUERY);
+                writer.WriteInt8(RequestType::CLOSE_SQL_QUERY);
                 writer.WriteInt64(queryId);
             }
 
@@ -255,7 +261,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_FETCH_SQL_QUERY);
+                writer.WriteInt8(RequestType::FETCH_SQL_QUERY);
                 writer.WriteInt64(queryId);
                 writer.WriteInt32(pageSize);
             }
@@ -303,7 +309,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_GET_COLUMNS_METADATA);
+                writer.WriteInt8(RequestType::GET_COLUMNS_METADATA);
                 
                 utility::WriteString(writer, schema);
                 utility::WriteString(writer, table);
@@ -359,7 +365,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_GET_TABLES_METADATA);
+                writer.WriteInt8(RequestType::GET_TABLES_METADATA);
 
                 utility::WriteString(writer, catalog);
                 utility::WriteString(writer, schema);
@@ -390,10 +396,8 @@ namespace ignite
             /**
              * Constructor.
              *
-             * @param catalog Catalog search pattern.
-             * @param schema Schema search pattern.
-             * @param table Table search pattern.
-             * @param tableTypes Table types search pattern.
+             * @param cacheName Cache name.
+             * @param sqlQuery SQL query itself.
              */
             QueryGetParamsMetaRequest(const std::string& cacheName, const std::string& sqlQuery) :
                 cacheName(cacheName),
@@ -416,7 +420,7 @@ namespace ignite
              */
             void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
             {
-                writer.WriteInt8(REQUEST_TYPE_GET_PARAMS_METADATA);
+                writer.WriteInt8(RequestType::GET_PARAMS_METADATA);
 
                 utility::WriteString(writer, cacheName);
                 utility::WriteString(writer, sqlQuery);
@@ -431,7 +435,7 @@ namespace ignite
         };
 
         /**
-         * Query close response.
+         * General response.
          */
         class Response
         {
@@ -439,7 +443,7 @@ namespace ignite
             /**
              * Constructor.
              */
-            Response() : status(RESPONSE_STATUS_FAILED), error()
+            Response() : status(ResponseStatus::FAILED), error()
             {
                 // No-op.
             }
@@ -460,7 +464,7 @@ namespace ignite
             {
                 status = reader.ReadInt8();
 
-                if (status == RESPONSE_STATUS_SUCCESS)
+                if (status == ResponseStatus::SUCCESS)
                     ReadOnSuccess(reader);
                 else
                     utility::ReadString(reader, error);;
@@ -486,7 +490,7 @@ namespace ignite
 
         protected:
             /**
-             * Read data if response status is RESPONSE_STATUS_SUCCESS.
+             * Read data if response status is ResponseStatus::SUCCESS.
              */
             virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl&)
             {

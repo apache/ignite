@@ -1179,7 +1179,7 @@ export default class IgniteConfigurationGenerator {
 
         switch (kind) {
             case 'OptimizedMarshaller':
-                bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
+                bean = new Bean('org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
                     .intProperty('poolSize')
                     .intProperty('requireSerializable');
 

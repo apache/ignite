@@ -538,7 +538,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             for (int i = 0; i < gridCount(); i++) {
                 IgniteCache<Object, Object> cache = jcache(i);
 
-                Object val = cache.localPeek(key, CachePeekMode.ONHEAP);
+                Object val = cache.localPeek(key);
 
                 if (val == null)
                     assertFalse(ignite(0).affinity(null).isPrimaryOrBackup(ignite(i).cluster().localNode(), key));

@@ -122,7 +122,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setSwapEnabled(swapEnabled());
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
 
@@ -156,6 +155,8 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
+
+        cfg.setOnheapCacheEnabled(onheapCacheEnabled());
 
         return cfg;
     }
@@ -211,9 +212,9 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return {@code true} if swap should be enabled.
+     * @return {@code True} if on-heap cache is enabled.
      */
-    protected boolean swapEnabled() {
+    protected boolean onheapCacheEnabled() {
         return false;
     }
 

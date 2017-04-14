@@ -91,12 +91,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Binary\BinaryArrayEqualityComparer.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Events\IEventStorageSpi.cs" />
     <Compile Include="Events\MemoryEventStorageSpi.cs" />
     <Compile Include="Events\NoopEventStorageSpi.cs" />
-    <Compile Include="Impl\Binary\BinaryFieldEqualityComparer.cs" />
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Common\JavaException.cs" />
     <Compile Include="DataStructures\Configuration\Package-Info.cs" />
@@ -104,18 +102,15 @@
     <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
-    <Compile Include="Impl\Binary\BinaryEqualityComparerSerializer.cs" />
+    <Compile Include="Impl\Binary\BinaryArrayEqualityComparer.cs" />
     <Compile Include="Impl\Binary\BinaryProcessor.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
-    <Compile Include="Impl\Binary\IBinaryEqualityComparer.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
     <Compile Include="Cache\Affinity\AffinityKey.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyMappedAttribute.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionContext.cs" />
     <Compile Include="Cache\Affinity\AffinityTopologyVersion.cs" />
-    <Compile Include="Cache\Affinity\Fair\FairAffinityFunction.cs" />
-    <Compile Include="Cache\Affinity\Fair\Package-Info.cs" />
     <Compile Include="Cache\Affinity\IAffinityFunction.cs" />
     <Compile Include="Cache\Affinity\Package-Info.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\Package-Info.cs" />
@@ -229,7 +224,6 @@
     <Compile Include="Cache\Configuration\CacheAtomicityMode.cs" />
     <Compile Include="Cache\Configuration\CacheAtomicWriteOrderMode.cs" />
     <Compile Include="Cache\Configuration\CacheConfiguration.cs" />
-    <Compile Include="Cache\Configuration\CacheMemoryMode.cs" />
     <Compile Include="Cache\Configuration\CacheMode.cs" />
     <Compile Include="Cache\Configuration\CacheRebalanceMode.cs" />
     <Compile Include="Cache\Configuration\CacheWriteSynchronizationMode.cs" />
@@ -270,7 +264,6 @@
     <Compile Include="Events\IEvents.cs" />
     <Compile Include="Events\JobEvent.cs" />
     <Compile Include="Events\Package-Info.cs" />
-    <Compile Include="Events\SwapSpaceEvent.cs" />
     <Compile Include="Events\TaskEvent.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IgniteConfiguration.cs" />
@@ -447,7 +440,6 @@
     <Compile Include="Impl\Services\ServiceProxyInvoker.cs" />
     <Compile Include="Impl\Services\ServiceProxySerializer.cs" />
     <Compile Include="Impl\Services\Services.cs" />
-    <Compile Include="Impl\SwapSpace\SwapSpaceSerializer.cs" />
     <Compile Include="Impl\Transactions\Transaction.cs" />
     <Compile Include="Impl\Transactions\TransactionImpl.cs" />
     <Compile Include="Impl\Transactions\TransactionMetricsImpl.cs" />
@@ -513,8 +505,6 @@
     <Compile Include="Services\Package-Info.cs" />
     <Compile Include="Services\ServiceConfiguration.cs" />
     <Compile Include="Services\ServiceInvocationException.cs" />
-    <Compile Include="SwapSpace\File\FileSwapSpaceSpi.cs" />
-    <Compile Include="SwapSpace\ISwapSpaceSpi.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
     <Compile Include="Transactions\ITransactionMetrics.cs" />
     <Compile Include="Transactions\ITransactions.cs" />

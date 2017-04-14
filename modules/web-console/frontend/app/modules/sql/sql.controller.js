@@ -271,12 +271,6 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             {value: 3600000, label: 'hours', short: 'h'}
         ];
 
-        $scope.exportDropdown = [
-            { text: 'Export all', click: 'exportCsvAll(paragraph)' }
-            // { 'text': 'Export all to CSV', 'click': 'exportCsvAll(paragraph)' },
-            // { 'text': 'Export all to PDF', 'click': 'exportPdfAll(paragraph)' }
-        ];
-
         $scope.metadata = [];
 
         $scope.metaFilter = '';

@@ -34,7 +34,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 
 /**
  * SQL query stress test.

@@ -231,7 +231,6 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         spisT += ("Checkpoints", spisClass(cfg.spis().checkpointSpis()))
         spisT += ("Failovers", spisClass(cfg.spis().failoverSpis()))
         spisT += ("Load balancings", spisClass(cfg.spis().loadBalancingSpis()))
-        spisT += ("Swap spaces", spiClass(cfg.spis().swapSpaceSpi()))
         spisT += ("Indexing", spisClass(cfg.spis().indexingSpis()))
 
         spisT.render()

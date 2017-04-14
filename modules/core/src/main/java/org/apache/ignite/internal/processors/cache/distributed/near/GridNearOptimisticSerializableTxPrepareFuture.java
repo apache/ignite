@@ -227,7 +227,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (sync) {
+        synchronized (GridNearOptimisticSerializableTxPrepareFuture.this) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.

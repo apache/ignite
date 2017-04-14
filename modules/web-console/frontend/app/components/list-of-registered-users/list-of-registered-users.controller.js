@@ -166,6 +166,9 @@ export default class IgniteListOfRegisteredUsersCtrl {
                 api.selection.on.rowSelectionChanged($scope, $ctrl._updateSelected.bind($ctrl));
                 api.selection.on.rowSelectionChangedBatch($scope, $ctrl._updateSelected.bind($ctrl));
 
+                api.core.on.filterChanged($scope, $ctrl._filteredRows.bind($ctrl));
+                api.core.on.rowsVisibleChanged($scope, $ctrl._filteredRows.bind($ctrl));
+
                 api.grid.registerRowsProcessor(companiesExcludeFilter, 50);
 
                 $scope.$watch(() => $ctrl.gridApi.grid.getVisibleRows().length, (rows) => $ctrl.adjustHeight(rows));
@@ -211,6 +214,13 @@ export default class IgniteListOfRegisteredUsersCtrl {
         this.gridApi.core.handleWindowResize();
     }
 
+    _filteredRows() {
+        const filtered = _.filter(this.gridApi.grid.rows, ({ visible}) => visible);
+        const entities = _.map(filtered, 'entity');
+
+        this.filteredRows = entities;
+    }
+
     _updateSelected() {
         const ids = this.gridApi.selection.getSelectedRows().map(({ _id }) => _id).sort();
 
@@ -241,7 +251,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
 
         // Check to all selected columns.
         this.gridOptions.selectedAll = true;
-
         _.forEach(this._selectableColumns(), ({ visible }) => this.gridOptions.selectedAll = visible);
 
         // Workaround for this.gridApi.grid.refresh() didn't return promise.
