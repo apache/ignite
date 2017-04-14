@@ -67,7 +67,6 @@ public class GridCacheWriteBehindStorePerfTest extends GridCacheWriteBehindStore
         public void writeAll(Collection collection) throws CacheWriterException {
             try {
                 Thread.sleep(10);
-//                System.out.println(collection.size());
             }
             catch (InterruptedException e) {
                 e.printStackTrace();
@@ -140,7 +139,7 @@ public class GridCacheWriteBehindStorePerfTest extends GridCacheWriteBehindStore
                 }
 
                 int i=0;
-                int BATCH_SIZE = 1000;
+                int BATCH_SIZE = 10;
                 try {
                     while (running.get()) {
                         while (i < BATCH_SIZE) {

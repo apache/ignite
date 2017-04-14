@@ -863,9 +863,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         /** Flusher write map. */
         private final ConcurrentHashMap<K, StatefulValue<K,V>> flusherWriteMap;
 
-        /** Max size of flusher local write queue. */
-        private final int flusherCacheMaxSize;
-
         /** Critical size of flusher local queue. */
         private final int flusherCacheCriticalSize;
 
@@ -881,8 +878,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             IgniteLogger log) {
             super(gridName, name, log);
 
-            flusherCacheMaxSize = cacheMaxSize/flushThreadCnt;
             flusherCacheCriticalSize = cacheCriticalSize/flushThreadCnt;
+
+            assert flusherCacheCriticalSize > batchSize;
 
             queue = new ConcurrentLinkedDeque8<>();
             flusherWriteMap = new ConcurrentHashMap<>(initCap, 0.75f, concurLvl);
@@ -906,14 +904,17 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             flusherWriteMap.put(key, newVal);
 
-            if (queue.sizex() > cacheCriticalSize) {
+            if (queue.sizex() > flusherCacheCriticalSize) {
+
                 wakeUp();
 
                 flusherFlushLock.lock();
 
                 try {
+
                     // Wait for free space in flusher queue
                     while (queue.sizex() >= flusherCacheCriticalSize && !stopping.get()) {
+
                         if (cacheFlushFreq > 0)
                             flusherCanFlush.await(cacheFlushFreq, TimeUnit.MILLISECONDS);
                         else
@@ -934,8 +935,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
 
             }
-            else if (queue.sizex() > cacheMaxSize)
+            else if (queue.sizex() > batchSize)
                 wakeUp();
+
         }
 
         /**
@@ -1009,7 +1011,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             try {
                 do {
-                    if (queue.sizex() <= flusherCacheMaxSize || flusherCacheMaxSize == 0) {
+                    if (queue.sizex() <= batchSize || cacheMaxSize == 0) {
                         if (cacheFlushFreq > 0)
                             flusherCanFlush.await(cacheFlushFreq, TimeUnit.MILLISECONDS);
                         else
@@ -1133,20 +1135,23 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     }
                 }
 
-                // Process collected batch and truncate queue
+                // Process collected batch
                 applied = applyBatch(pending, true);
-                if (!applied) {
+
+                if (applied) {
+
+                    // Wake up awaiting writers
+                    wakeUp();
+
+                } else {
+
                     // Return values to queue
                     ArrayList<Map.Entry<K, StatefulValue<K,V>>> pendingList = new ArrayList(pending.entrySet());
 
                     for (int i = pendingList.size() - 1; i >= 0; i--)
                         queue.addFirst(F.t(pendingList.get(i).getKey(), pendingList.get(i).getValue()));
-
                 }
             }
-
-            // Wake up awaiting writers
-            wakeUp();
         }
 
         /**
