@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.visor.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSyste
  * Task to collect cache query metrics.
  */
 @GridInternal
-public class VisorCacheQueryDetailMetricsCollectorTask extends VisorMultiNodeTask<Long, Collection<VisorCacheQueryDetailMetrics>,
+public class VisorQueryDetailMetricsCollectorTask extends VisorMultiNodeTask<Long, Collection<VisorQueryDetailMetrics>,
     Collection<? extends QueryDetailMetrics>> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -54,7 +54,7 @@ public class VisorCacheQueryDetailMetricsCollectorTask extends VisorMultiNodeTas
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Collection<VisorCacheQueryDetailMetrics> reduce0(List<ComputeJobResult> results)
+    @Nullable @Override protected Collection<VisorQueryDetailMetrics> reduce0(List<ComputeJobResult> results)
         throws IgniteException {
         Map<GridCacheQueryDetailMetricsKey, GridCacheQueryDetailMetricsAdapter> taskRes = new HashMap<>();
 
@@ -69,10 +69,10 @@ public class VisorCacheQueryDetailMetricsCollectorTask extends VisorMultiNodeTas
 
         Collection<GridCacheQueryDetailMetricsAdapter> aggMetrics = taskRes.values();
 
-        Collection<VisorCacheQueryDetailMetrics> res = new ArrayList<>(aggMetrics.size());
+        Collection<VisorQueryDetailMetrics> res = new ArrayList<>(aggMetrics.size());
 
-        for (GridCacheQueryDetailMetricsAdapter m : aggMetrics)
-            res.add(new VisorCacheQueryDetailMetrics().from(m));
+        for (GridCacheQueryDetailMetricsAdapter m: aggMetrics)
+            res.add(new VisorQueryDetailMetrics(m));
 
         return res;
     }

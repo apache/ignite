@@ -144,6 +144,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
         atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
+        partitionLossPolicy: {type: String, enum: ['READ_ONLY_SAFE', 'READ_ONLY_ALL', 'READ_WRITE_SAFE', 'READ_WRITE_ALL', 'IGNORE']},
 
         affinity: {
             kind: {type: String, enum: ['Default', 'Rendezvous', 'Fair', 'Custom']},
@@ -178,10 +179,9 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         },
 
         backups: Number,
-        memoryMode: {type: String, enum: ['ONHEAP_TIERED', 'OFFHEAP_TIERED', 'OFFHEAP_VALUES']},
-        offHeapMaxMemory: Number,
         startSize: Number,
-        swapEnabled: Boolean,
+
+        onheapCacheEnabled: Boolean,
 
         evictionPolicy: {
             kind: {type: String, enum: ['LRU', 'FIFO', 'SORTED']},
@@ -272,6 +272,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         sqlFunctionClasses: [String],
         snapshotableIndex: Boolean,
         queryDetailMetricsSize: Number,
+        queryParallelism: Number,
         statisticsEnabled: Boolean,
         managementEnabled: Boolean,
         readFromBackup: Boolean,
@@ -334,7 +335,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         affinnityGroupSize: Number,
         blockSize: Number,
-        streamBufferSize: Number,
+        bufferSize: Number,
         dataCacheName: String,
         metaCacheName: String,
         defaultMode: {type: String, enum: ['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']},
@@ -582,8 +583,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             }
         },
         marshalLocalJobs: Boolean,
-        marshallerCacheKeepAliveTime: Number,
-        marshallerCacheThreadPoolSize: Number,
         metricsExpireTime: Number,
         metricsHistorySize: Number,
         metricsLogFrequency: Number,
@@ -641,16 +640,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         peerClassLoadingMissedResourcesCacheSize: Number,
         peerClassLoadingThreadPoolSize: Number,
         publicThreadPoolSize: Number,
-        swapSpaceSpi: {
-            kind: {type: String, enum: ['FileSwapSpaceSpi']},
-            FileSwapSpaceSpi: {
-                baseDirectory: String,
-                readStripesNumber: Number,
-                maximumSparsity: Number,
-                maxWriteQueueSize: Number,
-                writeBufferSize: Number
-            }
-        },
         systemThreadPoolSize: Number,
         timeServerPortBase: Number,
         timeServerPortRange: Number,

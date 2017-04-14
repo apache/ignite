@@ -70,6 +70,7 @@ import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheNodesTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheStartArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheStartTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.visor.compute.VisorComputeResetMetricsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTask;
 import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.debug.VisorThreadDumpTask;
+import org.apache.ignite.internal.visor.file.VisorFileBlockArg;
 import org.apache.ignite.internal.visor.file.VisorFileBlockTask;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTask;
@@ -84,6 +86,7 @@ import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTask;
+import org.apache.ignite.internal.visor.log.VisorLogSearchArg;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
 import org.apache.ignite.internal.visor.misc.VisorAckTask;
 import org.apache.ignite.internal.visor.misc.VisorLatestVersionTask;
@@ -92,6 +95,7 @@ import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask;
 import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg;
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask;
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg;
 import org.apache.ignite.internal.visor.node.VisorNodeGcTask;
 import org.apache.ignite.internal.visor.node.VisorNodePingTask;
 import org.apache.ignite.internal.visor.node.VisorNodeSuppressedErrorsTask;
@@ -1373,7 +1377,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorFileBlockTask.class)
             .forNode(locNode)
-            .argument(VisorFileBlockTask.VisorFileBlockArg.class, "", 0L, 1, 0L));
+            .argument(VisorFileBlockArg.class, "", 0L, 1, 0L));
 
         info("VisorFileBlockTask result: " + ret);
 
@@ -1456,7 +1460,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorLogSearchTask.class)
-            .argument(VisorLogSearchTask.VisorLogSearchArg.class, ".", ".", "abrakodabra.txt", 1));
+            .argument(VisorLogSearchArg.class, ".", ".", "abrakodabra.txt", 1));
 
         info("VisorLogSearchTask result: " + ret);
 
@@ -1476,7 +1480,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorNodeEventsCollectorTask.class)
-            .argument(VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg.class,
+            .argument(VisorNodeEventsCollectorTaskArg.class,
                 "null", "null", "null", "taskName", "null"));
 
         info("VisorNodeEventsCollectorTask result: " + ret);
@@ -1526,7 +1530,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
                     "</beans>";
 
         ret = content(new VisorGatewayArgument(VisorCacheStartTask.class)
-            .argument(VisorCacheStartTask.VisorCacheStartArg.class, false, "person2",
+            .argument(VisorCacheStartArg.class, false, "person2",
                 URLEncoder.encode(START_CACHE, CHARSET)));
 
         info("VisorCacheStartTask result: " + ret);

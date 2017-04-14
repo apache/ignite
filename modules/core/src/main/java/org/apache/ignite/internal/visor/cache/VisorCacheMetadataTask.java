@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.escapeName;
  * Task to get cache SQL metadata.
  */
 @GridInternal
-public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSqlMetadata> {
+public class VisorCacheMetadataTask extends VisorOneNodeTask<String, VisorCacheSqlMetadata> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,7 +46,7 @@ public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSq
     /**
      * Job to get cache SQL metadata.
      */
-    private static class VisorCacheMetadataJob extends VisorJob<String, GridCacheSqlMetadata> {
+    private static class VisorCacheMetadataJob extends VisorJob<String, VisorCacheSqlMetadata> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -59,12 +59,18 @@ public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSq
         }
 
         /** {@inheritDoc} */
-        @Override protected GridCacheSqlMetadata run(String cacheName) {
+        @Override protected VisorCacheSqlMetadata run(String cacheName) {
             try {
                 IgniteInternalCache<Object, Object> cache = ignite.cachex(cacheName);
 
-                if (cache != null)
-                    return F.first(cache.context().queries().sqlMetadata());
+                if (cache != null) {
+                    GridCacheSqlMetadata meta = F.first(cache.context().queries().sqlMetadata());
+
+                    if (meta != null)
+                        return new VisorCacheSqlMetadata(meta);
+
+                    return null;
+                }
 
                 throw new IgniteException("Cache not found: " + escapeName(cacheName));
             }
