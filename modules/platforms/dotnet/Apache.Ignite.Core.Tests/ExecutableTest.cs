@@ -440,7 +440,7 @@ namespace Apache.Ignite.Core.Tests
 
             public RemoteConfiguration Invoke()
             {
-                var grid0 = ((IgniteProxy) _grid).Target;
+                var grid0 = (Ignite) _grid;
 
                 var cfg = grid0.Configuration;
 

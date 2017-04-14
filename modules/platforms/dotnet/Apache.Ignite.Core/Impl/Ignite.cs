@@ -75,9 +75,6 @@ namespace Apache.Ignite.Core.Impl
         /** Binary processor. */
         private readonly BinaryProcessor _binaryProc;
 
-        /** Cached proxy. */
-        private readonly IgniteProxy _proxy;
-
         /** Lifecycle handlers. */
         private readonly IList<LifecycleHandlerHolder> _lifecycleHandlers;
 
@@ -134,8 +131,6 @@ namespace Apache.Ignite.Core.Impl
 
             _binaryProc = new BinaryProcessor(UU.ProcessorBinaryProcessor(proc), marsh);
 
-            _proxy = new IgniteProxy(this);
-
             cbs.Initialize(this);
 
             // Grid is not completely started here, can't initialize interop transactions right away.
@@ -175,15 +170,6 @@ namespace Apache.Ignite.Core.Impl
 
             foreach (var lifecycleBean in _lifecycleHandlers)
                 lifecycleBean.OnStart(this);
-        }
-
-        /// <summary>
-        /// Gets Ignite proxy.
-        /// </summary>
-        /// <returns>Proxy.</returns>
-        public IgniteProxy Proxy
-        {
-            get { return _proxy; }
         }
 
         /** <inheritdoc /> */
