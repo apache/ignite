@@ -933,6 +933,13 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>math</id>
+            <modules>
+                <module>modules/math</module>
+            </modules>
+        </profile>
     </profiles>
 
     <build>
