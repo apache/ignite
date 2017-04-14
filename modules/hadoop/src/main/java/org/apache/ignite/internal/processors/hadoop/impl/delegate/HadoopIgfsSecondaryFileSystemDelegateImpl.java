@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
@@ -398,6 +399,9 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
                 blks.add(convertBlockLocation(hadoopBlocks[i]));
 
             return blks;
+        }
+        catch (FileNotFoundException ignored) {
+            return Collections.emptyList();
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed affinity for path: " + path);
