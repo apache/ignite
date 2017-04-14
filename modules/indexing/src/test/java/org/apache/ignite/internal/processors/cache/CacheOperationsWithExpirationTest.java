@@ -38,7 +38,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -62,7 +61,6 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setBackups(1);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
         ccfg.setStatisticsEnabled(true);
 

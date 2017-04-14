@@ -22,14 +22,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -60,7 +58,6 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setAtomicityMode(atomicityMode());
-        cCfg.setAtomicWriteOrderMode(writeOrderMode());
         cCfg.setNearConfiguration(nearConfiguration());
         cCfg.setRebalanceMode(SYNC);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -91,13 +88,6 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
-    }
-
-    /**
-     * @return Atomic write order mode.
-     */
-    protected CacheAtomicWriteOrderMode writeOrderMode() {
-        return CLOCK;
     }
 
     /**
