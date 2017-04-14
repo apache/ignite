@@ -30,9 +30,6 @@ import static org.junit.Assert.assertTrue;
  */
 public class VectorOffheapStorageTest extends VectorBaseStorageTest<DenseLocalOffHeapVectorStorage> {
     /** */
-    private static final double DOUBLE_ZERO = 0d;
-
-    /** */
     @Before
     public void setUp() {
         storage = new DenseLocalOffHeapVectorStorage(MathTestConstants.STORAGE_SIZE);
@@ -65,9 +62,12 @@ public class VectorOffheapStorageTest extends VectorBaseStorageTest<DenseLocalOf
     /** */
     @Test
     public void equalsTest() {
+        //noinspection EqualsWithItself
         assertTrue(MathTestConstants.VAL_NOT_EQUALS, storage.equals(storage));
 
-        assertFalse(MathTestConstants.VALUES_SHOULD_BE_NOT_EQUALS, storage.equals(new ArrayVectorStorage(MathTestConstants.STORAGE_SIZE)));
+        //noinspection EqualsBetweenInconvertibleTypes
+        assertFalse(MathTestConstants.VALUES_SHOULD_BE_NOT_EQUALS,
+            storage.equals(new ArrayVectorStorage(MathTestConstants.STORAGE_SIZE)));
     }
 
 }

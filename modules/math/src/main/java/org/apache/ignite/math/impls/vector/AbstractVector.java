@@ -408,6 +408,8 @@ public abstract class AbstractVector implements Vector {
             private int idx = 0;
             private int idxNext = -1;
 
+            /** {@inheritDoc} */
+            @NotNull
             @Override public Iterator<Element> iterator() {
                 return new Iterator<Element>() {
                     @Override public boolean hasNext() {
