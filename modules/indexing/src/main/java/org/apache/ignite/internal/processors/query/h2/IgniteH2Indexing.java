@@ -1306,8 +1306,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private Iterable<List<?>> runQueryTwoStep(final GridCacheContext<?,?> cctx, final GridCacheTwoStepQuery qry,
         final boolean keepCacheObj, final boolean enforceJoinOrder,
-        final int timeoutMillis,
-                                              final GridQueryCancel cancel, final int[] parts) {
+        final int timeoutMillis, final GridQueryCancel cancel, final int[] parts) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
                 return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, parts);

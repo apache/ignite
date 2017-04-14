@@ -51,10 +51,17 @@ public class IgniteCacheQueryConfigurationSelfTest extends GridCommonAbstractTes
             }
         });
 
+        // Duplicates with unordered input are not allowed.
+        failIfNotThrown(new Runnable() {
+            @Override public void run() {
+                qry.setPartitions(3, 2, 2);
+            }
+        });
+
         // Values out of range are not allowed.
         failIfNotThrown(new Runnable() {
             @Override public void run() {
-                qry.setPartitions(0, 1, CacheConfiguration.MAX_PARTITIONS_COUNT + 1);
+                qry.setPartitions(-1, 0, 1);
             }
         });
 
