@@ -52,7 +52,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
     /** Precision. */
-    public static final double PRESITION = 0.0;
+    private static final double PRECISION = 0.0;
     /** Grid instance. */
     private Ignite ignite;
     /** Matrix rows */
@@ -147,24 +147,24 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         cacheMatrix.assign(2.0);
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
-                assertEquals(UNEXPECTED_VAL, 2.0, cacheMatrix.get(i, j), PRESITION);
+                assertEquals(UNEXPECTED_VAL, 2.0, cacheMatrix.get(i, j), PRECISION);
 
         cacheMatrix.plus(3.0);
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
-                assertEquals(UNEXPECTED_VAL, 5.0, cacheMatrix.get(i, j), PRESITION);
+                assertEquals(UNEXPECTED_VAL, 5.0, cacheMatrix.get(i, j), PRECISION);
 
         cacheMatrix.times(2.0);
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
-                assertEquals(UNEXPECTED_VAL, 10.0, cacheMatrix.get(i, j), PRESITION);
+                assertEquals(UNEXPECTED_VAL, 10.0, cacheMatrix.get(i, j), PRECISION);
 
         cacheMatrix.divide(10.0);
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
-                assertEquals(UNEXPECTED_VAL, 1.0, cacheMatrix.get(i, j), PRESITION);
+                assertEquals(UNEXPECTED_VAL, 1.0, cacheMatrix.get(i, j), PRECISION);
 
-        assertEquals(UNEXPECTED_VAL, cacheMatrix.rowSize() * cacheMatrix.columnSize(), cacheMatrix.sum(), PRESITION);
+        assertEquals(UNEXPECTED_VAL, cacheMatrix.rowSize() * cacheMatrix.columnSize(), cacheMatrix.sum(), PRECISION);
     }
 
     /** */
@@ -177,22 +177,22 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
                 cacheMatrix.set(i, j, i * cols + j + 1);
 
-        assertEquals(UNEXPECTED_VAL, 1.0, cacheMatrix.minValue(), PRESITION);
-        assertEquals(UNEXPECTED_VAL, rows * cols, cacheMatrix.maxValue(), PRESITION);
+        assertEquals(UNEXPECTED_VAL, 1.0, cacheMatrix.minValue(), PRECISION);
+        assertEquals(UNEXPECTED_VAL, rows * cols, cacheMatrix.maxValue(), PRECISION);
 
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
                 cacheMatrix.set(i, j, -1.0 * (i * cols + j + 1));
 
-        assertEquals(UNEXPECTED_VAL, -rows * cols, cacheMatrix.minValue(), PRESITION);
-        assertEquals(UNEXPECTED_VAL, -1.0, cacheMatrix.maxValue(), PRESITION);
+        assertEquals(UNEXPECTED_VAL, -rows * cols, cacheMatrix.minValue(), PRECISION);
+        assertEquals(UNEXPECTED_VAL, -1.0, cacheMatrix.maxValue(), PRECISION);
 
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
                 cacheMatrix.set(i, j, i * cols + j);
 
-        assertEquals(UNEXPECTED_VAL, 1.0, cacheMatrix.minValue(), PRESITION);
-        assertEquals(UNEXPECTED_VAL, rows * cols - 1.0, cacheMatrix.maxValue(), PRESITION);
+        assertEquals(UNEXPECTED_VAL, 1.0, cacheMatrix.minValue(), PRECISION);
+        assertEquals(UNEXPECTED_VAL, rows * cols - 1.0, cacheMatrix.maxValue(), PRECISION);
     }
 
     /** */
@@ -205,7 +205,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         cacheMatrix.map(i -> 100.0);
         for (int i = 0; i < cacheMatrix.rowSize(); i++)
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
-                assertEquals(UNEXPECTED_VAL, 100.0, cacheMatrix.get(i, j), PRESITION);
+                assertEquals(UNEXPECTED_VAL, 100.0, cacheMatrix.get(i, j), PRECISION);
     }
 
     /** */

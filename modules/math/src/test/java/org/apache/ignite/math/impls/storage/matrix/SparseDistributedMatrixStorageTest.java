@@ -34,7 +34,7 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
     /** */
-    public static final String UNEXPECTED_ATTRIBUTE_VALUE = "Unexpected attribute value.";
+    private static final String UNEXPECTED_ATTRIBUTE_VALUE = "Unexpected attribute value.";
     /** Grid instance. */
     private Ignite ignite;
 
@@ -103,7 +103,7 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testAttibutes() {
+    public void testAttributes() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
