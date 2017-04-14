@@ -20,8 +20,8 @@ namespace Apache.Ignite.Core.Lifecycle
     using Apache.Ignite.Core.Resource;
 
     /// <summary>
-    /// A bean that reacts to Ignite lifecycle events defined in <see cref="LifecycleEventType"/>.
-    /// Use this bean whenever you need to plug some custom logic before or after
+    /// Handles lifecycle events defined in <see cref="LifecycleEventType"/>.
+    /// Use this interface whenever you need to plug some custom logic before or after
     /// Ignite startup and stopping routines.
     /// <para />
     /// There are four events you can react to:
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Lifecycle
     ///     </item>
     /// </list>
     /// </summary>
-    public interface ILifecycleBean
+    public interface ILifecycleHandler
     {
         /// <summary>
         /// This method is called when lifecycle event occurs.

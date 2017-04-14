@@ -23,10 +23,10 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Lifecycle bean holder.
     /// </summary>
-    internal class LifecycleBeanHolder
+    internal class LifecycleHandlerHolder
     {
         /** Target bean. */
-        private readonly ILifecycleBean _target;
+        private readonly ILifecycleHandler _target;
 
         /** Whether start event was invoked. */
         private volatile bool _startEvt;
@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl
         /// Constructor.
         /// </summary>
         /// <param name="target">Target bean.</param>
-        public LifecycleBeanHolder(ILifecycleBean target)
+        public LifecycleHandlerHolder(ILifecycleHandler target)
         {
             _target = target;
         }
