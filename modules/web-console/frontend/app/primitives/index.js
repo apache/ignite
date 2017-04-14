@@ -16,4 +16,12 @@
  */
 
 import './badge/index.scss';
+import './btn/index.scss';
+import './datepicker/index.scss';
 import './tabs/index.scss';
+import './panel/index.scss';
+import './dropdown/index.scss';
+import './ui-grid/index.scss';
+import './ui-grid-header/index.scss';
+import './ui-grid-settings/index.scss';
+import './page/index.scss';

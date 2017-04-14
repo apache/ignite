@@ -76,6 +76,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         boolean mappingKnown,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         boolean addDepInfo
     ) {
         super(cacheId,
@@ -91,6 +92,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
             mappingKnown,
             skipStore,
             keepBinary,
+            recovery,
             addDepInfo);
     }
 

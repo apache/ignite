@@ -161,13 +161,13 @@ public final class MarshallerMappingTransport {
      */
     private IgniteCheckedException duplicateMappingException(MarshallerMappingItem item, String mappedClsName) {
         return new IgniteCheckedException("Duplicate ID [platformId="
-                + item.platformId()
-                + ", typeId="
-                + item.typeId()
-                + ", oldCls="
-                + mappedClsName
-                + ", newCls="
-                + item.className() + "]");
+            + item.platformId()
+            + ", typeId="
+            + item.typeId()
+            + ", oldCls="
+            + mappedClsName
+            + ", newCls="
+            + item.className() + "]");
     }
 
     /** */

@@ -72,6 +72,8 @@
 
                     <property name="rebalanceMode" value="SYNC"/>
 
+                    <property name="onheapCacheEnabled" value="true"/>
+
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
                             <property name="maxSize" value="100"/>
@@ -93,6 +95,8 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
@@ -116,6 +120,8 @@
 
                     <property name="rebalanceMode" value="SYNC"/>
 
+                    <property name="onheapCacheEnabled" value="true"/>
+
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
                             <property name="maxSize" value="100"/>
@@ -137,6 +143,8 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
@@ -161,6 +169,8 @@
 
                     <property name="rebalanceMode" value="SYNC"/>
 
+                    <property name="onheapCacheEnabled" value="true"/>
+
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
                             <property name="maxSize" value="100"/>
@@ -182,6 +192,8 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
@@ -205,6 +217,8 @@
 
                     <property name="rebalanceMode" value="SYNC"/>
 
+                    <property name="onheapCacheEnabled" value="true"/>
+
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
                             <property name="maxSize" value="100"/>
@@ -226,6 +240,8 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">

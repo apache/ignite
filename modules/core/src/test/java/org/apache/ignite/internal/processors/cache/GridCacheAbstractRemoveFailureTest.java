@@ -50,7 +50,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -102,8 +101,6 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
         if (testClientNode() && getTestIgniteInstanceName(0).equals(igniteInstanceName))
             cfg.setClientMode(true);
-
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -167,7 +164,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPutAndRemove() throws Exception {
-        putAndRemove(DUR, null, null, GridTestUtils.TestMemoryMode.HEAP);
+        putAndRemove(DUR, null, null);
     }
 
     /**
@@ -177,7 +174,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
             return;
 
-        putAndRemove(30_000, PESSIMISTIC, REPEATABLE_READ, GridTestUtils.TestMemoryMode.HEAP);
+        putAndRemove(30_000, PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
@@ -187,34 +184,18 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
             return;
 
-        putAndRemove(30_000, OPTIMISTIC, SERIALIZABLE, GridTestUtils.TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAndRemoveOffheapEvict() throws Exception {
-        putAndRemove(30_000, null, null, GridTestUtils.TestMemoryMode.OFFHEAP_EVICT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAndRemoveOffheapEvictSwap() throws Exception {
-        putAndRemove(30_000, null, null, GridTestUtils.TestMemoryMode.OFFHEAP_EVICT_SWAP);
+        putAndRemove(30_000, OPTIMISTIC, SERIALIZABLE);
     }
 
     /**
      * @param duration Test duration.
      * @param txConcurrency Transaction concurrency if test explicit transaction.
      * @param txIsolation Transaction isolation if test explicit transaction.
-     * @param memMode Memory mode.
      * @throws Exception If failed.
      */
     private void putAndRemove(long duration,
         final TransactionConcurrency txConcurrency,
-        final TransactionIsolation txIsolation,
-        GridTestUtils.TestMemoryMode memMode) throws Exception {
+        final TransactionIsolation txIsolation) throws Exception {
         assertEquals(testClientNode(), (boolean) grid(0).configuration().isClientMode());
 
         grid(0).destroyCache(null);
@@ -231,8 +212,6 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
         ccfg.setNearConfiguration(nearCache());
-
-        GridTestUtils.setMemoryMode(null, ccfg, memMode, 100, 1024);
 
         final IgniteCache<Integer, Integer> sndCache0 = grid(0).createCache(ccfg);
 

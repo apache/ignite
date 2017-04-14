@@ -80,13 +80,12 @@ namespace ignite
         template<typename P>
         void RegisterCacheEntryProcessor(IgniteError& err)
         {
-            binary::BinaryType<P> bt;
             impl::IgniteBindingImpl *im = impl.Get();
 
             if (im)
             {
-                im->RegisterCallback(impl::IgniteBindingImpl::CACHE_ENTRY_PROCESSOR_APPLY,
-                    bt.GetTypeId(), impl::binding::ListenerApply<P, typename P::KeyType,
+                im->RegisterCallback(impl::IgniteBindingImpl::CallbackType::CACHE_ENTRY_PROCESSOR_APPLY,
+                    binary::BinaryType<P>::GetTypeId(), impl::binding::ListenerApply<P, typename P::KeyType,
                         typename P::ValueType, typename P::ReturnType, typename P::ArgumentType>, err);
             }
             else
@@ -105,14 +104,13 @@ namespace ignite
         template<typename F>
         void RegisterCacheEntryEventFilter()
         {
-            binary::BinaryType<F> bt;
             impl::IgniteBindingImpl *im = impl.Get();
 
-            int32_t typeId = bt.GetTypeId();
+            int32_t typeId = binary::BinaryType<F>::GetTypeId();
 
             if (im)
             {
-                im->RegisterCallback(impl::IgniteBindingImpl::CACHE_ENTRY_FILTER_CREATE,
+                im->RegisterCallback(impl::IgniteBindingImpl::CallbackType::CACHE_ENTRY_FILTER_CREATE,
                     typeId, impl::binding::FilterCreate<F>);
             }
             else

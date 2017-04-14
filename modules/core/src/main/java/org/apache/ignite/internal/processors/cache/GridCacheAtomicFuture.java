@@ -27,7 +27,7 @@ public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
     /**
      * @return Future ID.
      */
-    public Long id();
+    public long id();
 
     /**
      * Gets future that will be completed when it is safe when update is finished on the given version of topology.

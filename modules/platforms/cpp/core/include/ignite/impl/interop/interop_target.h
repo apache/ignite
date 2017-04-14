@@ -36,16 +36,19 @@ namespace ignite
                 /**
                  * Operation result.
                  */
-                enum OperationResult
+                struct OperationResult
                 {
-                    /** Null. */
-                    ResultNull = 0,
+                    enum Type
+                    {
+                        /** Null. */
+                        AI_NULL = 0,
 
-                    /** Success. */
-                    ResultSuccess = 1,
+                        /** Success. */
+                        AI_SUCCESS = 1,
 
-                    /** Error. */
-                    ResultError = -1
+                        /** Error. */
+                        AI_ERROR = -1
+                    };
                 };
 
                 /**
@@ -65,7 +68,7 @@ namespace ignite
                  * Internal out operation.
                  *
                  * @param opType Operation type.
-                 * @param outOp Input.
+                 * @param inOp Input.
                  * @param err Error.
                  * @return Result.
                  */
@@ -129,7 +132,7 @@ namespace ignite
                  * @param err Error.
                  * @return Operation result.
                  */
-                OperationResult InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError& err);
+                OperationResult::Type InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError& err);
 
                 /**
                 * Internal out-in operation.

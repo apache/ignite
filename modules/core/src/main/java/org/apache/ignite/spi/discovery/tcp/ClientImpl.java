@@ -1784,7 +1784,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             if (joinRes == null) {
                 if (join)
-                    joinError(new IgniteSpiException("Join process timed out."));
+                    joinError(new IgniteSpiException("Join process timed out (timeout = " + spi.joinTimeout + ")."));
                 else {
                     state = SEGMENTED;
 
@@ -1842,7 +1842,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             spi.stats.onMessageProcessingFinished(msg);
 
-            if (spi.ensured(msg) && state == CONNECTED)
+            if (spi.ensured(msg)
+                    && state == CONNECTED
+                    && !(msg instanceof TcpDiscoveryClientReconnectMessage))
                 lastMsgId = msg.id();
         }
 

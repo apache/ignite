@@ -79,7 +79,6 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setBackups(1);
         cacheCfg.setIndexedTypes(
             AffinityUuid.class, Purchase.class

@@ -87,7 +87,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** Conflict expire times. */
     private GridLongList conflictExpireTimes;
-
     /** Optional arguments for entry processor. */
     @GridDirectTransient
     private Object[] invokeArgs;
@@ -155,6 +154,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         boolean needPrimaryRes,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         boolean addDepInfo,
         int maxEntryCnt
     ) {
@@ -171,6 +171,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             needPrimaryRes,
             skipStore,
             keepBinary,
+            recovery,
             addDepInfo);
         this.expiryPlc = expiryPlc;
         this.invokeArgs = invokeArgs;

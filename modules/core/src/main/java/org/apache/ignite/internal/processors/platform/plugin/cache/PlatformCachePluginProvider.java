@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.plugin.cache;
 
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -26,12 +27,9 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
 
 /**
  * Platform cache plugin provider.
@@ -106,8 +104,8 @@ class PlatformCachePluginProvider implements CachePluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public void validateRemote(CacheConfiguration locCfg, CachePluginConfiguration locPluginCcfg,
-        CacheConfiguration rmtCfg, ClusterNode rmtNode) throws IgniteCheckedException {
+    @Override public void validateRemote(CacheConfiguration locCfg, CacheConfiguration rmtCfg, ClusterNode rmtNode)
+        throws IgniteCheckedException {
         // No-op.
     }
 

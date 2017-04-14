@@ -133,7 +133,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         checkNearCache();
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -221,7 +220,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < GRID_CNT; i++) {
             for (Integer nearKey : nearKeys.keySet()) {
-                UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};
+                UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[] {id0} : new UUID[] {};
 
                 checkEntry(grid(i), nearKey, 3, i == 0, expReaders);
             }
@@ -257,7 +256,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
                     Collection<UUID> readers = readersMap.get(key);
 
-                    UUID[] expReaders = primaryNode ? U.toArray(readers, new UUID[readers.size()]) : new UUID[]{};
+                    UUID[] expReaders = primaryNode ? U.toArray(readers, new UUID[readers.size()]) : new UUID[] {};
 
                     checkEntry(grid(j), key, val, readers.contains(grid(j).localNode().id()), expReaders);
                 }
@@ -309,7 +308,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         cache0.invoke(nearKey, new Processor(nearKey));
 
         for (int i = 0; i < GRID_CNT; i++) {
-            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};
+            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[] {id0} : new UUID[] {};
 
             checkEntry(grid(i), nearKey, nearKey, i == 0, expReaders);
         }
@@ -335,7 +334,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             for (int j = 0; j < GRID_CNT; j++) {
                 boolean primaryNode = aff.isPrimary(grid(j).localNode(), nearKey);
 
-                UUID[] expReaders = primaryNode ? U.toArray(readers, new UUID[readers.size()]) : new UUID[]{};
+                UUID[] expReaders = primaryNode ? U.toArray(readers, new UUID[readers.size()]) : new UUID[] {};
 
                 checkEntry(grid(j), nearKey, val, readers.contains(grid(j).localNode().id()), expReaders);
             }
@@ -400,7 +399,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < GRID_CNT; i++) {
             for (Integer nearKey : nearKeys) {
-                UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};
+                UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[] {id0} : new UUID[] {};
 
                 checkEntry(grid(i), nearKey, 3, i == 0, expReaders);
             }
@@ -436,7 +435,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
                     Collection<UUID> readers = readersMap.get(key);
 
-                    UUID[] expReaders = primaryNode ? U.toArray(readers, new UUID[readers.size()]) : new UUID[]{};
+                    UUID[] expReaders = primaryNode ? U.toArray(readers, new UUID[readers.size()]) : new UUID[] {};
 
                     checkEntry(grid(j), key, val, readers.contains(grid(j).localNode().id()), expReaders);
                 }
@@ -523,7 +522,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         cache0.put(nearKey, nearKey);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};
+            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[] {id0} : new UUID[] {};
 
             checkEntry(grid(i), nearKey, nearKey, i == grid, expReaders);
         }
@@ -549,7 +548,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             for (int j = 0; j < GRID_CNT; j++) {
                 boolean primaryNode = aff.isPrimary(grid(j).localNode(), nearKey);
 
-                UUID[] expReaders = primaryNode ? U.toArray(readers, new UUID[readers.size()]) : new UUID[]{};
+                UUID[] expReaders = primaryNode ? U.toArray(readers, new UUID[readers.size()]) : new UUID[] {};
 
                 checkEntry(grid(j), nearKey, val, readers.contains(grid(j).localNode().id()), expReaders);
             }
@@ -624,7 +623,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         cache0.put(nearKey, 1); // Put should create near entry on grid0.
 
         for (int i = 0; i < GRID_CNT; i++) {
-            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};
+            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[] {id0} : new UUID[] {};
 
             checkEntry(grid(i), nearKey, 1, i == 0, expReaders);
         }
@@ -632,13 +631,13 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         cache0.localEvict(Collections.singleton(nearKey));
 
         for (int i = 0; i < GRID_CNT; i++) {
-            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};
+            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[] {id0} : new UUID[] {};
 
             checkEntry(grid(i), nearKey, 1, false, expReaders);
         }
 
         IgniteCache<Integer, Integer> primaryCache = G.ignite(
-            (String) aff.mapKeyToNode(nearKey).attribute(ATTR_IGNITE_INSTANCE_NAME)).cache(null);
+            (String)aff.mapKeyToNode(nearKey).attribute(ATTR_IGNITE_INSTANCE_NAME)).cache(null);
 
         atomicClockModeDelay(cache0);
 
@@ -650,7 +649,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         assertEquals((Integer)2, cache0.get(nearKey)); // Get should again create near entry on grid0.
 
         for (int i = 0; i < GRID_CNT; i++) {
-            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};
+            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[] {id0} : new UUID[] {};
 
             checkEntry(grid(i), nearKey, 2, i == 0, expReaders);
         }
@@ -674,7 +673,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         cache0.put(nearKey, 1); // Put should create near entry on grid0.
 
         for (int i = 0; i < GRID_CNT; i++) {
-            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};
+            UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[] {id0} : new UUID[] {};
 
             checkEntry(grid(i), nearKey, 1, i == 0, expReaders);
         }
@@ -684,7 +683,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++)
             checkEntry(grid(i), nearKey, null, i == 0);
 
-        Ignite primaryNode = G.ignite((String) aff.mapKeyToNode(nearKey).attribute(ATTR_IGNITE_INSTANCE_NAME));
+        Ignite primaryNode = G.ignite((String)aff.mapKeyToNode(nearKey).attribute(ATTR_IGNITE_INSTANCE_NAME));
 
         IgniteCache<Integer, Integer> primaryCache = primaryNode.cache(null);
 
@@ -710,7 +709,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         boolean expectNear,
         final UUID... expReaders) throws Exception
     {
-        GridCacheAdapter<Integer, Integer> near = ((IgniteKernal) ignite).internalCache();
+        GridCacheAdapter<Integer, Integer> near = ((IgniteKernal)ignite).internalCache();
 
         assertTrue(near.isNear());
 
@@ -734,9 +733,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)near).dht();
 
-        final GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(key);
-
         if (expectDht) {
+            final GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.entryEx(key);
+
             assertNotNull("No dht entry for: " + key + ", grid: " + ignite.name(), dhtEntry);
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -757,6 +756,9 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             for (UUID reader : expReaders)
                 assertTrue(readers.contains(reader));
 
+            if (dhtEntry.peekVisibleValue() == null)
+                dhtEntry.unswap();
+
             assertEquals("Unexpected value for grid: " + ignite.name(),
                 val,
                 CU.value(dhtEntry.info().value(), dht.context(), false));
@@ -765,8 +767,11 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
                 val,
                 ignite.cache(near.name()).localPeek(key, CachePeekMode.ONHEAP));
         }
-        else
+        else {
+            GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(key);
+
             assertNull("Unexpected dht entry: " + dhtEntry + ", grid: " + ignite.name(), dhtEntry);
+        }
 
         if (!expectNear && !expectDht) {
             assertNull("Unexpected peek value for grid: " + ignite.name(), ignite.cache(near.name()).localPeek(key,
@@ -787,14 +792,21 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         for (int i = lastKey + 1; i < 1_000_000; i++) {
             boolean pass = false;
 
-            switch(mode) {
-                case PRIMARY: pass = aff.isPrimary(ignite.cluster().localNode(), i); break;
+            switch (mode) {
+                case PRIMARY:
+                    pass = aff.isPrimary(ignite.cluster().localNode(), i);
+                    break;
 
-                case BACKUP: pass = aff.isBackup(ignite.cluster().localNode(), i); break;
+                case BACKUP:
+                    pass = aff.isBackup(ignite.cluster().localNode(), i);
+                    break;
 
-                case NOT_PRIMARY_AND_BACKUP: pass = !aff.isPrimaryOrBackup(ignite.cluster().localNode(), i); break;
+                case NOT_PRIMARY_AND_BACKUP:
+                    pass = !aff.isPrimaryOrBackup(ignite.cluster().localNode(), i);
+                    break;
 
-                default: fail();
+                default:
+                    fail();
             }
 
             lastKey = i;

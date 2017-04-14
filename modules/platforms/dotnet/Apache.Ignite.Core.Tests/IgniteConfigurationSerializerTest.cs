@@ -33,7 +33,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Xml.Linq;
     using System.Xml.Schema;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
@@ -45,11 +44,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
-    using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Tests.Binary;
     using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Tests.Plugin.Cache;
@@ -70,14 +67,14 @@ namespace Apache.Ignite.Core.Tests
         {
             var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml'>
                             <localhost>127.1.1.1</localhost>
-                            <binaryConfiguration compactFooter='false'>
-                                <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
+                            <binaryConfiguration compactFooter='false' keepDeserialized='true'>
+                                <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
+                                <idMapper type='Apache.Ignite.Core.Tests.Binary.IdMapper' />
                                 <types>
                                     <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
                                 </types>
                                 <typeConfigurations>
                                     <binaryTypeConfiguration affinityKeyFieldName='affKeyFieldName' isEnum='true' keepDeserialized='True' typeName='typeName'>
-                                        <equalityComparer type='BinaryArrayEqualityComparer' />
                                         <idMapper type='Apache.Ignite.Core.Tests.Binary.IdMapper, Apache.Ignite.Core.Tests' />
                                         <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' />
                                         <serializer type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestSerializer, Apache.Ignite.Core.Tests' />
@@ -133,10 +130,10 @@ namespace Apache.Ignite.Core.Tests
                             <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                             <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
-                            <swapSpaceSpi type='FileSwapSpaceSpi' baseDirectory='abcd' maximumSparsity='0.7' maximumWriteQueueSize='25' readStripesNumber='36' writeBufferSize='47' />
                             <pluginConfigurations>
                                 <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
                             </pluginConfigurations>
+                            <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -154,7 +151,7 @@ namespace Apache.Ignite.Core.Tests
                 ((TcpDiscoveryMulticastIpFinder) ((TcpDiscoverySpi) cfg.DiscoverySpi).IpFinder).AddressRequestAttempts);
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
             Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
-            Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.DefaultNameMapper).Bar);
+            Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.NameMapper).Bar);
             Assert.AreEqual(
                 "Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests",
                 cfg.BinaryConfiguration.Types.Single());
@@ -231,20 +228,11 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsInstanceOf<TestLogger>(cfg.Logger);
 
-            var swap = cfg.SwapSpaceSpi as FileSwapSpaceSpi;
-            Assert.IsNotNull(swap);
-            Assert.AreEqual("abcd", swap.BaseDirectory);
-            Assert.AreEqual(0.7f, swap.MaximumSparsity);
-            Assert.AreEqual(25, swap.MaximumWriteQueueSize);
-            Assert.AreEqual(36, swap.ReadStripesNumber);
-            Assert.AreEqual(47, swap.WriteBufferSize);
-
             var binType = cfg.BinaryConfiguration.TypeConfigurations.Single();
             Assert.AreEqual("typeName", binType.TypeName);
             Assert.AreEqual("affKeyFieldName", binType.AffinityKeyFieldName);
             Assert.IsTrue(binType.IsEnum);
             Assert.AreEqual(true, binType.KeepDeserialized);
-            Assert.IsInstanceOf<BinaryArrayEqualityComparer>(binType.EqualityComparer);
             Assert.IsInstanceOf<IdMapper>(binType.IdMapper);
             Assert.IsInstanceOf<NameMapper>(binType.NameMapper);
             Assert.IsInstanceOf<TestSerializer>(binType.Serializer);
@@ -255,6 +243,11 @@ namespace Apache.Ignite.Core.Tests
 
             var cachePlugCfg = cacheCfg.PluginConfigurations.Cast<CachePluginConfiguration>().Single();
             Assert.AreEqual("baz", cachePlugCfg.TestProperty);
+
+            var eventStorage = cfg.EventStorageSpi as MemoryEventStorageSpi;
+            Assert.IsNotNull(eventStorage);
+            Assert.AreEqual(23.45, eventStorage.ExpirationTimeout.TotalSeconds);
+            Assert.AreEqual(129, eventStorage.MaxEventCount);
         }
 
         /// <summary>
@@ -595,8 +588,7 @@ namespace Apache.Ignite.Core.Tests
                             TypeName = "typeName",
                             IdMapper = new IdMapper(),
                             NameMapper = new NameMapper(),
-                            Serializer = new TestSerializer(),
-                            EqualityComparer = new BinaryArrayEqualityComparer()
+                            Serializer = new TestSerializer()
                         },
                         new BinaryTypeConfiguration
                         {
@@ -604,15 +596,14 @@ namespace Apache.Ignite.Core.Tests
                             KeepDeserialized = false,
                             AffinityKeyFieldName = "affKeyFieldName",
                             TypeName = "typeName2",
-                            Serializer = new BinaryReflectiveSerializer(),
-                            EqualityComparer = new BinaryFieldEqualityComparer()
+                            Serializer = new BinaryReflectiveSerializer()
                         }
                     },
                     Types = new[] {typeof (string).FullName},
-                    DefaultIdMapper = new IdMapper(),
-                    DefaultKeepDeserialized = true,
-                    DefaultNameMapper = new NameMapper(),
-                    DefaultSerializer = new TestSerializer()
+                    IdMapper = new IdMapper(),
+                    KeepDeserialized = true,
+                    NameMapper = new NameMapper(),
+                    Serializer = new TestSerializer()
                 },
                 CacheConfiguration = new[]
                 {
@@ -625,20 +616,12 @@ namespace Apache.Ignite.Core.Tests
                         CacheStoreFactory = new TestCacheStoreFactory(),
                         CopyOnRead = false,
                         EagerTtl = false,
-                        EnableSwap = true,
-                        EvictSynchronized = true,
-                        EvictSynchronizedConcurrencyLevel = 13,
-                        EvictSynchronizedKeyBufferSize = 14,
-                        EvictSynchronizedTimeout = TimeSpan.FromMinutes(3),
                         Invalidate = true,
                         KeepBinaryInStore = true,
                         LoadPreviousValue = true,
                         LockTimeout = TimeSpan.FromSeconds(56),
                         LongQueryWarningTimeout = TimeSpan.FromSeconds(99),
                         MaxConcurrentAsyncOperations = 24,
-                        MaxEvictionOverflowRatio = 5.6F,
-                        MemoryMode = CacheMemoryMode.OffheapValues,
-                        OffHeapMaxMemory = 567,
                         QueryEntities = new[]
                         {
                             new QueryEntity
@@ -667,7 +650,6 @@ namespace Apache.Ignite.Core.Tests
                         RebalanceThrottle = TimeSpan.FromHours(44),
                         RebalanceTimeout = TimeSpan.FromMinutes(8),
                         SqlEscapeAll = true,
-                        SqlOnheapRowCacheSize = 679,
                         StartSize = 1023,
                         WriteBehindBatchSize = 45,
                         WriteBehindEnabled = true,
@@ -687,7 +669,7 @@ namespace Apache.Ignite.Core.Tests
                         {
                             BatchSize = 18, MaxMemorySize = 1023, MaxSize = 554
                         },
-                        AffinityFunction = new FairAffinityFunction
+                        AffinityFunction = new RendezvousAffinityFunction
                         {
                             ExcludeNeighbors = true,
                             Partitions = 48
@@ -788,15 +770,12 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "test",
                 Logger = new IgniteNLogLogger(),
                 FailureDetectionTimeout = TimeSpan.FromMinutes(2),
-                SwapSpaceSpi = new FileSwapSpaceSpi
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
+                EventStorageSpi = new MemoryEventStorageSpi
                 {
-                    MaximumSparsity = 0.1f,
-                    MaximumWriteQueueSize = 55,
-                    WriteBufferSize = 66,
-                    ReadStripesNumber = 77,
-                    BaseDirectory = "test"
-                },
-                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() }
+                    ExpirationTimeout = TimeSpan.FromMilliseconds(12345),
+                    MaxEventCount = 257
+                }
             };
         }
 

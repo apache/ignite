@@ -29,7 +29,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -182,46 +181,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         for (int i = 0; i < size; i++)
             assertEquals(i, cache0.get(i));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testUnswapShort() throws Exception {
-        if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED)
-            return;
-
-        final IgniteAtomicLong swapEvts = grid(0).atomicLong("swapEvts", 0, true);
-
-        final IgniteAtomicLong unswapEvts = grid(0).atomicLong("unswapEvts", 0, true);
-
-        for (int i = 0; i < gridCount(); i++)
-            grid(i).events().localListen(
-                new SwapUnswapLocalListener(), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
-
-        jcache().put("key", 1);
-
-        for (int i = 0; i < gridCount(); i++) {
-            if (grid(i).affinity(null).isBackup(grid(i).localNode(), "key")) {
-                jcache(i).localEvict(Collections.singleton("key"));
-
-                assertNull(jcache(i).localPeek("key", ONHEAP));
-
-                assertEquals((Integer)1, jcache(i).get("key"));
-
-                GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                    @Override public boolean apply() {
-                        return swapEvts.get() == 1 && unswapEvts.get() == 1;
-                    }
-                }, 5000);
-
-                assertEquals(1, swapEvts.get());
-
-                assertEquals(1, unswapEvts.get());
-
-                break;
-            }
-        }
     }
 
     /**

@@ -299,7 +299,7 @@ public class QueryUtils {
                 QueryIndexType idxTyp = idx.getIndexType();
 
                 if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
-                    d.addIndex(idxName, idxTyp);
+                    d.addIndex(idxName, idxTyp, idx.getInlineSize());
 
                     int i = 0;
 
@@ -312,7 +312,7 @@ public class QueryUtils {
                         if (alias != null)
                             field = alias;
 
-                        d.addFieldToIndex(idxName, field, i++, !asc);
+                        d.addFieldToIndex(idxName, field, i++, idx.getInlineSize(), !asc);
                     }
                 }
                 else if (idxTyp == QueryIndexType.FULLTEXT){

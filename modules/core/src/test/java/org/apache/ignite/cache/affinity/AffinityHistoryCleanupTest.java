@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -63,7 +62,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             CacheConfiguration ccfg = new CacheConfiguration();
 
             ccfg.setName("static-cache-" + i);
-            ccfg.setAffinity(i % 2 == 0 ? new RendezvousAffinityFunction() : new FairAffinityFunction());
+            ccfg.setAffinity(new RendezvousAffinityFunction());
 
             ccfgs[i] = ccfg;
         }

@@ -43,21 +43,6 @@ public class VisorCacheEvictionConfiguration implements Serializable, LessNaming
     /** Eviction filter to specify which entries should not be evicted. */
     private String filter;
 
-    /** Synchronous eviction concurrency level. */
-    private int syncConcurrencyLvl;
-
-    /** Synchronous eviction timeout. */
-    private long syncTimeout;
-
-    /** Synchronized key buffer size. */
-    private int syncKeyBufSize;
-
-    /** Synchronous evicts flag. */
-    private boolean evictSynchronized;
-
-    /** Eviction max overflow ratio. */
-    private float maxOverflowRatio;
-
     /**
      * @param ccfg Cache configuration.
      * @return Data transfer object for eviction configuration properties.
@@ -70,11 +55,6 @@ public class VisorCacheEvictionConfiguration implements Serializable, LessNaming
         cfg.plc = compactClass(plc);
         cfg.plcMaxSize = evictionPolicyMaxSize(plc);
         cfg.filter = compactClass(ccfg.getEvictionFilter());
-        cfg.syncConcurrencyLvl = ccfg.getEvictSynchronizedConcurrencyLevel();
-        cfg.syncTimeout = ccfg.getEvictSynchronizedTimeout();
-        cfg.syncKeyBufSize = ccfg.getEvictSynchronizedKeyBufferSize();
-        cfg.evictSynchronized = ccfg.isEvictSynchronized();
-        cfg.maxOverflowRatio = ccfg.getEvictMaxOverflowRatio();
 
         return cfg;
     }
@@ -98,41 +78,6 @@ public class VisorCacheEvictionConfiguration implements Serializable, LessNaming
      */
     @Nullable public String filter() {
         return filter;
-    }
-
-    /**
-     * @return synchronized eviction concurrency level.
-     */
-    public int synchronizedConcurrencyLevel() {
-        return syncConcurrencyLvl;
-    }
-
-    /**
-     * @return synchronized eviction timeout.
-     */
-    public long synchronizedTimeout() {
-        return syncTimeout;
-    }
-
-    /**
-     * @return Synchronized key buffer size.
-     */
-    public int synchronizedKeyBufferSize() {
-        return syncKeyBufSize;
-    }
-
-    /**
-     * @return Synchronous evicts flag.
-     */
-    public boolean evictSynchronized() {
-        return evictSynchronized;
-    }
-
-    /**
-     * @return Eviction max overflow ratio.
-     */
-    public float maxOverflowRatio() {
-        return maxOverflowRatio;
     }
 
     /** {@inheritDoc} */

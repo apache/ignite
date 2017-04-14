@@ -96,7 +96,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -47;
+        return -50;
     }
 
     /** {@inheritDoc} */

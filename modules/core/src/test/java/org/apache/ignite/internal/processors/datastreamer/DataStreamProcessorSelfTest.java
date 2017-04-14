@@ -132,8 +132,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             cc.setWriteSynchronizationMode(FULL_SYNC);
 
-            cc.setEvictSynchronized(false);
-
             if (store != null) {
                 cc.setCacheStoreFactory(new IgniteReflectionFactory<CacheStore>(TestStore.class));
                 cc.setReadThrough(true);
@@ -371,11 +369,13 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
                 for (int key = 0; key < cnt * threads; key++) {
                     if (aff.isPrimary(locNode, key) || aff.isBackup(locNode, key)) {
-                        GridCacheEntryEx entry = cache0.peekEx(key);
+                        GridCacheEntryEx entry = cache0.entryEx(key);
+
+                        entry.unswap();
 
                         assertNotNull("Missing entry for key: " + key, entry);
                         assertEquals(new Integer((key < 100 ? -1 : key)),
-                            CU.value(entry.rawGetOrUnmarshal(false), cache0.context(), false));
+                            CU.value(entry.rawGet(), cache0.context(), false));
                     }
                 }
             }
