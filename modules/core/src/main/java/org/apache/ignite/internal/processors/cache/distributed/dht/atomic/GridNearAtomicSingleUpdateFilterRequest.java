@@ -87,6 +87,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         boolean needPrimaryRes,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         boolean addDepInfo
     ) {
         super(
@@ -103,6 +104,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
             needPrimaryRes,
             skipStore,
             keepBinary,
+            recovery,
             addDepInfo
         );
 

@@ -81,7 +81,7 @@ namespace ignite
         {
             IgniteError err;
 
-            cache::Cache<K, V> res = GetCache<K, V>(name, &err);
+            cache::Cache<K, V> res = GetCache<K, V>(name, err);
 
             IgniteError::ThrowIfNeeded(err);
 
@@ -98,9 +98,9 @@ namespace ignite
          * @return Cache.
          */
         template<typename K, typename V>
-        cache::Cache<K, V> GetCache(const char* name, IgniteError* err)
+        cache::Cache<K, V> GetCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache<K, V>(name, *err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache<K, V>(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -118,7 +118,7 @@ namespace ignite
         {
             IgniteError err;
 
-            cache::Cache<K, V> res = GetOrCreateCache<K, V>(name, &err);
+            cache::Cache<K, V> res = GetOrCreateCache<K, V>(name, err);
 
             IgniteError::ThrowIfNeeded(err);
 
@@ -135,9 +135,9 @@ namespace ignite
          * @return Cache.
          */
         template<typename K, typename V>
-        cache::Cache<K, V> GetOrCreateCache(const char* name, IgniteError* err)
+        cache::Cache<K, V> GetOrCreateCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache<K, V>(name, *err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache<K, V>(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -155,7 +155,7 @@ namespace ignite
         {
             IgniteError err;
 
-            cache::Cache<K, V> res = CreateCache<K, V>(name, &err);
+            cache::Cache<K, V> res = CreateCache<K, V>(name, err);
 
             IgniteError::ThrowIfNeeded(err);
 
@@ -172,9 +172,9 @@ namespace ignite
          * @return Cache.
          */
         template<typename K, typename V>
-        cache::Cache<K, V> CreateCache(const char* name, IgniteError* err)
+        cache::Cache<K, V> CreateCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache<K, V>(name, *err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache<K, V>(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }

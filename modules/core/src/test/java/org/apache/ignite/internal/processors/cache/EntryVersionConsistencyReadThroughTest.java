@@ -180,9 +180,11 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
                     for (IgniteEx g : grids) {
                         GridCacheAdapter<Object, Object> cx = g.context().cache().internalCache();
 
-                        GridCacheEntryEx e = cx.peekEx(key);
+                        GridCacheEntryEx e = cx.entryEx(key);
 
-                        assertNotNull("Failed to find entry on primary/backup node.", e);
+                        e.unswap();
+
+                        assertNotNull("Failed to find entry on primary/backup node.", e.rawGet());
 
                         GridCacheVersion ver = e.version();
                         Object val = e.rawGet().value(cx.context().cacheObjectContext(), true);

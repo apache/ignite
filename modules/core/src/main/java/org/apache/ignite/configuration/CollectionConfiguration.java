@@ -19,14 +19,12 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -41,9 +39,6 @@ public class CollectionConfiguration implements Serializable {
 
     /** Cache mode. */
     private CacheMode cacheMode = PARTITIONED;
-
-    /** Cache memory mode. */
-    private CacheMemoryMode memoryMode = ONHEAP_TIERED;
 
     /** Node filter specifying nodes on which this cache should be deployed. */
     private IgnitePredicate<ClusterNode> nodeFilter;
@@ -68,9 +63,13 @@ public class CollectionConfiguration implements Serializable {
      * @param collocated If {@code true} then all items within the same collection will be collocated on the same node.
      *      Otherwise elements of the same set maybe be cached on different nodes. This parameter works only
      *      collections stored in {@link CacheMode#PARTITIONED} cache.
+     *
+     * @return {@code this} for chaining.
      */
-    public void setCollocated(boolean collocated) {
+    public CollectionConfiguration setCollocated(boolean collocated) {
         this.collocated = collocated;
+
+        return this;
     }
 
     /**
@@ -82,9 +81,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param atomicityMode Cache atomicity mode.
+     * @return {@code this} for chaining.
      */
-    public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
+    public CollectionConfiguration setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
+
+        return this;
     }
 
     /**
@@ -96,23 +98,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param cacheMode Cache mode.
+     * @return {@code this} for chaining.
      */
-    public void setCacheMode(CacheMode cacheMode) {
+    public CollectionConfiguration setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
-    }
 
-    /**
-     * @return Cache memory mode.
-     */
-    public CacheMemoryMode getMemoryMode() {
-        return memoryMode;
-    }
-
-    /**
-     * @param memoryMode Memory mode.
-     */
-    public void setMemoryMode(CacheMemoryMode memoryMode) {
-        this.memoryMode = memoryMode;
+        return this;
     }
 
     /**
@@ -124,9 +115,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param nodeFilter Predicate specifying on which nodes the cache should be started.
+     * @return {@code this} for chaining.
      */
-    public void setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+    public CollectionConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
+
+        return this;
     }
 
     /**
@@ -138,9 +132,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param backups Cache number of backups.
+     * @return {@code this} for chaining.
      */
-    public void setBackups(int backups) {
+    public CollectionConfiguration setBackups(int backups) {
         this.backups = backups;
+
+        return this;
     }
 
     /**
@@ -152,9 +149,12 @@ public class CollectionConfiguration implements Serializable {
 
     /**
      * @param offHeapMaxMemory Off-heap memory size.
+     * @return {@code this} for chaining.
      */
-    public void setOffHeapMaxMemory(long offHeapMaxMemory) {
+    public CollectionConfiguration setOffHeapMaxMemory(long offHeapMaxMemory) {
         this.offHeapMaxMem = offHeapMaxMemory;
+
+        return this;
     }
 
     /** {@inheritDoc} */

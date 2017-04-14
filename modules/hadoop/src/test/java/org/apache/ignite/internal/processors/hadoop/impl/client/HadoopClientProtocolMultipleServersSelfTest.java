@@ -97,7 +97,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     private void beforeJob() throws Exception {
         IgniteFileSystem igfs = grid(0).fileSystem(HadoopAbstractSelfTest.igfsName);
 
-        igfs.format();
+        igfs.clear();
 
         igfs.mkdirs(new IgfsPath(PATH_INPUT));
 

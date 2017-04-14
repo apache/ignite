@@ -261,12 +261,12 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void format() throws IgniteException {
+    @Override public void clear() throws IgniteException {
         throwUnsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> formatAsync() throws IgniteException {
+    @Override public IgniteFuture<Void> clearAsync() throws IgniteException {
         throwUnsupported();
 
         return null;

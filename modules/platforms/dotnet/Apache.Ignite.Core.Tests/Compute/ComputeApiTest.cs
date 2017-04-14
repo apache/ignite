@@ -911,10 +911,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, res.GetField<int>("field"));
 
             // This call must fail because "keepBinary" flag is reset.
-            Assert.Catch(typeof(BinaryObjectException), () =>
+            var ex = Assert.Throws<BinaryObjectException>(() =>
             {
                 compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
             });
+
+            Assert.AreEqual("Unknown pair [platformId=1, typeId=2009791293]", ex.Message);
         }
 
         /// <summary>
@@ -1175,9 +1177,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             foreach (var node in nodes)
             {
-                var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
+                var primaryKey = TestUtils.GetPrimaryKey(_grid1, cacheName, node);
 
-                var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
+                var affinityKey = aff.GetAffinityKey<int, int>(primaryKey);
 
                 _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
@@ -1202,9 +1204,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             foreach (var node in nodes)
             {
-                var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
+                var primaryKey = TestUtils.GetPrimaryKey(_grid1, cacheName, node);
 
-                var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
+                var affinityKey = aff.GetAffinityKey<int, int>(primaryKey);
 
                 var result = _grid1.GetCompute().AffinityCall(cacheName, affinityKey, new ComputeFunc());
 
@@ -1386,9 +1388,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class InvalidNetSimpleJob : NetSimpleJob
+    class InvalidNetSimpleJob : NetSimpleJob, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 
     [Serializable]
@@ -1460,9 +1470,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class InvalidComputeAction : ComputeAction
+    class InvalidComputeAction : ComputeAction, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 
     interface IUserInterface<out T>

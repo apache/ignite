@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.visor.cache;
 
 import java.io.Serializable;
-import org.apache.ignite.cache.CacheTypeFieldMetadata;
+import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
 import org.apache.ignite.internal.LessNamingBean;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Data transfer object for {@link CacheTypeFieldMetadata}.
+ * Data transfer object for {@link JdbcTypeField}.
  */
 public class VisorCacheTypeFieldMetadata implements Serializable, LessNamingBean {
     /** */
@@ -40,15 +39,6 @@ public class VisorCacheTypeFieldMetadata implements Serializable, LessNamingBean
 
     /** Corresponding java type. */
     private String javaType;
-
-    /**
-     * @param f Actual field metadata.
-     * @return Data transfer object for given cache field metadata.
-     */
-    public static VisorCacheTypeFieldMetadata from(CacheTypeFieldMetadata f) {
-        return new VisorCacheTypeFieldMetadata(f.getDatabaseName(), f.getDatabaseType(),
-            f.getJavaName(), U.compact(f.getJavaType().getName()));
-    }
 
     /**
      * Empty constructor.

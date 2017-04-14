@@ -62,15 +62,6 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
     /** Number of batches that can be concurrently sent to remote node. */
     private int perNodeParallelBatchCnt;
 
-    /** @deprecated Needed only for backward compatibility. */
-    private String secondaryHadoopFileSysUri;
-
-    /** @deprecated Needed only for backward compatibility. */
-    private String secondaryHadoopFileSysCfgPath;
-
-    /** @deprecated Needed only for backward compatibility. */
-    private String secondaryHadoopFileSysUserName;
-
     /** IGFS instance mode. */
     private IgfsMode dfltMode;
 
@@ -134,7 +125,7 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
         cfg.dataCacheName = igfs.getDataCacheConfiguration().getName();
         cfg.blockSize = igfs.getBlockSize();
         cfg.prefetchBlocks = igfs.getPrefetchBlocks();
-        cfg.streamBufSize = igfs.getStreamBufferSize();
+        cfg.streamBufSize = igfs.getBufferSize();
         cfg.perNodeBatchSize = igfs.getPerNodeBatchSize();
         cfg.perNodeParallelBatchCnt = igfs.getPerNodeParallelBatchCount();
 
@@ -235,27 +226,6 @@ public class VisorIgfsConfiguration implements Serializable, LessNamingBean {
      */
     public int perNodeParallelBatchCount() {
         return perNodeParallelBatchCnt;
-    }
-
-    /**
-     * @deprecated Needed only for backward compatibility.
-     */
-    @Nullable public String secondaryHadoopFileSystemUri() {
-        return secondaryHadoopFileSysUri;
-    }
-
-    /**
-     * @deprecated Needed only for backward compatibility.
-     */
-    @Nullable public String secondaryHadoopFileSystemUserName() {
-        return secondaryHadoopFileSysUserName;
-    }
-
-    /**
-     * @deprecated Needed only for backward compatibility.
-     */
-    @Nullable public String secondaryHadoopFileSystemConfigPath() {
-        return secondaryHadoopFileSysCfgPath;
     }
 
     /**

@@ -22,6 +22,7 @@ import java.io.OutputStream;
 
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  * <li>Default binary marshaller. Will be used when no other marshaller is explicitly set to the
  * configuration. For more information, see {@link IgniteBinary}.</li>
- * <li>{@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller}</li>
+ * <li>{@link OptimizedMarshaller}</li>
  * <li>{@link org.apache.ignite.marshaller.jdk.JdkMarshaller}</li>
  * </ul>
  * <p>

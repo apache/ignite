@@ -60,7 +60,6 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
         cc1.setWriteSynchronizationMode(FULL_SYNC);
         cc1.setRebalanceMode(preloadMode);
         cc1.setEvictionPolicy(null);
-        cc1.setSwapEnabled(false);
         cc1.setCacheStoreFactory(null);
 
         // Identical configuration.

@@ -73,6 +73,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private boolean valTextIdx;
 
     /** */
+    private int typeId;
+
+    /** */
     private String affKey;
 
     /** {@inheritDoc} */
@@ -93,7 +96,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * Gets table name for type.
      * @return Table name.
      */
-    public String tableName() {
+    @Override public String tableName() {
         return tblName;
     }
 
@@ -160,16 +163,29 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
     }
 
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return typeId;
+    }
+
+    /**
+     * @param typeId Type ID.
+     */
+    public void typeId(int typeId) {
+        this.typeId = typeId;
+    }
+
     /**
      * Adds index.
      *
      * @param idxName Index name.
      * @param type Index type.
+     * @param inlineSize Inline size.
      * @return Index descriptor.
      * @throws IgniteCheckedException In case of error.
      */
-    public QueryIndexDescriptorImpl addIndex(String idxName, QueryIndexType type) throws IgniteCheckedException {
-        QueryIndexDescriptorImpl idx = new QueryIndexDescriptorImpl(type);
+    public QueryIndexDescriptorImpl addIndex(String idxName, QueryIndexType type, int inlineSize) throws IgniteCheckedException {
+        QueryIndexDescriptorImpl idx = new QueryIndexDescriptorImpl(type, inlineSize);
 
         if (indexes.put(idxName, idx) != null)
             throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
@@ -183,15 +199,21 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param idxName Index name.
      * @param field Field name.
      * @param orderNum Fields order number in index.
+     * @param inlineSize Inline size.
      * @param descending Sorting order.
      * @throws IgniteCheckedException If failed.
      */
-    public void addFieldToIndex(String idxName, String field, int orderNum,
-        boolean descending) throws IgniteCheckedException {
+    public void addFieldToIndex(
+        String idxName,
+        String field,
+        int orderNum,
+        int inlineSize,
+        boolean descending
+    ) throws IgniteCheckedException {
         QueryIndexDescriptorImpl desc = indexes.get(idxName);
 
         if (desc == null)
-            desc = addIndex(idxName, QueryIndexType.SORTED);
+            desc = addIndex(idxName, QueryIndexType.SORTED, inlineSize);
 
         desc.addField(field, orderNum, descending);
     }
@@ -203,7 +225,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void addFieldToTextIndex(String field) {
         if (fullTextIdx == null) {
-            fullTextIdx = new QueryIndexDescriptorImpl(QueryIndexType.FULLTEXT);
+            fullTextIdx = new QueryIndexDescriptorImpl(QueryIndexType.FULLTEXT, 0);
 
             indexes.put(null, fullTextIdx);
         }

@@ -858,8 +858,6 @@ public class VisorTaskUtils {
         if (cmdFilePath == null || !cmdFilePath.exists())
             throw new FileNotFoundException(String.format("File not found: %s", cmdFile));
 
-        String ignite = cmdFilePath.getCanonicalPath();
-
         File nodesCfgPath = U.resolveIgnitePath(cfgPath);
 
         if (nodesCfgPath == null || !nodesCfgPath.exists())
@@ -872,6 +870,8 @@ public class VisorTaskUtils {
         List<Process> run = new ArrayList<>();
 
         try {
+            String igniteCmd = cmdFilePath.getCanonicalPath();
+
             for (int i = 0; i < nodesToStart; i++) {
                 if (U.isMacOs()) {
                     Map<String, String> macEnv = new HashMap<>(System.getenv());
@@ -900,9 +900,9 @@ public class VisorTaskUtils {
                                     entry.getKey(), val.replace('\n', ' ').replace("'", "\'")));
                     }
 
-                    run.add(openInConsole(envs.toString(), ignite, quitePar, nodeCfg));
+                    run.add(openInConsole(envs.toString(), igniteCmd, quitePar, nodeCfg));
                 } else
-                    run.add(openInConsole(null, envVars, ignite, quitePar, nodeCfg));
+                    run.add(openInConsole(null, envVars, igniteCmd, quitePar, nodeCfg));
             }
 
             return run;

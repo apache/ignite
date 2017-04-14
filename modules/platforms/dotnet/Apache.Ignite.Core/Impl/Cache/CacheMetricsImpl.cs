@@ -74,9 +74,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly string _cacheName;
 
         /** */
-        private readonly long _overflowSize;
-
-        /** */
         private readonly long _offHeapGets;
 
         /** */
@@ -114,33 +111,6 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** */
         private readonly long _offHeapMaxSize;
-
-        /** */
-        private readonly long _swapGets;
-
-        /** */
-        private readonly long _swapPuts;
-
-        /** */
-        private readonly long _swapRemovals;
-
-        /** */
-        private readonly long _swapHits;
-
-        /** */
-        private readonly long _swapMisses;
-
-        /** */
-        private readonly long _swapEntriesCount;
-
-        /** */
-        private readonly long _swapSize;
-
-        /** */
-        private readonly float _swapHitPercentage;
-
-        /** */
-        private readonly float _swapMissPercentage;
 
         /** */
         private readonly int _size;
@@ -266,7 +236,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             _cacheTxCommits = reader.ReadLong();
             _cacheTxRollbacks = reader.ReadLong();
             _cacheName = reader.ReadString();
-            _overflowSize = reader.ReadLong();
             _offHeapGets = reader.ReadLong();
             _offHeapPuts = reader.ReadLong();
             _offHeapRemovals = reader.ReadLong();
@@ -280,15 +249,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             _offHeapBackupEntriesCount = reader.ReadLong();
             _offHeapAllocatedSize = reader.ReadLong();
             _offHeapMaxSize = reader.ReadLong();
-            _swapGets = reader.ReadLong();
-            _swapPuts = reader.ReadLong();
-            _swapRemovals = reader.ReadLong();
-            _swapHits = reader.ReadLong();
-            _swapMisses = reader.ReadLong();
-            _swapEntriesCount = reader.ReadLong();
-            _swapSize = reader.ReadLong();
-            _swapHitPercentage = reader.ReadFloat();
-            _swapMissPercentage = reader.ReadFloat();
             _size = reader.ReadInt();
             _keySize = reader.ReadInt();
             _isEmpty = reader.ReadBoolean();
@@ -374,9 +334,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         public string CacheName { get { return _cacheName; } }
 
         /** <inheritDoc /> */
-        public long OverflowSize { get { return _overflowSize; } }
-
-        /** <inheritDoc /> */
         public long OffHeapGets { get { return _offHeapGets; } }
 
         /** <inheritDoc /> */
@@ -414,33 +371,6 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
         public long OffHeapMaxSize { get { return _offHeapMaxSize; } }
-
-        /** <inheritDoc /> */
-        public long SwapGets { get { return _swapGets; } }
-
-        /** <inheritDoc /> */
-        public long SwapPuts { get { return _swapPuts; } }
-
-        /** <inheritDoc /> */
-        public long SwapRemovals { get { return _swapRemovals; } }
-
-        /** <inheritDoc /> */
-        public long SwapHits { get { return _swapHits; } }
-
-        /** <inheritDoc /> */
-        public long SwapMisses { get { return _swapMisses; } }
-
-        /** <inheritDoc /> */
-        public long SwapEntriesCount { get { return _swapEntriesCount; } }
-
-        /** <inheritDoc /> */
-        public long SwapSize { get { return _swapSize; } }
-
-        /** <inheritDoc /> */
-        public float SwapHitPercentage { get { return _swapHitPercentage; } }
-
-        /** <inheritDoc /> */
-        public float SwapMissPercentage { get { return _swapMissPercentage; } }
 
         /** <inheritDoc /> */
         public int Size { get { return _size; } }

@@ -320,6 +320,18 @@ export default class IgniteConfigurationGenerator {
                     .boolProperty('allowDuplicateRegistrations');
 
                 break;
+
+            case 'Kubernetes':
+                ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder',
+                    'ipFinder', cluster.discovery.Kubernetes, clusterDflts.discovery.Kubernetes);
+
+                ipFinder.stringProperty('serviceName')
+                    .stringProperty('namespace')
+                    .stringProperty('masterUrl')
+                    .pathProperty('accountToken');
+
+                break;
+
             default:
                 // No-op.
         }
@@ -1179,7 +1191,7 @@ export default class IgniteConfigurationGenerator {
 
         switch (kind) {
             case 'OptimizedMarshaller':
-                bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
+                bean = new Bean('org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
                     .intProperty('poolSize')
                     .intProperty('requireSerializable');
 

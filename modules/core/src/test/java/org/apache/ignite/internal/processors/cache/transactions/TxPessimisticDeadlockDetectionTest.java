@@ -36,6 +36,8 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -95,6 +97,18 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
             cfg.setDiscoverySpi(discoSpi);
         }
+
+        MemoryConfiguration memCfg = new MemoryConfiguration();
+
+        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+
+        plc.setName("dfltPlc");
+        plc.setSize(MemoryConfiguration.DFLT_MEMORY_POLICY_SIZE * 10);
+
+        memCfg.setDefaultMemoryPolicyName("dfltPlc");
+        memCfg.setMemoryPolicies(plc);
+
+        cfg.setMemoryConfiguration(memCfg);
 
         cfg.setClientMode(client);
 
@@ -189,6 +203,9 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         ccfg.setBackups(1);
         ccfg.setNearConfiguration(near ? new NearCacheConfiguration() : null);
         ccfg.setWriteSynchronizationMode(syncMode);
+
+        if (cacheMode == LOCAL)
+            ccfg.setMemoryPolicyName("dfltPlc");
 
         IgniteCache cache = ignite(0).createCache(ccfg);
 
