@@ -29,9 +29,9 @@ import org.apache.ignite.math.functions.IntDoubleToVoidFunction;
  * Read-only or read-write function-based vector storage.
  */
 public class FunctionVectorStorage implements VectorStorage {
-    private IgniteFunction<Integer, Double> getFunc;
-    private IntDoubleToVoidFunction setFunc;
-    private int size;
+    /** */ private IgniteFunction<Integer, Double> getFunc;
+    /** */ private IntDoubleToVoidFunction setFunc;
+    /** */ private int size;
 
     /**
      *

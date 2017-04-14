@@ -29,10 +29,11 @@ import org.apache.ignite.math.functions.IntIntToDoubleFunction;
  * Read-only or read-write function-based matrix storage.
  */
 public class FunctionMatrixStorage implements MatrixStorage {
-    private int rows, cols;
+    /** */ private int rows;
+    /** */ private int cols;
 
-    private IntIntToDoubleFunction getFunc;
-    private IntIntDoubleToVoidFunction setFunc;
+    /** */ private IntIntToDoubleFunction getFunc;
+    /** */ private IntIntDoubleToVoidFunction setFunc;
 
     /**
      *
@@ -42,10 +43,10 @@ public class FunctionMatrixStorage implements MatrixStorage {
     }
 
     /**
-     * @param rows
-     * @param cols
-     * @param getFunc
-     * @param setFunc
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     * @param getFunc Function that returns value corresponding to given row and column index.
+     * @param setFunc Set function. If {@code null} - this will be a read-only matrix.
      */
     public FunctionMatrixStorage(int rows, int cols, IntIntToDoubleFunction getFunc,
         IntIntDoubleToVoidFunction setFunc) {
@@ -60,9 +61,9 @@ public class FunctionMatrixStorage implements MatrixStorage {
     }
 
     /**
-     * @param rows
-     * @param cols
-     * @param getFunc
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     * @param getFunc Function that returns value corresponding to given row and column index.
      */
     public FunctionMatrixStorage(int rows, int cols, IntIntToDoubleFunction getFunc) {
         this(rows, cols, getFunc, null);

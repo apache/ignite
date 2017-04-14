@@ -29,9 +29,9 @@ import org.apache.ignite.math.impls.matrix.CacheMatrix;
 
 /** */
 public class CacheMatrixExample {
-    private static final String CACHE_NAME = CacheMatrixExample.class.getSimpleName();
-    private static final int ROWS = 3;
-    private static final int COLS = 3;
+    /** */ private static final String CACHE_NAME = CacheMatrixExample.class.getSimpleName();
+    /** */ private static final int ROWS = 3;
+    /** */ private static final int COLS = 3;
 
     /**
      * Executes example.
@@ -50,7 +50,7 @@ public class CacheMatrixExample {
             try (IgniteCache<Integer, Double> cache = ignite.getOrCreateCache(cfg)) {
                 double[][] testValues = {{1.0, 0.0, 0.0}, {1.0, 1.0, 0.0}, {1.0, 1.0, 1.0}};
 
-                ValueMapper valueMapper = new IdentityValueMapper();
+                ValueMapper valMapper = new IdentityValueMapper();
 
                 // Map matrix element indices to cache keys.
                 MatrixKeyMapper<Integer> keyMapper = new MatrixKeyMapper<Integer>() {
@@ -64,7 +64,7 @@ public class CacheMatrixExample {
                 };
 
                 // Create cache matrix.
-                CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(ROWS, COLS, cache, keyMapper, valueMapper);
+                CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(ROWS, COLS, cache, keyMapper, valMapper);
 
                 cacheMatrix.assign(testValues);
 

@@ -43,7 +43,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import static org.apache.ignite.math.impls.MathTestConstants.UNEXPECTED_VALUE;
 
 /**
- * Tests for {@ling SparseDistributedMatrix}.
+ * Tests for {@link SparseDistributedMatrix}.
  */
 @GridCommonTest(group = "Distributed Models")
 public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
@@ -51,6 +51,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 3;
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
+    /** Precision. */
     public static final double PRESITION = 0.0;
     /** Grid instance. */
     private Ignite ignite;

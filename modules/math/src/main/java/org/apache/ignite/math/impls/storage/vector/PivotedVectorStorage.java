@@ -27,12 +27,13 @@ import org.apache.ignite.math.VectorStorage;
  * Pivoted (index mapped) view over another vector storage implementation.
  */
 public class PivotedVectorStorage implements VectorStorage {
-    private VectorStorage sto;
-    private int[] pivot;
-    private int[] unpivot;
+    /** */ private VectorStorage sto;
+
+    /** */ private int[] pivot;
+    /** */ private int[] unpivot;
 
     /**
-     * @param pivot
+     * @param pivot Pivot array.
      */
     private static int[] reverse(int[] pivot) {
         int[] res = new int[pivot.length];
@@ -60,7 +61,7 @@ public class PivotedVectorStorage implements VectorStorage {
     }
 
     /**
-     * @param sto
+     * @param sto Backing vector storage.
      * @param pivot Mapping from external index to internal.
      * @param unpivot Mapping from internal index to external.
      */
@@ -75,7 +76,7 @@ public class PivotedVectorStorage implements VectorStorage {
     }
 
     /**
-     * @param sto
+     * @param sto Backing vector storage.
      * @param pivot Mapping from external index to internal.
      */
     public PivotedVectorStorage(VectorStorage sto, int[] pivot) {
@@ -89,34 +90,41 @@ public class PivotedVectorStorage implements VectorStorage {
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return sto.size();
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int i) {
         return sto.get(pivot[i]);
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         sto.set(pivot[i], v);
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
         out.writeObject(pivot);
         out.writeObject(unpivot);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (VectorStorage)in.readObject();
         pivot = (int[])in.readObject();
         unpivot = (int[])in.readObject();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return sto.isSequentialAccess();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
     }
@@ -131,6 +139,7 @@ public class PivotedVectorStorage implements VectorStorage {
         return sto.isDistributed();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return sto.isArrayBased();
     }

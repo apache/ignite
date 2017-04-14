@@ -33,7 +33,7 @@ import static org.junit.Assert.assertTrue;
  * Tests for {@link SparseLocalOffHeapVectorStorage}.
  */
 public class SparseLocalOffHeapVectorStorageTest extends ExternalizeTest<SparseLocalOffHeapVectorStorage> {
-    private SparseLocalOffHeapVectorStorage testVectorStorage;
+    /** */ private SparseLocalOffHeapVectorStorage testVectorStorage;
 
     /** */
     @Before
@@ -58,12 +58,9 @@ public class SparseLocalOffHeapVectorStorageTest extends ExternalizeTest<SparseL
         }
     }
 
-    ;
-
-    /** */
-    @Override
+    /** {@inheritDoc} */
     @Test(expected = UnsupportedOperationException.class)
-    public void externalizeTest() {
+    @Override public void externalizeTest() {
         super.externalizeTest(new SparseLocalOffHeapVectorStorage(STORAGE_SIZE));
     }
 

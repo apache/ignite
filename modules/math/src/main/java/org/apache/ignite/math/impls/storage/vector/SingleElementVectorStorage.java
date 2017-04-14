@@ -27,9 +27,9 @@ import org.apache.ignite.math.exceptions.UnsupportedOperationException;
  * Vector storage holding a single non-zero value at some index.
  */
 public class SingleElementVectorStorage implements VectorStorage {
-    private int idx;
-    private double val;
-    private int size;
+    /** */ private int idx;
+    /** */ private double val;
+    /** */ private int size;
 
     /**
      *
@@ -39,9 +39,9 @@ public class SingleElementVectorStorage implements VectorStorage {
     }
 
     /**
-     * @param size
-     * @param idx
-     * @param val
+     * @param size Parent vector size.
+     * @param idx Element index in the parent vector.
+     * @param val Value of the element.
      */
     public SingleElementVectorStorage(int size, int idx, double val) {
         assert size > 0;
@@ -52,18 +52,25 @@ public class SingleElementVectorStorage implements VectorStorage {
         this.val = val;
     }
 
+    /**
+     *
+     * @return Index of the element in the parent vector.
+     */
     public int index() {
         return idx;
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return size;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int i) {
         return i == idx ? val : 0.0;
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         if (i == idx)
             val = v;
@@ -71,22 +78,26 @@ public class SingleElementVectorStorage implements VectorStorage {
             throw new UnsupportedOperationException("Can't set element outside of index: " + idx);
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
         out.writeInt(idx);
         out.writeDouble(val);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         idx = in.readInt();
         val = in.readDouble();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return true;
     }
@@ -101,6 +112,7 @@ public class SingleElementVectorStorage implements VectorStorage {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }

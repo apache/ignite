@@ -403,11 +403,13 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         return cache;
     }
 
-    private static class TestKeyMapper implements VectorKeyMapper<Integer> {
+    /** */ private static class TestKeyMapper implements VectorKeyMapper<Integer> {
+        /** {@inheritDoc} */
         @Override public Integer apply(int i) {
             return i;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isValid(Integer i) {
             return i < size;
         }

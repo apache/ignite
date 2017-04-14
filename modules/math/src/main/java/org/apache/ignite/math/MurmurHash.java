@@ -26,7 +26,7 @@ import java.nio.ByteOrder;
  * See http://murmurhash.googlepages.com/ for mre details.
  */
 public class MurmurHash {
-    // Hide it.
+    /** Hide it. */
     private MurmurHash() {
     }
 

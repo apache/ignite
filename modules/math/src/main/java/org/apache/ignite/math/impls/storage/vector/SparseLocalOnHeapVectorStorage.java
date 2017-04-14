@@ -30,10 +30,10 @@ import org.apache.ignite.math.VectorStorage;
  * Sparse, local, on-heap vector storage.
  */
 public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageConstants {
-    private int size;
-    private int acsMode;
+    /** */ private int size;
+    /** */ private int acsMode;
 
-    // Actual map storage.
+    /** Actual map storage. */
     private Map<Integer, Double> sto;
 
     /**
@@ -44,8 +44,8 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
     }
 
     /**
-     * @param size
-     * @param acsMode
+     * @param size Vector size.
+     * @param acsMode Access mode.
      */
     public SparseLocalOnHeapVectorStorage(int size, int acsMode) {
         assert size > 0;
@@ -75,7 +75,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
 
     /** {@inheritDoc} */
     @Override public double get(int i) {
-        return sto.containsKey(i) ? sto.get(i) : 0.0;
+        return sto.getOrDefault(i, 0.0);
     }
 
     /** {@inheritDoc} */

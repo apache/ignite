@@ -39,6 +39,7 @@ import org.apache.ignite.math.functions.Functions;
 import org.apache.ignite.math.functions.IgniteBiFunction;
 import org.apache.ignite.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.math.impls.matrix.MatrixView;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * This class provides a helper implementation of the {@link Vector}
@@ -59,8 +60,10 @@ public abstract class AbstractVector implements Vector {
     /** Cached value for length squared. */
     private double lenSq = 0.0;
 
-    // Maximum and minimum cached elements.
-    private Element maxElm, minElm = null;
+    /** Maximum cached element. */
+    private Element maxElm = null;
+    /** Minimum cached element. */
+    private Element minElm = null;
 
     /** Readonly flag (false by default). */
     private boolean readOnly = false;
@@ -164,8 +167,8 @@ public abstract class AbstractVector implements Vector {
         return sto.isArrayBased();
     }
 
-    @Override
-    public Vector sort() {
+    /** {@inheritDoc} */
+    @Override public Vector sort() {
         if (isArrayBased())
             Arrays.parallelSort(sto.data());
         else
@@ -342,12 +345,16 @@ public abstract class AbstractVector implements Vector {
         return new Iterable<Element>() {
             private int idx = 0;
 
+            /** {@inheritDoc} */
+            @NotNull
             @Override public Iterator<Element> iterator() {
                 return new Iterator<Element>() {
+                    /** {@inheritDoc} */
                     @Override public boolean hasNext() {
                         return size() > 0 && idx < size();
                     }
 
+                    /** {@inheritDoc} */
                     @Override public Element next() {
                         if (hasNext())
                             return getElement(idx++);

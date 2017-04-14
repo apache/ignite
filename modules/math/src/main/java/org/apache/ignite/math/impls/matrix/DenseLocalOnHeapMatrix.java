@@ -39,8 +39,8 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
     }
 
     /**
-     * @param rows
-     * @param cols
+     * @param rows Amount of rows in matrix.
+     * @param cols Amount of columns in matrix.
      */
     public DenseLocalOnHeapMatrix(int rows, int cols) {
         assert rows > 0;
@@ -50,7 +50,7 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
     }
 
     /**
-     * @param mtx
+     * @param mtx Backing data array.
      */
     public DenseLocalOnHeapMatrix(double[][] mtx) {
         assert mtx != null;
@@ -59,7 +59,7 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
     }
 
     /**
-     * @param orig
+     * @param orig Original matrix.
      */
     private DenseLocalOnHeapMatrix(DenseLocalOnHeapMatrix orig) {
         assert orig != null;
@@ -69,14 +69,17 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
         assign(orig);
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix copy() {
         return new DenseLocalOnHeapMatrix(this);
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
         return new DenseLocalOnHeapMatrix(rows, cols);
     }
 
+    /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
         return new DenseLocalOnHeapVector(crd);
     }

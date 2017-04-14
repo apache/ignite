@@ -31,7 +31,7 @@ package org.apache.ignite.math;
  * Lifted from Apache Mahout.
  */
 public class Algebra extends Constants {
-    private static final double[] STIRLING_CORRECTION = {
+    /** */ private static final double[] STIRLING_CORRECTION = {
         0.0,
         8.106146679532726e-02, 4.134069595540929e-02,
         2.767792568499834e-02, 2.079067210376509e-02,
@@ -50,7 +50,7 @@ public class Algebra extends Constants {
         2.873449362352470e-03, 2.777674929752690e-03,
     };
 
-    private static final double[] LOG_FACTORIALS = {
+    /** */ private static final double[] LOG_FACTORIALS = {
         0.00000000000000000, 0.00000000000000000, 0.69314718055994531,
         1.79175946922805500, 3.17805383034794562, 4.78749174278204599,
         6.57925121201010100, 8.52516136106541430, 10.60460290274525023,
@@ -63,7 +63,7 @@ public class Algebra extends Constants {
         64.55753862700633106, 67.88974313718153498, 71.25703896716800901
     };
 
-    private static final long[] LONG_FACTORIALS = {
+    /** */ private static final long[] LONG_FACTORIALS = {
         1L,
         1L,
         2L,
@@ -87,7 +87,7 @@ public class Algebra extends Constants {
         2432902008176640000L
     };
 
-    private static final double[] DOUBLE_FACTORIALS = {
+    /** */ private static final double[] DOUBLE_FACTORIALS = {
         5.109094217170944E19,
         1.1240007277776077E21,
         2.585201673888498E22,

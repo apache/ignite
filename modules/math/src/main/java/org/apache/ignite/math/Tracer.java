@@ -71,8 +71,11 @@ public class Tracer {
         return defaultColorMapper(vec.minValue(), vec.maxValue());
     }
 
-    // Default matrix color mapper implementation that map given double value
-    // to continues red-blue (R_B) specter.
+    /** Default matrix color mapper implementation that map given double value
+     * to continuous red-blue (R_B) specter.
+     * @param mtx Matrix to be mapped.
+     * @return Color mapper for given matrix.
+     */
     static private ColorMapper mkMatrixColorMapper(Matrix mtx) {
         return defaultColorMapper(mtx.minValue(), mtx.maxValue());
     }

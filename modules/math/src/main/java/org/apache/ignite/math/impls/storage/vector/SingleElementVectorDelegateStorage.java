@@ -28,8 +28,8 @@ import org.apache.ignite.math.exceptions.UnsupportedOperationException;
  * Single value view storage over another vector.
  */
 public class SingleElementVectorDelegateStorage implements VectorStorage {
-    private int idx;
-    private Vector vec;
+    /** */ private int idx;
+    /** */ private Vector vec;
 
     /**
      *
@@ -39,8 +39,8 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
     }
 
     /**
-     * @param vec
-     * @param idx
+     * @param vec Parent vector.
+     * @param idx Element index.
      */
     public SingleElementVectorDelegateStorage(Vector vec, int idx) {
         assert vec != null;
@@ -66,14 +66,17 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
         return vec;
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return vec.size();
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int i) {
         return i == idx ? vec.get(i) : 0.0;
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         if (i == idx)
             vec.set(i, v);
@@ -81,20 +84,24 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
             throw new UnsupportedOperationException("Can't set element outside of index: " + idx);
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(vec);
         out.writeInt(idx);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vec = (Vector)in.readObject();
         idx = in.readInt();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return true;
     }
@@ -109,6 +116,7 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }

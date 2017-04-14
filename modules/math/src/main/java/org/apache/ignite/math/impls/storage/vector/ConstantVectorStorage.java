@@ -27,8 +27,8 @@ import org.apache.ignite.math.exceptions.UnsupportedOperationException;
  * Constant read-only vector storage.
  */
 public class ConstantVectorStorage implements VectorStorage {
-    private int size;
-    private double val;
+    /** */ private int size;
+    /** */ private double val;
 
     /**
      *
@@ -38,8 +38,8 @@ public class ConstantVectorStorage implements VectorStorage {
     }
 
     /**
-     * @param size
-     * @param val
+     * @param size Vector size.
+     * @param val Value to set for vector elements.
      */
     public ConstantVectorStorage(int size, double val) {
         assert size > 0;
@@ -56,56 +56,66 @@ public class ConstantVectorStorage implements VectorStorage {
         return val;
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return size;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int i) {
         return val;
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         throw new UnsupportedOperationException("Can't set value into constant vector.");
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
         out.writeDouble(val);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         val = in.readDouble();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isRandomAccess() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDistributed() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 1;
+        int res = 1;
 
-        result = result * 37 + size;
-        result = result * 37 + Double.hashCode(val);
+        res = res * 37 + size;
+        res = res * 37 + Double.hashCode(val);
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */

@@ -60,7 +60,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         assert keyMapper != null;
         assert valMapper != null;
 
-        setStorage(new CacheMatrixStorage<K, V>(rows, cols, cache, keyMapper, valMapper));
+        setStorage(new CacheMatrixStorage<>(rows, cols, cache, keyMapper, valMapper));
     }
 
     /**

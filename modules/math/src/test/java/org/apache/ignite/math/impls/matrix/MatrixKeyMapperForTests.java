@@ -20,8 +20,8 @@ import org.apache.ignite.math.MatrixKeyMapper;
 
 /** */
 public class MatrixKeyMapperForTests implements MatrixKeyMapper<Integer> {
-    private int rows;
-    private int cols;
+    /** */ private int rows;
+    /** */ private int cols;
 
     /** */
     public MatrixKeyMapperForTests() {

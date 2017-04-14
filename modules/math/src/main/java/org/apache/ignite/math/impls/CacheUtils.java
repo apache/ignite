@@ -294,7 +294,7 @@ public class CacheUtils {
                 // Query returns an empty cursor if this partition is not stored on this node.
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
                     (k, v) -> affinity.mapPartitionToNode(p) == locNode)))
-                    fun.accept(new CacheEntry<K, V>(entry, cache));
+                    fun.accept(new CacheEntry<>(entry, cache));
             }
         });
     }
@@ -330,7 +330,7 @@ public class CacheUtils {
                 // Query returns an empty cursor if this partition is not stored on this node.
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
                     (k, v) -> affinity.mapPartitionToNode(p) == locNode)))
-                    a = folder.apply(new CacheEntry<K, V>(entry, cache), a);
+                    a = folder.apply(new CacheEntry<>(entry, cache), a);
             }
 
             return a;

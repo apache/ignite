@@ -27,10 +27,11 @@ import org.apache.ignite.math.MatrixStorage;
  * Local, dense off-heap matrix storage.
  */
 public class DenseOffHeapMatrixStorage implements MatrixStorage {
-    private int rows, cols;
-    private transient long ptr;
+    /** */ private int rows;
+    /** */ private int cols;
+    /** */ private transient long ptr;
     //TODO: temp solution.
-    private int ptrInitialHash;
+    /** */ private int ptrInitHash;
 
     /** */
     public DenseOffHeapMatrixStorage() {
@@ -76,6 +77,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
         GridUnsafe.putDouble(pointerOffset(x, y), v);
     }
 
+    /** {@inheritDoc} */
     @Override public int columnSize() {
         return cols;
     }
@@ -119,7 +121,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
-        out.writeInt(ptrInitialHash);
+        out.writeInt(ptrInitHash);
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
@@ -133,7 +135,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
         allocateMemory(rows, cols);
 
-        ptrInitialHash = in.readInt();
+        ptrInitHash = in.readInt();
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
@@ -161,33 +163,35 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 1;
+        int res = 1;
 
-        result = result * 37 + rows;
-        result = result * 37 + cols;
-        result = result * 37 + ptrInitialHash;
+        res = res * 37 + rows;
+        res = res * 37 + cols;
+        res = res * 37 + ptrInitHash;
 
-        return result;
+        return res;
     }
 
     /** */
     private boolean isMemoryEquals(DenseOffHeapMatrixStorage otherStorage) {
-        boolean result = true;
+        boolean res = true;
+
         for (int i = 0; i < otherStorage.rows; i++) {
             for (int j = 0; j < otherStorage.cols; j++) {
                 if (Double.compare(get(i, j), otherStorage.get(i, j)) != 0) {
-                    result = false;
+                    res = false;
                     break;
                 }
             }
         }
-        return result;
+
+        return res;
     }
 
     /** */
     private void allocateMemory(int rows, int cols) {
         ptr = GridUnsafe.allocateMemory(rows * cols * Double.BYTES);
 
-        ptrInitialHash = Long.hashCode(ptr);
+        ptrInitHash = Long.hashCode(ptr);
     }
 }

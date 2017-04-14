@@ -30,8 +30,8 @@ import org.apache.ignite.math.impls.vector.CacheVector;
  * This example shows how to use {@link CacheVector} API.
  */
 public class CacheVectorExample {
-    private static final String CACHE_NAME = CacheVectorExample.class.getSimpleName();
-    private static final int CARDINALITY = 10;
+    /** */ private static final String CACHE_NAME = CacheVectorExample.class.getSimpleName();
+    /** */ private static final int CARDINALITY = 10;
 
     /**
      * Executes example.
@@ -41,7 +41,7 @@ public class CacheVectorExample {
     public static void main(String[] args) {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
-            System.out.println(">>> CacheVectore example started.");
+            System.out.println(">>> CacheVector example started.");
 
             CacheConfiguration<Integer, Double> cfg = new CacheConfiguration<>();
 
@@ -51,7 +51,7 @@ public class CacheVectorExample {
                 double[] testValues1 = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
                 double[] testValues2 = {0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-                ValueMapper valueMapper = new IdentityValueMapper();
+                ValueMapper valMapper = new IdentityValueMapper();
 
                 // Map vector element index to cache keys.
                 VectorKeyMapper<Integer> keyMapper1 = new VectorKeyMapper<Integer>() {
@@ -76,10 +76,10 @@ public class CacheVectorExample {
                 };
 
                 // Create two cache vectors over one cache.
-                CacheVector cacheVector1 = new CacheVector(CARDINALITY, cache, keyMapper1, valueMapper);
+                CacheVector cacheVector1 = new CacheVector(CARDINALITY, cache, keyMapper1, valMapper);
                 System.out.println(">>> First cache vector created.");
 
-                CacheVector cacheVector2 = new CacheVector(CARDINALITY, cache, keyMapper2, valueMapper);
+                CacheVector cacheVector2 = new CacheVector(CARDINALITY, cache, keyMapper2, valMapper);
                 System.out.println(">>> Second cache vector created.");
 
                 cacheVector1.assign(testValues1);

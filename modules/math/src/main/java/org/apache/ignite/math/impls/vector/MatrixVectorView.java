@@ -29,9 +29,13 @@ import org.apache.ignite.math.impls.storage.vector.MatrixVectorStorage;
  * Row or column vector view off the matrix.
  */
 public class MatrixVectorView extends AbstractVector {
-    private Matrix parent;
-    private int row, col;
-    private int rowStride, colStride;
+    /** */ private Matrix parent;
+
+    /** */ private int row;
+    /** */ private int col;
+    
+    /** */ private int rowStride;
+    /** */ private int colStride;
 
     /**
      *

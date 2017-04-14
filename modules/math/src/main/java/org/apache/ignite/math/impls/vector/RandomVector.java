@@ -32,7 +32,7 @@ import org.apache.ignite.math.impls.storage.vector.RandomVectorStorage;
  * that by default, the value is determined by a relatively simple hash of the index.
  */
 public class RandomVector extends AbstractReadOnlyVector {
-    private boolean fastHash;
+    /** */ private boolean fastHash;
 
     /**
      * @param size Vector cardinality.

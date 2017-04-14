@@ -30,7 +30,7 @@ import org.apache.ignite.math.impls.storage.vector.PivotedVectorStorage;
  * Pivoted (index mapped) view over another vector.
  */
 public class PivotedVectorView extends AbstractVector {
-    private Vector vec;
+    /** */ private Vector vec;
 
     /**
      * @param vec

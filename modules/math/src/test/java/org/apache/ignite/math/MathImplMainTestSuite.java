@@ -17,13 +17,12 @@
 
 package org.apache.ignite.math;
 
-/**
- * Test suite for local and distributed tests
- */
-
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+/**
+ * Test suite for local and distributed tests
+ */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     MathImplLocalTestSuite.class,

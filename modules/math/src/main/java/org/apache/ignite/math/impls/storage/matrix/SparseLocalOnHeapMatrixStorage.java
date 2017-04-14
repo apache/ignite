@@ -33,10 +33,14 @@ import org.apache.ignite.math.StorageConstants;
 public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageConstants {
     /** Default zero value. */
     private static final double DEFAULT_VALUE = 0.0;
-    private int rows, cols;
-    private int acsMode, stoMode;
 
-    // Actual map storage.
+    /** */ private int rows;
+    /** */ private int cols;
+
+    /** */ private int acsMode;
+    /** */ private int stoMode;
+
+    /** Actual map storage. */
     private Map<Integer, Map<Integer, Double>> sto;
 
     /** */
@@ -56,7 +60,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         this.acsMode = acsMode;
         this.stoMode = stoMode;
 
-        sto = new HashMap<Integer, Map<Integer, Double>>();
+        sto = new HashMap<>();
     }
 
     /**

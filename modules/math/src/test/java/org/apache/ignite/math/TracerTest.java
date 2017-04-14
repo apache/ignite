@@ -35,15 +35,15 @@ import static org.junit.Assert.assertEquals;
  * Tests for {@link Tracer}.
  */
 public class TracerTest {
-    private static final String DEFAULT_FORMAT = "%.10f";
-    private static final double DEFAULT_DELTA = 0.000000001d;
+    /** */ private static final String DEFAULT_FORMAT = "%.10f";
+    /** */ private static final double DEFAULT_DELTA = 0.000000001d;
 
     /**
      * Color mapper that maps [0, 1] range into three distinct RGB segments.
      */
     private static final Tracer.ColorMapper COLOR_MAPPER = new Tracer.ColorMapper() {
-        @Override
-        public Color apply(Double d) {
+        /** {@inheritDoc} */
+        @Override public Color apply(Double d) {
             if (d <= 0.33)
                 return Color.RED;
             else if (d <= 0.66)
@@ -54,7 +54,7 @@ public class TracerTest {
     };
 
     /**
-     * @param size
+     * @param size Vector size.
      */
     private Vector makeRandomVector(int size) {
         DenseLocalOnHeapVector vec = new DenseLocalOnHeapVector(size);
@@ -65,8 +65,8 @@ public class TracerTest {
     }
 
     /**
-     * @param rows
-     * @param cols
+     * @param rows Amount of rows in matrix.
+     * @param cols Amount of columns in matrix.
      */
     private Matrix makeRandomMatrix(int rows, int cols) {
         DenseLocalOnHeapMatrix mtx = new DenseLocalOnHeapMatrix(rows, cols);

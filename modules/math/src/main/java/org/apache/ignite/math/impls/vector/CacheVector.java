@@ -53,7 +53,7 @@ public class CacheVector<K, V> extends AbstractVector {
         IgniteCache<K, V> cache,
         VectorKeyMapper<K> keyFunc,
         ValueMapper<V> valMapper) {
-        setStorage(new CacheVectorStorage<K, V>(size, cache, keyFunc, valMapper));
+        setStorage(new CacheVectorStorage<>(size, cache, keyFunc, valMapper));
     }
 
     /**

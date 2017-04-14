@@ -21,7 +21,7 @@ package org.apache.ignite.math;
  * Identity value mapper.
  */
 public class IdentityValueMapper implements ValueMapper<Double> {
-    private static final long serialVersionUID = -8010078306142216389L;
+    /** */ private static final long serialVersionUID = -8010078306142216389L;
 
     /** {@inheritDoc} */
     @Override public Double fromDouble(double v) {
