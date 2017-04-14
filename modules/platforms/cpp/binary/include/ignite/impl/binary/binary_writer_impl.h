@@ -31,8 +31,8 @@
 #include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/impl/binary/binary_schema.h"
-#include "ignite/impl/binary/binary_type_impl.h"
 #include "ignite/impl/binary/binary_type_manager.h"
+#include "ignite/impl/binary/binary_object_impl.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"
@@ -722,9 +722,11 @@ namespace ignite
 
                         // We are using direct constructor here to avoid check-overhead, as we know
                         // at this point that underlying memory contains valid binary object.
-                        ignite::binary::BinaryObject binObj(*stream->GetMemory(), pos, &idRslvr, metaMgr);
+                        BinaryObjectImpl binObj(*stream->GetMemory(), pos, &idRslvr, metaMgr);
 
-                        stream->WriteInt32(hashPos, impl::binary::GetHashCode<T>(obj, binObj));
+                        int32_t hash = BinaryUtils::GetDataHashCode(binObj.GetData(), binObj.GetLength());
+
+                        stream->WriteInt32(hashPos, hash);
                     }
                 }
 

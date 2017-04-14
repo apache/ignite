@@ -32,6 +32,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -182,8 +186,14 @@ public interface GridQueryIndexing {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, CacheObject key, CacheObject val,
-        byte[] ver, long expirationTime) throws IgniteCheckedException;
+    public void store(@Nullable String spaceName,
+        GridQueryTypeDescriptor type,
+        KeyCacheObject key,
+        int partId,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expirationTime,
+        long link) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.
@@ -193,7 +203,12 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
+    public void remove(@Nullable String spaceName,
+        GridQueryTypeDescriptor type,
+        KeyCacheObject key,
+        int partId,
+        CacheObject val,
+        GridCacheVersion ver) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is swapped.
@@ -202,7 +217,7 @@ public interface GridQueryIndexing {
      * @param key Key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(@Nullable String spaceName, CacheObject key) throws IgniteCheckedException;
+    public void onSwap(@Nullable String spaceName, KeyCacheObject key, int partId) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is unswapped.
@@ -212,7 +227,25 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
+    public void onUnswap(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException;
+
+    /**
+     * Rebuilds all indexes of given type from hash index.
+     *
+     * @param spaceName Space name.
+     * @param type Type descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void rebuildIndexesFromHash(@Nullable String spaceName,
+        GridQueryTypeDescriptor type) throws IgniteCheckedException;
+
+    /**
+     * Marks all indexes of given type for rebuild from hash index, making them unusable until rebuild finishes.
+     *
+     * @param spaceName Space name.
+     * @param type Type descriptor.
+     */
+    public void markForRebuildFromHash(@Nullable String spaceName, GridQueryTypeDescriptor type);
 
     /**
      * Returns backup filter.

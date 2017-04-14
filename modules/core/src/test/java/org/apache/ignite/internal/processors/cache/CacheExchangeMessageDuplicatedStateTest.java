@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -54,12 +53,6 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     private static final String AFF1_CACHE2 = "a1c2";
 
     /** */
-    private static final String AFF2_CACHE1 = "a2c1";
-
-    /** */
-    private static final String AFF2_CACHE2 = "a2c2";
-
-    /** */
     private static final String AFF3_CACHE1 = "a3c1";
 
     /** */
@@ -67,9 +60,6 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
     /** */
     private static final String AFF4_FILTER_CACHE2 = "a4c2";
-
-    /** */
-    private static final String AFF5_FILTER_CACHE1 = "a5c1";
 
     /** */
     private boolean client;
@@ -93,25 +83,13 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         {
             CacheConfiguration ccfg = new CacheConfiguration();
             ccfg.setName(AFF1_CACHE1);
-            ccfg.setAffinity(new RendezvousAffinityFunction());
+            ccfg.setAffinity(new RendezvousAffinityFunction(false,512));
             ccfgs.add(ccfg);
         }
         {
             CacheConfiguration ccfg = new CacheConfiguration();
             ccfg.setName(AFF1_CACHE2);
-            ccfg.setAffinity(new RendezvousAffinityFunction());
-            ccfgs.add(ccfg);
-        }
-        {
-            CacheConfiguration ccfg = new CacheConfiguration();
-            ccfg.setName(AFF2_CACHE1);
-            ccfg.setAffinity(new FairAffinityFunction());
-            ccfgs.add(ccfg);
-        }
-        {
-            CacheConfiguration ccfg = new CacheConfiguration();
-            ccfg.setName(AFF2_CACHE2);
-            ccfg.setAffinity(new FairAffinityFunction());
+            ccfg.setAffinity(new RendezvousAffinityFunction(false,512));
             ccfgs.add(ccfg);
         }
         {
@@ -136,13 +114,6 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
             ccfg.setName(AFF4_FILTER_CACHE2);
             ccfg.setNodeFilter(new TestNodeFilter());
             ccfg.setAffinity(new RendezvousAffinityFunction());
-            ccfgs.add(ccfg);
-        }
-        {
-            CacheConfiguration ccfg = new CacheConfiguration();
-            ccfg.setName(AFF5_FILTER_CACHE1);
-            ccfg.setNodeFilter(new TestNodeFilter());
-            ccfg.setAffinity(new FairAffinityFunction());
             ccfgs.add(ccfg);
         }
 
@@ -265,11 +236,9 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         assertNotNull(dupPartsData);
 
         checkFullMessage(AFF1_CACHE1, AFF1_CACHE2, dupPartsData, msg);
-        checkFullMessage(AFF2_CACHE1, AFF2_CACHE2, dupPartsData, msg);
         checkFullMessage(AFF4_FILTER_CACHE1, AFF4_FILTER_CACHE2, dupPartsData, msg);
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
-        assertFalse(dupPartsData.containsKey(CU.cacheId(AFF5_FILTER_CACHE1)));
 
         Map<Integer, Map<Integer, Long>> partCntrs = GridTestUtils.getFieldValue(msg, "partCntrs");
 
@@ -288,11 +257,9 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         assertNotNull(dupPartsData);
 
         checkSingleMessage(AFF1_CACHE1, AFF1_CACHE2, dupPartsData, msg);
-        checkSingleMessage(AFF2_CACHE1, AFF2_CACHE2, dupPartsData, msg);
         checkSingleMessage(AFF4_FILTER_CACHE1, AFF4_FILTER_CACHE2, dupPartsData, msg);
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
-        assertFalse(dupPartsData.containsKey(CU.cacheId(AFF5_FILTER_CACHE1)));
 
         Map<Integer, Map<Integer, Long>> partCntrs = GridTestUtils.getFieldValue(msg, "partCntrs");
 

@@ -44,9 +44,6 @@ public class IgniteSpiTestSuite extends TestSuite {
         // Load Balancing.
         suite.addTest(IgniteSpiLoadBalancingSelfTestSuite.suite());
 
-        // Swap space.
-        suite.addTest(IgniteSpiSwapSpaceSelfTestSuite.suite());
-
         // Checkpoints.
         suite.addTest(IgniteSpiCheckpointSelfTestSuite.suite());
 

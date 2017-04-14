@@ -326,7 +326,11 @@ BOOST_AUTO_TEST_CASE(RemoteSchemaRetrieval)
     try
     {
         BOOST_CHECKPOINT("Node1 startup");
+#ifdef IGNITE_TESTS_32
+        Ignite node1 = ignite_test::StartNode("cache-test-32.xml", "node1");
+#else
         Ignite node1 = ignite_test::StartNode("cache-test.xml", "node1");
+#endif
 
         BOOST_CHECKPOINT("Creating cache");
         cache::Cache<int32_t, BinaryFields> cache = node1.GetOrCreateCache<int32_t, BinaryFields>("cache");
@@ -337,7 +341,11 @@ BOOST_AUTO_TEST_CASE(RemoteSchemaRetrieval)
         cache.Put(42, some);
 
         BOOST_CHECKPOINT("Node2 startup");
+#ifdef IGNITE_TESTS_32
+        Ignite node2 = ignite_test::StartNode("cache-test-32.xml", "node2");
+#else
         Ignite node2 = ignite_test::StartNode("cache-test.xml", "node2");
+#endif
 
         impl::IgniteImpl* nodeImpl = impl::IgniteImpl::GetFromProxy(node2);
         impl::IgniteEnvironment* env = nodeImpl->GetEnvironment();

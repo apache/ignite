@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
- namespace Apache.Ignite.Core
+namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
@@ -40,11 +40,9 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.SwapSpace;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin;
-    using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.Transactions;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
@@ -278,30 +276,6 @@
                 // Name mapper.
                 var mapper = BinaryConfiguration.NameMapper as BinaryBasicNameMapper;
                 writer.WriteBoolean(mapper != null && mapper.IsSimpleName);
-
-                // Send only descriptors with non-null EqualityComparer to preserve old behavior where
-                // remote nodes can have no BinaryConfiguration.
-
-                if (BinaryConfiguration.TypeConfigurations != null &&
-                    BinaryConfiguration.TypeConfigurations.Any(x => x.EqualityComparer != null))
-                {
-                    // Create a new marshaller to reuse type name resolver mechanism.
-                    var types = new Marshaller(BinaryConfiguration).GetUserTypeDescriptors()
-                        .Where(x => x.EqualityComparer != null).ToList();
-
-                    writer.WriteInt(types.Count);
-
-                    foreach (var type in types)
-                    {
-                        writer.WriteString(type.TypeName);
-                        writer.WriteBoolean(type.IsEnum);
-                        BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
-                    }
-                }
-                else
-                {
-                    writer.WriteInt(0);
-                }
             }
             else
             {
@@ -349,9 +323,6 @@
             }
             else
                 writer.WriteBoolean(false);
-
-            // Swap space
-            SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
 
             // Event storage
             if (EventStorageSpi == null)
@@ -471,25 +442,6 @@
                 {
                     BinaryConfiguration.NameMapper = BinaryBasicNameMapper.SimpleNameInstance;
                 }
-
-                var typeCount = r.ReadInt();
-
-                if (typeCount > 0)
-                {
-                    var types = new List<BinaryTypeConfiguration>(typeCount);
-
-                    for (var i = 0; i < typeCount; i++)
-                    {
-                        types.Add(new BinaryTypeConfiguration
-                        {
-                            TypeName = r.ReadString(),
-                            IsEnum = r.ReadBoolean(),
-                            EqualityComparer = BinaryEqualityComparerSerializer.Read(r)
-                        });
-                    }
-
-                    BinaryConfiguration.TypeConfigurations = types;
-                }
             }
 
             // User attributes
@@ -519,9 +471,6 @@
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
                 };
             }
-
-            // Swap
-            SwapSpaceSpi = SwapSpaceSerializer.Read(r);
 
             // Event storage
             switch (r.ReadByte())
@@ -963,11 +912,6 @@
         }
 
         /// <summary>
-        /// Gets or sets the swap space SPI.
-        /// </summary>
-        public ISwapSpaceSpi SwapSpaceSpi { get; set; }
-
-        /// <summary>
         /// Gets or sets the configurations for plugins to be started.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
@@ -976,7 +920,7 @@
         /// <summary>
         /// Gets or sets the event storage interface.
         /// <para />
-        /// Only predefined implementations are supported: 
+        /// Only predefined implementations are supported:
         /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
         /// </summary>
         public IEventStorageSpi EventStorageSpi { get; set; }

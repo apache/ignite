@@ -17,17 +17,28 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.lang.management.ManagementFactory;
+import java.net.InetSocketAddress;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.Set;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
-import org.apache.ignite.binary.BinaryFieldIdentityResolver;
-import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -35,7 +46,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -46,6 +56,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.binary.BinaryArrayIdentityResolver;
+import org.apache.ignite.internal.binary.BinaryIdentityResolver;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
@@ -71,39 +83,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
-import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-
-import javax.cache.configuration.Factory;
-import javax.cache.expiry.ExpiryPolicy;
-import java.lang.management.ManagementFactory;
-import java.net.InetSocketAddress;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.Set;
 
 /**
  * Configuration utils.
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
 public class PlatformConfigurationUtils {
-    /** */
-    private static final byte SWAP_TYP_NONE = 0;
-
-    /** */
-    private static final byte SWAP_TYP_FILE = 1;
-
     /**
      * Write .Net configuration to the stream.
      *
@@ -159,21 +146,13 @@ public class PlatformConfigurationUtils {
         ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
         ccfg.setCopyOnRead(in.readBoolean());
         ccfg.setEagerTtl(in.readBoolean());
-        ccfg.setSwapEnabled(in.readBoolean());
-        ccfg.setEvictSynchronized(in.readBoolean());
-        ccfg.setEvictSynchronizedConcurrencyLevel(in.readInt());
-        ccfg.setEvictSynchronizedKeyBufferSize(in.readInt());
-        ccfg.setEvictSynchronizedTimeout(in.readLong());
         ccfg.setInvalidate(in.readBoolean());
         ccfg.setStoreKeepBinary(in.readBoolean());
         ccfg.setLoadPreviousValue(in.readBoolean());
         ccfg.setDefaultLockTimeout(in.readLong());
         ccfg.setLongQueryWarningTimeout(in.readLong());
         ccfg.setMaxConcurrentAsyncOperations(in.readInt());
-        ccfg.setEvictMaxOverflowRatio(in.readFloat());
-        ccfg.setMemoryMode(CacheMemoryMode.values()[in.readInt()]);
         ccfg.setName(in.readString());
-        ccfg.setOffHeapMaxMemory(in.readLong());
         ccfg.setReadFromBackup(in.readBoolean());
         ccfg.setRebalanceBatchSize(in.readInt());
         ccfg.setRebalanceDelay(in.readLong());
@@ -181,7 +160,6 @@ public class PlatformConfigurationUtils {
         ccfg.setRebalanceThrottle(in.readLong());
         ccfg.setRebalanceTimeout(in.readLong());
         ccfg.setSqlEscapeAll(in.readBoolean());
-        ccfg.setSqlOnheapRowCacheSize(in.readInt());
         ccfg.setStartSize(in.readInt());
         ccfg.setWriteBehindBatchSize(in.readInt());
         ccfg.setWriteBehindEnabled(in.readBoolean());
@@ -213,6 +191,9 @@ public class PlatformConfigurationUtils {
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
+        if (ccfg.getEvictionPolicy() != null)
+            ccfg.setOnheapCacheEnabled(true);
+
         ccfg.setAffinity(readAffinityFunction(in));
         ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
 
@@ -344,11 +325,7 @@ public class PlatformConfigurationUtils {
 
         switch (plcTyp) {
             case 1: {
-                FairAffinityFunction f = new FairAffinityFunction();
-                f.setPartitions(partitions);
-                f.setExcludeNeighbors(exclNeighbours);
-                baseFunc = f;
-                break;
+                throw new IllegalStateException("FairAffinityFunction");
             }
             case 2: {
                 RendezvousAffinityFunction f = new RendezvousAffinityFunction();
@@ -388,15 +365,7 @@ public class PlatformConfigurationUtils {
         if (f instanceof PlatformDotNetAffinityFunction)
             f = ((PlatformDotNetAffinityFunction)f).getFunc();
 
-        if (f instanceof FairAffinityFunction) {
-            out.writeByte((byte) 1);
-
-            FairAffinityFunction f0 = (FairAffinityFunction) f;
-            out.writeInt(f0.getPartitions());
-            out.writeBoolean(f0.isExcludeNeighbors());
-            out.writeByte((byte) 0);  // override flags
-            out.writeObject(null);  // user func
-        } else if (f instanceof RendezvousAffinityFunction) {
+        if (f instanceof RendezvousAffinityFunction) {
             out.writeByte((byte) 2);
 
             RendezvousAffinityFunction f0 = (RendezvousAffinityFunction) f;
@@ -408,13 +377,7 @@ public class PlatformConfigurationUtils {
             PlatformAffinityFunction f0 = (PlatformAffinityFunction) f;
             AffinityFunction baseFunc = f0.getBaseFunc();
 
-            if (baseFunc instanceof FairAffinityFunction) {
-                out.writeByte((byte) 1);
-                out.writeInt(f0.partitions());
-                out.writeBoolean(((FairAffinityFunction) baseFunc).isExcludeNeighbors());
-                out.writeByte(f0.getOverrideFlags());
-                out.writeObject(f0.getUserFunc());
-            } else if (baseFunc instanceof RendezvousAffinityFunction) {
+            if (baseFunc instanceof RendezvousAffinityFunction) {
                 out.writeByte((byte) 2);
                 out.writeInt(f0.partitions());
                 out.writeBoolean(((RendezvousAffinityFunction) baseFunc).isExcludeNeighbors());
@@ -608,23 +571,6 @@ public class PlatformConfigurationUtils {
                 // Simple name mapper.
                 cfg.getBinaryConfiguration().setNameMapper(new BinaryBasicNameMapper(true));
             }
-
-            int typeCnt = in.readInt();
-
-            if (typeCnt > 0) {
-                Collection<BinaryTypeConfiguration> types = new ArrayList<>(typeCnt);
-
-                for (int i = 0; i < typeCnt; i++) {
-                    BinaryTypeConfiguration type = new BinaryTypeConfiguration(in.readString());
-
-                    type.setEnum(in.readBoolean());
-                    type.setIdentityResolver(readBinaryIdentityResolver(in));
-
-                    types.add(type);
-                }
-
-                cfg.getBinaryConfiguration().setTypeConfigurations(types);
-            }
         }
 
         int attrCnt = in.readInt();
@@ -658,27 +604,6 @@ public class PlatformConfigurationUtils {
             tx.setPessimisticTxLogLinger(in.readInt());
 
             cfg.setTransactionConfiguration(tx);
-        }
-
-        byte swapType = in.readByte();
-
-        switch (swapType) {
-            case SWAP_TYP_FILE: {
-                FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
-
-                swap.setBaseDirectory(in.readString());
-                swap.setMaximumSparsity(in.readFloat());
-                swap.setMaxWriteQueueSize(in.readInt());
-                swap.setReadStripesNumber(in.readInt());
-                swap.setWriteBufferSize(in.readInt());
-
-                cfg.setSwapSpaceSpi(swap);
-
-                break;
-            }
-
-            default:
-                assert swapType == SWAP_TYP_NONE;
         }
 
         switch (in.readByte()) {
@@ -826,21 +751,13 @@ public class PlatformConfigurationUtils {
         writeEnumInt(writer, ccfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
         writer.writeBoolean(ccfg.isCopyOnRead());
         writer.writeBoolean(ccfg.isEagerTtl());
-        writer.writeBoolean(ccfg.isSwapEnabled());
-        writer.writeBoolean(ccfg.isEvictSynchronized());
-        writer.writeInt(ccfg.getEvictSynchronizedConcurrencyLevel());
-        writer.writeInt(ccfg.getEvictSynchronizedKeyBufferSize());
-        writer.writeLong(ccfg.getEvictSynchronizedTimeout());
         writer.writeBoolean(ccfg.isInvalidate());
         writer.writeBoolean(ccfg.isStoreKeepBinary());
         writer.writeBoolean(ccfg.isLoadPreviousValue());
         writer.writeLong(ccfg.getDefaultLockTimeout());
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
-        writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
-        writeEnumInt(writer, ccfg.getMemoryMode(), CacheConfiguration.DFLT_MEMORY_MODE);
         writer.writeString(ccfg.getName());
-        writer.writeLong(ccfg.getOffHeapMaxMemory());
         writer.writeBoolean(ccfg.isReadFromBackup());
         writer.writeInt(ccfg.getRebalanceBatchSize());
         writer.writeLong(ccfg.getRebalanceDelay());
@@ -848,7 +765,6 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getRebalanceThrottle());
         writer.writeLong(ccfg.getRebalanceTimeout());
         writer.writeBoolean(ccfg.isSqlEscapeAll());
-        writer.writeInt(ccfg.getSqlOnheapRowCacheSize());
         writer.writeInt(ccfg.getStartSize());
         writer.writeInt(ccfg.getWriteBehindBatchSize());
         writer.writeBoolean(ccfg.isWriteBehindEnabled());
@@ -1064,20 +980,6 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(bc.isCompactFooter());
             w.writeBoolean(bc.getNameMapper() instanceof BinaryBasicNameMapper &&
                     ((BinaryBasicNameMapper)(bc.getNameMapper())).isSimpleName());
-
-            Collection<BinaryTypeConfiguration> types = bc.getTypeConfigurations();
-
-            if (types != null) {
-                w.writeInt(types.size());
-
-                for (BinaryTypeConfiguration type : types) {
-                    w.writeString(type.getTypeName());
-                    w.writeBoolean(type.isEnum());
-                    writeBinaryIdentityResolver(w, type.getIdentityResolver());
-                }
-            }
-            else
-                w.writeInt(0);
         }
         else
             w.writeBoolean(false);
@@ -1120,23 +1022,6 @@ public class PlatformConfigurationUtils {
         }
         else
             w.writeBoolean(false);
-
-        SwapSpaceSpi swap = cfg.getSwapSpaceSpi();
-
-        if (swap instanceof FileSwapSpaceSpi) {
-            w.writeByte(SWAP_TYP_FILE);
-
-            FileSwapSpaceSpi fileSwap = (FileSwapSpaceSpi)swap;
-
-            w.writeString(fileSwap.getBaseDirectory());
-            w.writeFloat(fileSwap.getMaximumSparsity());
-            w.writeInt(fileSwap.getMaxWriteQueueSize());
-            w.writeInt(fileSwap.getReadStripesNumber());
-            w.writeInt(fileSwap.getWriteBufferSize());
-        }
-        else {
-            w.writeByte(SWAP_TYP_NONE);
-        }
 
         EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
 
@@ -1280,17 +1165,6 @@ public class PlatformConfigurationUtils {
 
             case 1:
                 return new BinaryArrayIdentityResolver();
-
-            case 2:
-                int cnt = r.readInt();
-
-                String[] fields = new String[cnt];
-
-                for (int i = 0; i < cnt; i++)
-                    fields[i] = r.readString();
-
-                return new BinaryFieldIdentityResolver().setFieldNames(fields);
-
             default:
                 assert false;
                 return null;
@@ -1306,23 +1180,8 @@ public class PlatformConfigurationUtils {
     private static void writeBinaryIdentityResolver(BinaryRawWriter w, BinaryIdentityResolver resolver) {
         if (resolver instanceof BinaryArrayIdentityResolver)
             w.writeByte((byte)1);
-        else if (resolver instanceof BinaryFieldIdentityResolver) {
-            w.writeByte((byte)2);
-
-            String[] fields = ((BinaryFieldIdentityResolver)resolver).getFieldNames();
-
-            if (fields != null) {
-                w.writeInt(fields.length);
-
-                for (String field : fields)
-                    w.writeString(field);
-            }
-            else
-                w.writeInt(0);
-        }
-        else {
+        else
             w.writeByte((byte)0);
-        }
     }
 
     /**

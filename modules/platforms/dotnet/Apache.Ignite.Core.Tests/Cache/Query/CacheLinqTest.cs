@@ -1366,8 +1366,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
                 .ToArray();
 
-            Assert.Greater(res.Length, 0);
-            Assert.Less(res.Length, RoleCount);
+            Assert.AreEqual(res.Length, RoleCount);
 
             // Test distributed join: returns complete results
             persons = personCache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});

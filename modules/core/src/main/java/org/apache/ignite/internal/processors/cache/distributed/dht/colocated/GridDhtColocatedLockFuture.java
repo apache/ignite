@@ -105,6 +105,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     private final long threadId;
 
     /** Keys to lock. */
+    @GridToStringInclude
     private Collection<KeyCacheObject> keys;
 
     /** Future ID. */
@@ -161,6 +162,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     private final boolean keepBinary;
 
     /** */
+    private final boolean recovery;
+
+    /** */
     private int miniId;
 
     /**
@@ -186,7 +190,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean recovery
+    ) {
         super(CU.boolReducer());
 
         assert keys != null;
@@ -202,6 +208,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.filter = filter;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.recovery = recovery;
 
         ignoreInterrupts();
 
@@ -640,9 +647,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
-            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
-                if (fut.topologyVersion().equals(topVer)){
-                    Throwable err = fut.validateCache(cctx);
+            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
+                if (fut.topologyVersion().equals(topVer)) {
+                    Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                     if (err != null) {
                         onDone(err);
@@ -693,7 +700,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
-                Throwable err = fut.validateCache(cctx);
+                Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                 if (err != null) {
                     onDone(err);
@@ -863,7 +870,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     if (txEntry != null) {
                         entry = (GridDistributedCacheEntry)txEntry.cached();
 
-                        if (entry != null && !(loc ^ entry.detached())) {
+                        if (entry != null && loc == entry.detached()) {
                             entry = cctx.colocated().entryExx(key, topVer, true);
 
                             txEntry.cached(entry);
@@ -912,12 +919,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         !topLocked &&
                                         (tx == null || !tx.hasRemoteLocks());
 
-                                        first = false;
-                                    }
+                                    first = false;
+                                }
 
-                                    assert !implicitTx() && !implicitSingleTx() : tx;
-
-                                    req = new GridNearLockRequest(
+                                    assert !implicitTx() && !implicitSingleTx() : tx;req = new GridNearLockRequest(
                                         cctx.cacheId(),
                                         topVer,
                                         cctx.nodeId(),
@@ -937,13 +942,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         inTx() ? tx.taskNameHash() : 0,
                                         read ? createTtl : -1L,
                                         read ? accessTtl : -1L,
-                                        skipStore,
-                                        keepBinary,
-                                        clientFirst,
-                                        cctx.deploymentEnabled());
+                                    skipStore,
+                                    keepBinary,
+                                    clientFirst,
+                                    cctx.deploymentEnabled());
 
-                                    mapping.request(req);
-                                }
+                                mapping.request(req);
+                            }
 
                             distributedKeys.add(key);
 

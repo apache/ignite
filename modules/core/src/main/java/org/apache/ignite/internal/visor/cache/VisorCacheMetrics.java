@@ -161,7 +161,7 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
     private long offHeapAllocatedSize;
 
     /** Number of cache entries stored in off-heap memory. */
-    private long offHeapEntriesCount;
+    private long offHeapEntriesCnt;
 
     /**
      * Calculate rate of metric per second.
@@ -238,7 +238,7 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
         GridCacheAdapter<Object, Object> ca = cacheProcessor.internalCache(cacheName);
 
         offHeapAllocatedSize = ca.offHeapAllocatedSize();
-        offHeapEntriesCount = ca.offHeapEntriesCount();
+        offHeapEntriesCnt = ca.offHeapEntriesCount();
 
         return this;
     }
@@ -543,7 +543,7 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
      * @return Number of cache entries stored in off-heap memory.
      */
     public long offHeapEntriesCount() {
-        return offHeapEntriesCount;
+        return offHeapEntriesCnt;
     }
 
     /** {@inheritDoc} */

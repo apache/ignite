@@ -100,6 +100,9 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
     /** */
     protected final boolean keepCacheObjects;
 
+    /** */
+    protected final boolean recovery;
+
     /**
      * @param cctx Context.
      * @param keys Keys.
@@ -127,7 +130,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
         boolean skipVals,
         boolean canRemap,
         boolean needVer,
-        boolean keepCacheObjects
+        boolean keepCacheObjects,
+        boolean recovery
     ) {
         super(CU.<K, V>mapsReducer(keys.size()));
 
@@ -145,6 +149,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
         this.canRemap = canRemap;
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
+        this.recovery = recovery;
 
         futId = IgniteUuid.randomUuid();
     }

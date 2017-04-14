@@ -64,7 +64,6 @@ class VisorConsole {
         org.apache.ignite.visor.commands.cache.VisorCacheClearCommand
         org.apache.ignite.visor.commands.cache.VisorCacheResetCommand
         org.apache.ignite.visor.commands.cache.VisorCacheCommand
-        org.apache.ignite.visor.commands.cache.VisorCacheSwapCommand
         org.apache.ignite.visor.commands.config.VisorConfigurationCommand
         org.apache.ignite.visor.commands.deploy.VisorDeployCommand
         org.apache.ignite.visor.commands.disco.VisorDiscoveryCommand

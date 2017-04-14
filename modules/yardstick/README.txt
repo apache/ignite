@@ -120,8 +120,6 @@ would behave like a `servers`.
 * `-nn <num>` or `--nodeNumber <num>` - Number of nodes (automatically set in `benchmark.properties`), used to wait for
     the specified number of nodes to start
 * `-sm <mode>` or `-syncMode <mode>` - Synchronization mode (defined in `CacheWriteSynchronizationMode`)
-* `-ot` or `--offheapTiered` - Flag indicating whether tiered off-heap mode is on
-* `-ov` or `--offheapValuesOnly` - Flag indicating whether off-heap mode is on and only cache values are stored off-heap
 * `-r <num>` or `--range` - Range of keys that are randomly generated for cache operations
 * `-rd or --restartdelay` - Restart delay in seconds
 * `-rs or --restartsleep` - Restart sleep in seconds

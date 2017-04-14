@@ -140,6 +140,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withNoRetries();
 
     /**
+     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache operations (read, write)
+     * regardless of partition loss policy.
+     *
+     * @return Cache without partition loss protection.
+     */
+    public IgniteCache<K, V> withPartitionRecover();
+
+    /**
      * Returns cache that will operate with binary objects.
      * <p>
      * Cache returned by this method will not be forced to deserialize binary objects,
@@ -1356,7 +1364,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * For distributed caches, if called on clients, stops client cache, if called on a server node,
      * just closes this cache instance and does not destroy cache data.
      * <p>
-     * After cache instance is closed another {@link IgniteCache} instance for the same
+     * After cache instance is closed another {@code IgniteCache} instance for the same
      * cache can be created using {@link Ignite#cache(String)} method.
      */
     @Override public void close();
@@ -1387,6 +1395,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Future that will be completed when rebalancing is finished.
      */
     public IgniteFuture<?> rebalance();
+
+    /**
+     * Returns future that will be completed when all indexes for this cache are ready to use.
+     *
+     * @return Future.
+     */
+    public IgniteFuture<?> indexReadyFuture();
 
     /**
      * Gets whole cluster snapshot metrics (statistics) for this cache.
@@ -1423,4 +1438,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return MxBean.
      */
     public CacheMetricsMXBean localMxBean();
+
+    /**
+     * Gets a collection of lost partition IDs.
+     *
+     * @return Lost paritions.
+     */
+    public Collection<Integer> lostPartitions();
 }

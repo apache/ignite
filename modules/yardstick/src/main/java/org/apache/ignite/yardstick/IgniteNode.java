@@ -27,6 +27,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -42,7 +43,6 @@ import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 
 /**
@@ -125,15 +125,6 @@ public class IgniteNode implements BenchmarkServer {
                     c.setConnectorConfiguration(ccc);
                 }
 
-                if (args.isOffHeap()) {
-                    cc.setOffHeapMaxMemory(0);
-
-                    if (args.isOffheapValues())
-                        cc.setMemoryMode(OFFHEAP_VALUES);
-                    else
-                        cc.setEvictionPolicy(new LruEvictionPolicy(50000));
-                }
-
                 cc.setReadThrough(args.isStoreEnabled());
 
                 cc.setWriteThrough(args.isStoreEnabled());
@@ -157,6 +148,18 @@ public class IgniteNode implements BenchmarkServer {
             commSpi = new TcpCommunicationSpi();
 
         c.setCommunicationSpi(commSpi);
+
+        if (args.getPageSize() != MemoryConfiguration.DFLT_PAGE_SIZE) {
+            MemoryConfiguration dbCfg = c.getMemoryConfiguration();
+
+            if (dbCfg == null) {
+                dbCfg = new MemoryConfiguration();
+
+                c.setMemoryConfiguration(dbCfg);
+            }
+
+            dbCfg.setPageSize(args.getPageSize());
+        }
 
         ignite = IgniteSpring.start(c, appCtx);
 

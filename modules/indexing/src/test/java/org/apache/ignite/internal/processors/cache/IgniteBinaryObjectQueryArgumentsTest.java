@@ -30,7 +30,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -103,13 +102,6 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     }
 
     /**
-     * @return Memory mode.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
-    }
-
-    /**
      * @param cacheName Cache name.
      * @return Cache config.
      */
@@ -123,8 +115,6 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
         person.addQueryField("name", String.class.getName(), null);
 
         ccfg.setQueryEntities(Collections.singletonList(person));
-
-        ccfg.setMemoryMode(memoryMode());
 
         ccfg.setName(cacheName);
 
@@ -178,7 +168,6 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
 
         cfg.setName(cacheName);
 
-        cfg.setMemoryMode(memoryMode());
         cfg.setIndexedTypes(key, val);
 
         return cfg;

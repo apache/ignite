@@ -245,7 +245,6 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(QueryPerson)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(QueryPerson)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(QueryPerson)
             IGNITE_BINARY_IS_NULL_FALSE(QueryPerson)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryPerson)
 
@@ -275,7 +274,6 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(QueryRelation)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(QueryRelation)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(QueryRelation)
             IGNITE_BINARY_IS_NULL_FALSE(QueryRelation)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryRelation)
 
@@ -666,7 +664,11 @@ struct CacheQueryTestSuiteFixture
 {
     Ignite StartNode(const char* name)
     {
+#ifdef IGNITE_TESTS_32
+        return ignite_test::StartNode("cache-query-32.xml", name);
+#else
         return ignite_test::StartNode("cache-query.xml", name);
+#endif
     }
 
     void CheckFieldsQueryPages(int32_t pageSize, int32_t pagesNum, int32_t additionalNum)
