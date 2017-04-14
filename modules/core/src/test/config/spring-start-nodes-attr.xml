@@ -37,7 +37,7 @@
         <property name="connectorConfiguration"><null/></property>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
+            <bean class="org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller">
                 <property name="requireSerializable" value="false"/>
             </bean>
         </property>

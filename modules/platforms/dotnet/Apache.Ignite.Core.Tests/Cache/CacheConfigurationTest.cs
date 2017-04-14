@@ -547,7 +547,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 ExpiryPolicyFactory = new ExpiryFactory(),
                 EnableStatistics = true,
-                PluginConfigurations = new[] { new CachePluginConfiguration() }
+                PluginConfigurations = new[] { new CacheJavaPluginConfiguration() }
             };
         }
         /// <summary>
