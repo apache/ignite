@@ -17,34 +17,32 @@
 
 package org.apache.ignite.internal.visor.query;
 
+import java.util.regex.Pattern;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * Filter scan results by specified substring in string presentation of key or value.
  */
-public class VisorQueryScanSubstringFilter implements IgniteBiPredicate<Object, Object> {
+public class VisorQueryScanRegexFilter implements IgniteBiPredicate<Object, Object> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Case sensitive flag. */
-    private final boolean caseSensitive;
-
-    /** String to search in string presentation of key or value. */
-    private final String ptrn;
+    /** Regex pattern to search data. */
+    private final Pattern ptrn;
 
     /**
      * Create filter instance.
      *
      * @param caseSensitive Case sensitive flag.
+     * @param regex Regex search flag.
      * @param ptrn String to search in string presentation of key or value.
      */
-    public VisorQueryScanSubstringFilter(boolean caseSensitive, String ptrn) {
-        this.caseSensitive = caseSensitive;
+    public VisorQueryScanRegexFilter(boolean caseSensitive, boolean regex, String ptrn) {
+        int flags = caseSensitive ? 0 : Pattern.CASE_INSENSITIVE;
 
-        this.ptrn = caseSensitive ? ptrn : ptrn.toUpperCase();
+        this.ptrn = Pattern.compile(regex ? ptrn : ".*?" + Pattern.quote(ptrn) + ".*?", flags);
     }
-
     /**
      * Check that key or value contains specified string.
      *
@@ -56,9 +54,6 @@ public class VisorQueryScanSubstringFilter implements IgniteBiPredicate<Object, 
         String k = key instanceof BinaryObject ? VisorQueryUtils.binaryToString((BinaryObject)key) : key.toString();
         String v = val instanceof BinaryObject ? VisorQueryUtils.binaryToString((BinaryObject)val) : val.toString();
 
-        if (caseSensitive)
-            return k.contains(ptrn) || v.contains(ptrn);
-
-        return k.toUpperCase().contains(ptrn) || v.toUpperCase().contains(ptrn);
+        return ptrn.matcher(k).find() || ptrn.matcher(v).find();
     }
 }

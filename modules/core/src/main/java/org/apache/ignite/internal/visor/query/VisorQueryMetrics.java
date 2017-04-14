@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.visor.query;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.cache.query.QueryMetrics;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for cache query metrics.
  */
-public class VisorCacheQueryMetrics implements Serializable, LessNamingBean {
+public class VisorQueryMetrics extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,58 +47,79 @@ public class VisorCacheQueryMetrics implements Serializable, LessNamingBean {
     private int fails;
 
     /**
-     * @param m Cache query metrics.
-     * @return Data transfer object for given cache metrics.
+     * Default constructor.
      */
-    public static VisorCacheQueryMetrics from(QueryMetrics m) {
-        VisorCacheQueryMetrics qm = new VisorCacheQueryMetrics();
+    public VisorQueryMetrics() {
+        // No-op.
+    }
 
-        qm.minTime = m.minimumTime();
-        qm.maxTime = m.maximumTime();
-        qm.avgTime = m.averageTime();
-        qm.execs = m.executions();
-        qm.fails = m.fails();
-
-        return qm;
+    /**
+     * Create data transfer object for given cache metrics.
+     * @param m Cache query metrics.
+     */
+    public VisorQueryMetrics(QueryMetrics m) {
+        minTime = m.minimumTime();
+        maxTime = m.maximumTime();
+        avgTime = m.averageTime();
+        execs = m.executions();
+        fails = m.fails();
     }
 
     /**
      * @return Minimum execution time of query.
      */
-    public long minimumTime() {
+    public long getMinimumTime() {
         return minTime;
     }
 
     /**
      * @return Maximum execution time of query.
      */
-    public long maximumTime() {
+    public long getMaximumTime() {
         return maxTime;
     }
 
     /**
      * @return Average execution time of query.
      */
-    public double averageTime() {
+    public double getAverageTime() {
         return avgTime;
     }
 
     /**
      * @return Number of executions.
      */
-    public int executions() {
+    public int getExecutions() {
         return execs;
     }
 
     /**
      * @return Total number of times a query execution failed.
      */
-    public int fails() {
+    public int getFailures() {
         return fails;
     }
 
     /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(minTime);
+        out.writeLong(maxTime);
+        out.writeDouble(avgTime);
+        out.writeInt(execs);
+        out.writeInt(fails);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        minTime = in.readLong();
+        maxTime = in.readLong();
+        avgTime = in.readDouble();
+        execs = in.readInt();
+        fails = in.readInt();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheQueryMetrics.class, this);
+        return S.toString(VisorQueryMetrics.class, this);
     }
 }

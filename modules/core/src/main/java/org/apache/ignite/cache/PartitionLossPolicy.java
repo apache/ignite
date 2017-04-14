@@ -19,6 +19,7 @@ package org.apache.ignite.cache;
 
 import java.util.Collection;
 import org.apache.ignite.Ignite;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Partition loss policy. Defines how cache will behave in a case when one or more partitions are lost
@@ -62,5 +63,18 @@ public enum PartitionLossPolicy {
      * a previously lost and not cleared partition is undefined and may be different on different nodes in the
      * cluster.
      */
-    IGNORE
+    IGNORE;
+
+    /** Enumerated values. */
+    private static final PartitionLossPolicy[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static PartitionLossPolicy fromOrdinal(byte ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }
