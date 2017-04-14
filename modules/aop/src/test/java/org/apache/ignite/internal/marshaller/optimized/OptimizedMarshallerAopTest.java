@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized;
+package org.apache.ignite.internal.marshaller.optimized;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.compute.gridify.Gridify;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;

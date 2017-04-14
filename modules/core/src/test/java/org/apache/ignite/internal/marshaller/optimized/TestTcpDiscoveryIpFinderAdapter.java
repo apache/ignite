@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized;
+package org.apache.ignite.internal.marshaller.optimized;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;

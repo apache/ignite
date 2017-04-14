@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized;
+package org.apache.ignite.internal.marshaller.optimized;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -57,6 +57,11 @@ import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedClassDescriptor;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectInputStream;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectOutputStream;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamRegistry;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
