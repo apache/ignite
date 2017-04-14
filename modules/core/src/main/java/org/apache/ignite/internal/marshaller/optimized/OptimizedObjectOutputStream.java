@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized;
+package org.apache.ignite.internal.marshaller.optimized;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -45,20 +45,20 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
 
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.HANDLE;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.JDK;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.JDK_MARSH;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.NULL;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.classDescriptor;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getBoolean;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getByte;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getChar;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getDouble;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getFloat;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getInt;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getLong;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getObject;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.getShort;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.HANDLE;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK_MARSH;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.NULL;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.classDescriptor;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getBoolean;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getByte;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getChar;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getDouble;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getFloat;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getInt;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getLong;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getObject;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getShort;
 
 /**
  * Optimized object output stream.
