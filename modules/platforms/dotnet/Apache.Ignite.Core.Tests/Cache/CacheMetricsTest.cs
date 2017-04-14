@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
     using NUnit.Framework;
-    using System.Linq;
 
     /// <summary>
     /// Tests cache metrics propagation.
@@ -224,9 +223,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
             Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
 
-            var aff = localIgnite.GetAffinity(cacheName);
-            var localNode = localIgnite.GetCluster().GetLocalNode();
-            var localKey = Enumerable.Range(1, 10000).First(x => aff.IsPrimary(localNode, x));
+            var localKey = TestUtils.GetPrimaryKey(localIgnite, cacheName);
 
             localCache.Put(localKey, 1);
             localCache.Get(localKey);
