@@ -17,47 +17,43 @@
 
 package org.apache.ignite.internal.processors.cache.store;
 
-import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.cache.store.CacheStoreAdapter;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteFuture;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteFuture;
+
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * This class provides non write coalescing tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
 public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCacheAbstractTest {
     /** {@inheritDoc} */
-    @Override
-    protected int gridCount() {
+    @Override protected int gridCount() {
         return 1;
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return null;
     }
 
@@ -72,8 +68,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected NearCacheConfiguration nearConfiguration() {
+    @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
     }
 
@@ -94,19 +89,20 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
             TestIncrementStoreFactory.class);
 
         Set<Integer> keys = new HashSet<>();
+
         for (int i = 0; i < 1000; i++) {
             keys.add(i);
+
             cache.put(i, i);
         }
 
         Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
-        for (int i=0;i<100;i++)
+        for (int i = 0; i < 100; i++)
             futs.add(updateKeys(cache, keys));
 
         for (IgniteFuture<?> fut : futs)
             fut.get();
-
     }
 
     /**
@@ -121,9 +117,8 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
 
         // Using EntryProcessor.invokeAll to increment every value in place.
         asyncCache.invokeAll(keys, new EntryProcessor<Integer, Integer, Object>() {
-            @Override public Object process(MutableEntry<Integer, Integer> entry,
-                          Object... arguments) throws EntryProcessorException {
-
+            @Override public Object process(MutableEntry<Integer, Integer> entry, Object... arguments)
+                throws EntryProcessorException {
                 entry.setValue(entry.getValue() + 1);
 
                 return null;
@@ -161,11 +156,14 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
             Object oldValue = storeMap.put(entry.getKey(), entry.getValue());
+
             if (oldValue instanceof Integer && entry.getValue() instanceof Integer) {
                 Integer oldInt = (Integer)oldValue;
                 Integer newInt = (Integer)entry.getValue();
-                assertTrue("newValue(" + newInt + ") != oldValue(" + oldInt + ")+1 !",
-                newInt == oldInt+1);
+
+                assertTrue(
+                    "newValue(" + newInt + ") != oldValue(" + oldInt + ")+1 !",
+                    newInt == oldInt + 1);
             }
         }
 
