@@ -788,11 +788,12 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * @return {@code true} if value may be deleted from the write cache,
      *         {@code false} otherwise
      */
-    private boolean updateStore(StoreOperation operation,
+    private boolean updateStore(
+        StoreOperation operation,
         Map<K, Entry<? extends K, ? extends  V>> vals,
         boolean initSes,
-        Flusher flusher) {
-
+        Flusher flusher
+    ) {
         try {
             if (initSes && storeMgr != null)
                 storeMgr.writeBehindSessionInit();
@@ -826,7 +827,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
         catch (Exception e) {
             LT.error(log, e, "Unable to update underlying store: " + store);
+
             boolean overflow;
+
             if (writeCoalescing)
                 overflow = writeCache.sizex() > cacheCriticalSize || stopping.get();
             else
@@ -837,8 +840,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     Object val = entry.getValue() != null ? entry.getValue().getValue() : null;
 
                     log.warning("Failed to update store (value will be lost as current buffer size is greater " +
-                            "than 'cacheCriticalSize' or node has been stopped before store was repaired) [key=" +
-                            entry.getKey() + ", val=" + val + ", op=" + operation + "]");
+                        "than 'cacheCriticalSize' or node has been stopped before store was repaired) [key=" +
+                        entry.getKey() + ", val=" + val + ", op=" + operation + "]");
                 }
 
                 return true;
@@ -921,19 +924,17 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             K key,
             StatefulValue<K, V> newVal)
             throws IgniteInterruptedCheckedException {
-
             assert !writeCoalescing : "Unexpected write coalescing.";
 
             if (queue.sizex() > flusherCacheCriticalSize) {
                 while (queue.sizex() > flusherCacheCriticalSize) {
                     wakeUp();
+
                     flusherWriterLock.lock();
 
                     try {
-
                         // Wait for free space in flusher queue
                         while (queue.sizex() >= flusherCacheCriticalSize && !stopping.get()) {
-
                             if (cacheFlushFreq > 0)
                                 flusherWriterCanWrite.await(cacheFlushFreq, TimeUnit.MILLISECONDS);
                             else
@@ -941,7 +942,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                         }
 
                         cacheTotalOverflowCntr.incrementAndGet();
-
                     }
                     catch (InterruptedException e) {
                         if (log.isDebugEnabled())
@@ -953,6 +953,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                         flusherWriterLock.unlock();
                     }
                 }
+
                 cacheTotalOverflowCntr.incrementAndGet();
             }
 
@@ -991,7 +992,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            ConcurrentHashMap<K, StatefulValue<K,V>> targetMap;
             if (writeCoalescing) {
                 while (!stopping.get() || writeCache.sizex() > 0) {
                     awaitOperationsAvailableCoalescing();
@@ -1038,7 +1038,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          * @throws InterruptedException If awaiting was interrupted.
          */
         private void awaitOperationsAvailableNonCoalescing() throws InterruptedException {
-
             if (queue.sizex() > cacheCriticalSize)
                 return;
 
@@ -1098,10 +1097,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 Map.Entry<K, StatefulValue<K, V>> e = it.next();
                 StatefulValue<K, V> val = e.getValue();
 
-                val.writeLock().lock();
+                if (!val.writeLock().tryLock()) // TODO: stripe write maps to avoid lock contention.
+                    continue;
 
                 try {
-
                     BatchingResult addRes = tryAddStatefulValue(pending, prevOperation, e.getKey(), val);
 
                     switch (addRes) {
@@ -1114,19 +1113,19 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                             val.status(ValueStatus.PENDING);
                             pending.put(e.getKey(), val);
                             prevOperation = val.operation();
+
                             break;
+
                         case ADDED:
                             prevOperation = val.operation();
+
                             break;
-                        case SKIPPED:
-                            // Nothink to do
-                            break;
+
                         default:
-                            assert false : "Unexpected result: " + addRes;
-
+                            assert addRes == BatchingResult.SKIPPED : "Unexpected result: " + addRes;
                     }
-
-                } finally {
+                }
+                finally {
                     val.writeLock().unlock();
                 }
             }
@@ -1141,11 +1140,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          * on the underlying store.
          */
         private void flushCacheNonCoalescing() {
-            StoreOperation prevOperation = null;
-
+            StoreOperation prevOperation;
             Map<K, StatefulValue<K, V>> pending;
-
-
             IgniteBiTuple<K, StatefulValue<K, V>> tuple;
             boolean applied;
 
@@ -1157,7 +1153,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 // Collect batch
                 while (!needNewBatch && (tuple = queue.peek()) != null) {
                     BatchingResult addRes = tryAddStatefulValue(pending, prevOperation, tuple.getKey(),
-                            tuple.getValue());
+                        tuple.getValue());
 
                     switch (addRes) {
                         case ADDED:
@@ -1186,18 +1182,17 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 applied = applyBatch(pending, true, this);
 
                 if (applied) {
-
                     // Wake up awaiting writers
                     flusherWriterLock.lock();
 
                     try {
                         flusherWriterCanWrite.signalAll();
-                    } finally {
+                    }
+                    finally {
                         flusherWriterLock.unlock();
                     }
-
-                } else {
-
+                }
+                else {
                     // Return values to queue
                     ArrayList<Map.Entry<K, StatefulValue<K,V>>> pendingList = new ArrayList(pending.entrySet());
 
@@ -1221,7 +1216,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             Map<K, StatefulValue<K, V>> pending,
             StoreOperation prevOperation,
             K key,
-            StatefulValue<K, V> val) {
+            StatefulValue<K, V> val
+        ) {
             ValueStatus status = val.status();
 
             assert !(pending.isEmpty() && prevOperation != null) : "prev operation cannot be " + prevOperation
@@ -1278,7 +1274,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
         return result;
     }
-
 
     /**
      * Enumeration that represents possible operations on the underlying store.
