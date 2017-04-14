@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
@@ -380,6 +381,26 @@ namespace Apache.Ignite.Core.Tests
             var marsh = new Marshaller(null) {CompactFooter = false};
 
             return marsh.Unmarshal<T>(marsh.Marshal(obj));
+        }
+
+        /// <summary>
+        /// Gets the primary keys.
+        /// </summary>
+        public static IEnumerable<int> GetPrimaryKeys(IIgnite ignite, string cacheName = null,
+            IClusterNode node = null)
+        {
+            var aff = ignite.GetAffinity(cacheName);
+            node = node ?? ignite.GetCluster().GetLocalNode();
+
+            return Enumerable.Range(1, int.MaxValue).Where(x => aff.IsPrimary(node, x));
+        }
+
+        /// <summary>
+        /// Gets the primary key.
+        /// </summary>
+        public static int GetPrimaryKey(IIgnite ignite, string cacheName = null, IClusterNode node = null)
+        {
+            return GetPrimaryKeys(ignite, cacheName, node).First();
         }
     }
 }

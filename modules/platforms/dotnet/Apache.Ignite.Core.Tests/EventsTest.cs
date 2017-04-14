@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     EventType = EventType.CacheAll,
                     EventObjectType = typeof (CacheEvent),
-                    GenerateEvent = g => g.GetCache<int, int>(null).Put(1, 1),
+                    GenerateEvent = g => g.GetCache<int, int>(null).Put(TestUtils.GetPrimaryKey(g), 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
                     EventCount = 3
                 };
@@ -739,7 +739,7 @@ namespace Apache.Ignite.Core.Tests
 
             cache.Clear();
 
-            cache.Put(1, 1);
+            cache.Put(TestUtils.GetPrimaryKey(g), 1);
 
             cache.Query(new ScanQuery<int, int>()).GetAll();
         }

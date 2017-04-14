@@ -212,7 +212,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             func2 = func2 ?? func;
 
-            var localCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration(cacheName)
+            var localIgnite = Ignition.GetIgnite();
+            var localCache = localIgnite.CreateCache<int, int>(new CacheConfiguration(cacheName)
             {
                 EnableStatistics = true
             });
@@ -222,9 +223,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
             Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
 
-            localCache.Put(1, 1);
-            localCache.Get(1);
-            
+            var localKey = TestUtils.GetPrimaryKey(localIgnite, cacheName);
+
+            localCache.Put(localKey, 1);
+            localCache.Get(localKey);
             // Wait for metrics to propagate.
             Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
 

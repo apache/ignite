@@ -78,7 +78,6 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.snapshot.StartFullSnapshotAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -748,8 +747,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String masked = maskNull(cfg.getName());
 
-        if (cacheDescriptor(masked) != null) {
-                String cacheName = cfg.getName();
+        if (cacheDescriptor(cfg.getName()) != null) {
+            String cacheName = cfg.getName();
 
             if (cacheName != null)
                 throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
@@ -2769,7 +2768,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
         for (String cacheName : cacheNames) {
-            DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
+            DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
             if (desc == null) {
                 log.warning("Reset lost partition will not be executed, " +
@@ -2837,7 +2836,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
                 UUID.randomUUID(), cacheName, ctx.localNodeId());
 
-            DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
+            DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
             req.deploymentId(desc.deploymentId());
             req.stop(true);
