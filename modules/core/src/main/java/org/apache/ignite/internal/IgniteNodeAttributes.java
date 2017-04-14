@@ -172,7 +172,7 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_ACTIVE_ON_START = ATTR_PREFIX + ".active.on.start";
 
     /** Set of names of custom named executors (can be {@code null} when custom executors are not configured). */
-    public static final String ATTR_CUSTOM_EXECUTORS_NAMES = ATTR_PREFIX + ".custom.executors";
+    public static final String ATTR_CUSTOM_EXECUTORS = ATTR_PREFIX + ".custom.executors";
 
     /**
      * Enforces singleton.

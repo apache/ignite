@@ -1276,13 +1276,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private boolean executeAsync(GridJobWorker jobWorker) {
         try {
-            if (jobWorker.getExecutorName() != null)
+            if (jobWorker.executorName() != null)
                 try {
-                    ctx.pools().customPoolByName(jobWorker.getExecutorName()).execute(jobWorker);
+                    ctx.pools().customExecutor(jobWorker.executorName()).execute(jobWorker);
                 }
                 catch (IgniteCheckedException e) {
-                    throw new RejectedExecutionException("Cannot execute job by the custom executor: "
-                        + jobWorker.getExecutorName(), e);
+                    // TODO: ???
+                    throw new RejectedExecutionException("Cannot execute job by the custom executor: " +
+                        jobWorker.executorName(), e);
                 }
             else
                 ctx.getExecutorService().execute(jobWorker);

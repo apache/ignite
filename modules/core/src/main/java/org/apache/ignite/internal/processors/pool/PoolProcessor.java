@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CUSTOM_EXECUTORS_NAMES;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CUSTOM_EXECUTORS;
 
 /**
  * Processor which abstracts out thread pool management.
@@ -41,7 +41,7 @@ public class PoolProcessor extends GridProcessorAdapter {
     private final IoPool[] extPools = new IoPool[128];
 
     /** Custom named pools. */
-    private final Map<String, ? extends ExecutorService> customNamedPools;
+    private final Map<String, ? extends ExecutorService> customExecs;
 
     /**
      * Constructor.
@@ -82,10 +82,10 @@ public class PoolProcessor extends GridProcessorAdapter {
             }
         }
 
-        customNamedPools = ctx.getCustomNamedExecutorServices();
+        customExecs = ctx.customExecutors();
 
-        if (customNamedPools != null)
-            ctx.addNodeAttribute(ATTR_CUSTOM_EXECUTORS_NAMES, new HashSet(customNamedPools.keySet()));
+        if (customExecs != null)
+            ctx.addNodeAttribute(ATTR_CUSTOM_EXECUTORS, new HashSet<>(customExecs.keySet()));
     }
 
     /** {@inheritDoc} */
@@ -182,14 +182,14 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @return Executor service.
      * @throws IgniteCheckedException If failed.
      */
-    public Executor customPoolByName(@NotNull String name) throws IgniteCheckedException {
+    public Executor customExecutor(@NotNull String name) throws IgniteCheckedException {
         Executor exec = null;
 
-        if (customNamedPools != null)
-            exec = customNamedPools.get(name);
+        if (customExecs != null)
+            exec = customExecs.get(name);
 
         if (exec == null)
-            throw new IgniteCheckedException("No pool is registered for name: " + name);
+            throw new IgniteCheckedException("Custom executor is not configured: " + name);
 
         return exec;
     }

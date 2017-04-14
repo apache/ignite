@@ -43,7 +43,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.ExecutorAwareMessage;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -841,7 +840,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (execName != null) {
             try {
-                pools.customPoolByName(execName).execute(c);
+                pools.customExecutor(execName).execute(c);
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to process regular message due to rejected execution. Increase the upper bound " +

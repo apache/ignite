@@ -735,7 +735,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return Custom executor name.
      */
-    public String getExecutorName() {
+    public String executorName() {
         return execName;
     }
 
