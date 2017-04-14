@@ -20,22 +20,20 @@ package org.apache.ignite.internal.processors.query.schema;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
 
@@ -81,27 +79,26 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         FilteringVisitorClosure filterClo = new FilteringVisitorClosure(clo);
 
-        Collection<Integer> partNums = localPartitions();
+        Collection<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
 
-        for (int partNum : partNums)
-            processPartition(partNum, filterClo);
+        for (GridDhtLocalPartition part : parts)
+            processPartition(part, filterClo);
     }
 
     /**
      * Process partition.
      *
-     * @param partNum Partition number.
+     * @param part Partition.
      * @param clo Index closure.
      * @throws IgniteCheckedException If failed.
      */
-    private void processPartition(int partNum, FilteringVisitorClosure clo) throws IgniteCheckedException {
+    private void processPartition(GridDhtLocalPartition part, FilteringVisitorClosure clo)
+        throws IgniteCheckedException {
         checkCancelled();
-
-        GridDhtLocalPartition part = partition(partNum);
 
         boolean reserved = false;
 
-        // TODO: Check in tests whether we need reservation
+        // TODO: Check in tests whether we need reservation.
         if (part != null && part.state() != EVICTED)
             reserved = (part.state() == OWNING || part.state() == RENTING) && part.reserve();
 
@@ -109,9 +106,15 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             return;
 
         try {
-            // TODO: allEntries doesn't work for offheap
-            for (final GridCacheEntryEx entry : part.allEntries())
-                processEntry(part, entry, clo);
+            GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor();
+
+            while (cursor.next()) {
+                CacheDataRow row = cursor.get();
+
+                KeyCacheObject key = row.key();
+
+                processKey(key, clo);
+            }
         }
         finally {
             part.release();
@@ -119,56 +122,29 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     }
 
     /**
-     * Process single entry.
+     * Process single key.
      *
-     * @param part Partition.
-     * @param entry Entry.
+     * @param key Key.
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    // TODO: Rework in 3477
-    private void processEntry(GridDhtLocalPartition part, GridCacheEntryEx entry, FilteringVisitorClosure clo)
-        throws IgniteCheckedException {
+    private void processKey(KeyCacheObject key, FilteringVisitorClosure clo) throws IgniteCheckedException {
         while (true) {
             try {
                 checkCancelled();
 
-                if (entry != null)
-                    entry.updateIndex(clo);
+                GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
-                // TODO: Need to call touch() to notify eviction manager.
+                entry.updateIndex(clo);
+
+                cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
 
                 break;
             }
             catch (GridCacheEntryRemovedException ignored) {
-                entry = part.getEntry(entry.key());
+                // No-op.
             }
         }
-    }
-
-    /**
-     * @return Local cache partitions.
-     */
-    private Collection<Integer> localPartitions() {
-        GridCacheAffinityManager aff = cctx.affinity();
-
-        // TODO: Use cctx.topology().localPartitions() instead.
-        AffinityTopologyVersion topVer = aff.affinityTopologyVersion();
-
-        Set<Integer> res = new HashSet<>();
-
-        res.addAll(aff.primaryPartitions(cctx.localNodeId(), topVer));
-        res.addAll(aff.backupPartitions(cctx.localNodeId(), topVer));
-
-        return res;
-    }
-
-    /**
-     * @param partNum Partition number.
-     * @return Partition.
-     */
-    private GridDhtLocalPartition partition(int partNum) {
-        return cctx.topology().localPartition(partNum, AffinityTopologyVersion.NONE, false);
     }
 
     /**
