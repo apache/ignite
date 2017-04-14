@@ -204,7 +204,8 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
 
                 tr.commit();
 
-            } finally {
+            }
+            finally {
                 session.close();
             }
 
@@ -231,7 +232,8 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
 
                 tx.commit();
 
-            } finally {
+            }
+            finally {
                 session.close();
             }
 
@@ -265,7 +267,8 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
 
                 tx.commit();
 
-            } finally {
+            }
+            finally {
                 session.close();
             }
 
@@ -285,7 +288,8 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
 
             session.close();
 
-        } finally {
+        }
+        finally {
             sessionFactory.close();
         }
     }
@@ -336,7 +340,8 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
 
             return entityName;
 
-        } finally {
+        }
+        finally {
             ses.close();
         }
     }

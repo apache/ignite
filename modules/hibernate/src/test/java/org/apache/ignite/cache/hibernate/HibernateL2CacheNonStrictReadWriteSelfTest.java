@@ -81,7 +81,6 @@ public class HibernateL2CacheNonStrictReadWriteSelfTest extends GridCommonAbstra
     /** */
     public static final String ENTITY4_NAME = Entity4.class.getName();
 
-
     /** */
     public static final String TIMESTAMP_CACHE = "org.hibernate.cache.spi.UpdateTimestampsCache";
 
@@ -203,7 +202,8 @@ public class HibernateL2CacheNonStrictReadWriteSelfTest extends GridCommonAbstra
 
                 tr.commit();
 
-            } finally {
+            }
+            finally {
                 session.close();
             }
 
@@ -230,7 +230,8 @@ public class HibernateL2CacheNonStrictReadWriteSelfTest extends GridCommonAbstra
 
                 tx.commit();
 
-            } finally {
+            }
+            finally {
                 session.close();
             }
 
@@ -264,7 +265,8 @@ public class HibernateL2CacheNonStrictReadWriteSelfTest extends GridCommonAbstra
 
                 tx.commit();
 
-            } finally {
+            }
+            finally {
                 session.close();
             }
 
@@ -284,7 +286,8 @@ public class HibernateL2CacheNonStrictReadWriteSelfTest extends GridCommonAbstra
 
             session.close();
 
-        } finally {
+        }
+        finally {
             sessionFactory.close();
         }
     }
@@ -335,7 +338,8 @@ public class HibernateL2CacheNonStrictReadWriteSelfTest extends GridCommonAbstra
 
             return entityName;
 
-        } finally {
+        }
+        finally {
             ses.close();
         }
     }
