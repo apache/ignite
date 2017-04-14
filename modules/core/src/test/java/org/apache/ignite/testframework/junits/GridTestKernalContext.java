@@ -81,7 +81,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public void start() throws IgniteCheckedException {
         for (GridComponent comp : this)
-            comp.start();
+            comp.start(config().isActiveOnStart());
     }
 
     /**

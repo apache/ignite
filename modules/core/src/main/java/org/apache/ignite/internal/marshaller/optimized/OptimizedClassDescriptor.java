@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -90,7 +91,6 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.SHORT_ARR;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.STR;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.UUID;
-import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.classDescriptor;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.computeSerialVersionUid;
 
 /**
@@ -715,7 +715,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case OBJ_ARR:
-                OptimizedClassDescriptor compDesc = classDescriptor(clsMap,
+                OptimizedClassDescriptor compDesc = OptimizedMarshallerUtils.classDescriptor(clsMap,
                     obj.getClass().getComponentType(),
                     ctx,
                     mapper);
@@ -777,7 +777,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case CLS:
-                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
+                OptimizedClassDescriptor clsDesc = OptimizedMarshallerUtils.classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
 
                 clsDesc.writeTypeData(out);
 
@@ -787,7 +787,7 @@ class OptimizedClassDescriptor {
                 out.writeInt(proxyIntfs.length);
 
                 for (Class<?> intf : proxyIntfs) {
-                    OptimizedClassDescriptor intfDesc = classDescriptor(clsMap, intf, ctx, mapper);
+                    OptimizedClassDescriptor intfDesc = OptimizedMarshallerUtils.classDescriptor(clsMap, intf, ctx, mapper);
 
                     intfDesc.writeTypeData(out);
                 }

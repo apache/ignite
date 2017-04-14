@@ -28,6 +28,11 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.query.h2.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -139,7 +144,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object doTakeSnapshot() {
+    @Nullable @Override protected IgniteTree doTakeSnapshot() {
         return null; // TODO We do not support snapshots, but probably this is possible.
     }
 
@@ -286,11 +291,16 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             final MVRTreeMap<Long> segment = segments[seg];
 
-            return new GridH2Cursor(rowIterator(segment.keySet().iterator(), filter));
+            return new H2Cursor(rowIterator(segment.keySet().iterator(), filter));
         }
         finally {
             l.unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridH2Row findOne(GridH2Row row) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -303,9 +313,9 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @param filter Table filter.
      * @return Iterator over rows.
      */
-    private Iterator<GridH2Row> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
+    private GridCursor<GridH2Row> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
         if (!i.hasNext())
-            return Collections.emptyIterator();
+            return EMPTY_CURSOR;
 
         List<GridH2Row> rows = new ArrayList<>();
 
@@ -318,7 +328,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         }
         while (i.hasNext());
 
-        return filter(rows.iterator(), threadLocalFilter());
+        return filter(new GridCursorIteratorWrapper(rows.iterator()), threadLocalFilter());
     }
 
     /** {@inheritDoc} */
@@ -337,9 +347,12 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             final MVRTreeMap<Long> segment = segments[seg];
 
-            Iterator<GridH2Row> iter = rowIterator(segment.keySet().iterator(), null);
+            GridCursor<GridH2Row> iter = rowIterator(segment.keySet().iterator(), null);
 
-            return new SingleRowCursor(iter.hasNext() ? iter.next() : null);
+            return new SingleRowCursor(iter.next() ? iter.get() : null);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
         }
         finally {
             l.unlock();
@@ -370,7 +383,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             final MVRTreeMap<Long> segment = segments[seg];
 
-            return new GridH2Cursor(rowIterator(segment.findIntersectingKeys(getEnvelope(intersection, 0)), filter));
+            return new H2Cursor(rowIterator(segment.findIntersectingKeys(getEnvelope(intersection, 0)), filter));
         }
         finally {
             l.unlock();

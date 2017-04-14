@@ -294,6 +294,8 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
             commitLatch.await();
 
+            Thread.sleep(1000);
+
             stopGrid(1);
 
             // Check that thread successfully finished.
@@ -335,7 +337,9 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         if (backupCache.isNear())
             backupCache = backupCache.context().near().dht();
 
-        GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)backupCache.peekEx(key);
+        GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)backupCache.entryEx(key);
+
+        dhtEntry.unswap();
 
         if (commit) {
             assertNotNull(dhtEntry);
@@ -353,9 +357,10 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         }
         else {
             assertTrue("near=" + nearEntry + ", hc=" + System.identityHashCode(nearEntry), nearEntry == null);
-            assertTrue("Invalid backup cache entry: " + dhtEntry,
-                dhtEntry == null || dhtEntry.rawGetOrUnmarshal(false) == null);
+            assertTrue("Invalid backup cache entry: " + dhtEntry, dhtEntry.rawGet() == null);
         }
+
+        backupCache.context().evicts().touch(dhtEntry, null);
     }
 
     /**
@@ -400,7 +405,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         /**
          * @param bannedClasses Banned classes.
          */
-        public void bannedClasses(Collection<Class> bannedClasses) {
+        void bannedClasses(Collection<Class> bannedClasses) {
             this.bannedClasses = bannedClasses;
         }
 

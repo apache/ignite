@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.internal.processors.database.MemoryMetricsSelfTest;
 import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
@@ -41,11 +42,15 @@ import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationT
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
-import org.apache.ignite.internal.processors.cache.OffHeapTieredTransactionSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
+import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
+import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
+import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
+import org.apache.ignite.internal.processors.database.FreeListImplSelfTest;
+import org.apache.ignite.internal.processors.database.MetadataStorageSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessorValidationSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
@@ -129,7 +134,6 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridLifecycleAwareSelfTest.class);
         suite.addTestSuite(GridMessageListenSelfTest.class);
         suite.addTestSuite(GridFailFastNodeFailureDetectionSelfTest.class);
-        suite.addTestSuite(OffHeapTieredTransactionSelfTest.class);
         suite.addTestSuite(IgniteSlowClientDetectionSelfTest.class);
         GridTestUtils.addTestIfNeeded(suite, IgniteDaemonNodeMarshallerCacheTest.class, ignoredTests);
         suite.addTestSuite(IgniteMarshallerCacheConcurrentReadWriteTest.class);
@@ -155,6 +159,14 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(SecurityPermissionSetBuilderTest.class);
 
         suite.addTestSuite(AttributeNodeFilterSelfTest.class);
+
+        // Basic DB data structures.
+        suite.addTestSuite(BPlusTreeSelfTest.class);
+        suite.addTestSuite(BPlusTreeFakeReuseSelfTest.class);
+        suite.addTestSuite(BPlusTreeReuseSelfTest.class);
+        suite.addTestSuite(MetadataStorageSelfTest.class);
+        suite.addTestSuite(FreeListImplSelfTest.class);
+        suite.addTestSuite(MemoryMetricsSelfTest.class);
 
         return suite;
     }

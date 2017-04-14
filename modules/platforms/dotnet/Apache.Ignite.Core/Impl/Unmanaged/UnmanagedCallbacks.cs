@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -43,12 +42,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Messaging;
-    using Apache.Ignite.Core.Impl.Plugin.Cache;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
-    using Apache.Ignite.Core.Plugin.Cache;
     using Apache.Ignite.Core.Services;
     using UU = UnmanagedUtils;
 
@@ -242,10 +239,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.ComputeJobExecuteLocal, ComputeJobExecuteLocal);
             AddHandler(UnmanagedCallbackOp.PluginProcessorStop, PluginProcessorStop);
             AddHandler(UnmanagedCallbackOp.PluginProcessorIgniteStop, PluginProcessorIgniteStop);
-            AddHandler(UnmanagedCallbackOp.CachePluginCreate, CachePluginCreate);
-            AddHandler(UnmanagedCallbackOp.CachePluginDestroy, CachePluginDestroy);
-            AddHandler(UnmanagedCallbackOp.CachePluginIgniteStart, CachePluginIgniteStart);
-            AddHandler(UnmanagedCallbackOp.CachePluginIgniteStop, CachePluginIgniteStop);
             AddHandler(UnmanagedCallbackOp.PluginCallbackInLongLongOutLong, PluginCallbackInLongLongOutLong);
         }
 
@@ -812,7 +805,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long LifecycleOnEvent(long ptr, long evt, long unused, void* arg)
         {
-            var bean = _handleRegistry.Get<LifecycleBeanHolder>(ptr);
+            var bean = _handleRegistry.Get<LifecycleHandlerHolder>(ptr);
 
             bean.OnLifecycleEvent((LifecycleEventType) evt);
 
@@ -1242,54 +1235,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         #endregion
 
         #region PLUGINS
-
-        private long CachePluginCreate(long objPtr)
-        {
-            using (var stream = IgniteManager.Memory.Get(objPtr).GetStream())
-            {
-                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
-
-                var cachePluginCfg = reader.ReadObject<ICachePluginConfiguration>();
-                var providerProxy = CachePluginProcessor.CreateProviderProxy(cachePluginCfg);
-
-                var igniteCfg = new IgniteConfiguration(reader, _ignite.Configuration);
-                var cacheCfg = new CacheConfiguration(reader);
-
-                providerProxy.Start(igniteCfg, cacheCfg, _ignite);
-
-                return _handleRegistry.Allocate(providerProxy);
-            }
-        }
-
-        private long CachePluginDestroy(long objPtr, long cancel, long unused, void* arg)
-        {
-            var pluginProvider = _handleRegistry.Get<ICachePluginProviderProxy>(objPtr, true);
-
-            pluginProvider.Stop(cancel != 0);
-
-            _ignite.HandleRegistry.Release(objPtr);
-
-            return 0;
-        }
-
-        private long CachePluginIgniteStart(long objPtr)
-        {
-            var pluginProvider = _handleRegistry.Get<ICachePluginProviderProxy>(objPtr, true);
-
-            pluginProvider.OnIgniteStart();
-
-            return 0;
-        }
-
-        private long CachePluginIgniteStop(long objPtr, long cancel, long unused, void* arg)
-        {
-            var pluginProvider = _handleRegistry.Get<ICachePluginProviderProxy>(objPtr, true);
-
-            pluginProvider.OnIgniteStop(cancel != 0);
-
-            return 0;
-        }
-
+  
         private long PluginCallbackInLongLongOutLong(long callbackId, long inPtr, long outPtr, void* arg)
         {
             return _ignite.PluginProcessor.InvokeCallback(callbackId, inPtr, outPtr);

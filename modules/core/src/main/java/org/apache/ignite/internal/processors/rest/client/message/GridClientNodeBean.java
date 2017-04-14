@@ -250,7 +250,7 @@ public class GridClientNodeBean implements Externalizable {
 
         U.writeUuid(out, nodeId);
 
-        out.writeObject(consistentId);
+        out.writeObject(String.valueOf(consistentId));
         out.writeObject(metrics);
     }
 

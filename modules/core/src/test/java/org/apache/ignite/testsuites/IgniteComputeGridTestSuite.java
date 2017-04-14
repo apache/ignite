@@ -138,7 +138,6 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridMultipleJobsSelfTest.class);
         suite.addTestSuite(GridCheckpointManagerSelfTest.class);
         suite.addTestSuite(GridCheckpointTaskSelfTest.class);
-        suite.addTestSuite(ClusterNodeMetricsSelfTest.class);
         suite.addTestSuite(GridTaskNameAnnotationSelfTest.class);
         suite.addTestSuite(GridJobCheckpointCleanupSelfTest.class);
         suite.addTestSuite(GridEventStorageSelfTest.class);

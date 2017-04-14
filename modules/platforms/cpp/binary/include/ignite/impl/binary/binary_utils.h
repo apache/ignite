@@ -28,7 +28,6 @@
 #include <ignite/time.h>
 
 #include <ignite/binary/binary_type.h>
-#include <ignite/impl/binary/binary_writer_impl.h>
 
 namespace ignite
 {
