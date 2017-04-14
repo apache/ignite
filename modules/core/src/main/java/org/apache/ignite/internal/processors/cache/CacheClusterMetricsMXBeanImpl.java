@@ -99,16 +99,6 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getOffHeapAllocatedSize() {
-        return cache.clusterMetrics().getOffHeapAllocatedSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOffHeapMaxSize() {
-        return cache.clusterMetrics().getOffHeapMaxSize();
-    }
-
-    /** {@inheritDoc} */
     @Override public int getSize() {
         return cache.clusterMetrics().getSize();
     }

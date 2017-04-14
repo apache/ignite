@@ -228,18 +228,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getOffHeapAllocatedSize() {
-        GridCacheAdapter<?, ?> cache = cctx.cache();
-
-        return cache != null ? cache.offHeapAllocatedSize() : -1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOffHeapMaxSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public int getSize() {
         GridCacheAdapter<?, ?> cache = cctx.cache();
 

@@ -223,20 +223,6 @@ public interface CacheMetrics {
     public long getOffHeapBackupEntriesCount();
 
     /**
-     * Gets memory size allocated in off-heap.
-     *
-     * @return Memory size allocated in off-heap.
-     */
-    public long getOffHeapAllocatedSize();
-
-    /**
-     * Gets off-heap memory maximum size.
-     *
-     * @return Off-heap memory maximum size.
-     */
-    public long getOffHeapMaxSize();
-
-    /**
      * Gets number of non-{@code null} values in the cache.
      *
      * @return Number of non-{@code null} values in the cache.

@@ -99,16 +99,6 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getOffHeapAllocatedSize() {
-        return cache.metrics0().getOffHeapAllocatedSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOffHeapMaxSize() {
-        return cache.metrics0().getOffHeapMaxSize();
-    }
-
-    /** {@inheritDoc} */
     @Override public int getSize() {
         return cache.metrics0().getSize();
     }

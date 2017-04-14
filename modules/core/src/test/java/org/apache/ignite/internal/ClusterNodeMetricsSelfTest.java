@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -105,31 +106,30 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAllocatedMemory() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4536");
+        IgniteEx ignite = grid();
 
-        Ignite ignite = grid();
+        int pageSize = ignite.context().cache().context().database().pageSize();
+
+        MemoryMetrics defaultMetrics = null;
+
+        for (MemoryMetrics metrics : ignite.memoryMetrics()) {
+            if ("default".equals(metrics.getName()))
+                defaultMetrics = metrics;
+        }
+
+        assertNotNull(defaultMetrics);
+
+        defaultMetrics.enableMetrics();
 
         final IgniteCache cache = ignite.getOrCreateCache(CACHE_NAME);
 
-        long prevTieredOffHeapSize = cache.metrics().getOffHeapAllocatedSize();
+        long prevAllocatedPages = defaultMetrics.getTotalAllocatedPages();
 
-        assertEquals(0, prevTieredOffHeapSize);
-
-        long prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
+        assertEquals(0, prevAllocatedPages);
 
         fillCache(cache);
 
-        assertTrue(cache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5)
-            * VAL_SIZE + prevTieredOffHeapSize);
-
-        assertTrue(prevClusterNonHeapMemoryUsed < ignite.cluster().metrics().getNonHeapMemoryUsed());
-
-        prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
-        prevTieredOffHeapSize = cache.metrics().getOffHeapAllocatedSize();
-
-        assertEquals(prevTieredOffHeapSize, cache.metrics().getOffHeapAllocatedSize());
-        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevClusterNonHeapMemoryUsed <
-            ignite.cluster().metrics().getNonHeapMemoryUsed());
+        assertTrue(defaultMetrics.getTotalAllocatedPages() > MAX_VALS_AMOUNT * VAL_SIZE / pageSize);
     }
 
     /**

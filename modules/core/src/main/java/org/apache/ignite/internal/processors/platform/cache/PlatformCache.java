@@ -1411,8 +1411,6 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeLong(metrics.getOffHeapEntriesCount());
         writer.writeLong(metrics.getOffHeapPrimaryEntriesCount());
         writer.writeLong(metrics.getOffHeapBackupEntriesCount());
-        writer.writeLong(metrics.getOffHeapAllocatedSize());
-        writer.writeLong(metrics.getOffHeapMaxSize());
         writer.writeInt(metrics.getSize());
         writer.writeInt(metrics.getKeySize());
         writer.writeBoolean(metrics.isEmpty());
