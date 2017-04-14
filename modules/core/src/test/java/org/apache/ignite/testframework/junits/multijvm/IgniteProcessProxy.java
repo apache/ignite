@@ -48,6 +48,7 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -61,6 +62,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -138,10 +140,14 @@ public class IgniteProcessProxy implements IgniteEx {
 
         Collection<String> filteredJvmArgs = new ArrayList<>();
 
+        filteredJvmArgs.add("-ea");
+
         Marshaller marsh = cfg.getMarshaller();
 
         if (marsh != null)
             filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
+        else
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
 
         for (String arg : U.jvmArgs()) {
             if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
@@ -314,6 +320,15 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     public UUID getId() {
         return id;
+    }
+
+    /**
+     * @throws Exception If failed to kill.
+     */
+    public void kill() throws Exception {
+        getProcess().kill();
+
+        gridProxies.remove(cfg.getGridName(), this);
     }
 
     /** {@inheritDoc} */
@@ -630,6 +645,16 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void resetLostPartitions(Collection<String> cacheNames) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         if (locJvmGrid != null) {
             final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
@@ -667,6 +692,16 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         return new AffinityProcessProxy<>(cacheName, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /**

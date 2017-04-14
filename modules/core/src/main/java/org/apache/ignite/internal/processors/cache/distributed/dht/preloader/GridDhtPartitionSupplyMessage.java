@@ -64,6 +64,11 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     @GridDirectCollection(int.class)
     private Collection<Integer> missed;
 
+    /** Partitions for which we were able to get historical iterator. */
+    @GridToStringInclude
+    @GridDirectCollection(int.class)
+    private Collection<Integer> clean;
+
     /** Entries. */
     @GridDirectMap(keyType = int.class, valueType = CacheEntryInfoCollection.class)
     private Map<Integer, CacheEntryInfoCollection> infos;
@@ -139,6 +144,25 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
                 infos().put(p, infoCol);
             }
         }
+    }
+
+    /**
+     * @param p Partition to clean.
+     */
+    void clean(int p) {
+        if (clean == null)
+            clean = new HashSet<>();
+
+        if (clean.add(p))
+            msgSize += 4;
+    }
+
+    /**
+     * @param p Partition to check.
+     * @return Check result.
+     */
+    boolean isClean(int p) {
+        return clean != null && clean.contains(p);
     }
 
     /**
@@ -274,30 +298,36 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeMap("infos", infos, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection("clean", clean, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("last", last, MessageCollectionItemType.INT))
+                if (!writer.writeMap("infos", infos, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("missed", missed, MessageCollectionItemType.INT))
+                if (!writer.writeCollection("last", last, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeCollection("missed", missed, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 7:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
                 if (!writer.writeLong("updateSeq", updateSeq))
                     return false;
 
@@ -320,7 +350,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
 
         switch (reader.state()) {
             case 3:
-                infos = reader.readMap("infos", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                clean = reader.readCollection("clean", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -328,7 +358,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
                 reader.incrementState();
 
             case 4:
-                last = reader.readCollection("last", MessageCollectionItemType.INT);
+                infos = reader.readMap("infos", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -336,7 +366,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
                 reader.incrementState();
 
             case 5:
-                missed = reader.readCollection("missed", MessageCollectionItemType.INT);
+                last = reader.readCollection("last", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -344,7 +374,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
                 reader.incrementState();
 
             case 6:
-                topVer = reader.readMessage("topVer");
+                missed = reader.readCollection("missed", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -352,6 +382,14 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
                 reader.incrementState();
 
             case 7:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
                 updateSeq = reader.readLong("updateSeq");
 
                 if (!reader.isLastRead())
@@ -371,7 +409,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

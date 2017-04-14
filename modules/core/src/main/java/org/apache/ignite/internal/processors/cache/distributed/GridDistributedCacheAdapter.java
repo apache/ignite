@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJob;
@@ -39,7 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -263,6 +264,57 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        PeekModes modes = parsePeekModes(peekModes, true);
+
+        long size = 0;
+
+        if (modes.near)
+            size += nearSize();
+
+        // Swap and offheap are disabled for near cache.
+        if (modes.primary || modes.backup) {
+            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+
+            IgniteCacheOffheapManager offheap = ctx.offheap();
+
+            if (modes.offheap)
+                size += offheap.entriesCount(modes.primary, modes.backup, topVer);
+            else if (modes.heap) {
+                for (GridDhtLocalPartition locPart : ctx.topology().currentLocalPartitions()) {
+                    if ((modes.primary && locPart.primary(topVer)) || (modes.backup && locPart.backup(topVer)))
+                        size += locPart.publicSize();
+                }
+            }
+        }
+
+        return size;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException {
+        PeekModes modes = parsePeekModes(peekModes, true);
+
+        long size = 0;
+
+        if (modes.near)
+            size += nearSize();
+
+        // Swap and offheap are disabled for near cache.
+        if (modes.offheap) {
+            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+
+            IgniteCacheOffheapManager offheap = ctx.offheap();
+
+            if (ctx.affinity().primaryByPartition(ctx.localNode(), partition, topVer) && modes.primary ||
+                ctx.affinity().backupByPartition(ctx.localNode(), partition, topVer) && modes.backup)
+                size += offheap.entriesCount(partition);
+        }
+
+        return size;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDistributedCacheAdapter.class, this, "super", super.toString());
     }
@@ -334,12 +386,13 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             return true;
         }
     }
+
     /**
      * Internal job which performs remove all primary key mappings
      * operation on a cache with the given name.
      */
     @GridInternal
-    private static class GlobalRemoveAllJob<K,V>  extends TopologyVersionAwareJob {
+    private static class GlobalRemoveAllJob<K, V> extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -407,19 +460,16 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                             return false;
 
                         try {
-                            if (!locPart.isEmpty()) {
-                                for (GridCacheEntryEx o : locPart.allEntries()) {
-                                    if (!o.obsoleteOrDeleted())
-                                        dataLdr.removeDataInternal(o.key());
-                                }
-                            }
-
-                            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> iter =
-                                dht.context().swap().iterator(part);
+                            GridCloseableIterator<KeyCacheObject> iter = dht.context().offheap().keysIterator(part);
 
                             if (iter != null) {
-                                for (Map.Entry<byte[], GridCacheSwapEntry> e : iter)
-                                    dataLdr.removeDataInternal(ctx.toCacheKeyObject(e.getKey()));
+                                try {
+                                    while (iter.hasNext())
+                                        dataLdr.removeDataInternal(iter.next());
+                                }
+                                finally {
+                                    iter.close();
+                                }
                             }
                         }
                         finally {

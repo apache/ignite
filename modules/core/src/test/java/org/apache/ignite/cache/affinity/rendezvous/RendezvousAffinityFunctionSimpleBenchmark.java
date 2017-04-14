@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityNodeHashResolver;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -517,7 +516,8 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         final int backups = 2;
 
         AffinityFunction aff0 = new RendezvousAffinityFunction(true, 256);
-        AffinityFunction aff1 = new FairAffinityFunction(true, 256);
+        // TODO choose another affinity function to compare.
+        AffinityFunction aff1 = new RendezvousAffinityFunction(true, 256);
 
         for (int nodesCnt : nodesCnts) {
             List<ClusterNode> nodes0 = createBaseNodes(nodesCnt);

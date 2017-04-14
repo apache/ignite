@@ -200,9 +200,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.AreEqual(1, map.Count);
 
-            cache.LocalEvict(new[] { 1 });
+            // TODO: IGNITE-4535
+            //cache.LocalEvict(new[] { 1 });
 
-            Assert.AreEqual(0, cache.GetSize());
+            //Assert.AreEqual(0, cache.GetSize(CachePeekMode.All));
 
             Assert.AreEqual("val", cache.Get(1));
 
@@ -219,8 +220,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             CacheTestStore.ThrowError = true;
             CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
 
-            cache.LocalEvict(new[] {1});
-            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Get(1)).InnerException);
+            // TODO: IGNITE-4535
+            //cache.LocalEvict(new[] {1});
+            //CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Get(1)).InnerException);
 
             CacheTestStore.ThrowError = false;
 
@@ -260,9 +262,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.AreEqual(1, v.GetField<int>("_idx"));
 
-            cache.LocalEvict(new[] { 1 });
+            // TODO: IGNITE-4535
+            //cache.LocalEvict(new[] { 1 });
 
-            Assert.AreEqual(0, cache.GetSize());
+            //Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(1, cache.Get(1).Index);
 
@@ -287,9 +290,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.AreEqual(1, v.Index);
 
-            cache.LocalEvict(new[] { 1 });
+            // TODO: IGNITE-4535
+            //cache.LocalEvict(new[] { 1 });
 
-            Assert.AreEqual(0, cache.GetSize());
+            //Assert.AreEqual(0, cache.GetSize());
 
             Assert.AreEqual(1, cache.Get(1).Index);
 

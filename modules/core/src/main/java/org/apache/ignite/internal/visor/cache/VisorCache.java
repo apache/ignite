@@ -22,13 +22,14 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -41,6 +42,10 @@ import org.jetbrains.annotations.Nullable;
  * Data transfer object for {@link IgniteCache}.
  */
 public class VisorCache implements Serializable, LessNamingBean {
+    /** */
+    private static final CachePeekMode[] PEEK_NO_NEAR =
+        new CachePeekMode[] {CachePeekMode.PRIMARY, CachePeekMode.BACKUP};
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -63,48 +68,25 @@ public class VisorCache implements Serializable, LessNamingBean {
     private long indexesSize;
 
     /** Number of all entries in cache. */
-    private int size;
+    private long size;
 
     /** Number of all entries in near cache. */
     private int nearSize;
 
-    /** Number of all entries in DHT cache. */
-    private int dhtSize;
-
     /** Number of primary entries in cache. */
-    private int primarySize;
+    private long primarySize;
 
-    /** Memory size allocated in off-heap. */
-    private long offHeapAllocatedSize;
+    /** Number of backup entries in cache. */
+    private long backupSize;
 
-    /** Number of cache entries stored in off-heap memory. */
-    private long offHeapEntriesCnt;
-
-    /** Size in bytes for swap space. */
-    private long swapSize;
-
-    /** Number of cache entries stored in swap space. */
-    private long swapKeys;
+    /** Number of cache entries stored in heap memory. */
+    private long onHeapEntriesCnt;
 
     /** Number of partitions. */
     private int partitions;
 
-    /**
-     * Flag indicating that cache has near cache.
-     */
+    /** Flag indicating that cache has near cache. */
     private boolean near;
-
-    /** Number of primary entries in offheap. */
-    private int offHeapPrimaryEntriesCnt;
-
-    /** Number of backup entries in offheap. */
-    private int offHeapBackupEntriesCnt;
-
-    /** Number of primary entries in swap. */
-    private int swapPrimaryEntriesCnt;
-
-    /** Number of backup entries in swap. */
-    private int swapBackupEntriesCnt;
 
     /** Cache metrics. */
     private VisorCacheMetrics metrics;
@@ -128,23 +110,16 @@ public class VisorCache implements Serializable, LessNamingBean {
         if (ca == null || !ca.context().started())
             return null;
 
-        name = cacheName;
+        GridCacheContext cctx = ca.context();
 
-        try {
-            swapSize = ca.swapSize();
-            swapKeys = ca.swapKeys();
-        }
-        catch (IgniteCheckedException ignored) {
-            swapSize = -1;
-            swapKeys = -1;
-        }
+        name = cacheName;
 
         CacheConfiguration cfg = ca.configuration();
 
         mode = cfg.getCacheMode();
 
         boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
-            && ca.context().affinityNode();
+            && cctx.affinityNode();
 
         if (partitioned) {
             GridDhtCacheAdapter dca = null;
@@ -162,24 +137,15 @@ public class VisorCache implements Serializable, LessNamingBean {
             }
         }
 
-        size = ca.size();
+        dynamicDeploymentId = cctx.dynamicDeploymentId();
+        size = ca.localSizeLong(PEEK_NO_NEAR);
+        primarySize = ca.primarySizeLong();
+        backupSize = size - primarySize; // This is backup size.
         nearSize = ca.nearSize();
-        dynamicDeploymentId = ca.context().dynamicDeploymentId();
-        dhtSize = size - nearSize;
-        primarySize = ca.primarySize();
-        offHeapAllocatedSize = ca.offHeapAllocatedSize();
-        offHeapEntriesCnt = ca.offHeapEntriesCount();
+        onHeapEntriesCnt = 0; // TODO GG-11148 Need to rename on ON-heap entries count, see
         partitions = ca.affinity().partitions();
         metrics = new VisorCacheMetrics().from(ignite, cacheName);
-        near = ca.context().isNear();
-
-        GridCacheSwapManager swap = ca.context().swap();
-
-        offHeapPrimaryEntriesCnt = swap.offheapEntriesCount(true, false, AffinityTopologyVersion.NONE);
-        offHeapBackupEntriesCnt = swap.offheapEntriesCount(false, true, AffinityTopologyVersion.NONE);
-
-        swapPrimaryEntriesCnt = swap.swapEntriesCount(true, false, AffinityTopologyVersion.NONE);
-        swapBackupEntriesCnt = swap.swapEntriesCount(false, true, AffinityTopologyVersion.NONE);
+        near = cctx.isNear();
 
         estimateMemorySize(ignite, ca, sample);
 
@@ -195,6 +161,7 @@ public class VisorCache implements Serializable, LessNamingBean {
      * @throws IgniteCheckedException If estimation failed.
      */
     protected void estimateMemorySize(IgniteEx ignite, GridCacheAdapter ca, int sample) throws IgniteCheckedException {
+        /* TODO Fix after GG-11739 implemented.
         int size = ca.size();
 
         Iterable<GridCacheEntryEx> set = ca.context().isNear()
@@ -219,45 +186,30 @@ public class VisorCache implements Serializable, LessNamingBean {
             memSz = (long)((double)memSz / cnt * size);
 
         memorySize = memSz;
-    }
-
-    /**
-     * Fill values that should be stored in history;
-     *
-     * @param c Source cache.
-     * @return Cache.
-     */
-    protected VisorCache initHistory(VisorCache c) {
-        if (c != null) {
-            c.name = name;
-            c.mode = mode;
-            c.memorySize = memorySize;
-            c.indexesSize = indexesSize;
-            c.size = size;
-            c.nearSize = nearSize;
-            c.dhtSize = dhtSize;
-            c.primarySize = primarySize;
-            c.offHeapAllocatedSize = offHeapAllocatedSize;
-            c.offHeapEntriesCnt = offHeapEntriesCnt;
-            c.swapSize = swapSize;
-            c.swapKeys = swapKeys;
-            c.partitions = partitions;
-            c.metrics = metrics;
-            c.near = near;
-            c.offHeapPrimaryEntriesCnt = offHeapPrimaryEntriesCnt;
-            c.offHeapBackupEntriesCnt = offHeapBackupEntriesCnt;
-            c.swapPrimaryEntriesCnt = swapPrimaryEntriesCnt;
-            c.swapBackupEntriesCnt = swapBackupEntriesCnt;
-        }
-
-        return c;
+        */
+        memorySize = 0;
     }
 
     /**
      * @return New instance suitable to store in history.
      */
     public VisorCache history() {
-        return initHistory(new VisorCache());
+        VisorCache c = new VisorCache();
+
+        c.name = name;
+        c.mode = mode;
+        c.memorySize = memorySize;
+        c.indexesSize = indexesSize;
+        c.size = size;
+        c.nearSize = nearSize;
+        c.backupSize = backupSize;
+        c.primarySize = primarySize;
+        c.onHeapEntriesCnt = onHeapEntriesCnt;
+        c.partitions = partitions;
+        c.metrics = metrics;
+        c.near = near;
+
+        return c;
     }
 
     /**
@@ -307,7 +259,7 @@ public class VisorCache implements Serializable, LessNamingBean {
     /**
      * @return Number of all entries in cache.
      */
-    public int size() {
+    public long size() {
         return size;
     }
 
@@ -319,45 +271,24 @@ public class VisorCache implements Serializable, LessNamingBean {
     }
 
     /**
-     * @return Number of all entries in DHT cache.
+     * @return Number of backup entries in cache.
      */
-    public int dhtSize() {
-        return dhtSize;
+    public long backupSize() {
+        return backupSize;
     }
 
     /**
      * @return Number of primary entries in cache.
      */
-    public int primarySize() {
+    public long primarySize() {
         return primarySize;
     }
 
     /**
-     * @return Memory size allocated in off-heap.
+     * @return Number of cache entries stored in heap memory.
      */
-    public long offHeapAllocatedSize() {
-        return offHeapAllocatedSize;
-    }
-
-    /**
-     * @return Number of cache entries stored in off-heap memory.
-     */
-    public long offHeapEntriesCount() {
-        return offHeapEntriesCnt;
-    }
-
-    /**
-     * @return Size in bytes for swap space.
-     */
-    public long swapSize() {
-        return swapSize;
-    }
-
-    /**
-     * @return Number of cache entries stored in swap space.
-     */
-    public long swapKeys() {
-        return swapKeys;
+    public long onHeapEntriesCount() {
+        return onHeapEntriesCnt;
     }
 
     /**
@@ -365,41 +296,6 @@ public class VisorCache implements Serializable, LessNamingBean {
      */
     public int partitions() {
         return partitions;
-    }
-
-    /**
-     * @return {@code true} if cache has near cache.
-     */
-    public boolean near() {
-        return near;
-    }
-
-    /**
-     * @return Off-heap heap primary entries count.
-     */
-    public int offHeapPrimaryEntriesCount() {
-        return offHeapPrimaryEntriesCnt;
-    }
-
-    /**
-     * @return Off-heap heap backup entries count.
-     */
-    public int offHeapBackupEntriesCount() {
-        return offHeapBackupEntriesCnt;
-    }
-
-    /**
-     * @return Swap primary entries count.
-     */
-    public int swapPrimaryEntriesCount() {
-        return swapPrimaryEntriesCnt;
-    }
-
-    /**
-     * @return Swap backup entries count.
-     */
-    public int swapBackupEntriesCount() {
-        return swapBackupEntriesCnt;
     }
 
     /**
@@ -414,6 +310,13 @@ public class VisorCache implements Serializable, LessNamingBean {
      */
     @Nullable public GridDhtPartitionMap partitionMap() {
         return partitionsMap;
+    }
+
+    /**
+     * @return {@code true} if cache has near cache.
+     */
+    public boolean near() {
+        return near;
     }
 
     /** {@inheritDoc} */

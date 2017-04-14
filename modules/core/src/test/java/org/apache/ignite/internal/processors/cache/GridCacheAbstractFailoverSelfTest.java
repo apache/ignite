@@ -23,6 +23,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -96,6 +97,9 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setRebalanceMode(SYNC);
+
+        if (cfg.getCacheMode() == CacheMode.PARTITIONED)
+            cfg.setBackups(TOP_CHANGE_THREAD_CNT);
 
         return cfg;
     }

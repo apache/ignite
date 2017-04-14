@@ -24,7 +24,7 @@ import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Data transfer object for {@link org.apache.ignite.IgniteFileSystem}.
+ * Data transfer object for {@link IgniteFileSystem}.
  */
 public class VisorIgfs implements Serializable, LessNamingBean {
     /** */

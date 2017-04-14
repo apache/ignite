@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -88,7 +87,6 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
 
         ccfg.setAtomicityMode(cacheAtomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 

@@ -445,6 +445,10 @@
                                 <title>Flink integration</title>
                                 <packages>org.apache.ignite.sink.flink*</packages>
                             </group>
+                            <group>
+                                <title>SpringData integration</title>
+                                <packages>org.apache.ignite.springdata.repository*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[

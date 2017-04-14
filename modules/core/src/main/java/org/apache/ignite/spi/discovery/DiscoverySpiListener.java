@@ -29,6 +29,15 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface DiscoverySpiListener {
     /**
+     *  Notification of local node initialization. At the time this method is called, it is guaranteed that
+     *  local node consistent ID is available, but the discovery process is not started yet.
+     *  This method should not block for a long time since it blocks discovery.
+     *
+     * @param locNode Initialized local node.
+     */
+    public void onLocalNodeInitialized(ClusterNode locNode);
+
+    /**
      * Notification for grid node discovery events.
      *
      * @param type Node discovery event type. See {@link DiscoveryEvent}

@@ -94,7 +94,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (cnt.getAndIncrement() == 0) {
+        if (cnt.getAndIncrement() == 0 || (cnt.get() > gridCount() && cnt.get() % gridCount() == 0)) {
             info("Use grid '" + igniteInstanceName + "' as near-only.");
 
             cfg.setClientMode(true);
@@ -208,9 +208,11 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /**
+     * TODO GG-11133.
+
      * @throws Exception If failed.
      */
-    public void testReaderTtlTx() throws Exception {
+    public void _testReaderTtlTx() throws Exception {
         // IgniteProcessProxy#transactions is not implemented.
         if (isMultiJvm())
             return;
@@ -219,9 +221,11 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /**
+     * TODO GG-11133.
+
      * @throws Exception If failed.
      */
-    public void testReaderTtlNoTx() throws Exception {
+    public void _testReaderTtlNoTx() throws Exception {
         checkReaderTtl(false);
     }
 

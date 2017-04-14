@@ -92,14 +92,11 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
         IgniteCache<Integer, Integer> cache0 = ignite(0).cache(null);
         IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
 
-        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
-
         for (int i = 0; i < 5; i++) {
             log.info("Iteration: " + i);
 
-            futs.add(GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+            GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
                     int val = idx.getAndIncrement();
 
                     IgniteCache<Integer, Integer> cache = ignite1.cache(null);
@@ -109,13 +106,10 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
                     return null;
                 }
-            }, 5, "put-thread"));
+            }, 5, "put-thread").get();
 
             assertEquals(cache0.localPeek(key), cache1.localPeek(key));
         }
-
-        for (IgniteInternalFuture<?> fut : futs)
-            fut.get();
     }
 
     /**

@@ -62,7 +62,6 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
         cacheCfg.setName(CACHE_NAME);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setNearConfiguration(null);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setStartSize(10);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -70,6 +69,7 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
         plc.setMaxSize(100000);
 
         cacheCfg.setEvictionPolicy(plc);
+        cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setBackups(1);
 
         cacheCfg.setRebalanceMode(SYNC);

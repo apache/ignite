@@ -35,9 +35,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridLocalCacheEntry extends GridCacheMapEntry {
-    /** Off-heap value pointer. */
-    private long valPtr;
-
     /**
      * @param ctx  Cache registry.
      * @param key  Cache key.
@@ -344,21 +341,6 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         checkOwnerChanged(prev, owner, val);
 
         return doomed != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean hasOffHeapPointer() {
-        return valPtr != 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long offHeapPointer() {
-        return valPtr;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void offHeapPointer(long valPtr) {
-        this.valPtr = valPtr;
     }
 
     /** {@inheritDoc} */
