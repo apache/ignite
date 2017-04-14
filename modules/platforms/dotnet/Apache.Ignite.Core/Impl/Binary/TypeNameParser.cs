@@ -368,14 +368,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets a value indicating whether current char is a digit.
-        /// </summary>
-        private bool Digit
-        {
-            get { return Char >= '0' && Char <= '9'; }
-        }
-
-        /// <summary>
         /// Gets the current character.
         /// </summary>
         private char Char
