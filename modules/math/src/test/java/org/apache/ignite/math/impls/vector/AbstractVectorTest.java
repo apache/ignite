@@ -132,7 +132,7 @@ public class AbstractVectorTest {
             testVector.set(i, Math.exp(data[i]));
 
         for (int i = 0; i < MathTestConstants.STORAGE_SIZE; i++)
-            assertEquals(MathTestConstants.VALUE_NOT_EQUALS, testVector.get(i), Math.exp(data[i]), MathTestConstants.NIL_DELTA);
+            assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.get(i), Math.exp(data[i]), MathTestConstants.NIL_DELTA);
     }
 
     /** */
@@ -182,9 +182,9 @@ public class AbstractVectorTest {
     /** */
     @Test
     public void isZero() {
-        assertTrue(MathTestConstants.UNEXPECTED_VALUE, testVector.isZero(0d));
+        assertTrue(MathTestConstants.UNEXPECTED_VAL, testVector.isZero(0d));
 
-        assertFalse(MathTestConstants.UNEXPECTED_VALUE, testVector.isZero(1d));
+        assertFalse(MathTestConstants.UNEXPECTED_VAL, testVector.isZero(1d));
     }
 
     /** */
@@ -192,7 +192,7 @@ public class AbstractVectorTest {
     public void guid() {
         assertNotNull(MathTestConstants.NULL_GUID, testVector.guid());
 
-        assertEquals(MathTestConstants.UNEXPECTED_GUID_VALUE, testVector.guid(), testVector.guid());
+        assertEquals(MathTestConstants.UNEXPECTED_GUID_VAL, testVector.guid(), testVector.guid());
 
         assertFalse(MathTestConstants.EMPTY_GUID, testVector.guid().toString().isEmpty());
 
@@ -200,7 +200,7 @@ public class AbstractVectorTest {
 
         assertNotNull(MathTestConstants.NULL_GUID, testVector.guid());
 
-        assertEquals(MathTestConstants.UNEXPECTED_GUID_VALUE, testVector.guid(), testVector.guid());
+        assertEquals(MathTestConstants.UNEXPECTED_GUID_VAL, testVector.guid(), testVector.guid());
 
         assertFalse(MathTestConstants.EMPTY_GUID, testVector.guid().toString().isEmpty());
     }
@@ -216,11 +216,11 @@ public class AbstractVectorTest {
 
         AbstractVector testVector2 = getAbstractVector();
 
-        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, testVector, testVector);
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector, testVector);
 
         testVector2.setStorage(storage);
 
-        assertTrue(MathTestConstants.VALUE_NOT_EQUALS, testVector1.equals(testVector2));
+        assertTrue(MathTestConstants.VAL_NOT_EQUALS, testVector1.equals(testVector2));
 
         assertFalse(MathTestConstants.VALUES_SHOULD_BE_NOT_EQUALS, testVector1.equals(testVector));
     }
@@ -228,9 +228,9 @@ public class AbstractVectorTest {
     /** */
     @Test(expected = NullPointerException.class)
     public void all() {
-        assertNotNull(MathTestConstants.NULL_VALUE, testVector.all());
+        assertNotNull(MathTestConstants.NULL_VAL, testVector.all());
 
-        assertNotNull(MathTestConstants.NULL_VALUE, getAbstractVector(createStorage()).all());
+        assertNotNull(MathTestConstants.NULL_VAL, getAbstractVector(createStorage()).all());
 
         getAbstractVector().all().iterator().next();
     }
@@ -244,11 +244,11 @@ public class AbstractVectorTest {
 
         testVector = getAbstractVector(storage);
 
-        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, testVector.nonZeroElements(), Arrays.stream(data).filter(x -> x != 0d).count());
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.nonZeroElements(), Arrays.stream(data).filter(x -> x != 0d).count());
 
         addNilValues(data);
 
-        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, testVector.nonZeroElements(), Arrays.stream(data).filter(x -> x != 0d).count());
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.nonZeroElements(), Arrays.stream(data).filter(x -> x != 0d).count());
     }
 
     /** */
@@ -267,23 +267,23 @@ public class AbstractVectorTest {
         for (int i = 0; i < data0.length; i++)
             testVal += data0[i] + data1[i];
 
-        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, testVector.foldMap(testVector1, (string, xi) -> string.concat(xi.toString()), Functions.PLUS, ""), testVal);
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.foldMap(testVector1, (string, xi) -> string.concat(xi.toString()), Functions.PLUS, ""), testVal);
     }
 
     /** */
     @Test
     public void nonZeroes() {
-        assertNotNull(MathTestConstants.NULL_VALUE, testVector.nonZeroes());
+        assertNotNull(MathTestConstants.NULL_VAL, testVector.nonZeroes());
 
         double[] data = initVector();
 
-        assertNotNull(MathTestConstants.NULL_VALUE, testVector.nonZeroes());
+        assertNotNull(MathTestConstants.NULL_VAL, testVector.nonZeroes());
 
-        Assert.assertEquals(MathTestConstants.VALUE_NOT_EQUALS, StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(), Arrays.stream(data).filter(x -> x != 0d).count());
+        Assert.assertEquals(MathTestConstants.VAL_NOT_EQUALS, StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(), Arrays.stream(data).filter(x -> x != 0d).count());
 
         addNilValues(data);
 
-        Assert.assertEquals(MathTestConstants.VALUE_NOT_EQUALS, StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(), Arrays.stream(data).filter(x -> x != 0d).count());
+        Assert.assertEquals(MathTestConstants.VAL_NOT_EQUALS, StreamSupport.stream(testVector.nonZeroes().spliterator(), false).count(), Arrays.stream(data).filter(x -> x != 0d).count());
     }
 
     /** */
@@ -295,7 +295,7 @@ public class AbstractVectorTest {
     /** */
     @Test(expected = NullPointerException.class)
     public void assign() {
-        testVector.assign(MathTestConstants.TEST_VALUE);
+        testVector.assign(MathTestConstants.TEST_VAL);
     }
 
     /** */
@@ -321,16 +321,16 @@ public class AbstractVectorTest {
     public void dotSelf() {
         double[] data = initVector();
 
-        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, testVector.dotSelf(), Arrays.stream(data).reduce(0, (x, y) -> x + y * y), MathTestConstants.NIL_DELTA);
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.dotSelf(), Arrays.stream(data).reduce(0, (x, y) -> x + y * y), MathTestConstants.NIL_DELTA);
     }
 
     /** */
     @Test
     public void getStorage() {
-        assertNotNull(MathTestConstants.NULL_VALUE, getAbstractVector(createEmptyStorage()));
-        assertNotNull(MathTestConstants.NULL_VALUE, getAbstractVector(createStorage()));
+        assertNotNull(MathTestConstants.NULL_VAL, getAbstractVector(createEmptyStorage()));
+        assertNotNull(MathTestConstants.NULL_VAL, getAbstractVector(createStorage()));
         testVector.setStorage(createStorage());
-        assertNotNull(MathTestConstants.NULL_VALUE, testVector.getStorage());
+        assertNotNull(MathTestConstants.NULL_VAL, testVector.getStorage());
     }
 
     /** */
@@ -339,13 +339,13 @@ public class AbstractVectorTest {
         double[] data = initVector();
 
         for (int i = 0; i < data.length; i++) {
-            assertNotNull(MathTestConstants.NULL_VALUE, testVector.getElement(i));
+            assertNotNull(MathTestConstants.NULL_VAL, testVector.getElement(i));
 
-            assertEquals(MathTestConstants.UNEXPECTED_VALUE, testVector.getElement(i).get(), data[i], MathTestConstants.NIL_DELTA);
+            assertEquals(MathTestConstants.UNEXPECTED_VAL, testVector.getElement(i).get(), data[i], MathTestConstants.NIL_DELTA);
 
             testVector.getElement(i).set(++data[i]);
 
-            assertEquals(MathTestConstants.UNEXPECTED_VALUE, testVector.getElement(i).get(), data[i], MathTestConstants.NIL_DELTA);
+            assertEquals(MathTestConstants.UNEXPECTED_VAL, testVector.getElement(i).get(), data[i], MathTestConstants.NIL_DELTA);
         }
     }
 

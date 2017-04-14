@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.math.impls.MathTestConstants.STORAGE_SIZE;
-import static org.apache.ignite.math.impls.MathTestConstants.UNEXPECTED_VALUE;
+import static org.apache.ignite.math.impls.MathTestConstants.UNEXPECTED_VAL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -54,7 +54,7 @@ public class SparseLocalOffHeapVectorStorageTest extends ExternalizeTest<SparseL
         for (int i = 0; i < STORAGE_SIZE; i++) {
             double testVal = Math.random();
             testVectorStorage.set(i, testVal);
-            assertEquals(UNEXPECTED_VALUE, testVal, testVectorStorage.get(i), 0d);
+            assertEquals(UNEXPECTED_VAL, testVal, testVectorStorage.get(i), 0d);
         }
     }
 
@@ -69,10 +69,10 @@ public class SparseLocalOffHeapVectorStorageTest extends ExternalizeTest<SparseL
     public void testAttributes() {
         SparseLocalOffHeapVectorStorage testVectorStorage = new SparseLocalOffHeapVectorStorage(STORAGE_SIZE);
 
-        assertTrue(UNEXPECTED_VALUE, testVectorStorage.isRandomAccess());
-        assertFalse(UNEXPECTED_VALUE, testVectorStorage.isSequentialAccess());
-        assertFalse(UNEXPECTED_VALUE, testVectorStorage.isDense());
-        assertFalse(UNEXPECTED_VALUE, testVectorStorage.isArrayBased());
-        assertFalse(UNEXPECTED_VALUE, testVectorStorage.isDistributed());
+        assertTrue(UNEXPECTED_VAL, testVectorStorage.isRandomAccess());
+        assertFalse(UNEXPECTED_VAL, testVectorStorage.isSequentialAccess());
+        assertFalse(UNEXPECTED_VAL, testVectorStorage.isDense());
+        assertFalse(UNEXPECTED_VAL, testVectorStorage.isArrayBased());
+        assertFalse(UNEXPECTED_VAL, testVectorStorage.isDistributed());
     }
 }

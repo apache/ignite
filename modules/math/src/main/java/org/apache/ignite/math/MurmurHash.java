@@ -42,19 +42,19 @@ public class MurmurHash {
      * See also http://github.com/yonik/java_util for future updates to this method.
      *
      * @param data
-     * @param offset
+     * @param off
      * @param len
      * @param seed
      * @return 32 bit hash platform compatible with C++ MurmurHash3 implementation on x86.
      */
-    public static int hash3X86(byte[] data, int offset, int len, int seed) {
+    public static int hash3X86(byte[] data, int off, int len, int seed) {
         int c1 = 0xcc9e2d51;
         int c2 = 0x1b873593;
 
         int h1 = seed;
-        int roundedEnd = offset + (len & 0xfffffffc);  // Round down to 4 byte block.
+        int roundedEnd = off + (len & 0xfffffffc);  // Round down to 4 byte block.
 
-        for (int i = offset; i < roundedEnd; i += 4) {
+        for (int i = off; i < roundedEnd; i += 4) {
             int k1 = (data[i] & 0xff) | ((data[i + 1] & 0xff) << 8) | ((data[i + 2] & 0xff) << 16) | (data[i + 3] << 24);
 
             k1 *= c1;
@@ -130,13 +130,13 @@ public class MurmurHash {
      * Hashes bytes in part of an array.
      *
      * @param data The data to hash.
-     * @param offset Where to start munging.
-     * @param length How many bytes to process.
+     * @param off Where to start munging.
+     * @param len How many bytes to process.
      * @param seed The seed to start with.
      * @return The 32-bit hash of the data in question.
      */
-    public static int hash(byte[] data, int offset, int length, int seed) {
-        return hash(ByteBuffer.wrap(data, offset, length), seed);
+    public static int hash(byte[] data, int off, int len, int seed) {
+        return hash(ByteBuffer.wrap(data, off, len), seed);
     }
 
     /**
@@ -194,12 +194,12 @@ public class MurmurHash {
 
     /**
      * @param data
-     * @param offset
-     * @param length
+     * @param off
+     * @param len
      * @param seed
      */
-    public static long hash64A(byte[] data, int offset, int length, int seed) {
-        return hash64A(ByteBuffer.wrap(data, offset, length), seed);
+    public static long hash64A(byte[] data, int off, int len, int seed) {
+        return hash64A(ByteBuffer.wrap(data, off, len), seed);
     }
 
     /**

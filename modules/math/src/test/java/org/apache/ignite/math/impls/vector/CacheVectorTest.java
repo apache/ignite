@@ -380,8 +380,8 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
         CacheVector objRestored = (CacheVector)objInputStream.readObject();
 
-        assertTrue(MathTestConstants.VALUE_NOT_EQUALS, cacheVector.equals(objRestored));
-        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, objRestored.get(1), 1.0, 0.0);
+        assertTrue(MathTestConstants.VAL_NOT_EQUALS, cacheVector.equals(objRestored));
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, objRestored.get(1), 1.0, 0.0);
     }
 
     /** */

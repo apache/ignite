@@ -56,7 +56,7 @@ public abstract class MatrixBaseStorageTest<T extends MatrixStorage> extends Ext
 
                 storage.set(i, j, data);
 
-                Assert.assertEquals(MathTestConstants.VALUE_NOT_EQUALS, storage.get(i, j), data, MathTestConstants.NIL_DELTA);
+                Assert.assertEquals(MathTestConstants.VAL_NOT_EQUALS, storage.get(i, j), data, MathTestConstants.NIL_DELTA);
             }
         }
     }
@@ -64,13 +64,13 @@ public abstract class MatrixBaseStorageTest<T extends MatrixStorage> extends Ext
     /** */
     @Test
     public void columnSize() throws Exception {
-        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, storage.columnSize(), MathTestConstants.STORAGE_SIZE);
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, storage.columnSize(), MathTestConstants.STORAGE_SIZE);
     }
 
     /** */
     @Test
     public void rowSize() throws Exception {
-        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, storage.rowSize(), MathTestConstants.STORAGE_SIZE);
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, storage.rowSize(), MathTestConstants.STORAGE_SIZE);
     }
 
     /** */

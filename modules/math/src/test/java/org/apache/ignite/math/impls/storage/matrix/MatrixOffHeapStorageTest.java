@@ -34,6 +34,6 @@ public class MatrixOffHeapStorageTest extends MatrixBaseStorageTest<DenseOffHeap
     /** */
     @Test
     public void data() throws Exception {
-        assertNull(MathTestConstants.UNEXPECTED_VALUE, storage.data());
+        assertNull(MathTestConstants.UNEXPECTED_VAL, storage.data());
     }
 }

@@ -36,28 +36,28 @@ public class MatrixArrayStorageTest extends MatrixBaseStorageTest<ArrayMatrixSto
     /** */
     @Test
     public void isSequentialAccess() throws Exception {
-        assertFalse(MathTestConstants.UNEXPECTED_VALUE, storage.isSequentialAccess());
+        assertFalse(MathTestConstants.UNEXPECTED_VAL, storage.isSequentialAccess());
     }
 
     /** */
     @Test
     public void isDense() throws Exception {
-        assertTrue(MathTestConstants.UNEXPECTED_VALUE, storage.isDense());
+        assertTrue(MathTestConstants.UNEXPECTED_VAL, storage.isDense());
     }
 
     /** */
     @Test
     public void isArrayBased() throws Exception {
-        assertTrue(MathTestConstants.UNEXPECTED_VALUE, storage.isArrayBased());
+        assertTrue(MathTestConstants.UNEXPECTED_VAL, storage.isArrayBased());
     }
 
     /** */
     @Test
     public void data() throws Exception {
         double[][] data = storage.data();
-        assertNotNull(MathTestConstants.NULL_VALUE, data);
-        assertTrue(MathTestConstants.UNEXPECTED_VALUE, data.length == MathTestConstants.STORAGE_SIZE);
-        assertTrue(MathTestConstants.UNEXPECTED_VALUE, data[0].length == MathTestConstants.STORAGE_SIZE);
+        assertNotNull(MathTestConstants.NULL_VAL, data);
+        assertTrue(MathTestConstants.UNEXPECTED_VAL, data.length == MathTestConstants.STORAGE_SIZE);
+        assertTrue(MathTestConstants.UNEXPECTED_VAL, data[0].length == MathTestConstants.STORAGE_SIZE);
     }
 
 }

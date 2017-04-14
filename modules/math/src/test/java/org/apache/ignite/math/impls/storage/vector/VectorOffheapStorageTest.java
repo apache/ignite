@@ -41,31 +41,31 @@ public class VectorOffheapStorageTest extends VectorBaseStorageTest<DenseLocalOf
     /** */
     @Test
     public void isArrayBased() throws Exception {
-        assertFalse(MathTestConstants.UNEXPECTED_VALUE, storage.isArrayBased());
+        assertFalse(MathTestConstants.UNEXPECTED_VAL, storage.isArrayBased());
     }
 
     /** */
     @Test
     public void data() throws Exception {
-        assertNull(MathTestConstants.NULL_VALUE, storage.data());
+        assertNull(MathTestConstants.NULL_VAL, storage.data());
     }
 
     /** */
     @Test
     public void isSequentialAccess() throws Exception {
-        assertTrue(MathTestConstants.UNEXPECTED_VALUE, storage.isSequentialAccess());
+        assertTrue(MathTestConstants.UNEXPECTED_VAL, storage.isSequentialAccess());
     }
 
     /** */
     @Test
     public void isDense() throws Exception {
-        assertTrue(MathTestConstants.UNEXPECTED_VALUE, storage.isDense());
+        assertTrue(MathTestConstants.UNEXPECTED_VAL, storage.isDense());
     }
 
     /** */
     @Test
     public void equalsTest() {
-        assertTrue(MathTestConstants.VALUE_NOT_EQUALS, storage.equals(storage));
+        assertTrue(MathTestConstants.VAL_NOT_EQUALS, storage.equals(storage));
 
         assertFalse(MathTestConstants.VALUES_SHOULD_BE_NOT_EQUALS, storage.equals(new ArrayVectorStorage(MathTestConstants.STORAGE_SIZE)));
     }

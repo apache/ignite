@@ -27,9 +27,9 @@ public class UnknownProviderException extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param flavor Flavor (a.k.a. operation performance hints) that has no registered provider for.
+     * @param flv Flavor (a.k.a. operation performance hints) that has no registered provider for.
      */
-    public UnknownProviderException(String flavor) {
-        super("No provider has been found for the flavor: " + flavor);
+    public UnknownProviderException(String flv) {
+        super("No provider has been found for the flavor: " + flv);
     }
 }

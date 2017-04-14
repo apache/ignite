@@ -48,8 +48,8 @@ public abstract class ExternalizeTest<T extends Externalizable & Destroyable> {
 
             objRestored = (T)objInputStream.readObject();
 
-            assertTrue(MathTestConstants.VALUE_NOT_EQUALS, initObj.equals(objRestored));
-            assertTrue(MathTestConstants.VALUE_NOT_EQUALS, Integer.compare(initObj.hashCode(), objRestored.hashCode()) == 0);
+            assertTrue(MathTestConstants.VAL_NOT_EQUALS, initObj.equals(objRestored));
+            assertTrue(MathTestConstants.VAL_NOT_EQUALS, Integer.compare(initObj.hashCode(), objRestored.hashCode()) == 0);
         }
         catch (ClassNotFoundException | IOException e) {
             fail(e + " [" + e.getMessage() + "]");

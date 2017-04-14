@@ -191,28 +191,28 @@ public class VectorIterableTest {
 
                 Spliterator<Double> spliterator = v.allSpliterator();
 
-                assertNotNull(MathTestConstants.NULL_VALUE + desc1, spliterator);
+                assertNotNull(MathTestConstants.NULL_VAL + desc1, spliterator);
 
-                assertNull(MathTestConstants.NOT_NULL_VALUE + desc1, spliterator.trySplit());
+                assertNull(MathTestConstants.NOT_NULL_VAL + desc1, spliterator.trySplit());
 
-                assertTrue(MathTestConstants.UNEXPECTED_VALUE + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
+                assertTrue(MathTestConstants.UNEXPECTED_VAL + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
 
                 if (!readOnly(v))
                     fillWithNonZeroes(v);
 
                 spliterator = v.allSpliterator();
 
-                assertNotNull(MathTestConstants.NULL_VALUE + desc1, spliterator);
+                assertNotNull(MathTestConstants.NULL_VAL + desc1, spliterator);
 
-                assertEquals(MathTestConstants.VALUE_NOT_EQUALS + desc1, spliterator.estimateSize(), v.size());
+                assertEquals(MathTestConstants.VAL_NOT_EQUALS + desc1, spliterator.estimateSize(), v.size());
 
-                assertEquals(MathTestConstants.VALUE_NOT_EQUALS + desc1, spliterator.getExactSizeIfKnown(), v.size());
+                assertEquals(MathTestConstants.VAL_NOT_EQUALS + desc1, spliterator.getExactSizeIfKnown(), v.size());
 
-                assertTrue(MathTestConstants.UNEXPECTED_VALUE + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
+                assertTrue(MathTestConstants.UNEXPECTED_VAL + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
 
                 Spliterator<Double> secondHalf = spliterator.trySplit();
 
-                assertNull(MathTestConstants.NOT_NULL_VALUE + desc1, secondHalf);
+                assertNull(MathTestConstants.NOT_NULL_VAL + desc1, secondHalf);
 
                 spliterator.tryAdvance(x -> {
                 });
@@ -230,25 +230,25 @@ public class VectorIterableTest {
 
                 Spliterator<Double> spliterator = vec.nonZeroSpliterator();
 
-                assertNotNull(MathTestConstants.NULL_VALUE + desc1, spliterator);
+                assertNotNull(MathTestConstants.NULL_VAL + desc1, spliterator);
 
-                assertNull(MathTestConstants.NOT_NULL_VALUE + desc1, spliterator.trySplit());
+                assertNull(MathTestConstants.NOT_NULL_VAL + desc1, spliterator.trySplit());
 
-                assertTrue(MathTestConstants.UNEXPECTED_VALUE + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
+                assertTrue(MathTestConstants.UNEXPECTED_VAL + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
 
                 spliterator = vec.nonZeroSpliterator();
 
-                assertNotNull(MathTestConstants.NULL_VALUE + desc1, spliterator);
+                assertNotNull(MathTestConstants.NULL_VAL + desc1, spliterator);
 
-                assertEquals(MathTestConstants.VALUE_NOT_EQUALS + desc1, spliterator.estimateSize(), vec.size() - numZeroes);
+                assertEquals(MathTestConstants.VAL_NOT_EQUALS + desc1, spliterator.estimateSize(), vec.size() - numZeroes);
 
-                assertEquals(MathTestConstants.VALUE_NOT_EQUALS + desc1, spliterator.getExactSizeIfKnown(), vec.size() - numZeroes);
+                assertEquals(MathTestConstants.VAL_NOT_EQUALS + desc1, spliterator.getExactSizeIfKnown(), vec.size() - numZeroes);
 
-                assertTrue(MathTestConstants.UNEXPECTED_VALUE + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
+                assertTrue(MathTestConstants.UNEXPECTED_VAL + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
 
                 Spliterator<Double> secondHalf = spliterator.trySplit();
 
-                assertNull(MathTestConstants.NOT_NULL_VALUE + desc1, secondHalf);
+                assertNull(MathTestConstants.NOT_NULL_VAL + desc1, secondHalf);
 
                 double[] data = new double[vec.size()];
 
@@ -257,19 +257,19 @@ public class VectorIterableTest {
 
                 spliterator = vec.nonZeroSpliterator();
 
-                assertNotNull(MathTestConstants.NULL_VALUE + desc1, spliterator);
+                assertNotNull(MathTestConstants.NULL_VAL + desc1, spliterator);
 
-                assertEquals(MathTestConstants.VALUE_NOT_EQUALS + desc1, spliterator.estimateSize(),
+                assertEquals(MathTestConstants.VAL_NOT_EQUALS + desc1, spliterator.estimateSize(),
                     Arrays.stream(data).filter(x -> x != 0d).count());
 
-                assertEquals(MathTestConstants.VALUE_NOT_EQUALS + desc1, spliterator.getExactSizeIfKnown(),
+                assertEquals(MathTestConstants.VAL_NOT_EQUALS + desc1, spliterator.getExactSizeIfKnown(),
                     Arrays.stream(data).filter(x -> x != 0d).count());
 
-                assertTrue(MathTestConstants.UNEXPECTED_VALUE + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
+                assertTrue(MathTestConstants.UNEXPECTED_VAL + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
 
                 secondHalf = spliterator.trySplit();
 
-                assertNull(MathTestConstants.NOT_NULL_VALUE + desc1, secondHalf);
+                assertNull(MathTestConstants.NOT_NULL_VAL + desc1, secondHalf);
 
                 if (!spliterator.tryAdvance(x -> {
                 }))

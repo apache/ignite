@@ -27,16 +27,16 @@ public interface MathTestConstants {
     /**
      * We assume that we will check calculation precision in other tests.
      */
-    public double EXPECTED_DELTA = 0.1d;
+    public double EXP_DELTA = 0.1d;
 
     /** */
-    public String UNEXPECTED_VALUE = "Unexpected value.";
+    public String UNEXPECTED_VAL = "Unexpected value.";
 
     /** */
     public String NULL_GUID = "Null GUID.";
 
     /** */
-    public String UNEXPECTED_GUID_VALUE = "Unexpected GUID value.";
+    public String UNEXPECTED_GUID_VAL = "Unexpected GUID value.";
 
     /** */
     public String EMPTY_GUID = "Empty GUID.";
@@ -45,19 +45,19 @@ public interface MathTestConstants {
     public String VALUES_SHOULD_BE_NOT_EQUALS = "Values should be not equals.";
 
     /** */
-    public String NULL_VALUE = "Null value.";
+    public String NULL_VAL = "Null value.";
 
     /** */
     public String NULL_VALUES = "Null values.";
 
     /** */
-    public String NOT_NULL_VALUE = "Not null value.";
+    public String NOT_NULL_VAL = "Not null value.";
 
     /** */
-    public double TEST_VALUE = 1d;
+    public double TEST_VAL = 1d;
 
     /** */
-    public String VALUE_NOT_EQUALS = "Values not equals.";
+    public String VAL_NOT_EQUALS = "Values not equals.";
 
     /** */
     public String NO_NEXT_ELEMENT = "No next element.";
@@ -66,7 +66,7 @@ public interface MathTestConstants {
     public int STORAGE_SIZE = 100;
 
     /** */
-    public String WRONG_ATTRIBUTE_VALUE = "Wrong attribute value.";
+    public String WRONG_ATTRIBUTE_VAL = "Wrong attribute value.";
 
     /** */
     public String NULL_DATA_ELEMENT = "Null data element.";
@@ -84,5 +84,5 @@ public interface MathTestConstants {
     public String WRONG_DATA_SIZE = "Wrong data size.";
 
     /** */
-    public String UNEXPECTED_DATA_VALUE = "Unexpected data value.";
+    public String UNEXPECTED_DATA_VAL = "Unexpected data value.";
 }

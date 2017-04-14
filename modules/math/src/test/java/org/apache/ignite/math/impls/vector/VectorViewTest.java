@@ -85,7 +85,7 @@ public class VectorViewTest {
     public void testCopy() throws Exception {
         Vector cp = testVector.copy();
 
-        assertTrue(MathTestConstants.VALUE_NOT_EQUALS, cp.equals(testVector));
+        assertTrue(MathTestConstants.VAL_NOT_EQUALS, cp.equals(testVector));
     }
 
     /** */
@@ -147,7 +147,7 @@ public class VectorViewTest {
 
             objInputStream.close();
 
-            assertTrue(MathTestConstants.VALUE_NOT_EQUALS, testVector.equals(readVector));
+            assertTrue(MathTestConstants.VAL_NOT_EQUALS, testVector.equals(readVector));
         }
         catch (ClassNotFoundException | IOException e) {
             fail(e.getMessage());

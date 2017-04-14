@@ -38,9 +38,9 @@ public class VectorArrayStorageTest extends VectorBaseStorageTest<ArrayVectorSto
     /** */
     @Test
     public void isArrayBased() throws Exception {
-        assertTrue(MathTestConstants.WRONG_ATTRIBUTE_VALUE, storage.isArrayBased());
+        assertTrue(MathTestConstants.WRONG_ATTRIBUTE_VAL, storage.isArrayBased());
 
-        assertTrue(MathTestConstants.WRONG_ATTRIBUTE_VALUE, new ArrayVectorStorage().isArrayBased());
+        assertTrue(MathTestConstants.WRONG_ATTRIBUTE_VAL, new ArrayVectorStorage().isArrayBased());
     }
 
     /** */
@@ -50,9 +50,9 @@ public class VectorArrayStorageTest extends VectorBaseStorageTest<ArrayVectorSto
 
         assertEquals(MathTestConstants.WRONG_DATA_SIZE, storage.data().length, MathTestConstants.STORAGE_SIZE);
 
-        assertTrue(MathTestConstants.UNEXPECTED_DATA_VALUE, Arrays.equals(storage.data(), new double[MathTestConstants.STORAGE_SIZE]));
+        assertTrue(MathTestConstants.UNEXPECTED_DATA_VAL, Arrays.equals(storage.data(), new double[MathTestConstants.STORAGE_SIZE]));
 
-        assertNull(MathTestConstants.UNEXPECTED_DATA_VALUE, new ArrayVectorStorage().data());
+        assertNull(MathTestConstants.UNEXPECTED_DATA_VAL, new ArrayVectorStorage().data());
     }
 
 }

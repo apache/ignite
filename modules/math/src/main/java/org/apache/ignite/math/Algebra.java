@@ -399,31 +399,31 @@ public class Algebra extends Constants {
      * <dl><dt>Examples: {@code 1.0 -> 1, 1.2 -> 1, 1.9 -> 1 <dt> 2.0 -> 2, 2.2 -> 2, 2.9 -> 2}</dt></dl>
      * This method is safer than using (long) Math.floor(value), because of possible rounding error.
      */
-    public static long floor(double value) {
-        return Math.round(Math.floor(value));
+    public static long floor(double val) {
+        return Math.round(Math.floor(val));
     }
 
     /**
      * Returns {@code log<sub>base</sub>value}.
      */
-    public static double log(double base, double value) {
-        return Math.log(value) / Math.log(base);
+    public static double log(double base, double val) {
+        return Math.log(val) / Math.log(base);
     }
 
     /**
      * Returns {@code log<sub>10</sub>value}.
      */
-    public static double log10(double value) {
+    public static double log10(double val) {
         // 1.0 / Math.log(10) == 0.43429448190325176
-        return Math.log(value) * 0.43429448190325176;
+        return Math.log(val) * 0.43429448190325176;
     }
 
     /**
      * Returns {@code log<sub>2</sub>value}.
      */
-    public static double log2(double value) {
+    public static double log2(double val) {
         // 1.0 / Math.log(2) == 1.4426950408889634
-        return Math.log(value) * 1.4426950408889634;
+        return Math.log(val) * 1.4426950408889634;
     }
 
     /**

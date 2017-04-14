@@ -59,7 +59,7 @@ public abstract class VectorBaseStorageTest<T extends VectorStorage> extends Ext
     /** */
     @Test
     public void size() {
-        assertTrue(MathTestConstants.UNEXPECTED_VALUE, storage.size() == MathTestConstants.STORAGE_SIZE);
+        assertTrue(MathTestConstants.UNEXPECTED_VAL, storage.size() == MathTestConstants.STORAGE_SIZE);
     }
 
     /** */

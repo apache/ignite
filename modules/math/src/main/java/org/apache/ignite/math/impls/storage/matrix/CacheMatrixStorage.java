@@ -152,15 +152,15 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 1;
+        int res = 1;
 
-        result = result * 37 + rows;
-        result = result * 37 + cols;
-        result = result * 37 + cache.hashCode();
-        result = result * 37 + keyMapper.hashCode();
-        result = result * 37 + valMapper.hashCode();
+        res = res * 37 + rows;
+        res = res * 37 + cols;
+        res = res * 37 + cache.hashCode();
+        res = res * 37 + keyMapper.hashCode();
+        res = res * 37 + valMapper.hashCode();
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */
