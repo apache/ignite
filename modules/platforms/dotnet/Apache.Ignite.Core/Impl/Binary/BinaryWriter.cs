@@ -1112,6 +1112,11 @@ namespace Apache.Ignite.Core.Impl.Binary
             // automatic Nullable'1 unwrapping.
             Type type = obj.GetType();
 
+            if (type == typeof(Ignite))
+            {
+                throw new InvalidDataException("!!Serializing Ignite from: " + new StackTrace());
+            }
+
             // Handle common case when primitive is written.
             if (type.IsPrimitive)
             {
