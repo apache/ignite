@@ -114,6 +114,8 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         node2 = startGrid(1);
         cache2 = node2.cache(CACHE_NAME);
         cacheBinary2 = cache2.withKeepBinary();
+
+        awaitPartitionMapExchange();
     }
 
     /**

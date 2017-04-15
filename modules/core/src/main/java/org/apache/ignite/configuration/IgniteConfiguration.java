@@ -120,12 +120,6 @@ public class IgniteConfiguration {
     /** Default message send retries count. */
     public static final int DFLT_SEND_RETRY_CNT = 3;
 
-    /** Default number of clock sync samples. */
-    public static final int DFLT_CLOCK_SYNC_SAMPLES = 8;
-
-    /** Default clock synchronization frequency. */
-    public static final int DFLT_CLOCK_SYNC_FREQUENCY = 120000;
-
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
@@ -150,38 +144,14 @@ public class IgniteConfiguration {
     /** Default size of data streamer thread pool. */
     public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
-    /** Default keep alive time for public thread pool. */
-    @Deprecated
-    public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
-
     /** Default limit of threads used for rebalance. */
     public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
-
-    /** Default max queue capacity of public thread pool. */
-    @Deprecated
-    public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default size of system thread pool. */
     public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
-    /** Default max size of system thread pool. */
-    @Deprecated
-    public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
-
     /** Default size of query thread pool. */
     public static final int DFLT_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
-
-    /** Default keep alive time for system thread pool. */
-    @Deprecated
-    public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
-
-    /** Default keep alive time for utility thread pool. */
-    @Deprecated
-    public static final long DFLT_UTILITY_KEEP_ALIVE_TIME = 10_000;
-
-    /** Default max queue capacity of system thread pool. */
-    @Deprecated
-    public static final int DFLT_SYSTEM_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default Ignite thread keep alive time. */
     public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
@@ -220,7 +190,7 @@ public class IgniteConfiguration {
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
     /** Default value for late affinity assignment flag. */
-    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = false;
+    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
 
     /** Default value for active on start flag. */
     public static final boolean DFLT_ACTIVE_ON_START = true;
@@ -315,12 +285,6 @@ public class IgniteConfiguration {
 
     /** Message send retries delay. */
     private int sndRetryCnt = DFLT_SEND_RETRY_CNT;
-
-    /** Number of samples for clock synchronization. */
-    private int clockSyncSamples = DFLT_CLOCK_SYNC_SAMPLES;
-
-    /** Clock synchronization frequency. */
-    private long clockSyncFreq = DFLT_CLOCK_SYNC_FREQUENCY;
 
     /** Metrics history time. */
     private int metricsHistSize = DFLT_METRICS_HISTORY_SIZE;
@@ -524,8 +488,6 @@ public class IgniteConfiguration {
         callbackPoolSize = cfg.getAsyncCallbackPoolSize();
         classLdr = cfg.getClassLoader();
         clientMode = cfg.isClientMode();
-        clockSyncFreq = cfg.getClockSyncFrequency();
-        clockSyncSamples = cfg.getClockSyncSamples();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
         daemon = cfg.isDaemon();
@@ -1468,52 +1430,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setNetworkSendRetryCount(int sndRetryCnt) {
         this.sndRetryCnt = sndRetryCnt;
-
-        return this;
-    }
-
-    /**
-     * Gets number of samples used to synchronize clocks between different nodes.
-     * <p>
-     * Clock synchronization is used for cache version assignment in {@code CLOCK} order mode.
-     *
-     * @return Number of samples for one synchronization round.
-     */
-    public int getClockSyncSamples() {
-        return clockSyncSamples;
-    }
-
-    /**
-     * Sets number of samples used for clock synchronization.
-     *
-     * @param clockSyncSamples Number of samples.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setClockSyncSamples(int clockSyncSamples) {
-        this.clockSyncSamples = clockSyncSamples;
-
-        return this;
-    }
-
-    /**
-     * Gets frequency at which clock is synchronized between nodes, in milliseconds.
-     * <p>
-     * Clock synchronization is used for cache version assignment in {@code CLOCK} order mode.
-     *
-     * @return Clock synchronization frequency, in milliseconds.
-     */
-    public long getClockSyncFrequency() {
-        return clockSyncFreq;
-    }
-
-    /**
-     * Sets clock synchronization frequency in milliseconds.
-     *
-     * @param clockSyncFreq Clock synchronization frequency.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setClockSyncFrequency(long clockSyncFreq) {
-        this.clockSyncFreq = clockSyncFreq;
 
         return this;
     }

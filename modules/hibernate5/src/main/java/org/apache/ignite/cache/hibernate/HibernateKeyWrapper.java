@@ -24,7 +24,7 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.EntityPersister;
 
 /**
- *
+ * Hibernate cache key wrapper.
  */
 public class HibernateKeyWrapper {
     /** Key. */

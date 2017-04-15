@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for memory configuration.
  */
-public class VisorMemoryPolicyConfiguration implements Serializable {
+public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,6 +40,14 @@ public class VisorMemoryPolicyConfiguration implements Serializable {
 
     /** Path for memory mapped file. */
     private String swapFilePath;
+
+
+    /**
+     * Default constructor.
+     */
+    public VisorMemoryPolicyConfiguration() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -68,5 +81,25 @@ public class VisorMemoryPolicyConfiguration implements Serializable {
      */
     public String getSwapFilePath() {
         return swapFilePath;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, name);
+        out.writeLong(size);
+        U.writeString(out, swapFilePath);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        name = U.readString(in);
+        size = in.readLong();
+        swapFilePath = U.readString(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorMemoryPolicyConfiguration.class, this);
     }
 }

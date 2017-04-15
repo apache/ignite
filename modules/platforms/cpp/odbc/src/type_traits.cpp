@@ -187,7 +187,7 @@ namespace ignite
 
             bool IsApplicationTypeSupported(int16_t type)
             {
-                return ToDriverType(type) != IGNITE_ODBC_C_TYPE_UNSUPPORTED;
+                return ToDriverType(type) != OdbcNativeType::AI_UNSUPPORTED;
             }
 
             bool IsSqlTypeSupported(int16_t type)
@@ -296,75 +296,75 @@ namespace ignite
                 return -1;
             }
 
-            IgniteSqlType ToDriverType(int16_t type)
+            OdbcNativeType::Type ToDriverType(int16_t type)
             {
                 switch (type)
                 {
                 case SQL_C_CHAR:
-                    return IGNITE_ODBC_C_TYPE_CHAR;
+                    return OdbcNativeType::AI_CHAR;
 
                 case SQL_C_WCHAR:
-                    return IGNITE_ODBC_C_TYPE_WCHAR;
+                    return OdbcNativeType::AI_WCHAR;
 
                 case SQL_C_SSHORT:
                 case SQL_C_SHORT:
-                    return IGNITE_ODBC_C_TYPE_SIGNED_SHORT;
+                    return OdbcNativeType::AI_SIGNED_SHORT;
 
                 case SQL_C_USHORT:
-                    return IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT;
+                    return OdbcNativeType::AI_UNSIGNED_SHORT;
 
                 case SQL_C_SLONG:
                 case SQL_C_LONG:
-                    return IGNITE_ODBC_C_TYPE_SIGNED_LONG;
+                    return OdbcNativeType::AI_SIGNED_LONG;
 
                 case SQL_C_ULONG:
-                    return IGNITE_ODBC_C_TYPE_UNSIGNED_LONG;
+                    return OdbcNativeType::AI_UNSIGNED_LONG;
 
                 case SQL_C_FLOAT:
-                    return IGNITE_ODBC_C_TYPE_FLOAT;
+                    return OdbcNativeType::AI_FLOAT;
 
                 case SQL_C_DOUBLE:
-                    return IGNITE_ODBC_C_TYPE_DOUBLE;
+                    return OdbcNativeType::AI_DOUBLE;
 
                 case SQL_C_BIT:
-                    return IGNITE_ODBC_C_TYPE_BIT;
+                    return OdbcNativeType::AI_BIT;
 
                 case SQL_C_STINYINT:
                 case SQL_C_TINYINT:
-                    return IGNITE_ODBC_C_TYPE_SIGNED_TINYINT;
+                    return OdbcNativeType::AI_SIGNED_TINYINT;
 
                 case SQL_C_UTINYINT:
-                    return IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT;
+                    return OdbcNativeType::AI_UNSIGNED_TINYINT;
 
                 case SQL_C_SBIGINT:
-                    return IGNITE_ODBC_C_TYPE_SIGNED_BIGINT;
+                    return OdbcNativeType::AI_SIGNED_BIGINT;
 
                 case SQL_C_UBIGINT:
-                    return IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT;
+                    return OdbcNativeType::AI_UNSIGNED_BIGINT;
 
                 case SQL_C_BINARY:
-                    return IGNITE_ODBC_C_TYPE_BINARY;
+                    return OdbcNativeType::AI_BINARY;
 
                 case SQL_C_TYPE_DATE:
-                    return IGNITE_ODBC_C_TYPE_TDATE;
+                    return OdbcNativeType::AI_TDATE;
 
                 case SQL_C_TYPE_TIME:
-                    return IGNITE_ODBC_C_TYPE_TTIME;
+                    return OdbcNativeType::AI_TTIME;
 
                 case SQL_C_TYPE_TIMESTAMP:
-                    return IGNITE_ODBC_C_TYPE_TTIMESTAMP;
+                    return OdbcNativeType::AI_TTIMESTAMP;
 
                 case SQL_C_NUMERIC:
-                    return IGNITE_ODBC_C_TYPE_NUMERIC;
+                    return OdbcNativeType::AI_NUMERIC;
 
                 case SQL_C_GUID:
-                    return IGNITE_ODBC_C_TYPE_GUID;
+                    return OdbcNativeType::AI_GUID;
 
                 case SQL_C_DEFAULT:
-                    return IGNITE_ODBC_C_TYPE_DEFAULT;
+                    return OdbcNativeType::AI_DEFAULT;
 
                 default:
-                    return IGNITE_ODBC_C_TYPE_UNSUPPORTED;
+                    return OdbcNativeType::AI_UNSUPPORTED;
                 }
             }
 

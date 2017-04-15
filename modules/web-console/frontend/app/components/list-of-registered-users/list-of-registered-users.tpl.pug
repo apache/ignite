@@ -15,58 +15,62 @@
     limitations under the License.
 
 include /app/helpers/jade/mixins
-include /app/components/form-field-datepicker/form-field-datepicker.pug
 
 mixin grid-settings()
-    i.fa.fa-bars(data-animation='am-flip-x' bs-dropdown='' aria-haspopup='true' aria-expanded='expanded' data-auto-close='1' data-trigger='click')
-    ul.select.dropdown-menu(role='menu')
-        li(ng-repeat='item in $ctrl.gridOptions.categories|filter:{selectable:true}')
-            a(ng-click='$ctrl.toggleColumns(item, !item.visible)')
-                i.fa.fa-check-square-o.pull-left(ng-if='item.visible')
-                i.fa.fa-square-o.pull-left(ng-if='!item.visible')
-                span {{::item.name}}
-        li.divider
-        li
-            a(ng-click='$ctrl.selectAllColumns()') Select all
-        li
-            a(ng-click='$ctrl.clearAllColumns()') Clear all
-        li.divider
-        li
-            a(ng-click='$hide()') Close
-
+    .grid-settings
+        i.fa.fa-cog(data-animation='am-flip-x' bs-dropdown='' aria-haspopup='true' aria-expanded='expanded' data-auto-close='1' data-trigger='click')
+        ul.select.dropdown-menu(role='menu')
+            li
+                a(ng-click='$ctrl.gridOptions.selectedAll ? $ctrl.clearAllColumns() : $ctrl.selectAllColumns()')
+                    i.fa.fa-check-square-o.pull-left(ng-if='$ctrl.gridOptions.selectedAll')
+                    i.fa.fa-square-o.pull-left(ng-if='!$ctrl.gridOptions.selectedAll')
+                    span All
+            li(ng-repeat='item in $ctrl.gridOptions.categories|filter:{selectable:true}')
+                a(ng-click='$ctrl.toggleColumns(item, !item.visible)')
+                    i.fa.fa-check-square-o.pull-left(ng-if='item.visible')
+                    i.fa.fa-square-o.pull-left(ng-if='!item.visible')
+                    span {{::item.name}}
 
 .list-of-registered-users
-    ul.tabs
+    ul.tabs.tabs--blue
         li(role='presentation' ng-class='{ active: $ctrl.groupBy === "user" }') 
             a(ng-click='$ctrl.groupByUser()') 
                 span Users
-                span.badge {{ $ctrl.gridOptions.data.length }}
+                span.badge.badge--blue(ng-hide='$ctrl.groupBy === "user"')
+                    | {{ $ctrl.gridOptions.data.length }}
+                span.badge.badge--blue(ng-show='$ctrl.groupBy === "user"')
+                    | {{ $ctrl.filteredRows.length }}
         li(role='presentation' ng-class='{ active: $ctrl.groupBy === "company" }')
             a(ng-click='$ctrl.groupByCompany()') 
                 span Companies
-                span.badge {{ $ctrl.companies.length }}
+                span.badge.badge--blue {{ $ctrl.companies.length }}
         li(role='presentation' ng-class='{ active: $ctrl.groupBy === "country" }')
             a(ng-click='$ctrl.groupByCountry()')
                 span Countries
-                span.badge {{ $ctrl.countries.length }}
+                span.badge.badge--blue {{ $ctrl.countries.length }}
 
-    .panel.panel-default
+    .panel--ignite
         .panel-heading.ui-grid-settings
-            +grid-settings
-            label(ng-show='$ctrl.groupBy === "user"') Showing users:&nbsp;
-                strong {{ $ctrl.gridApi.grid.getVisibleRows().length }}
-                sub(ng-show='users.length === $ctrl.gridApi.grid.getVisibleRows().length') all
-
-            -var form = 'admin'
-            form.pull-right(name=form novalidate)
-                button.btn.btn-primary(ng-click='$ctrl.exportCsv()' bs-tooltip data-title='Export table to csv') Export
-
-                .ui-grid-settings-dateperiod
-                    +ignite-form-field-datepicker('Period:', '$ctrl.params.startDate', '"period"', null, '$ctrl.params.endDate')
-                    +ignite-form-field-datepicker('Period:', '$ctrl.params.endDate', null, '$ctrl.params.startDate', null)
-
-                .ui-grid-settings-filter
+            .panel-title(ng-hide='$ctrl.selected.length')
+                span(ng-if='$ctrl.groupBy === "user"') List of registered users
+                span(ng-if='$ctrl.groupBy === "company"') List of registered companies
+                span(ng-if='$ctrl.groupBy === "country"') List of registered countries
+                +grid-settings
+                button.btn.btn--stroke(ng-click='$ctrl.exportCsv()' bs-tooltip data-title='Export table to csv')
+                    i.fa.fa-file-excel-o.export-icon
+                form.ui-grid-settings-dateperiod(name=form novalidate)
+                    -var form = 'admin'
+                    +ignite-form-field-datepicker('Period: from', '$ctrl.params.startDate', '"startDate"', null, '$ctrl.params.endDate')
+                    +ignite-form-field-datepicker('to', '$ctrl.params.endDate', '"endDate"', '$ctrl.params.startDate', null)
+                form.ui-grid-settings-filter
+                    -var form = 'admin'
                     +ignite-form-field-text('Exclude:', '$ctrl.params.companiesExclude', '"exclude"', false, false, 'Exclude by company name...')
+
+            .panel-selected(ng-show='$ctrl.selected.length')
+                .pull-right
+                    +ignite-form-field-bsdropdown('Actions', '$ctrl.action', 'action', false, false, '$ctrl.actionOptions')
+                div
+                    | {{ $ctrl.selected.length }} item{{ $ctrl.selected.length > 1 ? 's' : '' }} selected
 
         .panel-collapse
             .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-grouping)

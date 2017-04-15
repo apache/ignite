@@ -111,7 +111,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
@@ -170,7 +169,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
@@ -909,29 +908,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            try {
-                startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
-                startProcessor(new GridClockSyncProcessor(ctx));
-                startProcessor(new GridAffinityProcessor(ctx));
-                startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
-                startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
-                startProcessor(new GridCacheProcessor(ctx));
-                startProcessor(new GridClusterStateProcessor(ctx));
-                startProcessor(new GridQueryProcessor(ctx));
-                startProcessor(new OdbcProcessor(ctx));
-                startProcessor(new GridServiceProcessor(ctx));
-                startProcessor(new GridTaskSessionProcessor(ctx));
-                startProcessor(new GridJobProcessor(ctx));
-                startProcessor(new GridTaskProcessor(ctx));
-                startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
-                startProcessor(new GridRestProcessor(ctx));
-                startProcessor(new DataStreamProcessor(ctx));
-                startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
-                startProcessor(new GridContinuousProcessor(ctx));
-                startProcessor(createHadoopComponent());
-                startProcessor(new DataStructuresProcessor(ctx));
-                startProcessor(createComponent(PlatformProcessor.class, ctx));
-                startProcessor(new GridMarshallerMappingProcessor(ctx));
+            try {startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
+            startProcessor(new  GridAffinityProcessor(ctx));
+            startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
+            startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
+            startProcessor(new GridCacheProcessor(ctx));startProcessor(new GridClusterStateProcessor(ctx));
+            startProcessor(new GridQueryProcessor(ctx));
+            startProcessor(new OdbcProcessor(ctx));
+            startProcessor(new GridServiceProcessor(ctx));
+            startProcessor(new GridTaskSessionProcessor(ctx));
+            startProcessor(new GridJobProcessor(ctx));
+            startProcessor(new GridTaskProcessor(ctx));
+            startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
+            startProcessor(new GridRestProcessor(ctx));
+            startProcessor(new DataStreamProcessor(ctx));
+            startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
+            startProcessor(new GridContinuousProcessor(ctx));
+            startProcessor(createHadoopComponent());
+            startProcessor(new DataStructuresProcessor(ctx));
+            startProcessor(createComponent(PlatformProcessor.class, ctx));
+            startProcessor(new GridMarshallerMappingProcessor(ctx));
 
                 // Start plugins.
                 for (PluginProvider provider : ctx.plugins().allProviders()) {

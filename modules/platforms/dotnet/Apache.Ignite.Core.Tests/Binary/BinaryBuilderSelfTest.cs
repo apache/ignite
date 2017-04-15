@@ -57,8 +57,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = GetTypeConfigurations(),
-                    DefaultIdMapper = new IdMapper(),
-                    DefaultNameMapper = new NameMapper(),
+                    IdMapper = new IdMapper(),
+                    NameMapper = new NameMapper(),
                     CompactFooter = GetCompactFooter()
                 }
             };
