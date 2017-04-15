@@ -58,7 +58,7 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
     private final QueryIndexType type;
 
     /** */
-    private int inlineSize;
+    private final int inlineSize;
 
     /**
      * Constructor.
@@ -84,10 +84,8 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
         return typDesc;
     }
 
-    /**
-     * @return Index name.
-     */
-    public String name() {
+    /** {@inheritDoc} */
+    @Override public String name() {
         return name;
     }
 

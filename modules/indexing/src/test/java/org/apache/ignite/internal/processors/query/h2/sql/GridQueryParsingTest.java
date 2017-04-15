@@ -465,32 +465,32 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      */
     public void testParseCreateIndex() throws Exception {
         assertCreateIndexEquals(
-            buildCreateIndex(null, "Person", "", false, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED, "name", true),
             "create index on Person (name)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "", false, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.SORTED, "name", true),
             "create index idx on Person (name ASC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "schema2", false, QueryIndexType.GEOSPATIAL, "name", true),
-            "create spatial index \"schema2\".idx on \"schema2\".Person (name ASC)");
+            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.GEOSPATIAL, "name", true),
+            "create spatial index sch1.idx on sch1.Person (name ASC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "schema2", true, QueryIndexType.SORTED, "name", true),
-            "create index if not exists \"schema2\".idx on \"schema2\".Person (name)");
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED, "name", true),
+            "create index if not exists sch1.idx on sch1.Person (name)");
 
         // When we specify schema for the table and don't specify it for the index, resulting schema is table's
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "schema2", true, QueryIndexType.SORTED, "name", false),
-            "create index if not exists idx on \"schema2\".Person (name dEsC)");
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED, "name", false),
+            "create index if not exists idx on sch1.Person (name dEsC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "", true, QueryIndexType.GEOSPATIAL, "old", true, "name", false),
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.GEOSPATIAL, "old", true, "name", false),
             "create spatial index if not exists idx on Person (old, name desc)");
 
-        // Schemas for index and table must match (here schema for the table defaults to empty string)
-        assertParseThrows("create index if not exists \"schema2\".idx on Person (name)",
+        // Schemas for index and table must match
+        assertParseThrows("create index if not exists sch2.idx on sch1.Person (name)",
             DbException.class, "Schema name must match [90080-191]");
 
         assertParseThrows("create hash index if not exists idx on Person (name)",
@@ -517,10 +517,10 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      */
     public void testParseDropIndex() throws Exception {
         // Schema that is not set defaults to default schema of connection which is empty string
-        assertDropIndexEquals(buildDropIndex("idx", "", false), "drop index idx");
-        assertDropIndexEquals(buildDropIndex("idx", "", true), "drop index if exists idx");
-        assertDropIndexEquals(buildDropIndex("idx", "schema2", true), "drop index if exists \"schema2\".idx");
-        assertDropIndexEquals(buildDropIndex("idx", "schema2", false), "drop index \"schema2\".idx");
+        assertDropIndexEquals(buildDropIndex("idx", "sch1", false), "drop index idx");
+        assertDropIndexEquals(buildDropIndex("idx", "sch1", true), "drop index if exists idx");
+        assertDropIndexEquals(buildDropIndex("idx", "sch1", true), "drop index if exists sch1.idx");
+        assertDropIndexEquals(buildDropIndex("idx", "sch1", false), "drop index sch1.idx");
 
         // Message is null as long as it may differ from system to system, so we just check for exceptions
         assertParseThrows("drop index schema2.", DbException.class, null);
@@ -635,7 +635,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     private static GridSqlCreateIndex buildCreateIndex(String name, String tblName, String schemaName, boolean ifNotExists,
-                                                       QueryIndexType type, Object... flds) {
+        QueryIndexType type, Object... flds) {
         QueryIndex idx = new QueryIndex();
 
         idx.setName(name);
@@ -645,7 +645,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         LinkedHashMap<String, Boolean> trueFlds = new LinkedHashMap<>();
 
         for (int i = 0; i < flds.length / 2; i++)
-            trueFlds.put((String) flds[i * 2], (Boolean) flds[i * 2 + 1]);
+            trueFlds.put((String)flds[i * 2], (Boolean)flds[i * 2 + 1]);
 
         idx.setFields(trueFlds);
         idx.setIndexType(type);

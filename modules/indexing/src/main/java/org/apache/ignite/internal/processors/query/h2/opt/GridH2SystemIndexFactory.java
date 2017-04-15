@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.schema;
+package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.h2.index.Index;
+
+import java.util.ArrayList;
 
 /**
- * Index closure accepting current entry state.
+ * Factory for system table indexes.
  */
-public interface SchemaIndexCacheVisitorClosure {
+public interface GridH2SystemIndexFactory {
     /**
-     * Apply closure.
+     * Create list of indexes. First must be primary key, after that all unique indexes and
+     * only then non-unique indexes.
+     * All indexes must be subtypes of {@link H2TreeIndex}.
      *
-     * @param key Key.
-     * @param part Partition.
-     * @param val Value.
-     * @param ver Version.
-     * @param expiration Expiration.
-     * @param link Link.
-     * @throws IgniteCheckedException If failed.
+     * @param tbl Table to create indexes for.
+     * @return List of indexes.
      */
-    public void apply(KeyCacheObject key, int part, CacheObject val, GridCacheVersion ver, long expiration, long link)
-        throws IgniteCheckedException;
+    ArrayList<Index> createSystemIndexes(GridH2Table tbl);
 }

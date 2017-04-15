@@ -143,13 +143,13 @@ public interface GridQueryIndexing {
      *
      * @param spaceName Space name.
      * @param tblName Table name.
-     * @param idx Index params.
+     * @param idxDesc Index descriptor.
      * @param ifNotExists Ignore operation if index exists (instead of throwing an error).
      * @param cacheVisitor Cache visitor
      * @throws IgniteCheckedException if failed.
      */
-    public void createIndex(@Nullable String spaceName, String tblName, QueryIndex idx, boolean ifNotExists,
-        SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException;
+    public void dynamicIndexCreate(@Nullable String spaceName, String tblName, QueryIndexDescriptorImpl idxDesc,
+        boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException;
 
     /**
      * Remove index from the space.
@@ -160,7 +160,8 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public void dropIndex(@Nullable String spaceName, String idxName, boolean ifExists) throws IgniteCheckedException;
+    public void dynamicIndexDrop(@Nullable String spaceName, String idxName, boolean ifExists)
+        throws IgniteCheckedException;
 
     /**
      * Registers cache.

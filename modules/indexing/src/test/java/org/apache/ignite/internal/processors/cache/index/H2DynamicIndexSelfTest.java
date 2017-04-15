@@ -33,7 +33,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /**
  * Test that checks indexes handling on H2 side.
@@ -82,13 +81,13 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that after index creation index is used by queries.
      */
-    public void testCreateIndex() {
+    public void testCreateIndex() throws Exception {
         IgniteCache<KeyClass, ValueClass> cache = cache();
 
         assertSize(3);
 
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1 + "\" ON \"" + TBL_NAME + "\"(\""
-            + FIELD_NAME_1 + "\" ASC)"));
+            + FIELD_NAME_1 + "\" ASC)")).getAll();
 
         // Test that local queries on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
@@ -310,8 +309,6 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
      */
     private IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi());
 
         cfg.setMarshaller(new BinaryMarshaller());
 

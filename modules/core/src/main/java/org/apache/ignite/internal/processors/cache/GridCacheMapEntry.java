@@ -3375,7 +3375,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIndex(SchemaIndexCacheVisitorClosure proc) throws IgniteCheckedException,
+    @Override public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
         synchronized (this) {
             if (isInternal())
@@ -3386,7 +3386,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             unswap(false);
 
             if (val != null)
-                proc.apply(key, partition(), val, ver, expireTimeUnlocked());
+                clo.apply(key, partition(), val, ver, expireTimeUnlocked(), link);
         }
     }
 

@@ -117,7 +117,10 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
         // H2 tests.
-        suite.addTest(new TestSuite(GridH2TableSelfTest.class));
+
+        // TODO: IGNITE-4994: Restore mock.
+        // suite.addTest(new TestSuite(GridH2TableSelfTest.class));
+
         suite.addTest(new TestSuite(GridH2IndexingInMemSelfTest.class));
         suite.addTest(new TestSuite(GridH2IndexingOffheapSelfTest.class));
 

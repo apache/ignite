@@ -337,6 +337,40 @@ public class QueryUtils {
     }
 
     /**
+     * Create index descriptor.
+     *
+     * @param typeDesc Type descriptor.
+     * @param idx Index.
+     * @return Index descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static QueryIndexDescriptorImpl createIndexDescriptor(QueryTypeDescriptorImpl typeDesc, QueryIndex idx)
+        throws IgniteCheckedException {
+        String idxName = indexName(idx);
+        QueryIndexType idxTyp = idx.getIndexType();
+
+        assert idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL;
+
+        QueryIndexDescriptorImpl res = new QueryIndexDescriptorImpl(typeDesc, idxName, idxTyp, idx.getInlineSize());
+
+        int i = 0;
+
+        for (Map.Entry<String, Boolean> entry : idx.getFields().entrySet()) {
+            String field = entry.getKey();
+            boolean asc = entry.getValue();
+
+            String alias = typeDesc.aliases().get(field);
+
+            if (alias != null)
+                field = alias;
+
+            res.addField(field, i++, !asc);
+        }
+
+        return res;
+    }
+
+    /**
      * Process single index.
      *
      * @param idx Index.
@@ -344,26 +378,10 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed to build index information.
      */
     private static void processIndex(QueryIndex idx, QueryTypeDescriptorImpl d) throws IgniteCheckedException {
-        String idxName = indexName(idx);
-
         QueryIndexType idxTyp = idx.getIndexType();
 
         if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
-            QueryIndexDescriptorImpl idxDesc = new QueryIndexDescriptorImpl(d, idxName, idxTyp, idx.getInlineSize());
-
-            int i = 0;
-
-            for (Map.Entry<String, Boolean> entry : idx.getFields().entrySet()) {
-                String field = entry.getKey();
-                boolean asc = entry.getValue();
-
-                String alias = d.aliases().get(field);
-
-                if (alias != null)
-                    field = alias;
-
-                idxDesc.addField(field, i++, !asc);
-            }
+            QueryIndexDescriptorImpl idxDesc = createIndexDescriptor(d, idx);
 
             d.addIndex(idxDesc);
         }

@@ -31,7 +31,6 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -75,7 +74,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
@@ -592,6 +590,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 assert res.get1() != null;
 
+                type = null;
                 nop = res.get1();
                 err = res.get2();
             }
@@ -1197,11 +1196,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Process index operation.
      *
      * @param op Operation.
+     * @param type Type descriptor.
      * @param depId Cache deployment ID.
      * @param cancelTok Cancel token.
      * @throws SchemaOperationException If failed.
      */
-    public void processIndexOperationLocal(SchemaAbstractOperation op, IgniteUuid depId,
+    public void processIndexOperationLocal(SchemaAbstractOperation op, QueryTypeDescriptorImpl type, IgniteUuid depId,
         SchemaIndexOperationCancellationToken cancelTok) throws SchemaOperationException {
         if (log.isDebugEnabled())
             log.debug("Started local index operation [opId=" + op.id() + ']');
@@ -1217,15 +1217,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (op instanceof SchemaIndexCreateOperation) {
                 SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation) op;
 
+                QueryIndexDescriptorImpl idxDesc = QueryUtils.createIndexDescriptor(type, op0.index());
+
                 SchemaIndexCacheVisitor visitor =
                     new SchemaIndexCacheVisitorImpl(this, cache.context(), space, op0.tableName(), cancelTok);
 
-                idx.createIndex(space, op0.tableName(), op0.index(), op0.ifNotExists(), visitor);
+                idx.dynamicIndexCreate(space, op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
             }
             else if (op instanceof SchemaIndexDropOperation) {
                 SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
 
-                idx.dropIndex(space, op0.indexName(), op0.ifExists());
+                idx.dynamicIndexDrop(space, op0.indexName(), op0.ifExists());
             }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
@@ -1234,7 +1236,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (e instanceof SchemaOperationException)
                 throw (SchemaOperationException)e;
             else
-                throw new SchemaOperationException("Schema change operation failed.", e);
+                throw new SchemaOperationException("Schema change operation failed: " + e.getMessage(), e);
         }
     }
 

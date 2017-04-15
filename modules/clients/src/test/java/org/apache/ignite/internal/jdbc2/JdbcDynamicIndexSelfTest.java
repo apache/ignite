@@ -34,9 +34,6 @@ import org.apache.ignite.internal.util.typedef.F;
  * Test that checks indexes handling with JDBC.
  */
 public class JdbcDynamicIndexSelfTest extends JdbcAbstractDmlStatementSelfTest {
-    /** Cache. */
-    protected static final String CACHE_NAME = "cache";
-
     /** */
     private final static String CREATE_INDEX = "create index idx on Person (id desc)";
 

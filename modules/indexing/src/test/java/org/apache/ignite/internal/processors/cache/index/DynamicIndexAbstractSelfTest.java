@@ -152,7 +152,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     /**
      * @return Default cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration() {
+    protected CacheConfiguration<KeyClass, ValueClass> cacheConfiguration() {
         CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
         QueryEntity entity = new QueryEntity();
@@ -228,7 +228,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         String plan = (String)node.cache(CACHE_NAME).query(qry).getAll().get(0).get(0);
 
-        assertTrue("Index is not used: " + plan, plan.contains(idxName));
+        assertTrue("Index is not used: " + plan, plan.toLowerCase().contains(idxName.toLowerCase()));
     }
 
     /**

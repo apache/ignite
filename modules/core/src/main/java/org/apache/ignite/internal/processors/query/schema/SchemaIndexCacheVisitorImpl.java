@@ -117,7 +117,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
                 KeyCacheObject key = row.key();
 
-                processKey(key, clo);
+                processKey(key, row.link(), clo);
             }
         }
         finally {
@@ -129,10 +129,11 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * Process single key.
      *
      * @param key Key.
+     * @param link Link.
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    private void processKey(KeyCacheObject key, FilteringVisitorClosure clo) throws IgniteCheckedException {
+    private void processKey(KeyCacheObject key, long link, FilteringVisitorClosure clo) throws IgniteCheckedException {
         while (true) {
             try {
                 checkCancelled();
@@ -140,7 +141,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
                 try {
-                    entry.updateIndex(clo);
+                    entry.updateIndex(clo, link);
                 }
                 finally {
                     cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
@@ -188,9 +189,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         /** {@inheritDoc} */
         @Override public void apply(KeyCacheObject key, int part, CacheObject val, GridCacheVersion ver,
-            long expiration) throws IgniteCheckedException {
+            long expiration, long link) throws IgniteCheckedException {
             if (qryProc.belongsToTable(cctx, spaceName, tblName, key, val))
-                target.apply(key, part, val, ver, expiration);
+                target.apply(key, part, val, ver, expiration, link);
         }
     }
 }

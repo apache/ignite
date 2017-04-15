@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
@@ -142,7 +143,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    public void testOperationJoin() throws Exception {
+    public void testOperationChaining() throws Exception {
         Ignite srv1 = Ignition.start(serverConfiguration(1));
 
         Ignition.start(serverConfiguration(2));
@@ -280,7 +281,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         Ignite cli = Ignition.start(clientConfiguration(4));
 
-        IgniteCache cache = cli.createCache(cacheConfiguration());
+        cli.createCache(cacheConfiguration());
 
         final AtomicBoolean stopped = new AtomicBoolean();
 
@@ -311,7 +312,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
                         fut.get();
                     }
                     catch (SchemaOperationException e) {
-                        log.info("Got operation exception (expected): " + e);
+                        // No-op.
                     }
                     catch (Exception e) {
                         fail("Unexpected exception: " + e);
@@ -339,6 +340,87 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
         assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+    }
+
+    /**
+     * Make sure that contended operations on the same index from different nodes do not hang when we issue both
+     * CREATE/DROP and SELECT statements.
+     *
+     * @throws Exception If failed.
+     */
+    public void testQueryConsistencyMultithreaded() throws Exception {
+        // Start complex topology.
+        Ignition.start(serverConfiguration(1));
+        Ignition.start(serverConfiguration(2));
+        Ignition.start(serverConfiguration(3, true));
+
+        Ignite cli = Ignition.start(clientConfiguration(4));
+
+        cli.createCache(cacheConfiguration());
+
+        put(cli, 0, KEY_AFTER);
+
+        final AtomicBoolean stopped = new AtomicBoolean();
+
+        // Start several threads which will mess around indexes.
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+        IgniteInternalFuture idxFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                boolean exists = false;
+
+                while (!stopped.get()) {
+                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
+
+                    IgniteInternalFuture fut;
+
+                    if (exists) {
+                        fut = queryProcessor(node).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true);
+
+                        exists = false;
+                    }
+                    else {
+                        fut = queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true);
+
+                        exists = true;
+                    }
+
+                    try {
+                        fut.get();
+                    }
+                    catch (SchemaOperationException e) {
+                        // No-op.
+                    }
+                    catch (Exception e) {
+                        fail("Unexpected exception: " + e);
+                    }
+                }
+
+                return null;
+            }
+        }, 1);
+
+        IgniteInternalFuture qryFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stopped.get()) {
+                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
+
+                    assertSqlSimpleData(node, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+                }
+
+                return null;
+            }
+        }, 8);
+
+        // Let them play for 30 seconds.
+        Thread.sleep(30_000);
+
+        stopped.set(true);
+
+        // Make sure nothing hanged.
+        idxFut.get();
+
+        qryFut.get();
     }
 
     /**
@@ -433,7 +515,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
                         fut.get();
                     }
                     catch (SchemaOperationException e) {
-                        log.info("Got operation exception (expected): " + e);
+                        // No-op.
                     }
                     catch (Exception e) {
                         fail("Unexpected exception: " + e);
@@ -472,7 +554,6 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    // TODO: Something is wrong here!
     public void testConcurrentOperationsAndCacheStartStopMultithreaded() throws Exception {
         // Start complex topology.
         Ignition.start(serverConfiguration(1));
@@ -534,7 +615,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
                         fut.get();
                     }
                     catch (SchemaOperationException e) {
-                        log.info("Got operation exception (expected): " + e);
+                        // No-op.
                     }
                     catch (Exception e) {
                         fail("Unexpected exception: " + e);
@@ -645,18 +726,20 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
-        @Override public void createIndex(@Nullable String spaceName, String tblName, QueryIndex idx,
-            boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
+        @Override public void dynamicIndexCreate(@Nullable String spaceName, String tblName,
+            QueryIndexDescriptorImpl idxDesc, boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor)
+            throws IgniteCheckedException {
             awaitIndexing(ctx.localNodeId());
 
-            super.createIndex(spaceName, tblName, idx, ifNotExists, cacheVisitor);
+            super.dynamicIndexCreate(spaceName, tblName, idxDesc, ifNotExists, cacheVisitor);
         }
 
         /** {@inheritDoc} */
-        @Override public void dropIndex(@Nullable String spaceName, String idxName, boolean ifExists) {
+        @Override public void dynamicIndexDrop(@Nullable String spaceName, String idxName, boolean ifExists)
+            throws IgniteCheckedException{
             awaitIndexing(ctx.localNodeId());
 
-            super.dropIndex(spaceName, idxName, ifExists);
+            super.dynamicIndexDrop(spaceName, idxName, ifExists);
         }
     }
 }
