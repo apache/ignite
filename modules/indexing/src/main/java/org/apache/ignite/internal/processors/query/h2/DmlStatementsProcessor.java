@@ -41,9 +41,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -51,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -73,14 +74,18 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.Prepared;
+import org.h2.command.dml.Delete;
+import org.h2.command.dml.Insert;
+import org.h2.command.dml.Merge;
+import org.h2.command.dml.Update;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
 /**
  *
@@ -90,11 +95,10 @@ public class DmlStatementsProcessor {
     private final static int DFLT_DML_RERUN_ATTEMPTS = 4;
 
     /** Indexing. */
-    private final IgniteH2Indexing indexing;
+    private IgniteH2Indexing idx;
 
-    /** Set of binary type ids for which warning about missing identity in configuration has been printed. */
-    private final static Set<Integer> WARNED_TYPES =
-        Collections.newSetFromMap(new ConcurrentHashMap8<Integer, Boolean>());
+    /** Logger. */
+    private IgniteLogger log;
 
     /** Default size for update plan cache. */
     private static final int PLAN_CACHE_SIZE = 1024;
@@ -102,15 +106,16 @@ public class DmlStatementsProcessor {
     /** Update plans cache. */
     private final ConcurrentMap<String, ConcurrentMap<String, UpdatePlan>> planCache = new ConcurrentHashMap<>();
 
-    /** Dummy metadata for update result. */
-    private final static List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
-        singletonList(new IgniteH2Indexing.SqlFieldMetadata(null, null, "UPDATED", Long.class.getName()));
-
     /**
-     * @param indexing indexing.
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     * @param idx indexing.
      */
-    DmlStatementsProcessor(IgniteH2Indexing indexing) {
-        this.indexing = indexing;
+    public void start(GridKernalContext ctx, IgniteH2Indexing idx) {
+        this.idx = idx;
+
+        log = ctx.log(DmlStatementsProcessor.class);
     }
 
     /**
@@ -251,7 +256,7 @@ public class DmlStatementsProcessor {
 
             final ArrayList<List<?>> data = new ArrayList<>(plan.rowsNum);
 
-            final GridQueryFieldsResult res = indexing.queryLocalSqlFields(cctx.name(), plan.selectQry,
+            final GridQueryFieldsResult res = idx.queryLocalSqlFields(cctx.name(), plan.selectQry,
                 F.asList(args), null, false, 0, null);
 
             QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
@@ -335,10 +340,10 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>) indexing.queryTwoStep(cctx, newFieldsQry, cancel);
+            cur = (QueryCursorImpl<List<?>>) idx.queryTwoStep(cctx, newFieldsQry, cancel);
         }
         else {
-            final GridQueryFieldsResult res = indexing.queryLocalSqlFields(cctx.name(), plan.selectQry,
+            final GridQueryFieldsResult res = idx.queryLocalSqlFields(cctx.name(), plan.selectQry,
                 F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
@@ -476,7 +481,7 @@ public class DmlStatementsProcessor {
         while (it.hasNext()) {
             List<?> e = it.next();
             if (e.size() != 2) {
-                U.warn(indexing.getLogger(), "Invalid row size on DELETE - expected 2, got " + e.size());
+                U.warn(log, "Invalid row size on DELETE - expected 2, got " + e.size());
                 continue;
             }
 
@@ -1067,6 +1072,16 @@ public class DmlStatementsProcessor {
         @Override public void apply(MutableEntry<Object, Object> e) {
             e.setValue(val);
         }
+    }
+
+    /**
+     * Check whether statement is DML statement.
+     *
+     * @param stmt Statement.
+     * @return {@code True} if this is DML.
+     */
+    static boolean isDmlStatement(Prepared stmt) {
+        return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
     }
 
     /** Update result - modifications count and keys to re-run query with, if needed. */

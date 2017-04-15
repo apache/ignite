@@ -2486,6 +2486,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         }
 
         /** {@inheritDoc} */
+        @Override public String name() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public Collection<String> fields() {
             Collection<String> res = new ArrayList<>(fields.size());
 
