@@ -62,7 +62,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -100,9 +99,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
     /** */
     public static final String BACKUP_CACHE_2 = "backup_2";
-
-    /** */
-    public static volatile boolean primaryWriteOrderMode = false;
 
     /** */
     public static volatile boolean near = false;
@@ -170,9 +166,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setAtomicityMode(getAtomicMode());
         cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        if (primaryWriteOrderMode)
-            cacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
         cacheCfg.setRebalanceMode(SYNC);
 
@@ -298,14 +291,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testBackupRestorePrimary() throws Exception {
-        try {
-            primaryWriteOrderMode = true;
-
-            testBackupRestore();
-        }
-        finally {
-            primaryWriteOrderMode = false;
-        }
+        testBackupRestore();
     }
 
     /**

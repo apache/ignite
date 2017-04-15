@@ -110,7 +110,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
@@ -1521,7 +1520,6 @@ public abstract class GridAbstractTest extends TestCase {
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setStartSize(1024);
-        cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setNearConfiguration(new NearCacheConfiguration());
         cfg.setWriteSynchronizationMode(FULL_SYNC);

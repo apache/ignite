@@ -81,15 +81,4 @@ public interface CacheEntry<K, V> extends Cache.Entry<K, V> {
      * @return Version of this cache entry.
      */
     public Comparable version();
-
-    /**
-     * Returns the time when the cache entry for the given key has been updated or initially created.
-     * <p>
-     * It is valid to compare cache entries' update time for the same key. In this case the latter update will
-     * be represented by higher update time. The result of update time comparison of cache entries of different keys is
-     * undefined.
-     *
-     * @return Time in milliseconds.
-     */
-    public long updateTime();
 }
