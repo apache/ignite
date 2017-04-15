@@ -24,6 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Schema operation exception.
  */
 public class SchemaOperationException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Code: generic error. */
     public static final int CODE_GENERIC = 0;
 
