@@ -181,7 +181,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         for (QueryEntity entity : desc.schema().entities()) {
             if (F.eq(tblName, QueryUtils.tableName(entity))) {
                 for (QueryIndex idx : entity.getIndexes()) {
-                    if (F.eq(QueryUtils.indexName(idx), idxName)) {
+                    if (F.eq(QueryUtils.indexName(entity, idx), idxName)) {
                         LinkedHashMap<String, Boolean> idxFields = idx.getFields();
 
                         assertEquals(idxFields.size(), fields.length);
@@ -287,7 +287,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
 
         for (QueryEntity entity : desc.schema().entities()) {
             for (QueryIndex idx : entity.getIndexes()) {
-                if (F.eq(idxName, QueryUtils.indexName(idx)))
+                if (F.eq(idxName, QueryUtils.indexName(entity, idx)))
                     fail("Index exists: " + idxName);
             }
         }

@@ -60,7 +60,7 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
 
     /** {@inheritDoc} */
     @Override public String indexName() {
-        return QueryUtils.indexName(idx);
+        return QueryUtils.indexName(tblName, idx);
     }
 
     /**

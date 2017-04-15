@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -224,7 +225,7 @@ public class QueryEntity implements Serializable {
         for (QueryIndex idx : idxs) {
             if (!F.isEmpty(idx.getFields())) {
                 if (idx.getName() == null)
-                    idx.setName(defaultIndexName(idx));
+                    idx.setName(QueryUtils.indexName(this, idx));
 
                 if (idx.getIndexType() == null)
                     throw new IllegalArgumentException("Index type is not set " + idx.getName());
@@ -280,57 +281,5 @@ public class QueryEntity implements Serializable {
             aliases.put(fullName, alias);
 
         return this;
-    }
-
-    /**
-     * Ensures that index with the given name exists.
-     *
-     * @param idxName Index name.
-     * @param idxType Index type.
-     */
-    public void ensureIndex(String idxName, QueryIndexType idxType) {
-        QueryIndex idx = idxs.get(idxName);
-
-        if (idx == null) {
-            idx = new QueryIndex();
-
-            idx.setName(idxName);
-            idx.setIndexType(idxType);
-
-            idxs.put(idxName, idx);
-        }
-        else
-            throw new IllegalArgumentException("An index with the same name and of a different type already exists " +
-                "[idxName=" + idxName + ", existingIdxType=" + idx.getIndexType() + ", newIdxType=" + idxType + ']');
-    }
-
-    /**
-     * Generates default index name by concatenating all index field names.
-     *
-     * @param idx Index to build name for.
-     * @return Index name.
-     */
-    public static String defaultIndexName(QueryIndex idx) {
-        StringBuilder idxName = new StringBuilder();
-
-        for (Map.Entry<String, Boolean> field : idx.getFields().entrySet()) {
-            idxName.append(field.getKey());
-
-            idxName.append('_');
-            idxName.append(field.getValue() ? "asc_" : "desc_");
-        }
-
-        for (int i = 0; i < idxName.length(); i++) {
-            char ch = idxName.charAt(i);
-
-            if (Character.isWhitespace(ch))
-                idxName.setCharAt(i, '_');
-            else
-                idxName.setCharAt(i, Character.toLowerCase(ch));
-        }
-
-        idxName.append("idx");
-
-        return idxName.toString();
     }
 }

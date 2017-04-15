@@ -96,11 +96,8 @@ public class QueryUtils {
     public static String tableName(QueryEntity entity) {
         String res = entity.getTableName();
 
-        if (res == null) {
-            Class<?> valCls = U.classForName(entity.getValueType(), null);
-
-            res = ((valCls == null) ? typeName(entity.getValueType()) : typeName(valCls));
-        }
+        if (res == null)
+            res = typeName(entity.getValueType());
 
         return res;
     }
@@ -108,14 +105,47 @@ public class QueryUtils {
     /**
      * Get index name.
      *
+     * @param entity Query entity.
      * @param idx Index.
      * @return Index name.
      */
-    public static String indexName(QueryIndex idx) {
+    public static String indexName(QueryEntity entity, QueryIndex idx) {
+        return indexName(tableName(entity), idx);
+    }
+
+    /**
+     * Get index name.
+     *
+     * @param tblName Table name.
+     * @param idx Index.
+     * @return Index name.
+     */
+    public static String indexName(String tblName, QueryIndex idx) {
         String res = idx.getName();
 
-        if (res == null)
-            res = QueryEntity.defaultIndexName(idx);
+        if (res == null) {
+            StringBuilder idxName = new StringBuilder(tblName + "_");
+
+            for (Map.Entry<String, Boolean> field : idx.getFields().entrySet()) {
+                idxName.append(field.getKey());
+
+                idxName.append('_');
+                idxName.append(field.getValue() ? "asc_" : "desc_");
+            }
+
+            for (int i = 0; i < idxName.length(); i++) {
+                char ch = idxName.charAt(i);
+
+                if (Character.isWhitespace(ch))
+                    idxName.setCharAt(i, '_');
+                else
+                    idxName.setCharAt(i, Character.toLowerCase(ch));
+            }
+
+            idxName.append("idx");
+
+            return idxName.toString();
+        }
 
         return res;
     }
@@ -346,7 +376,7 @@ public class QueryUtils {
      */
     public static QueryIndexDescriptorImpl createIndexDescriptor(QueryTypeDescriptorImpl typeDesc, QueryIndex idx)
         throws IgniteCheckedException {
-        String idxName = indexName(idx);
+        String idxName = indexName(typeDesc.tableName(), idx);
         QueryIndexType idxTyp = idx.getIndexType();
 
         assert idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL;

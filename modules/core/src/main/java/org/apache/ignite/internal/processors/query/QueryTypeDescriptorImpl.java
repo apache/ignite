@@ -265,7 +265,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @return {@code True} if exists.
      */
     public boolean hasField(String field) {
-        return props.containsKey(field);
+        return props.containsKey(field) || QueryUtils._VAL.equalsIgnoreCase(field);
     }
 
     /**
