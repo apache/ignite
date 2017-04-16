@@ -49,6 +49,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsReservation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
@@ -401,6 +402,26 @@ public class GridMapQueryExecutor {
     }
 
     /**
+     * @param caches Cache IDs.
+     * @return The first found partitioned cache.
+     */
+    private GridCacheContext<?,?> findFirstPartitioned(List<Integer> caches) {
+        GridCacheSharedContext<?,?> sctx = ctx.cache().context();
+
+        for (int i = 0; i < caches.size(); i++) {
+            GridCacheContext<?,?> mainCctx = sctx.cacheContext(caches.get(i));
+
+            if (mainCctx == null)
+                throw new CacheException("Failed to find cache.");
+
+            if (!mainCctx.isLocal() && !mainCctx.isReplicated())
+                return mainCctx;
+        }
+
+        throw new IllegalStateException("Failed to find a partitioned cache.");
+    }
+
+    /**
      * @param node Node.
      * @param req Query request.
      */
@@ -408,12 +429,7 @@ public class GridMapQueryExecutor {
         final Map<UUID,int[]> partsMap = req.partitions();
         final int[] parts = partsMap == null ? null : partsMap.get(ctx.localNodeId());
 
-        assert req.caches() != null && !req.caches().isEmpty();
-
-        GridCacheContext<?, ?> mainCctx = ctx.cache().context().cacheContext( req.caches().get(0));
-
-        if (mainCctx == null)
-            throw new CacheException("Failed to find cache.");
+        assert !F.isEmpty(req.caches());
 
         final DistributedJoinMode joinMode = distributedJoinMode(
             req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
@@ -421,8 +437,10 @@ public class GridMapQueryExecutor {
 
         final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
+        final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
 
-        int segments = explain ? 1 : mainCctx.config().getQueryParallelism();
+        int segments = explain || replicated ? 1 :
+            findFirstPartitioned(req.caches()).config().getQueryParallelism();
 
         for (int i = 1; i < segments; i++) {
             final int segment = i;
@@ -442,6 +460,7 @@ public class GridMapQueryExecutor {
                             req.pageSize(),
                             joinMode,
                             enforceJoinOrder,
+                            replicated,
                             req.timeout());
 
                         return null;
@@ -462,6 +481,7 @@ public class GridMapQueryExecutor {
             req.pageSize(),
             joinMode,
             enforceJoinOrder,
+            replicated,
             req.timeout());
     }
 
@@ -491,6 +511,7 @@ public class GridMapQueryExecutor {
         int pageSize,
         DistributedJoinMode distributedJoinMode,
         boolean enforceJoinOrder,
+        boolean replicated,
         int timeout
     ) {
         // Prepare to run queries.
@@ -525,7 +546,7 @@ public class GridMapQueryExecutor {
                 node.id(),
                 reqId,
                 segmentId,
-                mainCctx.isReplicated() ? REPLICATED : MAP)
+                replicated ? REPLICATED : MAP)
                 .filter(h2.backupFilter(topVer, parts))
                 .partitionsMap(partsMap)
                 .distributedJoinMode(distributedJoinMode)
