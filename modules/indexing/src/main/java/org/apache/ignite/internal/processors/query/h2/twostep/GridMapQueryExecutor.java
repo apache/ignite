@@ -620,7 +620,7 @@ public class GridMapQueryExecutor {
                                 qry.query(),
                                 null,
                                 null,
-                                qry.parameters(params),
+                                params,
                                 node.id(),
                                 null));
                         }
@@ -1171,7 +1171,7 @@ public class GridMapQueryExecutor {
                         qry.query(),
                         null,
                         null,
-                        qry.parameters(params),
+                        params,
                         qrySrcNodeId,
                         null,
                         null,
