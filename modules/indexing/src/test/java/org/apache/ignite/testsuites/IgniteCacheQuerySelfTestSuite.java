@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfT
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlEntryCacheModeAgnosticTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
@@ -130,6 +131,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // Queries tests.
         suite.addTestSuite(IgniteSqlSplitterSelfTest.class);
         suite.addTestSuite(IgniteSqlSegmentedIndexSelfTest.class);
+        suite.addTestSuite(IgniteSqlSegmentedIndexMultiNodeSelfTest.class);
         suite.addTestSuite(IgniteSqlSchemaIndexingTest.class);
         suite.addTestSuite(GridCacheQueryIndexDisabledSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryLoadSelfTest.class);
