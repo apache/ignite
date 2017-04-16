@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -101,6 +100,7 @@ import org.jsr166.ConcurrentHashMap8;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
@@ -482,6 +482,7 @@ public class GridReduceQueryExecutor {
      * @param enforceJoinOrder Enforce join order of tables.
      * @param timeoutMillis Timeout in milliseconds.
      * @param cancel Query cancel.
+     * @param params Query parameters.
      * @return Rows iterator.
      */
     public Iterator<List<?>> query(
@@ -490,8 +491,12 @@ public class GridReduceQueryExecutor {
         boolean keepPortable,
         boolean enforceJoinOrder,
         int timeoutMillis,
-        GridQueryCancel cancel
+        GridQueryCancel cancel,
+        Object[] params
     ) {
+        if (F.isEmpty(params))
+            params = EMPTY_PARAMS;
+
         final boolean isReplicatedOnly = qry.isReplicatedOnly();
 
         for (int attempt = 0;; attempt++) {
@@ -625,7 +630,7 @@ public class GridReduceQueryExecutor {
 
                     for (GridCacheSqlQuery mapQry : qry.mapQueries())
                         mapQrys.add(new GridCacheSqlQuery("EXPLAIN " + mapQry.query())
-                            .parameters(mapQry.parameters(), mapQry.parameterIndexes()));
+                            .parameterIndexes(mapQry.parameterIndexes()));
                 }
 
                 final boolean distributedJoins = qry.distributedJoins();
@@ -664,6 +669,7 @@ public class GridReduceQueryExecutor {
                             .tables(distributedJoins ? qry.tables() : null)
                             .partitions(convert(partsMap))
                             .queries(mapQrys)
+                            .parameters(params)
                             .flags(flags)
                             .timeout(timeoutMillis),
                     null,
@@ -735,14 +741,14 @@ public class GridReduceQueryExecutor {
 
                         try {
                             if (qry.explain())
-                                return explainPlan(r.conn, space, qry);
+                                return explainPlan(r.conn, space, qry, params);
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
                             ResultSet res = h2.executeSqlQueryWithTimer(space,
                                 r.conn,
                                 rdc.query(),
-                                F.asList(rdc.parameters()),
+                                F.asList(rdc.parameters(params)),
                                 false, // The statement will cache some extra thread local objects.
                                 timeoutMillis,
                                 cancel);
@@ -1144,32 +1150,14 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param mainSpace Main space.
-     * @param allSpaces All spaces.
-     * @return List of all extra spaces or {@code null} if none.
-     */
-    private List<String> extraSpaces(String mainSpace, Collection<String> allSpaces) {
-        if (F.isEmpty(allSpaces) || (allSpaces.size() == 1 && allSpaces.contains(mainSpace)))
-            return null;
-
-        ArrayList<String> res = new ArrayList<>(allSpaces.size());
-
-        for (String space : allSpaces) {
-            if (!F.eq(space, mainSpace))
-                res.add(space);
-        }
-
-        return res;
-    }
-
-    /**
      * @param c Connection.
      * @param space Space.
      * @param qry Query.
+     * @param params Query parameters.
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry)
+    private Iterator<List<?>> explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry, Object[] params)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 
@@ -1193,7 +1181,7 @@ public class GridReduceQueryExecutor {
         ResultSet rs = h2.executeSqlQueryWithTimer(space,
             c,
             "EXPLAIN " + rdc.query(),
-            F.asList(rdc.parameters()),
+            F.asList(rdc.parameters(params)),
             false,
             0,
             null);
@@ -1468,31 +1456,6 @@ public class GridReduceQueryExecutor {
          */
         void disconnected(CacheException e) {
             state(e, null);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Iter extends GridH2ResultSetIterator<List<?>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param data Data array.
-         * @throws IgniteCheckedException If failed.
-         */
-        protected Iter(ResultSet data) throws IgniteCheckedException {
-            super(data, true, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected List<?> createRow() {
-            ArrayList<Object> res = new ArrayList<>(row.length);
-
-            Collections.addAll(res, row);
-
-            return res;
         }
     }
 }

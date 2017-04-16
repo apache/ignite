@@ -442,6 +442,8 @@ public class GridMapQueryExecutor {
         int segments = explain || replicated ? 1 :
             findFirstPartitioned(req.caches()).config().getQueryParallelism();
 
+        final Object[] params = req.parameters();
+
         for (int i = 1; i < segments; i++) {
             final int segment = i;
 
@@ -461,7 +463,8 @@ public class GridMapQueryExecutor {
                             joinMode,
                             enforceJoinOrder,
                             replicated,
-                            req.timeout());
+                            req.timeout(),
+                            params);
 
                         return null;
                     }
@@ -482,7 +485,8 @@ public class GridMapQueryExecutor {
             joinMode,
             enforceJoinOrder,
             replicated,
-            req.timeout());
+            req.timeout(),
+            params);
     }
 
     /**
@@ -512,7 +516,8 @@ public class GridMapQueryExecutor {
         DistributedJoinMode distributedJoinMode,
         boolean enforceJoinOrder,
         boolean replicated,
-        int timeout
+        int timeout,
+        Object[] params
     ) {
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx = ctx.cache().context().cacheContext(cacheIds.get(0));
@@ -600,7 +605,7 @@ public class GridMapQueryExecutor {
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
-                            F.asList(qry.parameters()), true,
+                            F.asList(qry.parameters(params)), true,
                             timeout,
                             qr.cancels[qryIdx]);
 
@@ -615,7 +620,7 @@ public class GridMapQueryExecutor {
                                 qry.query(),
                                 null,
                                 null,
-                                qry.parameters(),
+                                qry.parameters(params),
                                 node.id(),
                                 null));
                         }
@@ -623,7 +628,7 @@ public class GridMapQueryExecutor {
                         assert rs instanceof JdbcResultSet : rs.getClass();
                     }
 
-                    qr.addResult(qryIdx, qry, node.id(), rs);
+                    qr.addResult(qryIdx, qry, node.id(), rs, params);
 
                     if (qr.canceled) {
                         qr.result(qryIdx).close();
@@ -986,8 +991,8 @@ public class GridMapQueryExecutor {
          * @param qrySrcNodeId Query source node.
          * @param rs Result set.
          */
-        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs) {
-            if (!results.compareAndSet(qry, null, new QueryResult(rs, cctx, qrySrcNodeId, q)))
+        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
+            if (!results.compareAndSet(qry, null, new QueryResult(rs, cctx, qrySrcNodeId, q, params)))
                 throw new IllegalStateException();
         }
 
@@ -1067,15 +1072,21 @@ public class GridMapQueryExecutor {
         /** */
         private volatile boolean closed;
 
+        /** */
+        private final Object[] params;
+
         /**
          * @param rs Result set.
          * @param cctx Cache context.
          * @param qrySrcNodeId Query source node.
          * @param qry Query.
+         * @param params Query params.
          */
-        private QueryResult(ResultSet rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
+        private QueryResult(ResultSet rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry,
+            Object[] params) {
             this.cctx = cctx;
             this.qry = qry;
+            this.params = params;
             this.qrySrcNodeId = qrySrcNodeId;
             this.cpNeeded = cctx.isLocalNode(qrySrcNodeId);
 
@@ -1160,7 +1171,7 @@ public class GridMapQueryExecutor {
                         qry.query(),
                         null,
                         null,
-                        qry.parameters(),
+                        qry.parameters(params),
                         qrySrcNodeId,
                         null,
                         null,

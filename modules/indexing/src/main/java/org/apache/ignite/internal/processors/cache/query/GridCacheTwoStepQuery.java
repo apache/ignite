@@ -257,10 +257,9 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param args New arguments to copy with.
      * @return Copy.
      */
-    public GridCacheTwoStepQuery copy(Object[] args) {
+    public GridCacheTwoStepQuery copy() {
         assert !explain;
 
         GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, schemas, tbls);
@@ -268,13 +267,13 @@ public class GridCacheTwoStepQuery {
         cp.caches = caches;
         cp.extraCaches = extraCaches;
         cp.spaces = spaces;
-        cp.rdc = rdc.copy(args);
+        cp.rdc = rdc.copy();
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
 
         for (int i = 0; i < mapQrys.size(); i++)
-            cp.mapQrys.add(mapQrys.get(i).copy(args));
+            cp.mapQrys.add(mapQrys.get(i).copy());
 
         return cp;
     }
