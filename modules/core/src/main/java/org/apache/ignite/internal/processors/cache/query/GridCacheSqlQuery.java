@@ -312,10 +312,15 @@ public class GridCacheSqlQuery implements Message {
 
         assert !F.isEmpty(allParams);
 
-        Object[] res = new Object[paramIdxs.length];
+        int maxIdx = paramIdxs[paramIdxs.length - 1];
 
-        for (int i = 0; i < res.length; i++)
-            res[i] = allParams[paramIdxs[i]];
+        Object[] res = new Object[maxIdx + 1];
+
+        for (int i = 0; i < paramIdxs.length; i++) {
+            int idx = paramIdxs[i];
+
+            res[idx] = allParams[idx];
+        }
 
         return res;
     }
