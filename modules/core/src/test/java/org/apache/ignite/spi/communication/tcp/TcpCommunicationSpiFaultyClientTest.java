@@ -70,7 +70,6 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClockSyncFrequency(300000);
         cfg.setFailureDetectionTimeout(1000);
         cfg.setClientMode(clientMode);
 

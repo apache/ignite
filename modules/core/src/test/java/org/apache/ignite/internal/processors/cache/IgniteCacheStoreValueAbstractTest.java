@@ -176,8 +176,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
             cache.remove(key);
 
-            atomicClockModeDelay(cache);
-
             try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
                 streamer.allowOverwrite(true);
 
@@ -344,8 +342,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             checkHasValue(aff, key);
 
             cache.remove(key);
-
-            atomicClockModeDelay(cache);
 
             try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
                 streamer.allowOverwrite(true);

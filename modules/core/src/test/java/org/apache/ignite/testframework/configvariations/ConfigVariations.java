@@ -26,7 +26,6 @@ import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.event.CacheEntryListenerException;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.CacheMode;
@@ -98,7 +97,6 @@ public class ConfigVariations {
         Parameters.objectParameters("setLoadPreviousValue", true),
         asArray(SIMPLE_CACHE_STORE_PARAM),
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
-        Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
         Parameters.objectParameters("setStartSize", 1024),
         Parameters.booleanParameters("setOnheapCacheEnabled")
     };
@@ -126,7 +124,6 @@ public class ConfigVariations {
         ),
         // Set default parameters.
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
-        Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
         Parameters.objectParameters("setStartSize", 1024),
         Parameters.booleanParameters("setOnheapCacheEnabled")
     };

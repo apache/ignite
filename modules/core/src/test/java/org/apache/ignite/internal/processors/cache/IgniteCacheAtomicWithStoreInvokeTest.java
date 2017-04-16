@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.cache.store.CacheStore;
 
 /**
  *
  */
-public class GridCacheAtomicLateAffDisabledPrimaryWriteOrderMultiNodeFullApiSelfTest extends
-    GridCacheAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest {
+public class IgniteCacheAtomicWithStoreInvokeTest extends
+    IgniteCacheAtomicInvokeTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setLateAffinityAssignment(false);
-
-        return cfg;
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new TestStoreFactory();
     }
 }
