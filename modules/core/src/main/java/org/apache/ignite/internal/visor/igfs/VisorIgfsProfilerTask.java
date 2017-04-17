@@ -139,6 +139,11 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, List<VisorIg
             }
         };
 
+    /** {@inheritDoc} */
+    @Override protected VisorIgfsProfilerJob job(String arg) {
+        return new VisorIgfsProfilerJob(arg, debug);
+    }
+
     /**
      * Job that do actual profiler work.
      */
@@ -534,10 +539,5 @@ public class VisorIgfsProfilerTask extends VisorOneNodeTask<String, List<VisorIg
         @Override public String toString() {
             return S.toString(VisorIgfsProfilerJob.class, this);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected VisorIgfsProfilerJob job(String arg) {
-        return new VisorIgfsProfilerJob(arg, debug);
     }
 }

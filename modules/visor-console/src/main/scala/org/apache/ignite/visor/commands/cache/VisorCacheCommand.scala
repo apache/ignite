@@ -839,7 +839,6 @@ object VisorCacheCommand {
 
         cacheT += ("Mode", cfg.getMode)
         cacheT += ("Atomicity Mode", safe(cfg.getAtomicityMode))
-        cacheT += ("Atomic Write Ordering Mode", safe(cfg.getAtomicWriteOrderMode))
         cacheT += ("Statistic Enabled", bool2Str(cfg.isStatisticsEnabled))
         cacheT += ("Management Enabled", bool2Str(cfg.isManagementEnabled))
 
