@@ -3871,6 +3871,274 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
+         *
+         * @return true if process is complite.
+         */
+        private boolean subProcessAddedMessageByCoordinator(final TcpDiscoveryNodeAddedMessage msg,
+        final TcpDiscoveryNode node, final UUID locNodeId) {
+            if (msg.verified()) {
+                spi.stats.onRingMessageReceived(msg);
+
+                TcpDiscoveryNodeAddFinishedMessage addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(locNodeId,
+                    node.id());
+
+                if (node.isClient()) {
+                    addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
+
+                    addFinishMsg.clientNodeAttributes(node.attributes());
+                }
+
+                processNodeAddFinishedMessage(addFinishMsg);
+
+                if (addFinishMsg.verified())
+                    msgHist.add(addFinishMsg);
+
+                addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
+
+                return true;
+            }
+
+            msg.verify(locNodeId);
+
+            return false;
+        }
+
+        private void securityProcessAddedMessage(final TcpDiscoveryNodeAddedMessage msg,
+            final TcpDiscoveryNode node, final UUID locNodeId) {
+            boolean authFailed = true;
+
+            try {
+                SecurityCredentials cred = unmarshalCredentials(node);
+
+                if (cred == null) {
+                    if (log.isDebugEnabled())
+                        log.debug(
+                            "Skipping global authentication for node (security credentials not found, " +
+                                "probably, due to coordinator has older version) " +
+                                "[nodeId=" + node.id() +
+                                ", addrs=" + U.addressesAsString(node) +
+                                ", coord=" + ring.coordinator() + ']');
+
+                    authFailed = false;
+                }
+                else {
+                    SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
+
+                    SecurityContext coordSubj = U.unmarshal(spi.marshaller(),
+                        node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT),
+                        U.resolveClassLoader(spi.ignite().configuration()));
+
+                    if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
+                        // Node has not pass authentication.
+                        LT.warn(log, "Authentication failed [nodeId=" + node.id() +
+                                ", addrs=" + U.addressesAsString(node) + ']',
+                            "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
+                                U.addressesAsString(node) + ']');
+
+                        // Always output in debug.
+                        if (log.isDebugEnabled())
+                            log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
+                                U.addressesAsString(node));
+                    }
+                    else
+                        // Node will not be kicked out.
+                        authFailed = false;
+                }
+            }
+            catch (IgniteException | IgniteCheckedException e) {
+                U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
+            }
+            finally {
+                if (authFailed) {
+                    try {
+                        trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId,
+                            spi.locHost));
+                    }
+                    catch (IgniteSpiException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send unauthenticated message to node " +
+                                "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                        onException("Failed to send unauthenticated message to node " +
+                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                    }
+
+                    addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, node.id(),
+                        node.internalOrder()));
+                }
+            }
+            return;
+        }
+
+        private boolean subProcessAddedMessageFromOtherNode(final TcpDiscoveryNodeAddedMessage msg,
+            final TcpDiscoveryNode node, final UUID locNodeId) {
+            if (node.internalOrder() <= ring.maxInternalOrder()) {
+                if (log.isDebugEnabled())
+                    log.debug("Discarding node added message since new node's order is less than " +
+                        "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
+                        ", msg=" + msg + ']');
+
+                if (debugMode)
+                    debugLog(msg, "Discarding node added message since new node's order is less than " +
+                        "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
+                        ", msg=" + msg + ']');
+
+                return true;
+            }
+
+            synchronized (mux) {
+                joiningNodes.add(node.id());
+            }
+
+            if (!isLocalNodeCoordinator() && spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
+                securityProcessAddedMessage(msg, node, locNodeId);
+            }
+
+            if (msg.client())
+                node.aliveCheck(spi.maxMissedClientHbs);
+
+            boolean topChanged = ring.add(node);
+
+            if (topChanged) {
+                assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
+
+                DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
+
+                if (dataPacket.hasJoiningNodeData())
+                    spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+
+                spi.collectExchangeData(dataPacket);
+
+                processMessageFailedNodes(msg);
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Added node to local ring [added=" + topChanged + ", node=" + node +
+                    ", ring=" + ring + ']');
+
+            return false;
+        }
+
+        private boolean subProcessAddedMessageFromThisNode(final TcpDiscoveryNodeAddedMessage msg,
+            final TcpDiscoveryNode node, final UUID locNodeId) {
+            DiscoveryDataPacket dataPacket;
+
+            synchronized (mux) {
+                if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
+                    // Initialize topology.
+                    Collection<TcpDiscoveryNode> top = msg.topology();
+
+                    if (top != null && !top.isEmpty()) {
+                        spi.gridStartTime = msg.gridStartTime();
+
+                        if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
+                            TcpDiscoveryAbstractMessage authFail =
+                                new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
+
+                            try {
+                                ClassLoader cl = U.resolveClassLoader(spi.ignite().configuration());
+
+                                byte[] rmSubj = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
+                                byte[] locSubj = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
+
+                                SecurityContext rmCrd = spi.marshaller().unmarshal(rmSubj, cl);
+                                SecurityContext locCrd = spi.marshaller().unmarshal(locSubj, cl);
+
+                                if (!permissionsEqual(locCrd.subject().permissions(),
+                                    rmCrd.subject().permissions())) {
+                                    // Node has not pass authentication.
+                                    LT.warn(log,
+                                        "Failed to authenticate local node " +
+                                            "(local authentication result is different from rest of topology) " +
+                                            "[nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']',
+                                        "Authentication failed [nodeId=" + U.id8(node.id()) +
+                                            ", addrs=" + U.addressesAsString(node) + ']');
+
+                                    joinRes.set(authFail);
+
+                                    spiState = AUTH_FAILED;
+
+                                    mux.notifyAll();
+
+                                    return true;
+                                }
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
+
+                                joinRes.set(authFail);
+
+                                spiState = AUTH_FAILED;
+
+                                mux.notifyAll();
+
+                                return true;
+                            }
+                        }
+
+                        for (TcpDiscoveryNode n : top) {
+                            assert n.internalOrder() < node.internalOrder() :
+                                "Invalid node [topNode=" + n + ", added=" + node + ']';
+
+                            // Make all preceding nodes and local node visible.
+                            n.visible(true);
+                        }
+
+                        synchronized (mux) {
+                            joiningNodes.clear();
+                        }
+
+                        locNode.setAttributes(node.attributes());
+
+                        locNode.visible(true);
+
+                        // Restore topology with all nodes visible.
+                        ring.restoreTopology(top, node.internalOrder());
+
+                        if (log.isDebugEnabled())
+                            log.debug("Restored topology from node added message: " + ring);
+
+                        dataPacket = msg.gridDiscoveryData();
+
+                        topHist.clear();
+                        topHist.putAll(msg.topologyHistory());
+
+                        pendingMsgs.reset(msg.messages(), msg.discardedMessageId(),
+                            msg.discardedCustomMessageId());
+
+                        // Clear data to minimize message size.
+                        msg.messages(null, null, null);
+                        msg.topology(null);
+                        msg.topologyHistory(null);
+                        msg.clearDiscoveryData();
+                    }
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Discarding node added message with empty topology: " + msg);
+
+                        return true;
+                    }
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Discarding node added message (this message has already been processed) " +
+                            "[spiState=" + spiState +
+                            ", msg=" + msg +
+                            ", locNode=" + locNode + ']');
+
+                    return true;
+                }
+            }
+
+            // Notify outside of synchronized block.
+            if (dataPacket != null)
+                spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+
+            processMessageFailedNodes(msg);
+            return false;
+        }
+
+        /**
          * Processes node added message.
          *
          * @param msg Node added message.
@@ -3882,9 +4150,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
-            TcpDiscoveryNode node = msg.node();
+            final TcpDiscoveryNode node = msg.node();
 
             assert node != null;
+
+            System.out.println("!!!~Try to add node: " + node.internalOrder()
+                + " on node " + locNode.internalOrder());
 
             if (node.internalOrder() < locNode.internalOrder()) {
                 if (log.isDebugEnabled())
@@ -3894,32 +4165,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            UUID locNodeId = getLocalNodeId();
+            final UUID locNodeId = getLocalNodeId();
 
             if (isLocalNodeCoordinator()) {
-                if (msg.verified()) {
-                    spi.stats.onRingMessageReceived(msg);
-
-                    TcpDiscoveryNodeAddFinishedMessage addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(locNodeId,
-                        node.id());
-
-                    if (node.isClient()) {
-                        addFinishMsg.clientDiscoData(msg.gridDiscoveryData());
-
-                        addFinishMsg.clientNodeAttributes(node.attributes());
-                    }
-
-                    processNodeAddFinishedMessage(addFinishMsg);
-
-                    if (addFinishMsg.verified())
-                        msgHist.add(addFinishMsg);
-
-                    addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
-
+                if (subProcessAddedMessageByCoordinator(msg, node, locNodeId))
                     return;
-                }
-
-                msg.verify(locNodeId);
             }
             else if (!locNodeId.equals(node.id()) && ring.node(node.id()) != null) {
                 // Local node already has node from message in local topology.
@@ -3943,227 +4193,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && !locNodeId.equals(node.id())) {
-                if (node.internalOrder() <= ring.maxInternalOrder()) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node added message since new node's order is less than " +
-                            "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
-                            ", msg=" + msg + ']');
-
-                    if (debugMode)
-                        debugLog(msg, "Discarding node added message since new node's order is less than " +
-                            "max order in ring [ring=" + ring + ", node=" + node + ", locNode=" + locNode +
-                            ", msg=" + msg + ']');
-
+                if (subProcessAddedMessageFromOtherNode(msg, node, locNodeId))
                     return;
-                }
-
-                synchronized (mux) {
-                    joiningNodes.add(node.id());
-                }
-
-                if (!isLocalNodeCoordinator() && spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
-                    boolean authFailed = true;
-
-                    try {
-                        SecurityCredentials cred = unmarshalCredentials(node);
-
-                        if (cred == null) {
-                            if (log.isDebugEnabled())
-                                log.debug(
-                                    "Skipping global authentication for node (security credentials not found, " +
-                                        "probably, due to coordinator has older version) " +
-                                        "[nodeId=" + node.id() +
-                                        ", addrs=" + U.addressesAsString(node) +
-                                        ", coord=" + ring.coordinator() + ']');
-
-                            authFailed = false;
-                        }
-                        else {
-                            SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
-
-                            SecurityContext coordSubj = U.unmarshal(spi.marshaller(),
-                                node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT),
-                                U.resolveClassLoader(spi.ignite().configuration()));
-
-                            if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
-                                // Node has not pass authentication.
-                                LT.warn(log, "Authentication failed [nodeId=" + node.id() +
-                                        ", addrs=" + U.addressesAsString(node) + ']',
-                                    "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
-                                        U.addressesAsString(node) + ']');
-
-                                // Always output in debug.
-                                if (log.isDebugEnabled())
-                                    log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
-                                        U.addressesAsString(node));
-                            }
-                            else
-                                // Node will not be kicked out.
-                                authFailed = false;
-                        }
-                    }
-                    catch (IgniteException | IgniteCheckedException e) {
-                        U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
-                    }
-                    finally {
-                        if (authFailed) {
-                            try {
-                                trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId,
-                                    spi.locHost));
-                            }
-                            catch (IgniteSpiException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to send unauthenticated message to node " +
-                                        "[node=" + node + ", err=" + e.getMessage() + ']');
-
-                                onException("Failed to send unauthenticated message to node " +
-                                    "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                            }
-
-                            addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, node.id(),
-                                node.internalOrder()));
-                        }
-                    }
-                }
-
-                if (msg.client())
-                    node.aliveCheck(spi.maxMissedClientHbs);
-
-                boolean topChanged = ring.add(node);
-
-                if (topChanged) {
-                    assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
-
-                    DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
-
-                    if (dataPacket.hasJoiningNodeData())
-                        spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
-
-                    spi.collectExchangeData(dataPacket);
-
-                    processMessageFailedNodes(msg);
-                }
-
-                if (log.isDebugEnabled())
-                    log.debug("Added node to local ring [added=" + topChanged + ", node=" + node +
-                        ", ring=" + ring + ']');
             }
-
             if (msg.verified() && locNodeId.equals(node.id())) {
-                DiscoveryDataPacket dataPacket;
-
-                synchronized (mux) {
-                    if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
-                        // Initialize topology.
-                        Collection<TcpDiscoveryNode> top = msg.topology();
-
-                        if (top != null && !top.isEmpty()) {
-                            spi.gridStartTime = msg.gridStartTime();
-
-                            if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
-                                TcpDiscoveryAbstractMessage authFail =
-                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
-
-                                try {
-                                    ClassLoader cl = U.resolveClassLoader(spi.ignite().configuration());
-
-                                    byte[] rmSubj = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
-                                    byte[] locSubj = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
-
-                                    SecurityContext rmCrd = spi.marshaller().unmarshal(rmSubj, cl);
-                                    SecurityContext locCrd = spi.marshaller().unmarshal(locSubj, cl);
-
-                                    if (!permissionsEqual(locCrd.subject().permissions(),
-                                        rmCrd.subject().permissions())) {
-                                        // Node has not pass authentication.
-                                        LT.warn(log,
-                                            "Failed to authenticate local node " +
-                                                "(local authentication result is different from rest of topology) " +
-                                                "[nodeId=" + node.id() + ", addrs=" + U.addressesAsString(node) + ']',
-                                            "Authentication failed [nodeId=" + U.id8(node.id()) +
-                                                ", addrs=" + U.addressesAsString(node) + ']');
-
-                                        joinRes.set(authFail);
-
-                                        spiState = AUTH_FAILED;
-
-                                        mux.notifyAll();
-
-                                        return;
-                                    }
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
-
-                                    joinRes.set(authFail);
-
-                                    spiState = AUTH_FAILED;
-
-                                    mux.notifyAll();
-
-                                    return;
-                                }
-                            }
-
-                            for (TcpDiscoveryNode n : top) {
-                                assert n.internalOrder() < node.internalOrder() :
-                                    "Invalid node [topNode=" + n + ", added=" + node + ']';
-
-                                // Make all preceding nodes and local node visible.
-                                n.visible(true);
-                            }
-
-                            synchronized (mux) {
-                                joiningNodes.clear();
-                            }
-
-                            locNode.setAttributes(node.attributes());
-
-                            locNode.visible(true);
-
-                            // Restore topology with all nodes visible.
-                            ring.restoreTopology(top, node.internalOrder());
-
-                            if (log.isDebugEnabled())
-                                log.debug("Restored topology from node added message: " + ring);
-
-                            dataPacket = msg.gridDiscoveryData();
-
-                            topHist.clear();
-                            topHist.putAll(msg.topologyHistory());
-
-                            pendingMsgs.reset(msg.messages(), msg.discardedMessageId(),
-                                msg.discardedCustomMessageId());
-
-                            // Clear data to minimize message size.
-                            msg.messages(null, null, null);
-                            msg.topology(null);
-                            msg.topologyHistory(null);
-                            msg.clearDiscoveryData();
-                        }
-                        else {
-                            if (log.isDebugEnabled())
-                                log.debug("Discarding node added message with empty topology: " + msg);
-
-                            return;
-                        }
-                    }
-                    else  {
-                        if (log.isDebugEnabled())
-                            log.debug("Discarding node added message (this message has already been processed) " +
-                                "[spiState=" + spiState +
-                                ", msg=" + msg +
-                                ", locNode=" + locNode + ']');
-
-                        return;
-                    }
-                }
-
-                // Notify outside of synchronized block.
-                if (dataPacket != null)
-                    spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
-
-                processMessageFailedNodes(msg);
+                if (subProcessAddedMessageFromThisNode(msg, node, locNodeId))
+                    return;
             }
 
             if (sendMessageToRemotes(msg))
