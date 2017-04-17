@@ -317,6 +317,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      */
     protected static void put(Ignite node, int from, int to) {
         try (IgniteDataStreamer streamer = node.dataStreamer(CACHE_NAME)) {
+            streamer.allowOverwrite(true);
             streamer.keepBinary(true);
 
             for (int i = from; i < to; i++) {
@@ -328,9 +329,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
             streamer.flush();
         }
-
-//        for (int i = from; i < to; i++)
-//            put(node, i);
     }
 
     /**
@@ -416,8 +414,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
             assertTrue(ids.add(id));
         }
 
-        assertEquals("Size mismatch [exp=" + expSize + ", actual=" + res.size() + ", ids=" + ids + ']',
-            expSize, res.size());
+        assertEquals("Size mismatch [node=" + node.name() + ", exp=" + expSize + ", actual=" + res.size() +
+            ", ids=" + ids + ']', expSize, res.size());
     }
 
     /**

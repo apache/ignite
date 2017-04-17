@@ -163,30 +163,12 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test simple index create for REPLICATED ATOMIC cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateReplicatedAtomicNear() throws Exception {
-        checkCreate(REPLICATED, ATOMIC, true);
-    }
-
-    /**
      * Test simple index create for REPLICATED TRANSACTIONAL cache.
      *
      * @throws Exception If failed.
      */
     public void testCreateReplicatedTransactional() throws Exception {
         checkCreate(REPLICATED, TRANSACTIONAL, false);
-    }
-
-    /**
-     * Test simple index create for REPLICATED TRANSACTIONAL cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateReplicatedTransactionalNear() throws Exception {
-        checkCreate(REPLICATED, TRANSACTIONAL, true);
     }
 
     /**
@@ -267,30 +249,12 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test composite index creation for REPLICATED ATOMIC cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateCompositeReplicatedAtomicNear() throws Exception {
-        checkCreateComposite(REPLICATED, ATOMIC, true);
-    }
-
-    /**
      * Test composite index creation for REPLICATED TRANSACTIONAL cache.
      *
      * @throws Exception If failed.
      */
     public void testCreateCompositeReplicatedTransactional() throws Exception {
         checkCreateComposite(REPLICATED, TRANSACTIONAL, false);
-    }
-
-    /**
-     * Test composite index creation for REPLICATED TRANSACTIONAL cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateCompositeReplicatedTransactionalNear() throws Exception {
-        checkCreateComposite(REPLICATED, TRANSACTIONAL, true);
     }
 
     /**
@@ -360,30 +324,12 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test create when cache doesn't exist for REPLICATED ATOMIC cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateNoCacheReplicatedAtomicNear() throws Exception {
-        checkCreateNotCache(REPLICATED, ATOMIC, true);
-    }
-
-    /**
      * Test create when cache doesn't exist for REPLICATED TRANSACTIONAL cache.
      *
      * @throws Exception If failed.
      */
     public void testCreateNoCacheReplicatedTransactional() throws Exception {
         checkCreateNotCache(REPLICATED, TRANSACTIONAL, false);
-    }
-
-    /**
-     * Test create when cache doesn't exist for REPLICATED TRANSACTIONAL cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateNoCacheReplicatedTransactionalNear() throws Exception {
-        checkCreateNotCache(REPLICATED, TRANSACTIONAL, true);
     }
 
     /**
@@ -454,30 +400,12 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test create when table doesn't exist for REPLICATED ATOMIC cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateNoTableReplicatedAtomicNear() throws Exception {
-        checkCreateNoTable(REPLICATED, ATOMIC, true);
-    }
-
-    /**
      * Test create when table doesn't exist for REPLICATED TRANSACTIONAL cache.
      *
      * @throws Exception If failed.
      */
     public void testCreateNoTableReplicatedTransactional() throws Exception {
         checkCreateNoTable(REPLICATED, TRANSACTIONAL, false);
-    }
-
-    /**
-     * Test create when table doesn't exist for REPLICATED TRANSACTIONAL cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateNoTableReplicatedTransactionalNear() throws Exception {
-        checkCreateNoTable(REPLICATED, TRANSACTIONAL, true);
     }
 
     /**
@@ -548,30 +476,12 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test create when table doesn't exist for REPLICATED ATOMIC cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateNoColumnReplicatedAtomicNear() throws Exception {
-        checkCreateNoColumn(REPLICATED, ATOMIC, true);
-    }
-
-    /**
      * Test create when table doesn't exist for REPLICATED TRANSACTIONAL cache.
      *
      * @throws Exception If failed.
      */
     public void testCreateNoColumnReplicatedTransactional() throws Exception {
         checkCreateNoColumn(REPLICATED, TRANSACTIONAL, false);
-    }
-
-    /**
-     * Test create when table doesn't exist for REPLICATED TRANSACTIONAL cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateNoColumnReplicatedTransactionalNear() throws Exception {
-        checkCreateNoColumn(REPLICATED, TRANSACTIONAL, true);
     }
 
     /**
@@ -642,30 +552,12 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test index creation on aliased column for REPLICATED ATOMIC cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateColumnWithAliasReplicatedAtomicNear() throws Exception {
-        checkCreateColumnWithAlias(REPLICATED, ATOMIC, true);
-    }
-
-    /**
      * Test index creation on aliased column for REPLICATED TRANSACTIONAL cache.
      *
      * @throws Exception If failed.
      */
     public void testCreateColumnWithAliasReplicatedTransactional() throws Exception {
         checkCreateColumnWithAlias(REPLICATED, TRANSACTIONAL, false);
-    }
-
-    /**
-     * Test index creation on aliased column for REPLICATED TRANSACTIONAL cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCreateColumnWithAliasReplicatedTransactionalNear() throws Exception {
-        checkCreateColumnWithAlias(REPLICATED, TRANSACTIONAL, true);
     }
 
     /**
@@ -746,30 +638,12 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test simple index drop for REPLICATED ATOMIC cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testDropReplicatedAtomicNear() throws Exception {
-        checkDrop(REPLICATED, ATOMIC, true);
-    }
-
-    /**
      * Test simple index drop for REPLICATED TRANSACTIONAL cache.
      *
      * @throws Exception If failed.
      */
     public void testDropReplicatedTransactional() throws Exception {
         checkDrop(REPLICATED, TRANSACTIONAL, false);
-    }
-
-    /**
-     * Test simple index drop for REPLICATED TRANSACTIONAL cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testDropReplicatedTransactionalNear() throws Exception {
-        checkDrop(REPLICATED, TRANSACTIONAL, true);
     }
 
     /**
@@ -848,30 +722,12 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test drop when there is no index for REPLICATED ATOMIC cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testDropNoIndexReplicatedAtomicNear() throws Exception {
-        checkDropNoIndex(REPLICATED, ATOMIC, true);
-    }
-
-    /**
      * Test drop when there is no index for REPLICATED TRANSACTIONAL cache.
      *
      * @throws Exception If failed.
      */
     public void testDropNoIndexReplicatedTransactional() throws Exception {
         checkDropNoIndex(REPLICATED, TRANSACTIONAL, false);
-    }
-
-    /**
-     * Test drop when there is no index for REPLICATED TRANSACTIONAL cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testDropNoIndexReplicatedTransactionalNear() throws Exception {
-        checkDropNoIndex(REPLICATED, TRANSACTIONAL, true);
     }
 
     /**
@@ -941,30 +797,12 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test drop when cache doesn't exist for REPLICATED ATOMIC cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testDropNoCacheReplicatedAtomicNear() throws Exception {
-        checkDropNoCache(REPLICATED, ATOMIC, true);
-    }
-
-    /**
      * Test drop when cache doesn't exist for REPLICATED TRANSACTIONAL cache.
      *
      * @throws Exception If failed.
      */
     public void testDropNoCacheReplicatedTransactional() throws Exception {
         checkDropNoCache(REPLICATED, TRANSACTIONAL, false);
-    }
-
-    /**
-     * Test drop when cache doesn't exist for REPLICATED TRANSACTIONAL cache with near cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testDropNoCacheReplicatedTransactionalNear() throws Exception {
-        checkDropNoCache(REPLICATED, TRANSACTIONAL, true);
     }
 
     /**
