@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.LessNamingBean;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.internal.visor.cache.VisorCache;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
@@ -34,7 +38,7 @@ import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 /**
  * Data collector task result.
  */
-public class VisorNodeDataCollectorTaskResult implements Serializable, LessNamingBean {
+public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,47 +46,54 @@ public class VisorNodeDataCollectorTaskResult implements Serializable, LessNamin
     private boolean active;
 
     /** Unhandled exceptions from nodes. */
-    private final Map<UUID, VisorExceptionWrapper> unhandledEx = new HashMap<>();
+    private Map<UUID, VisorExceptionWrapper> unhandledEx = new HashMap<>();
 
     /** Nodes grid names. */
-    private final Map<UUID, String> igniteInstanceNames = new HashMap<>();
+    private Map<UUID, String> gridNames = new HashMap<>();
 
     /** Nodes topology versions. */
-    private final Map<UUID, Long> topVersions = new HashMap<>();
+    private Map<UUID, Long> topVersions = new HashMap<>();
 
     /** All task monitoring state collected from nodes. */
-    private final Map<UUID, Boolean> taskMonitoringEnabled = new HashMap<>();
+    private Map<UUID, Boolean> taskMonitoringEnabled = new HashMap<>();
 
     /** Nodes error counts. */
-    private final Map<UUID, Long> errCnts = new HashMap<>();
+    private Map<UUID, Long> errCnts = new HashMap<>();
 
     /** All events collected from nodes. */
-    private final List<VisorGridEvent> evts = new ArrayList<>();
+    private List<VisorGridEvent> evts = new ArrayList<>();
 
     /** Exceptions caught during collecting events from nodes. */
-    private final Map<UUID, VisorExceptionWrapper> evtsEx = new HashMap<>();
+    private Map<UUID, VisorExceptionWrapper> evtsEx = new HashMap<>();
 
     /** All caches collected from nodes. */
-    private final Map<UUID, Collection<VisorCache>> caches = new HashMap<>();
+    private Map<UUID, Collection<VisorCache>> caches = new HashMap<>();
 
     /** Exceptions caught during collecting caches from nodes. */
-    private final Map<UUID, VisorExceptionWrapper> cachesEx = new HashMap<>();
+    private Map<UUID, VisorExceptionWrapper> cachesEx = new HashMap<>();
 
     /** All IGFS collected from nodes. */
-    private final Map<UUID, Collection<VisorIgfs>> igfss = new HashMap<>();
+    private Map<UUID, Collection<VisorIgfs>> igfss = new HashMap<>();
 
     /** All IGFS endpoints collected from nodes. */
-    private final Map<UUID, Collection<VisorIgfsEndpoint>> igfsEndpoints = new HashMap<>();
+    private Map<UUID, Collection<VisorIgfsEndpoint>> igfsEndpoints = new HashMap<>();
 
     /** Exceptions caught during collecting IGFS from nodes. */
-    private final Map<UUID, VisorExceptionWrapper> igfssEx = new HashMap<>();
+    private Map<UUID, VisorExceptionWrapper> igfssEx = new HashMap<>();
+
+    /**
+     * Default constructor.
+     */
+    public VisorNodeDataCollectorTaskResult() {
+        // No-op.
+    }
 
     /**
      * @return {@code true} If no data was collected.
      */
     public boolean isEmpty() {
         return
-            igniteInstanceNames.isEmpty() &&
+            gridNames.isEmpty() &&
             topVersions.isEmpty() &&
             unhandledEx.isEmpty() &&
             taskMonitoringEnabled.isEmpty() &&
@@ -112,84 +123,123 @@ public class VisorNodeDataCollectorTaskResult implements Serializable, LessNamin
     /**
      * @return Unhandled exceptions from nodes.
      */
-    public Map<UUID, VisorExceptionWrapper> unhandledEx() {
+    public Map<UUID, VisorExceptionWrapper> getUnhandledEx() {
         return unhandledEx;
     }
 
     /**
-     * @return Nodes Ignite instance names.
+     * @return Nodes grid names.
      */
-    public Map<UUID, String> igniteInstanceNames() {
-        return igniteInstanceNames;
+    public Map<UUID, String> getGridNames() {
+        return gridNames;
     }
 
     /**
      * @return Nodes topology versions.
      */
-    public Map<UUID, Long> topologyVersions() {
+    public Map<UUID, Long> getTopologyVersions() {
         return topVersions;
     }
 
     /**
      * @return All task monitoring state collected from nodes.
      */
-    public Map<UUID, Boolean> taskMonitoringEnabled() {
+    public Map<UUID, Boolean> isTaskMonitoringEnabled() {
         return taskMonitoringEnabled;
     }
 
     /**
      * @return All events collected from nodes.
      */
-    public List<VisorGridEvent> events() {
+    public List<VisorGridEvent> getEvents() {
         return evts;
     }
 
     /**
      * @return Exceptions caught during collecting events from nodes.
      */
-    public Map<UUID, VisorExceptionWrapper> eventsEx() {
+    public Map<UUID, VisorExceptionWrapper> getEventsEx() {
         return evtsEx;
     }
 
     /**
      * @return All caches collected from nodes.
      */
-    public Map<UUID, Collection<VisorCache>> caches() {
+    public Map<UUID, Collection<VisorCache>> getCaches() {
         return caches;
     }
 
     /**
      * @return Exceptions caught during collecting caches from nodes.
      */
-    public Map<UUID, VisorExceptionWrapper> cachesEx() {
+    public Map<UUID, VisorExceptionWrapper> getCachesEx() {
         return cachesEx;
     }
 
     /**
      * @return All IGFS collected from nodes.
      */
-    public Map<UUID, Collection<VisorIgfs>> igfss() {
+    public Map<UUID, Collection<VisorIgfs>> getIgfss() {
         return igfss;
     }
 
     /**
      * @return All IGFS endpoints collected from nodes.
      */
-    public Map<UUID, Collection<VisorIgfsEndpoint>> igfsEndpoints() {
+    public Map<UUID, Collection<VisorIgfsEndpoint>> getIgfsEndpoints() {
         return igfsEndpoints;
     }
 
     /**
      * @return Exceptions caught during collecting IGFS from nodes.
      */
-    public Map<UUID, VisorExceptionWrapper> igfssEx() {
+    public Map<UUID, VisorExceptionWrapper> getIgfssEx() {
         return igfssEx;
     }
 
     /**
      * @return Nodes error counts.
      */
-    public Map<UUID, Long> errorCounts() {
+    public Map<UUID, Long> getErrorCounts() {
         return errCnts;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeBoolean(active);
+        U.writeMap(out, unhandledEx);
+        U.writeMap(out, gridNames);
+        U.writeMap(out, topVersions);
+        U.writeMap(out, taskMonitoringEnabled);
+        U.writeMap(out, errCnts);
+        U.writeCollection(out, evts);
+        U.writeMap(out, evtsEx);
+        U.writeMap(out, caches);
+        U.writeMap(out, cachesEx);
+        U.writeMap(out, igfss);
+        U.writeMap(out, igfsEndpoints);
+        U.writeMap(out, igfssEx);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        active = in.readBoolean();
+        unhandledEx = U.readMap(in);
+        gridNames = U.readMap(in);
+        topVersions = U.readMap(in);
+        taskMonitoringEnabled = U.readMap(in);
+        errCnts = U.readMap(in);
+        evts = U.readList(in);
+        evtsEx = U.readMap(in);
+        caches = U.readMap(in);
+        cachesEx = U.readMap(in);
+        igfss = U.readMap(in);
+        igfsEndpoints = U.readMap(in);
+        igfssEx = U.readMap(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorNodeDataCollectorTaskResult.class, this);
     }
 }

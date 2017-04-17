@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -159,7 +158,7 @@ public class GridH2Table extends TableBase {
 
         snapshotEnabled = desc == null || desc.snapshotableIndex();
 
-        lock = snapshotEnabled ? new ReentrantReadWriteLock() : null;
+        lock = new ReentrantReadWriteLock();
     }
 
     /**
@@ -233,7 +232,7 @@ public class GridH2Table extends TableBase {
 
         GridUnsafeMemory mem = desc.memory();
 
-        Lock l = lock(false, Long.MAX_VALUE);
+        lock(false);
 
         if (mem != null)
             desc.guard().begin();
@@ -252,7 +251,7 @@ public class GridH2Table extends TableBase {
             return true;
         }
         finally {
-            unlock(l);
+            unlock(false);
 
             if (mem != null)
                 desc.guard().end();
@@ -305,8 +304,6 @@ public class GridH2Table extends TableBase {
 
         Object[] snapshots;
 
-        Lock l;
-
         // Try to reuse existing snapshots outside of the lock.
         for (long waitTime = 200;; waitTime *= 2) { // Increase wait time to avoid starvation.
             snapshots = actualSnapshot.get();
@@ -318,9 +315,7 @@ public class GridH2Table extends TableBase {
                     return; // Reused successfully.
             }
 
-            l = lock(true, waitTime);
-
-            if (l != null)
+            if (tryLock(true, waitTime))
                 break;
         }
 
@@ -340,7 +335,7 @@ public class GridH2Table extends TableBase {
             }
         }
         finally {
-            unlock(l);
+            unlock(true);
         }
     }
 
@@ -352,39 +347,65 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * @param l Lock.
+     * Acquire table lock.
+     *
+     * @param exclusive Exclusive flag.
      */
-    private static void unlock(Lock l) {
-        if (l != null)
-            l.unlock();
+    private void lock(boolean exclusive) {
+        Lock l = exclusive ? lock.writeLock() : lock.readLock();
+
+        try {
+            l.lockInterruptibly();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
+        }
+
+        if (destroyed) {
+            unlock(exclusive);
+
+            throw new IllegalStateException("Table " + identifier() + " already destroyed.");
+        }
     }
 
     /**
      * @param exclusive Exclusive lock.
      * @param waitMillis Milliseconds to wait for the lock.
-     * @return The acquired lock or {@code null} if the lock time out occurred.
+     * @return Whether lock was acquired.
      */
-    public Lock lock(boolean exclusive, long waitMillis) {
-        if (!snapshotEnabled)
-            return null;
-
+    private boolean tryLock(boolean exclusive, long waitMillis) {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
             if (!l.tryLock(waitMillis, TimeUnit.MILLISECONDS))
-                return null;
+                return false;
         }
         catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
             throw new IgniteInterruptedException("Thread got interrupted while trying to acquire table lock.", e);
         }
 
         if (destroyed) {
-            unlock(l);
+            unlock(exclusive);
 
             throw new IllegalStateException("Table " + identifier() + " already destroyed.");
         }
 
-        return l;
+        return true;
+    }
+
+    /**
+     * Release table lock.
+     *
+     * @param exclusive Exclusive flag.
+     */
+    private void unlock(boolean exclusive) {
+        Lock l = exclusive ? lock.writeLock() : lock.readLock();
+
+        l.unlock();
     }
 
     /**
@@ -438,7 +459,7 @@ public class GridH2Table extends TableBase {
      * Destroy the table.
      */
     public void destroy() {
-        Lock l = lock(true, Long.MAX_VALUE);
+        lock(true);
 
         try {
             assert sessions.isEmpty() : sessions;
@@ -449,7 +470,7 @@ public class GridH2Table extends TableBase {
                 index(i).destroy();
         }
         finally {
-            unlock(l);
+            unlock(true);
         }
     }
 
@@ -572,7 +593,7 @@ public class GridH2Table extends TableBase {
         // getting updated from different threads with different rows with the same key is impossible.
         GridUnsafeMemory mem = desc == null ? null : desc.memory();
 
-        Lock l = lock(false, Long.MAX_VALUE);
+        lock(false);
 
         if (mem != null)
             desc.guard().begin();
@@ -647,7 +668,7 @@ public class GridH2Table extends TableBase {
             return true;
         }
         finally {
-            unlock(l);
+            unlock(false);
 
             if (mem != null)
                 desc.guard().end();

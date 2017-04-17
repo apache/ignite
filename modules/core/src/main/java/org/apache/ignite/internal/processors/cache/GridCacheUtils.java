@@ -961,12 +961,11 @@ public class GridCacheUtils {
     public static byte[] versionToBytes(GridCacheVersion ver) {
         assert ver != null;
 
-        byte[] bytes = new byte[28];
+        byte[] bytes = new byte[20];
 
         U.intToBytes(ver.topologyVersion(), bytes, 0);
-        U.longToBytes(ver.globalTime(), bytes, 4);
-        U.longToBytes(ver.order(), bytes, 12);
-        U.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 20);
+        U.longToBytes(ver.order(), bytes, 4);
+        U.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 12);
 
         return bytes;
     }

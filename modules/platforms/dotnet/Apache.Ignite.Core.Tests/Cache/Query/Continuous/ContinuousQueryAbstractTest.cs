@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
-    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Resource;
@@ -706,7 +705,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void TestBufferSize()
         {
             // Put two remote keys in advance.
-            List<int> rmtKeys = PrimaryKeys(cache2, 2);
+            var rmtKeys = TestUtils.GetPrimaryKeys(cache2.Ignite, cache2.Name).Take(2).ToList();
 
             ContinuousQuery<int, BinarizableEntry> qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
 
@@ -977,43 +976,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <returns>Primary key.</returns>
         private static int PrimaryKey<T>(ICache<int, T> cache)
         {
-            return PrimaryKeys(cache, 1)[0];
-        }
-
-        /// <summary>
-        /// Get primary keys for cache.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        /// <param name="cnt">Amount of keys.</param>
-        /// <param name="startFrom">Value to start from.</param>
-        /// <returns></returns>
-        private static List<int> PrimaryKeys<T>(ICache<int, T> cache, int cnt, int startFrom = 0)
-        {
-            IClusterNode node = cache.Ignite.GetCluster().GetLocalNode();
-
-            ICacheAffinity aff = cache.Ignite.GetAffinity(cache.Name);
-
-            List<int> keys = new List<int>(cnt);
-
-            Assert.IsTrue(
-                TestUtils.WaitForCondition(() =>
-                {
-                    for (int i = startFrom; i < startFrom + 100000; i++)
-                    {
-                        if (aff.IsPrimary(node, i))
-                        {
-                            keys.Add(i);
-
-                            if (keys.Count == cnt)
-                                return true;
-                        }
-                    }
-
-                    return false;
-                }, 5000), "Failed to find " + cnt + " primary keys.");
-
-
-            return keys;
+            return TestUtils.GetPrimaryKey(cache.Ignite, cache.Name);
         }
 
         /// <summary>

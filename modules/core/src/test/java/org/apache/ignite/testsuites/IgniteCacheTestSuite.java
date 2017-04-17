@@ -79,8 +79,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalWithStoreInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicNearEnabledInvokeTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPrimaryWriteOrderInvokeTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPrimaryWriteOrderWithStoreInvokeTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicWithStoreInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicStopBusySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicLocalTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicReplicatedTest;
@@ -172,8 +171,7 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheAtomicInvokeTest.class);
         suite.addTestSuite(IgniteCacheAtomicNearEnabledInvokeTest.class);
-        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderInvokeTest.class);
-        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderWithStoreInvokeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicWithStoreInvokeTest.class);
         suite.addTestSuite(IgniteCacheAtomicLocalInvokeTest.class);
         suite.addTestSuite(IgniteCacheAtomicLocalWithStoreInvokeTest.class);
         suite.addTestSuite(IgniteCacheTxInvokeTest.class);

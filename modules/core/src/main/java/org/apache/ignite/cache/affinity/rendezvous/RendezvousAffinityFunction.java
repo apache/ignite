@@ -35,10 +35,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
-import org.apache.ignite.cache.affinity.AffinityNodeHashResolver;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -100,9 +98,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      *  the second is a list of nodes that are already assigned for a given partition (the first node in the list
      *  is primary). */
     private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
-
-    /** Hash ID resolver. */
-    private AffinityNodeHashResolver hashIdRslvr = null;
 
     /** Logger instance. */
     @LoggerResource
@@ -214,45 +209,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Gets hash ID resolver for nodes. This resolver is used to provide
-     * alternate hash ID, other than node ID.
-     * <p>
-     * Node IDs constantly change when nodes get restarted, which causes them to
-     * be placed on different locations in the hash ring, and hence causing
-     * repartitioning. Providing an alternate hash ID, which survives node restarts,
-     * puts node on the same location on the hash ring, hence minimizing required
-     * repartitioning.
-     *
-     * @return Hash ID resolver.
-     */
-    @Deprecated
-    public AffinityNodeHashResolver getHashIdResolver() {
-        return hashIdRslvr;
-    }
-
-    /**
-     * Sets hash ID resolver for nodes. This resolver is used to provide
-     * alternate hash ID, other than node ID.
-     * <p>
-     * Node IDs constantly change when nodes get restarted, which causes them to
-     * be placed on different locations in the hash ring, and hence causing
-     * repartitioning. Providing an alternate hash ID, which survives node restarts,
-     * puts node on the same location on the hash ring, hence minimizing required
-     * repartitioning.
-     *
-     * @param hashIdRslvr Hash ID resolver.
-     *
-     * @deprecated Use {@link IgniteConfiguration#setConsistentId(Serializable)} instead.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public RendezvousAffinityFunction setHashIdResolver(AffinityNodeHashResolver hashIdRslvr) {
-        this.hashIdRslvr = hashIdRslvr;
-
-        return this;
-    }
-
-    /**
      * Gets optional backup filter. If not {@code null}, backups will be selected
      * from all nodes that pass this filter. First node passed to this filter is primary node,
      * and second node is a node being tested.
@@ -346,10 +302,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @return Node hash.
      */
     public Object resolveNodeHash(ClusterNode node) {
-        if (hashIdRslvr != null)
-            return hashIdRslvr.resolve(node);
-        else
-            return node.consistentId();
+        return node.consistentId();
     }
 
     /**
@@ -552,7 +505,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(parts);
         out.writeBoolean(exclNeighbors);
-        out.writeObject(hashIdRslvr);
         out.writeObject(backupFilter);
     }
 
@@ -562,7 +514,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         setPartitions(in.readInt());
 
         exclNeighbors = in.readBoolean();
-        hashIdRslvr = (AffinityNodeHashResolver)in.readObject();
         backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
     }
 

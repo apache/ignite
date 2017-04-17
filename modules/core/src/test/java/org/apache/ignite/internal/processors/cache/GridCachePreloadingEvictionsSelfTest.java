@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -209,7 +210,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @return Random entry from cache.
      */
     @Nullable private Cache.Entry<Integer, Object> randomEntry(Ignite g) {
-        return g.<Integer, Object>cache(null).randomEntry();
+        return g.<Integer, Object>cache(null).iterator().next();
     }
 
     /**

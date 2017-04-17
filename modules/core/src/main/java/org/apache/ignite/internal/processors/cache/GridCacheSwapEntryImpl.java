@@ -38,10 +38,10 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     static final int VERSION_OFFSET = 16;
 
     /** */
-    static final int VERSION_SIZE = 24;
+    static final int VERSION_SIZE = 16;
 
     /** */
-    static final int VERSION_EX_SIZE = 48;
+    static final int VERSION_EX_SIZE = 32;
 
     /** */
     static final int GUID_SIZE = 24;
