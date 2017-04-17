@@ -617,10 +617,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(obj1, obj2);
 
-            Assert.AreEqual(1823354401, obj1.GetHashCode());
-            Assert.AreEqual(1823354401, obj2.GetHashCode());
+            Assert.AreEqual(-88648479, obj1.GetHashCode());
+            Assert.AreEqual(obj1.GetHashCode(), obj2.GetHashCode());
 
-            Assert.IsTrue(Regex.IsMatch(obj1.ToString(), @"myType \[idHash=[0-9]+, str=foo, int=1\]"));
+            Assert.AreEqual("myType [, int=1, str=foo]", Regex.Replace(obj1.ToString(), "idHash=\\d+", ""));
         }
 
         /// <summary>
@@ -1728,6 +1728,32 @@ namespace Apache.Ignite.Core.Tests.Binary
                 cache1Bin[6] = newObj.ToBuilder().SetField("foo2", 3).Build();
                 Assert.AreEqual(3, cache2[6].GetField<int>("foo2"));
             }
+        }
+
+        /// <summary>
+        /// Tests that fields are sorted by name in serialized form.
+        /// </summary>
+        [Test]
+        public void TestFieldSorting()
+        {
+            var obj1 = (BinaryObject)_grid.GetBinary().GetBuilder("sortTest")
+                .SetByteField("c", 3).SetByteField("b", 1).SetByteField("a", 2).Build();
+
+            var obj2 = (BinaryObject)_grid.GetBinary().GetBuilder("sortTest")
+                .SetByteField("b", 1).SetByteField("a", 2).SetByteField("c", 3).Build();
+
+            Assert.AreEqual(obj1, obj2);
+            Assert.AreEqual(obj1.GetHashCode(), obj2.GetHashCode());
+
+            Assert.AreEqual("sortTest [, a=2, b=1, c=3]", Regex.Replace(obj1.ToString(), "idHash=\\d+", ""));
+
+            // Skip header, take 3 fields (type code + value).
+            var bytes1 = obj1.Data.Skip(24).Take(6).ToArray();
+            var bytes2 = obj2.Data.Skip(24).Take(6).ToArray();
+            
+            Assert.AreEqual(bytes1, bytes2);
+
+            Assert.AreEqual(new[] {1, 2, 1, 1, 1, 3}, bytes1);
         }
     }
 
