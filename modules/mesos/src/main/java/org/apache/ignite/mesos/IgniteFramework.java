@@ -56,8 +56,8 @@ public class IgniteFramework {
         // Have Mesos fill in the current user.
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
             .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser(getUser(MESOS_USER_NAME))
-            .setRole(getRole(MESOS_ROLE))
+            .setUser(getUser())
+            .setRole(getRole())
             .setFailoverTimeout(frameworkFailoverTimeout);
 
         if (System.getenv("MESOS_CHECKPOINT") != null) {
@@ -133,16 +133,36 @@ public class IgniteFramework {
     /**
      * @return Mesos user name value.
      */
-    public static String getUser(String mesosUserName) {
-        String userName = System.getenv(mesosUserName);
+    public static String getUser() {
+        String userName = System.getenv(MESOS_USER_NAME);
+
         return userName != null ? userName : "";
     }
 
     /**
      * @return Mesos role value.
      */
-    public static String getRole(String mesosRoleFramework) {
-        String mesosRole = System.getenv(mesosRoleFramework);
-        return mesosRole != null ? mesosRole : "*";
+    public static String getRole() {
+        String mesosRole = System.getenv(MESOS_ROLE);
+
+        return isRoleValid(mesosRole) ? mesosRole : "*";
+    }
+
+    /**
+     * @return Result of Mesos role validation.
+     */
+    private static boolean isRoleValid(String mesosRole) {
+
+        if (mesosRole.equals("")|| mesosRole == null || mesosRole.equals(".") ||
+            mesosRole.equals("..")|| mesosRole.startsWith("") || mesosRole.contains("/") ||
+            mesosRole.contains("\\")|| mesosRole.contains(" ")){
+            log.severe("Provided mesos role" + mesosRole + "is not valid and have replaced by '*'. " +
+                "A role name must be a valid directory name, so it cannot be an empty string\n" +
+                "•Be . or ..\n" + "•Start with -\n" + "•Contain any slash, backspace, or whitespace character\n");
+
+            return false;
+        }
+
+        return true;
     }
 }
