@@ -39,10 +39,10 @@ public class IgniteSchedulerSelfTest extends TestCase {
     private IgniteScheduler scheduler;
 
     /** */
-    private final String mesosUserValue = "userAAAAA";
+    private String mesosUserValue = "userAAAAA";
 
     /** */
-    private final String mesosRoleValue = "role1";
+    private String mesosRoleValue = "role1";
 
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -316,19 +316,40 @@ public class IgniteSchedulerSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testIgniteFramework() throws Exception {
-        setEnv(MESOS_USER_NAME, mesosUserValue);
+        mesosUserValue = "userAAAAA";
+        mesosRoleValue = "role1";
 
+        setEnv(MESOS_USER_NAME, mesosUserValue);
         setEnv(MESOS_ROLE, mesosRoleValue);
 
-
         IgniteFrameworkThread igniteFWThread = new IgniteFrameworkThread();
-
         igniteFWThread.start();
 
         igniteFWThread.sleep(500);
 
         assertEquals(mesosUserValue, igniteFWThread.getIgniteFramework().getUser());
         assertEquals(mesosRoleValue, igniteFWThread.getIgniteFramework().getRole());
+
+        mesosRoleValue = "-role1";
+
+        setEnv(MESOS_ROLE, mesosRoleValue);
+
+        igniteFWThread.sleep(500);
+        assertEquals("*", igniteFWThread.getIgniteFramework().getRole());
+
+        mesosRoleValue = "mesosRol/le";
+
+        setEnv(MESOS_ROLE, mesosRoleValue);
+
+        igniteFWThread.sleep(500);
+        assertEquals("*", igniteFWThread.getIgniteFramework().getRole());
+
+        mesosRoleValue = "..";
+
+        setEnv(MESOS_ROLE, mesosRoleValue);
+
+        igniteFWThread.sleep(500);
+        assertEquals("*", igniteFWThread.getIgniteFramework().getRole());
     }
 
     /**

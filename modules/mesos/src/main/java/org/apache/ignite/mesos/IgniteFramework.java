@@ -151,12 +151,15 @@ public class IgniteFramework {
     /**
      * @return Result of Mesos role validation.
      */
-    private static boolean isRoleValid(String mesosRole) {
+    private static boolean isRoleValid(String mRole) {
 
-        if (mesosRole.equals("")|| mesosRole == null || mesosRole.equals(".") ||
-            mesosRole.equals("..")|| mesosRole.startsWith("") || mesosRole.contains("/") ||
-            mesosRole.contains("\\")|| mesosRole.contains(" ")){
-            log.severe("Provided mesos role" + mesosRole + "is not valid and have replaced by '*'. " +
+        if (
+            mRole.equals("")|| mRole == null ||
+            mRole.equals(".") || mRole.equals("..")||
+            mRole.startsWith("-") || mRole.contains("/") ||
+            mRole.contains("\\")|| mRole.contains(" "))
+        {
+            log.severe("Provided mesos role" + mRole + "is not valid and have replaced by '*'. " +
                 "A role name must be a valid directory name, so it cannot be an empty string\n" +
                 "•Be . or ..\n" + "•Start with -\n" + "•Contain any slash, backspace, or whitespace character\n");
 
