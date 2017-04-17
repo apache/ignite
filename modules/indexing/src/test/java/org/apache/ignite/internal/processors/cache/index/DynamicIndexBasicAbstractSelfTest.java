@@ -19,13 +19,20 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests for dynamic index creation.
@@ -59,6 +66,42 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     }
 
     /**
+     * Initialize cache for tests.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     */
+    private void initialize(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) {
+        node().getOrCreateCache(cacheConfiguration(mode, atomicityMode, near));
+
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+
+        loadInitialData();
+    }
+
+    /**
+     * Create cache with the given cache mode and atomicity mode.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Whether near cache should be initialized.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration<KeyClass, ValueClass> cacheConfiguration(CacheMode mode,
+        CacheAtomicityMode atomicityMode, boolean near) {
+        CacheConfiguration<KeyClass, ValueClass> ccfg = cacheConfiguration();
+
+        ccfg.setCacheMode(mode);
+        ccfg.setAtomicityMode(atomicityMode);
+
+        if (near)
+            ccfg.setNearConfiguration(new NearCacheConfiguration<KeyClass, ValueClass>());
+
+        return ccfg;
+    }
+
+    /**
      * Load initial data.
      */
     private void loadInitialData() {
@@ -66,11 +109,88 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test simple index create.
+     * Test simple index create for PARTITIONED ATOMIC cache.
      *
      * @throws Exception If failed.
      */
-    public void testCreate() throws Exception {
+    public void testCreatePartitionedAtomic() throws Exception {
+        checkCreate(PARTITIONED, ATOMIC, false);
+    }
+
+    /**
+     * Test simple index create for PARTITIONED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreatePartitionedAtomicNear() throws Exception {
+        checkCreate(PARTITIONED, ATOMIC, true);
+    }
+
+    /**
+     * Test simple index create for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPartitionedTransactional() throws Exception {
+        checkCreate(PARTITIONED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test simple index create for PARTITIONED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPartitionedTransactionalNear() throws Exception {
+        checkCreate(PARTITIONED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Test simple index create for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateReplicatedAtomic() throws Exception {
+        checkCreate(REPLICATED, ATOMIC, false);
+    }
+
+    /**
+     * Test simple index create for REPLICATED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateReplicatedAtomicNear() throws Exception {
+        checkCreate(REPLICATED, ATOMIC, true);
+    }
+
+    /**
+     * Test simple index create for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testReplicatedTransactional() throws Exception {
+        checkCreate(REPLICATED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test simple index create for REPLICATED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testReplicatedTransactionalNear() throws Exception {
+        checkCreate(REPLICATED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Check normal create operation.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     * @throws Exception If failed.
+     */
+    private void checkCreate(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
+        initialize(mode, atomicityMode, near);
+
         final IgniteEx node = node();
 
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
@@ -93,11 +213,88 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test composite index creation.
+     * Test composite index creation for PARTITIONED ATOMIC cache.
      *
      * @throws Exception If failed.
      */
-    public void testCreateComposite() throws Exception {
+    public void testCreateCompositePartitionedAtomic() throws Exception {
+        checkCreateComposite(PARTITIONED, ATOMIC, false);
+    }
+
+    /**
+     * Test composite index creation for PARTITIONED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateCompositePartitionedAtomicNear() throws Exception {
+        checkCreateComposite(PARTITIONED, ATOMIC, true);
+    }
+
+    /**
+     * Test composite index creation for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateCompositePartitionedTransactional() throws Exception {
+        checkCreateComposite(PARTITIONED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test composite index creation for PARTITIONED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateCompositePartitionedTransactionalNear() throws Exception {
+        checkCreateComposite(PARTITIONED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Test composite index creation for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateCompositeReplicatedAtomic() throws Exception {
+        checkCreateComposite(REPLICATED, ATOMIC, false);
+    }
+
+    /**
+     * Test composite index creation for REPLICATED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateCompositeReplicatedAtomicNear() throws Exception {
+        checkCreateComposite(REPLICATED, ATOMIC, true);
+    }
+
+    /**
+     * Test composite index creation for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateCompositeReplicatedTransactional() throws Exception {
+        checkCreateComposite(REPLICATED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test composite index creation for REPLICATED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateCompositeReplicatedTransactionalNear() throws Exception {
+        checkCreateComposite(REPLICATED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Check composite index creation.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     * @throws Exception If failed.
+     */
+    private void checkCreateComposite(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
+        initialize(mode, atomicityMode, near);
+
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
 
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
@@ -107,11 +304,88 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test create when cache doesn't exist.
+     * Test create when cache doesn't exist for PARTITIONED ATOMIC cache.
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoCache() throws Exception {
+    public void testCreateNoCachePartitionedAtomic() throws Exception {
+        checkCreateNotCache(PARTITIONED, ATOMIC, false);
+    }
+
+    /**
+     * Test create when cache doesn't exist for PARTITIONED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoCachePartitionedAtomicNear() throws Exception {
+        checkCreateNotCache(PARTITIONED, ATOMIC, true);
+    }
+
+    /**
+     * Test create when cache doesn't exist for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoCachePartitionedTransactional() throws Exception {
+        checkCreateNotCache(PARTITIONED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test create when cache doesn't exist for PARTITIONED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoCachePartitionedTransactionalNear() throws Exception {
+        checkCreateNotCache(PARTITIONED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Test create when cache doesn't exist for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoCacheReplicatedAtomic() throws Exception {
+        checkCreateNotCache(REPLICATED, ATOMIC, false);
+    }
+
+    /**
+     * Test create when cache doesn't exist for REPLICATED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoCacheReplicatedAtomicNear() throws Exception {
+        checkCreateNotCache(REPLICATED, ATOMIC, true);
+    }
+
+    /**
+     * Test create when cache doesn't exist for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoCacheReplicatedTransactional() throws Exception {
+        checkCreateNotCache(REPLICATED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test create when cache doesn't exist for REPLICATED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoCacheReplicatedTransactionalNear() throws Exception {
+        checkCreateNotCache(REPLICATED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Check create when cache doesn't exist.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     * @throws Exception If failed.
+     */
+    private void checkCreateNotCache(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
+        initialize(mode, atomicityMode, near);
+
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         assertSchemaException(new RunnableX() {
@@ -124,11 +398,88 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test create when table doesn't exist.
+     * Test create when table doesn't exist for PARTITIONED ATOMIC cache.
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoTable() throws Exception {
+    public void testCreateNoTablePartitionedAtomic() throws Exception {
+        checkCreateNoTable(PARTITIONED, ATOMIC, false);
+    }
+
+    /**
+     * Test create when table doesn't exist for PARTITIONED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoTablePartitionedAtomicNear() throws Exception {
+        checkCreateNoTable(PARTITIONED, ATOMIC, true);
+    }
+
+    /**
+     * Test create when table doesn't exist for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoTablePartitionedTransactional() throws Exception {
+        checkCreateNoTable(PARTITIONED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test create when table doesn't exist for PARTITIONED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoTablePartitionedTransactionalNear() throws Exception {
+        checkCreateNoTable(PARTITIONED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Test create when table doesn't exist for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoTableReplicatedAtomic() throws Exception {
+        checkCreateNoTable(REPLICATED, ATOMIC, false);
+    }
+
+    /**
+     * Test create when table doesn't exist for REPLICATED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoTableReplicatedAtomicNear() throws Exception {
+        checkCreateNoTable(REPLICATED, ATOMIC, true);
+    }
+
+    /**
+     * Test create when table doesn't exist for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoTableReplicatedTransactional() throws Exception {
+        checkCreateNoTable(REPLICATED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test create when table doesn't exist for REPLICATED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoTableReplicatedTransactionalNear() throws Exception {
+        checkCreateNoTable(REPLICATED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Check create when table doesn't exist.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     * @throws Exception If failed.
+     */
+    private void checkCreateNoTable(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
+        initialize(mode, atomicityMode, near);
+
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         assertSchemaException(new RunnableX() {
@@ -141,11 +492,88 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test create when table doesn't exist.
+     * Test create when table doesn't exist for PARTITIONED ATOMIC cache.
      *
      * @throws Exception If failed.
      */
-    public void testCreateNoColumn() throws Exception {
+    public void testCreateNoColumnPartitionedAtomic() throws Exception {
+        checkCreateNoColumn(PARTITIONED, ATOMIC, false);
+    }
+
+    /**
+     * Test create when table doesn't exist for PARTITIONED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoColumnPartitionedAtomicNear() throws Exception {
+        checkCreateNoColumn(PARTITIONED, ATOMIC, true);
+    }
+
+    /**
+     * Test create when table doesn't exist for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoColumnPartitionedTransactional() throws Exception {
+        checkCreateNoColumn(PARTITIONED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test create when table doesn't exist for PARTITIONED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoColumnPartitionedTransactionalNear() throws Exception {
+        checkCreateNoColumn(PARTITIONED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Test create when table doesn't exist for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoColumnReplicatedAtomic() throws Exception {
+        checkCreateNoColumn(REPLICATED, ATOMIC, false);
+    }
+
+    /**
+     * Test create when table doesn't exist for REPLICATED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoColumnReplicatedAtomicNear() throws Exception {
+        checkCreateNoColumn(REPLICATED, ATOMIC, true);
+    }
+
+    /**
+     * Test create when table doesn't exist for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoColumnReplicatedTransactional() throws Exception {
+        checkCreateNoColumn(REPLICATED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test create when table doesn't exist for REPLICATED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateNoColumnReplicatedTransactionalNear() throws Exception {
+        checkCreateNoColumn(REPLICATED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Check create when table doesn't exist.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     * @throws Exception If failed.
+     */
+    private void checkCreateNoColumn(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
+        initialize(mode, atomicityMode, near);
+
         final QueryIndex idx = index(IDX_NAME_1, field(randomString()));
 
         assertSchemaException(new RunnableX() {
@@ -158,11 +586,89 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test index creation on aliased column.
+     * Test index creation on aliased column for PARTITIONED ATOMIC cache.
      *
      * @throws Exception If failed.
      */
-    public void testCreateColumnWithAlias() throws Exception {
+    public void testCreateColumnWithAliasPartitionedAtomic() throws Exception {
+        checkCreateColumnWithAlias(PARTITIONED, ATOMIC, false);
+    }
+
+    /**
+     * Test index creation on aliased column for PARTITIONED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateColumnWithAliasPartitionedAtomicNear() throws Exception {
+        checkCreateColumnWithAlias(PARTITIONED, ATOMIC, true);
+    }
+
+    /**
+     * Test index creation on aliased column for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateColumnWithAliasPartitionedTransactional() throws Exception {
+        checkCreateColumnWithAlias(PARTITIONED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test index creation on aliased column for PARTITIONED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateColumnWithAliasPartitionedTransactionalNear() throws Exception {
+        checkCreateColumnWithAlias(PARTITIONED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Test index creation on aliased column for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateColumnWithAliasReplicatedAtomic() throws Exception {
+        checkCreateColumnWithAlias(REPLICATED, ATOMIC, false);
+    }
+
+    /**
+     * Test index creation on aliased column for REPLICATED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateColumnWithAliasReplicatedAtomicNear() throws Exception {
+        checkCreateColumnWithAlias(REPLICATED, ATOMIC, true);
+    }
+
+    /**
+     * Test index creation on aliased column for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateColumnWithAliasReplicatedTransactional() throws Exception {
+        checkCreateColumnWithAlias(REPLICATED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test index creation on aliased column for REPLICATED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateColumnWithAliasReplicatedTransactionalNear() throws Exception {
+        checkCreateColumnWithAlias(REPLICATED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Check index creation on aliased column.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     * @throws Exception If failed.
+     */
+    private void checkCreateColumnWithAlias(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near)
+        throws Exception {
+        initialize(mode, atomicityMode, near);
+
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
                 QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_2));
@@ -184,11 +690,88 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test simple index drop.
+     * Test simple index drop for PARTITIONED ATOMIC cache.
      *
      * @throws Exception If failed.
      */
-    public void testDrop() throws Exception {
+    public void testDropPartitionedAtomic() throws Exception {
+        checkDrop(PARTITIONED, ATOMIC, false);
+    }
+
+    /**
+     * Test simple index drop for PARTITIONED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropPartitionedAtomicNear() throws Exception {
+        checkDrop(PARTITIONED, ATOMIC, true);
+    }
+
+    /**
+     * Test simple index drop for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropPartitionedTransactional() throws Exception {
+        checkDrop(PARTITIONED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test simple index drop for PARTITIONED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropPartitionedTransactionalNear() throws Exception {
+        checkDrop(PARTITIONED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Test simple index drop for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropReplicatedAtomic() throws Exception {
+        checkDrop(REPLICATED, ATOMIC, false);
+    }
+
+    /**
+     * Test simple index drop for REPLICATED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropReplicatedAtomicNear() throws Exception {
+        checkDrop(REPLICATED, ATOMIC, true);
+    }
+
+    /**
+     * Test simple index drop for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropReplicatedTransactional() throws Exception {
+        checkDrop(REPLICATED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test simple index drop for REPLICATED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropReplicatedTransactionalNear() throws Exception {
+        checkDrop(REPLICATED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Check simple index drop.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     * @throws Exception If failed.
+     */
+    public void checkDrop(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
+        initialize(mode, atomicityMode, near);
+
         QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
@@ -209,11 +792,88 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test drop when there is no index.
+     * Test drop when there is no index for PARTITIONED ATOMIC cache.
      *
      * @throws Exception If failed.
      */
-    public void testDropNoIndex() throws Exception {
+    public void testDropNoIndexPartitionedAtomic() throws Exception {
+        checkDropNoIndex(PARTITIONED, ATOMIC, false);
+    }
+
+    /**
+     * Test drop when there is no index for PARTITIONED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoIndexPartitionedAtomicNear() throws Exception {
+        checkDropNoIndex(PARTITIONED, ATOMIC, true);
+    }
+
+    /**
+     * Test drop when there is no index for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoIndexPartitionedTransactional() throws Exception {
+        checkDropNoIndex(PARTITIONED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test drop when there is no index for PARTITIONED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoIndexPartitionedTransactionalNear() throws Exception {
+        checkDropNoIndex(PARTITIONED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Test drop when there is no index for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoIndexReplicatedAtomic() throws Exception {
+        checkDropNoIndex(REPLICATED, ATOMIC, false);
+    }
+
+    /**
+     * Test drop when there is no index for REPLICATED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoIndexReplicatedAtomicNear() throws Exception {
+        checkDropNoIndex(REPLICATED, ATOMIC, true);
+    }
+
+    /**
+     * Test drop when there is no index for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoIndexReplicatedTransactional() throws Exception {
+        checkDropNoIndex(REPLICATED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test drop when there is no index for REPLICATED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoIndexReplicatedTransactionalNear() throws Exception {
+        checkDropNoIndex(REPLICATED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Check drop when there is no index.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     * @throws Exception If failed.
+     */
+    private void checkDropNoIndex(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
+        initialize(mode, atomicityMode, near);
+
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
                 queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false).get();
@@ -225,11 +885,90 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test drop when cache doesn't exist.
+     * Test drop when cache doesn't exist for PARTITIONED ATOMIC cache.
      *
      * @throws Exception If failed.
      */
-    public void testDropNoCache() throws Exception {
+    public void testDropNoCachePartitionedAtomic() throws Exception {
+        checkDropNoCache(PARTITIONED, ATOMIC, false);
+    }
+
+    /**
+     * Test drop when cache doesn't exist for PARTITIONED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoCachePartitionedAtomicNear() throws Exception {
+        checkDropNoCache(PARTITIONED, ATOMIC, true);
+    }
+
+    /**
+     * Test drop when cache doesn't exist for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoCachePartitionedTransactional() throws Exception {
+        checkDropNoCache(PARTITIONED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test drop when cache doesn't exist for PARTITIONED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoCachePartitionedTransactionalNear() throws Exception {
+        checkDropNoCache(PARTITIONED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Test drop when cache doesn't exist for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoCacheReplicatedAtomic() throws Exception {
+        checkDropNoCache(REPLICATED, ATOMIC, false);
+    }
+
+    /**
+     * Test drop when cache doesn't exist for REPLICATED ATOMIC cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoCacheReplicatedAtomicNear() throws Exception {
+        checkDropNoCache(REPLICATED, ATOMIC, true);
+    }
+
+    /**
+     * Test drop when cache doesn't exist for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoCacheReplicatedTransactional() throws Exception {
+        checkDropNoCache(REPLICATED, TRANSACTIONAL, false);
+    }
+
+    /**
+     * Test drop when cache doesn't exist for REPLICATED TRANSACTIONAL cache with near cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropNoCacheReplicatedTransactionalNear() throws Exception {
+        checkDropNoCache(REPLICATED, TRANSACTIONAL, true);
+    }
+
+    /**
+     * Check drop when cache doesn't exist.
+     *
+     * Check drop when there is no index.
+     *
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @param near Near flag.
+     * @throws Exception If failed.
+     */
+    private void checkDropNoCache(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
+        initialize(mode, atomicityMode, near);
+
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
                 queryProcessor(node()).dynamicIndexDrop(randomString(), "my_idx", false).get();
@@ -277,21 +1016,21 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      */
     private void assertSimpleIndexOperations(String sql) {
         for (Ignite node : Ignition.allGrids())
-            assertSqlSimpleData((IgniteEx)node, sql, KEY_BEFORE - SQL_SIMPLE_ARG);
+            assertSqlSimpleData(node, sql, KEY_BEFORE - SQL_SIMPLE_ARG);
 
         put(node(), KEY_BEFORE, KEY_AFTER);
 
         for (Ignite node : Ignition.allGrids())
-            assertSqlSimpleData((IgniteEx)node, sql, KEY_AFTER - SQL_SIMPLE_ARG);
+            assertSqlSimpleData(node, sql, KEY_AFTER - SQL_SIMPLE_ARG);
 
         remove(node(), 0, KEY_BEFORE);
 
         for (Ignite node : Ignition.allGrids())
-            assertSqlSimpleData((IgniteEx)node, sql, KEY_AFTER - KEY_BEFORE);
+            assertSqlSimpleData(node, sql, KEY_AFTER - KEY_BEFORE);
 
         remove(node(), KEY_BEFORE, KEY_AFTER);
 
         for (Ignite node : Ignition.allGrids())
-            assertSqlSimpleData((IgniteEx)node, sql, 0);
+            assertSqlSimpleData(node, sql, 0);
     }
 }
