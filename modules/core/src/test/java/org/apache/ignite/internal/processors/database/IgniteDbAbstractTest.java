@@ -74,8 +74,6 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         else
             dbCfg.setPageSize(1024);
 
-        dbCfg.setPageCacheSize(200 * 1024 * 1024);
-
         configure(dbCfg);
 
         cfg.setMemoryConfiguration(dbCfg);

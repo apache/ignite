@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
@@ -67,11 +66,6 @@ public class CacheNearDisabledAtomicInvokeRestartSelfTest extends CacheAbstractR
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CacheAtomicWriteOrderMode.PRIMARY;
     }
 
     /** */

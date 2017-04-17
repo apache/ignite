@@ -61,9 +61,8 @@
         </file>
 
         <file>
-            <source>examples/schema-import/pom-standalone.xml</source>
-            <outputDirectory>/examples/schema-import</outputDirectory>
-            <destName>pom.xml</destName>
+            <source>config/dotnet/default-dotnet.xml</source>
+            <outputDirectory>/config/dotnet</outputDirectory>
         </file>
     </files>
 
@@ -173,6 +172,24 @@
             <directory>modules/clients/target/cppdoc/html</directory>
             <outputDirectory>/platforms/cpp/docs</outputDirectory>
         </fileSet>
+		
+        <!-- Move CPP binaries. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/bin</directory>
+            <outputDirectory>/platforms/cpp/bin</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP binaries. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/bin</directory>
+            <outputDirectory>/platforms/cpp/bin</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP binaries. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/bin</directory>
+            <outputDirectory>/platforms/cpp/bin</outputDirectory>
+        </fileSet>
 
         <!-- Other files. -->
         <fileSet>
@@ -204,9 +221,6 @@
                 <include>rest/**</include>
                 <include>memcached/**</include>
                 <include>redis/**</include>
-                <include>schema-import/src/**</include>
-                <include>schema-import/bin/**</include>
-                <include>schema-import/README.txt</include>
             </includes>
         </fileSet>
 

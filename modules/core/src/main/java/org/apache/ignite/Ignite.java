@@ -65,16 +65,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface Ignite extends AutoCloseable {
     /**
-     * Gets the name of the grid this grid instance (and correspondingly its local node) belongs to.
-     * Note that single Java VM can have multiple grid instances all belonging to different grids. Grid
-     * name allows to indicate to what grid this particular grid instance (i.e. grid runtime and its
-     * local node) belongs to.
+     * Gets the name of the Ignite instance.
+     * The name allows having multiple Ignite instances with different names within the same Java VM.
      * <p>
-     * If default grid instance is used, then
-     * {@code null} is returned. Refer to {@link Ignition} documentation
-     * for information on how to start named grids.
+     * If default Ignite instance is used, then {@code null} is returned.
+     * Refer to {@link Ignition} documentation for information on how to start named ignite Instances.
      *
-     * @return Name of the grid, or {@code null} for default grid.
+     * @return Name of the Ignite instance, or {@code null} for default Ignite instance.
      */
     public String name();
 
@@ -527,6 +524,7 @@ public interface Ignite extends AutoCloseable {
      *      all threads on other nodes waiting to acquire lock are interrupted.
      * @param fair If {@code True}, fair lock will be created.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     *      Will re-create lock if the node that stored the lock left topology and there are no backups left.
      * @return ReentrantLock for the given name.
      * @throws IgniteException If reentrant lock could not be fetched or created.
      */
@@ -581,7 +579,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Closes {@code this} instance of grid. This method is identical to calling
-     * {@link G#stop(String, boolean) G.stop(gridName, true)}.
+     * {@link G#stop(String, boolean) G.stop(igniteInstanceName, true)}.
      * <p>
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.
@@ -617,4 +615,12 @@ public interface Ignite extends AutoCloseable {
      * Clears partition's lost state and moves caches to a normal mode.
      */
     public void resetLostPartitions(Collection<String> cacheNames);
+
+
+    /**
+     * Returns collection {@link MemoryMetrics} objects providing information about memory usage in current Ignite instance.
+     *
+     * @return Collection of {@link MemoryMetrics}
+     */
+    public Collection<MemoryMetrics> memoryMetrics();
 }

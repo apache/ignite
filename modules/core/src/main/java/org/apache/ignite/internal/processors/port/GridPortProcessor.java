@@ -193,7 +193,7 @@ public class GridPortProcessor extends GridProcessorAdapter {
         }
 
         X.println(">>>");
-        X.println(">>> Task session processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Task session processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  recsSize: " + recsSize);
         X.println(">>>  lsnrsSize: " + lsnrsSize);
     }

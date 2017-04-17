@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -37,7 +36,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
 /**
  * Implementation of concurrent cache map.
  */
-public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
+public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     /** Default load factor. */
     private static final float DFLT_LOAD_FACTOR = 0.75f;
 
@@ -52,9 +51,6 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
     /** Cache context. */
     private final GridCacheContext ctx;
-
-    /** Public size counter. */
-    private final AtomicInteger pubSize = new AtomicInteger();
 
     /**
      * Creates a new, empty map with the specified initial
@@ -113,109 +109,163 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
         KeyCacheObject key,
         @Nullable final CacheObject val,
         final boolean create,
-        final boolean touch)
-    {
+        final boolean touch) {
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
         GridCacheMapEntry created0 = null;
         GridCacheMapEntry doomed = null;
 
         boolean done = false;
+        boolean reserved = false;
+        int sizeChange = 0;
 
-        while (!done) {
-            GridCacheMapEntry entry = map.get(key);
-            created = null;
-            doomed = null;
+        try {
+            while (!done) {
+                GridCacheMapEntry entry = map.get(key);
+                created = null;
+                doomed = null;
 
-            if (entry == null) {
-                if (create) {
-                    if (created0 == null)
-                        created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
-
-                    cur = created = created0;
-
-                    done = map.putIfAbsent(created.key(), created) == null;
-                }
-                else
-                    done = true;
-            }
-            else {
-                if (entry.obsolete()) {
-                    doomed = entry;
-
+                if (entry == null) {
                     if (create) {
-                        if (created0 == null)
+                        if (created0 == null) {
+                            if (!reserved) {
+                                if (!reserve())
+                                    return null;
+
+                                reserved = true;
+                            }
+
                             created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                        }
 
                         cur = created = created0;
 
-                        done = map.replace(entry.key(), doomed, created);
+                        done = map.putIfAbsent(created.key(), created) == null;
                     }
                     else
-                        done = map.remove(entry.key(), doomed);
+                        done = true;
                 }
                 else {
-                    cur = entry;
+                    if (entry.obsolete()) {
+                        doomed = entry;
 
-                    done = true;
+                        if (create) {
+                            if (created0 == null) {
+                                if (!reserved) {
+                                    if (!reserve())
+                                        return null;
+
+                                    reserved = true;
+                                }
+
+                                created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                            }
+
+                            cur = created = created0;
+
+                            done = map.replace(entry.key(), doomed, created);
+                        }
+                        else
+                            done = map.remove(entry.key(), doomed);
+                    }
+                    else {
+                        cur = entry;
+
+                        done = true;
+                    }
+                }
+            }
+
+            sizeChange = 0;
+
+            if (doomed != null) {
+                synchronized (doomed) {
+                    if (!doomed.deleted())
+                        sizeChange--;
+                }
+
+                if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
+                    ctx.events().addEvent(doomed.partition(),
+                        doomed.key(),
+                        ctx.localNodeId(),
+                        (IgniteUuid)null,
+                        null,
+                        EVT_CACHE_ENTRY_DESTROYED,
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        null,
+                        null,
+                        true);
+            }
+
+            if (created != null) {
+                sizeChange++;
+
+                if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
+                    ctx.events().addEvent(created.partition(),
+                        created.key(),
+                        ctx.localNodeId(),
+                        (IgniteUuid)null,
+                        null,
+                        EVT_CACHE_ENTRY_CREATED,
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        null,
+                        null,
+                        true);
+
+                if (touch)
+                    ctx.evicts().touch(
+                        cur,
+                        topVer);
+            }
+
+            assert Math.abs(sizeChange) <= 1;
+
+            return cur;
+        }
+        finally {
+            if (reserved)
+                release(sizeChange, cur);
+            else {
+                if (sizeChange != 0) {
+                    assert sizeChange == -1;
+
+                    decrementPublicSize(cur);
                 }
             }
         }
+    }
 
-        int sizeChange = 0;
+    /**
+     *
+     */
+    protected boolean reserve() {
+        return true;
+    }
 
-        if (doomed != null) {
-            synchronized (doomed) {
-                if (!doomed.deleted())
-                    sizeChange--;
-            }
+    /**
+     *
+     */
+    protected void release() {
+        // No-op.
+    }
 
-            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
-                ctx.events().addEvent(doomed.partition(),
-                    doomed.key(),
-                    ctx.localNodeId(),
-                    (IgniteUuid)null,
-                    null,
-                    EVT_CACHE_ENTRY_DESTROYED,
-                    null,
-                    false,
-                    null,
-                    false,
-                    null,
-                    null,
-                    null,
-                    true);
-        }
-
-        if (created != null) {
-            sizeChange++;
-
-            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
-                ctx.events().addEvent(created.partition(),
-                    created.key(),
-                    ctx.localNodeId(),
-                    (IgniteUuid)null,
-                    null,
-                    EVT_CACHE_ENTRY_CREATED,
-                    null,
-                    false,
-                    null,
-                    false,
-                    null,
-                    null,
-                    null,
-                    true);
-
-            if (touch)
-                ctx.evicts().touch(
-                    cur,
-                    topVer);
-        }
-
-        if (sizeChange != 0)
-            pubSize.addAndGet(sizeChange);
-
-        return cur;
+    /**
+     * @param sizeChange Size delta.
+     * @param e Map entry.
+     */
+    protected void release(int sizeChange, GridCacheEntryEx e) {
+        if (sizeChange == 1)
+            incrementPublicSize(e);
+        else if (sizeChange == -1)
+            decrementPublicSize(e);
     }
 
     /** {@inheritDoc} */
@@ -240,21 +290,6 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     /** {@inheritDoc} */
     @Override public int size() {
         return map.size();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int publicSize() {
-        return pubSize.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void incrementPublicSize(GridCacheEntryEx e) {
-        pubSize.incrementAndGet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void decrementPublicSize(GridCacheEntryEx e) {
-        pubSize.decrementAndGet();
     }
 
     /** {@inheritDoc} */
@@ -305,16 +340,6 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
         };
 
         return F.viewReadOnly(map.values(), F.<GridCacheMapEntry>identity(), p);
-    }
-
-    /** {@inheritDoc} */
-    @Deprecated @Nullable @Override public GridCacheMapEntry randomEntry() {
-        Iterator<GridCacheMapEntry> iterator = map.values().iterator();
-
-        if (iterator.hasNext())
-            return iterator.next();
-
-        return null;
     }
 
     /** {@inheritDoc} */

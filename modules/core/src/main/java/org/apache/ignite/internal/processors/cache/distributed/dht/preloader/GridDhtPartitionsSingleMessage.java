@@ -48,7 +48,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Local partitions. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, GridDhtPartitionMap2> parts;
+    private Map<Integer, GridDhtPartitionMap> parts;
 
     /** */
     @GridDirectMap(keyType = Integer.class, valueType = Integer.class)
@@ -123,7 +123,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param locMap Local partition map.
      * @param dupDataCache Optional ID of cache with the same partition state map.
      */
-    public void addLocalPartitionMap(int cacheId, GridDhtPartitionMap2 locMap, @Nullable Integer dupDataCache) {
+    public void addLocalPartitionMap(int cacheId, GridDhtPartitionMap locMap, @Nullable Integer dupDataCache) {
         if (parts == null)
             parts = new HashMap<>();
 
@@ -206,7 +206,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /**
      * @return Local partitions.
      */
-    public Map<Integer, GridDhtPartitionMap2> partitions() {
+    public Map<Integer, GridDhtPartitionMap> partitions() {
         if (parts == null)
             parts = new HashMap<>();
 
@@ -319,13 +319,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             assert parts != null;
 
             for (Map.Entry<Integer, Integer> e : dupPartsData.entrySet()) {
-                GridDhtPartitionMap2 map1 = parts.get(e.getKey());
+                GridDhtPartitionMap map1 = parts.get(e.getKey());
 
                 assert map1 != null : e.getKey();
                 assert F.isEmpty(map1.map());
                 assert !map1.hasMovingPartitions();
 
-                GridDhtPartitionMap2 map2 = parts.get(e.getValue());
+                GridDhtPartitionMap map2 = parts.get(e.getValue());
 
                 assert map2 != null : e.getValue();
                 assert map2.map() != null;
@@ -457,7 +457,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 47;
     }
 

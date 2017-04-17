@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Tests.Log
             Assert.Throws<IgniteException>(() =>
                 Ignition.Start(new IgniteConfiguration(GetConfigWithLogger())
                 {
-                    LifecycleBeans = new[] {new FailBean()}
+                    LifecycleHandlers = new[] {new FailBean()}
                 }));
 
             var err = TestLogger.Entries.First(x => x.Level == LogLevel.Error);
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             // Start 2 nodes: PlatformNativeException does not occur in local scenario
             using (var ignite = Ignition.Start(GetConfigWithLogger()))
-            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "1"}))
+            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = "1"}))
             {
                 var compute = ignite.GetCluster().ForRemotes().GetCompute();
 
@@ -426,7 +426,7 @@ namespace Apache.Ignite.Core.Tests.Log
         /// <summary>
         /// Failing lifecycle bean.
         /// </summary>
-        private class FailBean : ILifecycleBean
+        private class FailBean : ILifecycleHandler
         {
             public void OnLifecycleEvent(LifecycleEventType evt)
             {

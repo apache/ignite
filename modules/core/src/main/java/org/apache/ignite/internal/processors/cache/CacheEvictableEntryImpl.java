@@ -91,7 +91,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
             return val != null ? val.<V>value(cached.context().cacheObjectContext(), false) : null;
         }
-        catch (GridCacheEntryRemovedException ignore) {
+        catch (GridCacheEntryRemovedException ignored) {
             return null;
         }
         catch (IgniteCheckedException e) {
@@ -117,7 +117,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
             return valBytes == null ? keyBytes.length : keyBytes.length + valBytes.length;
         }
-        catch (GridCacheEntryRemovedException e) {
+        catch (GridCacheEntryRemovedException ignored) {
             return 0;
         }
         catch (IgniteCheckedException e) {

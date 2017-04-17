@@ -98,9 +98,9 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // Execute query on node and return first page to browser.
-                socket.on('node:query', (nid, cacheName, query, distributedJoins, local, pageSize, cb) => {
+                socket.on('node:query', (nid, cacheName, query, distributedJoins, enforceJoinOrder, local, pageSize, cb) => {
                     agentMgr.findAgent(accountId())
-                        .then((agent) => agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, local, pageSize))
+                        .then((agent) => agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, enforceJoinOrder, local, pageSize))
                         .then((res) => cb(null, res))
                         .catch((err) => cb(_errorToJson(err)));
                 });
@@ -113,34 +113,33 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
+                const fetchResult = (acc) => {
+                    if (!acc.hasMore)
+                        return acc;
+
+                    return agent.queryFetch(demo, acc.responseNodeId, acc.queryId, pageSize)
+                        .then(({result}) => {
+                            acc.rows = acc.rows.concat(result.rows);
+                            acc.hasMore = result.hasMore;
+
+                            return fetchResult(acc);
+                        });
+                };
+
                 // Execute query on node and return full result to browser.
-                socket.on('node:query:getAll', (nid, cacheName, query, distributedJoins, local, cb) => {
+                socket.on('node:query:getAll', (nid, cacheName, query, distributedJoins, enforceJoinOrder, local, cb) => {
                     // Set page size for query.
                     const pageSize = 1024;
 
                     agentMgr.findAgent(accountId())
                         .then((agent) => {
-                            const firstPage = agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, local, pageSize)
+                            const firstPage = agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, enforceJoinOrder, local, pageSize)
                                 .then(({result}) => {
-                                    if (result.key)
-                                        return Promise.reject(result.key);
+                                    if (result.error)
+                                        return Promise.reject(result.error);
 
-                                    return result.value;
+                                    return result.result;
                                 });
-
-                            const fetchResult = (acc) => {
-                                if (!acc.hasMore)
-                                    return acc;
-
-                                return agent.queryFetch(demo, acc.responseNodeId, acc.queryId, pageSize)
-                                    .then(({result}) => {
-                                        acc.rows = acc.rows.concat(result.rows);
-
-                                        acc.hasMore = result.hasMore;
-
-                                        return fetchResult(acc);
-                                    });
-                            };
 
                             return firstPage
                                 .then(fetchResult);
@@ -172,6 +171,64 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                             cb(_errorToJson(data.error));
                         })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Collect running queries from all nodes in grid.
+                socket.on('node:query:running', (duration, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.queryCollectRunning(demo, duration))
+                        .then((data) => {
+
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Cancel running query by query id on node.
+                socket.on('node:query:cancel', (nid, queryId, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.queryCancel(demo, nid, queryId))
+                        .then((data) => {
+
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Execute scan query on node and return first page to browser.
+                socket.on('node:scan', (nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.queryScan(demo, nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize))
+                        .then((res) => cb(null, res))
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Execute scan on node and return full result to browser.
+                socket.on('node:scan:getAll', (nid, cacheName, filter, regEx, caseSensitive, near, local, cb) => {
+                    // Set page size for query.
+                    const pageSize = 1024;
+
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => {
+                            const firstPage = agent.queryScan(demo, nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize)
+                                .then(({result}) => {
+                                    if (result.error)
+                                        return Promise.reject(result.error);
+
+                                    return result.result;
+                                });
+
+                            return firstPage
+                                .then(fetchResult);
+                        })
+                        .then((res) => cb(null, res))
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
@@ -311,19 +368,6 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
-                // Swap backups specified caches on specified node and return result to browser.
-                socket.on('node:cache:swap:backups', (nid, cacheNames, cb) => {
-                    agentMgr.findAgent(accountId())
-                        .then((agent) => agent.cacheSwapBackups(demo, nid, cacheNames))
-                        .then((data) => {
-                            if (data.finished)
-                                return cb(null, data.result);
-
-                            cb(_errorToJson(data.error));
-                        })
-                        .catch((err) => cb(_errorToJson(err)));
-                });
-
                 // Reset metrics specified cache on specified node and return result to browser.
                 socket.on('node:cache:reset:metrics', (nid, cacheName, cb) => {
                     agentMgr.findAgent(accountId())
@@ -446,6 +490,32 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 socket.on('node:restart', (nids, cb) => {
                     agentMgr.findAgent(accountId())
                         .then((agent) => agent.restartNodes(demo, nids))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Collect service information from grid.
+                socket.on('service:collect', (nid, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.services(demo, nid))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Collect service information from grid.
+                socket.on('service:cancel', (nid, name, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.serviceCancel(demo, nid, name))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);

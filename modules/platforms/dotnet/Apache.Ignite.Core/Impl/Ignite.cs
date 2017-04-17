@@ -39,6 +39,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
@@ -77,8 +78,8 @@ namespace Apache.Ignite.Core.Impl
         /** Cached proxy. */
         private readonly IgniteProxy _proxy;
 
-        /** Lifecycle beans. */
-        private readonly IList<LifecycleBeanHolder> _lifecycleBeans;
+        /** Lifecycle handlers. */
+        private readonly IList<LifecycleHandlerHolder> _lifecycleHandlers;
 
         /** Local node. */
         private IClusterNode _locNode;
@@ -97,6 +98,9 @@ namespace Apache.Ignite.Core.Impl
         private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
             new TaskCompletionSource<bool>();
 
+        /** Plugin processor. */
+        private readonly PluginProcessor _pluginProcessor;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -104,22 +108,22 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="name">Grid name.</param>
         /// <param name="proc">Interop processor.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="lifecycleBeans">Lifecycle beans.</param>
+        /// <param name="lifecycleHandlers">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
         public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh,
-            IList<LifecycleBeanHolder> lifecycleBeans, UnmanagedCallbacks cbs)
+            IList<LifecycleHandlerHolder> lifecycleHandlers, UnmanagedCallbacks cbs)
         {
             Debug.Assert(cfg != null);
             Debug.Assert(proc != null);
             Debug.Assert(marsh != null);
-            Debug.Assert(lifecycleBeans != null);
+            Debug.Assert(lifecycleHandlers != null);
             Debug.Assert(cbs != null);
 
             _cfg = cfg;
             _name = name;
             _proc = proc;
             _marsh = marsh;
-            _lifecycleBeans = lifecycleBeans;
+            _lifecycleHandlers = lifecycleHandlers;
             _cbs = cbs;
 
             marsh.Ignite = this;
@@ -142,6 +146,8 @@ namespace Apache.Ignite.Core.Impl
             _clientReconnectTaskCompletionSource.SetResult(false);
 
             SetCompactFooter();
+
+            _pluginProcessor = new PluginProcessor(this);
         }
 
         /// <summary>
@@ -151,7 +157,7 @@ namespace Apache.Ignite.Core.Impl
         {
             if (!string.IsNullOrEmpty(_cfg.SpringConfigUrl))
             {
-                // If there is a Spring config, use setting from Spring, 
+                // If there is a Spring config, use setting from Spring,
                 // since we ignore .NET config in legacy mode.
                 var cfg0 = GetConfiguration().BinaryConfiguration;
 
@@ -165,7 +171,9 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnStart()
         {
-            foreach (var lifecycleBean in _lifecycleBeans)
+            PluginProcessor.OnIgniteStart();
+
+            foreach (var lifecycleBean in _lifecycleHandlers)
                 lifecycleBean.OnStart(this);
         }
 
@@ -381,7 +389,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void AfterNodeStop()
         {
-            foreach (var bean in _lifecycleBeans)
+            foreach (var bean in _lifecycleHandlers)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
 
             var handler = Stopped;
@@ -416,7 +424,7 @@ namespace Apache.Ignite.Core.Impl
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var writer = Marshaller.StartMarshal(stream);
+                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
 
@@ -455,7 +463,8 @@ namespace Apache.Ignite.Core.Impl
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var writer = Marshaller.StartMarshal(stream);
+                // Use system marshaller: full footers, always unregistered mode.
+                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
 
@@ -631,6 +640,8 @@ namespace Apache.Ignite.Core.Impl
 
                 writer.Write(initialValue);
 
+                Marshaller.FinishMarshal(writer);
+
                 var memPtr = stream.SynchronizeOutput();
 
                 return UU.ProcessorAtomicReference(_proc, name, memPtr, true);
@@ -646,7 +657,7 @@ namespace Apache.Ignite.Core.Impl
 
                 stream.SynchronizeInput();
 
-                return new IgniteConfiguration(_marsh.StartUnmarshal(stream));
+                return new IgniteConfiguration(BinaryUtils.Marshaller.StartUnmarshal(stream), _cfg);
             }
         }
 
@@ -698,6 +709,14 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
 
+        /** <inheritdoc /> */
+        public T GetPlugin<T>(string name) where T : class
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            return PluginProcessor.GetProvider(name).GetPlugin<T>();
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>
@@ -708,7 +727,7 @@ namespace Apache.Ignite.Core.Impl
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                var writer = Marshaller.StartMarshal(stream);
+                var writer = BinaryUtils.Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
 
@@ -817,6 +836,14 @@ namespace Apache.Ignite.Core.Impl
             var handler = ClientReconnected;
             if (handler != null)
                 handler.Invoke(this, new ClientReconnectEventArgs(clusterRestarted));
+        }
+
+        /// <summary>
+        /// Gets the plugin processor.
+        /// </summary>
+        internal PluginProcessor PluginProcessor
+        {
+            get { return _pluginProcessor; }
         }
     }
 }

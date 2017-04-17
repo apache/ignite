@@ -73,7 +73,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
             !cctx.config().isEagerTtl() ||
             CU.isAtomicsCache(cctx.name()) ||
-            CU.isMarshallerCache(cctx.name()) ||
             CU.isUtilityCache(cctx.name()) ||
             (cctx.kernalContext().clientNode() && cctx.config().getNearConfiguration() == null);
 
@@ -127,7 +126,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     @Override public void printMemoryStats() {
         try {
             X.println(">>>");
-            X.println(">>> TTL processor memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+            X.println(">>> TTL processor memory stats [igniteInstanceName=" + cctx.igniteInstanceName() +
+            ", cache=" + cctx.name() + ']');
             X.println(">>>   pendingEntriesSize: " + pendingSize());
         }
         catch (IgniteCheckedException e) {

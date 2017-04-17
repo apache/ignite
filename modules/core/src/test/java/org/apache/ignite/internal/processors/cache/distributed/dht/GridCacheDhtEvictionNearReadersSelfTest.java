@@ -63,8 +63,8 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -76,19 +76,15 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setEvictSynchronized(true);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setBackups(1);
-
-        // Set eviction queue size explicitly.
-        cacheCfg.setEvictSynchronizedKeyBufferSize(1);
-        cacheCfg.setEvictMaxOverflowRatio(0);
 
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxSize(10);
 
         cacheCfg.setEvictionPolicy(plc);
+        cacheCfg.setOnheapCacheEnabled(true);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 

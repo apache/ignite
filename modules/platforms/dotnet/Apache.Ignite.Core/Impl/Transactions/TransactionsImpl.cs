@@ -63,6 +63,8 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** */
         private const int OpResetMetrics = 11;
 
+        /** */
+        private const int OpPrepare = 12;
 
         /** */
         private readonly TransactionConcurrency _dfltConcurrency;
@@ -174,6 +176,14 @@ namespace Apache.Ignite.Core.Impl.Transactions
         public TimeSpan DefaultTimeout
         {
             get { return _dfltTimeout; }
+        }
+
+        /// <summary>
+        /// Executes prepare step of the two phase commit.
+        /// </summary>
+        internal void TxPrepare(TransactionImpl tx)
+        {
+            DoOutInOp(OpPrepare, tx.Id);
         }
 
         /// <summary>

@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -85,8 +85,8 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     private boolean nearEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -139,11 +139,15 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         Marshaller marsh = new OptimizedMarshaller();
 
         marsh.setContext(new MarshallerContext() {
-            @Override public boolean registerClass(int id, Class cls) {
+            @Override public boolean registerClassName(byte platformId, int typeId, String clsName) {
                 return true;
             }
 
-            @Override public Class getClass(int id, ClassLoader ldr) {
+            @Override public Class getClass(int typeId, ClassLoader ldr) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public String getClassName(byte platformId, int typeId) {
                 throw new UnsupportedOperationException();
             }
 

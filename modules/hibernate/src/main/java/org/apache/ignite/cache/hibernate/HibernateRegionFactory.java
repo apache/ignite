@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.G;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
+import org.hibernate.cache.spi.CacheKey;
 import org.hibernate.cache.spi.CollectionRegion;
 import org.hibernate.cache.spi.EntityRegion;
 import org.hibernate.cache.spi.NaturalIdRegion;
@@ -52,9 +53,9 @@ import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
  * Note that before region factory is started you need to start properly configured Ignite node in the same JVM.
  * For example to start Ignite node one of loader provided in {@code org.apache.ignite.grid.startup} package can be used.
  * <p>
- * Name of grid to be used for region factory must be specified as following Hibernate property:
+ * Name of Ignite instance to be used for region factory must be specified as following Hibernate property:
  * <pre name="code" class="brush: xml; gutter: false;">
- * org.apache.ignite.hibernate.grid_name=&lt;grid name&gt;
+ * org.apache.ignite.hibernate.ignite_instance_name=&lt;Ignite instance name&gt;
  * </pre>
  * Each Hibernate cache region must be associated with some {@link IgniteInternalCache}, by default it is assumed that
  * for each cache region there is a {@link IgniteInternalCache} with the same name. Also it is possible to define
@@ -69,8 +70,17 @@ public class HibernateRegionFactory implements RegionFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Hibernate L2 cache grid name property name. */
+    /**
+     * Hibernate L2 cache grid name property name.
+     *
+     * @deprecated Use {@link #IGNITE_INSTANCE_NAME_PROPERTY}.
+     *      If {@link #IGNITE_INSTANCE_NAME_PROPERTY} is specified it takes precedence.
+     */
+    @Deprecated
     public static final String GRID_NAME_PROPERTY = "org.apache.ignite.hibernate.grid_name";
+
+    /** Hibernate L2 cache Ignite instance name property name. */
+    public static final String IGNITE_INSTANCE_NAME_PROPERTY = "org.apache.ignite.hibernate.ignite_instance_name";
 
     /** Default cache property name. */
     public static final String DFLT_CACHE_NAME_PROPERTY = "org.apache.ignite.hibernate.default_cache";
@@ -88,7 +98,7 @@ public class HibernateRegionFactory implements RegionFactory {
     private Ignite ignite;
 
     /** Default cache. */
-    private IgniteInternalCache<Object, Object> dfltCache;
+    private HibernateCacheProxy dfltCache;
 
     /** Default region access type. */
     private AccessType dfltAccessType;
@@ -99,10 +109,30 @@ public class HibernateRegionFactory implements RegionFactory {
     /** Map needed to provide the same transaction context for different regions. */
     private final ThreadLocal threadLoc = new ThreadLocal();
 
+    /** Key transformer. */
+    private final HibernateKeyTransformer hibernate4transformer = new HibernateKeyTransformer() {
+        @Override public Object transform(Object key) {
+            if (key instanceof CacheKey) {
+                CacheKey cacheKey = (CacheKey)key;
+
+                return new HibernateKeyWrapper(
+                    cacheKey.getKey(),
+                    cacheKey.getEntityOrRoleName(),
+                    cacheKey.getTenantId()
+                );
+            }
+
+            return key;
+        }
+    };
+
     /** {@inheritDoc} */
     @Override public void start(Settings settings, Properties props) throws CacheException {
         String gridCfg = props.getProperty(GRID_CONFIG_PROPERTY);
-        String gridName = props.getProperty(GRID_NAME_PROPERTY);
+        String igniteInstanceName = props.getProperty(IGNITE_INSTANCE_NAME_PROPERTY);
+
+        if (igniteInstanceName == null)
+            igniteInstanceName = props.getProperty(GRID_NAME_PROPERTY);
 
         if (gridCfg != null) {
             try {
@@ -113,7 +143,7 @@ public class HibernateRegionFactory implements RegionFactory {
             }
         }
         else
-            ignite = Ignition.ignite(gridName);
+            ignite = Ignition.ignite(igniteInstanceName);
 
         String accessType = props.getProperty(DFLT_ACCESS_TYPE_PROPERTY, NONSTRICT_READ_WRITE.name());
 
@@ -138,20 +168,23 @@ public class HibernateRegionFactory implements RegionFactory {
         String dfltCacheName = props.getProperty(DFLT_CACHE_NAME_PROPERTY);
 
         if (dfltCacheName != null) {
-            dfltCache = ((IgniteKernal)ignite).getCache(dfltCacheName);
+            IgniteInternalCache<Object, Object> dfltCache = ((IgniteKernal)ignite).getCache(dfltCacheName);
 
             if (dfltCache == null)
                 throw new CacheException("Cache specified as default is not configured: " + dfltCacheName);
+
+            this.dfltCache = new HibernateCacheProxy(dfltCache, hibernate4transformer);
         }
 
         IgniteLogger log = ignite.log().getLogger(HibernateRegionFactory.class);
 
         if (log.isDebugEnabled())
-            log.debug("HibernateRegionFactory started [grid=" + gridName + ']');
+            log.debug("HibernateRegionFactory started [igniteInstanceName=" + igniteInstanceName + ']');
     }
 
     /** {@inheritDoc} */
     @Override public void stop() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -213,7 +246,7 @@ public class HibernateRegionFactory implements RegionFactory {
      * @return Cache for given region.
      * @throws CacheException If cache for given region is not configured.
      */
-    private IgniteInternalCache<Object, Object> regionCache(String regionName) throws CacheException {
+    private HibernateCacheProxy regionCache(String regionName) throws CacheException {
         String cacheName = regionCaches.get(regionName);
 
         if (cacheName == null) {
@@ -228,6 +261,6 @@ public class HibernateRegionFactory implements RegionFactory {
         if (cache == null)
             throw new CacheException("Cache '" + cacheName + "' for region '" + regionName + "' is not configured.");
 
-        return cache;
+        return new HibernateCacheProxy(cache, hibernate4transformer);
     }
 }

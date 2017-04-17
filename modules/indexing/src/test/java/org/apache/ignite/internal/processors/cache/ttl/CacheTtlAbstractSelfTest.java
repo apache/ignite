@@ -31,7 +31,6 @@ import javax.cache.integration.CompletionListenerFuture;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -71,20 +70,19 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     private static final long DEFAULT_TIME_TO_LIVE = 2000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(cacheMode());
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setMemoryMode(memoryMode());
-        ccfg.setOffHeapMaxMemory(0);
 
         LruEvictionPolicy plc = new LruEvictionPolicy();
         plc.setMaxSize(MAX_CACHE_SIZE);
 
         ccfg.setEvictionPolicy(plc);
+        ccfg.setOnheapCacheEnabled(true);
         ccfg.setIndexedTypes(Integer.class, Integer.class);
         ccfg.setBackups(2);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -123,11 +121,6 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
      * @return Atomicity mode.
      */
     protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     * @return Memory mode.
-     */
-    protected abstract CacheMemoryMode memoryMode();
 
     /**
      * @return Cache mode.
@@ -329,21 +322,9 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < gridCnt; ++i) {
             IgniteCache<Integer, Integer> cache = jcache(i);
 
-            log.info("Size [node=" + i +
-                ", heap=" + cache.localSize(PRIMARY, BACKUP, NEAR, ONHEAP) +
-                ", offheap=" + cache.localSize(PRIMARY, BACKUP, NEAR, OFFHEAP) + ']');
+            log.info("Size [node=" + i + ", " + cache.localSize(PRIMARY, BACKUP, NEAR) + ']');
 
-            if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED) {
-                assertEquals("Unexpected size, node: " + i, 0, cache.localSize(PRIMARY, BACKUP, NEAR, ONHEAP));
-                assertEquals("Unexpected size, node: " + i, size, cache.localSize(PRIMARY, BACKUP, NEAR, OFFHEAP));
-            }
-            else {
-                assertEquals("Unexpected size, node: " + i, size > MAX_CACHE_SIZE ? MAX_CACHE_SIZE : size,
-                    cache.localSize(PRIMARY, BACKUP, NEAR, ONHEAP));
-
-                assertEquals("Unexpected size, node: " + i,
-                    size > MAX_CACHE_SIZE ? size - MAX_CACHE_SIZE : 0, cache.localSize(PRIMARY, BACKUP, NEAR, OFFHEAP));
-            }
+            assertEquals("Unexpected size, node: " + i, size, cache.localSize(PRIMARY, BACKUP, NEAR));
 
             for (int key = 0; key < size; key++)
                 assertNotNull(cache.localPeek(key));

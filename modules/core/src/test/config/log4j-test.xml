@@ -102,9 +102,9 @@
     </category>
     -->
 
-    <!-- Enable GG database debugging. -->
-    <category name="org.gridgain.grid.internal.processors.cache.database">
-        <level value="DEBUG"/>
+    <!-- Disable all open source debugging. -->
+    <category name="org">
+        <level value="INFO"/>
     </category>
 
     <category name="org.eclipse.jetty">

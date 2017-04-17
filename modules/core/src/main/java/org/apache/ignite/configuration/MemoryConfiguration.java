@@ -22,29 +22,75 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Database configuration used to configure database.
+ * Page memory configuration of an Apache Ignite node.
+ *
+ * <p>It can be configured using {@link IgniteConfiguration} as follows:</p>
+ * <pre>
+ *     {@code
+ *     <property name="memoryConfiguration">
+ *         <bean class="org.apache.ignite.configuration.MemoryConfiguration">
+ *             <property name="systemCacheMemorySize" value="103833600"/>
+ *             <property name="defaultMemoryPolicyName" value="default_mem_plc"/>
+ *
+ *             <property name="memoryPolicies">
+ *                 <list>
+ *                     <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+ *                         <property name="name" value="default_mem_plc"/>
+ *                         <property name="size" value="103833600"/>
+ *                     </bean>
+ *                     <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+ *                         ...
+ *                     </bean>
+ *                 </list>
+ *             </property>
+ *         </bean>
+ *     </property>
+ *     }
+ * </pre>
  */
 public class MemoryConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default cache size is 1Gb. */
-    public static final long DFLT_PAGE_CACHE_SIZE = 1024 * 1024 * 1024;
+    /** Default MemoryPolicy size is 1GB. */
+    public static final long DFLT_MEMORY_POLICY_SIZE = 1024 * 1024 * 1024;
+
+    /** Default size of memory chunk for system cache is 100MB. */
+    public static final long DFLT_SYS_CACHE_MEM_SIZE = 100 * 1024 * 1024;
 
     /** Default page size. */
     public static final int DFLT_PAGE_SIZE = 2 * 1024;
 
+    /** Size of memory for system cache. */
+    private long sysCacheMemSize = DFLT_SYS_CACHE_MEM_SIZE;
+
     /** Page size. */
     private int pageSize = DFLT_PAGE_SIZE;
 
-    /** File cache allocation path. */
-    private String fileCacheAllocationPath;
-
-    /** Amount of memory allocated for the page cache. */
-    private long pageCacheSize = DFLT_PAGE_CACHE_SIZE;
-
     /** Concurrency level. */
     private int concLvl;
+
+    /** Name of MemoryPolicy to be used as default. */
+    private String dfltMemPlcName;
+
+    /** Memory policies. */
+    private MemoryPolicyConfiguration[] memPlcs;
+
+    /**
+     * @return memory size for system cache.
+     */
+    public long getSystemCacheMemorySize() {
+        return sysCacheMemSize;
+    }
+
+    /**
+     * @param sysCacheMemSize Memory size for system cache.
+     */
+    public MemoryConfiguration setSystemCacheMemorySize(long sysCacheMemSize) {
+        this.sysCacheMemSize = sysCacheMemSize;
+
+        return this;
+    }
 
     /**
      * @return Page size.
@@ -56,39 +102,41 @@ public class MemoryConfiguration implements Serializable {
     /**
      * @param pageSize Page size.
      */
-    public void setPageSize(int pageSize) {
+    public MemoryConfiguration setPageSize(int pageSize) {
         A.ensure(pageSize >= 1024 && pageSize <= 16 * 1024, "Page size must be between 1kB and 16kB.");
         A.ensure(U.isPow2(pageSize), "Page size must be a power of 2.");
 
         this.pageSize = pageSize;
+
+        return this;
     }
 
     /**
-     * @return File allocation path.
+     * @return array of MemoryPolicyConfiguration objects.
      */
-    public String getFileCacheAllocationPath() {
-        return fileCacheAllocationPath;
+    public MemoryPolicyConfiguration[] getMemoryPolicies() {
+        return memPlcs;
     }
 
     /**
-     * @param fileCacheAllocationPath File allocation path.
+     * @param memPlcs MemoryPolicyConfiguration instances.
      */
-    public void setFileCacheAllocationPath(String fileCacheAllocationPath) {
-        this.fileCacheAllocationPath = fileCacheAllocationPath;
+    public MemoryConfiguration setMemoryPolicies(MemoryPolicyConfiguration... memPlcs) {
+        this.memPlcs = memPlcs;
+
+        return this;
     }
 
     /**
-     * @return Page cache size, in bytes.
+     * @return default {@link MemoryPolicyConfiguration} instance.
      */
-    public long getPageCacheSize() {
-        return pageCacheSize;
-    }
+    public MemoryPolicyConfiguration createDefaultPolicyConfig() {
+        MemoryPolicyConfiguration memPlc = new MemoryPolicyConfiguration();
 
-    /**
-     * @param pageCacheSize Page cache size, in bytes.
-     */
-    public void setPageCacheSize(long pageCacheSize) {
-        this.pageCacheSize = pageCacheSize;
+        memPlc.setName(null);
+        memPlc.setSize(DFLT_MEMORY_POLICY_SIZE);
+
+        return memPlc;
     }
 
     /**
@@ -101,7 +149,25 @@ public class MemoryConfiguration implements Serializable {
     /**
      * @param concLvl Concurrency level.
      */
-    public void setConcurrencyLevel(int concLvl) {
+    public MemoryConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
+
+        return this;
+    }
+
+    /**
+     * @return Name of MemoryPolicy to be used as default.
+     */
+    public String getDefaultMemoryPolicyName() {
+        return dfltMemPlcName;
+    }
+
+    /**
+     * @param dfltMemPlcName Name of MemoryPolicy to be used as default.
+     */
+    public MemoryConfiguration setDefaultMemoryPolicyName(String dfltMemPlcName) {
+        this.dfltMemPlcName = dfltMemPlcName;
+
+        return this;
     }
 }

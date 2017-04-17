@@ -18,12 +18,17 @@
 import _ from 'lodash';
 import saver from 'file-saver';
 
+import summaryProjectStructureTemplateUrl from 'views/configuration/summary-project-structure.tpl.pug';
+
 const escapeFileName = (name) => name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
 
 export default [
-    '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteLoading', '$filter', 'IgniteConfigurationResource', 'JavaTypes', 'IgniteVersion', 'IgniteConfigurationGenerator', 'SpringTransformer', 'JavaTransformer', 'IgniteDockerGenerator', 'IgniteMavenGenerator', 'IgnitePropertiesGenerator', 'IgniteReadmeGenerator', 'IgniteFormUtils', 'IgniteSummaryZipper',
-    function($root, $scope, $http, LegacyUtils, Messages, Loading, $filter, Resource, JavaTypes, Version, generator, spring, java, docker, pom, propsGenerator, readme, FormUtils, SummaryZipper) {
+    '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteLoading', '$filter', 'IgniteConfigurationResource', 'JavaTypes', 'IgniteVersion', 'IgniteConfigurationGenerator', 'SpringTransformer', 'JavaTransformer', 'IgniteDockerGenerator', 'IgniteMavenGenerator', 'IgnitePropertiesGenerator', 'IgniteReadmeGenerator', 'IgniteFormUtils', 'IgniteSummaryZipper', 'IgniteActivitiesData',
+    function($root, $scope, $http, LegacyUtils, Messages, Loading, $filter, Resource, JavaTypes, Version, generator, spring, java, docker, pom, propsGenerator, readme, FormUtils, SummaryZipper, ActivitiesData) {
         const ctrl = this;
+
+        // Define template urls.
+        ctrl.summaryProjectStructureTemplateUrl = summaryProjectStructureTemplateUrl;
 
         $scope.ui = {
             isSafari: !!(/constructor/i.test(window.HTMLElement) || window.safari),
@@ -259,6 +264,9 @@ export default [
             if (cluster.discovery.kind === 'Jdbc' && cluster.discovery.Jdbc.dialect)
                 $scope.dialects[cluster.discovery.Jdbc.dialect] = true;
 
+            if (cluster.discovery.kind === 'Kubernetes')
+                resourcesFolder.children.push({ type: 'file', name: 'ignite-service.yaml' });
+
             _.forEach(cluster.caches, (cache) => {
                 if (cache.cacheStoreFactory) {
                     const store = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
@@ -303,6 +311,8 @@ export default [
             const cluster = $scope.cluster;
 
             $scope.isPrepareDownloading = true;
+
+            ActivitiesData.post({ action: '/configuration/download' });
 
             return new SummaryZipper({ cluster, data: ctrl.data || {}, IgniteDemoMode: $root.IgniteDemoMode })
                 .then((data) => {

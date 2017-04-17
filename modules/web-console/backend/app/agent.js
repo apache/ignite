@@ -24,7 +24,7 @@
  */
 module.exports = {
     implements: 'agent-manager',
-    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo']
+    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo', 'services/activities']
 };
 
 /**
@@ -35,9 +35,10 @@ module.exports = {
  * @param socketio
  * @param settings
  * @param mongo
+ * @param {ActivitiesService} activitiesService
  * @returns {AgentManager}
  */
-module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo) {
+module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo, activitiesService) {
     /**
      *
      */
@@ -226,31 +227,52 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
          * @param {String} cacheName Cache name.
          * @param {String} query Query.
          * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
+         * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
          * @param {Boolean} local Flag whether to execute query locally.
          * @param {int} pageSize Page size.
          * @returns {Promise}
          */
-        fieldsQuery(demo, nid, cacheName, query, nonCollocatedJoins, local, pageSize) {
+        fieldsQuery(demo, nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local, pageSize) {
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nid)
-                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryTask');
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryTask')
+                .addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArg')
+                .addParam('p4', cacheName)
+                .addParam('p5', query)
+                .addParam('p6', nonCollocatedJoins)
+                .addParam('p7', enforceJoinOrder)
+                .addParam('p8', local)
+                .addParam('p9', pageSize);
 
-            if (nonCollocatedJoins) {
-                cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArgV2')
-                    .addParam('p4', cacheName)
-                    .addParam('p5', query)
-                    .addParam('p6', true)
-                    .addParam('p7', local)
-                    .addParam('p8', pageSize);
-            }
-            else {
-                cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArg')
-                    .addParam('p4', cacheName)
-                    .addParam('p5', query)
-                    .addParam('p6', local)
-                    .addParam('p7', pageSize);
-            }
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @param {String} cacheName Cache name.
+         * @param {String} filter Filter text.
+         * @param {Boolean} regEx Flag whether filter by regexp.
+         * @param {Boolean} caseSensitive Case sensitive filtration.
+         * @param {Boolean} near Scan near cache.
+         * @param {Boolean} local Flag whether to execute query locally.
+         * @param {int} pageSize Page size.
+         * @returns {Promise}
+         */
+        queryScan(demo, nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorScanQueryTask')
+                .addParam('p3', 'org.apache.ignite.internal.visor.query.VisorScanQueryArg')
+                .addParam('p4', cacheName)
+                .addParam('p5', filter)
+                .addParam('p6', regEx)
+                .addParam('p7', caseSensitive)
+                .addParam('p8', near)
+                .addParam('p9', local)
+                .addParam('p10', pageSize);
 
             return this.executeRest(cmd);
         }
@@ -267,7 +289,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nid)
                 .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryNextPageTask')
-                .addParam('p3', 'org.apache.ignite.lang.IgniteBiTuple')
+                .addParam('p3', 'org.apache.ignite.lang.VisorQueryNextPageTaskArg')
                 .addParam('p4', 'java.lang.String')
                 .addParam('p5', 'java.lang.Integer')
                 .addParam('p6', queryId)
@@ -305,7 +327,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nids)
-                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheQueryDetailMetricsCollectorTask')
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryDetailMetricsCollectorTask')
                 .addParam('p3', 'java.lang.Long')
                 .addParam('p4', since);
 
@@ -321,8 +343,43 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nids)
-                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheResetQueryDetailMetricsTask')
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryResetDetailMetricsTask')
                 .addParam('p3', 'java.lang.Void');
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * Collect running queries
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {Number} duration minimum duration time of running queries.
+         * @returns {Promise}
+         */
+        queryCollectRunning(demo, duration) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', '')
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorRunningQueriesCollectorTask')
+                .addParam('p3', 'java.lang.Long')
+                .addParam('p4', duration);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * Cancel running query.
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @param {Number} queryId query id to cancel.
+         * @returns {Promise}
+         */
+        queryCancel(demo, nid, queryId) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryCancelTask')
+                .addParam('p3', 'java.lang.Long')
+                .addParam('p4', queryId);
 
             return this.executeRest(cmd);
         }
@@ -424,7 +481,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nids)
                 .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask')
-                .addParam('p3', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask$VisorCacheStartArg')
+                .addParam('p3', 'org.apache.ignite.internal.visor.cache.VisorCacheStartArg')
                 .addParam('p4', near)
                 .addParam('p5', cacheName)
                 .addParam('p6', cfg);
@@ -462,24 +519,6 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                 .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask')
                 .addParam('p3', 'java.lang.String')
                 .addParam('p4', cacheName);
-
-            return this.executeRest(cmd);
-        }
-
-        /**
-         * @param {Boolean} demo Is need run command on demo node.
-         * @param {String} nid Node id.
-         * @param {String} cacheNames Cache names separated by comma.
-         * @returns {Promise}
-         */
-        cacheSwapBackups(demo, nid, cacheNames) {
-            const cmd = new Command(demo, 'exe')
-                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
-                .addParam('p1', nid)
-                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask')
-                .addParam('p3', 'java.util.Set')
-                .addParam('p4', 'java.lang.String')
-                .addParam('p5', cacheNames);
 
             return this.executeRest(cmd);
         }
@@ -580,6 +619,40 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
 
             return this.executeRest(cmd);
         }
+
+        /**
+         * Collect service information.
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node ID.
+         * @returns {Promise}
+         */
+        services(demo, nid) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.service.VisorServiceTask')
+                .addParam('p3', 'java.lang.Void');
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * Cancel service with specified name.
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node ID.
+         * @param {String} name Name of service to cancel.
+         * @returns {Promise}
+         */
+        serviceCancel(demo, nid, name) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.service.VisorCancelServiceTask')
+                .addParam('p3', 'java.lang.String')
+                .addParam('p4', name);
+
+            return this.executeRest(cmd);
+        }
     }
 
     /**
@@ -650,14 +723,14 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                         const bParts = b.split('.');
 
                         for (let i = 0; i < aParts.length; ++i) {
-                            if (bParts.length === i)
-                                return 1;
-
-                            if (aParts[i] === aParts[i])
-                                continue;
-
-                            return aParts[i] > bParts[i] ? 1 : -1;
+                            if (aParts[i] !== bParts[i])
+                                return aParts[i] < bParts[i] ? 1 : -1;
                         }
+
+                        if (aParts.length === bParts.length)
+                            return 0;
+
+                        return aParts.length < bParts.length ? 1 : -1;
                     }));
 
                     // Latest version of agent distribution.
@@ -823,6 +896,11 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                 const sockets = this._browsers[accountId];
 
                 _.forEach(sockets, (socket) => socket.emit('agent:count', {count: agents.length}));
+
+                activitiesService.merge(accountId, {
+                    group: 'agent',
+                    action: '/agent/start'
+                });
             });
         }
 

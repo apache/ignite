@@ -207,4 +207,14 @@ public abstract class HadoopTaskContext {
      * @throws IgniteCheckedException On any error in callable.
      */
     public abstract <T> T runAsJobOwner(Callable<T> c) throws IgniteCheckedException;
+
+    /**
+     * Callback invoked from mapper thread when map is finished.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onMapperFinished() throws IgniteCheckedException {
+        if (output instanceof HadoopMapperAwareTaskOutput)
+            ((HadoopMapperAwareTaskOutput)output).onMapperFinished();
+    }
 }

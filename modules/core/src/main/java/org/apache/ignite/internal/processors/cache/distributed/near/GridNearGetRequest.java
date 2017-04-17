@@ -73,10 +73,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
-    /** Partition IDs. */
-    @GridDirectCollection(int.class)
-    private List<Integer> partIds;
-
     /** */
     @GridDirectCollection(boolean.class)
     private Collection<Boolean> flags;
@@ -103,6 +99,9 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     private int taskNameHash;
 
     /** TTL for read operation. */
+    private long createTtl;
+
+    /** TTL for read operation. */
     private long accessTtl;
 
     /**
@@ -124,6 +123,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
+     * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      * @param addDepInfo Deployment info.
      */
@@ -137,6 +137,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         @NotNull AffinityTopologyVersion topVer,
         UUID subjId,
         int taskNameHash,
+        long createTtl,
         long accessTtl,
         boolean skipVals,
         boolean addDepInfo,
@@ -153,18 +154,17 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
         this.keys = new ArrayList<>(keys.size());
         flags = new ArrayList<>(keys.size());
-        partIds = new ArrayList<>(keys.size());
 
         for (Map.Entry<KeyCacheObject, Boolean> entry : keys.entrySet()) {
             this.keys.add(entry.getKey());
             flags.add(entry.getValue());
-            partIds.add(entry.getKey().partition());
         }
 
         this.readThrough = readThrough;
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipVals = skipVals;
         this.addDepInfo = addDepInfo;
@@ -250,6 +250,13 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     }
 
     /**
+     * @return New TTL to set after entry is created, -1 to leave unchanged.
+     */
+    public long createTtl() {
+        return createTtl;
+    }
+
+    /**
      * @return New TTL to set after entry is accessed, -1 to leave unchanged.
      */
     public long accessTtl() {
@@ -258,7 +265,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
     }
 
     /**
@@ -301,13 +308,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
             while (keysIt.hasNext())
                 keyMap.put(keysIt.next(), flagsIt.next());
         }
-
-        if (partIds != null && !partIds.isEmpty()) {
-            assert partIds.size() == keys.size();
-
-            for (int i = 0; i < keys.size(); i++)
-                keys.get(i).partition(partIds.get(i));
-        }
     }
 
     /** {@inheritDoc} */
@@ -337,31 +337,31 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("flags", flags, MessageCollectionItemType.BOOLEAN))
+                if (!writer.writeLong("createTtl", createTtl))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeCollection("flags", flags, MessageCollectionItemType.BOOLEAN))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -439,7 +439,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 reader.incrementState();
 
             case 4:
-                flags = reader.readCollection("flags", MessageCollectionItemType.BOOLEAN);
+                createTtl = reader.readLong("createTtl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -447,7 +447,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 reader.incrementState();
 
             case 5:
-                futId = reader.readIgniteUuid("futId");
+                flags = reader.readCollection("flags", MessageCollectionItemType.BOOLEAN);
 
                 if (!reader.isLastRead())
                     return false;
@@ -455,7 +455,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 reader.incrementState();
 
             case 6:
-                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -463,7 +463,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 reader.incrementState();
 
             case 7:
-                miniId = reader.readIgniteUuid("miniId");
+                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -471,7 +471,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 reader.incrementState();
 
             case 8:
-                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -548,7 +548,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 49;
     }
 

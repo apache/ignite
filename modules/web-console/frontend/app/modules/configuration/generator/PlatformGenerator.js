@@ -282,6 +282,8 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
                     .intProperty('readFromBackup');
             }
 
+            ccfg.enumProperty('partitionLossPolicy');
+
             ccfg.intProperty('copyOnRead');
 
             if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && ccfg.valueOf('atomicityMode') === 'TRANSACTIONAL')
@@ -292,15 +294,9 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
 
         // Generate cache memory group.
         static cacheMemory(cache, ccfg = this.cacheConfigurationBean(cache)) {
-            ccfg.enumProperty('memoryMode');
-
-            if (ccfg.valueOf('memoryMode') !== 'OFFHEAP_VALUES')
-                ccfg.intProperty('offHeapMaxMemory');
-
             // this._evictionPolicy(ccfg, 'evictionPolicy', cache.evictionPolicy, cacheDflts.evictionPolicy);
 
-            ccfg.intProperty('startSize')
-                .boolProperty('swapEnabled', 'EnableSwap');
+            ccfg.intProperty('startSize');
 
             return ccfg;
         }
@@ -414,7 +410,6 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
         static cacheConcurrency(cache, ccfg = this.cacheConfigurationBean(cache)) {
             ccfg.intProperty('maxConcurrentAsyncOperations')
                 .intProperty('defaultLockTimeout')
-                .enumProperty('atomicWriteOrderMode')
                 .enumProperty('writeSynchronizationMode');
 
             return ccfg;

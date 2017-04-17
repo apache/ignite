@@ -17,10 +17,6 @@
 
 package org.apache.ignite.spi.discovery;
 
-import java.io.Serializable;
-import java.util.Map;
-import java.util.UUID;
-
 /**
  * Handler for initial data exchange between Ignite nodes. Data exchange
  * is initiated by a new node when it tries to join topology and finishes
@@ -32,17 +28,14 @@ public interface DiscoverySpiDataExchange {
      * on new node that joins topology to transfer its data to existing
      * nodes and on all existing nodes to transfer their data to new node.
      *
-     * @param joiningNodeId ID of new node that joins topology.
-     * @return Collection of discovery data objects from different components.
+     * @param dataBag {@link DiscoveryDataBag} object managing discovery data during node joining process.
      */
-    public Map<Integer, Serializable> collect(UUID joiningNodeId);
+    public DiscoveryDataBag collect(DiscoveryDataBag dataBag);
 
     /**
      * Notifies discovery manager about data received from remote node.
      *
-     * @param joiningNodeId ID of new node that joins topology.
-     * @param nodeId ID of the node provided data.
-     * @param data Collection of discovery data objects from different components.
+     * @param dataBag Collection of discovery data objects from different components.
      */
-    public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data);
+    public void onExchange(DiscoveryDataBag dataBag);
 }

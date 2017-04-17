@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -78,12 +79,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         // ReSharper disable once CollectionNeverQueried.Local
         private readonly List<Delegate> _delegates = new List<Delegate>(5);
 
+        /** Max op code. */
+        private static readonly int MaxOpCode = Enum.GetValues(typeof(UnmanagedCallbackOp)).Cast<int>().Max();
+
         /** Handlers array. */
-        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[62];
+        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[MaxOpCode + 1];
 
         /** Handlers array. */
         private readonly InLongLongLongObjectOutLongHandler[] _inLongLongLongObjectOutLongHandlers
-            = new InLongLongLongObjectOutLongHandler[62];
+            = new InLongLongLongObjectOutLongHandler[MaxOpCode + 1];
 
         /** Initialized flag. */
         private readonly ManualResetEventSlim _initEvent = new ManualResetEventSlim(false);
@@ -133,6 +137,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public UnmanagedCallbacks(ILogger log)
         {
             Debug.Assert(log != null);
+
             _log = log;
 
             var cbs = new UnmanagedCallbackHandlers
@@ -232,6 +237,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.AffinityFunctionDestroy, AffinityFunctionDestroy);
             AddHandler(UnmanagedCallbackOp.ComputeTaskLocalJobResult, ComputeTaskLocalJobResult);
             AddHandler(UnmanagedCallbackOp.ComputeJobExecuteLocal, ComputeJobExecuteLocal);
+            AddHandler(UnmanagedCallbackOp.PluginProcessorStop, PluginProcessorStop);
+            AddHandler(UnmanagedCallbackOp.PluginProcessorIgniteStop, PluginProcessorIgniteStop);
+            AddHandler(UnmanagedCallbackOp.PluginCallbackInLongLongOutLong, PluginCallbackInLongLongOutLong);
         }
 
         /// <summary>
@@ -361,7 +369,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     stream.Reset();
 
-                    _ignite.Marshaller.StartMarshal(stream).WriteObject(e);
+                    var writer = _ignite.Marshaller.StartMarshal(stream);
+
+                    writer.WriteObject(e);
+
+                    _ignite.Marshaller.FinishMarshal(writer);
 
                     return -1;
                 }
@@ -429,13 +441,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             var marsh = grid.Marshaller;
 
-            var key = marsh.Unmarshal<object>(inOutStream);
-            var val = marsh.Unmarshal<object>(inOutStream);
             var isLocal = inOutStream.ReadBool();
 
             var holder = isLocal
                 ? _handleRegistry.Get<CacheEntryProcessorHolder>(inOutStream.ReadLong(), true)
                 : marsh.Unmarshal<CacheEntryProcessorHolder>(inOutStream);
+
+            var key = marsh.Unmarshal<object>(inOutStream);
+            var val = marsh.Unmarshal<object>(inOutStream);
 
             return holder.Process(key, val, val != null, grid);
         }
@@ -792,7 +805,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long LifecycleOnEvent(long ptr, long evt, long unused, void* arg)
         {
-            var bean = _handleRegistry.Get<LifecycleBeanHolder>(ptr);
+            var bean = _handleRegistry.Get<LifecycleHandlerHolder>(ptr);
 
             bean.OnLifecycleEvent((LifecycleEventType) evt);
 
@@ -1126,6 +1139,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        private long PluginProcessorIgniteStop(long val)
+        {
+            _ignite.PluginProcessor.OnIgniteStop(val != 0);
+
+            return 0;
+        }
+
+        private long PluginProcessorStop(long val)
+        {
+            _ignite.PluginProcessor.Stop(val != 0);
+
+            return 0;
+        }
+
         #endregion
 
         #region AffinityFunction
@@ -1134,7 +1161,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
 
                 var func = reader.ReadObjectEx<IAffinityFunction>();
 
@@ -1203,6 +1230,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             _handleRegistry.Release(ptr);
 
             return 0;
+        }
+
+        #endregion
+
+        #region PLUGINS
+  
+        private long PluginCallbackInLongLongOutLong(long callbackId, long inPtr, long outPtr, void* arg)
+        {
+            return _ignite.PluginProcessor.InvokeCallback(callbackId, inPtr, outPtr);
         }
 
         #endregion

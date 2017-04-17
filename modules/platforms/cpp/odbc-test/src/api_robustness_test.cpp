@@ -42,6 +42,7 @@ using namespace ignite;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
 using namespace ignite::common;
+using namespace ignite_test;
 
 using namespace boost::unit_test;
 
@@ -111,39 +112,17 @@ struct ApiRobustnessTestSuiteFixture
         SQLFreeHandle(SQL_HANDLE_ENV, env);
     }
 
-    static Ignite StartNode(const char* name, const char* config)
-    {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
-
-        BOOST_REQUIRE(cfgPath != 0);
-
-        cfg.springCfgPath.assign(cfgPath).append("/").append(config);
-
-        IgniteError err;
-
-        return Ignition::Start(cfg, name);
-    }
-
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartNode(name, "queries-test-noodbc.xml");
+        const char* config = NULL;
+
+#ifdef IGNITE_TESTS_32
+        config = "queries-test-noodbc-32.xml";
+#else
+        config = "queries-test-noodbc.xml";
+#endif
+
+        return StartNode(config, name);
     }
 
     /**
@@ -155,7 +134,15 @@ struct ApiRobustnessTestSuiteFixture
         dbc(NULL),
         stmt(NULL)
     {
-        grid = StartNode("NodeMain", "queries-test.xml");
+        const char* config = NULL;
+
+#ifdef IGNITE_TESTS_32
+          config = "queries-test-32.xml";
+#else
+          config = "queries-test.xml";
+#endif
+
+        grid = StartNode(config, "NodeMain");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
     }
@@ -282,7 +269,6 @@ SQLSMALLINT unsupportedSql[] = {
         SQL_WLONGVARCHAR,
         SQL_REAL,
         SQL_NUMERIC,
-        SQL_TYPE_TIME,
         SQL_INTERVAL_MONTH,
         SQL_INTERVAL_YEAR,
         SQL_INTERVAL_YEAR_TO_MONTH,
@@ -354,7 +340,7 @@ BOOST_AUTO_TEST_CASE(TestSQLConnect)
     // Everyting is ok.
     SQLRETURN ret = SQLGetInfo(dbc, SQL_DRIVER_NAME, buffer, ODBC_BUFFER_SIZE, &resLen);
 
-    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
 
     // Resulting length is null.
     SQLGetInfo(dbc, SQL_DRIVER_NAME, buffer, ODBC_BUFFER_SIZE, 0);

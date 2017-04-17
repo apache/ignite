@@ -26,23 +26,36 @@ public interface MarshallerContext {
     /**
      * Registers class with provided type ID.
      *
-     * @param id Type ID.
-     * @param cls Class.
+     * @param typeId Type ID.
+     * @param platformId id of a platform to register class.
+     * @param clsName class name.
      * @return Whether class was registered.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean registerClass(int id, Class cls) throws IgniteCheckedException;
+    public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException;
 
     /**
      * Gets class for provided type ID.
      *
-     * @param id Type ID.
+     * @param typeId Type ID.
      * @param ldr Class loader.
      * @return Class.
      * @throws ClassNotFoundException If class was not found.
      * @throws IgniteCheckedException In case of any other error.
      */
-    public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException;
+    public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException;
+
+
+    /**
+     * Gets class name for provided (platformId, typeId) pair.
+     *
+     * @param platformId id of a platform the class was registered for.
+     * @param typeId Type ID.
+     * @return Class name
+     * @throws ClassNotFoundException If class was not found.
+     * @throws IgniteCheckedException In case of any other error.
+     */
+    public String getClassName(byte platformId, int typeId) throws ClassNotFoundException, IgniteCheckedException;
 
     /**
      * Checks whether the given type is a system one - JDK class or Ignite class.

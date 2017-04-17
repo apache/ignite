@@ -23,7 +23,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Date;
 
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
@@ -139,6 +139,6 @@ public class JdbcUtils {
      * @return Whether given type is SQL-compliant.
      */
     static boolean isSqlType(Class<?> cls) {
-        return GridQueryProcessor.isSqlType(cls) || cls == URL.class;
+        return QueryUtils.isSqlType(cls) || cls == URL.class;
     }
 }

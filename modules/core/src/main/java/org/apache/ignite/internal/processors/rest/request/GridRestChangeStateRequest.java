@@ -52,6 +52,6 @@ public class GridRestChangeStateRequest extends GridRestRequest {
      *
      */
     public void reqCurrentState() {
-        this.reqCurrentState = true;
+        reqCurrentState = true;
     }
 }

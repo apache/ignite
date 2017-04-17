@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -133,7 +134,7 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
         out.writeBoolean(hasCombiner);
         out.writeInt(numReduces);
 
-        U.writeStringMap(out, props);
+        IgfsUtils.writeStringMap(out, props);
     }
 
     /** {@inheritDoc} */
@@ -144,7 +145,7 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
         hasCombiner = in.readBoolean();
         numReduces = in.readInt();
 
-        props = U.readStringMap(in);
+        props = IgfsUtils.readStringMap(in);
     }
 
     /**

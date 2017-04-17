@@ -94,9 +94,12 @@ public class ServiceConfiguration implements Serializable {
      * This parameter is mandatory when deploying a service.
      *
      * @param name Service name.
+     * @return {@code this} for chaining.
      */
-    public void setName(String name) {
+    public ServiceConfiguration setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /**
@@ -116,9 +119,12 @@ public class ServiceConfiguration implements Serializable {
      * This parameter is mandatory when deploying a service.
      *
      * @param svc Service instance.
+     * @return {@code this} for chaining.
      */
-    public void setService(Service svc) {
+    public ServiceConfiguration setService(Service svc) {
         this.svc = svc;
+
+        return this;
     }
 
     /**
@@ -138,9 +144,12 @@ public class ServiceConfiguration implements Serializable {
      * At least one of {@code getTotalCount()} or {@link #getMaxPerNodeCount()} values must be positive.
      *
      * @param totalCnt Total number of deployed service instances in the cluster, {@code 0} for unlimited.
+     * @return {@code this} for chaining.
      */
-    public void setTotalCount(int totalCnt) {
+    public ServiceConfiguration setTotalCount(int totalCnt) {
         this.totalCnt = totalCnt;
+
+        return this;
     }
 
     /**
@@ -160,9 +169,12 @@ public class ServiceConfiguration implements Serializable {
      * At least one of {@code getMaxPerNodeCount()} or {@link #getTotalCount()} values must be positive.
      *
      * @param maxPerNodeCnt Maximum number of deployed service instances on each node, {@code 0} for unlimited.
+     * @return {@code this} for chaining.
      */
-    public void setMaxPerNodeCount(int maxPerNodeCnt) {
+    public ServiceConfiguration setMaxPerNodeCount(int maxPerNodeCnt) {
         this.maxPerNodeCnt = maxPerNodeCnt;
+
+        return this;
     }
 
     /**
@@ -182,9 +194,12 @@ public class ServiceConfiguration implements Serializable {
      * This parameter is optional and is set only when deploying service based on key-affinity.
      *
      * @param cacheName Cache name, possibly {@code null}.
+     * @return {@code this} for chaining.
      */
-    public void setCacheName(String cacheName) {
+    public ServiceConfiguration setCacheName(String cacheName) {
         this.cacheName = cacheName;
+
+        return this;
     }
 
     /**
@@ -204,9 +219,12 @@ public class ServiceConfiguration implements Serializable {
      * This parameter is optional and is set only when deploying service based on key-affinity.
      *
      * @param affKey Affinity key, possibly {@code null}.
+     * @return {@code this} for chaining.
      */
-    public void setAffinityKey(Object affKey) {
+    public ServiceConfiguration setAffinityKey(Object affKey) {
         this.affKey = affKey;
+
+        return this;
     }
 
     /**
@@ -228,9 +246,12 @@ public class ServiceConfiguration implements Serializable {
      * nodes in the grid, based on configuration.
      *
      * @param nodeFilter Node filter used to filter nodes on which the service will be deployed, possibly {@code null}.
+     * @return {@code this} for chaining.
      */
-    public void setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+    public ServiceConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
+
+        return this;
     }
 
     /** {@inheritDoc} */

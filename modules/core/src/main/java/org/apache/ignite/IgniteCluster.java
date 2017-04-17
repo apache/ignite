@@ -22,8 +22,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
@@ -107,56 +105,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public Collection<ClusterNode> topology(long topVer) throws UnsupportedOperationException;
 
     /**
-     * This method provides ability to detect which cache keys are mapped to which nodes
-     * on cache instance with given name. Use it to determine which nodes are storing which
-     * keys prior to sending jobs that access these keys.
-     * <p>
-     * This method works as following:
-     * <ul>
-     * <li>For local caches it returns only local node mapped to all keys.</li>
-     * <li>
-     *      For fully replicated caches, {@link AffinityFunction} is
-     *      used to determine which keys are mapped to which groups of nodes.
-     * </li>
-     * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
-     * </ul>
-     *
-     * @param cacheName Cache name, if {@code null}, then default cache instance is used.
-     * @param keys Cache keys to map to nodes.
-     * @return Map of nodes to cache keys or empty map if there are no alive nodes for this cache.
-     * @throws IgniteException If failed to map cache keys.
-     * @deprecated Use {@link Affinity#mapKeysToNodes(Collection)} instead.
-     */
-    @Deprecated
-    public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws IgniteException;
-
-    /**
-     * This method provides ability to detect which cache keys are mapped to which nodes
-     * on cache instance with given name. Use it to determine which nodes are storing which
-     * keys prior to sending jobs that access these keys.
-     * <p>
-     * This method works as following:
-     * <ul>
-     * <li>For local caches it returns only local node ID.</li>
-     * <li>
-     *      For fully replicated caches first node ID returned by {@link AffinityFunction}
-     *      is returned.
-     * </li>
-     * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>
-     * </ul>
-     *
-     * @param cacheName Cache name, if {@code null}, then default cache instance is used.
-     * @param key Cache key to map to a node.
-     * @return Primary node for the key or {@code null} if cache with given name
-     *      is not present in the grid.
-     * @throws IgniteException If failed to map key.
-     * @deprecated Use {@link Affinity#mapKeyToNode(Object)} instead.
-     */
-    @Deprecated
-    public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException;
-
-    /**
      * Starts one or more nodes on remote host(s).
      * <p>
      * This method takes INI file which defines all startup parameters. It can contain one or
@@ -185,6 +133,33 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public Collection<ClusterStartNodeResult> startNodes(File file, boolean restart, int timeout,
+        int maxConn) throws IgniteException;
+
+    /**
+     * Starts one or more nodes on remote host(s) asynchronously.
+     * <p>
+     * This method takes INI file which defines all startup parameters. It can contain one or
+     * more sections, each for a host or for range of hosts (note that they must have different
+     * names) and a special '{@code defaults}' section with default values. They are applied to
+     * undefined parameters in host's sections.
+     * <p>
+     * Completed future contains collection of tuples. Each tuple corresponds to one node start attempt and
+     * contains hostname, success flag and error message if attempt was not successful. Note that
+     * successful attempt doesn't mean that node was actually started and joined topology. For large
+     * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
+     * node logs for details.
+     *
+     * @param file Configuration file.
+     * @param restart Whether to stop existing nodes. If {@code true}, all existing
+     *      nodes on the host will be stopped before starting new ones. If
+     *      {@code false}, nodes will be started only if there are less
+     *      nodes on the host than expected.
+     * @param timeout Connection timeout.
+     * @param maxConn Number of parallel SSH connections to one host.
+     * @return a Future representing pending completion of the starting nodes.
+     * @throws IgniteException In case of error.
+     */
+    public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file, boolean restart, int timeout,
         int maxConn) throws IgniteException;
 
     /**
@@ -290,6 +265,104 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
         @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
 
     /**
+     * Starts one or more nodes on remote host(s) asynchronously.
+     * <p>
+     * Each map in {@code hosts} collection
+     * defines startup parameters for one host or for a range of hosts. The following
+     * parameters are supported:
+     *     <table class="doctable">
+     *         <tr>
+     *             <th>Name</th>
+     *             <th>Type</th>
+     *             <th>Description</th>
+     *         </tr>
+     *         <tr>
+     *             <td><b>host</b></td>
+     *             <td>String</td>
+     *             <td>
+     *                 Hostname (required). Can define several hosts if their IPs are sequential.
+     *                 E.g., {@code 10.0.0.1~5} defines range of five IP addresses. Other
+     *                 parameters are applied to all hosts equally.
+     *             </td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>port</b></td>
+     *             <td>Integer</td>
+     *             <td>Port number (default is {@code 22}).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>uname</b></td>
+     *             <td>String</td>
+     *             <td>Username (if not defined, current local username will be used).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>passwd</b></td>
+     *             <td>String</td>
+     *             <td>Password (if not defined, private key file must be defined).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>key</b></td>
+     *             <td>File</td>
+     *             <td>Private key file (if not defined, password must be defined).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>nodes</b></td>
+     *             <td>Integer</td>
+     *             <td>
+     *                 Expected number of nodes on the host. If some nodes are started
+     *                 already, then only remaining nodes will be started. If current count of
+     *                 nodes is equal to this number, and {@code restart} flag is {@code false},
+     *                 then nothing will happen.
+     *             </td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>igniteHome</b></td>
+     *             <td>String</td>
+     *             <td>
+     *                 Path to Ignite installation folder. If not defined, IGNITE_HOME
+     *                 environment variable must be set on remote hosts.
+     *             </td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>cfg</b></td>
+     *             <td>String</td>
+     *             <td>Path to configuration file (relative to {@code igniteHome}).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>script</b></td>
+     *             <td>String</td>
+     *             <td>
+     *                 Custom startup script file name and path (relative to {@code igniteHome}).
+     *                 You can also specify a space-separated list of parameters in the same
+     *                 string (for example: {@code "bin/my-custom-script.sh -v"}).
+     *             </td>
+     *         </tr>
+     *     </table>
+     * <p>
+     * {@code dflts} map defines default values. They are applied to undefined parameters in
+     * {@code hosts} collection.
+     * <p>
+     * Completed future contains collection of tuples. Each tuple corresponds to one node start attempt and
+     * contains hostname, success flag and error message if attempt was not successful. Note that
+     * successful attempt doesn't mean that node was actually started and joined topology. For large
+     * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
+     * node logs for details.
+     *
+     * @param hosts Startup parameters.
+     * @param dflts Default values.
+     * @param restart Whether to stop existing nodes. If {@code true}, all existing
+     *      nodes on the host will be stopped before starting new ones. If
+     *      {@code false}, nodes will be started only if there are less
+     *      nodes on the host than expected.
+     * @param timeout Connection timeout in milliseconds.
+     * @param maxConn Number of parallel SSH connections to one host.
+     * @return a Future representing pending completion of the starting nodes.
+     * @throws IgniteException In case of error.
+     */
+    public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(Collection<Map<String, Object>> hosts,
+        @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
+
+    /**
      * Stops nodes satisfying optional set of predicates.
      * <p>
      * <b>NOTE:</b> {@code System.exit(Ignition.KILL_EXIT_CODE)} will be executed on each
@@ -347,5 +420,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     @Nullable public IgniteFuture<?> clientReconnectFuture();
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteCluster withAsync();
 }

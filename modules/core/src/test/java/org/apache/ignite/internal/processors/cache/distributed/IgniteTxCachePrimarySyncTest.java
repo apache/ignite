@@ -88,8 +88,8 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     private boolean clientMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -106,7 +106,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 10 * 60_000;
+        return 15 * 60_000;
     }
 
     /** {@inheritDoc} */

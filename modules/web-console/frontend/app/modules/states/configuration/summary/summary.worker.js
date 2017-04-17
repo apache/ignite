@@ -17,30 +17,45 @@
 
 import JSZip from 'jszip';
 
-import IgniteVersion from 'app/modules/configuration/Version.service';
+import IgniteMavenGenerator from 'app/modules/configuration/generator/Maven.service';
+import IgniteDockerGenerator from 'app/modules/configuration/generator/Docker.service';
+import IgniteReadmeGenerator from 'app/modules/configuration/generator/Readme.service';
+import IgnitePropertiesGenerator from 'app/modules/configuration/generator/Properties.service';
+import IgniteConfigurationGenerator from 'app/modules/configuration/generator/ConfigurationGenerator';
 
-import MavenGenerator from 'app/modules/configuration/generator/Maven.service';
-import DockerGenerator from 'app/modules/configuration/generator/Docker.service';
-import ReadmeGenerator from 'app/modules/configuration/generator/Readme.service';
-import PropertiesGenerator from 'app/modules/configuration/generator/Properties.service';
-import ConfigurationGenerator from 'app/modules/configuration/generator/ConfigurationGenerator';
+import IgniteJavaTransformer from 'app/modules/configuration/generator/JavaTransformer.service';
+import IgniteSpringTransformer from 'app/modules/configuration/generator/SpringTransformer.service';
 
-import JavaTransformer from 'app/modules/configuration/generator/JavaTransformer.service';
-import SpringTransformer from 'app/modules/configuration/generator/SpringTransformer.service';
+const maven = new IgniteMavenGenerator();
+const docker = new IgniteDockerGenerator();
+const readme = new IgniteReadmeGenerator();
+const properties = new IgnitePropertiesGenerator();
 
-const Version = new IgniteVersion();
+const java = IgniteJavaTransformer;
+const spring = IgniteSpringTransformer;
 
-const maven = new MavenGenerator();
-const docker = new DockerGenerator();
-const readme = new ReadmeGenerator();
-const properties = new PropertiesGenerator();
-
-const java = new JavaTransformer[0]();
-const spring = new SpringTransformer[0]();
-
-const generator = new ConfigurationGenerator[0]();
+const generator = IgniteConfigurationGenerator;
 
 const escapeFileName = (name) => name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
+
+const kubernetesConfig = (cluster) => {
+    if (!cluster.discovery.Kubernetes)
+        cluster.discovery.Kubernetes = { serviceName: 'ignite' };
+
+    return `apiVersion: v1\n\
+kind: Service\n\
+metadata:\n\
+  # Name of Ignite Service used by Kubernetes IP finder for IP addresses lookup.\n\
+  name: ${ cluster.discovery.Kubernetes.serviceName || 'ignite' }\n\
+spec:\n\
+  clusterIP: None # custom value.\n\
+  ports:\n\
+    - port: 9042 # custom value.\n\
+  selector:\n\
+    # Must be equal to one of the labels set in Ignite pods'\n\
+    # deployement configuration.\n\
+    app: ${ cluster.discovery.Kubernetes.serviceName || 'ignite' }`;
+};
 
 // eslint-disable-next-line no-undef
 onmessage = function(e) {
@@ -71,6 +86,9 @@ onmessage = function(e) {
 
     const metaPath = `${resourcesPath}/META-INF`;
 
+    if (cluster.discovery.kind === 'Kubernetes')
+        zip.file(`${metaPath}/ignite-service.yaml`, kubernetesConfig(cluster));
+
     zip.file(`${metaPath}/${serverXml}`, spring.igniteConfiguration(cfg).asString());
     zip.file(`${metaPath}/${clientXml}`, spring.igniteConfiguration(clientCfg, clientNearCaches).asString());
 
@@ -100,7 +118,7 @@ onmessage = function(e) {
     zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeCodeStartup',
         'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCaches));
 
-    zip.file('pom.xml', maven.generate(cluster, Version.productVersion().ignite).asString());
+    zip.file('pom.xml', maven.generate(cluster));
 
     zip.file('README.txt', readme.generate());
     zip.file('jdbc-drivers/README.txt', readme.generateJDBC());

@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.h2.result.SearchRow;
@@ -35,7 +34,6 @@ import org.h2.result.SearchRow;
  * Leaf page for H2 row references.
  */
 public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
-
     /** Payload size. */
     private final int payloadSize;
 
@@ -58,7 +56,11 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
             return (IOVersions<BPlusLeafIO<SearchRow>>)PageIO.getLeafVersions((short)(payload - 1));
     }
 
-    /** */
+    /**
+     * @param type Type.
+     * @param payload Payload size.
+     * @return Versions.
+     */
     private static IOVersions<H2ExtrasLeafIO> getVersions(short type, short payload) {
         return new IOVersions<>(new H2ExtrasLeafIO(type, 1, payload));
     }
@@ -79,19 +81,20 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
         assert row0.link != 0;
 
-        H2TreeIndex currentIdx = H2TreeIndex.getCurrentIndex();
-        assert currentIdx != null;
-        List<InlineIndexHelper> inlineIdxs = currentIdx.inlineIndexes();
+        List<InlineIndexHelper> inlineIdxs = InlineIndexHelper.getCurrentInlineIndexes();
 
-        assert inlineIdxs != null;
+        assert inlineIdxs != null : "no inline index helpers";
 
         int fieldOff = 0;
 
         for (int i = 0; i < inlineIdxs.size(); i++) {
             InlineIndexHelper idx = inlineIdxs.get(i);
+
             int size = idx.put(pageAddr, off + fieldOff, row.getValue(idx.columnIndex()), payloadSize - fieldOff);
+
             if (size == 0)
                 break;
+
             fieldOff += size;
         }
 
