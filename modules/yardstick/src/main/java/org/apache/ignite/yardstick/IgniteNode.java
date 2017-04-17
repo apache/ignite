@@ -109,9 +109,6 @@ public class IgniteNode implements BenchmarkServer {
 
                 cc.setWriteSynchronizationMode(args.syncMode());
 
-                if (args.orderMode() != null)
-                    cc.setAtomicWriteOrderMode(args.orderMode());
-
                 cc.setBackups(args.backups());
 
                 if (args.restTcpPort() != 0) {

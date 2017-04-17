@@ -277,7 +277,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 byte[] res = new byte[els.length];
 
                 for (int i = 0; i < els.length; i ++)
-                    res[i] =  Byte.valueOf(els[i]);
+                    res[i] = Byte.valueOf(els[i]);
 
                 return res;
             }
@@ -348,7 +348,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 }
             }
 
-            final Collection<UUID> nids;
+            final List<UUID> nids;
 
             if (nidsArg == null || "null".equals(nidsArg) || nidsArg.isEmpty()) {
                 Collection<ClusterNode> nodes = ignite.cluster().nodes();

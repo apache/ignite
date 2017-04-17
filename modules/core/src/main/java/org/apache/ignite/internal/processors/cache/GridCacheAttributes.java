@@ -146,22 +146,6 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return Affinity hash ID resolver class name.
-     */
-    public String affinityHashIdResolverClassName() {
-        AffinityFunction aff = ccfg.getAffinity();
-
-        if (aff instanceof RendezvousAffinityFunction) {
-            if (((RendezvousAffinityFunction) aff).getHashIdResolver() == null)
-                return null;
-
-            return className(((RendezvousAffinityFunction) aff).getHashIdResolver());
-        }
-
-        return null;
-    }
-
-    /**
      * @return Eviction filter class name.
      */
     public String evictionFilterClassName() {
