@@ -122,7 +122,6 @@ public class IgniteSchedulerSelfTest extends TestCase {
         assertEquals(offer.getId(), declinedOffer);
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -354,47 +353,45 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
     /**
      * @param varName MESOS system environment name.
-     * @param varValue MESOS system environment value.
-     * The method {@link #setEnv(String, String)} } sets environment variables from  Java.
-     * Given from <a href="https://gist.github.com/zhaopengme/53719298b6edf1a99a41">https://gist.github.com/zhaopengme/53719298b6edf1a99a41</a>
+     * @param varValue MESOS system environment value. The method {@link #setEnv(String, String)} } sets environment
+     * variables from  Java. Given from <a href="https://gist.github.com/zhaopengme/53719298b6edf1a99a41">https://gist.github.com/zhaopengme/53719298b6edf1a99a41</a>
      */
-    protected static void setEnv(String varName,String varValue)
-    {
+    protected static void setEnv(String varName, String varValue) {
         Map<String, String> newenv = System.getenv();
 
-        try
-        {
+        try {
             Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
             Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
             theEnvironmentField.setAccessible(true);
-            Map<String, String> env = (Map<String, String>) theEnvironmentField.get(null);
+            Map<String, String> env = (Map<String, String>)theEnvironmentField.get(null);
             env.putAll(newenv);
             Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
             theCaseInsensitiveEnvironmentField.setAccessible(true);
-            Map<String, String> cienv = (Map<String, String>)     theCaseInsensitiveEnvironmentField.get(null);
+            Map<String, String> cienv = (Map<String, String>)theCaseInsensitiveEnvironmentField.get(null);
             cienv.putAll(newenv);
-            cienv.put(varName,varValue);
+            cienv.put(varName, varValue);
         }
-        catch (NoSuchFieldException e)
-        {
+        catch (NoSuchFieldException e) {
             try {
                 Class[] classes = Collections.class.getDeclaredClasses();
                 Map<String, String> env = System.getenv();
-                for(Class cl : classes) {
-                    if("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
+                for (Class cl : classes) {
+                    if ("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
                         Field field = cl.getDeclaredField("m");
                         field.setAccessible(true);
                         Object obj = field.get(env);
-                        Map<String, String> map = (Map<String, String>) obj;
+                        Map<String, String> map = (Map<String, String>)obj;
                         map.clear();
                         map.putAll(newenv);
-                        map.put(varName,varValue);
+                        map.put(varName, varValue);
                     }
                 }
-            } catch (Exception e2) {
+            }
+            catch (Exception e2) {
                 e2.printStackTrace();
             }
-        } catch (Exception e1) {
+        }
+        catch (Exception e1) {
             e1.printStackTrace();
         }
     }
