@@ -123,7 +123,6 @@
         <spark.test.folder>src/test/java</spark.test.folder>
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <java8.test.folder>src/test/java</java8.test.folder>
-        <ml.test.folder>src/test/java</ml.test.folder>
     </properties>
 
     <profiles>
@@ -260,7 +259,6 @@
 
             <properties>
                 <ml.folder>src/main/ml</ml.folder>
-                <ml.test.folder>src/test/ml</ml.test.folder>
             </properties>
 
             <activation>
@@ -343,7 +341,6 @@
                                 <source>${lgpl.test.folder}</source>
                                 <source>${spark.test.folder}</source>
                                 <source>${java8.test.folder}</source>
-                                <source>${ml.test.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
