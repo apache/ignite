@@ -4154,9 +4154,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert node != null;
 
-            System.out.println("!!!~Try to add node: " + node.internalOrder()
-                + " on node " + locNode.internalOrder());
-
             if (node.internalOrder() < locNode.internalOrder()) {
                 if (log.isDebugEnabled())
                     log.debug("Discarding node added message since local node's order is greater " +
