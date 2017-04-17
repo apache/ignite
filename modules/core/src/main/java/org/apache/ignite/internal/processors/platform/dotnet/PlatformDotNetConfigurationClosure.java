@@ -135,41 +135,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
 
         BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
-
-        if (bCfg == null) {
-            bCfg = new BinaryConfiguration();
-
-            bCfg.setNameMapper(new BinaryBasicNameMapper(false));
-            bCfg.setIdMapper(new BinaryBasicIdMapper(true));
-
-            igniteCfg.setBinaryConfiguration(bCfg);
-
-            dotNetCfg.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
-                "note that binary name mapper is set to " + bCfg.getNameMapper()
-                + " and binary ID mapper is set to " + bCfg.getIdMapper()
-                + " (other nodes must have the same binary name and ID mapper types)."));
-        }
-        else {
-            BinaryNameMapper nameMapper = bCfg.getNameMapper();
-
-            if (nameMapper == null) {
-                bCfg.setNameMapper(new BinaryBasicNameMapper(false));
-
-                dotNetCfg.warnings(Collections.singleton("Binary name mapper is automatically set to " +
-                    bCfg.getNameMapper()
-                    + " (other nodes must have the same binary name mapper type)."));
-            }
-
-            BinaryIdMapper idMapper = bCfg.getIdMapper();
-
-            if (idMapper == null) {
-                bCfg.setIdMapper(new BinaryBasicIdMapper(true));
-
-                dotNetCfg.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
-                    bCfg.getIdMapper()
-                    + " (other nodes must have the same binary ID mapper type)."));
-            }
-        }
     }
 
     /**
