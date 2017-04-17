@@ -10,6 +10,6 @@ Based on ideas from Apache Mahout.
 # Local build with javadoc
 
 Run from project root:
-mvn clean package -Pmath -DskipTests -pl modules/math -am
+mvn clean package -Pml -DskipTests -pl modules/ml -am
 
 Find generated jars in target folder.
