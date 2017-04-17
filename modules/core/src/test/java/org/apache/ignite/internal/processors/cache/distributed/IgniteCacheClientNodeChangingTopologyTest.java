@@ -42,7 +42,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -91,8 +91,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -150,53 +148,30 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicPutAllClockMode() throws Exception {
-        atomicPut(CLOCK, true, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicPutAllPrimaryMode() throws Exception {
-        atomicPut(PRIMARY, true, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicPutAllNearEnabledClockMode() throws Exception {
-        atomicPut(CLOCK, true, new NearCacheConfiguration());
+        atomicPut(true, null);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomicPutAllNearEnabledPrimaryMode() throws Exception {
-        atomicPut(PRIMARY, true, new NearCacheConfiguration());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicPutClockMode() throws Exception {
-        atomicPut(CLOCK, false, null);
+        atomicPut(true, new NearCacheConfiguration());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomicPutPrimaryMode() throws Exception {
-        atomicPut(PRIMARY, false, null);
+        atomicPut(false, null);
     }
 
     /**
-     * @param writeOrder Write order.
      * @param putAll If {@code true} executes putAll.
      * @param nearCfg Near cache configuration.
      * @throws Exception If failed.
      */
-    private void atomicPut(CacheAtomicWriteOrderMode writeOrder,
-        final boolean putAll,
+    private void atomicPut(final boolean putAll,
         @Nullable NearCacheConfiguration nearCfg) throws Exception {
         ccfg = new CacheConfiguration();
 
@@ -204,7 +179,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setRebalanceMode(SYNC);
 
         IgniteEx ignite0 = startGrid(0);
@@ -234,8 +208,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearAtomicFullUpdateRequest.class, ignite1.localNode().id());
 
         final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
-
-        assertEquals(writeOrder, cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -315,29 +287,20 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicNoRemapClockMode() throws Exception {
-        atomicNoRemap(CLOCK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicNoRemapPrimaryMode() throws Exception {
-        atomicNoRemap(PRIMARY);
+        atomicNoRemap();
     }
 
     /**
-     * @param writeOrder Write order.
      * @throws Exception If failed.
      */
-    private void atomicNoRemap(CacheAtomicWriteOrderMode writeOrder) throws Exception {
+    private void atomicNoRemap() throws Exception {
         ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setRebalanceMode(SYNC);
 
         IgniteEx ignite0 = startGrid(0);
@@ -368,8 +331,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.record(GridNearAtomicFullUpdateRequest.class);
 
         final IgniteCache<Integer, Integer> cache = ignite3.cache(null);
-
-        assertEquals(writeOrder, cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -413,29 +374,20 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicGetAndPutClockMode() throws Exception {
-        atomicGetAndPut(CLOCK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicGetAndPutPrimaryMode() throws Exception {
-        atomicGetAndPut(PRIMARY);
+        atomicGetAndPut();
     }
 
     /**
-     * @param writeOrder Write order.
      * @throws Exception If failed.
      */
-    private void atomicGetAndPut(CacheAtomicWriteOrderMode writeOrder) throws Exception {
+    private void atomicGetAndPut() throws Exception {
         ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setRebalanceMode(SYNC);
 
         IgniteEx ignite0 = startGrid(0);
@@ -460,8 +412,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearAtomicFullUpdateRequest.class, ignite1.localNode().id());
 
         final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
-
-        assertEquals(writeOrder, cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
 
         IgniteInternalFuture<Integer> putFut = GridTestUtils.runAsync(new Callable<Integer>() {
             @Override public Integer call() throws Exception {
@@ -1698,57 +1648,49 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testAtomicPrimaryPutAllMultinode() throws Exception {
-        multinode(PRIMARY, TestType.PUT_ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicClockPutAllMultinode() throws Exception {
-        multinode(CLOCK, TestType.PUT_ALL);
+        multinode(ATOMIC, TestType.PUT_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOptimisticTxPutAllMultinode() throws Exception {
-        multinode(null, TestType.OPTIMISTIC_TX);
+        multinode(TRANSACTIONAL, TestType.OPTIMISTIC_TX);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOptimisticSerializableTxPutAllMultinode() throws Exception {
-        multinode(null, TestType.OPTIMISTIC_SERIALIZABLE_TX);
+        multinode(TRANSACTIONAL, TestType.OPTIMISTIC_SERIALIZABLE_TX);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPessimisticTxPutAllMultinode() throws Exception {
-        multinode(null, TestType.PESSIMISTIC_TX);
+        multinode(TRANSACTIONAL, TestType.PESSIMISTIC_TX);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testLockAllMultinode() throws Exception {
-        multinode(null, TestType.LOCK);
+        multinode(TRANSACTIONAL, TestType.LOCK);
     }
 
     /**
-     * @param atomicWriteOrder Write order if test atomic cache.
+     * @param atomicityMode Atomicity mode cache.
      * @param testType Test type.
      * @throws Exception If failed.
      */
-    private void multinode(final CacheAtomicWriteOrderMode atomicWriteOrder, final TestType testType)
+    private void multinode(CacheAtomicityMode atomicityMode, final TestType testType)
         throws Exception {
         ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
-        ccfg.setAtomicityMode(atomicWriteOrder != null ? ATOMIC : TRANSACTIONAL);
-        ccfg.setAtomicWriteOrderMode(atomicWriteOrder);
+        ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
 

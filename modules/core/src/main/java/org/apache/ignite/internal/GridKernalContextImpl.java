@@ -50,9 +50,6 @@ import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManage
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.clock.GridClockSource;
-import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
-import org.apache.ignite.internal.processors.clock.GridJvmClockSource;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
@@ -180,10 +177,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridTimeoutProcessor timeProc;
-
-    /** */
-    @GridToStringInclude
-    private GridClockSyncProcessor clockSyncProc;
 
     /** */
     @GridToStringInclude
@@ -364,9 +357,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Network segmented flag. */
     private volatile boolean segFlag;
 
-    /** Time source. */
-    private GridClockSource clockSrc = new GridJvmClockSource();
-
     /** Performance suggestions. */
     private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
 
@@ -526,8 +516,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             jobProc = (GridJobProcessor)comp;
         else if (comp instanceof GridTimeoutProcessor)
             timeProc = (GridTimeoutProcessor)comp;
-        else if (comp instanceof GridClockSyncProcessor)
-            clockSyncProc = (GridClockSyncProcessor)comp;
         else if (comp instanceof GridResourceProcessor)
             rsrcProc = (GridResourceProcessor)comp;
         else if (comp instanceof GridJobMetricsProcessor)
@@ -649,11 +637,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridTimeoutProcessor timeout() {
         return timeProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridClockSyncProcessor clockSync() {
-        return clockSyncProc;
     }
 
     /** {@inheritDoc} */
@@ -855,20 +838,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public boolean segmented() {
         return segFlag;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridClockSource timeSource() {
-        return clockSrc;
-    }
-
-    /**
-     * Sets time source. For test purposes only.
-     *
-     * @param clockSrc Time source.
-     */
-    public void timeSource(GridClockSource clockSrc) {
-        this.clockSrc = clockSrc;
     }
 
     /** {@inheritDoc} */

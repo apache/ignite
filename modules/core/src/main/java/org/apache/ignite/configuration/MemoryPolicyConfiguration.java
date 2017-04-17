@@ -22,27 +22,20 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 
 /**
- * Configuration bean used for creating {@link MemoryPolicy} instances.
+ * This class defines {@code MemoryPolicy} configuration.
  */
 public final class MemoryPolicyConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Unique name of MemoryPolicy. */
+    /** Memory policy name. */
     private String name;
 
-    /** Size in bytes of {@link PageMemory} in bytes that will be created for this configuration. */
+    /** Memory policy size. */
     private long size;
 
-    /** Path for memory mapped file (won't be created if not configured). */
+    /** An optional path to a memory mapped file for this memory policy. */
     private String swapFilePath;
-
-    /**
-     * Unique name of MemoryPolicy.
-     */
-    public String getName() {
-        return name;
-    }
 
     /** Algorithm for per-page eviction. If {@link DataPageEvictionMode#DISABLED} set, eviction is not performed. */
     private DataPageEvictionMode pageEvictionMode = DataPageEvictionMode.DISABLED;
@@ -62,6 +55,13 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Increase this parameter if {@link OutOfMemoryException} occurred with enabled page eviction.
      */
     private int emptyPagesPoolSize = 100;
+
+    /**
+     * Unique name of MemoryPolicy.
+     */
+    public String getName() {
+        return name;
+    }
 
     /**
      * @param name Unique name of MemoryPolicy.

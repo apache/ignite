@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.visor.igfs;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsMetrics;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for {@link IgfsMetrics}.
  */
-public class VisorIgfsMetrics implements Serializable, LessNamingBean {
+public class VisorIgfsMetrics extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -73,32 +75,36 @@ public class VisorIgfsMetrics implements Serializable, LessNamingBean {
     private long bytesWrtTm;
 
     /**
-     * @param igfs Source IGFS.
-     * @return Data transfer object for given IGFS metrics.
+     * Create data transfer object for given IGFS metrics.
      */
-    public static VisorIgfsMetrics from(IgniteFileSystem igfs) {
+    public VisorIgfsMetrics() {
+        // No-op.
+    }
+
+    /**
+     * Create data transfer object for given IGFS metrics.
+     *
+     * @param igfs Source IGFS.
+     */
+    public VisorIgfsMetrics(IgniteFileSystem igfs) {
         assert igfs != null;
 
         IgfsMetrics m = igfs.metrics();
 
-        VisorIgfsMetrics metrics = new VisorIgfsMetrics();
-
-        metrics.totalSpaceSz = igfs.configuration().getMaxSpaceSize();
-        metrics.usedSpaceSz = m.localSpaceSize();
-        metrics.foldersCnt = m.directoriesCount();
-        metrics.filesCnt = m.filesCount();
-        metrics.filesOpenedForRd = m.filesOpenedForRead();
-        metrics.filesOpenedForWrt = m.filesOpenedForWrite();
-        metrics.blocksRd = m.blocksReadTotal();
-        metrics.blocksRdRmt = m.blocksReadRemote();
-        metrics.blocksWrt = m.blocksWrittenTotal();
-        metrics.blocksWrtRmt = m.blocksWrittenRemote();
-        metrics.bytesRd = m.bytesRead();
-        metrics.bytesRdTm = m.bytesReadTime();
-        metrics.bytesWrt = m.bytesWritten();
-        metrics.bytesWrtTm = m.bytesWriteTime();
-
-        return metrics;
+        totalSpaceSz = igfs.configuration().getMaxSpaceSize();
+        usedSpaceSz = m.localSpaceSize();
+        foldersCnt = m.directoriesCount();
+        filesCnt = m.filesCount();
+        filesOpenedForRd = m.filesOpenedForRead();
+        filesOpenedForWrt = m.filesOpenedForWrite();
+        blocksRd = m.blocksReadTotal();
+        blocksRdRmt = m.blocksReadRemote();
+        blocksWrt = m.blocksWrittenTotal();
+        blocksWrtRmt = m.blocksWrittenRemote();
+        bytesRd = m.bytesRead();
+        bytesRdTm = m.bytesReadTime();
+        bytesWrt = m.bytesWritten();
+        bytesWrtTm = m.bytesWriteTime();
     }
 
     /**
@@ -146,106 +152,142 @@ public class VisorIgfsMetrics implements Serializable, LessNamingBean {
     /**
      * @return Maximum amount of data that can be stored on local node.
      */
-    public long totalSpaceSize() {
+    public long getTotalSpaceSize() {
         return totalSpaceSz;
     }
 
     /**
      * @return Local used space in bytes on local node.
      */
-    public long usedSpaceSize() {
+    public long getUsedSpaceSize() {
         return usedSpaceSz;
     }
 
     /**
      * @return Local free space in bytes on local node.
      */
-    public long freeSpaceSize() {
+    public long getFreeSpaceSize() {
         return totalSpaceSz - usedSpaceSz;
     }
 
     /**
      * @return Number of directories created in file system.
      */
-    public int foldersCount() {
+    public int getFoldersCount() {
         return foldersCnt;
     }
 
     /**
      * @return Number of files stored in file system.
      */
-    public int filesCount() {
+    public int getFilesCount() {
         return filesCnt;
     }
 
     /**
      * @return Number of files that are currently opened for reading on local node.
      */
-    public int filesOpenedForRead() {
+    public int getFilesOpenedForRead() {
         return filesOpenedForRd;
     }
 
     /**
      * @return Number of files that are currently opened for writing on local node.
      */
-    public int filesOpenedForWrite() {
+    public int getFilesOpenedForWrite() {
         return filesOpenedForWrt;
     }
 
     /**
      * @return Total blocks read, local and remote.
      */
-    public long blocksRead() {
+    public long getBlocksRead() {
         return blocksRd;
     }
 
     /**
      * @return Total remote blocks read.
      */
-    public long blocksReadRemote() {
+    public long getBlocksReadRemote() {
         return blocksRdRmt;
     }
 
     /**
      * @return Total blocks write, local and remote.
      */
-    public long blocksWritten() {
+    public long getBlocksWritten() {
         return blocksWrt;
     }
 
     /**
      * @return Total remote blocks write.
      */
-    public long blocksWrittenRemote() {
+    public long getBlocksWrittenRemote() {
         return blocksWrtRmt;
     }
 
     /**
      * @return Total bytes read.
      */
-    public long bytesRead() {
+    public long getBytesRead() {
         return bytesRd;
     }
 
     /**
      * @return Total bytes read time.
      */
-    public long bytesReadTime() {
+    public long getBytesReadTime() {
         return bytesRdTm;
     }
 
     /**
      * @return Total bytes write.
      */
-    public long bytesWritten() {
+    public long getBytesWritten() {
         return bytesWrt;
     }
 
     /**
      * @return Total bytes write time.
      */
-    public long bytesWriteTime() {
+    public long getBytesWriteTime() {
         return bytesWrtTm;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(totalSpaceSz);
+        out.writeLong(usedSpaceSz);
+        out.writeInt(foldersCnt);
+        out.writeInt(filesCnt);
+        out.writeInt(filesOpenedForRd);
+        out.writeInt(filesOpenedForWrt);
+        out.writeLong(blocksRd);
+        out.writeLong(blocksRdRmt);
+        out.writeLong(blocksWrt);
+        out.writeLong(blocksWrtRmt);
+        out.writeLong(bytesRd);
+        out.writeLong(bytesRdTm);
+        out.writeLong(bytesWrt);
+        out.writeLong(bytesWrtTm);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        totalSpaceSz = in.readLong();
+        usedSpaceSz = in.readLong();
+        foldersCnt = in.readInt();
+        filesCnt = in.readInt();
+        filesOpenedForRd = in.readInt();
+        filesOpenedForWrt = in.readInt();
+        blocksRd = in.readLong();
+        blocksRdRmt = in.readLong();
+        blocksWrt = in.readLong();
+        blocksWrtRmt = in.readLong();
+        bytesRd = in.readLong();
+        bytesRdTm = in.readLong();
+        bytesWrt = in.readLong();
+        bytesWrtTm = in.readLong();
     }
 
     /** {@inheritDoc} */

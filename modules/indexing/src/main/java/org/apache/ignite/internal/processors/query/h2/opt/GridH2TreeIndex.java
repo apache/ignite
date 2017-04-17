@@ -290,7 +290,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @return Row.
      */
     @Override public GridH2Row findOne(GridH2Row row) {
-        int seg = threadLocalSegment();
+        int seg = segmentForRow(row);
 
         return segments[seg].findOne(row);
     }
