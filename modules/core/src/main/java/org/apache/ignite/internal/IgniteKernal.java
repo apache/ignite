@@ -29,7 +29,6 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
-import java.security.PrivateKey;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -102,7 +101,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
@@ -1191,18 +1189,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 sysPoolQSize = exec.getQueue().size();
                             }
 
-                            HashSet<PageMemory> allocators = U.newHashSet(ctx.cache().context().cacheContexts().size());
-
-                            for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
-                                MemoryPolicy memPlc = cctx.memoryPolicy();
-                                if (memPlc != null)
-                                    allocators.add(memPlc.pageMemory());
-                            }
-
                             int loadedPages = 0;
 
-                            for (PageMemory allocator : allocators) {
-                                loadedPages += allocator.loadedPages();
+                            Collection<MemoryPolicy> policies = ctx.cache().context().database().memoryPolicies();
+
+                            if(!F.isEmpty(policies)){
+                                HashSet<PageMemory> processed = U.newHashSet(policies.size());
+
+                                for (MemoryPolicy memPlc : policies) {
+                                    if(processed.add(memPlc.pageMemory()))
+                                        loadedPages += memPlc.pageMemory().loadedPages();
+                                }
                             }
 
                             String id = U.id8(localNode().id());
