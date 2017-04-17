@@ -2565,6 +2565,8 @@ public class IgnitionEx {
             if (!F.isEmpty(customExecSvcs)) {
                 for (ThreadPoolExecutor exec : customExecSvcs.values())
                     U.shutdownNow(getClass(), exec, log);
+
+                customExecSvcs = null;
             }
         }
 

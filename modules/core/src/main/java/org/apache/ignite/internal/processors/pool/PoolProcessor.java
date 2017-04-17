@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.pool;
 
 import java.util.Arrays;
 import java.util.concurrent.Executor;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
