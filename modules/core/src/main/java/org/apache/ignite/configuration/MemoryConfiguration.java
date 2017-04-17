@@ -18,25 +18,53 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Page memory configuration of an Apache Ignite node.
+ * Page memory configuration of Apache Ignite node defines memory regions called {@link PageMemory}
+ * where all cache data is stored.
  *
- * <p>It can be configured using {@link IgniteConfiguration} as follows:</p>
+ * PageMemory objects and associated data structures are managed by {@link MemoryPolicy} objects.
+ *
+ * User can define as many memory policies as he or she wants, but there are some validation rules
+ * applied to memory configuration provided by user.
+ *
+ * <p>Validation rules:</p>
+ * <ul>
+ *     <li>
+ *         All user-defined policies must have non-null non-empty unique names.
+ *     </li>
+ *     <li>
+ *         Memory policy name 'sysMemPlc' is reserved for internal use.
+ *     </li>
+ *     <li>
+ *         Memory policy size must be bigger than 1 MB (this rule will be changed as cache overhead is more than 1 MB
+ *         and enforcing MemoryPolicy size at such low level doesn't prevent OutOfMemoryExceptions)
+ *     </li>
+ *     <li>
+ *         If user provides a name for default memory policy, it cannot be empty.
+ *     </li>
+ *     <li>
+ *         If user provides a name for default memory policy, this policy must be presented in the list.
+ *     </li>
+ * </ul>
+ *
+ * <p>Using XML configuration it can be configured as follows:</p>
  * <pre>
  *     {@code
  *     <property name="memoryConfiguration">
  *         <bean class="org.apache.ignite.configuration.MemoryConfiguration">
- *             <property name="systemCacheMemorySize" value="103833600"/>
+ *             <property name="systemCacheMemorySize" value="#{100 * 1024 * 1024}"/>
  *             <property name="defaultMemoryPolicyName" value="default_mem_plc"/>
  *
  *             <property name="memoryPolicies">
  *                 <list>
  *                     <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                         <property name="name" value="default_mem_plc"/>
- *                         <property name="size" value="103833600"/>
+ *                         <property name="size" value="#{1024 * 1024 * 1024}"/>
  *                     </bean>
  *                     <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                         ...
