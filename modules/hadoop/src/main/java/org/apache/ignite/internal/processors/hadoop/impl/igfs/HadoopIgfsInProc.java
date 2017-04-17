@@ -672,7 +672,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
             });
         }
         catch (IllegalStateException ignored) {
-            throw new HadoopIgfsCommunicationException("Failed to get mode resolver");
+            throw new HadoopIgfsCommunicationException("Failed to get mode resolver because Grid is stopping");
         }
     }
 }

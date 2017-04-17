@@ -147,6 +147,17 @@ public class IgfsModeResolver implements Externalizable {
         }
         else
             out.writeBoolean(false);
+
+        if (!F.isEmpty(dualParentsWithPrimaryChildren)) {
+            out.writeBoolean(true);
+            out.writeInt(dualParentsWithPrimaryChildren.size());
+
+            for (IgfsPath p : dualParentsWithPrimaryChildren)
+                p.writeExternal(out);
+        }
+        else
+            out.writeBoolean(false);
+
     }
 
     /** {@inheritDoc} */
@@ -164,16 +175,16 @@ public class IgfsModeResolver implements Externalizable {
                 modes.add(new T2<>(path, IgfsMode.fromOrdinal(in.readByte())));
             }
 
-            dualParentsWithPrimaryChildren = new HashSet<>();
-
-            try {
-                modes = IgfsUtils.preparePathModes(dfltMode, modes, dualParentsWithPrimaryChildren);
-            }
-            catch (IgniteCheckedException e) {
-                // No-op.
-            }
-
             modesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
+        }
+
+        dualParentsWithPrimaryChildren = new HashSet<>();
+
+        if (in.readBoolean()) {
+            int size = in.readInt();
+
+            for (int i = 0; i < size; i++)
+                dualParentsWithPrimaryChildren.add(IgfsUtils.readPath(in));
         }
     }
 }
