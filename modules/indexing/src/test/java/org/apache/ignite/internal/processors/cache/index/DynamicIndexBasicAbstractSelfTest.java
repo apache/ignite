@@ -218,7 +218,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
-        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
     }
 
     /**
@@ -309,7 +309,9 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
 
-        // TODO
+        assertCompositeIndexOperations(SQL_COMPOSITE);
+
+        assertIndexUsed(IDX_NAME_1, SQL_COMPOSITE, SQL_ARG_1, SQL_ARG_2);
     }
 
     /**
@@ -695,7 +697,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_2);
 
-        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_2, SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_2, SQL_ARG_1);
     }
 
     /**
@@ -786,7 +788,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
         queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
 
-        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
@@ -797,7 +799,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
-        assertIndexNotUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
+        assertIndexNotUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
     }
 
     /**
@@ -1065,12 +1067,12 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      */
     private void assertSimpleIndexOperations(String sql) {
         for (Ignite node : Ignition.allGrids())
-            assertSqlSimpleData(node, sql, KEY_BEFORE - SQL_SIMPLE_ARG);
+            assertSqlSimpleData(node, sql, KEY_BEFORE - SQL_ARG_1);
 
         put(node(), KEY_BEFORE, KEY_AFTER);
 
         for (Ignite node : Ignition.allGrids())
-            assertSqlSimpleData(node, sql, KEY_AFTER - SQL_SIMPLE_ARG);
+            assertSqlSimpleData(node, sql, KEY_AFTER - SQL_ARG_1);
 
         remove(node(), 0, KEY_BEFORE);
 
@@ -1081,5 +1083,30 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
 
         for (Ignite node : Ignition.allGrids())
             assertSqlSimpleData(node, sql, 0);
+    }
+
+    /**
+     * Assert composite index usage.
+     *
+     * @param sql Simple SQL.
+     */
+    private void assertCompositeIndexOperations(String sql) {
+        for (Ignite node : Ignition.allGrids())
+            assertSqlCompositeData(node, sql, KEY_BEFORE - SQL_ARG_2);
+
+        put(node(), KEY_BEFORE, KEY_AFTER);
+
+        for (Ignite node : Ignition.allGrids())
+            assertSqlCompositeData(node, sql, KEY_AFTER - SQL_ARG_2);
+
+        remove(node(), 0, KEY_BEFORE);
+
+        for (Ignite node : Ignition.allGrids())
+            assertSqlCompositeData(node, sql, KEY_AFTER - KEY_BEFORE);
+
+        remove(node(), KEY_BEFORE, KEY_AFTER);
+
+        for (Ignite node : Ignition.allGrids())
+            assertSqlCompositeData(node, sql, 0);
     }
 }

@@ -114,8 +114,8 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
         idxFut1.get();
 
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
-        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
 
         // Test migration from normal server to non-affinity server.
         blockIndexing(srv2Id);
@@ -134,8 +134,8 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
         idxFut2.get();
 
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
-        assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_SIMPLE_ARG);
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_2, KEY_AFTER - SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_1);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_2, KEY_AFTER - SQL_ARG_1);
     }
 
     /**
@@ -180,11 +180,11 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         put(srv1, 0, KEY_AFTER);
 
-        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
-        assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+        assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_1);
 
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_2, KEY_AFTER - SQL_SIMPLE_ARG);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_2, KEY_AFTER - SQL_ARG_1);
     }
 
     /**
@@ -219,8 +219,8 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         put(srv1, 0, KEY_AFTER);
 
-        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
     }
 
     /**
@@ -338,8 +338,8 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         put(cli, 0, KEY_AFTER);
 
-        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
     }
 
     /**
@@ -405,7 +405,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    assertSqlSimpleData(node, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+                    assertSqlSimpleData(node, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
                 }
 
                 return null;
@@ -545,8 +545,8 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         put(cli, 0, KEY_AFTER);
 
-        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
     }
 
     /**
@@ -645,8 +645,8 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         put(cli, 0, KEY_AFTER);
 
-        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_SIMPLE_ARG);
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_SIMPLE_ARG);
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
     }
 
     /**

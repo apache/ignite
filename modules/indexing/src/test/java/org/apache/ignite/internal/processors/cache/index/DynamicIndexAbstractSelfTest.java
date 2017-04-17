@@ -59,12 +59,19 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     /** SQL to check index on the field 1. */
     protected static final String SQL_SIMPLE_FIELD_1 = "SELECT * FROM " + TBL_NAME + " WHERE " + FIELD_NAME_1 + " >= ?";
 
+    /** SQL to check composite index */
+    protected static final String SQL_COMPOSITE = "SELECT * FROM " + TBL_NAME + " WHERE " + FIELD_NAME_1 +
+        " >= ? AND " + alias(FIELD_NAME_2) + " >= ?";
+
     /** SQL to check index on the field 2. */
     protected static final String SQL_SIMPLE_FIELD_2 =
         "SELECT * FROM " + TBL_NAME + " WHERE " + alias(FIELD_NAME_2) + " >= ?";
 
-    /** Argument for simple SQL. */
-    protected static final int SQL_SIMPLE_ARG = 40;
+    /** Argument for simple SQL (1). */
+    protected static final int SQL_ARG_1 = 40;
+
+    /** Argument for simple SQL (2). */
+    protected static final int SQL_ARG_2 = 80;
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -375,7 +382,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param expSize Expected size.
      */
     protected static void assertSqlSimpleData(Ignite node, String sql, int expSize) {
-        SqlQuery qry = new SqlQuery(tableName(ValueClass.class), sql).setArgs(SQL_SIMPLE_ARG);
+        SqlQuery qry = new SqlQuery(tableName(ValueClass.class), sql).setArgs(SQL_ARG_1);
 
         List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
 
@@ -387,7 +394,39 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
             long field1 = entry.getValue().field(FIELD_NAME_1);
             long field2 = entry.getValue().field(FIELD_NAME_2);
 
-            assertTrue(field1 >= SQL_SIMPLE_ARG);
+            assertTrue(field1 >= SQL_ARG_1);
+
+            assertEquals(id, field1);
+            assertEquals(id, field2);
+
+            assertTrue(ids.add(id));
+        }
+
+        assertEquals("Size mismatch [exp=" + expSize + ", actual=" + res.size() + ", ids=" + ids + ']',
+            expSize, res.size());
+    }
+
+    /**
+     * Assert SQL simple data state.
+     *
+     * @param node Node.
+     * @param sql SQL query.
+     * @param expSize Expected size.
+     */
+    protected static void assertSqlCompositeData(Ignite node, String sql, int expSize) {
+        SqlQuery qry = new SqlQuery(tableName(ValueClass.class), sql).setArgs(SQL_ARG_1, SQL_ARG_2);
+
+        List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
+
+        Set<Long> ids = new HashSet<>();
+
+        for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
+            long id = entry.getKey().field("id");
+
+            long field1 = entry.getValue().field(FIELD_NAME_1);
+            long field2 = entry.getValue().field(FIELD_NAME_2);
+
+            assertTrue(field1 >= SQL_ARG_2);
 
             assertEquals(id, field1);
             assertEquals(id, field2);
