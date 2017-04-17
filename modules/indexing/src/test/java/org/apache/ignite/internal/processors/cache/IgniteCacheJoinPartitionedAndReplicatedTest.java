@@ -208,6 +208,16 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
             "from \"orgRepl\".Organization o left join \"person\".Person p " +
             "on (p.orgId = o.id)", orgCacheRepl, 2);
 
+        // Left join from replicated to partitioned cache is not supported:
+        // returns duplicates in result and must fail.
+        checkQueryFails("select o.name, p._key, p.name " +
+            "from \"person\".Person p left join \"org\".Organization o " +
+            "on (p.orgId = o.id)", orgCache);
+
+        checkQueryFails("select o.name, p._key, p.name " +
+            "from \"org\".Organization o right join \"person\".Person p " +
+            "on (p.orgId = o.id)", orgCache);
+
         checkQueryFails("select o.name, p._key, p.name " +
                 "from \"person\".Person p left join \"org\".Organization o " +
                 "on (p.orgId = o.id)", personCache);

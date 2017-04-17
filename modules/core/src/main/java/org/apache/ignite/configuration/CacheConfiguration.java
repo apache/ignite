@@ -494,9 +494,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Sets name of {@link MemoryPolicyConfiguration} for this cache.
+     * Sets a name of {@link MemoryPolicyConfiguration} for this cache.
      *
-     * @param memPlcName MemoryPolicyConfiguration name. Can be null (default MemoryPolicyConfiguration will be used) but should not be empty.
+     * @param memPlcName MemoryPolicyConfiguration name. Can be null (default MemoryPolicyConfiguration will be used)
+     *                   but should not be empty.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
