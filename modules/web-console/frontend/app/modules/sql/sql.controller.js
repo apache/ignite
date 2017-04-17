@@ -26,12 +26,6 @@ const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
 // Row index X axis descriptor.
 const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
-/** Prefix for node local key for SCAN near queries. */
-const SCAN_CACHE_WITH_FILTER = 'VISOR_SCAN_CACHE_WITH_FILTER';
-
-/** Prefix for node local key for SCAN near queries. */
-const SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE = 'VISOR_SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE';
-
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
 const ENFORCE_JOIN_VERS = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], ['1.9.1']];
@@ -1493,11 +1487,12 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         };
 
         $scope.scan = (paragraph, local = false) => {
-            const {filter, caseSensitive} = paragraph;
-            const prefix = caseSensitive ? SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE : SCAN_CACHE_WITH_FILTER;
-            const query = `${prefix}${filter}`;
+            const cacheName = paragraph.cacheName;
+            const filter = paragraph.filter;
+            const caseSensitive = !!paragraph.caseSensitive;
+            const pageSize = paragraph.pageSize;
 
-            $scope.actionAvailable(paragraph, false) && _chooseNode(paragraph.cacheName, local)
+            $scope.actionAvailable(paragraph, false) && _chooseNode(cacheName, local)
                 .then((nid) => {
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
@@ -1508,18 +1503,20 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
                     _closeOldQuery(paragraph)
                         .then(() => {
-                            const args = paragraph.queryArgs = {
+                            paragraph.queryArgs = {
                                 type: 'SCAN',
-                                cacheName: paragraph.cacheName,
-                                query,
+                                cacheName,
                                 filter,
-                                pageSize: paragraph.pageSize,
+                                regEx: false,
+                                caseSensitive,
+                                near: false,
+                                pageSize,
                                 localNid: local ? nid : null
                             };
 
                             ActivitiesData.post({ action: '/queries/scan' });
 
-                            return agentMonitor.query(nid, args.cacheName, query, false, false, local, args.pageSize);
+                            return agentMonitor.scan(nid, cacheName, filter, false, caseSensitive, false, local, pageSize);
                         })
                         .then((res) => _processQueryResult(paragraph, true, res))
                         .catch((err) => {
@@ -1640,8 +1637,10 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const args = paragraph.queryArgs;
 
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
-                .then((nid) => agentMonitor.queryGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins,
-                    !!args.enforceJoinOrder, !!args.localNid))
+                .then((nid) =>
+                    args.type === 'SCAN'
+                        ? agentMonitor.scanGetAll(nid, args.cacheName, args.filter, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
+                        : agentMonitor.queryGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, !!args.localNid))
                 .then((res) => _export(paragraph.name + '-all.csv', paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
                 .then(() => paragraph.ace && paragraph.ace.focus());
@@ -1755,21 +1754,15 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             if (!_.isNil(paragraph)) {
                 const scope = $scope.$new();
 
-                if (_.isNil(paragraph.queryArgs.query)) {
-                    scope.title = 'SCAN query';
-                    scope.content = [`SCAN query for cache: <b>${maskCacheName(paragraph.queryArgs.cacheName, true)}</b>`];
-                }
-                else if (paragraph.queryArgs.query.startsWith(SCAN_CACHE_WITH_FILTER)) {
+                if (paragraph.queryArgs.type === 'SCAN') {
                     scope.title = 'SCAN query';
 
-                    let filter = '';
+                    const filter = paragraph.queryArgs.filter;
 
-                    if (paragraph.queryArgs.query.startsWith(SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE))
-                        filter = paragraph.queryArgs.query.substr(SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE.length);
+                    if (_.isEmpty(filter))
+                        scope.content = [`SCAN query for cache: <b>${maskCacheName(paragraph.queryArgs.cacheName, true)}</b>`];
                     else
-                        filter = paragraph.queryArgs.query.substr(SCAN_CACHE_WITH_FILTER.length);
-
-                    scope.content = [`SCAN query for cache: <b>${maskCacheName(paragraph.queryArgs.cacheName, true)}</b> with filter: <b>${filter}</b>`];
+                        scope.content = [`SCAN query for cache: <b>${maskCacheName(paragraph.queryArgs.cacheName, true)}</b> with filter: <b>${filter}</b>`];
                 }
                 else if (paragraph.queryArgs.query .startsWith('EXPLAIN ')) {
                     scope.title = 'Explain query';
@@ -1794,9 +1787,12 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
                 let cause = paragraph.error.root;
 
+                const tab = '&nbsp;&nbsp;&nbsp;&nbsp;';
+
                 while (_.nonNil(cause)) {
-                    scope.content.push((scope.content.length > 0 ? '&nbsp;&nbsp;&nbsp;&nbsp;' : '') +
-                        '[' + JavaTypes.shortClassName(cause.className) + '] ' + cause.message);
+                    const clsName = _.isEmpty(cause.className) ? '' : '[' + JavaTypes.shortClassName(cause.className) + '] ';
+
+                    scope.content.push((scope.content.length > 0 ? tab : '') + clsName + cause.message);
 
                     cause = cause.cause;
                 }

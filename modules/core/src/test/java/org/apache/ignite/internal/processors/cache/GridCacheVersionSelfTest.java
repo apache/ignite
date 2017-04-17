@@ -79,7 +79,7 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
      */
     public void testMarshalling() throws Exception {
         GridCacheVersion ver = version(1, 1);
-        GridCacheVersionEx verEx = new GridCacheVersionEx(2, 2, 0, 0, ver);
+        GridCacheVersionEx verEx = new GridCacheVersionEx(2, 2, 0, ver);
 
         OptimizedMarshaller marsh = new OptimizedMarshaller(false);
 
@@ -101,6 +101,6 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
      * @return Cache version.
      */
     private GridCacheVersion version(int nodeOrder, int drId) {
-        return new GridCacheVersion(0, 0, 0, nodeOrder, drId);
+        return new GridCacheVersion(0, 0, nodeOrder, drId);
     }
 }
