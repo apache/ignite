@@ -256,26 +256,47 @@ import org.jetbrains.annotations.Nullable;
  * or for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Binary objects can be indexed for querying by specifying index fields in
- * {@link org.apache.ignite.cache.CacheTypeMetadata} inside of specific
+ * {@link org.apache.ignite.cache.QueryEntity} inside of specific
  * {@link org.apache.ignite.configuration.CacheConfiguration} instance,
  * like so:
  * <pre name=code class=xml>
  * ...
  * &lt;bean class="org.apache.ignite.cache.CacheConfiguration"&gt;
  *     ...
- *     &lt;property name="typeMetadata"&gt;
+ *     &lt;property name="queryEntities"&gt;
  *         &lt;list&gt;
- *             &lt;bean class="CacheTypeMetadata"&gt;
+ *             &lt;bean class="QueryEntity"&gt;
  *                 &lt;property name="type" value="Employee"/&gt;
  *
- *                 &lt;!-- Fields to index in ascending order. --&gt;
- *                 &lt;property name="ascendingFields"&gt;
+ *                 &lt;!-- Fields available from query. --&gt;
+ *                 &lt;property name="fields"&gt;
  *                     &lt;map&gt;
  *                     &lt;entry key="name" value="java.lang.String"/&gt;
  *
- *                         &lt;!-- Nested binary objects can also be indexed. --&gt;
- *                         &lt;entry key="address.zip" value="java.lang.Integer"/&gt;
+ *                     &lt;!-- Nested binary objects can also be indexed. --&gt;
+ *                     &lt;entry key="address.zip" value="java.lang.Integer" /&gt;
  *                     &lt;/map&gt;
+ *                 &lt;/property&gt;
+ *
+ *                 &lt;!-- Aliases for full property name in dot notation. --&gt;
+ *                 &lt;property name="fields"&gt;
+ *                     &lt;map&gt;
+ *                     &lt;entry key="address.zip" value="zip" /&gt;
+ *                     &lt;/map&gt;
+ *                 &lt;/property&gt;
+ *
+ *                 &lt;!-- Indexes configuration. --&gt;
+ *                 &lt;property name="indexes"&gt;
+ *                 &lt;list&gt;
+ *                 &lt;bean class="org.apache.ignite.cache.QueryIndex"&gt;
+ *                     &lt;property name="fields"&gt;
+ *                          &lt;map&gt;
+ *                          &lt;!-- The boolean value is the acceding flag. --&gt;
+ *                          &lt;entry key="name" value="true"/&gt;
+ *                          &lt;/map&gt;
+ *                     &lt;/property&gt;
+ *                 &lt;/bean&gt;
+ *                 &lt;/list&gt;
  *                 &lt;/property&gt;
  *             &lt;/bean&gt;
  *         &lt;/list&gt;

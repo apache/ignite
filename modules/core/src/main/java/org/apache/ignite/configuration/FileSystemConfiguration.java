@@ -204,7 +204,7 @@ public class FileSystemConfiguration {
          * Must preserve alphabetical order!
          */
         blockSize = cfg.getBlockSize();
-        bufSize = cfg.getStreamBufferSize();
+        bufSize = cfg.getBufferSize();
         colocateMeta = cfg.isColocateMetadata();
         dataCacheCfg = cfg.getDataCacheConfiguration();
         dfltMode = cfg.getDefaultMode();
@@ -411,7 +411,7 @@ public class FileSystemConfiguration {
      *
      * @return Read/write buffers size (bytes).
      */
-    public int getStreamBufferSize() {
+    public int getBufferSize() {
         return bufSize;
     }
 
@@ -421,7 +421,7 @@ public class FileSystemConfiguration {
      * @param bufSize Read/write buffers size for stream operations (bytes) or {@code 0} to reset default value.
      * @return {@code this} for chaining.
      */
-    public FileSystemConfiguration setStreamBufferSize(int bufSize) {
+    public FileSystemConfiguration setBufferSize(int bufSize) {
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
         this.bufSize = bufSize == 0 ? DFLT_BUF_SIZE : bufSize;

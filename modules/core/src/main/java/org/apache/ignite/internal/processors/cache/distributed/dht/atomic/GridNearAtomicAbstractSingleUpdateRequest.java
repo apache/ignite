@@ -47,7 +47,6 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
 
     /**
      * Constructor.
-     *
      * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futId Future ID.
@@ -76,6 +75,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         boolean mappingKnown,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         boolean addDepInfo
     ) {
         super(cacheId,
@@ -91,6 +91,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
             mappingKnown,
             skipStore,
             keepBinary,
+            recovery,
             addDepInfo);
     }
 

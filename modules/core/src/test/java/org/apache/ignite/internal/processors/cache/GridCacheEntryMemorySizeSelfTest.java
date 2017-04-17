@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -106,6 +106,8 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
+        cfg.setMarshaller(createMarshaller());
+
         return cfg;
     }
 
@@ -169,11 +171,12 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
             GridCacheAdapter<Integer, Value> internalCache = internalCache(cache);
 
+            // All values are stored in PageMemory, cache entry size shouldn't depend on value size
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(0)),
                 internalCache.entryEx(0).memorySize());
-            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(1)),
+            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(1)),
                 internalCache.entryEx(1).memorySize());
-            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(2)),
+            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(2)),
                 internalCache.entryEx(2).memorySize());
         }
         finally {
@@ -193,11 +196,12 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
             GridCacheAdapter<Integer, Value> internalCache = dht(cache);
 
+            // All values are stored in PageMemory, cache entry size shouldn't depend on value size
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
                 extrasSize(internalCache.entryEx(0)), internalCache.entryEx(0).memorySize());
-            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
+            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
                 extrasSize(internalCache.entryEx(1)), internalCache.entryEx(1).memorySize());
-            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
+            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
                 extrasSize(internalCache.entryEx(2)), internalCache.entryEx(2).memorySize());
         }
         finally {
@@ -238,6 +242,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
             GridCacheAdapter<Object, Object> cache0 = dht(jcache(0));
 
+            // Values are unswapped, so value size should be included in cache entry size
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
                 extrasSize(cache0.entryEx(keys[0])), cache0.entryEx(keys[0]).memorySize());
             assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
@@ -292,11 +297,12 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
             GridCacheAdapter<Object, Object> cache = dht(jcache(0));
 
+            // All values are stored in PageMemory, cache entry size shouldn't depend on value size
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
                 extrasSize(cache.entryEx(keys[0])), cache.entryEx(keys[0]).memorySize());
-            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
+            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
                 extrasSize(cache.entryEx(keys[1])), cache.entryEx(keys[1]).memorySize());
-            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
+            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
                 extrasSize(cache.entryEx(keys[2])), cache.entryEx(keys[2]).memorySize());
 
             // Do not test other node since there are no backups.

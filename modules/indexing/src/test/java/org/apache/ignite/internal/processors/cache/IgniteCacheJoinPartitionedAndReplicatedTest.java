@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -134,7 +133,6 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setBackups(1);
 
@@ -209,6 +207,16 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
         checkQuery("select o.name, p._key, p.name " +
             "from \"orgRepl\".Organization o left join \"person\".Person p " +
             "on (p.orgId = o.id)", orgCacheRepl, 2);
+
+        // Left join from replicated to partitioned cache is not supported:
+        // returns duplicates in result and must fail.
+        checkQueryFails("select o.name, p._key, p.name " +
+            "from \"person\".Person p left join \"org\".Organization o " +
+            "on (p.orgId = o.id)", orgCache);
+
+        checkQueryFails("select o.name, p._key, p.name " +
+            "from \"org\".Organization o right join \"person\".Person p " +
+            "on (p.orgId = o.id)", orgCache);
 
         checkQueryFails("select o.name, p._key, p.name " +
                 "from \"person\".Person p left join \"org\".Organization o " +

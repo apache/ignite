@@ -197,6 +197,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteBinaryEnum;
             if (type.IsEnum)
                 return WriteEnum;
+            if (type == typeof(Ignite))
+                return WriteIgnite;
 
             // All types below can be written as handles.
             supportsHandles = true;
@@ -637,6 +639,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static object ReadDictionary(BinaryReader ctx, Type type)
         {
             return BinaryUtils.ReadDictionary(ctx, null);
+        }
+                
+        /// <summary>
+        /// Write Ignite.
+        /// </summary>
+        private static void WriteIgnite(BinaryWriter ctx, object obj)
+        {
+            ctx.Stream.WriteByte(BinaryUtils.HdrNull);
         }
 
         /**

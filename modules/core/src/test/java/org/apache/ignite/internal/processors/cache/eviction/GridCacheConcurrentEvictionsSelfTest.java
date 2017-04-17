@@ -70,13 +70,12 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
         cc.setCacheMode(mode);
 
-        cc.setSwapEnabled(false);
-
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         cc.setNearConfiguration(null);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 

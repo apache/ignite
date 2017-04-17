@@ -25,22 +25,25 @@
 
 namespace
 {
-    enum ResultColumn
+    struct ResultColumn
     {
-        /** Catalog name. NULL if not applicable to the data source. */
-        TABLE_CAT = 1,
+        enum Type
+        {
+            /** Catalog name. NULL if not applicable to the data source. */
+            TABLE_CAT = 1,
 
-        /** Schema name. NULL if not applicable to the data source. */
-        TABLE_SCHEM,
+            /** Schema name. NULL if not applicable to the data source. */
+            TABLE_SCHEM,
 
-        /** Table name. */
-        TABLE_NAME,
+            /** Table name. */
+            TABLE_NAME,
 
-        /** Table type. */
-        TABLE_TYPE,
+            /** Table type. */
+            TABLE_TYPE,
 
-        /** A description of the column. */
-        REMARKS
+            /** A description of the column. */
+            REMARKS
+        };
     };
 }
 
@@ -53,7 +56,7 @@ namespace ignite
             TableMetadataQuery::TableMetadataQuery(diagnostic::Diagnosable& diag,
                 Connection& connection, const std::string& catalog,const std::string& schema,
                 const std::string& table, const std::string& tableType) :
-                Query(diag, TABLE_METADATA),
+                Query(diag, QueryType::TABLE_METADATA),
                 connection(connection),
                 catalog(catalog),
                 schema(schema),
@@ -85,14 +88,14 @@ namespace ignite
                 // No-op.
             }
 
-            SqlResult TableMetadataQuery::Execute()
+            SqlResult::Type TableMetadataQuery::Execute()
             {
                 if (executed)
                     Close();
 
-                SqlResult result = MakeRequestGetTablesMeta();
+                SqlResult::Type result = MakeRequestGetTablesMeta();
 
-                if (result == SQL_RESULT_SUCCESS)
+                if (result == SqlResult::AI_SUCCESS)
                 {
                     executed = true;
 
@@ -107,17 +110,17 @@ namespace ignite
                 return columnsMeta;
             }
 
-            SqlResult TableMetadataQuery::FetchNextRow(app::ColumnBindingMap& columnBindings)
+            SqlResult::Type TableMetadataQuery::FetchNextRow(app::ColumnBindingMap& columnBindings)
             {
                 if (!executed)
                 {
-                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
                 if (cursor == meta.end())
-                    return SQL_RESULT_NO_DATA;
+                    return SqlResult::AI_NO_DATA;
 
                 app::ColumnBindingMap::iterator it;
 
@@ -126,50 +129,50 @@ namespace ignite
 
                 ++cursor;
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
-            SqlResult TableMetadataQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer & buffer)
+            SqlResult::Type TableMetadataQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer & buffer)
             {
                 if (!executed)
                 {
-                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
                 if (cursor == meta.end())
-                    return SQL_RESULT_NO_DATA;
+                    return SqlResult::AI_NO_DATA;
 
                 const meta::TableMeta& currentColumn = *cursor;
 
                 switch (columnIdx)
                 {
-                    case TABLE_CAT:
+                    case ResultColumn::TABLE_CAT:
                     {
                         buffer.PutString(currentColumn.GetCatalogName());
                         break;
                     }
 
-                    case TABLE_SCHEM:
+                    case ResultColumn::TABLE_SCHEM:
                     {
                         buffer.PutString(currentColumn.GetSchemaName());
                         break;
                     }
 
-                    case TABLE_NAME:
+                    case ResultColumn::TABLE_NAME:
                     {
                         buffer.PutString(currentColumn.GetTableName());
                         break;
                     }
 
-                    case TABLE_TYPE:
+                    case ResultColumn::TABLE_TYPE:
                     {
                         buffer.PutString(currentColumn.GetTableType());
                         break;
                     }
 
-                    case REMARKS:
+                    case ResultColumn::REMARKS:
                     {
                         buffer.PutNull();
                         break;
@@ -179,16 +182,16 @@ namespace ignite
                         break;
                 }
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
-            SqlResult TableMetadataQuery::Close()
+            SqlResult::Type TableMetadataQuery::Close()
             {
                 meta.clear();
 
                 executed = false;
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
             bool TableMetadataQuery::DataAvailable() const
@@ -201,7 +204,7 @@ namespace ignite
                 return 0;
             }
 
-            SqlResult TableMetadataQuery::MakeRequestGetTablesMeta()
+            SqlResult::Type TableMetadataQuery::MakeRequestGetTablesMeta()
             {
                 QueryGetTablesMetaRequest req(catalog, schema, table, tableType);
                 QueryGetTablesMetaResponse rsp;
@@ -212,18 +215,18 @@ namespace ignite
                 }
                 catch (const IgniteError& err)
                 {
-                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
-                if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                 {
                     LOG_MSG("Error: " << rsp.GetError());
 
-                    diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
                 meta = rsp.GetMeta();
@@ -236,7 +239,7 @@ namespace ignite
                          << "\n[" << i << "] TableType:   " << meta[i].GetTableType());
                 }
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
         }
     }

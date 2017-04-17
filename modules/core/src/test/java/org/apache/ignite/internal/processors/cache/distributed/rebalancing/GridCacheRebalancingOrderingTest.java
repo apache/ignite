@@ -60,7 +60,6 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -158,7 +157,6 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setName(TEST_CACHE_NAME);
         cfg.setAffinity(new RendezvousAffinityFunction(true /* machine-safe */, 271));
-        cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setBackups(1);
         cfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);

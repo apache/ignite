@@ -166,7 +166,7 @@ public class GridDhtAtomicNearResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -45;
+        return -48;
     }
 
     /** {@inheritDoc} */

@@ -108,7 +108,7 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, loc, getArgs(),
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, true, loc, getArgs(),
             fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
@@ -165,11 +165,11 @@ public class JdbcStatement implements Statement {
         if (!conn.isDmlSupported())
             throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
 
-        JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
             fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
-            JdbcQueryTaskV2.QueryResult qryRes =
+            JdbcQueryTask.QueryResult qryRes =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
             return updateCnt = updateCounterFromQueryResult(qryRes.getRows());
@@ -332,15 +332,15 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
+        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
             fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
-            JdbcQueryTaskV2.QueryResult res =
+            JdbcQueryTask.QueryResult res =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
             if (res.isQuery()) {
-                JdbcResultSet rs = JdbcResultSet.resultSetForQueryTaskV2(uuid, this, res.getTbls(), res.getCols(),
+                JdbcResultSet rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(),
                     res.getTypes(), res.getRows(), res.isFinished());
 
                 rs.setFetchSize(fetchSize);

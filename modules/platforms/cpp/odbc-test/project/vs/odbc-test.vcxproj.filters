@@ -137,7 +137,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\queries-test-32.xml">
+      <Filter>Configs</Filter>
+    </None>
     <None Include="..\..\config\queries-test.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-test-noodbc-32.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\queries-test-noodbc.xml">

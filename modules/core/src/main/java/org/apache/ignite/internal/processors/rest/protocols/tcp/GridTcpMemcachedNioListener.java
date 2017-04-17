@@ -31,11 +31,11 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.C2;
-import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -178,11 +178,11 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return null;
         }
 
-        IgniteInternalFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
-
-        f.listen(new CIX1<IgniteInternalFuture<GridRestResponse>>() {
-            @Override public void applyx(IgniteInternalFuture<GridRestResponse> f) throws IgniteCheckedException {
-                GridRestResponse restRes = f.get();
+        return new GridEmbeddedFuture<>(new IgniteClosure2X<GridRestResponse, Exception, GridRestResponse>() {
+            @Override public GridRestResponse applyx(GridRestResponse restRes,
+                Exception ex) throws IgniteCheckedException {
+                if(ex != null)
+                    throw U.cast(ex);
 
                 // Handle 'Stat' command (special case because several packets are included in response).
                 if (cmd.get1() == CACHE_METRICS) {
@@ -237,7 +237,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
                     else
                         res.status(FAILURE);
 
-                    if (cmd.get3())
+                    if (cmd.get3() == Boolean.TRUE)
                         res.key(req.key());
 
                     if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS && res.addData() &&
@@ -246,10 +246,10 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
                     sendResponse(ses, res);
                 }
-            }
-        });
 
-        return f;
+                return restRes;
+            }
+        }, hnd.handleAsync(createRestRequest(req, cmd.get1())));
     }
 
     /**

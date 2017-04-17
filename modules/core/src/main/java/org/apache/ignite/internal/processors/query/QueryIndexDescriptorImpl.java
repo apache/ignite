@@ -48,13 +48,17 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
     /** */
     private final QueryIndexType type;
 
+    /** */
+    private int inlineSize;
+
     /**
      * @param type Type.
      */
-    public QueryIndexDescriptorImpl(QueryIndexType type) {
+    public QueryIndexDescriptorImpl(QueryIndexType type, int inlineSize) {
         assert type != null;
 
         this.type = type;
+        this.inlineSize = inlineSize;
     }
 
     /** {@inheritDoc} */
@@ -65,6 +69,11 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
             res.add(t.get1());
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int inlineSize() {
+        return inlineSize;
     }
 
     /** {@inheritDoc} */
