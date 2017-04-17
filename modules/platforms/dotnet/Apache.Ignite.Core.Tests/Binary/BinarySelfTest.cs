@@ -2340,7 +2340,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             /** <inheritdoc /> */
             override public void WriteBinary(IBinaryWriter writer)
             {
-                var writer0 = (BinaryWriter) ((SortedBinaryWriter) writer).Writer;
+                var writer0 = (BinaryWriter) writer;
 
                 writer.WriteString("before", Before);
 
