@@ -347,7 +347,7 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
      * @param r Runnable.
      * @param expCode Error code.
      */
-    private static void assertSqlException(DynamicIndexBasicAbstractSelfTest.RunnableX r, int expCode) {
+    private static void assertSqlException(DynamicIndexAbstractBasicSelfTest.RunnableX r, int expCode) {
         try {
             try {
                 r.run();

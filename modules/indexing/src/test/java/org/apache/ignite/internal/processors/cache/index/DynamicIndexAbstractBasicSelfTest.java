@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Tests for dynamic index creation.
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbstractSelfTest {
+public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbstractSelfTest {
     /** Node index for regular server (coordinator). */
     protected static final int IDX_SRV_CRD = 0;
 

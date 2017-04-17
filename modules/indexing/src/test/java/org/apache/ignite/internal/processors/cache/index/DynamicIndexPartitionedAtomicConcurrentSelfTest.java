@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+
 /**
- * Test dynamic schema operations from client node.
+ * Concurrency tests for dynamic index create/drop for PARTITIONED/ATOMIC cache.
  */
-public class DynamicIndexBasicClientSelfTest extends DynamicIndexBasicAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected int nodeIndex() {
-        return IDX_CLI;
+public class DynamicIndexPartitionedAtomicConcurrentSelfTest extends DynamicIndexAbstractConcurrentSelfTest {
+    /**
+     * Constructor.
+     */
+    public DynamicIndexPartitionedAtomicConcurrentSelfTest() {
+        super(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC);
     }
 }

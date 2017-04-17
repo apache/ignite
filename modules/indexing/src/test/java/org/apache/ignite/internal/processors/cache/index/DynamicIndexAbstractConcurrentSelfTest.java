@@ -21,7 +21,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -42,15 +45,32 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Concurrency tests for dynamic indexes.
+ * Concurrency tests for dynamic index create/drop.
  */
 @SuppressWarnings("unchecked")
-public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest {
+public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicIndexAbstractSelfTest {
     /** Test duration. */
     private static final long TEST_DUR = 10_000L;
 
     /** Latches to block certain index operations. */
     private static final ConcurrentHashMap<UUID, T2<CountDownLatch, AtomicBoolean>> BLOCKS = new ConcurrentHashMap<>();
+
+    /** Cache mode. */
+    private final CacheMode cacheMode;
+
+    /** Atomicity mode. */
+    private final CacheAtomicityMode atomicityMode;
+
+    /**
+     * Constructor.
+     *
+     * @param cacheMode Cache mode.
+     * @param atomicityMode Atomicity mode.
+     */
+    protected DynamicIndexAbstractConcurrentSelfTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
+        this.cacheMode = cacheMode;
+        this.atomicityMode = atomicityMode;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -76,6 +96,13 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 5 * 60 * 1000L;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration<KeyClass, ValueClass> cacheConfiguration() {
+        CacheConfiguration<KeyClass, ValueClass> ccfg =  super.cacheConfiguration();
+
+        return ccfg.setCacheMode(cacheMode).setAtomicityMode(atomicityMode);
     }
 
     /**
@@ -231,7 +258,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
      *
      * @throws Exception If failed.
      */
-    public void testRebalance() throws Exception {
+    public void testConcurrentRebalance() throws Exception {
         int cacheSize = 100_000;
 
         // Start cache and populate it with data.

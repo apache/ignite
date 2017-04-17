@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-
 /**
- * Test dynamic schema operations from server node which do not pass node filter and which is coordinator.
+ * Test dynamic schema operations from coordinator node.
  */
-public class DynamicIndexBasicServerNodeFilterCoordinatorSelfTest extends DynamicIndexBasicServerCoordinatorSelfTest {
+public class DynamicIndexServerCoordinatorBasicSelfTest extends DynamicIndexAbstractBasicSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration serverCoordinatorConfiguration(int idx) throws Exception {
-        return serverConfiguration(idx, true);
+    @Override protected int nodeIndex() {
+        return IDX_SRV_CRD;
     }
 }
