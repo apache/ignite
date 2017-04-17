@@ -37,17 +37,6 @@ include /app/helpers/jade/mixins
                     +number('Default lock timeout:', `${model}.defaultLockTimeout`, '"defaultLockTimeout"', 'true', '0', '0',
                         'Default lock acquisition timeout in milliseconds<br/>\
                         If <b>0</b> then lock acquisition will never timeout')
-                .settings-row(ng-hide=`${model}.atomicityMode === 'TRANSACTIONAL'`)
-                    +dropdown('Entry versioning:', `${model}.atomicWriteOrderMode`, '"atomicWriteOrderMode"', 'true', 'Choose versioning',
-                        '[\
-                            {value: "CLOCK", label: "CLOCK"},\
-                            {value: "PRIMARY", label: "PRIMARY"}\
-                        ]',
-                        'Write ordering mode determines which node assigns the write version, sender or the primary node\
-                        <ul>\
-                            <li>CLOCK - in this mode write versions are assigned on a sender node which generally leads to better performance</li>\
-                            <li>PRIMARY - in this mode version is assigned only on primary node. This means that sender will only send write request to primary node, which in turn will assign write version and forward it to backups</li>\
-                        </ul>')
                 .settings-row
                     +dropdown('Write synchronization mode:', `${model}.writeSynchronizationMode`, '"writeSynchronizationMode"', 'true', 'PRIMARY_SYNC',
                         '[\

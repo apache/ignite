@@ -343,16 +343,6 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     }
 
     /** {@inheritDoc} */
-    @Deprecated @Nullable @Override public GridCacheMapEntry randomEntry() {
-        Iterator<GridCacheMapEntry> iterator = map.values().iterator();
-
-        if (iterator.hasNext())
-            return iterator.next();
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<GridCacheMapEntry> entrySet(final CacheEntryPredicate... filter) {
         final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
             @Override public boolean apply(GridCacheMapEntry entry) {

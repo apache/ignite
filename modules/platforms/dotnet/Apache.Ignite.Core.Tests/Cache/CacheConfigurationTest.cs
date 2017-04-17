@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Tests.Plugin.Cache;
+    using Apache.Ignite.Core.Plugin.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -479,7 +479,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CopyOnRead = true,
                 WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
                 WriteBehindFlushSize = 7,
-                AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
                 AtomicityMode = CacheAtomicityMode.Atomic,
                 Backups = 8,
                 CacheMode = CacheMode.Partitioned,
@@ -547,7 +546,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 ExpiryPolicyFactory = new ExpiryFactory(),
                 EnableStatistics = true,
-                PluginConfigurations = new[] { new CacheJavaPluginConfiguration() }
+                PluginConfigurations = new[] { new MyPluginConfiguration() }
             };
         }
         /// <summary>
@@ -566,7 +565,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CopyOnRead = true,
                 WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
                 WriteBehindFlushSize = 7,
-                AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Clock,
                 AtomicityMode = CacheAtomicityMode.Transactional,
                 Backups = 8,
                 CacheMode = CacheMode.Partitioned,
@@ -709,6 +707,16 @@ namespace Apache.Ignite.Core.Tests.Cache
             public IExpiryPolicy CreateInstance()
             {
                 return new ExpiryPolicy(null, null, null);
+            }
+        }
+
+        private class MyPluginConfiguration : ICachePluginConfiguration
+        {
+            public int? CachePluginConfigurationClosureFactoryId { get { return null; } }
+
+            public void WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
             }
         }
     }

@@ -222,7 +222,6 @@
     <Compile Include="Compute\IComputeReducer.cs" />
     <Compile Include="Compute\IComputeTask.cs" />
     <Compile Include="Cache\Configuration\CacheAtomicityMode.cs" />
-    <Compile Include="Cache\Configuration\CacheAtomicWriteOrderMode.cs" />
     <Compile Include="Cache\Configuration\CacheConfiguration.cs" />
     <Compile Include="Cache\Configuration\CacheMode.cs" />
     <Compile Include="Cache\Configuration\CacheRebalanceMode.cs" />
@@ -360,7 +359,6 @@
     <Compile Include="Impl\ExceptionUtils.cs" />
     <Compile Include="Impl\Ignite.cs" />
     <Compile Include="Impl\IgniteManager.cs" />
-    <Compile Include="Impl\IgniteProxy.cs" />
     <Compile Include="Impl\Log\JavaLogger.cs" />
     <Compile Include="Impl\PlatformTarget.cs" />
     <Compile Include="Impl\IgniteUtils.cs" />

@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractPartitionedByteArrayValuesSelfTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -49,7 +48,6 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
 
         atomicCacheCfg.setName(CACHE_ATOMIC);
         atomicCacheCfg.setAtomicityMode(ATOMIC);
-        atomicCacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
         c.setCacheConfiguration(cacheConfiguration(), atomicCacheCfg);
 

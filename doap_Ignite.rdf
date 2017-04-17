@@ -41,8 +41,15 @@
     <programming-language>ODBC</programming-language>
 
     <category rdf:resource="http://projects.apache.org/category/big-data" />
+    <category rdf:resource="http://projects.apache.org/category/sql" />
+    <category rdf:resource="http://projects.apache.org/category/cloud" />
+    <category rdf:resource="http://projects.apache.org/category/database" />
+    <category rdf:resource="http://projects.apache.org/category/hadoop" />
     <category rdf:resource="http://projects.apache.org/category/network-server" />
     <category rdf:resource="http://projects.apache.org/category/network-client" />
+    <category rdf:resource="http://projects.apache.org/category/osgi" />
+    <category rdf:resource="http://projects.apache.org/category/IoT" />
+
 
     <repository>
       <GitRepository>
@@ -52,8 +59,8 @@
     </repository>
     <maintainer>
       <foaf:Person>
-        <foaf:name>Dmitriy Setrakyan</foaf:name>
-          <foaf:mbox rdf:resource="mailto:dsetrakyan@apache.org"/>
+        <foaf:name>Denis Magda</foaf:name>
+          <foaf:mbox rdf:resource="mailto:dmagda@apache.org"/>
       </foaf:Person>
     </maintainer>
     <asfext:implements><asfext:Standard>

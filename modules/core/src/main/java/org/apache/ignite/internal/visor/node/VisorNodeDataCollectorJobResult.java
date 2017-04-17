@@ -17,9 +17,14 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.internal.visor.cache.VisorCache;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
@@ -28,12 +33,12 @@ import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
 /**
  * Data collector job result.
  */
-public class VisorNodeDataCollectorJobResult implements Serializable {
+public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Ignite instance name. */
-    private String igniteInstanceName;
+    /** Grid name. */
+    private String gridName;
 
     /** Node topology version. */
     private long topVer;
@@ -42,22 +47,22 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     private boolean taskMonitoringEnabled;
 
     /** Node events. */
-    private final Collection<VisorGridEvent> evts = new ArrayList<>();
+    private List<VisorGridEvent> evts = new ArrayList<>();
 
     /** Exception while collecting node events. */
     private Throwable evtsEx;
 
     /** Node caches. */
-    private final Collection<VisorCache> caches = new ArrayList<>();
+    private List<VisorCache> caches = new ArrayList<>();
 
     /** Exception while collecting node caches. */
     private Throwable cachesEx;
 
     /** Node IGFSs. */
-    private final Collection<VisorIgfs> igfss = new ArrayList<>();
+    private List<VisorIgfs> igfss = new ArrayList<>();
 
     /** All IGFS endpoints collected from nodes. */
-    private final Collection<VisorIgfsEndpoint> igfsEndpoints = new ArrayList<>();
+    private List<VisorIgfsEndpoint> igfsEndpoints = new ArrayList<>();
 
     /** Exception while collecting node IGFSs. */
     private Throwable igfssEx;
@@ -66,128 +71,170 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     private long errCnt;
 
     /**
-     * @return Ignite instance name.
+     * Default constructor.
      */
-    public String igniteInstanceName() {
-        return igniteInstanceName;
+    public VisorNodeDataCollectorJobResult() {
+        // No-op.
     }
 
     /**
-     * @param igniteInstanceName New Ignite instance name.
+     * @return Grid name.
      */
-    public void igniteInstanceName(String igniteInstanceName) {
-        this.igniteInstanceName = igniteInstanceName;
+    public String getGridName() {
+        return gridName;
+    }
+
+    /**
+     * @param gridName New grid name value.
+     */
+    public void setGridName(String gridName) {
+        this.gridName = gridName;
     }
 
     /**
      * @return Current topology version.
      */
-    public long topologyVersion() {
+    public long getTopologyVersion() {
         return topVer;
     }
 
     /**
      * @param topVer New topology version value.
      */
-    public void topologyVersion(long topVer) {
+    public void setTopologyVersion(long topVer) {
         this.topVer = topVer;
     }
 
     /**
      * @return Current task monitoring state.
      */
-    public boolean taskMonitoringEnabled() {
+    public boolean isTaskMonitoringEnabled() {
         return taskMonitoringEnabled;
     }
 
     /**
      * @param taskMonitoringEnabled New value of task monitoring state.
      */
-    public void taskMonitoringEnabled(boolean taskMonitoringEnabled) {
+    public void setTaskMonitoringEnabled(boolean taskMonitoringEnabled) {
         this.taskMonitoringEnabled = taskMonitoringEnabled;
     }
 
     /**
      * @return Collection of collected events.
      */
-    public Collection<VisorGridEvent> events() {
+    public List<VisorGridEvent> getEvents() {
         return evts;
     }
 
     /**
      * @return Exception caught during collecting events.
      */
-    public Throwable eventsEx() {
+    public Throwable getEventsEx() {
         return evtsEx;
     }
 
     /**
      * @param evtsEx Exception caught during collecting events.
      */
-    public void eventsEx(Throwable evtsEx) {
+    public void setEventsEx(Throwable evtsEx) {
         this.evtsEx = evtsEx;
     }
 
     /**
      * @return Collected cache metrics.
      */
-    public Collection<VisorCache> caches() {
+    public List<VisorCache> getCaches() {
         return caches;
     }
 
     /**
      * @return Exception caught during collecting caches metrics.
      */
-    public Throwable cachesEx() {
+    public Throwable getCachesEx() {
         return cachesEx;
     }
 
     /**
      * @param cachesEx Exception caught during collecting caches metrics.
      */
-    public void cachesEx(Throwable cachesEx) {
+    public void setCachesEx(Throwable cachesEx) {
         this.cachesEx = cachesEx;
     }
 
     /**
      * @return Collected IGFSs metrics.
      */
-    public Collection<VisorIgfs> igfss() {
+    public List<VisorIgfs> getIgfss() {
         return igfss;
     }
 
     /**
      * @return Collected IGFSs endpoints.
      */
-    public Collection<VisorIgfsEndpoint> igfsEndpoints() {
+    public List<VisorIgfsEndpoint> getIgfsEndpoints() {
         return igfsEndpoints;
     }
 
     /**
      * @return Exception caught during collecting IGFSs metrics.
      */
-    public Throwable igfssEx() {
+    public Throwable getIgfssEx() {
         return igfssEx;
     }
 
     /**
      * @param igfssEx Exception caught during collecting IGFSs metrics.
      */
-    public void igfssEx(Throwable igfssEx) {
+    public void setIgfssEx(Throwable igfssEx) {
         this.igfssEx = igfssEx;
     }
 
     /**
      * @return Errors count.
      */
-    public long errorCount() {
+    public long getErrorCount() {
         return errCnt;
     }
 
     /**
      * @param errCnt Errors count.
      */
-    public void errorCount(long errCnt) {
+    public void setErrorCount(long errCnt) {
         this.errCnt = errCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, gridName);
+        out.writeLong(topVer);
+        out.writeBoolean(taskMonitoringEnabled);
+        U.writeCollection(out, evts);
+        out.writeObject(evtsEx);
+        U.writeCollection(out, caches);
+        out.writeObject(cachesEx);
+        U.writeCollection(out, igfss);
+        U.writeCollection(out, igfsEndpoints);
+        out.writeObject(igfssEx);
+        out.writeLong(errCnt);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        gridName = U.readString(in);
+        topVer = in.readLong();
+        taskMonitoringEnabled = in.readBoolean();
+        evts = U.readList(in);
+        evtsEx = (Throwable)in.readObject();
+        caches = U.readList(in);
+        cachesEx = (Throwable)in.readObject();
+        igfss = U.readList(in);
+        igfsEndpoints = U.readList(in);
+        igfssEx = (Throwable)in.readObject();
+        errCnt = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorNodeDataCollectorJobResult.class, this);
     }
 }

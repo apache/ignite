@@ -79,8 +79,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
-        commSpi.setConnectionBufferSize(bufSize);
-
         c.setCommunicationSpi(commSpi);
 
         return c;
