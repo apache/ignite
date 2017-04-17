@@ -432,19 +432,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (startLatch.getCount() != 0)
             return false;
 
-        if (cache() == null)
-            return false;
-
         GridCachePreloader prldr = preloader();
 
         return prldr == null || prldr.startFuture().isDone();
-    }
-
-    /**
-     * @return Stopped flag.
-     */
-    public boolean stopped() {
-        return startLatch.getCount() == 0 && cache() == null;
     }
 
     /**
@@ -774,7 +764,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Preloader.
      */
     public GridCachePreloader preloader() {
-        return cache().preloader();
+        return cache() == null ? null : cache().preloader();
     }
 
     /**

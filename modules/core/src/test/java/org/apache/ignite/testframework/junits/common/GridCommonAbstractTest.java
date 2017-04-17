@@ -581,10 +581,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             AffinityTopologyVersion readyVer = dht.context().shared().exchange().readyAffinityVersion();
 
-                            if (c.context().stopped())
-                                break;
-
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
+                                // Cache is stopped.
+                                if (c.context().cache() == null)
+                                    break;
+
                                 // Must map on updated version of topology.
                                 Collection<ClusterNode> affNodes =
                                     dht.context().affinity().assignment(readyVer).idealAssignment().get(p);
