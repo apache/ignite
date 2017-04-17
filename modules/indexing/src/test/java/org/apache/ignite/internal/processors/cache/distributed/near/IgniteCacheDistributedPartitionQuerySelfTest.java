@@ -27,9 +27,13 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import javax.cache.Cache;
 import javax.cache.CacheException;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -47,6 +51,8 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -65,7 +71,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     private static final String REGION_ATTR_NAME = "reg";
 
     /** Grids count. */
-    private static final int GRIDS_COUNT = 11;
+    private static final int GRIDS_COUNT = 10;
 
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -77,7 +83,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     private static final int UNMAPPED_REGION = PARTS_PER_REGION.length;
 
     /** Clients per partition. */
-    private static final int CLIENTS_PER_PARTITION = 10;
+    private static final int CLIENTS_PER_PARTITION = 1;
 
     /** Total clients. */
     private static final int TOTAL_CLIENTS;
@@ -86,10 +92,19 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     private static final AffinityFunction AFFINITY = new RegionAwareAffinityFunction();
 
     /** Partitions count. */
-    public static final int PARTS_COUNT;
+    private static final int PARTS_COUNT;
 
     /** Regions to partitions mapping. */
-    public static final NavigableMap<Integer, List<Integer>> REGION_TO_PART_MAP = new TreeMap<>();
+    private static final NavigableMap<Integer, List<Integer>> REGION_TO_PART_MAP = new TreeMap<>();
+
+    /** Query threads count. */
+    private static final int QUERY_THREADS_CNT = 4;
+
+    /** Restarting threads count. */
+    private static final int RESTART_THREADS_CNT = 2;
+
+    /** Node stop time. */
+    public static final int NODE_STOP_TIME = 1_000;
 
     static {
         int total = 0, parts = 0, p = 0, regionId = 1;
@@ -114,14 +129,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     public static final int DEPOSITS_PER_CLIENT = 10;
 
     /** {@inheritDoc} */
-    @Override public String getTestIgniteInstanceName(int idx) {
-        if (idx == 10)
-            return "client";
-
-        return super.getTestIgniteInstanceName(idx);
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
         TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
@@ -131,7 +138,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         CacheConfiguration<ClientKey, Client> clientCfg = new CacheConfiguration<>();
         clientCfg.setName("cl");
         clientCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        clientCfg.setBackups(0);
+        clientCfg.setBackups(2);
         clientCfg.setAffinity(AFFINITY);
         clientCfg.setIndexedTypes(ClientKey.class, Client.class);
 
@@ -139,7 +146,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         CacheConfiguration<DepositKey, Deposit> depoCfg = new CacheConfiguration<>();
         depoCfg.setName("de");
         depoCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        depoCfg.setBackups(0);
+        depoCfg.setBackups(2);
         depoCfg.setAffinity(AFFINITY);
         depoCfg.setIndexedTypes(DepositKey.class, Deposit.class);
 
@@ -150,14 +157,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         regionCfg.setCacheMode(CacheMode.REPLICATED);
         regionCfg.setIndexedTypes(Integer.class, Region.class);
 
-        /** Passports cache. Uses default affinity. For distributed joins testing. */
-        CacheConfiguration<Integer, Integer> passportCfg = new CacheConfiguration<>();
-        passportCfg.setName("pa");
-        passportCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        passportCfg.setCacheMode(CacheMode.PARTITIONED);
-        passportCfg.setIndexedTypes(Integer.class, Integer.class);
-
-        cfg.setCacheConfiguration(clientCfg, depoCfg, regionCfg, passportCfg);
+        cfg.setCacheConfiguration(clientCfg, depoCfg, regionCfg);
 
         if ("client".equals(gridName))
             cfg.setClientMode(true);
@@ -232,8 +232,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
                     }
                 });
 
-                // Assignment for partition will be empty in case of last region.
-                assignment.add(regionNodes.size() == 0 ? regionNodes : Collections.singletonList(regionNodes.get(0)));
+                assignment.add(regionNodes);
             }
 
             return assignment;
@@ -305,6 +304,8 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
 
         startGridsMultiThreaded(GRIDS_COUNT);
 
+        startGrid("client");
+
         // Fill caches.
         int clientId = 1;
         int depositId = 1;
@@ -312,9 +313,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         int p = 1; // Percents counter. Log message will be printed 10 times.
 
         try (IgniteDataStreamer<ClientKey, Client> clStr = grid(0).dataStreamer("cl");
-             IgniteDataStreamer<DepositKey, Deposit> depStr = grid(0).dataStreamer("de");
-             IgniteDataStreamer<Integer, Integer> pptStr = grid(0).dataStreamer("pa");
-        ) {
+             IgniteDataStreamer<DepositKey, Deposit> depStr = grid(0).dataStreamer("de")) {
             for (int cnt : PARTS_PER_REGION) {
                 // Last region was left empty intentionally.
                 if (regionId < PARTS_PER_REGION.length) {
@@ -327,8 +326,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
                         cl.passport = clientId * 1_000;
 
                         clStr.addData(ck, cl);
-
-                        pptStr.addData(cl.passport, ck.clientId);
 
                         for (int j = 0; j < DEPOSITS_PER_CLIENT; j++) {
                             DepositKey dk = new DepositKey(depositId++, new ClientKey(clientId, regionId));
@@ -366,39 +363,13 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         stopAllGrids();
     }
 
-    /** Tests API validation. */
-    public void testValidation() {
-        SqlFieldsQuery qty = new SqlFieldsQuery("");
-
-        try {
-            qty.setPartitions(0, CacheConfiguration.MAX_PARTITIONS_COUNT);
-            fail();
-        } catch (Exception e) {
-            // No-op.
-        }
-
-        try {
-            qty.setPartitions(0, 1, 1);
-            fail();
-        } catch (Exception e) {
-            // No-op.
-        }
-
-        try {
-            qty.setPartitions(0, 1, -1);
-            fail();
-        } catch (Exception e) {
-            // No-op.
-        }
-    }
-
     /** Tests query within region. */
     public void testRegionQuery() {
         doTestRegionQuery(grid(0));
     }
 
     /** Tests query within region (client). */
-    public void testRegionQueryClient() {
+    public void testRegionQueryClient() throws Exception {
         doTestRegionQuery(grid("client"));
     }
 
@@ -408,7 +379,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     }
 
     /** Test query within partitions (client). */
-    public void testPartitionsQueryClient() {
+    public void testPartitionsQueryClient() throws Exception {
         doTestPartitionsQuery(grid("client"));
     }
 
@@ -418,8 +389,91 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     }
 
     /** Tests join query within region. */
-    public void testJoinQueryCancel() {
+    public void testJoinQueryClient() throws Exception {
         doTestJoinQuery(grid("client"));
+    }
+
+    /** Tests join query within region on unstable topology. */
+    public void testJoinQueryUnstableTopology() throws Exception {
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        final GridRandom r = new GridRandom();
+
+        final AtomicIntegerArray states = new AtomicIntegerArray(GRIDS_COUNT);
+
+        final Ignite client = grid("client");
+
+        log().info("Starting test");
+
+        final AtomicInteger cnt = new AtomicInteger();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                while (!stop.get()) {
+                    doTestJoinQuery(client, r.nextInt(1) + 3);
+
+                    int cur = cnt.incrementAndGet();
+
+                    if (cur % 100 == 0)
+                        log().info("Queries count: " + cur);
+                }
+            }
+        }, QUERY_THREADS_CNT);
+
+        final AtomicIntegerArray restartStats = new AtomicIntegerArray(GRIDS_COUNT);
+
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while(!stop.get()) {
+                    int grid = r.nextInt(GRIDS_COUNT);
+
+                    String name = getTestIgniteInstanceName(grid);
+
+                    Integer regionId = regionForGrid(name);
+
+                    // Restart nodes only from region with enough number of nodes.
+                    if (regionId != 3 && regionId != 4)
+                        continue;
+
+                    if (states.compareAndSet(grid, 0, 1)) {
+                        restartStats.incrementAndGet(grid);
+
+                        try {
+                            stopGrid(grid);
+
+                            Thread.sleep(r.nextInt(NODE_STOP_TIME));
+
+                            startGrid(grid);
+
+                            Thread.sleep(r.nextInt(NODE_STOP_TIME));
+                        } finally {
+                            states.set(grid, 0);
+                        }
+                    }
+                }
+
+                return null;
+            }
+        }, RESTART_THREADS_CNT);
+
+        grid(0).scheduler().runLocal(new Runnable() {
+            @Override public void run() {
+                stop.set(true);
+            }
+        }, 60, TimeUnit.SECONDS);
+
+        fut2.get();
+
+        try {
+            fut.get();
+        }
+        finally {
+            log().info("Queries count: " + cnt.get());
+
+            for (int i = 0; i < GRIDS_COUNT; i++)
+                log().info("Grid [name = " + getTestIgniteInstanceName(i) + ", idx=" + i + " ] restarts count: " +
+                    restartStats.get(i));
+        }
     }
 
     /** Tests local query over partitions. */
@@ -451,30 +505,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
             assertEquals("Incorrect partition", parts[0], affinity.partition(row.get(0)));
     }
 
-    /** Tests distributed query over subset of partitions. */
-    public void testDistributedJoinQuery() {
-        IgniteCache<ClientKey, Client> cl = grid("client").cache("cl");
-
-        int regionId = 1;
-        List<Integer> range = REGION_TO_PART_MAP.get(regionId);
-
-        SqlFieldsQuery qry = new SqlFieldsQuery("select cl._KEY, cl._VAL, pa._VAL from " +
-                "\"cl\".Client cl, \"pa\".Integer pa where cl.passport=pa._KEY");
-
-        qry.setPartitions(createRange(range.get(0), range.get(1)));
-        qry.setDistributedJoins(true);
-
-        try {
-            cl.query(qry).getAll();
-            fail();
-        } catch(Exception e) {
-            String error = e.getMessage().toLowerCase();
-            assertTrue(error.contains("partitions"));
-            assertTrue(error.contains("distributed join"));
-            assertTrue(error.contains("not supported"));
-        }
-    }
-
     /**
      * @param orig Originator.
      */
@@ -482,8 +512,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         IgniteCache<ClientKey, Client> cl = orig.cache("cl");
 
         for (int regionId = 1; regionId <= PARTS_PER_REGION.length; regionId++) {
-            log().info("Running test queries for region " + regionId);
-
             SqlQuery<ClientKey, Client> qry1 = new SqlQuery<>(Client.class, "regionId=?");
             qry1.setArgs(regionId);
 
@@ -583,18 +611,24 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     }
 
     /**
-     * @param orig Originator.
+     * @param orig Query originator.
+     * @param regions Region ids.
      */
-    private void doTestJoinQuery(Ignite orig) {
+    private void doTestJoinQuery(Ignite orig, int... regions) {
         IgniteCache<ClientKey, Client> cl = orig.cache("cl");
 
-        for (int regionId = 1; regionId <= PARTS_PER_REGION.length; regionId++) {
-            log().info("Running test queries for region " + regionId);
+        if (regions == null) {
+            regions = new int[PARTS_PER_REGION.length];
 
+            for (int i = 0; i < regions.length; i++)
+                regions[i] = i + 1;
+        }
+
+        for (int regionId : regions) {
             List<Integer> range = REGION_TO_PART_MAP.get(regionId);
 
-            SqlFieldsQuery qry = new SqlFieldsQuery("select cl._KEY, cl._VAL, de._KEY, de._VAL, re._KEY, re._VAL from " +
-                    "\"cl\".Client cl, \"de\".Deposit de, \"re\".Region re where cl.clientId=de.clientId and de.regionId=re._KEY");
+            SqlFieldsQuery qry = new SqlFieldsQuery("select cl.clientId, de.regionId from " +
+                "\"cl\".Client cl, \"de\".Deposit de, \"re\".Region re where cl.clientId=de.clientId and de.regionId=re._KEY");
 
             qry.setPartitions(createRange(range.get(0), range.get(1)));
 
@@ -607,11 +641,12 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
 
                 // Query must produce only results from single region.
                 for (List<?> row : rows)
-                    assertEquals("Region id", regionId, ((Integer)row.get(4)).intValue());
+                    assertEquals("Region id", regionId, ((Integer)row.get(1)).intValue());
 
                 if (regionId == UNMAPPED_REGION)
                     fail();
-            } catch (CacheException ignored) {
+            }
+            catch (CacheException ignored) {
                 if (regionId != UNMAPPED_REGION)
                     fail();
             }
@@ -714,7 +749,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     /** */
     private static class RegionKey implements Serializable {
         /** Region id. */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         protected int regionId;
     }
 

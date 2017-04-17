@@ -25,7 +25,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests cache query configuration.
  */
-public class IgniteCacheQueryConfigurationSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheDistributedPartitionQueryConfigurationSelfTest extends GridCommonAbstractTest {
     /** Tests partition validation. */
     public void testPartitions() {
         final SqlFieldsQuery qry = new SqlFieldsQuery("select 1");
@@ -65,15 +65,14 @@ public class IgniteCacheQueryConfigurationSelfTest extends GridCommonAbstractTes
             }
         });
 
-        // Expect ordered.
+        // Expecting ordered set.
         int[] tmp = new int[] {6, 2 ,3};
         qry.setPartitions(tmp);
 
         assertTrue(Arrays.equals(new int[]{2, 3, 6}, tmp));
 
-        // If already ordered use same instance.
-        tmp = new int[] {0, 1, 2};
-        qry.setPartitions(tmp);
+        // If already ordered expecting same instance.
+        qry.setPartitions((tmp = new int[] {0, 1, 2}));
 
         assertTrue(tmp == qry.getPartitions());
     }

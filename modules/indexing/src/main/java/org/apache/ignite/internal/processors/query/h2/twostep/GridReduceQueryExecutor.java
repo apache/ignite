@@ -610,11 +610,13 @@ public class GridReduceQueryExecutor {
                     else {
                         partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
 
-                        // If specific partitions are set for a query we must narrow mapping to related nodes.
-                        qryNodesMap = parts == null ? partsMap : F.viewReadOnly(partsMap, new ProjectionFilter(parts),
-                            new QueryNodesPredicate(parts, partsMap));
+                        if (partsMap != null) {
+                            // If specific partitions are set for a query we must narrow mapping to related nodes.
+                            qryNodesMap = parts == null ? partsMap : F.viewReadOnly(partsMap, new ProjectionFilter(parts),
+                                new QueryNodesPredicate(parts, partsMap));
 
-                        nodes = qryNodesMap == null ? null : qryNodesMap.keySet();
+                            nodes = qryNodesMap == null ? null : qryNodesMap.keySet();
+                        }
                     }
                 } else {
                     qryNodesMap = stableDataNodes(topVer, cctx, extraSpaces, parts);

@@ -84,7 +84,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheP
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedSnapshotEnabledQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryAbstractDistributedJoinSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryConfigurationSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedPartitionQueryConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNoRebalanceSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest;
@@ -254,7 +254,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteSqlEntryCacheModeAgnosticTest.class);
         suite.addTestSuite(QueryEntityCaseMismatchTest.class);
         suite.addTestSuite(IgniteCacheDistributedPartitionQuerySelfTest.class);
-        suite.addTestSuite(IgniteCacheQueryConfigurationSelfTest.class);
+        suite.addTestSuite(IgniteCacheDistributedPartitionQueryConfigurationSelfTest.class);
 
         return suite;
     }
