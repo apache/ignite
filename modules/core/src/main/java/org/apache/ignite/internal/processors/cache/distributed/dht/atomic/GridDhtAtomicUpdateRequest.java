@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -91,6 +92,10 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     @GridToStringInclude
     @GridDirectCollection(CacheObject.class)
     private List<CacheObject> nearVals;
+
+    /** Obsolete near values. */
+    @GridToStringInclude
+    private GridIntList obsoleteIndexes;
 
     /** Force transform backups flag. */
     private boolean forceTransformBackups;
@@ -267,6 +272,15 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         long expireTime) {
         assert key.partition() >= 0 : key;
 
+        if (hasKey(key)) {
+            if (obsoleteIndexes == null)
+                obsoleteIndexes = new GridIntList();
+
+            obsoleteIndexes.add(keys.indexOf(key));
+
+            return;
+        }
+
         if (nearKeys == null) {
             nearKeys = new ArrayList<>();
 
@@ -331,6 +345,16 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** {@inheritDoc} */
     @Override public int nearSize() {
         return nearKeys != null ? nearKeys.size() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int obsoleteNearKeysSize() {
+        return obsoleteIndexes != null ? obsoleteIndexes.size() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject obsoleteNearKey(int idx) {
+        return keys.get(obsoleteIndexes.get(idx));
     }
 
     /** {@inheritDoc} */
@@ -603,24 +627,30 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeCollection("prevVals", prevVals, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("obsoleteIndexes", obsoleteIndexes))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeMessage("ttls", ttls))
+                if (!writer.writeCollection("prevVals", prevVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeMessage("updateCntrs", updateCntrs))
+                if (!writer.writeMessage("ttls", ttls))
                     return false;
 
                 writer.incrementState();
 
             case 26:
+                if (!writer.writeMessage("updateCntrs", updateCntrs))
+                    return false;
+
+                writer.incrementState();
+
+            case 27:
                 if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
                     return false;
 
@@ -731,7 +761,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 23:
-                prevVals = reader.readCollection("prevVals", MessageCollectionItemType.MSG);
+                obsoleteIndexes = reader.readMessage("obsoleteIndexes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -739,7 +769,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 24:
-                ttls = reader.readMessage("ttls");
+                prevVals = reader.readCollection("prevVals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -747,7 +777,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 25:
-                updateCntrs = reader.readMessage("updateCntrs");
+                ttls = reader.readMessage("ttls");
 
                 if (!reader.isLastRead())
                     return false;
@@ -755,6 +785,14 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 26:
+                updateCntrs = reader.readMessage("updateCntrs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 27:
                 vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -780,7 +818,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 27;
+        return 28;
     }
 
     /** {@inheritDoc} */
