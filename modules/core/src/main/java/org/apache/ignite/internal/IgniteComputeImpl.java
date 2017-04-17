@@ -1078,7 +1078,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
-        return prj.compute();
+        return prj.compute().withExecutor(execName);
     }
 
     /** {@inheritDoc} */

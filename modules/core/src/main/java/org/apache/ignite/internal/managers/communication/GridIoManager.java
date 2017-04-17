@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -840,7 +841,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (execName != null) {
             try {
-                pools.customExecutor(execName).execute(c);
+                Executor exec = pools.customExecutor(execName);
+                if (exec != null)
+                    exec.execute(c);
+                else {
+                    U.warn(log, "Custom executor '" + execName + "' doesn't exist. " +
+                        "The message will be processed in the pool specified by policy");
+
+                    pools.poolForPolicy(plc).execute(c);
+                }
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to process regular message due to rejected execution. Increase the upper bound " +

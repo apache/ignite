@@ -32,6 +32,8 @@ import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -111,6 +113,17 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    public void testInvalidCustomExecutor() throws Exception {
+        grid(0).compute().withExecutor("invalid").broadcast(new IgniteRunnable() {
+            @Override public void run() {
+                assertTrue(Thread.currentThread().getName().contains("pub"));
+            }
+        });
     }
 
     /**
