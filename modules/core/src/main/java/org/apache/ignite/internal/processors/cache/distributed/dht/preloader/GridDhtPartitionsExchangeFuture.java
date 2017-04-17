@@ -51,6 +51,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapsh
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperationType;
 import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -121,6 +122,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Dummy reassign flag. */
     private final boolean reassign;
 
+    /** */
+    @GridToStringExclude
+    private volatile DiscoCache discoCache;
+
     /** Discovery event. */
     private volatile DiscoveryEvent discoEvt;
 
@@ -160,9 +165,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     private boolean init;
-
-    /** Topology snapshot. */
-    private AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot = new AtomicReference<>();
 
     /** Last committed cache version before next topology version use. */
     private AtomicReference<GridCacheVersion> lastVer = new AtomicReference<>();
@@ -386,6 +388,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @return Discovery cache.
+     */
+    public DiscoCache discoCache() {
+        return discoCache;
+    }
+
+    /**
      * @param cacheId Cache ID to check.
      * @param topVer Topology version.
      * @return {@code True} if cache was added during this exchange.
@@ -428,11 +437,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      *
      * @param exchId Exchange ID.
      * @param discoEvt Discovery event.
+     * @param discoCache Discovery data cache.
      */
-    public void onEvent(GridDhtPartitionExchangeId exchId, DiscoveryEvent discoEvt) {
+    public void onEvent(GridDhtPartitionExchangeId exchId, DiscoveryEvent discoEvt, DiscoCache discoCache) {
         assert exchId.equals(this.exchId);
 
         this.discoEvt = discoEvt;
+        this.discoCache = discoCache;
 
         evtLatch.countDown();
     }
@@ -512,7 +523,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         try {
             AffinityTopologyVersion topVer = topologyVersion();
 
-            srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topVer));
+            discoCache.updateAlives(cctx.discovery());
+
+            srvNodes = new ArrayList<>(discoCache.serverNodes());
 
             remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
 
@@ -912,11 +925,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * @param snapshotOperationMsg Snapshot operation message.
+     * @param snapOpMsg Snapshot operation message.
      */
-    private void startLocalSnasphotOperation(StartSnapshotOperationAckDiscoveryMessage snapshotOperationMsg
+    private void startLocalSnasphotOperation(StartSnapshotOperationAckDiscoveryMessage snapOpMsg
     ) throws IgniteCheckedException {
-        IgniteInternalFuture fut = cctx.database().startLocalSnapshotOperation(snapshotOperationMsg);
+        IgniteInternalFuture fut = cctx.database()
+            .startLocalSnapshotOperation(snapOpMsg.initiatorNodeId(), snapOpMsg.snapshotOperation());
 
         if (fut != null)
             fut.get();
@@ -1017,7 +1031,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         List<String> cachesWithoutNodes = null;
 
         for (String name : cctx.cache().cacheNames()) {
-            if (cctx.discovery().cacheAffinityNodes(name, topologyVersion()).isEmpty()) {
+            if (discoCache.cacheAffinityNodes(name).isEmpty()) {
                 if (cachesWithoutNodes == null)
                     cachesWithoutNodes = new ArrayList<>();
 
@@ -1446,7 +1460,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Cleans up resources to avoid excessive memory usage.
      */
     public void cleanUp() {
-        topSnapshot.set(null);
         singleMsgs.clear();
         fullMsgs.clear();
         msgs.clear();
@@ -1519,13 +1532,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void processMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
         boolean allReceived = false;
+        boolean updateSingleMap = false;
 
         synchronized (mux) {
             assert crd != null;
 
             if (crd.isLocal()) {
                 if (remaining.remove(node.id())) {
-                    updatePartitionSingleMap(node, msg);
+                    updateSingleMap = true;
 
                     if (exchangeOnChangeGlobalState && msg.getException() != null)
                         changeGlobalStateExceptions.put(node.id(), msg.getException());
@@ -1536,6 +1550,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             else
                 singleMsgs.put(node, msg);
         }
+
+        if (updateSingleMap)
+            updatePartitionSingleMap(node, msg);
 
         if (allReceived)
             onAllReceived();
@@ -1732,7 +1749,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             assert partHistSuppliers.isEmpty();
 
-            if (!crd.equals(cctx.discovery().serverNodes(topologyVersion()).get(0))) {
+            if (!crd.equals(discoCache.serverNodes().get(0))) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (!cacheCtx.isLocal())
                         cacheCtx.topology().beforeExchange(this, !centralizedAff);
@@ -2089,6 +2106,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         Set<UUID> reqFrom = null;
 
                         ClusterNode crd0;
+
+                        discoCache.updateAlives(node);
 
                         synchronized (mux) {
                             if (!srvNodes.remove(node))

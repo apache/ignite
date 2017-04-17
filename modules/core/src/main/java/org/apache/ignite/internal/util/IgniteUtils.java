@@ -9167,6 +9167,32 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Checks if the given directory exists and attempts to create one if not.
+     *
+     * @param dir Directory to check.
+     * @param msg Directory name for the messages.
+     * @param log Optional logger to log a message that the directory has been resolved.
+     * @throws IgniteCheckedException If directory does not exist and failed to create it, or if a file with
+     *      the same name already exists.
+     */
+    public static void ensureDirectory(Path dir, String msg, IgniteLogger log) throws IgniteCheckedException {
+        if (!Files.exists(dir)) {
+            try {
+                Files.createDirectories(dir);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to create " + msg + ": " + dir.toAbsolutePath(), e);
+            }
+        }
+        else if (!Files.isDirectory(dir))
+            throw new IgniteCheckedException("Failed to initialize " + msg +
+                " (a file with the same name already exists): " + dir.toAbsolutePath());
+
+        if (log != null && log.isInfoEnabled())
+            log.info("Resolved " + msg + ": " + dir.toAbsolutePath());
+    }
+
+    /**
      * Creates {@code IgniteCheckedException} with the collection of suppressed exceptions.
      *
      * @param msg Message.

@@ -102,9 +102,9 @@
     </category>
     -->
 
-    <!-- Disable all open source debugging. -->
-    <category name="org">
-        <level value="INFO"/>
+    <!-- Enable GG database debugging. -->
+    <category name="org.gridgain.grid.internal.processors.cache.database">
+        <level value="DEBUG"/>
     </category>
 
     <category name="org.eclipse.jetty">
@@ -113,7 +113,7 @@
 
     <!-- Default settings. -->
     <root>
-        <!-- Print out all debug by default. -->
+        <!-- Print at info by default. -->
         <level value="INFO"/>
 
         <!-- Append to file and console. -->

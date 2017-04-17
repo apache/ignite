@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,7 +31,7 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -209,12 +210,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param snapshotMsg Snapshot message.
+     * @param initiatorNodeId Snapshot message.
+     * @param snapshotOperation
      * @return Snapshot creation init future or {@code null} if snapshot is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture startLocalSnapshotOperation(
-        StartSnapshotOperationAckDiscoveryMessage snapshotMsg)
+    @Nullable public IgniteInternalFuture startLocalSnapshotOperation(UUID initiatorNodeId,
+        SnapshotOperation snapshotOperation)
         throws IgniteCheckedException {
         return null;
     }
