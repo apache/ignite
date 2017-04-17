@@ -19,25 +19,12 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 
-import java.util.Arrays;
-import java.util.List;
-
 /**
  * Test dynamic schema operations from server node which do not pass node filter and which is coordinator.
  */
-public class DynamicIndexBasicServerNodeFIlterCoordinatorSelfTest extends DynamicIndexBasicAbstractSelfTest {
+public class DynamicIndexBasicServerNodeFilterCoordinatorSelfTest extends DynamicIndexBasicServerCoordinatorSelfTest {
     /** {@inheritDoc} */
-    @Override protected List<IgniteConfiguration> configurations() throws Exception {
-        return Arrays.asList(
-            serverConfiguration(IDX_SRV_CRD, true),
-            serverConfiguration(IDX_SRV_NON_CRD),
-            clientConfiguration(IDX_CLI),
-            serverConfiguration(IDX_SRV_FILTERED, true)
-        );
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int nodeIndex() {
-        return IDX_SRV_CRD;
+    @Override protected IgniteConfiguration serverCoordinatorConfiguration(int idx) throws Exception {
+        return serverConfiguration(idx, true);
     }
 }

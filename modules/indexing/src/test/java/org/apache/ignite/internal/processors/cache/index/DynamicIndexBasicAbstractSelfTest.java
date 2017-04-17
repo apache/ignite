@@ -31,8 +31,10 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests for dynamic index creation.
@@ -50,6 +52,9 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
 
     /** Node index for server which doesn't pass node filter. */
     protected static final int IDX_SRV_FILTERED = 3;
+
+    /** Node index for client with near-only cache. */
+    protected static final int IDX_CLI_NEAR_ONLY = 4;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -75,6 +80,10 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      */
     private void initialize(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) {
         node().getOrCreateCache(cacheConfiguration(mode, atomicityMode, near));
+
+
+
+        grid(IDX_CLI_NEAR_ONLY).getOrCreateNearCache(CACHE_NAME, new NearCacheConfiguration<>());
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
@@ -1003,11 +1012,23 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      */
     protected List<IgniteConfiguration> configurations() throws Exception {
         return Arrays.asList(
-            serverConfiguration(IDX_SRV_CRD),
+            serverCoordinatorConfiguration(IDX_SRV_CRD),
             serverConfiguration(IDX_SRV_NON_CRD),
             clientConfiguration(IDX_CLI),
-            serverConfiguration(IDX_SRV_FILTERED, true)
+            serverConfiguration(IDX_SRV_FILTERED, true),
+            clientConfiguration(IDX_CLI_NEAR_ONLY)
         );
+    }
+
+    /**
+     * Get server coordinator configuration.
+     *
+     * @param idx Index.
+     * @return Configuration.
+     * @throws Exception If failed.
+     */
+    protected IgniteConfiguration serverCoordinatorConfiguration(int idx) throws Exception {
+        return serverConfiguration(idx);
     }
 
     /**
