@@ -37,7 +37,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -1197,12 +1196,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             Collection<MemoryPolicy> policies = ctx.cache().context().database().memoryPolicies();
 
-                            if(!F.isEmpty(policies)){
-                                HashSet<PageMemory> processed = U.newHashSet(policies.size());
-
+                            if (!F.isEmpty(policies)) {
                                 for (MemoryPolicy memPlc : policies) {
-                                    if(processed.add(memPlc.pageMemory()))
-                                        loadedPages += memPlc.pageMemory().loadedPages();
+                                    loadedPages += memPlc.pageMemory().loadedPages();
                                 }
                             }
 
