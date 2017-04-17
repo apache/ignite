@@ -80,7 +80,8 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
         long size = (1024 * (isLargePage() ? 16 : 1) + 24) * pagesMax();
 
-        mCfg.setPageCacheSize(Math.max(size, MIN_PAGE_CACHE_SIZE));
+        mCfg.setDefaultMemoryPolicyName("default").setMemoryPolicies(
+            new MemoryPolicyConfiguration().setSize(Math.max(size, MIN_PAGE_CACHE_SIZE)).setName("default"));
     }
 
     /**

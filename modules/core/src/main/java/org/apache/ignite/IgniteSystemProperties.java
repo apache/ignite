@@ -301,9 +301,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES =
         "IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES";
 
-    /** Ttl of removed cache entries (ms). */
-    public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
-
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
      * Makes sense only for {@link org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}.

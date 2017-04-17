@@ -348,30 +348,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
-     * Records discovery events.
-     *
-     * @param evt Event to record.
-     * @param discoCache Discovery cache.
-     */
-    public void record(DiscoveryEvent evt, DiscoCache discoCache) {
-        assert evt != null;
-
-        if (!enterBusy())
-            return;
-
-        try {
-            // Notify internal discovery listeners first.
-            notifyDiscoveryListeners(evt, discoCache);
-
-            // Notify all other registered listeners.
-            record(evt);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
      * Gets types of enabled user-recordable events.
      *
      * @return Array of types of enabled user-recordable events.
@@ -839,38 +815,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
             if (p instanceof PlatformEventFilterListener)
                 ((PlatformEventFilterListener)p).onClose();
-        }
-
-        return found;
-    }
-
-    /**
-     * Removes listener for specified events, if any. If no event types provided - it
-     * remove the listener for all its registered events.
-     *
-     * @param lsnr Listener.
-     * @param types Event types.
-     * @return Returns {@code true} if removed.
-     */
-    public boolean removeDiscoveryEventListener(DiscoveryEventListener lsnr, @Nullable int... types) {
-        assert lsnr != null;
-
-        boolean found = false;
-
-        if (F.isEmpty(types)) {
-            for (Set<DiscoveryEventListener> set : discoLsnrs.values())
-                if (set.remove(lsnr))
-                    found = true;
-        }
-        else {
-            assert types != null;
-
-            for (int type : types) {
-                Set<DiscoveryEventListener> set = discoLsnrs.get(type);
-
-                if (set != null && set.remove(lsnr))
-                    found = true;
-            }
         }
 
         return found;
