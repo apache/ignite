@@ -46,6 +46,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @SuppressWarnings("unchecked")
 public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest {
+    /** Test duration. */
+    private static final long TEST_DUR = 10_000L;
+
     /** Latches to block certain index operations. */
     private static final ConcurrentHashMap<UUID, T2<CountDownLatch, AtomicBoolean>> BLOCKS = new ConcurrentHashMap<>();
 
@@ -224,6 +227,54 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
     }
 
     /**
+     * Test index consistency on re-balance.
+     *
+     * @throws Exception If failed.
+     */
+    public void testRebalance() throws Exception {
+        int cacheSize = 100_000;
+
+        // Start cache and populate it with data.
+        Ignite srv1 = Ignition.start(serverConfiguration(1));
+        Ignite srv2 = Ignition.start(serverConfiguration(2));
+
+        srv1.createCache(cacheConfiguration());
+
+        awaitPartitionMapExchange();
+
+        put(srv1, 0, cacheSize);
+
+        // Start index operation in blocked state.
+        blockIndexing(srv1);
+        blockIndexing(srv2);
+
+        QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+        final IgniteInternalFuture<?> idxFut =
+            queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
+
+        Thread.sleep(100);
+
+        // Start two more nodes and unblock index operation in the middle.
+        Ignition.start(serverConfiguration(3));
+
+        unblockIndexing(srv1);
+        unblockIndexing(srv2);
+
+        Ignition.start(serverConfiguration(4));
+
+        awaitPartitionMapExchange();
+
+        // Validate index state.
+        idxFut.get();
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, cacheSize - SQL_ARG_1);
+    }
+
+    /**
      * Check what happen in case cache is destroyed before operation is started.
      *
      * @throws Exception If failed.
@@ -261,7 +312,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
         try {
             idxFut.get();
 
-            fail("Ëxception has not been thrown.");
+            fail("Exception has not been thrown.");
         }
         catch (SchemaOperationException e) {
             // No-op.
@@ -323,8 +374,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
             }
         }, 8);
 
-        // Let them play for 30 seconds.
-        Thread.sleep(30_000);
+        Thread.sleep(TEST_DUR);
 
         stopped.set(true);
 
@@ -362,7 +412,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
         final AtomicBoolean stopped = new AtomicBoolean();
 
-        // Start several threads which will mess around indexes.
+        // Thread which will mess around indexes.
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
         IgniteInternalFuture idxFut = multithreadedAsync(new Callable<Void>() {
@@ -412,14 +462,12 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
             }
         }, 8);
 
-        // Let them play for 30 seconds.
-        Thread.sleep(30_000);
+        Thread.sleep(TEST_DUR);
 
         stopped.set(true);
 
         // Make sure nothing hanged.
         idxFut.get();
-
         qryFut.get();
     }
 
@@ -526,8 +574,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
             }
         }, 1);
 
-        // Let them play for 30 seconds.
-        Thread.sleep(30_000);
+        Thread.sleep(TEST_DUR);
 
         stopped.set(true);
 
@@ -582,6 +629,8 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
 
                         exists = true;
                     }
+
+                    Thread.sleep(ThreadLocalRandom.current().nextLong(200L, 400L));
                 }
 
                 return null;
@@ -626,8 +675,7 @@ public class DynamicIndexConcurrentSelfTest extends DynamicIndexAbstractSelfTest
             }
         }, 8);
 
-        // Let them play for 30 seconds.
-        Thread.sleep(30_000);
+        Thread.sleep(TEST_DUR);
 
         stopped.set(true);
 

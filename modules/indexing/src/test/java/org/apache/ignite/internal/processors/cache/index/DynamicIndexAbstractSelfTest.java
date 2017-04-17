@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
@@ -315,8 +316,21 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param to To key.
      */
     protected static void put(Ignite node, int from, int to) {
-        for (int i = from; i < to; i++)
-            put(node, i);
+        try (IgniteDataStreamer streamer = node.dataStreamer(CACHE_NAME)) {
+            streamer.keepBinary(true);
+
+            for (int i = from; i < to; i++) {
+                BinaryObject key = key(node, i);
+                BinaryObject val = value(node, i);
+
+                streamer.addData(key, val);
+            }
+
+            streamer.flush();
+        }
+
+//        for (int i = from; i < to; i++)
+//            put(node, i);
     }
 
     /**
