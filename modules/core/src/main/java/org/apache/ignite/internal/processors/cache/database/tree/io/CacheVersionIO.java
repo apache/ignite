@@ -36,7 +36,7 @@ public class CacheVersionIO {
     private static final int NULL_SIZE = 1;
 
     /** Serialized size in bytes. */
-    private static final int SIZE_V1 = 25;
+    private static final int SIZE_V1 = 17;
 
     /**
      * @param ver Version.
