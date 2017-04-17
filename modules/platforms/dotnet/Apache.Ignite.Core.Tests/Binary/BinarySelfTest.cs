@@ -2335,12 +2335,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
+
         public class HandleOuterExclusive : HandleOuter
         {
             /** <inheritdoc /> */
             override public void WriteBinary(IBinaryWriter writer)
             {
-                var writer0 = (BinaryWriter) writer;
+                BinaryWriter writer0 = (BinaryWriter)writer;
 
                 writer.WriteString("before", Before);
 
@@ -2348,7 +2349,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 
                 writer.WriteString("after", After);
 
-                var rawWriter = writer.GetRawWriter();
+                IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
 

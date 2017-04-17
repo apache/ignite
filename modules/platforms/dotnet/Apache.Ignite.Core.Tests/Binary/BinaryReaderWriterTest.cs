@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
     using System.IO;
-    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -40,30 +39,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var marsh = new Marshaller(new BinaryConfiguration(typeof(ReadWriteAll)));
 
-            var bytes = marsh.Marshal(new ReadWriteAll());
-
-            // Verify reading (asserts are in ReadBinary).
-            marsh.Unmarshal<ReadWriteAll>(bytes);
-
-            // Verify field ordering.
-            var obj = marsh.Unmarshal<BinaryObject>(bytes, BinaryMode.ForceBinary);
-
-            var fieldNames = new[]
-            {
-                "Byte", "ByteArray", "Char", "CharArray", "Short", "ShortArray", "Int",
-                "IntArray", "Long", "LongArray", "Boolean", "BooleanArray", "Float", "FloatArray", "Double",
-                "DoubleArray", "Decimal", "DecimalN", "DecimalArray", "Timestamp", "TimestampArray", "String",
-                "StringArray", "Guid", "GuidN", "GuidArray", "Enum", "EnumArray"
-            };
-
-            var fields = fieldNames.Select(x =>
-            {
-                int pos;
-                obj.TryGetFieldPosition(x, out pos);
-                return new {Name = x, Pos = pos};
-            }).ToArray();
-
-            Assert.AreEqual(fields.OrderBy(x => x.Name), fields.OrderBy(x => x.Pos));
+            marsh.Unmarshal<ReadWriteAll>(marsh.Marshal(new ReadWriteAll()));
         }
 
         /// <summary>
