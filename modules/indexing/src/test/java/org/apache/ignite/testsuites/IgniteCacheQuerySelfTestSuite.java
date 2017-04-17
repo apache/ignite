@@ -80,12 +80,19 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQueryP2PDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexAtomicPartitionedNearSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexAtomicPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexAtomicReplicatedNearSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexAtomicReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexTransactionalPartitionedNearSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexTransactionalPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexTransactionalReplicatedNearSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexTransactionalReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexClientBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerCoordinatorBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFIlterBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFilterCoordinatorBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerBasicSelfTest;
-import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
@@ -202,7 +209,14 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteSqlQueryMinMaxTest.class);
 
         // DDL.
-        suite.addTestSuite(H2DynamicIndexSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexTransactionalReplicatedSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexTransactionalReplicatedNearSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexTransactionalPartitionedSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexTransactionalPartitionedNearSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexAtomicReplicatedSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexAtomicReplicatedNearSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexAtomicPartitionedSelfTest.class);
+        suite.addTestSuite(H2DynamicIndexAtomicPartitionedNearSelfTest.class);
 
         // Fields queries.
         suite.addTestSuite(SqlFieldsQuerySelfTest.class);

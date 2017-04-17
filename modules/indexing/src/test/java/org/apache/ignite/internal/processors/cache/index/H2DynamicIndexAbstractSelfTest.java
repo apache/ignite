@@ -25,10 +25,13 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -37,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Test that checks indexes handling on H2 side.
  */
-public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
+public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
     private final static int CLIENT = 2;
 
@@ -319,12 +322,13 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
      * @return Default cache configuration.
      */
     private CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
+        CacheConfiguration<KeyClass, ValueClass> ccfg = new CacheConfiguration<KeyClass, ValueClass>()
+            .setName(CACHE_NAME);
 
         QueryEntity entity = new QueryEntity();
 
-        entity.setKeyType(AbstractSchemaSelfTest.KeyClass.class.getName());
-        entity.setValueType(AbstractSchemaSelfTest.ValueClass.class.getName());
+        entity.setKeyType(KeyClass.class.getName());
+        entity.setValueType(ValueClass.class.getName());
 
         entity.addQueryField("id", Long.class.getName(), null);
         entity.addQueryField(FIELD_NAME_1, String.class.getName(), null);
@@ -338,8 +342,30 @@ public class H2DynamicIndexSelfTest extends AbstractSchemaSelfTest {
 
         ccfg.setSqlEscapeAll(true);
 
+        ccfg.setAtomicityMode(atomicityMode());
+
+        ccfg.setCacheMode(cacheMode());
+
+        if (nearCache())
+            ccfg.setNearConfiguration(new NearCacheConfiguration<KeyClass, ValueClass>());
+
         return ccfg;
     }
+
+    /**
+     * @return Cache mode to use.
+     */
+    protected abstract CacheMode cacheMode();
+
+    /**
+     * @return Cache atomicity mode to use.
+     */
+    protected abstract CacheAtomicityMode atomicityMode();
+
+    /**
+     * @return Whether to use near cache.
+     */
+    protected abstract boolean nearCache();
 
     /**
      * Ensure that SQL exception is thrown.
