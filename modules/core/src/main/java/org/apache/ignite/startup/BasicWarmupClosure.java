@@ -413,8 +413,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
         return
             F.eq(ccfg0.getCacheMode(), ccfg1.getCacheMode()) &&
             F.eq(ccfg0.getBackups(), ccfg1.getBackups()) &&
-            F.eq(ccfg0.getAtomicityMode(), ccfg1.getAtomicityMode()) &&
-            F.eq(ccfg0.getAtomicWriteOrderMode(), ccfg1.getAtomicWriteOrderMode());
+            F.eq(ccfg0.getAtomicityMode(), ccfg1.getAtomicityMode());
     }
 
     /**

@@ -236,32 +236,43 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nid)
-                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryTask');
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryTask')
+                .addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArg')
+                .addParam('p4', cacheName)
+                .addParam('p5', query)
+                .addParam('p6', nonCollocatedJoins)
+                .addParam('p7', enforceJoinOrder)
+                .addParam('p8', local)
+                .addParam('p9', pageSize);
 
-            if (enforceJoinOrder) {
-                cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArgV3')
-                    .addParam('p4', cacheName)
-                    .addParam('p5', query)
-                    .addParam('p6', nonCollocatedJoins)
-                    .addParam('p7', enforceJoinOrder)
-                    .addParam('p8', local)
-                    .addParam('p9', pageSize);
-            }
-            else if (nonCollocatedJoins) {
-                cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArgV2')
-                    .addParam('p4', cacheName)
-                    .addParam('p5', query)
-                    .addParam('p6', true)
-                    .addParam('p7', local)
-                    .addParam('p8', pageSize);
-            }
-            else {
-                cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArg')
-                    .addParam('p4', cacheName)
-                    .addParam('p5', query)
-                    .addParam('p6', local)
-                    .addParam('p7', pageSize);
-            }
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @param {String} cacheName Cache name.
+         * @param {String} filter Filter text.
+         * @param {Boolean} regEx Flag whether filter by regexp.
+         * @param {Boolean} caseSensitive Case sensitive filtration.
+         * @param {Boolean} near Scan near cache.
+         * @param {Boolean} local Flag whether to execute query locally.
+         * @param {int} pageSize Page size.
+         * @returns {Promise}
+         */
+        queryScan(demo, nid, cacheName, filter, regEx, caseSensitive, near, local, pageSize) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorScanQueryTask')
+                .addParam('p3', 'org.apache.ignite.internal.visor.query.VisorScanQueryArg')
+                .addParam('p4', cacheName)
+                .addParam('p5', filter)
+                .addParam('p6', regEx)
+                .addParam('p7', caseSensitive)
+                .addParam('p8', near)
+                .addParam('p9', local)
+                .addParam('p10', pageSize);
 
             return this.executeRest(cmd);
         }
@@ -278,7 +289,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nid)
                 .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryNextPageTask')
-                .addParam('p3', 'org.apache.ignite.lang.IgniteBiTuple')
+                .addParam('p3', 'org.apache.ignite.lang.VisorQueryNextPageTaskArg')
                 .addParam('p4', 'java.lang.String')
                 .addParam('p5', 'java.lang.Integer')
                 .addParam('p6', queryId)
@@ -316,7 +327,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nids)
-                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheQueryDetailMetricsCollectorTask')
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryDetailMetricsCollectorTask')
                 .addParam('p3', 'java.lang.Long')
                 .addParam('p4', since);
 
@@ -332,7 +343,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nids)
-                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheResetQueryDetailMetricsTask')
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryResetDetailMetricsTask')
                 .addParam('p3', 'java.lang.Void');
 
             return this.executeRest(cmd);
@@ -348,7 +359,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', '')
-                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorCollectRunningQueriesTask')
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorRunningQueriesCollectorTask')
                 .addParam('p3', 'java.lang.Long')
                 .addParam('p4', duration);
 
@@ -366,10 +377,9 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nid)
-                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorCancelQueriesTask')
-                .addParam('p3', 'java.util.Collection')
-                .addParam('p4', 'java.lang.Long')
-                .addParam('p5', queryId);
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryCancelTask')
+                .addParam('p3', 'java.lang.Long')
+                .addParam('p4', queryId);
 
             return this.executeRest(cmd);
         }
@@ -471,7 +481,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nids)
                 .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask')
-                .addParam('p3', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask$VisorCacheStartArg')
+                .addParam('p3', 'org.apache.ignite.internal.visor.cache.VisorCacheStartArg')
                 .addParam('p4', near)
                 .addParam('p5', cacheName)
                 .addParam('p6', cfg);
@@ -509,24 +519,6 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask')
                 .addParam('p3', 'java.lang.String')
                 .addParam('p4', cacheName);
-
-            return this.executeRest(cmd);
-        }
-
-        /**
-         * @param {Boolean} demo Is need run command on demo node.
-         * @param {String} nid Node id.
-         * @param {String} cacheNames Cache names separated by comma.
-         * @returns {Promise}
-         */
-        cacheSwapBackups(demo, nid, cacheNames) {
-            const cmd = new Command(demo, 'exe')
-                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
-                .addParam('p1', nid)
-                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask')
-                .addParam('p3', 'java.util.Set')
-                .addParam('p4', 'java.lang.String')
-                .addParam('p5', cacheNames);
 
             return this.executeRest(cmd);
         }

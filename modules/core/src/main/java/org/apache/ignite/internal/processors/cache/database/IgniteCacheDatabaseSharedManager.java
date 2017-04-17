@@ -98,20 +98,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void init() throws IgniteCheckedException {
         if (memPlcMap == null) {
-            MemoryConfiguration dbCfg = cctx.kernalContext().config().getMemoryConfiguration();
+            MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
-            if (dbCfg == null)
-                dbCfg = new MemoryConfiguration();
+            if (memCfg == null)
+                memCfg = new MemoryConfiguration();
 
-            validateConfiguration(dbCfg);
+            validateConfiguration(memCfg);
 
-            pageSize = dbCfg.getPageSize();
+            pageSize = memCfg.getPageSize();
 
-            initPageMemoryPolicies(dbCfg);
+            initPageMemoryPolicies(memCfg);
 
             startMemoryPolicies();
 
-            initPageMemoryDataStructures(dbCfg);
+            initPageMemoryDataStructures(memCfg);
         }
     }
 

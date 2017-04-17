@@ -22,9 +22,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Database configuration used to configure database and manage offheap memory of Ignite Node.
+ * Page memory configuration of an Apache Ignite node.
  *
- * <p>It may be configured under {@link IgniteConfiguration XML configuration} as follows:</p>
+ * <p>It can be configured using {@link IgniteConfiguration} as follows:</p>
  * <pre>
  *     {@code
  *     <property name="memoryConfiguration">
