@@ -33,6 +33,7 @@ import java.util.List;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -80,8 +81,6 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      */
     private void initialize(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) {
         node().getOrCreateCache(cacheConfiguration(mode, atomicityMode, near));
-
-
 
         grid(IDX_CLI_NEAR_ONLY).getOrCreateNearCache(CACHE_NAME, new NearCacheConfiguration<>());
 
@@ -986,6 +985,34 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
         }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+    }
+
+    /**
+     * Test that operations fail on LOCAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testFailOnLocalCache() throws Exception {
+        for (Ignite node : Ignition.allGrids()) {
+            if (!node.configuration().isClientMode())
+                node.getOrCreateCache(cacheConfiguration().setCacheMode(LOCAL));
+        }
+
+        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
+                queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
+            }
+        }, SchemaOperationException.CODE_GENERIC);
+
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+
+        assertSchemaException(new RunnableX() {
+            @Override public void run() throws Exception {
+                queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true).get();
+            }
+        }, SchemaOperationException.CODE_GENERIC);
     }
 
     /**

@@ -21,12 +21,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -350,11 +352,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 msg.onError(new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, space));
             }
             else {
-                // Preserve deployment ID so that we can distinguish between different caches with the same name.
-                if (msg.deploymentId() == null)
-                    msg.deploymentId(cacheDesc.deploymentId());
+                CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
-                assert F.eq(cacheDesc.deploymentId(), msg.deploymentId());
+                if (ccfg.getCacheMode() == CacheMode.LOCAL) {
+                    // Distributed operation is not allowed on LOCAL caches.
+                    if (log.isDebugEnabled())
+                        log.debug("Received schema propose discovery message, but cache is LOCAL " +
+                            "(will report error) [opId=" + opId + ", msg=" + msg + ']');
+
+                    msg.onError(new SchemaOperationException("Schema changes are not supported for LOCAL cache."));
+                }
+                else {
+                    // Preserve deployment ID so that we can distinguish between different caches with the same name.
+                    if (msg.deploymentId() == null)
+                        msg.deploymentId(cacheDesc.deploymentId());
+
+                    assert F.eq(cacheDesc.deploymentId(), msg.deploymentId());
+                }
             }
         }
 
