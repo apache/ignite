@@ -67,7 +67,7 @@ public class VisorCacheConfigurationCollectorJob
      * @return Data transfer object to send it to Visor.
      */
     protected VisorCacheConfiguration config(CacheConfiguration ccfg) {
-        return new VisorCacheConfiguration().from(ignite, ccfg);
+        return new VisorCacheConfiguration(ignite, ccfg);
     }
 
     /** {@inheritDoc} */

@@ -91,11 +91,6 @@ public interface GridCacheConcurrentMap {
     public void decrementPublicSize(GridCacheEntryEx e);
 
     /**
-     * @return Partition random entry.
-     */
-    @Nullable public GridCacheMapEntry randomEntry();
-
-    /**
      * @return Random entry out of hash map.
      */
     public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter);

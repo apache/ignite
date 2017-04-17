@@ -366,7 +366,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         private TestDataRow(int keySize, int valSize) {
             key = new TestCacheObject(keySize);
             val = new TestCacheObject(valSize);
-            ver = new GridCacheVersion(keySize, valSize, 0L, 1);
+            ver = new GridCacheVersion(keySize, valSize, 1);
         }
 
         /** {@inheritDoc} */

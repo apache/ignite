@@ -38,7 +38,7 @@ const DFLT_IGFS = {
     dualModeMaxPendingPutsSize: 0,
     dualModePutExecutorServiceShutdown: false,
     blockSize: 65536,
-    streamBufferSize: 65536,
+    bufferSize: 65536,
     maxSpaceSize: 0,
     maximumTaskRangeLength: 0,
     managementPort: 11400,

@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -528,7 +527,6 @@ public class IgfsUtils {
      */
     private static CacheConfiguration defaultCacheConfig() {
         CacheConfiguration cfg = new CacheConfiguration();
-        cfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setCacheMode(CacheMode.PARTITIONED);

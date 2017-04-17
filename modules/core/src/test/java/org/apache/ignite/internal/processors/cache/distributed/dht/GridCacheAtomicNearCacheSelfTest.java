@@ -29,7 +29,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -47,7 +46,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -74,9 +72,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** */
-    private CacheAtomicWriteOrderMode writeOrderMode;
-
-    /** */
     private int lastKey;
 
     /** {@inheritDoc} */
@@ -90,10 +85,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         ccfg.setNearConfiguration(new NearCacheConfiguration());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
-
-        assert writeOrderMode != null;
-
-        ccfg.setAtomicWriteOrderMode(writeOrderMode);
         ccfg.setBackups(backups);
 
         cfg.setCacheConfiguration(ccfg);
@@ -109,8 +100,8 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNoBackupsPrimaryWriteOrder() throws Exception {
-        startGrids(0, CacheAtomicWriteOrderMode.PRIMARY);
+    public void testNoBackups() throws Exception {
+        doStartGrids(0);
 
         checkNearCache();
     }
@@ -118,26 +109,8 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNoBackupsClockWriteOrder() throws Exception {
-        startGrids(0, CLOCK);
-
-        checkNearCache();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testWithBackupsPrimaryWriteOrder() throws Exception {
-        startGrids(2, CacheAtomicWriteOrderMode.PRIMARY);
-
-        checkNearCache();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testWithBackupsClockWriteOrder() throws Exception {
-        startGrids(2, CLOCK);
+    public void testWithBackups() throws Exception {
+        doStartGrids(2);
 
         checkNearCache();
     }
@@ -236,8 +209,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
 
-            atomicClockModeDelay(cache);
-
             for (Integer key : nearKeys.keySet())
                 nearKeys.put(key, val);
 
@@ -321,8 +292,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
-
-            atomicClockModeDelay(cache);
 
             log.info("Transform [igniteInstanceName=" + grid(i).name() + ", val=" + val + ']');
 
@@ -414,8 +383,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
-
-            atomicClockModeDelay(cache);
 
             for (Integer key : nearKeys)
                 nearKeys.add(key);
@@ -536,8 +503,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
 
-            atomicClockModeDelay(cache);
-
             log.info("Put [igniteInstanceName=" + grid(i).name() + ", val=" + val + ']');
 
             cache.put(nearKey, val);
@@ -639,8 +604,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> primaryCache = G.ignite(
             (String)aff.mapKeyToNode(nearKey).attribute(ATTR_IGNITE_INSTANCE_NAME)).cache(null);
 
-        atomicClockModeDelay(cache0);
-
         primaryCache.put(nearKey, 2); // This put should see that near entry evicted on grid0 and remove reader.
 
         for (int i = 0; i < GRID_CNT; i++)
@@ -686,8 +649,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         Ignite primaryNode = G.ignite((String)aff.mapKeyToNode(nearKey).attribute(ATTR_IGNITE_INSTANCE_NAME));
 
         IgniteCache<Integer, Integer> primaryCache = primaryNode.cache(null);
-
-        atomicClockModeDelay(primaryCache);
 
         primaryCache.put(nearKey, 2); // Put from primary, check there are no readers.
 
@@ -825,13 +786,10 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param backups Backups number.
-     * @param writeOrderMode Write order mode.
      * @throws Exception If failed.
      */
-    private void startGrids(int backups, CacheAtomicWriteOrderMode writeOrderMode) throws Exception {
+    private void doStartGrids(int backups) throws Exception {
         this.backups = backups;
-
-        this.writeOrderMode = writeOrderMode;
 
         startGrids(GRID_CNT);
 

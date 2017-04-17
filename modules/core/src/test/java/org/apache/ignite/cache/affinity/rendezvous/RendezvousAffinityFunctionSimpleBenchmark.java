@@ -32,10 +32,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
-import org.apache.ignite.cache.affinity.AffinityNodeHashResolver;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -653,9 +651,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
          *  is primary). */
         private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
 
-        /** Hash ID resolver. */
-        private AffinityNodeHashResolver hashIdRslvr = null;
-
         /** Ignite instance. */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -765,42 +760,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
 
         /**
-         * Gets hash ID resolver for nodes. This resolver is used to provide
-         * alternate hash ID, other than node ID.
-         * <p>
-         * Node IDs constantly change when nodes get restarted, which causes them to
-         * be placed on different locations in the hash ring, and hence causing
-         * repartitioning. Providing an alternate hash ID, which survives node restarts,
-         * puts node on the same location on the hash ring, hence minimizing required
-         * repartitioning.
-         *
-         * @return Hash ID resolver.
-         */
-        @Deprecated
-        public AffinityNodeHashResolver getHashIdResolver() {
-            return hashIdRslvr;
-        }
-
-        /**
-         * Sets hash ID resolver for nodes. This resolver is used to provide
-         * alternate hash ID, other than node ID.
-         * <p>
-         * Node IDs constantly change when nodes get restarted, which causes them to
-         * be placed on different locations in the hash ring, and hence causing
-         * repartitioning. Providing an alternate hash ID, which survives node restarts,
-         * puts node on the same location on the hash ring, hence minimizing required
-         * repartitioning.
-         *
-         * @param hashIdRslvr Hash ID resolver.
-         *
-         * @deprecated Use {@link IgniteConfiguration#setConsistentId(Serializable)} instead.
-         */
-        @Deprecated
-        public void setHashIdResolver(AffinityNodeHashResolver hashIdRslvr) {
-            this.hashIdRslvr = hashIdRslvr;
-        }
-
-        /**
          * Gets optional backup filter. If not {@code null}, backups will be selected
          * from all nodes that pass this filter. First node passed to this filter is primary node,
          * and second node is a node being tested.
@@ -886,10 +845,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
          * @return Node hash.
          */
         public Object resolveNodeHash(ClusterNode node) {
-            if (hashIdRslvr != null)
-                return hashIdRslvr.resolve(node);
-            else
-                return node.consistentId();
+            return node.consistentId();
         }
 
         /**
@@ -1070,7 +1026,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeInt(parts);
             out.writeBoolean(exclNeighbors);
-            out.writeObject(hashIdRslvr);
             out.writeObject(backupFilter);
         }
 
@@ -1079,7 +1034,6 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             parts = in.readInt();
             exclNeighbors = in.readBoolean();
-            hashIdRslvr = (AffinityNodeHashResolver)in.readObject();
             backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
         }
 

@@ -47,9 +47,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Plugin.Cache;
     using Apache.Ignite.Core.Tests.Binary;
     using Apache.Ignite.Core.Tests.Plugin;
-    using Apache.Ignite.Core.Tests.Plugin.Cache;
     using Apache.Ignite.Core.Transactions;
     using Apache.Ignite.NLog;
     using NUnit.Framework;
@@ -86,9 +86,9 @@ namespace Apache.Ignite.Core.Tests
                             </discoverySpi>
                             <communicationSpi type='TcpCommunicationSpi' ackSendThreshold='33' idleConnectionTimeout='0:1:2' />
                             <jvmOptions><string>-Xms1g</string><string>-Xmx4g</string></jvmOptions>
-                            <lifecycleBeans>
-                                <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
-                            </lifecycleBeans>
+                            <lifecycleHandlers>
+                                <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
+                            </lifecycleHandlers>
                             <cacheConfiguration>
                                 <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true'>
                                     <queryEntities>    
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests
                                     </nearConfiguration>
                                     <affinityFunction type='RendezvousAffinityFunction' partitions='99' excludeNeighbors='true' />
                                     <expiryPolicyFactory type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyPolicyFactory, Apache.Ignite.Core.Tests' />
-                                    <pluginConfigurations><iCachePluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.Cache.CachePluginConfiguration, Apache.Ignite.Core.Tests' testProperty='baz' /></pluginConfigurations>
+                                    <pluginConfigurations><iCachePluginConfiguration type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyPluginConfiguration, Apache.Ignite.Core.Tests' /></pluginConfigurations>
                                 </cacheConfiguration>
                                 <cacheConfiguration name='secondCache' />
                             </cacheConfiguration>
@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(7,
                 ((TcpDiscoveryMulticastIpFinder) ((TcpDiscoverySpi) cfg.DiscoverySpi).IpFinder).AddressRequestAttempts);
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
-            Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
+            Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleHandlers.Single()).Foo);
             Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.NameMapper).Bar);
             Assert.AreEqual(
                 "Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests",
@@ -242,8 +242,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(plugins);
             Assert.IsNotNull(plugins.Cast<TestIgnitePluginConfiguration>().SingleOrDefault());
 
-            var cachePlugCfg = cacheCfg.PluginConfigurations.Cast<CachePluginConfiguration>().Single();
-            Assert.AreEqual("baz", cachePlugCfg.TestProperty);
+            Assert.IsNotNull(cacheCfg.PluginConfigurations.Cast<MyPluginConfiguration>().SingleOrDefault());
 
             var eventStorage = cfg.EventStorageSpi as MemoryEventStorageSpi;
             Assert.IsNotNull(eventStorage);
@@ -610,7 +609,6 @@ namespace Apache.Ignite.Core.Tests
                 {
                     new CacheConfiguration("cacheName")
                     {
-                        AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
                         AtomicityMode = CacheAtomicityMode.Transactional,
                         Backups = 15,
                         CacheMode = CacheMode.Replicated,
@@ -679,7 +677,7 @@ namespace Apache.Ignite.Core.Tests
                         EnableStatistics = true,
                         PluginConfigurations = new[]
                         {
-                            new CachePluginConfiguration()
+                            new MyPluginConfiguration()
                         }
                     }
                 },
@@ -720,7 +718,7 @@ namespace Apache.Ignite.Core.Tests
                 JvmDllPath = @"c:\jvm",
                 JvmInitialMemoryMb = 1024,
                 JvmMaxMemoryMb = 2048,
-                LifecycleBeans = new[] {new LifecycleBean(), new LifecycleBean()},
+                LifecycleHandlers = new[] {new LifecycleBean(), new LifecycleBean()},
                 MetricsExpireTime = TimeSpan.FromSeconds(15),
                 MetricsHistorySize = 45,
                 MetricsLogFrequency = TimeSpan.FromDays(2),
@@ -814,7 +812,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test bean.
         /// </summary>
-        public class LifecycleBean : ILifecycleBean
+        public class LifecycleBean : ILifecycleHandler
         {
             /// <summary>
             /// Gets or sets the foo.
@@ -964,6 +962,19 @@ namespace Apache.Ignite.Core.Tests
         {
             /** <inheritdoc /> */
             public IExpiryPolicy CreateInstance()
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public class MyPluginConfiguration : ICachePluginConfiguration
+        {
+            int? ICachePluginConfiguration.CachePluginConfigurationClosureFactoryId
+            {
+                get { return 0; }
+            }
+
+            void ICachePluginConfiguration.WriteBinary(IBinaryRawWriter writer)
             {
                 throw new NotImplementedException();
             }
