@@ -102,6 +102,9 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private static final byte[] ZERO_BYTES = new byte[0];
+
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         protected transient IgniteEx ignite;
@@ -181,7 +184,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
                 if (entries != null) {
                     for (String entry : entries.split(";")) {
-                        if (entry.length() > 0) {
+                        if (!entry.isEmpty()) {
                             String[] values = entry.split("=");
 
                             assert values.length >= 1;
@@ -220,7 +223,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
          * @return Object constructed from string.
          */
         @Nullable private Object toSimpleObject(Class cls, String val) {
-            if (val == null  || val.equals("null"))
+            if (val == null  || "null".equals(val))
                 return null;
 
             if (String.class == cls)
@@ -268,13 +271,13 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             if (byte[].class == cls) {
                 String[] els = val.split(";");
 
-                if (els.length == 0 || (els.length == 1 && els[0].length() == 0))
-                    return new byte[0];
+                if (els.length == 0 || (els.length == 1 && els[0].isEmpty()))
+                    return ZERO_BYTES;
 
                 byte[] res = new byte[els.length];
 
                 for (int i = 0; i < els.length; i ++)
-                    res[i] =  Byte.valueOf(els[i]);
+                    res[i] = Byte.valueOf(els[i]);
 
                 return res;
             }
@@ -294,7 +297,6 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Object execute() throws IgniteException {
             if (fut != null)
                 return fut.get();
@@ -346,9 +348,9 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 }
             }
 
-            final Collection<UUID> nids;
+            final List<UUID> nids;
 
-            if (nidsArg == null || nidsArg.equals("null") || nidsArg.equals("")) {
+            if (nidsArg == null || "null".equals(nidsArg) || nidsArg.isEmpty()) {
                 Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
                 nids = new ArrayList<>(nodes.size());

@@ -55,7 +55,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            TestUtils.JvmDebug = true;
             TestUtils.KillProcesses();
 
             IgniteConfiguration cfg = new IgniteConfiguration
@@ -867,8 +866,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Filter that can't be serialized.
     /// </summary>
-    public class InvalidScanQueryFilter<TV> : ScanQueryFilter<TV>
+    public class InvalidScanQueryFilter<TV> : ScanQueryFilter<TV>, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 }

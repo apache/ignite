@@ -43,70 +43,73 @@ namespace ignite
              * We use these so we will not be needed to include system-specific
              * headers in our header files.
              */
-            enum IgniteSqlType
+            struct OdbcNativeType
             {
-                /** Alias for the SQL_C_CHAR type. */
-                IGNITE_ODBC_C_TYPE_CHAR,
+                enum Type
+                {
+                    /** Alias for the SQL_C_CHAR type. */
+                    AI_CHAR,
 
-                /** Alias for the SQL_C_WCHAR type. */
-                IGNITE_ODBC_C_TYPE_WCHAR,
+                    /** Alias for the SQL_C_WCHAR type. */
+                    AI_WCHAR,
 
-                /** Alias for the SQL_C_SSHORT type. */
-                IGNITE_ODBC_C_TYPE_SIGNED_SHORT,
+                    /** Alias for the SQL_C_SSHORT type. */
+                    AI_SIGNED_SHORT,
 
-                /** Alias for the SQL_C_USHORT type. */
-                IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT,
+                    /** Alias for the SQL_C_USHORT type. */
+                    AI_UNSIGNED_SHORT,
 
-                /** Alias for the SQL_C_SLONG type. */
-                IGNITE_ODBC_C_TYPE_SIGNED_LONG,
+                    /** Alias for the SQL_C_SLONG type. */
+                    AI_SIGNED_LONG,
 
-                /** Alias for the SQL_C_ULONG type. */
-                IGNITE_ODBC_C_TYPE_UNSIGNED_LONG,
+                    /** Alias for the SQL_C_ULONG type. */
+                    AI_UNSIGNED_LONG,
 
-                /** Alias for the SQL_C_FLOAT type. */
-                IGNITE_ODBC_C_TYPE_FLOAT,
+                    /** Alias for the SQL_C_FLOAT type. */
+                    AI_FLOAT,
 
-                /** Alias for the SQL_C_DOUBLE type. */
-                IGNITE_ODBC_C_TYPE_DOUBLE,
+                    /** Alias for the SQL_C_DOUBLE type. */
+                    AI_DOUBLE,
 
-                /** Alias for the SQL_C_BIT type. */
-                IGNITE_ODBC_C_TYPE_BIT,
+                    /** Alias for the SQL_C_BIT type. */
+                    AI_BIT,
 
-                /** Alias for the SQL_C_STINYINT type. */
-                IGNITE_ODBC_C_TYPE_SIGNED_TINYINT,
+                    /** Alias for the SQL_C_STINYINT type. */
+                    AI_SIGNED_TINYINT,
 
-                /** Alias for the SQL_C_UTINYINT type. */
-                IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT,
+                    /** Alias for the SQL_C_UTINYINT type. */
+                    AI_UNSIGNED_TINYINT,
 
-                /** Alias for the SQL_C_SBIGINT type. */
-                IGNITE_ODBC_C_TYPE_SIGNED_BIGINT,
+                    /** Alias for the SQL_C_SBIGINT type. */
+                    AI_SIGNED_BIGINT,
 
-                /** Alias for the SQL_C_UBIGINT type. */
-                IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT,
+                    /** Alias for the SQL_C_UBIGINT type. */
+                    AI_UNSIGNED_BIGINT,
 
-                /** Alias for the SQL_C_BINARY type. */
-                IGNITE_ODBC_C_TYPE_BINARY,
+                    /** Alias for the SQL_C_BINARY type. */
+                    AI_BINARY,
 
-                /** Alias for the SQL_C_TDATE type. */
-                IGNITE_ODBC_C_TYPE_TDATE,
+                    /** Alias for the SQL_C_TDATE type. */
+                    AI_TDATE,
 
-                /** Alias for the SQL_C_TTIME type. */
-                IGNITE_ODBC_C_TYPE_TTIME,
+                    /** Alias for the SQL_C_TTIME type. */
+                    AI_TTIME,
 
-                /** Alias for the SQL_C_TTIMESTAMP type. */
-                IGNITE_ODBC_C_TYPE_TTIMESTAMP,
+                    /** Alias for the SQL_C_TTIMESTAMP type. */
+                    AI_TTIMESTAMP,
 
-                /** Alias for the SQL_C_NUMERIC type. */
-                IGNITE_ODBC_C_TYPE_NUMERIC,
+                    /** Alias for the SQL_C_NUMERIC type. */
+                    AI_NUMERIC,
 
-                /** Alias for the SQL_C_GUID type. */
-                IGNITE_ODBC_C_TYPE_GUID,
+                    /** Alias for the SQL_C_GUID type. */
+                    AI_GUID,
 
-                /** Alias for the SQL_DEFAULT. */
-                IGNITE_ODBC_C_TYPE_DEFAULT,
+                    /** Alias for the SQL_DEFAULT. */
+                    AI_DEFAULT,
 
-                /** Alias for all unsupported types. */
-                IGNITE_ODBC_C_TYPE_UNSUPPORTED
+                    /** Alias for all unsupported types. */
+                    AI_UNSUPPORTED
+                };
             };
 
             /**
@@ -196,7 +199,7 @@ namespace ignite
              * @param type ODBC type;
              * @return Internal driver type.
              */
-            IgniteSqlType ToDriverType(int16_t type);
+            OdbcNativeType::Type ToDriverType(int16_t type);
 
             /**
              * Convert binary data type to SQL data type.

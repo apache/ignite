@@ -178,44 +178,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys)
-        throws IgniteException
-    {
-        if (F.isEmpty(keys))
-            return Collections.emptyMap();
-
-        guard();
-
-        try {
-            return ctx.affinity().mapKeysToNodes(cacheName, keys);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException {
-        A.notNull(key, "key");
-
-        guard();
-
-        try {
-            return ctx.affinity().mapKeyToNode(cacheName, key);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<ClusterStartNodeResult> startNodes(File file,
         boolean restart,
         int timeout,

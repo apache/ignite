@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -29,6 +28,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
+import org.apache.ignite.transactions.TransactionException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -200,6 +200,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      */
     private void checkTransactional(GridCacheContext ctx) {
         if (!ctx.transactional())
-            throw new IgniteException("Failed to start transaction on non-transactional cache: " + ctx.name());
+            throw new TransactionException("Failed to start transaction on non-transactional cache: " + ctx.name());
     }
 }

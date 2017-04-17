@@ -20,14 +20,17 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -45,6 +48,9 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /** */
     private GridTestKernalContext ctx;
 
+    /** */
+    private static final int THREADS = 4;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         innerLog = new InnerLogger();
@@ -58,7 +64,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        ctx.setSystemExecutorService(Executors.newFixedThreadPool(12));
+        ctx.setSystemExecutorService(Executors.newFixedThreadPool(THREADS));
 
         ctx.add(new PoolProcessor(ctx));
         ctx.add(new GridClosureProcessor(ctx));
@@ -90,7 +96,30 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 4);
+        }, THREADS);
+
+        final CountDownLatch arrive = new CountDownLatch(THREADS);
+
+        // Wait for all pending tasks in closure processor to complete.
+        for (int i = 0; i < THREADS; i++) {
+            ctx.closure().runLocalSafe(new GridPlainRunnable() {
+                @Override
+                public void run() {
+                    arrive.countDown();
+
+                    try {
+                        arrive.await();
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+
+                        throw new IgniteInterruptedException(e);
+                    }
+                }
+            }, true);
+        }
+
+        arrive.await();
 
         assertTrue(InternalExecutor.counter.get() == 0);
 

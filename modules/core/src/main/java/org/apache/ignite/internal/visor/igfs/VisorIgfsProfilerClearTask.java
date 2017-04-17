@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.resolveIgfsProfilerLogsDir;
 
@@ -40,14 +39,14 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.resolveIgfsPr
  * Remove all IGFS profiler logs.
  */
 @GridInternal
-public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteBiTuple<Integer, Integer>> {
+public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, VisorIgfsProfilerClearTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Job to clear profiler logs.
      */
-    private static class VisorIgfsProfilerClearJob extends VisorJob<String, IgniteBiTuple<Integer, Integer>> {
+    private static class VisorIgfsProfilerClearJob extends VisorJob<String, VisorIgfsProfilerClearTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -62,7 +61,7 @@ public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<Integer, Integer> run(String arg) {
+        @Override protected VisorIgfsProfilerClearTaskResult run(String arg) {
             int deleted = 0;
             int notDeleted = 0;
 
@@ -106,7 +105,7 @@ public class VisorIgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
                 throw U.convertException(e);
             }
 
-            return new IgniteBiTuple<>(deleted, notDeleted);
+            return new VisorIgfsProfilerClearTaskResult(deleted, notDeleted);
         }
 
         /** {@inheritDoc} */

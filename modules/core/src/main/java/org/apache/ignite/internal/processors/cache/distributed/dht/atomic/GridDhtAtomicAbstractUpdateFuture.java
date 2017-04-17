@@ -36,12 +36,12 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -58,7 +58,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  * DHT atomic cache backup update future.
  */
-public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapter<Void>
+public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureAdapter<Void>
     implements GridCacheAtomicFuture<Void> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -110,7 +110,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         this.updateReq = updateReq;
         this.writeVer = writeVer;
 
-        futId = cctx.mvcc().atomicFutureId();
+        futId = cctx.mvcc().nextAtomicId();
 
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
@@ -295,7 +295,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public final Long id() {
+    @Override public final long id() {
         return futId;
     }
 

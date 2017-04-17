@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -99,6 +100,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
@@ -400,6 +404,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
     /** */
     private boolean clientReconnectDisabled;
+
+    /** */
+    private Serializable consistentId;
+
+    /** Local node addresses. */
+    private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 
     /** */
     protected IgniteSpiContext spiCtx;
@@ -1023,20 +1033,54 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         return ignite.cluster().localNode().id();
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public Serializable consistentId() throws IgniteSpiException {
+        if (consistentId == null) {
+            initializeImpl();
+
+            initAddresses();
+
+            Serializable cfgId = ignite.configuration().getConsistentId();
+
+            if (cfgId == null) {
+                List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+
+                Collections.sort(sortedAddrs);
+
+                if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
+                    consistentId = U.consistentId(sortedAddrs);
+                else
+                    consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+            }
+            else
+                consistentId = cfgId;
+        }
+
+        return consistentId;
+    }
+
+    /**
+     *
+     */
+    private void initAddresses() {
+        if (addrs == null) {
+            try {
+                addrs = U.resolveLocalAddresses(locHost);
+            }
+            catch (IOException | IgniteCheckedException e) {
+                throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost,
+                    e);
+            }
+        }
+    }
+
     /**
      * @param srvPort Server port.
      * @param addExtAddrAttr If {@code true} adds {@link #ATTR_EXT_ADDRS} attribute.
      */
     protected void initLocalNode(int srvPort, boolean addExtAddrAttr) {
         // Init local node.
-        IgniteBiTuple<Collection<String>, Collection<String>> addrs;
-
-        try {
-            addrs = U.resolveLocalAddresses(locHost);
-        }
-        catch (IOException | IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
-        }
+        initAddresses();
 
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
@@ -1045,7 +1089,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
             srvPort,
             metricsProvider,
             locNodeVer,
-            ignite.configuration().getConsistentId());
+            consistentId());
 
         if (addExtAddrAttr) {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
@@ -1064,6 +1108,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
         locNode.setAttributes(locNodeAttrs);
         locNode.local(true);
+
+        DiscoverySpiListener lsnr = this.lsnr;
+
+        if (lsnr != null)
+            lsnr.onLocalNodeInitialized(locNode);
 
         if (log.isDebugEnabled())
             log.debug("Local node initialized: " + locNode);
@@ -1853,6 +1902,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        initializeImpl();
+
+        registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
+
+        impl.spiStart(igniteInstanceName);
+    }
+
+    /**
+     *
+     */
+    private void initializeImpl() {
+        if (impl != null)
+            return;
+
         initFailureDetectionTimeout();
 
         if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
@@ -1946,8 +2009,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         if (netTimeout < 3000)
             U.warn(log, "Network timeout is too low (at least 3000 ms recommended): " + netTimeout);
 
-        registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
-
         if (ipFinder instanceof TcpDiscoveryMulticastIpFinder) {
             TcpDiscoveryMulticastIpFinder mcastIpFinder = ((TcpDiscoveryMulticastIpFinder)ipFinder);
 
@@ -1956,8 +2017,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         }
 
         cfgNodeId = ignite.configuration().getNodeId();
-
-        impl.spiStart(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -1995,13 +2054,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     void printStopInfo() {
         if (log.isDebugEnabled())
             log.debug(stopInfo());
-    }
-
-    /**
-     * @return Ignite instance.
-     */
-    Ignite ignite() {
-        return ignite;
     }
 
     /**

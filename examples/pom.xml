@@ -81,6 +81,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring-data</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.code.simple-spring-memcached</groupId>
             <artifactId>spymemcached</artifactId>
             <version>2.7.3</version>
@@ -244,6 +250,14 @@
                     </plugin>
                 </plugins>
             </build>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-math</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
         </profile>
 
         <profile>
@@ -282,7 +296,6 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>schema-import/src/main/java</source>
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>

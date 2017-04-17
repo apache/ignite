@@ -79,9 +79,9 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         plc.setMaxSize(1000);
 
         cc.setEvictionPolicy(plc);
+        cc.setOnheapCacheEnabled(true);
         cc.setBackups(1);
         cc.setAffinity(new RendezvousAffinityFunction(true));
-        cc.setEvictSynchronized(true);
 
         c.setCacheConfiguration(cc);
 
