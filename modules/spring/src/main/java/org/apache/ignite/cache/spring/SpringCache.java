@@ -35,7 +35,7 @@ class SpringCache implements Cache {
     private static final Object NULL = new NullValue();
 
     /** */
-    private static final Object LOCK_VALUE = new LockValue();
+    private static final Object LOCK = new LockValue();
 
     /** */
     private final IgniteCache<Object, Object> cache;
@@ -71,7 +71,7 @@ class SpringCache implements Cache {
     @Override public <T> T get(Object key, Class<T> type) {
         Object val = cache.get(key);
 
-        if (NULL.equals(val))
+        if (NULL.equals(val) || LOCK.equals(val))
             val = null;
 
         if (val != null && type != null && !type.isInstance(val))
@@ -84,23 +84,23 @@ class SpringCache implements Cache {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T get(Object key, Callable<T> valueLoader) {
-        // This is workaround solution
-        // "cache.invoke(key, new ValueLoaderEntryProcessor<T>(), valueLoader)"
-        // doesn't work properly with <code>@Cacheable(sync = true)</code> (Spring AOP)
-        synchronized (SpringCache.class) {
+        // This is a workaround solution
+        // "cache.invoke(key, new ValueLoaderEntryProcessor<T>(), valueLoader)" method
+        // doesn't work properly with Spring AOP - @Cacheable(sync = true)
+        synchronized (this) {
             long startTime = U.currentTimeMillis();
 
-            Object val = cache.getAndPutIfAbsent(key, LOCK_VALUE);
+            Object val = cache.getAndPutIfAbsent(key, LOCK);
 
             if (val == null)
                 return loadAndPut(key, valueLoader);
 
-            if (val.equals(LOCK_VALUE)) {
-                // it is not our lock
+            if (val.equals(LOCK)) {
+                // it is the lock of another node
                 CacheEntry entry = cache.getEntry(key);
                 val = entry.getValue();
 
-                if (val.equals(LOCK_VALUE))
+                if (val.equals(LOCK))
                     return waitAndLoad(entry, valueLoader, startTime);
             }
 
@@ -156,17 +156,17 @@ class SpringCache implements Cache {
                 isUpdated = (updateTime != entry.updateTime());
 
             if (updateTime != entry.updateTime()) {
-                cache.put(entry.getKey(), LOCK_VALUE);
+                cache.put(entry.getKey(), LOCK);
 
                 return loadAndPut(entry.getKey(), valueLoader);
             }
 
             Object val = entry.getValue();
 
-            if (!val.equals(LOCK_VALUE))
+            if (!val.equals(LOCK))
                 return (T)fromStoreValue(val);
 
-            // lock was updated by another node, try again
+            // the lock was updated by another node, try again
             startTime = U.currentTimeMillis();
             isUpdated = false;
         }
@@ -235,6 +235,6 @@ class SpringCache implements Cache {
      * @return User value.
      */
     @Nullable private static Object fromStoreValue(@NotNull Object val) {
-        return NULL.equals(val) ? null : val;
+        return (NULL.equals(val) || LOCK.equals(val)) ? null : val;
     }
 }
