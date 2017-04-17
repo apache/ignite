@@ -60,6 +60,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -78,6 +79,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
+    /** Ip finder. */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -98,9 +102,11 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (isDebug()) {
-            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
+        discoSpi.setIpFinder(IP_FINDER);
+
+        if (isDebug()) {
             discoSpi.failureDetectionTimeoutEnabled(false);
 
             cfg.setDiscoverySpi(discoSpi);
@@ -111,6 +117,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(commSpi);
 
         cfg.setClientMode(client);
+
+        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }

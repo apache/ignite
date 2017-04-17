@@ -49,6 +49,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsReservation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
@@ -401,6 +402,26 @@ public class GridMapQueryExecutor {
     }
 
     /**
+     * @param caches Cache IDs.
+     * @return The first found partitioned cache.
+     */
+    private GridCacheContext<?,?> findFirstPartitioned(List<Integer> caches) {
+        GridCacheSharedContext<?,?> sctx = ctx.cache().context();
+
+        for (int i = 0; i < caches.size(); i++) {
+            GridCacheContext<?,?> mainCctx = sctx.cacheContext(caches.get(i));
+
+            if (mainCctx == null)
+                throw new CacheException("Failed to find cache.");
+
+            if (!mainCctx.isLocal() && !mainCctx.isReplicated())
+                return mainCctx;
+        }
+
+        throw new IllegalStateException("Failed to find a partitioned cache.");
+    }
+
+    /**
      * @param node Node.
      * @param req Query request.
      */
@@ -408,12 +429,7 @@ public class GridMapQueryExecutor {
         final Map<UUID,int[]> partsMap = req.partitions();
         final int[] parts = partsMap == null ? null : partsMap.get(ctx.localNodeId());
 
-        assert req.caches() != null && !req.caches().isEmpty();
-
-        GridCacheContext<?, ?> mainCctx = ctx.cache().context().cacheContext( req.caches().get(0));
-
-        if (mainCctx == null)
-            throw new CacheException("Failed to find cache.");
+        assert !F.isEmpty(req.caches());
 
         final DistributedJoinMode joinMode = distributedJoinMode(
             req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
@@ -421,8 +437,12 @@ public class GridMapQueryExecutor {
 
         final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
+        final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
 
-        int segments = explain ? 1 : mainCctx.config().getQueryParallelism();
+        int segments = explain || replicated ? 1 :
+            findFirstPartitioned(req.caches()).config().getQueryParallelism();
+
+        final Object[] params = req.parameters();
 
         for (int i = 1; i < segments; i++) {
             final int segment = i;
@@ -442,7 +462,9 @@ public class GridMapQueryExecutor {
                             req.pageSize(),
                             joinMode,
                             enforceJoinOrder,
-                            req.timeout());
+                            replicated,
+                            req.timeout(),
+                            params);
 
                         return null;
                     }
@@ -462,7 +484,9 @@ public class GridMapQueryExecutor {
             req.pageSize(),
             joinMode,
             enforceJoinOrder,
-            req.timeout());
+            replicated,
+            req.timeout(),
+            params);
     }
 
     /**
@@ -491,7 +515,9 @@ public class GridMapQueryExecutor {
         int pageSize,
         DistributedJoinMode distributedJoinMode,
         boolean enforceJoinOrder,
-        int timeout
+        boolean replicated,
+        int timeout,
+        Object[] params
     ) {
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx = ctx.cache().context().cacheContext(cacheIds.get(0));
@@ -525,7 +551,7 @@ public class GridMapQueryExecutor {
                 node.id(),
                 reqId,
                 segmentId,
-                mainCctx.isReplicated() ? REPLICATED : MAP)
+                replicated ? REPLICATED : MAP)
                 .filter(h2.backupFilter(topVer, parts))
                 .partitionsMap(partsMap)
                 .distributedJoinMode(distributedJoinMode)
@@ -579,7 +605,7 @@ public class GridMapQueryExecutor {
                     if (qry.node() == null ||
                         (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         rs = h2.executeSqlQueryWithTimer(mainCctx.name(), conn, qry.query(),
-                            F.asList(qry.parameters()), true,
+                            F.asList(qry.parameters(params)), true,
                             timeout,
                             qr.cancels[qryIdx]);
 
@@ -594,7 +620,7 @@ public class GridMapQueryExecutor {
                                 qry.query(),
                                 null,
                                 null,
-                                qry.parameters(),
+                                params,
                                 node.id(),
                                 null));
                         }
@@ -602,7 +628,7 @@ public class GridMapQueryExecutor {
                         assert rs instanceof JdbcResultSet : rs.getClass();
                     }
 
-                    qr.addResult(qryIdx, qry, node.id(), rs);
+                    qr.addResult(qryIdx, qry, node.id(), rs, params);
 
                     if (qr.canceled) {
                         qr.result(qryIdx).close();
@@ -965,8 +991,8 @@ public class GridMapQueryExecutor {
          * @param qrySrcNodeId Query source node.
          * @param rs Result set.
          */
-        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs) {
-            if (!results.compareAndSet(qry, null, new QueryResult(rs, cctx, qrySrcNodeId, q)))
+        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
+            if (!results.compareAndSet(qry, null, new QueryResult(rs, cctx, qrySrcNodeId, q, params)))
                 throw new IllegalStateException();
         }
 
@@ -1046,15 +1072,21 @@ public class GridMapQueryExecutor {
         /** */
         private volatile boolean closed;
 
+        /** */
+        private final Object[] params;
+
         /**
          * @param rs Result set.
          * @param cctx Cache context.
          * @param qrySrcNodeId Query source node.
          * @param qry Query.
+         * @param params Query params.
          */
-        private QueryResult(ResultSet rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
+        private QueryResult(ResultSet rs, GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry,
+            Object[] params) {
             this.cctx = cctx;
             this.qry = qry;
+            this.params = params;
             this.qrySrcNodeId = qrySrcNodeId;
             this.cpNeeded = cctx.isLocalNode(qrySrcNodeId);
 
@@ -1139,7 +1171,7 @@ public class GridMapQueryExecutor {
                         qry.query(),
                         null,
                         null,
-                        qry.parameters(),
+                        params,
                         qrySrcNodeId,
                         null,
                         null,

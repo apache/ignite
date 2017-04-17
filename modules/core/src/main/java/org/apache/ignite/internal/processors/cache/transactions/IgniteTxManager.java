@@ -211,7 +211,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         txHnd = new IgniteTxHandler(cctx);
 
-        deferredAckMsgSnd = new GridDeferredAckMessageSender(cctx.time(), cctx.kernalContext().closure()) {
+        deferredAckMsgSnd = new GridDeferredAckMessageSender<GridCacheVersion>(cctx.time(), cctx.kernalContext().closure()) {
             @Override public int getTimeout() {
                 return DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
             }
@@ -1554,6 +1554,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 try {
                     GridCacheEntryEx entry1 = txEntry1.cached();
 
+                    assert entry1 != null : txEntry1;
                     assert !entry1.detached() : "Expected non-detached entry for near transaction " +
                         "[locNodeId=" + cctx.localNodeId() + ", entry=" + entry1 + ']';
 
@@ -1562,6 +1563,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     assert serReadVer == null || (tx.optimistic() && tx.serializable()) : txEntry1;
 
                     boolean read = serOrder != null && txEntry1.op() == READ;
+
+                    entry1.unswap();
 
                     if (!entry1.tmLock(tx, timeout, serOrder, serReadVer, read)) {
                         // Unlock locks locked so far.
@@ -1574,8 +1577,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                         return false;
                     }
-
-                    entry1.unswap();
 
                     break;
                 }
@@ -2355,7 +2356,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @param nearVer Near transaction version.
          */
         private CommittedVersion(GridCacheVersion ver, GridCacheVersion nearVer) {
-            super(ver.topologyVersion(), ver.globalTime(), ver.order(), ver.nodeOrder(), ver.dataCenterId());
+            super(ver.topologyVersion(), ver.order(), ver.nodeOrder(), ver.dataCenterId());
 
             assert nearVer != null;
 

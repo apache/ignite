@@ -96,6 +96,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         boolean needPrimaryRes,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         boolean addDepInfo
     ) {
         super(cacheId,
@@ -111,7 +112,9 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             needPrimaryRes,
             skipStore,
             keepBinary,
-            addDepInfo);
+            recovery,
+            addDepInfo
+        );
     }
 
     /** {@inheritDoc} */

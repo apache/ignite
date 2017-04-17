@@ -24,6 +24,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -151,94 +153,130 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
      */
     public void testNoNodesDieOnRequest() throws Exception {
         Ignite srv1 = startGrid(0);
+
         replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv1, "ctx")).io());
 
         Ignite srv2 = startGrid(1);
+
         replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv2, "ctx")).io());
 
         Ignite srv3 = startGrid(2);
+
         replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv3, "ctx")).io());
 
-        srv3.cache(null).put(1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
+        srv3.cache(null).put(
+            1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
         clientMode = true;
 
         Ignite cl1 = startGrid(4);
+
         cl1.cache(null).get(1);
 
-        assertEquals("Expected requests count is 1, actual is " + mappingReqsCounter.get(),
-                1,
-                mappingReqsCounter.get());
+        int result = mappingReqsCounter.get();
+
+        assertEquals("Expected requests count is 1, actual is " + result, 1, result);
     }
 
     /**
      *
      */
     public void testOneNodeDiesOnRequest() throws Exception {
+        CountDownLatch nodeStopLatch = new CountDownLatch(1);
+
         Ignite srv1 = startGrid(0);
-        replaceWithStoppingMappingRequestListener(((GridKernalContext)U.field(srv1, "ctx")).io(), 0);
+
+        replaceWithStoppingMappingRequestListener(
+            ((GridKernalContext)U.field(srv1, "ctx")).io(), 0, nodeStopLatch);
 
         Ignite srv2 = startGrid(1);
+
         replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv2, "ctx")).io());
 
         Ignite srv3 = startGrid(2);
+
         replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv3, "ctx")).io());
 
-        srv3.cache(null).put(1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
+        srv3.cache(null).put(
+            1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
         clientMode = true;
 
         Ignite cl1 = startGrid(4);
+
         cl1.cache(null).get(1);
 
-        assertEquals("Expected requests count is 2, actual is " + mappingReqsCounter.get(),
-                2,
-                mappingReqsCounter.get());
+        nodeStopLatch.await(5_000, TimeUnit.MILLISECONDS);
+
+        int result = mappingReqsCounter.get();
+
+        assertEquals("Expected requests count is 2, actual is " + result, 2, result);
     }
 
     /**
      *
      */
     public void testTwoNodesDieOnRequest() throws Exception {
+        CountDownLatch nodeStopLatch = new CountDownLatch(2);
+
         Ignite srv1 = startGrid(0);
-        replaceWithStoppingMappingRequestListener(((GridKernalContext)U.field(srv1, "ctx")).io(), 0);
+
+        replaceWithStoppingMappingRequestListener(
+            ((GridKernalContext)U.field(srv1, "ctx")).io(), 0, nodeStopLatch);
 
         Ignite srv2 = startGrid(1);
-        replaceWithStoppingMappingRequestListener(((GridKernalContext)U.field(srv2, "ctx")).io(), 1);
+
+        replaceWithStoppingMappingRequestListener(
+            ((GridKernalContext)U.field(srv2, "ctx")).io(), 1, nodeStopLatch);
 
         Ignite srv3 = startGrid(2);
+
         replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv3, "ctx")).io());
 
-        srv3.cache(null).put(1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
+        srv3.cache(null).put(
+            1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
         clientMode = true;
 
         Ignite cl1 = startGrid(4);
+
         cl1.cache(null).get(1);
 
-        assertEquals("Expected requests count is 3, actual is " + mappingReqsCounter.get(),
-                3,
-                mappingReqsCounter.get());
+        nodeStopLatch.await(5_000, TimeUnit.MILLISECONDS);
+
+        int result = mappingReqsCounter.get();
+
+        assertEquals("Expected requests count is 3, actual is " + result, 3, result);
     }
 
     /**
      *
      */
     public void testAllNodesDieOnRequest() throws Exception {
+        CountDownLatch nodeStopLatch = new CountDownLatch(3);
+
         Ignite srv1 = startGrid(0);
-        replaceWithStoppingMappingRequestListener(((GridKernalContext)U.field(srv1, "ctx")).io(), 0);
+
+        replaceWithStoppingMappingRequestListener(
+            ((GridKernalContext)U.field(srv1, "ctx")).io(), 0, nodeStopLatch);
 
         Ignite srv2 = startGrid(1);
-        replaceWithStoppingMappingRequestListener(((GridKernalContext)U.field(srv2, "ctx")).io(), 1);
+
+        replaceWithStoppingMappingRequestListener(
+            ((GridKernalContext)U.field(srv2, "ctx")).io(), 1, nodeStopLatch);
 
         Ignite srv3 = startGrid(2);
-        replaceWithStoppingMappingRequestListener(((GridKernalContext)U.field(srv3, "ctx")).io(), 2);
 
-        srv3.cache(null).put(1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
+        replaceWithStoppingMappingRequestListener(
+            ((GridKernalContext)U.field(srv3, "ctx")).io(), 2, nodeStopLatch);
+
+        srv3.cache(null).put(
+            1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
         clientMode = true;
 
         Ignite cl1 = startGrid(4);
+
         try {
             cl1.cache(null).get(1);
         }
@@ -246,9 +284,11 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
             e.printStackTrace();
         }
 
-        assertEquals("Expected requests count is 3, actual is " + mappingReqsCounter.get(),
-                3,
-                mappingReqsCounter.get());
+        nodeStopLatch.await(5_000, TimeUnit.MILLISECONDS);
+
+        int result = mappingReqsCounter.get();
+
+        assertEquals("Expected requests count is 3, actual is " + result, 3, result);
     }
 
     /**
@@ -262,6 +302,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         GridMessageListener wrapper = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
                 mappingReqsCounter.incrementAndGet();
+
                 delegate.onMessage(nodeId, msg);
             }
         };
@@ -272,7 +313,11 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
-    private void replaceWithStoppingMappingRequestListener(GridIoManager ioMgr, final int nodeIdToStop) {
+    private void replaceWithStoppingMappingRequestListener(
+        GridIoManager ioMgr,
+        final int nodeIdToStop,
+        final CountDownLatch latch
+    ) {
         ioMgr.removeMessageListener(GridTopic.TOPIC_MAPPING_MARSH);
 
         ioMgr.addMessageListener(GridTopic.TOPIC_MAPPING_MARSH, new GridMessageListener() {
@@ -280,6 +325,9 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
                 new Thread(new Runnable() {
                     @Override public void run() {
                         mappingReqsCounter.incrementAndGet();
+
+                        latch.countDown();
+
                         stopGrid(nodeIdToStop, true);
                     }
                 }).start();

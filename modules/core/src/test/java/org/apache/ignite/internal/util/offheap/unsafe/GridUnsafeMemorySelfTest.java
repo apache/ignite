@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.LongAdder8;
@@ -35,6 +37,39 @@ import org.jsr166.LongAdder8;
  * Tests unsafe memory.
  */
 public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
+    /** */
+    public void testBuffers() {
+        ByteBuffer b1 = GridUnsafe.allocateBuffer(10);
+        ByteBuffer b2 = GridUnsafe.allocateBuffer(20);
+
+        assertEquals(GridUnsafe.NATIVE_BYTE_ORDER, b2.order());
+        assertTrue(b2.isDirect());
+        assertEquals(20, b2.capacity());
+        assertEquals(20, b2.limit());
+        assertEquals(0, b2.position());
+
+        assertEquals(GridUnsafe.NATIVE_BYTE_ORDER, b1.order());
+        assertTrue(b1.isDirect());
+        assertEquals(10, b1.capacity());
+        assertEquals(10, b1.limit());
+        assertEquals(0, b1.position());
+
+        b1.putLong(1L);
+        b1.putShort((short)7);
+
+        b2.putLong(2L);
+
+        GridUnsafe.freeBuffer(b1);
+
+        b2.putLong(3L);
+        b2.putInt(9);
+
+        for (int i = 0; i <= 16; i++)
+            b2.putInt(i, 100500);
+
+        GridUnsafe.freeBuffer(b2);
+    }
+
     /**
      * @throws Exception If failed.
      */

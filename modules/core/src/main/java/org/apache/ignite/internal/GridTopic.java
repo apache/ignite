@@ -96,6 +96,8 @@ public enum GridTopic {
     /** */
     TOPIC_TX,
 
+    TOPIC_SNAPSHOT,
+
     /** */
     TOPIC_IO_TEST,
 

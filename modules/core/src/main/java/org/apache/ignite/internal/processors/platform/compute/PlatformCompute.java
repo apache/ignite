@@ -383,16 +383,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
 
         /** {@inheritDoc} */
-        @Override public long startTime() {
-            return fut.startTime();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long duration() {
-            return fut.duration();
-        }
-
-        /** {@inheritDoc} */
         @Override public void listen(final IgniteInClosure lsnr) {
             fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                 private static final long serialVersionUID = 0L;

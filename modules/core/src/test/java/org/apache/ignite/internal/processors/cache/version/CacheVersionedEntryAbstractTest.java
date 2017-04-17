@@ -26,7 +26,6 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 
 /**
@@ -109,22 +108,10 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
-    public void testRandomEntry() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
-
-        for (int i = 0; i < 5; i++)
-            checkVersionedEntry(cache.randomEntry().unwrap(CacheEntry.class));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testLocalPeek() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).cache(null);
 
-        Iterable<Cache.Entry<Integer, String>> entries = offheapTiered(cache) ?
-            cache.localEntries(CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
-            cache.localEntries(CachePeekMode.ONHEAP);
+        Iterable<Cache.Entry<Integer, String>> entries = cache.localEntries();
 
         for (Cache.Entry<Integer, String> entry : entries)
             checkVersionedEntry(entry.unwrap(CacheEntry.class));
@@ -155,7 +142,6 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
             });
 
         assert ver1.version().compareTo(ver2.version()) < 0;
-        assert ver1.updateTime() <= ver2.updateTime();
     }
 
     /**
@@ -165,7 +151,6 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
         assertNotNull(entry);
 
         assertNotNull(entry.version());
-        assert entry.updateTime() > 0;
 
         assertNotNull(entry.getKey());
         assertNotNull(entry.getValue());

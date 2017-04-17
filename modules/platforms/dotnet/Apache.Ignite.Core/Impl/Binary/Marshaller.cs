@@ -452,7 +452,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (meta != BinaryType.Empty)
             {
                 desc = new BinaryFullTypeDescriptor(null, meta.TypeId, meta.TypeName, true, null, null, null, false,
-                    meta.AffinityKeyFieldName, meta.IsEnum, null);
+                    meta.AffinityKeyFieldName, meta.IsEnum);
 
                 _idToDesc.GetOrAdd(typeKey, _ => desc);
 
@@ -472,19 +472,11 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
 
             var typeName = BinaryUtils.GetTypeName(type);
-            var typeId = BinaryUtils.TypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
+            var typeId = BinaryUtils.TypeId(typeName, _cfg.NameMapper, _cfg.IdMapper);
 
             var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, type);
 
             return AddUserType(type, typeId, typeName, registered, desc);
-        }
-
-        /// <summary>
-        /// Gets the user type descriptors.
-        /// </summary>
-        public ICollection<BinaryFullTypeDescriptor> GetUserTypeDescriptors()
-        {
-            return _typeNameToDesc.Values;
         }
 
         /// <summary>
@@ -505,8 +497,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             var ser = GetSerializer(_cfg, null, type, typeId, null, null, _log);
 
             desc = desc == null
-                ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
-                    _cfg.DefaultIdMapper, ser, false, null, type.IsEnum, null, registered)
+                ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.NameMapper,
+                    _cfg.IdMapper, ser, false, null, type.IsEnum, registered)
                 : new BinaryFullTypeDescriptor(desc, type, ser, registered);
 
             if (RegistrationDisabled)
@@ -546,23 +538,27 @@ namespace Apache.Ignite.Core.Impl.Binary
         private void AddUserType(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
         {
             // Get converter/mapper/serializer.
-            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.DefaultNameMapper;
+            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.NameMapper;
 
-            IBinaryIdMapper idMapper = typeCfg.IdMapper ?? _cfg.DefaultIdMapper;
+            IBinaryIdMapper idMapper = typeCfg.IdMapper ?? _cfg.IdMapper;
 
-            bool keepDeserialized = typeCfg.KeepDeserialized ?? _cfg.DefaultKeepDeserialized;
+            bool keepDeserialized = typeCfg.KeepDeserialized ?? _cfg.KeepDeserialized;
 
             // Try resolving type.
             Type type = typeResolver.ResolveType(typeCfg.TypeName);
 
             if (type != null)
             {
+                ValidateUserType(type);
+
                 if (typeCfg.IsEnum != type.IsEnum)
+                {
                     throw new BinaryObjectException(
                         string.Format(
                             "Invalid IsEnum flag in binary type configuration. " +
                             "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
                             typeCfg.IsEnum, type.IsEnum));
+                }
 
                 // Type is found.
                 var typeName = BinaryUtils.GetTypeName(type);
@@ -571,7 +567,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper, _log);
 
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
-                    affKeyFld, type.IsEnum, typeCfg.EqualityComparer);
+                    affKeyFld, type.IsEnum);
             }
             else
             {
@@ -581,7 +577,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
-                    typeCfg.AffinityKeyFieldName, typeCfg.IsEnum, typeCfg.EqualityComparer);
+                    typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
             }
         }
 
@@ -593,7 +589,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinaryIdMapper idMapper, ILogger log)
         {
             var serializer = (typeCfg != null ? typeCfg.Serializer : null) ??
-                             (cfg != null ? cfg.DefaultSerializer : null);
+                             (cfg != null ? cfg.Serializer : null);
 
             if (serializer == null)
             {
@@ -648,11 +644,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
-        /// <param name="comparer">Comparer.</param>
         private void AddType(Type type, int typeId, string typeName, bool userType,
             bool keepDeserialized, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper,
-            IBinarySerializerInternal serializer, string affKeyFieldName, bool isEnum,
-            IEqualityComparer<IBinaryObject> comparer)
+            IBinarySerializerInternal serializer, string affKeyFieldName, bool isEnum)
         {
             long typeKey = BinaryUtils.TypeKey(userType, typeId);
 
@@ -673,7 +667,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 throw new BinaryObjectException("Conflicting type name: " + typeName);
 
             var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, 
-                serializer, keepDeserialized, affKeyFieldName, isEnum, comparer);
+                serializer, keepDeserialized, affKeyFieldName, isEnum);
 
             if (type != null)
                 _typeToDesc.GetOrAdd(type, x => descriptor);
@@ -699,7 +693,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 typeId = BinaryUtils.TypeId(type.Name, null, null);
 
             AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, affKeyFldName,
-                false, null);
+                false);
         }
 
         /// <summary>
@@ -709,7 +703,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             AddSystemType(BinaryUtils.TypeNativeJobHolder, r => new ComputeJobHolder(r));
             AddSystemType(BinaryUtils.TypeComputeJobWrapper, r => new ComputeJobWrapper(r));
-            AddSystemType(BinaryUtils.TypeIgniteProxy, r => new IgniteProxy());
             AddSystemType(BinaryUtils.TypeComputeOutFuncJob, r => new ComputeOutFuncJob(r));
             AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, r => new ComputeOutFuncWrapper(r));
             AddSystemType(BinaryUtils.TypeComputeFuncWrapper, r => new ComputeFuncWrapper(r));
@@ -739,6 +732,29 @@ namespace Apache.Ignite.Core.Impl.Binary
                       "the following limitations apply: " +
                       "DateTime fields would not work in SQL; " +
                       "sbyte, ushort, uint, ulong fields would not work in DML.", type, typeof(ISerializable));
+        }
+
+        /// <summary>
+        /// Validates binary type.
+        /// </summary>
+        // ReSharper disable once UnusedParameter.Local
+        private static void ValidateUserType(Type type)
+        {
+            Debug.Assert(type != null);
+
+            if (type.IsGenericTypeDefinition)
+            {
+                throw new BinaryObjectException(
+                    "Open generic types (Type.IsGenericTypeDefinition == true) are not allowed " +
+                    "in BinaryConfiguration: " + type.AssemblyQualifiedName);
+            }
+
+            if (type.IsAbstract)
+            {
+                throw new BinaryObjectException(
+                    "Abstract types and interfaces are not allowed in BinaryConfiguration: " +
+                    type.AssemblyQualifiedName);
+            }
         }
     }
 }

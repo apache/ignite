@@ -99,7 +99,6 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setBackups(1);
 

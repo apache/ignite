@@ -55,6 +55,8 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
+        ccfg.setStoreKeepBinary(storeValBytes);
+
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
@@ -82,9 +84,12 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
 
         c.put(1, "Cached value");
 
-        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache().peekEx(1);
+        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache().entryEx(1);
 
         assert entry != null;
+
+        entry.unswap();
+
         assert entry.valueBytes() != null;
     }
 }

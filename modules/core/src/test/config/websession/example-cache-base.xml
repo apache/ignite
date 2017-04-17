@@ -30,7 +30,7 @@
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
+            <bean class="org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller">
                 <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                 <property name="requireSerializable" value="false"/>
             </bean>
@@ -65,7 +65,6 @@
                     <property name="name" value="partitioned_primary"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="atomicWriteOrderMode" value="PRIMARY"/>
                     <property name="backups" value="1"/>
                 </bean>
 

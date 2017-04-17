@@ -523,20 +523,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
 
         switch (msg.directType()) {
-            case 14: {
-                GridCacheEvictionRequest req = (GridCacheEvictionRequest)msg;
-
-                GridCacheEvictionResponse res = new GridCacheEvictionResponse(
-                    ctx.cacheId(),
-                    req.futureId(),
-                    req.classError() != null
-                );
-
-                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
-            }
-
-            break;
-
             case 30: {
                 GridDhtLockRequest req = (GridDhtLockRequest)msg;
 

@@ -565,7 +565,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(4, 4);
             cache.Put(5, 5);
 
-            IDictionary<int, int> map = cache.GetAll(new List<int> { 0, 1, 2, 5 });
+            var map = cache.GetAll(new List<int> {0, 1, 2, 5}).ToDictionary(x => x.Key, x => x.Value);
 
             Assert.AreEqual(3, map.Count);
 
@@ -582,7 +582,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(2, 2);
             cache.Put(3, 3);
 
-            var map = cache.GetAll(new List<int> { 0, 1, 2 });
+            var map = cache.GetAll(new List<int> {0, 1, 2}).ToDictionary(x => x.Key, x => x.Value);
 
             Assert.AreEqual(2, map.Count);
 
@@ -1098,6 +1098,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        [Ignore("IGNITE-4535")]
         public void TestEvict()
         {
             var cache = Cache();
@@ -1122,6 +1123,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        [Ignore("IGNITE-4535")]
         public void TestEvictAllKeys()
         {
             var cache = Cache();
@@ -1472,7 +1474,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(keys.Take(2).ToArray());
 
-            Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
+            //Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));  // TODO: IGNITE-4535
             Assert.AreEqual(localSize, cache.GetLocalSize(CachePeekMode.All));
 
             cache.Put(keys[2], 3);
@@ -1510,15 +1512,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Evict and check peek modes.
             cache.LocalEvict(new List<int> { keys[0] } );
 
-            e = cache.GetLocalEntries(CachePeekMode.Onheap);
-            CheckEnumerator(e.GetEnumerator(), new List<int> { keys[1] });
-            CheckEnumerator(e.GetEnumerator(), new List<int> { keys[1] });
+            // TODO: IGNITE-4535
+            //e = cache.GetLocalEntries(CachePeekMode.Onheap);
+            //CheckEnumerator(e.GetEnumerator(), new List<int> { keys[1] });
+            //CheckEnumerator(e.GetEnumerator(), new List<int> { keys[1] });
 
             e = cache.GetLocalEntries(CachePeekMode.All);
-            CheckEnumerator(e.GetEnumerator(), keys);
-            CheckEnumerator(e.GetEnumerator(), keys);
-
-            e = cache.GetLocalEntries(CachePeekMode.Onheap, CachePeekMode.Swap);
             CheckEnumerator(e.GetEnumerator(), keys);
             CheckEnumerator(e.GetEnumerator(), keys);
 
@@ -1577,6 +1576,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        [Ignore("IGNITE-4535")]
         public void TestPromote()
         {
             var cache = Cache();
@@ -1601,6 +1601,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        [Ignore("IGNITE-4535")]
         public void TestPromoteAll()
         {
             var cache = Cache();
@@ -2469,7 +2470,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Existing entries
             var res = cache.InvokeAll(entries.Keys, new T(), arg);
 
-            var results = res.OrderBy(x => x.Key).Select(x => x.Value.Result);
+            var results = res.OrderBy(x => x.Key).Select(x => x.Result);
             var expectedResults = entries.OrderBy(x => x.Key).Select(x => x.Value + arg);
             
             Assert.IsTrue(results.SequenceEqual(expectedResults));
@@ -2481,13 +2482,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Remove entries
             res = cache.InvokeAll(entries.Keys, new T {Remove = true}, arg);
 
-            Assert.IsTrue(res.All(x => x.Value.Result == 0));
+            Assert.IsTrue(res.All(x => x.Result == 0));
             Assert.AreEqual(0, cache.GetAll(entries.Keys).Count);
 
             // Non-existing entries
             res = cache.InvokeAll(entries.Keys, new T {Exists = false}, arg);
 
-            Assert.IsTrue(res.All(x => x.Value.Result == arg));
+            Assert.IsTrue(res.All(x => x.Result == arg));
             Assert.IsTrue(cache.GetAll(entries.Keys).All(x => x.Value == arg)); 
 
             // Test exceptions
@@ -2510,9 +2511,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 if (procRes.Key == errKey)
                     // ReSharper disable once AccessToForEachVariableInClosure
-                    AssertThrowsCacheEntryProcessorException(() => { var x = procRes.Value.Result; }, exceptionText);
+                    AssertThrowsCacheEntryProcessorException(() => { var x = procRes.Result; }, exceptionText);
                 else
-                    Assert.Greater(procRes.Value.Result, 0);
+                    Assert.Greater(procRes.Result, 0);
             }
         }
 
@@ -2709,9 +2710,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
 
             // Check keepBinary for GetAll operation.
-            var allObjs1 = binCache.GetAll(keys);
+            var allObjs1 = binCache.GetAll(keys).ToDictionary(x => x.Key, x => x.Value);
 
-            var allObjs2 = binCache.GetAll(keys);
+            var allObjs2 = binCache.GetAll(keys).ToDictionary(x => x.Key, x => x.Value);
 
             for (int i = 0; i < cnt; i++)
             {

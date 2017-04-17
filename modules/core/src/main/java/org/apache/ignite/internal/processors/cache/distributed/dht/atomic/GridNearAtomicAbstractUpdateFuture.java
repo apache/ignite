@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -58,7 +59,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  * Base for near atomic update futures.
  */
-public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapter<Object>
+public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFutureAdapter<Object>
     implements GridCacheAtomicFuture<Object> {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -108,14 +109,14 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
     /** Keep binary flag. */
     protected final boolean keepBinary;
 
+    /** Recovery flag. */
+    protected final boolean recovery;
+
     /** Wait for topology future flag. */
     protected final boolean waitTopFut;
 
     /** Near cache flag. */
     protected final boolean nearEnabled;
-
-    /** Mutex to synchronize state updates. */
-    protected final Object mux = new Object();
 
     /** Topology locked flag. Set if atomic update is performed inside a TX or explicit lock. */
     protected boolean topLocked;
@@ -138,7 +139,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
 
     /** Future ID. */
     @GridToStringInclude
-    protected Long futId;
+    protected volatile long futId;
 
     /** Operation result. */
     protected GridCacheReturn opRes;
@@ -159,6 +160,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param taskNameHash Task name hash.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
+     * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Remap count.
      * @param waitTopFut Wait topology future flag.
      */
@@ -176,6 +178,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         int remapCnt,
         boolean waitTopFut
     ) {
@@ -197,6 +200,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.recovery = recovery;
         this.waitTopFut = waitTopFut;
 
         nearEnabled = CU.isNearEnabled(cctx);

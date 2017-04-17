@@ -722,12 +722,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                             if (changeHash)
                             {
                                 // Get from identity resolver.
-                                var comparer = BinaryUtils.GetEqualityComparer(_desc);
-
-                                outHash = comparer.GetHashCode(outStream,
+                                outHash = BinaryArrayEqualityComparer.GetHashCode(outStream,
                                     outStartPos + BinaryObjectHeader.Size,
-                                    schemaPos - outStartPos - BinaryObjectHeader.Size,
-                                    outSchema, outSchemaId, _binary.Marshaller, _desc);
+                                    schemaPos - outStartPos - BinaryObjectHeader.Size);
                             }
 
                             var outHeader = new BinaryObjectHeader(inHeader.TypeId, outHash, outLen, 

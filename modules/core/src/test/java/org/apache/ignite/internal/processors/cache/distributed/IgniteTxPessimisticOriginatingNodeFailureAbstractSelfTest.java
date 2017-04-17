@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -270,7 +269,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                         assertNotNull(cache);
 
                         assertEquals("Failed to check entry value on node: " + checkNodeId,
-                            fullFailure ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
+                            fullFailure ? initVal : val, cache.localPeek(key));
 
                         return null;
                     }
@@ -417,7 +416,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                         assertNotNull(cache);
 
                         assertEquals("Failed to check entry value on node: " + checkNodeId,
-                            !commmit ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
+                            !commmit ? initVal : val, cache.localPeek(key));
 
                         return null;
                     }
