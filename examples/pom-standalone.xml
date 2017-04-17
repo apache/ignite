@@ -33,6 +33,7 @@
         <lgpl.folder>src/main/java</lgpl.folder>
         <java8.folder>src/main/java</java8.folder>
         <spark.folder>src/main/java</spark.folder>
+        <ml.folder>src/main/java</ml.folder>
         <java.ver>1.7</java.ver>
     </properties>
 
