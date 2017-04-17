@@ -119,9 +119,11 @@
         <lgpl.folder>src/main/java</lgpl.folder>
         <java8.folder>src/main/java</java8.folder>
         <spark.folder>src/main/java</spark.folder>
+        <ml.folder>src/main/java</ml.folder>
         <spark.test.folder>src/test/java</spark.test.folder>
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <java8.test.folder>src/test/java</java8.test.folder>
+        <ml.test.folder>src/test/java</ml.test.folder>
     </properties>
 
     <profiles>
@@ -251,6 +253,32 @@
                 </plugins>
             </build>
 
+        </profile>
+
+        <profile>
+            <id>ml</id>
+
+            <properties>
+                <ml.folder>src/main/ml</ml.folder>
+                <ml.test.folder>src/test/ml</ml.test.folder>
+            </properties>
+
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
@@ -299,6 +327,7 @@
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>
+                                <source>${ml.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -314,6 +343,7 @@
                                 <source>${lgpl.test.folder}</source>
                                 <source>${spark.test.folder}</source>
                                 <source>${java8.test.folder}</source>
+                                <source>${ml.test.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
