@@ -21,9 +21,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -36,7 +38,8 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.UUID;
+import javax.cache.Cache;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -51,6 +54,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicIndexAbstractSelfTest {
     /** Test duration. */
     private static final long TEST_DUR = 10_000L;
+
+    /** Large cache size. */
+    private static final int LARGE_CACHE_SIZE = 100_000;
 
     /** Latches to block certain index operations. */
     private static final ConcurrentHashMap<UUID, T2<CountDownLatch, AtomicBoolean>> BLOCKS = new ConcurrentHashMap<>();
@@ -254,13 +260,108 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
     }
 
     /**
+     * PUT/REMOVE data from cache and build index concurrently.
+     *
+     * @throws Exception If failed,
+     */
+    public void testConcurrentPutRemove() throws Exception {
+        // Start several nodes.
+        Ignite srv1 = Ignition.start(serverConfiguration(1));
+        Ignition.start(serverConfiguration(2));
+        Ignition.start(serverConfiguration(3));
+        Ignition.start(serverConfiguration(4));
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<BinaryObject, BinaryObject> cache = srv1.createCache(cacheConfiguration()).withKeepBinary();
+
+        // Start data change operations from several threads.
+        final AtomicBoolean stopped = new AtomicBoolean();
+
+        IgniteInternalFuture updateFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!stopped.get()) {
+                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
+
+                    int key = ThreadLocalRandom.current().nextInt(0, LARGE_CACHE_SIZE);
+                    int val = ThreadLocalRandom.current().nextInt();
+
+                    BinaryObject keyObj = key(node, key);
+
+                    if (ThreadLocalRandom.current().nextBoolean()) {
+                        BinaryObject valObj = value(node, val);
+
+                        node.cache(CACHE_NAME).put(keyObj, valObj);
+                    }
+                    else
+                        node.cache(CACHE_NAME).remove(keyObj);
+                }
+
+                return null;
+            }
+        }, 4);
+
+        // Let some to arrive.
+        Thread.sleep(500L);
+
+        // Create index.
+        QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+        queryProcessor(srv1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+
+        // Stop updates once index is ready.
+        stopped.set(true);
+
+        updateFut.get();
+
+        // Make sure index is there.
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+
+        // Get expected values.
+        Map<Long, Long> expKeys = new HashMap<>();
+
+        for (int i = 0; i < LARGE_CACHE_SIZE; i++) {
+            BinaryObject val = cache.get(key(srv1, i));
+
+            if (val != null) {
+                long fieldVal = val.field(FIELD_NAME_1);
+
+                if (fieldVal >= SQL_ARG_1)
+                    expKeys.put((long)i, fieldVal);
+            }
+        }
+
+        // Validate query result.
+        for (Ignite node : Ignition.allGrids()) {
+            IgniteCache<BinaryObject, BinaryObject> nodeCache = node.cache(CACHE_NAME).withKeepBinary();
+
+            SqlQuery qry = new SqlQuery(tableName(ValueClass.class), SQL_SIMPLE_FIELD_1).setArgs(SQL_ARG_1);
+
+            List<Cache.Entry<BinaryObject, BinaryObject>> res = nodeCache.query(qry).getAll();
+
+            assertEquals("Cache size mismatch [exp=" + expKeys.size() + ", actual=" + res.size() + ']',
+                expKeys.size(), res.size());
+
+            for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
+                long key = entry.getKey().field(FIELD_KEY);
+                Long fieldVal = entry.getValue().field(FIELD_NAME_1);
+
+                assertTrue("Expected key is not in result set: " + key, expKeys.containsKey(key));
+
+                assertEquals("Unexpected value [key=" + key + ", expVal=" + expKeys.get(key) +
+                    ", actualVal=" + fieldVal + ']', expKeys.get(key), fieldVal);
+            }
+
+        }
+    }
+
+    /**
      * Test index consistency on re-balance.
      *
      * @throws Exception If failed.
      */
     public void testConcurrentRebalance() throws Exception {
-        int cacheSize = 100_000;
-
         // Start cache and populate it with data.
         Ignite srv1 = Ignition.start(serverConfiguration(1));
         Ignite srv2 = Ignition.start(serverConfiguration(2));
@@ -269,7 +370,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         awaitPartitionMapExchange();
 
-        put(srv1, 0, cacheSize);
+        put(srv1, 0, LARGE_CACHE_SIZE);
 
         // Start index operation in blocked state.
         blockIndexing(srv1);
@@ -298,7 +399,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
 
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
-        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, cacheSize - SQL_ARG_1);
+        assertSqlSimpleData(SQL_SIMPLE_FIELD_1, LARGE_CACHE_SIZE - SQL_ARG_1);
     }
 
     /**

@@ -69,6 +69,9 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /** Index name 3. */
     protected static final String IDX_NAME_3 = "idx_3";
 
+    /** Key ID field. */
+    protected static final String FIELD_KEY = "id";
+
     /** Field 1. */
     protected static final String FIELD_NAME_1 = "field1";
 

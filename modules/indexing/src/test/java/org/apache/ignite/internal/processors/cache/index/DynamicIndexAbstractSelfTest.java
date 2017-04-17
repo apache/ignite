@@ -149,11 +149,11 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         entity.setKeyType(KeyClass.class.getName());
         entity.setValueType(ValueClass.class.getName());
 
-        entity.addQueryField("id", Long.class.getName(), null);
+        entity.addQueryField(FIELD_KEY, Long.class.getName(), null);
         entity.addQueryField(FIELD_NAME_1, Long.class.getName(), null);
         entity.addQueryField(FIELD_NAME_2, Long.class.getName(), null);
 
-        entity.setKeyFields(Collections.singleton("id"));
+        entity.setKeyFields(Collections.singleton(FIELD_KEY));
 
         entity.setAliases(Collections.singletonMap(FIELD_NAME_2, alias(FIELD_NAME_2)));
 
@@ -260,7 +260,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @return Key object.
      */
     protected static BinaryObject key(Ignite ignite, long id) {
-        return ignite.binary().builder(KeyClass.class.getName()).setField("id", id).build();
+        return ignite.binary().builder(KeyClass.class.getName()).setField(FIELD_KEY, id).build();
     }
 
     /**
@@ -403,7 +403,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         Set<Long> ids = new HashSet<>();
 
         for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
-            long id = entry.getKey().field("id");
+            long id = entry.getKey().field(FIELD_KEY);
 
             long field1 = entry.getValue().field(FIELD_NAME_1);
             long field2 = entry.getValue().field(FIELD_NAME_2);
@@ -435,7 +435,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         Set<Long> ids = new HashSet<>();
 
         for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
-            long id = entry.getKey().field("id");
+            long id = entry.getKey().field(FIELD_KEY);
 
             long field1 = entry.getValue().field(FIELD_NAME_1);
             long field2 = entry.getValue().field(FIELD_NAME_2);
