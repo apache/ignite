@@ -32,11 +32,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
 import java.io.Serializable;
@@ -126,27 +122,11 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
-            @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-                super.setListener(GridTestUtils.DiscoverySpiListenerWrapper.wrap(lsnr, new Hook()));
-            }
-        };
-
-        cfg.setDiscoverySpi(discoSpi);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi());
 
         cfg.setMarshaller(new BinaryMarshaller());
 
         return optimize(cfg);
-    }
-
-    /**
-     * Generic discovery hook.
-     */
-    private static class Hook extends GridTestUtils.DiscoveryHook {
-        @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
-//            if (msg != null)
-//                System.out.println("DISCO: " + msg);
-        }
     }
 
     /**

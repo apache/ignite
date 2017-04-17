@@ -23,6 +23,6 @@ package org.apache.ignite.internal.processors.cache.index;
 public class DynamicIndexBasicServerNodeFIlterSelfTest extends DynamicIndexBasicAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeIndex() {
-        return 3;
+        return IDX_SRV_FILTERED;
     }
 }

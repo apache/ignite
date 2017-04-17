@@ -29,15 +29,15 @@ public class DynamicIndexBasicServerNodeFIlterCoordinatorSelfTest extends Dynami
     /** {@inheritDoc} */
     @Override protected List<IgniteConfiguration> configurations() throws Exception {
         return Arrays.asList(
-            serverConfiguration(1, true),
-            serverConfiguration(2),
-            clientConfiguration(3),
-            serverConfiguration(4, true)
+            serverConfiguration(IDX_SRV_CRD, true),
+            serverConfiguration(IDX_SRV_NON_CRD),
+            clientConfiguration(IDX_CLI),
+            serverConfiguration(IDX_SRV_FILTERED, true)
         );
     }
 
     /** {@inheritDoc} */
     @Override protected int nodeIndex() {
-        return 1;
+        return IDX_SRV_CRD;
     }
 }

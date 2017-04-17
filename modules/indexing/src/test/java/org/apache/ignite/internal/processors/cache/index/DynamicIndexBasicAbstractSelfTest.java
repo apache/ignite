@@ -39,23 +39,24 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
 public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbstractSelfTest {
+    /** Node index for regular server (coordinator). */
+    protected static final int IDX_SRV_CRD = 0;
+
+    /** Node index for regular server (not coordinator). */
+    protected static final int IDX_SRV_NON_CRD = 1;
+
+    /** Node index for regular client. */
+    protected static final int IDX_CLI = 2;
+
+    /** Node index for server which doesn't pass node filter. */
+    protected static final int IDX_SRV_FILTERED = 3;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         for (IgniteConfiguration cfg : configurations())
             Ignition.start(cfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        node().getOrCreateCache(cacheConfiguration());
-
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
-
-        loadInitialData();
     }
 
     /** {@inheritDoc} */
@@ -131,7 +132,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testPartitionedTransactional() throws Exception {
+    public void testCreatePartitionedTransactional() throws Exception {
         checkCreate(PARTITIONED, TRANSACTIONAL, false);
     }
 
@@ -140,7 +141,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testPartitionedTransactionalNear() throws Exception {
+    public void testCreatePartitionedTransactionalNear() throws Exception {
         checkCreate(PARTITIONED, TRANSACTIONAL, true);
     }
 
@@ -167,7 +168,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testReplicatedTransactional() throws Exception {
+    public void testCreateReplicatedTransactional() throws Exception {
         checkCreate(REPLICATED, TRANSACTIONAL, false);
     }
 
@@ -176,7 +177,7 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      *
      * @throws Exception If failed.
      */
-    public void testReplicatedTransactionalNear() throws Exception {
+    public void testCreateReplicatedTransactionalNear() throws Exception {
         checkCreate(REPLICATED, TRANSACTIONAL, true);
     }
 
@@ -1002,10 +1003,10 @@ public abstract class DynamicIndexBasicAbstractSelfTest extends DynamicIndexAbst
      */
     protected List<IgniteConfiguration> configurations() throws Exception {
         return Arrays.asList(
-            serverConfiguration(0),
-            serverConfiguration(1),
-            clientConfiguration(2),
-            serverConfiguration(3, true)
+            serverConfiguration(IDX_SRV_CRD),
+            serverConfiguration(IDX_SRV_NON_CRD),
+            clientConfiguration(IDX_CLI),
+            serverConfiguration(IDX_SRV_FILTERED, true)
         );
     }
 
