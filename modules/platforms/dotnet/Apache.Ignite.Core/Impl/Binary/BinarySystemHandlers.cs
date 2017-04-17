@@ -646,7 +646,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static void WriteIgnite(BinaryWriter ctx, object obj)
         {
-            // No-op.
+            ctx.Stream.WriteByte(BinaryUtils.HdrNull);
         }
 
         /**
