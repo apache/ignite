@@ -93,8 +93,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
 
+        c.setFailureDetectionTimeout(Long.MAX_VALUE);
         c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
 

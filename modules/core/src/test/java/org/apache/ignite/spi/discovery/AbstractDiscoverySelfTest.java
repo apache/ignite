@@ -214,11 +214,11 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     }
 
     /**
-     * Tests whether local node heartbeats cause METRICS_UPDATE event.
+     * Tests whether local node metrics update cause METRICS_UPDATE event.
      *
      * @throws Exception If test failed.
      */
-    public void testLocalHeartbeat() throws Exception {
+    public void testLocalMetricsUpdate() throws Exception {
         AtomicInteger[] locUpdCnts = new AtomicInteger[getSpiCount()];
 
         int i = 0;
@@ -226,7 +226,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         for (final DiscoverySpi spi : spis) {
             final AtomicInteger spiCnt = new AtomicInteger(0);
 
-            DiscoverySpiListener locHeartbeatLsnr = new DiscoverySpiListener() {
+            DiscoverySpiListener locMetricsUpdateLsnr = new DiscoverySpiListener() {
                 @Override public void onDiscovery(int type, long topVer, ClusterNode node,
                     Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist,
                     @Nullable DiscoverySpiCustomMessage data) {
@@ -239,12 +239,12 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
             locUpdCnts[i] = spiCnt;
 
-            spi.setListener(locHeartbeatLsnr);
+            spi.setListener(locMetricsUpdateLsnr);
 
             i++;
         }
 
-        // Sleep fro 3 Heartbeats.
+        // Sleep for 3 metrics update.
         Thread.sleep(getMaxDiscoveryTime() * 3);
 
         for (AtomicInteger cnt : locUpdCnts) {

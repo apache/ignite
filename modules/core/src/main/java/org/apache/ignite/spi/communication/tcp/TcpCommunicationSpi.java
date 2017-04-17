@@ -2807,7 +2807,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         long connTimeout0 = connTimeout;
 
-        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this);
+        IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
+            !node.isClient());
 
         while (true) {
             GridCommunicationClient client;
@@ -2998,7 +2999,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             int attempt = 1;
 
-            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this);
+            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
+                !node.isClient());
 
             while (!conn) { // Reconnection on handshake timeout.
                 try {

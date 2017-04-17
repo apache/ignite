@@ -83,7 +83,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         cfg.setConsistentId(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setMaxMissedClientHeartbeats(1000);
+        cfg.setClientFailureDetectionTimeout(Long.MAX_VALUE);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 

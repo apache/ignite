@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * <p>
  * Node metrics for any node can be accessed via {@link ClusterNode#metrics()}
  * method. Keep in mind that there will be a certain network delay (usually
- * equal to heartbeat delay) for the accuracy of node metrics. However, when accessing
+ * equal to metrics update delay) for the accuracy of node metrics. However, when accessing
  * metrics on local node {@link IgniteCluster#localNode() Grid.localNode().getMetrics()}
  * the metrics are always accurate and up to date.
  * <p>

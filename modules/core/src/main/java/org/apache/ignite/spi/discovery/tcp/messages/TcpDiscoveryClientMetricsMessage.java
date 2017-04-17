@@ -23,11 +23,11 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Heartbeat message.
+ * Metrics message.
  * <p>
- * Client sends his heartbeats in this message.
+ * Client sends his metrics in this message.
  */
-public class TcpDiscoveryClientHeartbeatMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryClientMetricsMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,7 +40,7 @@ public class TcpDiscoveryClientHeartbeatMessage extends TcpDiscoveryAbstractMess
      * @param creatorNodeId Creator node.
      * @param metrics Metrics.
      */
-    public TcpDiscoveryClientHeartbeatMessage(UUID creatorNodeId, ClusterMetrics metrics) {
+    public TcpDiscoveryClientMetricsMessage(UUID creatorNodeId, ClusterMetrics metrics) {
         super(creatorNodeId);
 
         this.metrics = ClusterMetricsSnapshot.serialize(metrics);
@@ -67,6 +67,6 @@ public class TcpDiscoveryClientHeartbeatMessage extends TcpDiscoveryAbstractMess
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryClientHeartbeatMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryClientMetricsMessage.class, this, "super", super.toString());
     }
 }

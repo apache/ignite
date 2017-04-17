@@ -94,8 +94,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi().setForceServerMode(true);
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
         disco.setIpFinder(ipFinder);
 
         if (isDebug())
@@ -103,6 +101,8 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
         eventSpi.setExpireCount(100);
+
+        cfg.setFailureDetectionTimeout(Long.MAX_VALUE);
 
         cfg.setEventStorageSpi(eventSpi);
 

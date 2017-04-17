@@ -95,6 +95,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
     private boolean failureDetectionTimeoutEnabled = true;
 
     /**
+     * Failure detection timeout for client nodes. Initialized with the value of
+     * {@link IgniteConfiguration#getClientFailureDetectionTimeout()}.
+     */
+    private long clientFailureDetectionTimeout;
+
+    /**
      * Failure detection timeout. Initialized with the value of
      * {@link IgniteConfiguration#getFailureDetectionTimeout()}.
      */
@@ -631,6 +637,16 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      */
     protected void initFailureDetectionTimeout() {
         if (failureDetectionTimeoutEnabled) {
+            clientFailureDetectionTimeout = ignite.configuration().getClientFailureDetectionTimeout();
+
+            if (clientFailureDetectionTimeout <= 0)
+                throw new IgniteSpiException("Invalid client failure detection timeout value: " +
+                    clientFailureDetectionTimeout);
+            else if (clientFailureDetectionTimeout <= 10)
+                // Because U.currentTimeInMillis() is updated once in 10 milliseconds.
+                log.warning("Client failure detection timeout is too low, it may lead to unpredictable behaviour " +
+                    "[clientFailureDetectionTimeout=" + clientFailureDetectionTimeout + ']');
+
             failureDetectionTimeout = ignite.configuration().getFailureDetectionTimeout();
 
             if (failureDetectionTimeout <= 0)
@@ -663,6 +679,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      */
     public boolean failureDetectionTimeoutEnabled() {
         return failureDetectionTimeoutEnabled;
+    }
+
+    /**
+     * Returns client failure detection timeout set to use for network related operations.
+     *
+     * @return client failure detection timeout in milliseconds or {@code 0} if the timeout is disabled.
+     */
+    public long clientFailureDetectionTimeout() {
+        return clientFailureDetectionTimeout;
     }
 
     /**
