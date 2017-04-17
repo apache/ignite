@@ -666,7 +666,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, locNodeId);
 
             t.stop(true);
-            t.destroy(true);
+            t.destroy(false);
 
             t.deploymentId(desc.deploymentId());
 
