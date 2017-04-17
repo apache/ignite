@@ -17,9 +17,8 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.mem.OutOfMemoryException;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 
 /**
  * This class defines {@code MemoryPolicy} configuration.
@@ -43,7 +42,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Threshold for per-page eviction.
      * When this percentage of memory pages of the current policy is allocated (90% by default),
      * system starts page eviction.
-     * Decrease this parameter if {@link OutOfMemoryException} occurred with enabled page eviction.
+     * Decrease this parameter if {@link IgniteOutOfMemoryException} occurred with enabled page eviction.
      */
     private double evictionThreshold = 0.9;
 
@@ -52,7 +51,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * it will take empty page from the pool instead of allocating a new one.
      * Increase this parameter if cache can contain very big entries (total size of pages in the pool should be enough
      * to contain largest cache entry).
-     * Increase this parameter if {@link OutOfMemoryException} occurred with enabled page eviction.
+     * Increase this parameter if {@link IgniteOutOfMemoryException} occurred with enabled page eviction.
      */
     private int emptyPagesPoolSize = 100;
 

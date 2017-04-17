@@ -27,7 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.mem.DirectMemory;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
-import org.apache.ignite.internal.mem.OutOfMemoryException;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -105,6 +105,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Direct memory allocator. */
     private final DirectMemoryProvider directMemoryProvider;
 
+    /** Name of MemoryPolicy this PageMemory is associated with. */
+    private final String memoryPolicyName;
+
     /** Object to collect memory usage metrics. */
     private final MemoryMetricsImpl memMetrics;
 
@@ -137,6 +140,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      * @param directMemoryProvider Memory allocator to use.
      * @param sharedCtx Cache shared context.
      * @param pageSize Page size.
+     * @param memPlcName Memory Policy name.
      * @param memMetrics Memory Metrics.
      * @param trackAcquiredPages If {@code true} tracks number of allocated pages (for tests purpose only).
      */
@@ -145,6 +149,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         DirectMemoryProvider directMemoryProvider,
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
+        String memPlcName,
         MemoryMetricsImpl memMetrics,
         boolean trackAcquiredPages
     ) {
@@ -155,6 +160,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.directMemoryProvider = directMemoryProvider;
         this.trackAcquiredPages = trackAcquiredPages;
         this.memMetrics = memMetrics;
+        memoryPolicyName = memPlcName;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
@@ -252,7 +258,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         if (relPtr == INVALID_REL_PTR)
-            throw new OutOfMemoryException();
+            throw new IgniteOutOfMemoryException("Failed to allocate page in MemoryPolicy: " + memoryPolicyName);
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0;
 
