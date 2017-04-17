@@ -51,20 +51,6 @@ public class IgniteFramework {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        final int frameworkFailoverTimeout = 0;
-
-        // Have Mesos fill in the current user.
-        Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
-            .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser(getUser())
-            .setRole(getRole())
-            .setFailoverTimeout(frameworkFailoverTimeout);
-
-        if (System.getenv("MESOS_CHECKPOINT") != null) {
-            log.info("Enabling checkpoint for the framework");
-
-            frameworkBuilder.setCheckpoint(true);
-        }
 
         ClusterProperties clusterProps = ClusterProperties.from(args.length >= 1 ? args[0] : null);
 
@@ -109,15 +95,12 @@ public class IgniteFramework {
                 .setSecret(ByteString.copyFrom(System.getenv("DEFAULT_SECRET").getBytes()))
                 .build();
 
-            frameworkBuilder.setPrincipal(System.getenv("DEFAULT_PRINCIPAL"));
-
-            driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), clusterProps.masterUrl(),
+            driver = new MesosSchedulerDriver(scheduler, getFrameworkInfo(), clusterProps.masterUrl(),
                 cred);
         }
         else {
-            frameworkBuilder.setPrincipal("ignite-framework-java");
 
-            driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), clusterProps.masterUrl());
+            driver = new MesosSchedulerDriver(scheduler, getFrameworkInfo(), clusterProps.masterUrl());
         }
 
         int status = driver.run() == Protos.Status.DRIVER_STOPPED ? 0 : 1;
@@ -128,6 +111,32 @@ public class IgniteFramework {
         driver.stop();
 
         System.exit(status);
+    }
+
+    public static Protos.FrameworkInfo getFrameworkInfo(){
+        final int frameworkFailoverTimeout = 0;
+
+        // Have Mesos fill in the current user.
+        Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
+            .setName(IGNITE_FRAMEWORK_NAME)
+            .setUser(getUser())
+            .setRole(getRole())
+            .setFailoverTimeout(frameworkFailoverTimeout);
+
+        if (System.getenv("MESOS_CHECKPOINT") != null) {
+            log.info("Enabling checkpoint for the framework");
+
+            frameworkBuilder.setCheckpoint(true);
+        }
+
+        if (System.getenv("MESOS_AUTHENTICATE") != null) {
+            frameworkBuilder.setPrincipal(System.getenv("DEFAULT_PRINCIPAL"));
+        } else {
+            frameworkBuilder.setPrincipal("ignite-framework-java");
+        }
+
+        return frameworkBuilder.build();
+
     }
 
     /**
