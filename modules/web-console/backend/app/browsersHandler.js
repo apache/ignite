@@ -199,8 +199,8 @@ module.exports.factory = (_, socketio, configure, errors) => {
 
             const internalVisor = (postfix) => `org.apache.ignite.internal.visor.${postfix}`;
 
-            this.registerVisorTask('querySql', internalVisor('query.VisorQueryTask'), internalVisor('query.VisorQueryArg'));
-            this.registerVisorTask('queryScan', internalVisor('query.VisorScanQueryTask'), internalVisor('query.VisorScanQueryArg'));
+            this.registerVisorTask('querySql', internalVisor('query.VisorQueryTask'), internalVisor('query.VisorQueryTaskArg'));
+            this.registerVisorTask('queryScan', internalVisor('query.VisorScanQueryTask'), internalVisor('query.VisorScanQueryTaskArg'));
             this.registerVisorTask('queryFetch', internalVisor('query.VisorQueryNextPageTask'), internalVisor('query.VisorQueryNextPageTaskArg'));
             this.registerVisorTask('queryClose', internalVisor('query.VisorQueryCleanupTask'),
                 'java.util.Map', 'java.util.UUID', 'java.util.Set');
