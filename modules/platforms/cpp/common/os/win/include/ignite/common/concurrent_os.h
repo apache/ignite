@@ -18,12 +18,14 @@
 #ifndef _IGNITE_COMMON_CONCURRENT_OS
 #define _IGNITE_COMMON_CONCURRENT_OS
 
-#include <map>
 #include <stdint.h>
+
+#include <cassert>
+#include <map>
+
 #include <windows.h>
 
 #include "ignite/common/common.h"
-
 namespace ignite
 {
     namespace common
@@ -398,6 +400,84 @@ namespace ignite
             private:
                 /** Index. */
                 int32_t idx; 
+            };
+
+            /**
+             * Manually triggered event.
+             * Once triggered it stays in passing state until manually reset.
+             */
+            class ManualEvent
+            {
+            public:
+                /**
+                 * Constructs manual event.
+                 * Initial state is untriggered.
+                 */
+                ManualEvent()
+                {
+                    handle = CreateEvent(NULL, TRUE, FALSE, NULL);
+
+                    assert(handle != NULL);
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~ManualEvent()
+                {
+                    CloseHandle(handle);
+                }
+
+                /**
+                 * Sets event into triggered state.
+                 */
+                void Set()
+                {
+                    BOOL success = SetEvent(handle);
+
+                    assert(success);
+                }
+
+                /**
+                 * Resets event into non-triggered state.
+                 */
+                void Reset()
+                {
+                    BOOL success = ResetEvent(handle);
+
+                    assert(success);
+                }
+
+                /**
+                 * Wait for event to be triggered.
+                 */
+                void Wait()
+                {
+                    DWORD res = WaitForSingleObject(handle, INFINITE);
+
+                    assert(res == WAIT_OBJECT_0);
+                }
+
+                /**
+                 * Wait for event to be triggered for specified time.
+                 *
+                 * @param msTimeout Timeout in milliseconds.
+                 * @return True if the object has been triggered and false in case of timeout.
+                 */
+                bool WaitFor(int32_t msTimeout)
+                {
+                    DWORD res = WaitForSingleObject(handle, static_cast<DWORD>(msTimeout));
+
+                    assert(res == WAIT_OBJECT_0 || res == WAIT_TIMEOUT);
+
+                    return res == WAIT_OBJECT_0;
+                }
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(ManualEvent);
+
+                /** Event handle. */
+                HANDLE handle;
             };
         }
     }

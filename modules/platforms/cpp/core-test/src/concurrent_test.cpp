@@ -276,4 +276,26 @@ BOOST_AUTO_TEST_CASE(TestEnableSharedFromThis)
     BOOST_CHECK(deleted);
 }
 
+BOOST_AUTO_TEST_CASE(ManualEventBasic)
+{
+    ManualEvent evt;
+
+    bool triggered = evt.Wait(100);
+    BOOST_CHECK(!triggered);
+
+    evt.Set();
+
+    triggered = evt.Wait(100);
+    BOOST_REQUIRE(triggered);
+
+    triggered = evt.Wait(100);
+    BOOST_REQUIRE(triggered);
+
+    evt.Wait();
+    evt.Reset();
+
+    triggered = evt.Wait(100);
+    BOOST_CHECK(!triggered);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
