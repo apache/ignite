@@ -542,7 +542,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testIncorrectPut() throws Exception {
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "key", "key0"));
 
-        assertResponseContainsError(ret, "Failed to find mandatory parameter in request: val");
+        assertResponseContainsError(ret,
+            "Failed to handle request: [req=CACHE_PUT, err=Failed to find mandatory parameter in request: val]");
     }
 
     /**
