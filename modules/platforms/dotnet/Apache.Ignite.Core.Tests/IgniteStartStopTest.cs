@@ -35,16 +35,7 @@ namespace Apache.Ignite.Core.Tests
     public class IgniteStartStopTest
     {
         /// <summary>
-        /// 
-        /// </summary>
-        [SetUp]
-        public void SetUp()
-        {
-            TestUtils.KillProcesses();
-        }
-
-        /// <summary>
-        /// 
+        /// Test teardown.
         /// </summary>
         [TearDown]
         public void TearDown()
