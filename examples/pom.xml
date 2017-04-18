@@ -260,10 +260,6 @@
                 <ml.folder>src/main/ml</ml.folder>
             </properties>
 
-            <activation>
-                <jdk>[1.8,)</jdk>
-            </activation>
-
             <build>
                 <plugins>
                     <plugin>

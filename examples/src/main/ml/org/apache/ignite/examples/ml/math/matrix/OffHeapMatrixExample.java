@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples.ml.math.matrix;
 
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOffHeapMatrix;
 
 /**
  * This example shows how to use off-heap {@link Matrix} API.
