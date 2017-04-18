@@ -69,7 +69,6 @@ import org.jetbrains.annotations.Nullable;
  * @see EventType#EVT_CACHE_ENTRY_DESTROYED
  * @see EventType#EVT_CACHE_ENTRY_EVICTED
  * @see EventType#EVT_CACHE_OBJECT_EXPIRED
- * @see EventType#EVT_CACHE_OBJECT_FROM_OFFHEAP
  * @see EventType#EVT_CACHE_OBJECT_LOCKED
  * @see EventType#EVT_CACHE_OBJECT_PUT
  * @see EventType#EVT_CACHE_OBJECT_READ

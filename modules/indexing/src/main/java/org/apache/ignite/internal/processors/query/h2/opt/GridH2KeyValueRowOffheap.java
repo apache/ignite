@@ -128,10 +128,6 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
         return l;
     }
 
-    @Override public Value getValue(int index) {
-        return getOffheapValue(index);
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     @Override protected Value getOffheapValue(int col) {
