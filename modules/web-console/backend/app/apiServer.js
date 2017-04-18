@@ -20,16 +20,19 @@
 // Fire me up!
 
 module.exports = {
-    implements: 'app',
+    implements: 'api-server',
     inject: ['require(express)', 'configure', 'routes']
 };
 
 module.exports.factory = function(Express, configure, routes) {
-    return {
+    /**
+     * Connected agents manager.
+     */
+    class ApiServer {
         /**
          * @param {Server} srv
          */
-        listen: (srv) => {
+        attach(srv) {
             const app = new Express();
 
             configure.express(app);
@@ -59,5 +62,7 @@ module.exports.factory = function(Express, configure, routes) {
 
             return app;
         }
-    };
+    }
+
+    return new ApiServer();
 };
