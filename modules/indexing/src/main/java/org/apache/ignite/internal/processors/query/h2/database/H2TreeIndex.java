@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -161,7 +162,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            IndexingQueryFilter f = threadLocalFilter();
+            IndexingQueryFilter f = sessionLocalFilter(ses);
             IgniteBiPredicate<Object, Object> p = null;
 
             if (f != null) {
@@ -170,7 +171,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                 p = f.forSpace(spaceName);
             }
 
-            int seg = threadLocalSegment();
+            int seg = sessionLocalSegment(ses, null);
 
             H2Tree tree = treeForRead(seg);
 
@@ -305,9 +306,9 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public Cursor findFirstOrLast(Session session, boolean b) {
+    @Override public Cursor findFirstOrLast(Session ses, boolean b) {
         try {
-            int seg = threadLocalSegment();
+            int seg = sessionLocalSegment(ses, null);
 
             H2Tree tree = treeForRead(seg);
 
@@ -340,8 +341,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected IgniteTree<SearchRow, GridH2Row> doTakeSnapshot() {
-        int seg = threadLocalSegment();
+    @Nullable @Override protected IgniteTree<SearchRow, GridH2Row> doTakeSnapshot(GridH2QueryContext qctx) {
+        int seg = sessionLocalSegment(null, qctx);
 
         return treeForRead(seg);
     }

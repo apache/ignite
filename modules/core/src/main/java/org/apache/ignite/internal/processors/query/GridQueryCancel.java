@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.util.GridCancelable;
 
 /**
  * Holds query cancel state.
  */
-public class GridQueryCancel {
+public class GridQueryCancel implements GridCancelable {
     /** No-op runnable indicating cancelled state. */
     private static final Runnable CANCELLED = new Runnable() {
         @Override public void run() {
@@ -60,7 +61,7 @@ public class GridQueryCancel {
     /**
      * Executes cancel closure.
      */
-    public void cancel() {
+    @Override public void cancel() {
         while(true) {
             Runnable tmp = this.clo;
 

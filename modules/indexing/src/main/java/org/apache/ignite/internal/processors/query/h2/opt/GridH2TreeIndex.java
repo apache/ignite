@@ -167,10 +167,10 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteTree doTakeSnapshot() {
+    @Override protected IgniteTree doTakeSnapshot(GridH2QueryContext qctx) {
         assert snapshotEnabled;
 
-        int seg = threadLocalSegment();
+        int seg = sessionLocalSegment(null, qctx);
 
         IgniteNavigableMapTree tree = segments[seg];
 
@@ -199,9 +199,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public long getRowCount(@Nullable Session ses) {
-        IndexingQueryFilter f = threadLocalFilter();
+        IndexingQueryFilter f = sessionLocalFilter(ses);
 
-        int seg = threadLocalSegment();
+        int seg = sessionLocalSegment(ses, null);
 
         // Fast path if we don't need to perform any filtering.
         if (f == null || f.forSpace((getTable()).spaceName()) == null)
@@ -211,7 +211,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 throw DbException.convert(e);
             }
 
-        GridCursor<GridH2Row> cursor = doFind(null, false, null);
+        GridCursor<GridH2Row> cursor = doFind(ses, null, false, null);
 
         long size = 0;
 
@@ -273,12 +273,12 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, @Nullable SearchRow first, @Nullable SearchRow last) {
-        return new H2Cursor(doFind(first, true, last), null);
+        return new H2Cursor(doFind(ses, first, true, last), null);
     }
 
     /** {@inheritDoc} */
     @Override public Cursor findNext(Session ses, SearchRow higherThan, SearchRow last) {
-        return new H2Cursor(doFind(higherThan, false, last), null);
+        return new H2Cursor(doFind(ses, higherThan, false, last), null);
     }
 
     /**
@@ -304,12 +304,17 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @return Iterator over rows in given range.
      */
     @SuppressWarnings("unchecked")
-    private GridCursor<GridH2Row> doFind(@Nullable SearchRow first, boolean includeFirst, @Nullable SearchRow last) {
-        int seg = threadLocalSegment();
+    private GridCursor<GridH2Row> doFind(
+        Session ses,
+        @Nullable SearchRow first,
+        boolean includeFirst,
+        @Nullable SearchRow last
+    ) {
+        int seg = sessionLocalSegment(ses, null);
 
         IgniteTree t = treeForRead(seg);
 
-        return doFind0(t, first, includeFirst, last, threadLocalFilter());
+        return doFind0(t, first, includeFirst, last, sessionLocalFilter(ses));
     }
 
     /** {@inheritDoc} */
@@ -372,12 +377,13 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /**
+     * For tests only.
      * Gets iterator over all rows in this index.
      *
      * @return Rows iterator.
      */
     GridCursor<GridH2Row> rows() {
-        return doFind(null, false, null);
+        return doFind(null, null, false, null);
     }
 
     /** {@inheritDoc} */
@@ -388,7 +394,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session ses, boolean first) {
         try {
-            int seg = threadLocalSegment();
+            int seg = sessionLocalSegment(ses, null);
 
             IgniteTree t = treeForRead(seg);
 

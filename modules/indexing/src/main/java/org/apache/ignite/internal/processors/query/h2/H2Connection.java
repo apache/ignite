@@ -25,10 +25,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.util.GridCancelable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
@@ -40,7 +41,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_STATEM
 /**
  * Pooled H2 connection with statement cache inside.
  */
-public final class H2Connection implements AutoCloseable {
+public final class H2Connection implements AutoCloseable, GridCancelable {
     /** The period of clean up the connection from pool. */
     private static final long CLEANUP_PERIOD = IgniteSystemProperties.getLong(
         IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 30_000);
@@ -50,12 +51,8 @@ public final class H2Connection implements AutoCloseable {
         IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE, 256);
 
     /** */
-    private static final AtomicIntegerFieldUpdater<H2Connection> deadUpd =
-        AtomicIntegerFieldUpdater.newUpdater(H2Connection.class, "dead");
-
-    /** */
-    @SuppressWarnings("unused")
-    private volatile int dead;
+    private static final ConcurrentMap<Session,GridH2QueryContext> sesLocQctx =
+        new ConcurrentHashMap<>();
 
     /** */
     private final Connection conn;
@@ -75,22 +72,41 @@ public final class H2Connection implements AutoCloseable {
     /** */
     private final H2ConnectionPool pool;
 
+    /** */
+    private final Session ses;
+
     /**
      * @param dbUrl Database URL.
      */
     public H2Connection(H2ConnectionPool pool, String dbUrl) throws SQLException {
         assert !F.isEmpty(dbUrl): dbUrl;
 
+        this.pool = pool;
         this.conn = DriverManager.getConnection(dbUrl);
         stmt = conn.createStatement();
-        this.pool = pool;
+
+        // Need to take session because on connection close
+        // we can loose it too early.
+        ses = (Session)((JdbcConnection)conn).getSession();
+        assert ses != null;
+    }
+
+    /**
+     * @param ses Session.
+     * @return Session local query context.
+     */
+    public static GridH2QueryContext getQueryContextForSession(Session ses) {
+        return ses == null ? null : sesLocQctx.get(ses);
     }
 
     /**
      * @param qctx Current session query context.
      */
-    public void setQueryContext(GridH2QueryContext qctx) {
-        H2ConnectionPool.queryContext(session(), qctx);
+    public void setQueryContextForSession(GridH2QueryContext qctx) {
+        assert qctx != null;
+
+        if (sesLocQctx.put(ses, qctx) != null)
+            throw new IllegalStateException("Session local query context already set.");
     }
 
     /**
@@ -118,7 +134,7 @@ public final class H2Connection implements AutoCloseable {
     /**
      * @param schema Schema name set on this connection.
      */
-    public void schema(String schema) throws IgniteCheckedException {
+    public void schema(String schema) throws SQLException {
         assert schema != null;
 
         if (F.eq(this.schema, schema))
@@ -126,12 +142,7 @@ public final class H2Connection implements AutoCloseable {
 
         // TODO conn.setSchema(schema);
 
-        try {
-            stmt.executeUpdate("SET SCHEMA " + schema);
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
-        }
+        stmt.executeUpdate("SET SCHEMA " + schema);
 
         this.schema = schema;
     }
@@ -158,10 +169,8 @@ public final class H2Connection implements AutoCloseable {
      * @param enforceJoinOrder Enforce join order of tables.
      */
     public void setupConnection(boolean distributedJoins, boolean enforceJoinOrder) {
-        Session s = session();
-
-        s.setForceJoinOrder(enforceJoinOrder);
-        s.setJoinBatchEnabled(distributedJoins);
+        ses.setForceJoinOrder(enforceJoinOrder);
+        ses.setJoinBatchEnabled(distributedJoins);
     }
 
     public void queryTimeout(int timeout) {
@@ -169,19 +178,23 @@ public final class H2Connection implements AutoCloseable {
     }
 
     /**
-     * @throws SQLException If failed.
+     * Destroy the connection.
      */
-    public void destroy() throws SQLException {
-        if (!deadUpd.compareAndSet(this, 0, 1))
-            return;
+    public void destroy() {
+        clearSessionLocalQueryContext();
 
-        Session ses = session();
+        U.closeQuiet(conn);
+    }
 
-        if (ses != null)
-            H2ConnectionPool.removeQueryContext(ses);
+    /** {@inheritDoc} */
+    @Override public void cancel() {
+        destroy();
+    }
 
-        if (!conn.isClosed())
-            conn.close();
+    /**
+     */
+    public void clearSessionLocalQueryContext() {
+        sesLocQctx.remove(ses);
     }
 
     /** {@inheritDoc} */
@@ -197,15 +210,19 @@ public final class H2Connection implements AutoCloseable {
      * @throws SQLException If failed.
      */
     public boolean isValid() throws SQLException {
-        return dead == 0 && !conn.isClosed() &&
-            (U.currentTimeMillis() - createTime) < CLEANUP_PERIOD;
+        if (U.currentTimeMillis() - createTime > CLEANUP_PERIOD)
+            return false;
+
+        synchronized (conn) { // Possible NPE in H2 with racy close.
+            return !conn.isClosed();
+        }
     }
 
     /**
      * @return Session.
      */
     public Session session() {
-        return (Session)((JdbcConnection)conn).getSession();
+        return ses;
     }
 
     /**

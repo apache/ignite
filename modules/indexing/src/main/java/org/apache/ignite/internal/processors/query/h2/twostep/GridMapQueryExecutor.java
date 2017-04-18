@@ -581,7 +581,7 @@ public class GridMapQueryExecutor {
             GridH2QueryContext.set(conn, qctx);
 
             // qctx is set, we have to release reservations inside of it.
-            reserved = null;
+            reserved = null; // TODO lazy
 
             try {
                 if (nodeRess.cancelled(reqId)) {
@@ -642,7 +642,7 @@ public class GridMapQueryExecutor {
                 }
             }
             finally {
-                GridH2QueryContext.clearThreadLocal();
+                U.close(conn, log); // TODO lazy
 
                 if (distributedJoinMode == OFF)
                     qctx.clearContext(false);

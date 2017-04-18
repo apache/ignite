@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -144,7 +143,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected IgniteTree doTakeSnapshot() {
+    @Nullable @Override protected IgniteTree doTakeSnapshot(GridH2QueryContext qctx) {
         return null; // TODO We do not support snapshots, but probably this is possible.
     }
 
@@ -287,7 +286,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         try {
             checkClosed();
 
-            final int seg = threadLocalSegment();
+            final int seg = sessionLocalSegment(filter.getSession(), null);
 
             final MVRTreeMap<Long> segment = segments[seg];
 
@@ -328,7 +327,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         }
         while (i.hasNext());
 
-        return filter(new GridCursorIteratorWrapper(rows.iterator()), threadLocalFilter());
+        return filter(new GridCursorIteratorWrapper(rows.iterator()),
+            sessionLocalFilter(filter.getSession()));
     }
 
     /** {@inheritDoc} */
@@ -343,7 +343,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             if (!first)
                 throw DbException.throwInternalError("Spatial Index can only be fetch by ascending order");
 
-            final int seg = threadLocalSegment();
+            final int seg = sessionLocalSegment(ses, null);
 
             final MVRTreeMap<Long> segment = segments[seg];
 
@@ -379,7 +379,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             if (intersection == null)
                 return find(filter.getSession(), null, null);
 
-            final int seg = threadLocalSegment();
+            final int seg = sessionLocalSegment(filter.getSession(), null);
 
             final MVRTreeMap<Long> segment = segments[seg];
 

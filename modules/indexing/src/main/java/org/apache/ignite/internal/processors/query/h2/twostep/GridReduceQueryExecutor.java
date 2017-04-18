@@ -514,7 +514,7 @@ public class GridReduceQueryExecutor {
             final String space = cctx.name();
 
             final QueryRun r = new QueryRun(qryReqId, qry.originalSql(), space,
-                h2.takeConnectionForSpace(space), qry.mapQueries().size(), qry.pageSize(),
+                qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), cancel);
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
@@ -567,16 +567,21 @@ public class GridReduceQueryExecutor {
             final int segmentsPerIndex = qry.explain() || isReplicatedOnly ? 1 :
                 findFirstPartitioned(cctx, extraSpaces).config().getQueryParallelism();
 
+            H2Connection conn = null;
+
             int replicatedQrysCnt = 0;
 
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
 
                 if (!skipMergeTbl) {
+                    if (conn == null)
+                        r.qryInfo.connection(conn = h2.takeConnectionForSpace(space));
+
                     GridMergeTable tbl;
 
                     try {
-                        tbl = createMergeTable(r.conn, mapQry, qry.explain());
+                        tbl = createMergeTable(conn, mapQry, qry.explain());
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -584,7 +589,7 @@ public class GridReduceQueryExecutor {
 
                     idx = tbl.getMergeIndex();
 
-                    fakeTable(r.conn, tblIdx++).innerTable(tbl);
+                    fakeTable(conn, tblIdx++).innerTable(tbl);
                 }
                 else
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
@@ -707,6 +712,7 @@ public class GridReduceQueryExecutor {
                     if (skipMergeTbl) {
                         List<List<?>> res = new ArrayList<>();
 
+                        // TODO lazy
                         // Simple UNION ALL can have multiple indexes.
                         for (GridMergeIndex idx : r.idxs) {
                             Cursor cur = idx.findInStream(null, null);
@@ -732,19 +738,19 @@ public class GridReduceQueryExecutor {
 
                         UUID locNodeId = ctx.localNodeId();
 
-                        r.conn.setupConnection(false, enforceJoinOrder);
+                        conn.setupConnection(false, enforceJoinOrder);
 
-                        GridH2QueryContext.set(r.conn, new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
+                        GridH2QueryContext.set(conn, new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
                             .pageSize(r.pageSize).distributedJoinMode(OFF));
 
                         try {
                             if (qry.explain())
-                                return explainPlan(r.conn, space, qry, params);
+                                return explainPlan(conn, space, qry, params);
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
                             ResultSet res = h2.executeSqlQueryWithTimer(space,
-                                r.conn,
+                                conn,
                                 rdc.query(),
                                 F.asList(rdc.parameters(params)),
                                 false, // The statement will cache some extra thread local objects.
@@ -754,7 +760,7 @@ public class GridReduceQueryExecutor {
                             resIter = new IgniteH2Indexing.FieldsIterator(res);
                         }
                         finally {
-                            GridH2QueryContext.clearThreadLocal();
+                            conn.clearSessionLocalQueryContext(); // TODO lazy
                         }
                     }
                 }
@@ -769,7 +775,8 @@ public class GridReduceQueryExecutor {
                 return new GridQueryCacheObjectsIterator(resIter, cctx, keepPortable);
             }
             catch (IgniteCheckedException | RuntimeException e) {
-                U.closeQuiet(r.conn);
+                if (conn != null)
+                    conn.destroy();
 
                 if (e instanceof CacheException) {
                     if (wasCancelled((CacheException)e))
@@ -791,6 +798,8 @@ public class GridReduceQueryExecutor {
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
+                U.close(conn, log); // TODO lazy
+
                 // Make sure any activity related to current attempt is cancelled.
                 cancelRemoteQueriesIfNeeded(nodes, r, qryReqId, qry.distributedJoins());
 
@@ -1369,8 +1378,8 @@ public class GridReduceQueryExecutor {
         long curTime = U.currentTimeMillis();
 
         for (QueryRun run : runs.values()) {
-            if (run.qry.longQuery(curTime, duration))
-                res.add(run.qry);
+            if (run.qryInfo.longQuery(curTime, duration))
+                res.add(run.qryInfo);
         }
 
         return res;
@@ -1386,7 +1395,7 @@ public class GridReduceQueryExecutor {
             QueryRun run = runs.get(qryId);
 
             if (run != null)
-                run.qry.cancel();
+                run.qryInfo.cancel();
         }
     }
 
@@ -1395,7 +1404,7 @@ public class GridReduceQueryExecutor {
      */
     public void cancelAllQueries() {
         for (QueryRun run : runs.values())
-            run.qry.cancel();
+            run.qryInfo.cancel();
     }
 
     /**
@@ -1403,16 +1412,13 @@ public class GridReduceQueryExecutor {
      */
     private static class QueryRun {
         /** */
-        private final GridRunningQueryInfo qry;
+        private final GridRunningQueryInfo qryInfo;
 
         /** */
         private final List<GridMergeIndex> idxs;
 
         /** */
         private CountDownLatch latch;
-
-        /** */
-        private final H2Connection conn;
 
         /** */
         private final int pageSize;
@@ -1424,15 +1430,13 @@ public class GridReduceQueryExecutor {
          * @param id Query ID.
          * @param qry Query text.
          * @param cache Cache where query was executed.
-         * @param conn Connection.
          * @param idxsCnt Number of indexes.
          * @param pageSize Page size.
          * @param startTime Start time.
          * @param cancel Query cancel handler.
          */
-        private QueryRun(Long id, String qry, String cache, H2Connection conn, int idxsCnt, int pageSize, long startTime, GridQueryCancel cancel) {
-            this.qry = new GridRunningQueryInfo(id, qry, SQL_FIELDS, cache, startTime, cancel, false, conn);
-            this.conn = conn;
+        private QueryRun(Long id, String qry, String cache, int idxsCnt, int pageSize, long startTime, GridQueryCancel cancel) {
+            this.qryInfo = new GridRunningQueryInfo(id, qry, SQL_FIELDS, cache, startTime, cancel, false, null);
             this.idxs = new ArrayList<>(idxsCnt);
             this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;
         }

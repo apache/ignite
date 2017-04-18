@@ -377,7 +377,7 @@ public class GridH2QueryContext {
          if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 
-         c.setQueryContext(x);
+         c.setQueryContextForSession(x);
     }
 
     /**

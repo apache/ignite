@@ -83,7 +83,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.internal.processors.query.h2.H2ConnectionPool.queryContext;
+import static org.apache.ignite.internal.processors.query.h2.H2Connection.getQueryContextForSession;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.LOCAL_ONLY;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
@@ -189,11 +189,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @return Index segment ID for current query context.
      */
-    protected int threadLocalSegment(Session ses) {
+    protected final int sessionLocalSegment(Session ses, GridH2QueryContext qctx) {
         if (segmentsCount() == 1)
             return 0;
 
-        GridH2QueryContext qctx = queryContext(ses);
+        if (qctx == null)
+            qctx = getQueryContextForSession(ses);
 
         if (qctx == null)
             throw new IllegalStateException("GridH2QueryContext is not initialized.");
@@ -255,7 +256,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         assert snapshot.get() == null;
 
         if (s == null)
-            s = doTakeSnapshot();
+            s = doTakeSnapshot(qctx);
 
         if (s != null) {
             if (s instanceof GridReservable && !((GridReservable)s).reserve())
@@ -287,7 +288,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Multiplier.
      */
     public final int getDistributedMultiplier(Session ses, TableFilter[] filters, int filter) {
-        GridH2QueryContext qctx = queryContext(ses);
+        GridH2QueryContext qctx = getQueryContextForSession(ses);
 
         // We do optimizations with respect to distributed joins only on PREPARE stage only.
         // Notice that we check for isJoinBatchEnabled, because we can do multiple different
@@ -319,7 +320,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      *
      * @return Snapshot or {@code null}.
      */
-    @Nullable protected abstract IgniteTree doTakeSnapshot();
+    @Nullable protected abstract IgniteTree doTakeSnapshot(GridH2QueryContext qctx);
 
     /**
      * @return Thread local snapshot.
@@ -360,8 +361,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @return Filter for currently running query or {@code null} if none.
      */
-    protected static IndexingQueryFilter threadLocalFilter(Session ses) {
-        GridH2QueryContext qctx = queryContext(ses);
+    protected static IndexingQueryFilter sessionLocalFilter(Session ses) {
+        GridH2QueryContext qctx = getQueryContextForSession(ses);
 
         return qctx != null ? qctx.filter() : null;
     }
@@ -403,7 +404,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
-        GridH2QueryContext qctx = queryContext(filter.getSession());
+        GridH2QueryContext qctx = getQueryContextForSession(filter.getSession());
 
         if (qctx == null || qctx.distributedJoinMode() == OFF || !getTable().isPartitioned())
             return null;
@@ -1186,7 +1187,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 if (qctx == null) {
                     // It is the first call after query begin (may be after reuse),
                     // reinitialize query context and result.
-                    qctx = queryContext(ses);
+                    qctx = getQueryContextForSession(ses);
                     res = new ArrayList<>();
 
                     assert qctx != null;

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -84,7 +85,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, final SearchRow lower, final SearchRow upper) {
-        IndexingQueryFilter f = threadLocalFilter();
+        IndexingQueryFilter f = sessionLocalFilter(ses);
         IgniteBiPredicate<Object, Object> p = null;
 
         if (f != null) {
@@ -198,7 +199,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected IgniteTree doTakeSnapshot() {
+    @Nullable @Override protected IgniteTree doTakeSnapshot(GridH2QueryContext qctx) {
         throw new AssertionError("This method must not be called for PK index");
     }
 
