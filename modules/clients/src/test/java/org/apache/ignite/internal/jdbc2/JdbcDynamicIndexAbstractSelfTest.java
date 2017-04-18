@@ -27,14 +27,13 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Test that checks indexes handling with JDBC.
@@ -85,16 +84,17 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override CacheConfiguration cacheConfig() {
-        CacheConfiguration cache = super.cacheConfig();
+        CacheConfiguration ccfg = super.cacheConfig();
 
-        cache.setCacheMode(cacheMode());
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
-        cache.setAtomicityMode(atomicityMode());
+        ccfg.setCacheMode(cacheMode());
+        ccfg.setAtomicityMode(atomicityMode());
 
         if (nearCache())
-            cache.setNearConfiguration(new NearCacheConfiguration());
+            ccfg.setNearConfiguration(new NearCacheConfiguration());
 
-        return cache;
+        return ccfg;
     }
 
     /**
