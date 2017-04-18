@@ -42,11 +42,11 @@ public interface IgfsEx extends IgniteFileSystem {
     public IgfsContext context();
 
     /**
-     * Get handshake message.
+     * Get paths.
      *
-     * @return Handshake message.
+     * @return Paths.
      */
-    public IgfsPaths proxyPaths();
+    public IgfsPaths paths();
 
     /**
      * Gets global space counters.

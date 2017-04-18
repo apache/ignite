@@ -266,7 +266,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
 
         igfs.clientLogDirectory(req.logDirectory());
 
-        IgfsHandshakeResponse handshake = new IgfsHandshakeResponse(igfs.name(), igfs.proxyPaths(),
+        IgfsHandshakeResponse handshake = new IgfsHandshakeResponse(igfs.name(), igfs.paths(),
             igfs.groupBlockSize(), igfs.globalSampling());
 
         res.handshake(handshake);

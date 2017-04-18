@@ -154,8 +154,8 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsPaths proxyPaths() {
-        return igfs.proxyPaths();
+    @Override public IgfsPaths paths() {
+        return igfs.paths();
     }
 
     /** {@inheritDoc} */

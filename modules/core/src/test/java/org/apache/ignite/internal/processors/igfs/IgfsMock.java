@@ -69,7 +69,7 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsPaths proxyPaths() {
+    @Override public IgfsPaths paths() {
         throwUnsupported();
 
         return null;

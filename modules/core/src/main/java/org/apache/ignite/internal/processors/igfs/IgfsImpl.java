@@ -67,7 +67,6 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadabl
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
-import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
@@ -121,7 +120,7 @@ public final class IgfsImpl implements IgfsEx {
     static final Map<String, String> DFLT_DIR_META = F.asMap(IgfsUtils.PROP_PERMISSION, PERMISSION_DFLT_VAL);
 
     /** Handshake message. */
-    private final IgfsPaths secondaryPaths;
+    private final IgfsPaths paths;
 
     /** Cache based structure (meta data) manager. */
     private IgfsMetaManager meta;
@@ -256,12 +255,7 @@ public final class IgfsImpl implements IgfsEx {
 
         modeRslvr = new IgfsModeResolver(dfltMode, modes);
 
-        Object secondaryFsPayload = null;
-
-        if (secondaryFs instanceof HadoopPayloadAware)
-            secondaryFsPayload = ((HadoopPayloadAware) secondaryFs).getPayload();
-
-        secondaryPaths = new IgfsPaths(secondaryFsPayload, dfltMode, modeRslvr.modesOrdered());
+        paths = new IgfsPaths(dfltMode, modeRslvr.modesOrdered());
 
         // Check whether IGFS LRU eviction policy is set on data cache.
         String dataCacheName = igfsCtx.configuration().getDataCacheConfiguration().getName();
@@ -430,8 +424,8 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsPaths proxyPaths() {
-        return secondaryPaths;
+    @Override public IgfsPaths paths() {
+        return paths;
     }
 
     /** {@inheritDoc} */
