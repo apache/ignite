@@ -98,12 +98,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(GetServerCount(), res);
         }
 
-        /** <inheritdoc /> */
-        protected override ICollection<Type> GetBinaryTypes()
-        {
-            return new[] {typeof(InjectionJobBinarizable)};
-        }
-
         /// <summary>
         /// Injection task.
         /// </summary>
