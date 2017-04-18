@@ -132,6 +132,6 @@
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
         <property name="backups" value="1"/>
         <property name="eagerTtl" value="true"/>
-        <property name="onheapCacheEnabled"/>
+        <property name="onheapCacheEnabled" value="true"/>
     </bean>
 </beans>
