@@ -577,7 +577,7 @@ public class GridIntList implements Message, Externalizable {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 85;
+        return -52;
     }
 
     /** {@inheritDoc} */
