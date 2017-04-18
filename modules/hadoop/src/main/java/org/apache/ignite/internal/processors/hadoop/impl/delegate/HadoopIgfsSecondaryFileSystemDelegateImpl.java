@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
@@ -125,8 +126,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
             throw handleSecondaryFsError(e, "Failed to update file properties [path=" + path + "]");
         }
 
-        //Result is not used in case of secondary FS.
-        return null;
+        return info(path);
     }
 
     /** {@inheritDoc} */
@@ -300,7 +300,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
             final Map<String, String> props = properties(status);
 
-            return new IgfsFile() {
+            return new IgfsFileImpl(new IgfsFile() {
                 @Override public IgfsPath path() {
                     return path;
                 }
@@ -353,7 +353,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
                 @Override public Map<String, String> properties() {
                     return props;
                 }
-            };
+            }, 0);
         }
         catch (FileNotFoundException ignore) {
             return null;
@@ -399,6 +399,9 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
                 blks.add(convertBlockLocation(hadoopBlocks[i]));
 
             return blks;
+        }
+        catch (FileNotFoundException ignored) {
+            return Collections.emptyList();
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed affinity for path: " + path);

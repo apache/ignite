@@ -22,10 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -35,7 +32,6 @@ import org.apache.ignite.internal.visor.VisorEither;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
-import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SQL_QRY_NAME;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchSqlQueryRows;
@@ -45,19 +41,19 @@ import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleRes
  * Task for execute SQL fields query and get first page of results.
  */
 @GridInternal
-public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, VisorEither<VisorQueryResult>> {
+public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEither<VisorQueryResult>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorQueryJob job(VisorQueryArg arg) {
+    @Override protected VisorQueryJob job(VisorQueryTaskArg arg) {
         return new VisorQueryJob(arg, debug);
     }
 
     /**
      * Job for execute SCAN or SQL query and get first page of results.
      */
-    private static class VisorQueryJob extends VisorJob<VisorQueryArg, VisorEither<VisorQueryResult>> {
+    private static class VisorQueryJob extends VisorJob<VisorQueryTaskArg, VisorEither<VisorQueryResult>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -67,28 +63,12 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, VisorEither<
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorQueryJob(VisorQueryArg arg, boolean debug) {
+        private VisorQueryJob(VisorQueryTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
-        /**
-         * Execute scan query.
-         *
-         * @param c Cache to scan.
-         * @param arg Job argument with query parameters.
-         * @return Query cursor.
-         */
-        private QueryCursor<Cache.Entry<Object, Object>> scan(IgniteCache<Object, Object> c, VisorQueryArg arg,
-            IgniteBiPredicate<Object, Object> filter) {
-            ScanQuery<Object, Object> qry = new ScanQuery<>(filter);
-            qry.setPageSize(arg.getPageSize());
-            qry.setLocal(arg.isLocal());
-
-            return c.withKeepBinary().query(qry);
-        }
-
         /** {@inheritDoc} */
-        @Override protected VisorEither<VisorQueryResult> run(final VisorQueryArg arg) {
+        @Override protected VisorEither<VisorQueryResult> run(final VisorQueryTaskArg arg) {
             try {
                 IgniteCache<Object, Object> c = ignite.context().cache().jcache(arg.getCacheName());
                 UUID nid = ignite.localNode().id();
@@ -98,6 +78,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, VisorEither<
                 qry.setLocal(arg.isLocal());
                 qry.setDistributedJoins(arg.isDistributedJoins());
                 qry.setEnforceJoinOrder(arg.isEnforceJoinOrder());
+                qry.setReplicatedOnly(arg.isReplicatedOnly());
 
                 long start = U.currentTimeMillis();
 

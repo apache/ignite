@@ -698,7 +698,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
-        return (V) update0(
+        return (V)update0(
             key,
             val,
             null,
@@ -817,7 +817,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     private <T> IgniteInternalFuture<T> asyncOp(final CO<IgniteInternalFuture<T>> op) {
-        IgniteInternalFuture<T> fail = asyncOpAcquire();
+        IgniteInternalFuture<T> fail = asyncOpAcquire(/*retry*/false);
 
         if (fail != null)
             return fail;
@@ -841,14 +841,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
                     });
 
-                saveFuture(holder, f);
+                saveFuture(holder, f, /*retry*/false);
 
                 return f;
             }
 
             IgniteInternalFuture<T> f = op.apply();
 
-            saveFuture(holder, f);
+            saveFuture(holder, f, /*retry*/false);
 
             return f;
         }
@@ -884,8 +884,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
-        Object... args) throws IgniteCheckedException
-    {
+        Object... args) throws IgniteCheckedException {
         return invokeAll0(false, keys, entryProcessor, args).get();
     }
 
@@ -1830,7 +1829,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (req.size() > 1 &&                    // Several keys ...
                             writeThrough() && !req.skipStore() && // and store is enabled ...
                             !ctx.store().isLocal() &&             // and this is not local store ...
-                                                                  // (conflict resolver should be used for local store)
+                            // (conflict resolver should be used for local store)
                             !ctx.dr().receiveEnabled()            // and no DR.
                             ) {
                             // This method can only be used when there are no replicated entries in the batch.
@@ -2224,7 +2223,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (intercept) {
                         CacheObject old = entry.innerGet(
                             null,
-                             null,
+                            null,
                             /*read through*/ctx.loadPreviousValue(),
                             /*metrics*/true,
                             /*event*/true,
@@ -2836,8 +2835,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param req Request with keys to lock.
      * @param topVer Topology version to lock on.
      * @return Collection of locked entries.
-     * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown,
-     *      locks are released.
+     * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown, locks
+     * are released.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private List<GridDhtCacheEntry> lockEntries(GridNearAtomicAbstractUpdateRequest req, AffinityTopologyVersion topVer)
@@ -2964,8 +2963,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param entry Entry to check.
      * @param req Update request.
-     * @param res Update response. If filter evaluation failed, key will be added to failed keys and method
-     *      will return false.
+     * @param res Update response. If filter evaluation failed, key will be added to failed keys and method will return
+     * false.
      * @return {@code True} if filter evaluation succeeded.
      */
     private boolean checkFilter(GridCacheEntryEx entry, GridNearAtomicAbstractUpdateRequest req,
@@ -3401,7 +3400,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send deferred DHT update response to remote node [" +
+            U.error(log, "Failed to send deferredDHT  update response to remote node [" +
                 "futIds=" + msg.futureIds() + ", node=" + primaryId + ']', e);
         }
     }

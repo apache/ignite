@@ -119,14 +119,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Gets the configuration.
         /// </summary>
-        private static IgniteConfiguration GetConfig(string gridName = null)
+        private IgniteConfiguration GetConfig(string gridName = null)
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(Person),
-                    typeof(Organization), typeof(Address), typeof(Role), typeof(RoleKey), typeof(Numerics)),
+                    typeof(Organization), typeof(Address), typeof(Role), typeof(RoleKey), typeof(Numerics))
+                {
+                    NameMapper = GetNameMapper()
+                },
                 IgniteInstanceName = gridName
             };
+        }
+
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>
@@ -609,6 +620,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 x => x.Value.Age, x => x.Key, (x, y) => x.Key);
 
             Assert.AreEqual(PersonCount, qry.ToArray().Distinct().Count());
+        }
+
+        /// <summary>
+        /// Tests the SelectMany from field collection.
+        /// </summary>
+        [Test]
+        public void TestSelectManySameTable()
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<NotSupportedException>(() => persons.SelectMany(x => x.Value.Name).ToArray());
+
+            Assert.IsTrue(ex.Message.StartsWith("FROM clause must be IQueryable: from Char"));
         }
 
         /// <summary>

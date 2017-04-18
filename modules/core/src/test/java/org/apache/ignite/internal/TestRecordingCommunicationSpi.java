@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -43,6 +44,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     /** */
     private Set<Class<?>> recordClasses;
+
+    /** */
+    private IgniteBiPredicate<ClusterNode, Message> recordP;
 
     /** */
     private List<Object> recordedMsgs = new ArrayList<>();
@@ -65,7 +69,8 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
             Object msg0 = ioMsg.message();
 
             synchronized (this) {
-                if (recordClasses != null && recordClasses.contains(msg0.getClass()))
+                if ((recordClasses != null && recordClasses.contains(msg0.getClass())) ||
+                    (recordP != null && recordP.apply(node, msg)))
                     recordedMsgs.add(msg0);
 
                 boolean block = false;
@@ -96,6 +101,15 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         }
 
         super.sendMessage(node, msg, ackC);
+    }
+
+    /**
+     * @param recordP Record predicate.
+     */
+    public void record(IgniteBiPredicate<ClusterNode, Message> recordP) {
+        synchronized (this) {
+            this.recordP = recordP;
+        }
     }
 
     /**

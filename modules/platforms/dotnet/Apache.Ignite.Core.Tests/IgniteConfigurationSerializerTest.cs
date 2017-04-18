@@ -47,9 +47,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Plugin.Cache;
     using Apache.Ignite.Core.Tests.Binary;
     using Apache.Ignite.Core.Tests.Plugin;
-    using Apache.Ignite.Core.Tests.Plugin.Cache;
     using Apache.Ignite.Core.Transactions;
     using Apache.Ignite.NLog;
     using NUnit.Framework;
@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml'>
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true'>
                             <localhost>127.1.1.1</localhost>
                             <binaryConfiguration compactFooter='false' keepDeserialized='true'>
                                 <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests
                                     </nearConfiguration>
                                     <affinityFunction type='RendezvousAffinityFunction' partitions='99' excludeNeighbors='true' />
                                     <expiryPolicyFactory type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyPolicyFactory, Apache.Ignite.Core.Tests' />
-                                    <pluginConfigurations><iCachePluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.Cache.CacheJavaPluginConfiguration, Apache.Ignite.Core.Tests' foo='baz' /></pluginConfigurations>
+                                    <pluginConfigurations><iCachePluginConfiguration type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyPluginConfiguration, Apache.Ignite.Core.Tests' /></pluginConfigurations>
                                 </cacheConfiguration>
                                 <cacheConfiguration name='secondCache' />
                             </cacheConfiguration>
@@ -158,6 +158,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsFalse(cfg.BinaryConfiguration.CompactFooter);
             Assert.AreEqual(new[] {42, EventType.TaskFailed, EventType.JobFinished}, cfg.IncludedEventTypes);
             Assert.AreEqual(@"c:\myconfig.xml", cfg.SpringConfigUrl);
+            Assert.IsTrue(cfg.AutoGenerateIgniteInstanceName);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
 
@@ -241,8 +242,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(plugins);
             Assert.IsNotNull(plugins.Cast<TestIgnitePluginConfiguration>().SingleOrDefault());
 
-            var cachePlugCfg = cacheCfg.PluginConfigurations.Cast<CacheJavaPluginConfiguration>().Single();
-            Assert.AreEqual("baz", cachePlugCfg.Foo);
+            Assert.IsNotNull(cacheCfg.PluginConfigurations.Cast<MyPluginConfiguration>().SingleOrDefault());
 
             var eventStorage = cfg.EventStorageSpi as MemoryEventStorageSpi;
             Assert.IsNotNull(eventStorage);
@@ -609,7 +609,6 @@ namespace Apache.Ignite.Core.Tests
                 {
                     new CacheConfiguration("cacheName")
                     {
-                        AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
                         AtomicityMode = CacheAtomicityMode.Transactional,
                         Backups = 15,
                         CacheMode = CacheMode.Replicated,
@@ -678,7 +677,7 @@ namespace Apache.Ignite.Core.Tests
                         EnableStatistics = true,
                         PluginConfigurations = new[]
                         {
-                            new CacheJavaPluginConfiguration()
+                            new MyPluginConfiguration()
                         }
                     }
                 },
@@ -963,6 +962,19 @@ namespace Apache.Ignite.Core.Tests
         {
             /** <inheritdoc /> */
             public IExpiryPolicy CreateInstance()
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public class MyPluginConfiguration : ICachePluginConfiguration
+        {
+            int? ICachePluginConfiguration.CachePluginConfigurationClosureFactoryId
+            {
+                get { return 0; }
+            }
+
+            void ICachePluginConfiguration.WriteBinary(IBinaryRawWriter writer)
             {
                 throw new NotImplementedException();
             }

@@ -33,7 +33,6 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePartialUpdateException;
@@ -57,8 +56,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
@@ -96,7 +93,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setAtomicWriteOrderMode(writeOrderMode());
         cfg.setBackups(1);
         cfg.setRebalanceMode(SYNC);
 
@@ -169,13 +165,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
      * @return Cache atomicity mode.
      */
     protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     * @return Write order mode.
-     */
-    protected CacheAtomicWriteOrderMode writeOrderMode() {
-        return CLOCK;
-    }
 
     /**
      * @throws Exception If failed.
@@ -277,11 +266,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
         int iter = 0;
 
         try {
-            if (atomicityMode() == ATOMIC) {
-                assertEquals(writeOrderMode(),
-                    cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
-            }
-
             long stopTime = System.currentTimeMillis() + DURATION;
 
             switch (test) {

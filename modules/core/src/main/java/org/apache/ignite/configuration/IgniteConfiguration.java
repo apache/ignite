@@ -120,12 +120,6 @@ public class IgniteConfiguration {
     /** Default message send retries count. */
     public static final int DFLT_SEND_RETRY_CNT = 3;
 
-    /** Default number of clock sync samples. */
-    public static final int DFLT_CLOCK_SYNC_SAMPLES = 8;
-
-    /** Default clock synchronization frequency. */
-    public static final int DFLT_CLOCK_SYNC_FREQUENCY = 120000;
-
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
@@ -292,12 +286,6 @@ public class IgniteConfiguration {
     /** Message send retries delay. */
     private int sndRetryCnt = DFLT_SEND_RETRY_CNT;
 
-    /** Number of samples for clock synchronization. */
-    private int clockSyncSamples = DFLT_CLOCK_SYNC_SAMPLES;
-
-    /** Clock synchronization frequency. */
-    private long clockSyncFreq = DFLT_CLOCK_SYNC_FREQUENCY;
-
     /** Metrics history time. */
     private int metricsHistSize = DFLT_METRICS_HISTORY_SIZE;
 
@@ -452,8 +440,8 @@ public class IgniteConfiguration {
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
-    /** Database configuration. */
-    private MemoryConfiguration dbCfg;
+    /** Page memory configuration. */
+    private MemoryConfiguration memCfg;
 
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -493,15 +481,13 @@ public class IgniteConfiguration {
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
-        dbCfg = cfg.getMemoryConfiguration();
+        memCfg = cfg.getMemoryConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         callbackPoolSize = cfg.getAsyncCallbackPoolSize();
         classLdr = cfg.getClassLoader();
         clientMode = cfg.isClientMode();
-        clockSyncFreq = cfg.getClockSyncFrequency();
-        clockSyncSamples = cfg.getClockSyncSamples();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
         daemon = cfg.isDaemon();
@@ -1449,52 +1435,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets number of samples used to synchronize clocks between different nodes.
-     * <p>
-     * Clock synchronization is used for cache version assignment in {@code CLOCK} order mode.
-     *
-     * @return Number of samples for one synchronization round.
-     */
-    public int getClockSyncSamples() {
-        return clockSyncSamples;
-    }
-
-    /**
-     * Sets number of samples used for clock synchronization.
-     *
-     * @param clockSyncSamples Number of samples.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setClockSyncSamples(int clockSyncSamples) {
-        this.clockSyncSamples = clockSyncSamples;
-
-        return this;
-    }
-
-    /**
-     * Gets frequency at which clock is synchronized between nodes, in milliseconds.
-     * <p>
-     * Clock synchronization is used for cache version assignment in {@code CLOCK} order mode.
-     *
-     * @return Clock synchronization frequency, in milliseconds.
-     */
-    public long getClockSyncFrequency() {
-        return clockSyncFreq;
-    }
-
-    /**
-     * Sets clock synchronization frequency in milliseconds.
-     *
-     * @param clockSyncFreq Clock synchronization frequency.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setClockSyncFrequency(long clockSyncFreq) {
-        this.clockSyncFreq = clockSyncFreq;
-
-        return this;
-    }
-
-    /**
      * Gets Max count of threads can be used at rebalancing.
      * Minimum is 1.
      * @return count.
@@ -2151,22 +2091,22 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets memory configuration.
+     * Gets page memory configuration.
      *
      * @return Memory configuration.
      */
     public MemoryConfiguration getMemoryConfiguration() {
-        return dbCfg;
+        return memCfg;
     }
 
     /**
-     * Sets memory configuration.
+     * Sets page memory configuration.
      *
-     * @param dbCfg Memory configuration.
+     * @param memCfg Memory configuration.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration dbCfg) {
-        this.dbCfg = dbCfg;
+    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
+        this.memCfg = memCfg;
 
         return this;
     }

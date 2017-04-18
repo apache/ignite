@@ -28,10 +28,6 @@ const DFLT_CACHE = {
         clsName: 'Apache.Ignite.Core.Cache.Configuration.CacheAtomicityMode',
         mapper: enumValueMapper
     },
-    atomicWriteOrderMode: {
-        clsName: 'org.apache.ignite.cache.CacheAtomicWriteOrderMode',
-        mapper: enumValueMapper
-    },
     writeSynchronizationMode: {
         clsName: 'org.apache.ignite.cache.CacheWriteSynchronizationMode',
         value: 'PRIMARY_SYNC',

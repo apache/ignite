@@ -15,29 +15,38 @@
     limitations under the License.
 
 .modal.center(tabindex='-1' role='dialog')
-    .modal-dialog
-        .modal-content
-            #errors-container.modal-header.header
+    .modal-dialog(ng-switch='ctrl.status')
+        .modal-content(ng-switch-when='agentMissing')
+            .modal-header.header
                 h4.modal-title
                     i.fa.fa-download
-                    span(ng-if='!hasAgents') Connection to Ignite Web Agent is not established
-                    span(ng-if='hasAgents') Connection to Ignite Node is not established
-            .agent-download(ng-if='!hasAgents')
-                p Please download and run #[a(href='/api/v1/agent/download/zip' target='_self') ignite-web-agent] in order to {{::agentGoal}}
+                    span Connection to Ignite Web Agent is not established
+            .modal-body.agent-download
+                p Please download and run #[a(href='/api/v1/downloads/agent' target='_self') ignite-web-agent] to use this functionality
                 p For run:
                 ul
-                    li Download and unzip #[a(href='/api/v1/agent/download/zip' target='_self') ignite-web-agent] archive
+                    li Download and unzip #[a(href='/api/v1/downloads/agent' target='_self') ignite-web-agent] archive
                     li Run shell file #[b ignite-web-agent.{sh|bat}]
                 p Refer to #[b README.txt] in agent folder for more information
                 .modal-advanced-options
-                    i.fa.fa-chevron-circle-down(ng-show='agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
-                    i.fa.fa-chevron-circle-right(ng-show='!agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
-                    a(ng-click='agentLoad.showToken = ! agentLoad.showToken') {{agentLoad.showToken ? 'Hide security token...' : 'Show security token...'}}
-                .details-row(ng-show='agentLoad.showToken')
+                    i.fa(ng-class='showToken ? "fa-chevron-circle-down" : "fa-chevron-circle-right"' ng-click='showToken = !showToken')
+                    a(ng-click='showToken = !showToken') {{showToken ? 'Hide security token...' : 'Show security token...'}}
+                .details-row(ng-show='showToken')
                     label.labelField Security token: {{user.becameToken || user.token}}
                     i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{user.becameToken || user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
                     i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
-            .agent-download(ng-if='hasAgents')
+
+            .modal-footer
+                button.btn.btn-default(ng-click='ctrl.back()') {{::ctrl.backText}}
+                a.btn.btn-primary(href='/api/v1/downloads/agent' target='_self') Download agent
+
+        .modal-content(ng-switch-when='nodeMissing')
+            .modal-header.header
+                h4.modal-title
+                    i.fa.fa-download
+                    span Connection to Ignite Node is not established
+
+            .modal-body.agent-download
                 p Connection to Ignite Web Agent is established, but agent failed to connect to Ignite Node
                 p Please check the following:
                 ul
@@ -45,6 +54,6 @@
                     li In agent settings check URI for connect to Ignite REST server
                     li Check agent logs for errors
                     li Refer to #[b README.txt] in agent folder for more information
+
             .modal-footer
-                button.btn.btn-default(ng-click='back()') {{::backText}}
-                a.btn.btn-primary(ng-if='!hasAgents' href='/api/v1/agent/download/zip' target='_self') Download agent
+                button.btn.btn-default(ng-click='ctrl.back()') {{::ctrl.backText}}

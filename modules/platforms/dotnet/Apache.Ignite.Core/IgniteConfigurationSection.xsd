@@ -39,13 +39,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="cacheAtomicWriteOrderMode" final="restriction">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="Clock" />
-            <xs:enumeration value="Primary" />
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:simpleType name="cacheRebalanceMode" final="restriction">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Sync" />
@@ -569,11 +562,6 @@
                                     <xs:attribute name="atomicityMode" type="cacheAtomicityMode">
                                         <xs:annotation>
                                             <xs:documentation>Cache atomicity mode.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="atomicWriteOrderMode" type="cacheAtomicWriteOrderMode">
-                                        <xs:annotation>
-                                            <xs:documentation>Cache write ordering mode.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                     <xs:attribute name="backups" type="xs:int">
@@ -1162,6 +1150,11 @@
             <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Local Ignite instance name to be used with Ignition.GetIgnite.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="autoGenerateIgniteInstanceName" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Generate unique igniteInstanceName automatically.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="jvmDllPath" type="xs:string">
