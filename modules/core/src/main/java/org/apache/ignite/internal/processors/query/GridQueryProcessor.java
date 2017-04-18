@@ -325,8 +325,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 (LinkedHashMap<UUID, SchemaProposeDiscoveryMessage>)data.commonData();
 
             // Process proposals as if they were received as regular discovery messages.
-            for (SchemaProposeDiscoveryMessage activeProposal : data0.values())
-                onSchemaProposeDiscovery0(activeProposal);
+            if (data0 != null) {
+                for (SchemaProposeDiscoveryMessage activeProposal : data0.values())
+                    onSchemaProposeDiscovery0(activeProposal);
+            }
         }
     }
 
