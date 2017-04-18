@@ -8062,7 +8062,7 @@ public abstract class IgniteUtils {
      * @param paramTypes Parameter types.
      * @param params Parameters.
      * @return Field value.
-     * @throws IgniteCheckedException If static field with given name cannot be retreived.
+     * @throws IgniteCheckedException If static field with given name cannot be retrieved.
      */
     public static <T> T invoke(@Nullable Class<?> cls, @Nullable Object obj, String mtdName,
         Class[] paramTypes, Object... params) throws IgniteCheckedException {
