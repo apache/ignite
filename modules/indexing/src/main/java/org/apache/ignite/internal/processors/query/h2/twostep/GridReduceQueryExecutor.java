@@ -1567,39 +1567,6 @@ public class GridReduceQueryExecutor {
     }
 
     /** */
-    private static class QueryNodesPredicate implements IgnitePredicate<ClusterNode> {
-        /** Partitions map. */
-        private final Map<ClusterNode, IntArray> partsMap;
-
-        /** Partitions to check. */
-        private final int[] parts;
-
-        /**
-         * @param parts Partitions.
-         * @param partsMap Partitions map.
-         */
-        public QueryNodesPredicate(int[] parts, Map<ClusterNode, IntArray> partsMap) {
-            this.partsMap = partsMap;
-
-            this.parts = parts;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode node) {
-            IntArray arr = partsMap.get(node);
-
-            for (int i = 0; i < arr.size(); i++) {
-                int p = arr.get(i);
-
-                if (Arrays.binarySearch(parts, p) >= 0)
-                    return true;
-            }
-
-            return false;
-        }
-    }
-
-    /** */
     private Map<ClusterNode, IntArray> narrowForQuery(Map<ClusterNode, IntArray> partsMap, int[] parts) {
         if (parts == null)
             return partsMap;
