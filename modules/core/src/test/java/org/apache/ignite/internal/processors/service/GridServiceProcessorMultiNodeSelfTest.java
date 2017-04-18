@@ -210,7 +210,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
             IgniteServices svcs = g.services();
 
-            IgniteFuture<?> fut = svcs.deployAsync(name, new DummyService());
+            IgniteFuture<?> fut = svcs.deployAsync(srvcCfg);
 
             info("Deployed service: " + name);
 
