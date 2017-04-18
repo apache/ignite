@@ -443,7 +443,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSyncCache() throws Exception {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
             startGrid(getTestIgniteInstanceName() + i);
 
         final int threads = 10;

@@ -18,6 +18,9 @@
 package org.apache.ignite.cache.spring;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
@@ -81,13 +84,18 @@ class SpringCache implements Cache {
         return (T)val;
     }
 
+    /** */
+    private final Map<Object, Object> instanceKeyLocks = Collections.synchronizedMap(new WeakHashMap<>());
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T get(Object key, Callable<T> valueLoader) {
         // This is a workaround solution
         // "cache.invoke(key, new ValueLoaderEntryProcessor<T>(), valueLoader)" method
         // doesn't work properly with Spring AOP - @Cacheable(sync = true)
-        synchronized (this) {
+        instanceKeyLocks.putIfAbsent(key, key);
+
+        synchronized (instanceKeyLocks.get(key)) {
             long startTime = U.currentTimeMillis();
 
             Object val = cache.getAndPutIfAbsent(key, LOCK);
@@ -146,7 +154,7 @@ class SpringCache implements Cache {
      * @return Value.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private synchronized <T> T waitAndLoad(CacheEntry entry, Callable<T> valueLoader, long startTime) {
+    private <T> T waitAndLoad(CacheEntry entry, Callable<T> valueLoader, long startTime) {
         long updateTime = entry.updateTime();
         boolean isUpdated = false;
 
@@ -181,7 +189,7 @@ class SpringCache implements Cache {
      * @return Loaded value.
      */
     @SuppressWarnings("unchecked")
-    private synchronized <T> T loadAndPut(Object key, Callable<T> valueLoader) {
+    private <T> T loadAndPut(Object key, Callable<T> valueLoader) {
         Object val;
 
         try {
@@ -191,7 +199,7 @@ class SpringCache implements Cache {
             throw new ValueRetrievalException(key, valueLoader, e);
         }
 
-        cache.put(key, val);
+        cache.put(key, toStoreValue(val));
 
         return (T)val;
     }
