@@ -166,11 +166,12 @@ namespace Apache.Ignite.Core.Tests
         {
             public void Run()
             {
-                var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
                     IgniteInstanceName = "newDomainGrid"
                 });
-                Ignition.Stop(ignite.Name, true);
+
+                // Will be stopped automatically on domain unload.
             }
         }
     }

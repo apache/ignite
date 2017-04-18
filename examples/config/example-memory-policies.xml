@@ -53,12 +53,12 @@
                         </bean>
 
                         <!--
-                            Memory region of 10 MBs in size with an eviction enabled.
+                            Memory region of 20 MBs in size with an eviction enabled.
                         -->
                         <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
-                            <property name="name" value="10MB_Region_Eviction"/>
-                            <!-- 10 MB memory region. -->
-                            <property name="size" value="#{10 * 1024 * 1024}"/>
+                            <property name="name" value="20MB_Region_Eviction"/>
+                            <!-- 20 MB memory region. -->
+                            <property name="size" value="#{20 * 1024 * 1024}"/>
                             <!-- Enabling eviction for this memory region -->
                             <property name="pageEvictionMode" value="RANDOM_2_LRU"/>
                         </bean>
@@ -68,9 +68,9 @@
                             'swapFilePath' parameter.
                         -->
                         <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
-                            <property name="name" value="5MB_Region_Swapping"/>
-                            <!-- 5 MB memory region. -->
-                            <property name="size" value="#{5 * 1024 * 1024}"/>
+                            <property name="name" value="15MB_Region_Swapping"/>
+                            <!-- 15 MB memory region. -->
+                            <property name="size" value="#{15 * 1024 * 1024}"/>
                             <!-- Setting a name of the swapping file. -->
                             <property name="swapFilePath" value="memoryPolicyExampleSwap"/>
                         </bean>

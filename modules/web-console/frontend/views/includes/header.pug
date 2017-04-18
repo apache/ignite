@@ -27,26 +27,31 @@ header#header.header
                         a.dropdown-toggle Configure
                             span.caret
 
-                ul.nav.navbar-nav(ng-controller='notebookController')
-                    li.sql-notebooks(ng-if='IgniteDemoMode' ng-class='{active: $state.includes("base.sql")}')
+                ul.nav.navbar-nav(ng-if='IgniteDemoMode' ng-controller='notebookController')
+                    li.sql-notebooks( ng-class='{active: $state.includes("base.sql")}')
                         a(ui-sref='base.sql.demo') Queries
 
-                    li.sql-notebooks(ng-if='!IgniteDemoMode && !notebooks.length' ng-class='{active: $state.includes("base.sql")}')
+                ul.nav.navbar-nav(ng-if='!IgniteDemoMode' ng-controller='notebookController')
+                    li.sql-notebooks(ng-if='!notebooks.length' ng-class='{active: $state.includes("base.sql")}')
                         a(ng-click='createNotebook()') Queries
 
-                    li.sql-notebooks(ng-if='!IgniteDemoMode && notebooks.length' ng-class='{active: $state.includes("base.sql")}' bs-dropdown='notebooks' data-placement='bottom-left' data-trigger='hover focus' data-container='self' data-animation='' ng-click='$event.stopPropagation()' aria-haspopup='true' aria-expanded='false')
+                    li.sql-notebooks(ng-if='notebooks.length' ng-class='{active: $state.includes("base.sql")}' bs-dropdown='notebooks' data-placement='bottom-left' data-trigger='hover focus' data-container='self' data-animation='' ng-click='$event.stopPropagation()' aria-haspopup='true' aria-expanded='false')
                         a.dropdown-toggle Queries
                             span.caret
 
+                ul.nav.navbar-nav
                     li(ui-sref-active='active' ng-repeat='item in navbar.items' ng-class='{active: $state.includes("base.monitoring")}' bs-dropdown='item.children' data-placement='bottom-left' data-trigger='hover focus' data-container='self' data-animation='' ng-click='$event.stopPropagation()' aria-haspopup='true' aria-expanded='false')
                         a.dropdown-toggle {{::item.text}}
                             span.caret
 
-                a(ng-controller='demoController')
+                a.padding-left-dflt(ng-controller='demoController')
                     button.btn.btn-info(ng-if='IgniteDemoMode' ng-click='closeDemo()') Close demo
                     button.btn.btn-info(ng-if='!IgniteDemoMode' ng-click='startDemo()') Start demo
 
-                ul.nav.navbar-nav.pull-right(ignite-userbar)
-                    li(bs-dropdown='userbar.items' data-placement='bottom-right' data-trigger='hover focus' data-container='self' data-animation='' ng-class='{active: $state.includes("settings")}' ng-click='$event.stopPropagation()')
-                        a.dropdown-toggle {{user.firstName}} {{user.lastName}}
-                            span.caret
+                .pull-right
+                    ignite-cluster-select
+
+                    ul.nav.navbar-nav.pull-right(ignite-userbar)
+                        li(bs-dropdown='userbar.items' data-placement='bottom-right' data-trigger='hover focus' data-container='self' data-animation='' ng-class='{active: $state.includes("settings")}' ng-click='$event.stopPropagation()')
+                            a.dropdown-toggle {{user.firstName}} {{user.lastName}}
+                                span.caret
