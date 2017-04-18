@@ -32,8 +32,9 @@ namespace Apache.Ignite.Core.Tests
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for executable.
+    /// Tests for Apache.Ignite.exe.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ExecutableTest
     {
         /** Spring configuration path. */
@@ -323,8 +324,9 @@ namespace Apache.Ignite.Core.Tests
             checkError("assembly=", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
                                  "'assembly'. See 'Apache.Ignite.exe /help'");
 
-            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
-                                         "Failed to load assembly: x.dll");
+            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: Failed to start " +
+                                         "Ignite.NET, check inner exception for details ---> Apache.Ignite.Core." +
+                                         "Common.IgniteException: Failed to load assembly: x.dll");
 
             checkError("configFileName=wrong.config", "ERROR: System.Configuration.ConfigurationErrorsException: " +
                                                       "Specified config file does not exist: wrong.config");
@@ -439,7 +441,7 @@ namespace Apache.Ignite.Core.Tests
 
             public RemoteConfiguration Invoke()
             {
-                var grid0 = ((IgniteProxy) _grid).Target;
+                var grid0 = (Ignite) _grid;
 
                 var cfg = grid0.Configuration;
 

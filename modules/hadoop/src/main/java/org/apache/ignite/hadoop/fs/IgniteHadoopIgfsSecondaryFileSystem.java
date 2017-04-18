@@ -30,7 +30,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
-import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopIgfsSecondaryFileSystemDelegate;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -48,8 +47,7 @@ import java.util.concurrent.Callable;
  * <p>
  * Target {@code FileSystem}'s are created on per-user basis using passed {@link HadoopFileSystemFactory}.
  */
-public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware,
-    HadoopPayloadAware {
+public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, LifecycleAware {
     /** The default user name. It is used if no user context is set. */
     private String dfltUsrName;
 
@@ -286,10 +284,5 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
     @Override public void stop() throws IgniteException {
         if (target != null)
             target.stop();
-    }
-
-    /** {@inheritDoc} */
-    @Override public HadoopFileSystemFactory getPayload() {
-        return factory;
     }
 }

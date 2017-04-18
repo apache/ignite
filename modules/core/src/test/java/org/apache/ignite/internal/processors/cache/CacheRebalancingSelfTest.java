@@ -51,10 +51,11 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRebalanceFuture() throws Exception {
-        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ig0 = startGrid(0);
+
         startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite0.cache(null);
+        IgniteCache<Object, Object> cache = ig0.cache(null);
 
         IgniteFuture fut1 = cache.rebalance();
 

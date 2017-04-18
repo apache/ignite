@@ -71,13 +71,14 @@ import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
+import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -2105,6 +2106,15 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         finally {
             U.closeQuiet(s); // Safety.
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testModeResolver() throws Exception {
+        IgfsModeResolver mr = ((IgniteHadoopFileSystem)fs).getModeResolver();
+
+        assertEquals(mode, mr.resolveMode(IgfsPath.ROOT));
     }
 
     /**

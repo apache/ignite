@@ -22,7 +22,6 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,11 +34,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -95,25 +90,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testAtomic() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, ONHEAP_TIERED);
-
-        enumOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValues() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_VALUES);
-
-        enumOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_TIERED);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC);
 
         enumOperations(ccfg);
     }
@@ -122,25 +99,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testTx() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, ONHEAP_TIERED);
-
-        enumOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValues() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_VALUES);
-
-        enumOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_TIERED);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC);
 
         enumOperations(ccfg);
     }
@@ -269,24 +228,17 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @return Cache configuration.
      */
     private CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         int backups,
-        CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode) {
+        CacheAtomicityMode atomicityMode) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
-
-        if (memoryMode == OFFHEAP_TIERED)
-            ccfg.setOffHeapMaxMemory(0);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(backups);

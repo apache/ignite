@@ -38,23 +38,33 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="backups" value="0"/>
                     <property name="startSize" value="10"/>
-                    <property name="typeMetadata">
+
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="BinarizableEntry"/>
-                                <property name="ascendingFields">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.Continuous.ContinuousQueryAbstractTest+BinarizableEntry"/>
+                                <property name="fields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>
                                     </map>
                                 </property>
-                                <property name="queryFields">
-                                    <map>
-                                        <entry key="val" value="java.lang.Integer"/>
-                                    </map>
-                                </property>
-                                <property name="textFields">
+                                <property name="indexes">
                                     <list>
-                                        <value>val</value>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="val" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="indexType" value="FULLTEXT"/>
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="val" value="false"/>
+                                                </map>
+                                            </property>
+                                        </bean>
                                     </list>
                                 </property>
                             </bean>
@@ -68,23 +78,33 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="backups" value="1"/>
                     <property name="startSize" value="10"/>
-                    <property name="typeMetadata">
+
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="BinarizableEntry"/>
-                                <property name="ascendingFields">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.Continuous.ContinuousQueryAbstractTest+BinarizableEntry"/>
+                                <property name="fields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>
                                     </map>
                                 </property>
-                                <property name="queryFields">
-                                    <map>
-                                        <entry key="val" value="java.lang.Integer"/>
-                                    </map>
-                                </property>
-                                <property name="textFields">
+                                <property name="indexes">
                                     <list>
-                                        <value>val</value>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="val" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="indexType" value="FULLTEXT"/>
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="val" value="false"/>
+                                                </map>
+                                            </property>
+                                        </bean>
                                     </list>
                                 </property>
                             </bean>
@@ -98,23 +118,32 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="backups" value="0"/>
                     <property name="startSize" value="10"/>
-                    <property name="typeMetadata">
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="BinarizableEntry"/>
-                                <property name="ascendingFields">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.Continuous.ContinuousQueryAbstractTest+BinarizableEntry"/>
+                                <property name="fields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>
                                     </map>
                                 </property>
-                                <property name="queryFields">
-                                    <map>
-                                        <entry key="val" value="java.lang.Integer"/>
-                                    </map>
-                                </property>
-                                <property name="textFields">
+                                <property name="indexes">
                                     <list>
-                                        <value>val</value>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="val" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="indexType" value="FULLTEXT"/>
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="val" value="false"/>
+                                                </map>
+                                            </property>
+                                        </bean>
                                     </list>
                                 </property>
                             </bean>
@@ -128,23 +157,32 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="backups" value="1"/>
                     <property name="startSize" value="10"/>
-                    <property name="typeMetadata">
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="BinarizableEntry"/>
-                                <property name="ascendingFields">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.Continuous.ContinuousQueryAbstractTest+BinarizableEntry"/>
+                                <property name="fields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>
                                     </map>
                                 </property>
-                                <property name="queryFields">
-                                    <map>
-                                        <entry key="val" value="java.lang.Integer"/>
-                                    </map>
-                                </property>
-                                <property name="textFields">
+                                <property name="indexes">
                                     <list>
-                                        <value>val</value>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="val" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="indexType" value="FULLTEXT"/>
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="val" value="false"/>
+                                                </map>
+                                            </property>
+                                        </bean>
                                     </list>
                                 </property>
                             </bean>

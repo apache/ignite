@@ -43,6 +43,9 @@ public class QueryIndex implements Serializable {
     /** */
     private QueryIndexType type = DFLT_IDX_TYP;
 
+    /** */
+    private int inlineSize = -1;
+
     /**
      * Creates an empty index. Should be populated via setters.
      */
@@ -238,5 +241,23 @@ public class QueryIndex implements Serializable {
         this.type = type;
 
         return this;
+    }
+
+    /**
+     * Gets inline size.
+     *
+     * @return inline size.
+     */
+    public int getInlineSize() {
+        return inlineSize;
+    }
+
+    /**
+     * Sets inline size.
+     *
+     * @param inlineSize Inline size.
+     */
+    public void setInlineSize(int inlineSize) {
+        this.inlineSize = inlineSize;
     }
 }

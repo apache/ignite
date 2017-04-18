@@ -297,7 +297,7 @@ public class GridDhtPartitionDemander {
                 });
             }
 
-             if (forcedRebFut != null) {
+            if (forcedRebFut != null) {
                 fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
                     @Override public void apply(IgniteInternalFuture<Boolean> future) {
                         try {
@@ -407,27 +407,37 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @param fut Future.
+     * @param fut Rebalance future.
      * @param assigns Assignments.
      * @throws IgniteCheckedException If failed.
-     * @return Partitions were requested.
      */
     private void requestPartitions(
         RebalanceFuture fut,
         GridDhtPreloaderAssignments assigns
     ) throws IgniteCheckedException {
+        assert fut != null;
+
         if (topologyChanged(fut)) {
             fut.cancel();
 
             return;
         }
 
-        for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
-            final ClusterNode node = e.getKey();
+        synchronized (fut) {
+            if (fut.isDone())
+                return;
 
-            GridDhtPartitionDemandMessage d = e.getValue();
+            // Must add all remaining node before send first request, for avoid race between add remaining node and
+            // processing response, see checkIsDone(boolean).
+            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
+                UUID nodeId = e.getKey().id();
 
-            fut.appendPartitions(node.id(), d.partitions()); //Future preparation.
+                Collection<Integer> parts= e.getValue().partitions();
+
+                assert parts != null : "Partitions are null [cache=" + cctx.name() + ", fromNode=" + nodeId + "]";
+
+                fut.remaining.put(nodeId, new T2<>(U.currentTimeMillis(), parts));
+            }
         }
 
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
@@ -460,20 +470,21 @@ public class GridDhtPartitionDemander {
             for (cnt = 0; cnt < lsnrCnt; cnt++) {
                 if (!sParts.get(cnt).isEmpty()) {
                     // Create copy.
-                    GridDhtPartitionDemandMessage initD = new GridDhtPartitionDemandMessage(d, sParts.get(cnt));
+                    GridDhtPartitionDemandMessage initD = createDemandMessage(d, sParts.get(cnt));
 
                     initD.topic(rebalanceTopics.get(cnt));
                     initD.updateSequence(fut.updateSeq);
                     initD.timeout(cctx.config().getRebalanceTimeout());
 
                     synchronized (fut) {
-                        if (!fut.isDone()) {
-                            // Future can be already cancelled at this moment and all failovers happened.
-                            // New requests will not be covered by failovers.
-                            cctx.io().sendOrderedMessage(node,
-                                rebalanceTopics.get(cnt), initD, cctx.ioPolicy(), initD.timeout());
-                        }
+                        if (fut.isDone())
+                            return;// Future can be already cancelled at this moment and all failovers happened.
+
+                        // New requests will not be covered by failovers.
+                        cctx.io().sendOrderedMessage(node,
+                            rebalanceTopics.get(cnt), initD, cctx.ioPolicy(), initD.timeout());
                     }
+
 
                     if (log.isDebugEnabled())
                         log.debug("Requested rebalancing [from node=" + node.id() + ", listener index=" +
@@ -482,6 +493,34 @@ public class GridDhtPartitionDemander {
                 }
             }
         }
+    }
+
+    /**
+     * @param old Old message.
+     * @param parts Partitions to demand.
+     * @return New demand message.
+     */
+    private GridDhtPartitionDemandMessage createDemandMessage(GridDhtPartitionDemandMessage old,
+        Collection<Integer> parts) {
+        Map<Integer, Long> partCntrs = null;
+
+        for (Integer part : parts) {
+            try {
+                if (cctx.shared().database().persistenceEnabled()) {
+                    if (partCntrs == null)
+                        partCntrs = new HashMap<>(parts.size(), 1.0f);
+
+                    GridDhtLocalPartition p = cctx.topology().localPartition(part, old.topologyVersion(), false);
+
+                    partCntrs.put(part, p.initialUpdateCounter());
+                }
+            }
+            catch (GridDhtInvalidPartitionException ignore) {
+                // Skip this partition.
+            }
+        }
+
+        return new GridDhtPartitionDemandMessage(old, parts, partCntrs);
     }
 
     /**
@@ -541,7 +580,7 @@ public class GridDhtPartitionDemander {
     public void handleSupplyMessage(
         int idx,
         final UUID id,
-        final GridDhtPartitionSupplyMessageV2 supply
+        final GridDhtPartitionSupplyMessage supply
     ) {
         AffinityTopologyVersion topVer = supply.topologyVersion();
 
@@ -694,6 +733,8 @@ public class GridDhtPartitionDemander {
         GridCacheEntryInfo entry,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
+        cctx.shared().database().checkpointReadLock();
+
         try {
             GridCacheEntryEx cached = null;
 
@@ -733,8 +774,7 @@ public class GridDhtPartitionDemander {
                                 false, null, null, null, true);
                     }
                     else {
-                        if (cctx.isSwapOrOffheapEnabled())
-                            cctx.evicts().touch(cached, topVer); // Start tracking.
+                        cctx.evicts().touch(cached, topVer); // Start tracking.
 
                         if (log.isDebugEnabled())
                             log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
@@ -762,6 +802,9 @@ public class GridDhtPartitionDemander {
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [local=" +
                 cctx.nodeId() + ", node=" + pick.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
         }
 
         return true;
@@ -865,18 +908,6 @@ public class GridDhtPartitionDemander {
          */
         private boolean isInitial() {
             return topVer == null;
-        }
-
-        /**
-         * @param nodeId Node id.
-         * @param parts Parts.
-         */
-        private void appendPartitions(UUID nodeId, Collection<Integer> parts) {
-            synchronized (this) {
-                assert parts != null : "Partitions are null [cache=" + cctx.name() + ", fromNode=" + nodeId + "]";
-
-                remaining.put(nodeId, new T2<>(U.currentTimeMillis(), parts));
-            }
         }
 
         /**

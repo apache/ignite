@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -90,6 +90,7 @@ public interface GridCachePreloader {
      */
     public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forcePreload,
+        Collection<String> caches,
         int cnt,
         Runnable next,
         @Nullable GridFutureAdapter<Boolean> forcedRebFut);
@@ -168,7 +169,7 @@ public interface GridCachePreloader {
      * @param id Node Id.
      * @param s Supply message.
      */
-    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessageV2 s);
+    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s);
 
     /**
      * Handles Demand message.

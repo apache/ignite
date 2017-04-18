@@ -27,6 +27,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -55,6 +56,13 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
 
     /** SPIs. */
     private Map<String, MessageCountingCommunicationSpi> commSpis = new ConcurrentHashMap8<>();
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        assert G.allGrids().isEmpty();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -126,6 +134,8 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheValueDeploymentOnPut() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4551");
+
         ClassLoader ldr = getExternalClassLoader();
 
         Class valCls = ldr.loadClass(TEST_VALUE);

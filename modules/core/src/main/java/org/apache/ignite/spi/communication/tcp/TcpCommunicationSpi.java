@@ -184,15 +184,12 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
  * <li>Node local port number (see {@link #setLocalPort(int)})</li>
  * <li>Local port range (see {@link #setLocalPortRange(int)}</li>
  * <li>Connections per node (see {@link #setConnectionsPerNode(int)})</li>
- * <li>Connection buffer flush frequency (see {@link #setConnectionBufferFlushFrequency(long)})</li>
- * <li>Connection buffer size (see {@link #setConnectionBufferSize(int)})</li>
  * <li>Idle connection timeout (see {@link #setIdleConnectionTimeout(long)})</li>
  * <li>Direct or heap buffer allocation (see {@link #setDirectBuffer(boolean)})</li>
  * <li>Direct or heap buffer allocation for sending (see {@link #setDirectSendBuffer(boolean)})</li>
  * <li>Count of selectors and selector threads for NIO server (see {@link #setSelectorsCount(int)})</li>
  * <li>{@code TCP_NODELAY} socket option for sockets (see {@link #setTcpNoDelay(boolean)})</li>
  * <li>Message queue limit (see {@link #setMessageQueueLimit(int)})</li>
- * <li>Minimum buffered message count (see {@link #setMinimumBufferedMessageCount(int)})</li>
  * <li>Connect timeout (see {@link #setConnectTimeout(long)})</li>
  * <li>Maximum connect timeout (see {@link #setMaxConnectTimeout(long)})</li>
  * <li>Reconnect attempts count (see {@link #setReconnectCount(int)})</li>
@@ -474,6 +471,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 HandshakeMessage msg0 = (HandshakeMessage)msg;
 
+                if (log.isDebugEnabled())
+                    log.debug("Received handshake message [locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId +
+                        ", msg=" + msg0 + ']');
+
                 if (usePairedConnections(rmtNode)) {
                     final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode, connKey);
 
@@ -568,7 +569,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         if (log.isDebugEnabled())
                             log.debug("Received incoming connection from remote node " +
-                                "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved + ']');
+                                "[rmtNode=" + rmtNode.id() + ", reserved=" + reserved +
+                                ", recovery=" + recoveryDesc + ']');
 
                         if (reserved) {
                             try {
@@ -1389,63 +1391,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
-     * Sets connection buffer size. If set to {@code 0} connection buffer is disabled.
-     *
-     * @param connBufSize Connection buffer size.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    @IgniteSpiConfiguration(optional = true)
-    public void setConnectionBufferSize(int connBufSize) {
-        // No-op.
-    }
-
-    /**
-     * Gets connection buffer size.
-     * <p>
-     * If set to {@code 0} connection buffer is disabled.
-     *
-     * @return Connection buffer size.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    public int getConnectionBufferSize() {
-        return 0;
-    }
-
-    /**
-     * Sets connection buffer flush frequency.
-     * <p>
-     * Client connections to other nodes in topology use buffered output.
-     * This frequency defines how often system will advice to flush
-     * connection buffer.
-     * <p>
-     * This property is used only if {@link #getConnectionBufferSize()} is greater than {@code 0}.
-     *
-     * @param connBufFlushFreq Flush frequency.
-     * @see #getConnectionBufferSize()
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    @IgniteSpiConfiguration(optional = true)
-    public void setConnectionBufferFlushFrequency(long connBufFlushFreq) {
-        // No-op.
-    }
-
-    /**
-     * Gets connection buffer size.
-     * <p>
-     * If set to {@code 0} connection buffer is disabled.
-     *
-     * @return Connection buffer size.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    public long getConnectionBufferFlushFrequency() {
-        return 0;
-    }
-
-    /**
      * Sets connect timeout used when establishing connection
      * with remote nodes.
      * <p>
@@ -1767,31 +1712,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         this.slowClientQueueLimit = slowClientQueueLimit;
 
         return this;
-    }
-
-    /**
-     * Sets the minimum number of messages for this SPI, that are buffered
-     * prior to sending.
-     *
-     * @param minBufferedMsgCnt Minimum buffered message count.
-     * @deprecated Not used any more.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    @Deprecated
-    public void setMinimumBufferedMessageCount(int minBufferedMsgCnt) {
-        // No-op.
-    }
-
-    /**
-     * Gets the minimum number of messages for this SPI, that are buffered
-     * prior to sending.
-     *
-     * @return Minimum buffered message count.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    public int getMinimumBufferedMessageCount() {
-        return 0;
     }
 
     /** {@inheritDoc} */
@@ -3350,7 +3270,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         }
 
                         if (log.isDebugEnabled())
-                            log.debug("Write handshake message [rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
+                            log.debug("Writing handshake message [locNodeId=" + locNode.id() +
+                                ", rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
 
                         buf = ByteBuffer.allocate(msgSize);
 
@@ -3388,10 +3309,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             assert sslHnd != null;
 
                             buf = ByteBuffer.allocate(1000);
-
-                            ByteBuffer decode = null;
-
                             buf.order(ByteOrder.nativeOrder());
+
+                            ByteBuffer decode = ByteBuffer.allocate(2 * buf.capacity());
+                            decode.order(ByteOrder.nativeOrder());
 
                             for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                                 int read = ch.read(buf);
@@ -3402,12 +3323,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                                 buf.flip();
 
-                                decode = sslHnd.decode(buf);
+                                ByteBuffer decode0 = sslHnd.decode(buf);
 
-                                i += decode.remaining();
+                                i += decode0.remaining();
+
+                                decode = appendAndResizeIfNeeded(decode, decode0);
 
                                 buf.clear();
                             }
+
+                            decode.flip();
 
                             rcvCnt = decode.getLong(Message.DIRECT_TYPE_SIZE);
 
@@ -3497,6 +3422,31 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
+     * @param target Target buffer to append to.
+     * @param src Source buffer to get data.
+     * @return Original or expanded buffer.
+     */
+    private ByteBuffer appendAndResizeIfNeeded(ByteBuffer target, ByteBuffer src) {
+        if (target.remaining() < src.remaining()) {
+            int newSize = Math.max(target.capacity() * 2, target.capacity() + src.remaining());
+
+            ByteBuffer tmp = ByteBuffer.allocate(newSize);
+
+            tmp.order(target.order());
+
+            target.flip();
+
+            tmp.put(target);
+
+            target = tmp;
+        }
+
+        target.put(src);
+
+        return target;
+    }
+
+    /**
      * Stops service threads to simulate node failure.
      *
      * FOR TEST PURPOSES ONLY!!!
@@ -3570,6 +3520,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         GridNioRecoveryDescriptor recovery = recoveryDescs.get(key);
 
         if (recovery == null) {
+            if (log.isDebugEnabled())
+                log.debug("Missing recovery descriptor for the node (will create a new one) " +
+                    "[locNodeId=" + getLocalNode().id() +
+                    ", key=" + key + ", rmtNode=" + node + ']');
+
             int maxSize = Math.max(msgQueueLimit, ackSndThreshold);
 
             int queueLimit = unackedMsgsBufSize != 0 ? unackedMsgsBufSize : (maxSize * 128);
@@ -3577,8 +3532,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             GridNioRecoveryDescriptor old = recoveryDescs.putIfAbsent(key,
                 recovery = new GridNioRecoveryDescriptor(pairedConnections, queueLimit, node, log));
 
-            if (old != null)
+            if (old != null) {
                 recovery = old;
+
+                if (log.isDebugEnabled())
+                    log.debug("Will use existing recovery descriptor: " + recovery);
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Initialized recovery descriptor [desc=" + recovery + ", maxSize=" + maxSize +
+                        ", queueLimit=" + queueLimit + ']');
+            }
         }
 
         return recovery;
@@ -4834,24 +4798,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         /** {@inheritDoc} */
-        @Deprecated
-        @Override public int getConnectionBufferSize() {
-            return TcpCommunicationSpi.this.getConnectionBufferSize();
-        }
-
-        /** {@inheritDoc} */
-        @Deprecated
-        @Override public void setConnectionBufferFlushFrequency(long connBufFlushFreq) {
-            TcpCommunicationSpi.this.setConnectionBufferFlushFrequency(connBufFlushFreq);
-        }
-
-        /** {@inheritDoc} */
-        @Deprecated
-        @Override public long getConnectionBufferFlushFrequency() {
-            return TcpCommunicationSpi.this.getConnectionBufferFlushFrequency();
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean isDirectBuffer() {
             return TcpCommunicationSpi.this.isDirectBuffer();
         }
@@ -4894,12 +4840,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** {@inheritDoc} */
         @Override public int getSlowClientQueueLimit() {
             return TcpCommunicationSpi.this.getSlowClientQueueLimit();
-        }
-
-        /** {@inheritDoc} */
-        @Deprecated
-        @Override public int getMinimumBufferedMessageCount() {
-            return TcpCommunicationSpi.this.getMinimumBufferedMessageCount();
         }
 
         /** {@inheritDoc} */

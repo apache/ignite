@@ -31,7 +31,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.internal.igfs.common.IgfsLogger.DELIM_FIELD;
 import static org.apache.ignite.internal.igfs.common.IgfsLogger.DELIM_FIELD_VAL;
 import static org.apache.ignite.internal.igfs.common.IgfsLogger.HDR;
@@ -123,7 +122,7 @@ public class IgniteHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest
 
         otherLog.close();
 
-        log.logDelete(PATH, PRIMARY, false);
+        log.logDelete(PATH, false);
 
         log.close();
 
@@ -166,7 +165,7 @@ public class IgniteHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest
     public void testLogRead() throws Exception {
         IgfsLogger log = IgfsLogger.logger(ENDPOINT, IGFS_NAME, LOG_DIR, 10);
 
-        log.logOpen(1, PATH, PRIMARY, 2, 3L);
+        log.logOpen(1, PATH, 2, 3L);
         log.logRandomRead(1, 4L, 5);
         log.logSeek(1, 6L);
         log.logSkip(1, 7L);
@@ -177,7 +176,7 @@ public class IgniteHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest
         log.close();
 
         checkLog(
-            new SB().a(U.jvmPid() + d() + TYPE_OPEN_IN + d() + PATH_STR_ESCAPED + d() + PRIMARY + d() + 1 + d() + 2 +
+            new SB().a(U.jvmPid() + d() + TYPE_OPEN_IN + d() + PATH_STR_ESCAPED + d() + d() + 1 + d() + 2 +
                 d() + 3 + d(14)).toString(),
             new SB().a(U.jvmPid() + d() + TYPE_RANDOM_READ + d(3) + 1 + d(7) + 4 + d() + 5 + d(8)).toString(),
             new SB().a(U.jvmPid() + d() + TYPE_SEEK + d(3) + 1 + d(7) + 6 + d(9)).toString(),
@@ -196,16 +195,16 @@ public class IgniteHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest
     public void testLogWrite() throws Exception {
         IgfsLogger log = IgfsLogger.logger(ENDPOINT, IGFS_NAME, LOG_DIR, 10);
 
-        log.logCreate(1, PATH, PRIMARY, true, 2, new Integer(3).shortValue(), 4L);
-        log.logAppend(2, PATH, PRIMARY, 8);
+        log.logCreate(1, PATH, true, 2, new Integer(3).shortValue(), 4L);
+        log.logAppend(2, PATH, 8);
         log.logCloseOut(2, 9L, 10L, 11);
 
         log.close();
 
         checkLog(
-            new SB().a(U.jvmPid() + d() + TYPE_OPEN_OUT + d() + PATH_STR_ESCAPED + d() + PRIMARY + d() + 1 + d() +
+            new SB().a(U.jvmPid() + d() + TYPE_OPEN_OUT + d() + PATH_STR_ESCAPED + d() + d() + 1 + d() +
                 2 + d(2) + 0 + d() + 1 + d() + 3 + d() + 4 + d(10)).toString(),
-            new SB().a(U.jvmPid() + d() + TYPE_OPEN_OUT + d() + PATH_STR_ESCAPED + d() + PRIMARY + d() + 2 + d() +
+            new SB().a(U.jvmPid() + d() + TYPE_OPEN_OUT + d() + PATH_STR_ESCAPED + d() + d() + 2 + d() +
                 8 + d(2) + 1 + d(13)).toString(),
             new SB().a(U.jvmPid() + d() + TYPE_CLOSE_OUT + d(3) + 2 + d(11) + 9 + d() + 10 + d() + 11 + d(3))
                 .toString()
@@ -225,20 +224,20 @@ public class IgniteHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest
         String file1 = "/dir3/file1.test";
         String file2 = "/dir3/file1.test";
 
-        log.logMakeDirectory(PATH, PRIMARY);
-        log.logRename(PATH, PRIMARY, new IgfsPath(newFile));
-        log.logListDirectory(PATH, PRIMARY, new String[] { file1, file2 });
-        log.logDelete(PATH, PRIMARY, false);
+        log.logMakeDirectory(PATH);
+        log.logRename(PATH, new IgfsPath(newFile));
+        log.logListDirectory(PATH, new String[] { file1, file2 });
+        log.logDelete(PATH, false);
 
         log.close();
 
         checkLog(
-            new SB().a(U.jvmPid() + d() + TYPE_DIR_MAKE + d() + PATH_STR_ESCAPED + d() + PRIMARY + d(17)).toString(),
-            new SB().a(U.jvmPid() + d() + TYPE_RENAME + d() + PATH_STR_ESCAPED + d() + PRIMARY + d(15) + newFile +
+            new SB().a(U.jvmPid() + d() + TYPE_DIR_MAKE + d() + PATH_STR_ESCAPED + d() + d(17)).toString(),
+            new SB().a(U.jvmPid() + d() + TYPE_RENAME + d() + PATH_STR_ESCAPED + d() + d(15) + newFile +
                 d(2)).toString(),
-            new SB().a(U.jvmPid() + d() + TYPE_DIR_LIST + d() + PATH_STR_ESCAPED + d() + PRIMARY + d(17) + file1 +
+            new SB().a(U.jvmPid() + d() + TYPE_DIR_LIST + d() + PATH_STR_ESCAPED + d() + d(17) + file1 +
                 DELIM_FIELD_VAL + file2).toString(),
-            new SB().a(U.jvmPid() + d() + TYPE_DELETE + d(1) + PATH_STR_ESCAPED + d() + PRIMARY + d(16) + 0 +
+            new SB().a(U.jvmPid() + d() + TYPE_DELETE + d(1) + PATH_STR_ESCAPED + d() + d(16) + 0 +
                 d()).toString()
         );
     }
@@ -247,6 +246,7 @@ public class IgniteHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest
      * Ensure that log file has only the following lines.
      *
      * @param lines Expected lines.
+     * @throws Exception If failed.
      */
     private void checkLog(String... lines) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(LOG_FILE)));

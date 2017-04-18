@@ -93,26 +93,34 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
         protected override Expression VisitUnary(UnaryExpression expression)
         {
-            ResultBuilder.Append("(");
+            var closeBracket = false;
 
             switch (expression.NodeType)
             {
                 case ExpressionType.Negate:
+                    ResultBuilder.Append("(");
                     ResultBuilder.Append("-");
+                    closeBracket = true;
                     break;
+
                 case ExpressionType.Not:
+                    ResultBuilder.Append("(");
                     ResultBuilder.Append("not ");
+                    closeBracket = true;
                     break;
+
                 case ExpressionType.Convert:
                     // Ignore, let the db do the conversion
                     break;
+
                 default:
                     return base.VisitUnary(expression);
             }
 
             Visit(expression.Operand);
 
-            ResultBuilder.Append(")");
+            if(closeBracket)
+                ResultBuilder.Append(")");
 
             return expression;
         }
@@ -330,8 +338,8 @@ namespace Apache.Ignite.Linq.Impl
 
             var entity = cacheCfg.QueryEntities.FirstOrDefault(e =>
                 e.Aliases != null &&
-                (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].Name) &&
-                (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].Name));
+                (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].FullName) &&
+                (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName));
 
             if (entity == null)
                 return fieldName;
@@ -418,7 +426,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Appends the parameter.
         /// </summary>
-        private void AppendParameter(object value)
+        public void AppendParameter(object value)
         {
             ResultBuilder.Append("?");
 
