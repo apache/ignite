@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
@@ -624,7 +625,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Grid1 = Ignition.Start(GetConfiguration("grid1"));
             Grid2 = Ignition.Start(GetConfiguration("grid2"));
-            Grid3 = Ignition.Start(GetConfiguration("grid3"));
+            Grid3 = Ignition.Start(GetConfiguration("grid3", true));
 
             Grids = new[] { Grid1, Grid2, Grid3 };
         }
@@ -666,7 +667,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private IgniteConfiguration GetConfiguration(string name)
+        private IgniteConfiguration GetConfiguration(string name, bool client = false)
         {
             if (!CompactFooter)
                 name = ComputeApiTestFullFooter.ReplaceFooterSetting(name);
@@ -675,13 +676,15 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 IgniteInstanceName = name,
                 BinaryConfiguration = new BinaryConfiguration(
-                    typeof (TestIgniteServiceBinarizable),
-                    typeof (TestIgniteServiceBinarizableErr),
-                    typeof (PlatformComputeBinarizable),
-                    typeof (BinarizableObject))
+                    typeof(TestIgniteServiceBinarizable),
+                    typeof(TestIgniteServiceBinarizableErr),
+                    typeof(PlatformComputeBinarizable),
+                    typeof(BinarizableObject))
                 {
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
-                }
+                },
+                CacheConfiguration = new[] {new CacheConfiguration(CacheName)},
+                ClientMode = client
             };
         }
 
