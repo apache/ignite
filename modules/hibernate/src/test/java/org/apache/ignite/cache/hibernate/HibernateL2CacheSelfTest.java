@@ -72,7 +72,6 @@ import static org.hibernate.cfg.Environment.USE_QUERY_CACHE;
 import static org.hibernate.cfg.Environment.USE_SECOND_LEVEL_CACHE;
 
 /**
- *
  * Tests Hibernate L2 cache.
  */
 public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
@@ -176,8 +175,8 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         /**
          * @return Children.
          */
-        @OneToMany(cascade=javax.persistence.CascadeType.ALL, fetch=FetchType.LAZY)
-        @JoinColumn(name="ENTITY_ID")
+        @OneToMany(cascade = javax.persistence.CascadeType.ALL, fetch = FetchType.LAZY)
+        @JoinColumn(name = "ENTITY_ID")
         public Collection<ChildEntity> getChildren() {
             return children;
         }
@@ -548,7 +547,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @return Hibernate L2 cache access types to test.
      */
     protected AccessType[] accessTypes() {
-        return new AccessType[]{AccessType.READ_ONLY, AccessType.NONSTRICT_READ_WRITE, AccessType.READ_WRITE};
+        return new AccessType[] {AccessType.READ_ONLY, AccessType.NONSTRICT_READ_WRITE, AccessType.READ_WRITE};
     }
 
     /**
@@ -1218,10 +1217,10 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 ses.close();
             }
 
-            if(accessType == AccessType.NONSTRICT_READ_WRITE) {
+            if (accessType == AccessType.NONSTRICT_READ_WRITE) {
                 reloadNaturalIdCache("name-1-changed1");
             }
-            
+
             assertNaturalIdCache(sesFactory2, nameToId, "name-1");
             assertNaturalIdCache(sesFactory1, nameToId, "name-1");
 
@@ -1246,7 +1245,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 ses.close();
             }
 
-            if(accessType == AccessType.NONSTRICT_READ_WRITE) {
+            if (accessType == AccessType.NONSTRICT_READ_WRITE) {
                 reloadNaturalIdCache("name-1-changed2");
             }
 
@@ -1436,7 +1435,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 tx = ses.beginTransaction();
 
-                ses.save(new ParentEntity(0, (Entity) ses.load(Entity.class, 0)));
+                ses.save(new ParentEntity(0, (Entity)ses.load(Entity.class, 0)));
 
                 tx.commit();
             }
@@ -1839,7 +1838,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         Session ses = sesFactory.openSession();
 
         try {
-            for(Map.Entry<Integer, Integer> e : idToChildCnt.entrySet()) {
+            for (Map.Entry<Integer, Integer> e : idToChildCnt.entrySet()) {
                 Entity entity = (Entity)ses.load(Entity.class, e.getKey());
 
                 assertEquals((int)e.getValue(), entity.getChildren().size());
