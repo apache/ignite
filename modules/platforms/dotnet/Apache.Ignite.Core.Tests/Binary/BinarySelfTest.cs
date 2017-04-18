@@ -63,16 +63,27 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TestFixtureSetUp]
         public void BeforeTest()
         {
-            _marsh = new Marshaller(new BinaryConfiguration{CompactFooter = GetCompactFooter()});
+            _marsh = new Marshaller(new BinaryConfiguration
+            {
+                CompactFooter = GetCompactFooter(),
+                NameMapper = GetNameMapper()
+            });
         }
 
         /// <summary>
         /// Gets the binary configuration.
         /// </summary>
-        /// <returns></returns>
         protected virtual bool GetCompactFooter()
         {
             return true;
+        }
+
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
         
         /**
@@ -1398,7 +1409,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             BinaryConfiguration cfg = new BinaryConfiguration();
 
-            cfg.DefaultKeepDeserialized = false;
+            cfg.KeepDeserialized = false;
 
             CheckKeepSerialized(cfg, false);
         }
@@ -1430,7 +1441,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             typeCfg.KeepDeserialized = true;
 
             BinaryConfiguration cfg = new BinaryConfiguration();
-            cfg.DefaultKeepDeserialized = false;
+            cfg.KeepDeserialized = false;
 
             cfg.TypeConfigurations = new List<BinaryTypeConfiguration> { typeCfg };
 
@@ -1550,7 +1561,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestBinaryConfigurationValidation()
         {
-            var cfg = new BinaryConfiguration(typeof (PropertyType)) {Types = new[] {"PropertyType"}};
+            var cfg = new BinaryConfiguration(typeof (PropertyType))
+            {
+                Types = new[] {typeof(PropertyType).AssemblyQualifiedName}
+            };
 
             // ReSharper disable once ObjectCreationAsStatement
             Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
@@ -2392,21 +2406,21 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             public void WriteBinary(IBinaryWriter writer)
             {
-                writer.WriteCollection("col", Collection);
-                writer.WriteDictionary("dict", Dictionary);
-                writer.WriteObject("dictEntry", DictionaryEntry);
-                writer.WriteObject("obj", Object);
-                writer.WriteArray("arr", Array);
+                writer.WriteCollection("1col", Collection);
+                writer.WriteDictionary("2dict", Dictionary);
+                writer.WriteObject("3dictEntry", DictionaryEntry);
+                writer.WriteObject("4obj", Object);
+                writer.WriteArray("5arr", Array);
                 writer.GetRawWriter().WriteCollection(CollectionRaw);
             }
 
             public void ReadBinary(IBinaryReader reader)
             {
-                Collection = reader.ReadCollection("col");
-                Dictionary = reader.ReadDictionary("dict");
-                DictionaryEntry = reader.ReadObject<DictionaryEntry>("dictEntry");
-                Object = reader.ReadObject<object>("obj");
-                Array = reader.ReadArray<object>("arr");
+                Collection = reader.ReadCollection("1col");
+                Dictionary = reader.ReadDictionary("2dict");
+                DictionaryEntry = reader.ReadObject<DictionaryEntry>("3dictEntry");
+                Object = reader.ReadObject<object>("4obj");
+                Array = reader.ReadArray<object>("5arr");
                 CollectionRaw = reader.GetRawReader().ReadCollection();
             }
         }

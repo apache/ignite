@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +30,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.GridLongList;
@@ -63,6 +65,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** Write view on transaction map. */
     @GridToStringExclude
     protected IgniteTxMap writeView;
+
+    /** */
+    @GridToStringInclude
+    protected Boolean recovery;
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -107,18 +113,33 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException validateTopology(GridCacheSharedContext cctx,
-        GridDhtTopologyFuture topFut) {
+    @Override public IgniteCheckedException validateTopology(
+        GridCacheSharedContext cctx,
+        boolean read,
+        GridDhtTopologyFuture topFut
+    ) {
+
+        Map<Integer, Set<KeyCacheObject>> keysByCacheId = new HashMap<>();
+
+        for (IgniteTxKey key : txMap.keySet()) {
+            Set<KeyCacheObject> set = keysByCacheId.get(key.cacheId());
+
+            if (set == null)
+                keysByCacheId.put(key.cacheId(), set = new HashSet<>());
+
+            set.add(key.key());
+        }
+
         StringBuilder invalidCaches = null;
 
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = (int)activeCacheIds.get(i);
+        for (Map.Entry<Integer, Set<KeyCacheObject>> e : keysByCacheId.entrySet()) {
+            int cacheId = e.getKey();
 
             GridCacheContext ctx = cctx.cacheContext(cacheId);
 
             assert ctx != null : cacheId;
 
-            Throwable err = topFut.validateCache(ctx);
+            Throwable err = topFut.validateCache(ctx, recovery != null && recovery, read, null, e.getValue());
 
             if (err != null) {
                 if (invalidCaches != null)
@@ -132,7 +153,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
         if (invalidCaches != null) {
             return new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                invalidCaches.toString());
+                invalidCaches);
         }
 
         for (int i = 0; i < activeCacheIds.size(); i++) {
@@ -193,11 +214,17 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
         throws IgniteCheckedException {
         GridCacheSharedContext cctx = cacheCtx.shared();
 
         int cacheId = cacheCtx.cacheId();
+
+        if (this.recovery != null && this.recovery != recovery)
+            throw new IgniteCheckedException("Failed to enlist an entry to existing transaction " +
+                "(cannot transact between recovery and non-recovery caches).");
+
+        this.recovery = recovery;
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {

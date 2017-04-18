@@ -146,22 +146,6 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return Affinity hash ID resolver class name.
-     */
-    public String affinityHashIdResolverClassName() {
-        AffinityFunction aff = ccfg.getAffinity();
-
-        if (aff instanceof RendezvousAffinityFunction) {
-            if (((RendezvousAffinityFunction) aff).getHashIdResolver() == null)
-                return null;
-
-            return className(((RendezvousAffinityFunction) aff).getHashIdResolver());
-        }
-
-        return null;
-    }
-
-    /**
      * @return Eviction filter class name.
      */
     public String evictionFilterClassName() {
@@ -202,27 +186,6 @@ public class GridCacheAttributes implements Serializable {
     @Deprecated
     public String transactionManagerLookupClassName() {
         return ccfg.getTransactionManagerLookupClassName();
-    }
-
-    /**
-     * @return {@code True} if swap enabled.
-     */
-    public boolean swapEnabled() {
-        return ccfg.isSwapEnabled();
-    }
-
-    /**
-     * @return Flag indicating whether eviction is synchronized.
-     */
-    public boolean evictSynchronized() {
-        return ccfg.isEvictSynchronized();
-    }
-
-    /**
-     * @return Maximum eviction overflow ratio.
-     */
-    public float evictMaxOverflowRatio() {
-        return ccfg.getEvictMaxOverflowRatio();
     }
 
     /**

@@ -274,10 +274,6 @@ ul.navbar-nav, .sidebar-nav {
     }
 }
 
-.header .nav.navbar-nav.pull-right > li > a {
-    padding-right: 0;
-}
-
 .header .title {
     margin: 20px 0 5px 0;
     padding: 0 15px;
@@ -285,26 +281,36 @@ ul.navbar-nav, .sidebar-nav {
     font-size: 1.4em;
 }
 
-.header .nav.navbar-nav .not-link {
-    padding: 15px;
-    display: inline-block;
-}
-
 .nav > li {
     > a {
-        color: $navbar-default-link-color
+        color: $navbar-default-link-color;
+
+        &:hover,
+        &:focus {
+            color: $link-hover-color;
+        }
+
+        &.active {
+            color: $link-color;
+        }
     }
-    > a:hover {
-        color: $link-hover-color
-    }
-    > a.active {
-        color: $link-color
+
+    &.disabled > a {
+        label:hover, label:focus, i:hover, i:focus {
+            cursor: default;
+        }
     }
 }
 
-.theme-line header .navbar-nav a {
-    line-height: 25px;
-    font-size: 18px;
+.theme-line header .navbar-nav {
+    a {
+        line-height: 25px;
+        font-size: 18px;
+    }
+
+    > li > a {
+        padding-right: 0;
+    }
 }
 
 .theme-line .section-right {
@@ -1621,6 +1627,19 @@ th[st-sort] {
     padding: 10px 10px 10px 20px;
 }
 
+// Hack to solve an issue where scrollbars aren't visible in Safari.
+// Safari seems to clip part of the scrollbar element. By giving the
+// element a background, we're telling Safari that it *really* needs to
+// paint the whole area. See https://github.com/ajaxorg/ace/issues/2872
+.ace_scrollbar-inner {
+	background-color: #FFF;
+	opacity: 0.01;
+
+    .ace_dark & {
+        background-color: #000;
+    }
+}
+
 .ace_content {
     padding-left: 5px;
 }
@@ -2311,11 +2330,6 @@ html,body,.splash-screen {
         i {
             margin-top: 2px;
             margin-right: 10px;
-        }
-
-        label {
-            cursor: default;
-            line-height: 28px;
         }
 
         sub {

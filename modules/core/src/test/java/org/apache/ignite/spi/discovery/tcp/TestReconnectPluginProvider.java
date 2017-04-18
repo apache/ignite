@@ -24,6 +24,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.plugin.CachePluginContext;
+import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
@@ -107,5 +109,10 @@ public class TestReconnectPluginProvider implements PluginProvider {
     /** {@inheritDoc} */
     @Override public IgnitePlugin plugin() {
         return new IgnitePlugin() {};
+    }
+
+    /** {@inheritDoc} */
+    @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
+        return null;
     }
 }

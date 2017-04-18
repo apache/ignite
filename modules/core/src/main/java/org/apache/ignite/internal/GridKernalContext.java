@@ -32,14 +32,12 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.clock.GridClockSource;
-import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -51,7 +49,6 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
-import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
@@ -165,25 +162,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridJobProcessor job();
 
     /**
-     * Gets offheap processor.
-     *
-     * @return Off-heap processor.
-     */
-    public GridOffHeapProcessor offheap();
-
-    /**
      * Gets timeout processor.
      *
      * @return Timeout processor.
      */
     public GridTimeoutProcessor timeout();
-
-    /**
-     * Gets time processor.
-     *
-     * @return Time processor.
-     */
-    public GridClockSyncProcessor clockSync();
 
     /**
      * Gets resource processor.
@@ -205,6 +188,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Cache processor.
      */
     public GridCacheProcessor cache();
+
+    /**
+     * Gets cluster state processor.
+     *
+     * @return Cluster state processor.
+     */
+    public GridClusterStateProcessor state();
 
     /**
      * Gets task session processor.
@@ -415,25 +405,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridLoadBalancerManager loadBalancing();
 
     /**
-     * Gets swap space manager.
-     *
-     * @return Swap space manager.
-     */
-    public GridSwapSpaceManager swap();
-
-    /**
      * Gets indexing manager.
      *
      * @return Indexing manager.
      */
     public GridIndexingManager indexing();
-
-    /**
-     * Gets grid time source.
-     *
-     * @return Time source.
-     */
-    public GridClockSource timeSource();
 
     /**
      * Gets data structures processor.

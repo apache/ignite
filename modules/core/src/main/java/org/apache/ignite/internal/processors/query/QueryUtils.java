@@ -299,7 +299,7 @@ public class QueryUtils {
                 QueryIndexType idxTyp = idx.getIndexType();
 
                 if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
-                    d.addIndex(idxName, idxTyp);
+                    d.addIndex(idxName, idxTyp, idx.getInlineSize());
 
                     int i = 0;
 
@@ -312,7 +312,7 @@ public class QueryUtils {
                         if (alias != null)
                             field = alias;
 
-                        d.addFieldToIndex(idxName, field, i++, !asc);
+                        d.addFieldToIndex(idxName, field, i++, idx.getInlineSize(), !asc);
                     }
                 }
                 else if (idxTyp == QueryIndexType.FULLTEXT){
@@ -611,6 +611,11 @@ public class QueryUtils {
             clsName = clsName.substring(0, clsName.length() - 2) + "_array";
 
         int parentEnd = clsName.lastIndexOf('$');
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
+        parentEnd = clsName.lastIndexOf('+');   // .NET parent
 
         if (parentEnd >= 0)
             clsName = clsName.substring(parentEnd + 1);

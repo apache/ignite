@@ -256,7 +256,7 @@ namespace Apache.Ignite.Core.Tests
 
             messaging.Send(NextMessage());
 
-            Thread.Sleep(MessagingTestHelper.MessageTimeout);
+            Thread.Sleep(MessagingTestHelper.SleepTimeout);
 
             // Check that unsubscription worked properly
             Assert.AreEqual(sharedResult, Thread.VolatileRead(ref sharedReceived));
@@ -392,7 +392,7 @@ namespace Apache.Ignite.Core.Tests
 
             messaging.Send(NextMessage()); // send a message to make filters return false
 
-            Thread.Sleep(MessagingTestHelper.MessageTimeout); // wait for all to unsubscribe
+            Thread.Sleep(MessagingTestHelper.SleepTimeout); // wait for all to unsubscribe
 
             MessagingTestHelper.ListenResult = true;
 
@@ -403,7 +403,7 @@ namespace Apache.Ignite.Core.Tests
             var lastMsg = NextMessage();
             messaging.Send(lastMsg);
 
-            Thread.Sleep(MessagingTestHelper.MessageTimeout);
+            Thread.Sleep(MessagingTestHelper.SleepTimeout);
 
             // Check that unsubscription worked properly
             var sharedResult = MessagingTestHelper.ReceivedMessages.ToArray();
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Tests
 
             (grid ?? _grid1).GetMessaging().SendAll(NextMessage(), topic);
 
-            Thread.Sleep(MessagingTestHelper.MessageTimeout);
+            Thread.Sleep(MessagingTestHelper.SleepTimeout);
 
             MessagingTestHelper.AssertFailures();
         }
@@ -534,7 +534,10 @@ namespace Apache.Ignite.Core.Tests
         public static volatile bool ListenResult = true;
 
         /** */
-        public static readonly TimeSpan MessageTimeout = TimeSpan.FromMilliseconds(700);
+        public static readonly TimeSpan MessageTimeout = TimeSpan.FromMilliseconds(5000);
+
+        /** */
+        public static readonly TimeSpan SleepTimeout = TimeSpan.FromMilliseconds(50);
 
         /// <summary>
         /// Clears received message information.

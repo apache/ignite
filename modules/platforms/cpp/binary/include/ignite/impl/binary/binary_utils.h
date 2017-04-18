@@ -28,7 +28,6 @@
 #include <ignite/time.h>
 
 #include <ignite/binary/binary_type.h>
-#include <ignite/impl/binary/binary_writer_impl.h>
 
 namespace ignite
 {
@@ -471,9 +470,11 @@ namespace ignite
                 template<typename T>
                 static T GetDefaultValue()
                 {
-                    ignite::binary::BinaryType<T> binType;
+                    T res;
 
-                    return binType.GetNull();
+                    ignite::binary::BinaryType<T>::GetNull(res);
+
+                    return res;
                 }
             };
 

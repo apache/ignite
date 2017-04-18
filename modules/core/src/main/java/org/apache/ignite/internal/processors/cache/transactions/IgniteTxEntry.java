@@ -72,16 +72,16 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private static final long serialVersionUID = 0L;
 
     /** Dummy version for non-existing entry read in SERIALIZABLE transaction. */
-    public static final GridCacheVersion SER_READ_EMPTY_ENTRY_VER = new GridCacheVersion(0, 0, 0, 0);
+    public static final GridCacheVersion SER_READ_EMPTY_ENTRY_VER = new GridCacheVersion(0, 0, 0);
 
     /** Dummy version for any existing entry read in SERIALIZABLE transaction. */
-    public static final GridCacheVersion SER_READ_NOT_EMPTY_VER = new GridCacheVersion(0, 0, 0, 1);
+    public static final GridCacheVersion SER_READ_NOT_EMPTY_VER = new GridCacheVersion(0, 0, 1);
 
     /** */
-    public static final GridCacheVersion GET_ENTRY_INVALID_VER_UPDATED = new GridCacheVersion(0, 0, 0, 2);
+    public static final GridCacheVersion GET_ENTRY_INVALID_VER_UPDATED = new GridCacheVersion(0, 0, 2);
 
     /** */
-    public static final GridCacheVersion GET_ENTRY_INVALID_VER_AFTER_GET = new GridCacheVersion(0, 0, 0, 3);
+    public static final GridCacheVersion GET_ENTRY_INVALID_VER_AFTER_GET = new GridCacheVersion(0, 0, 3);
 
     /** Prepared flag updater. */
     private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
@@ -565,9 +565,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param entry Cache entry.
      */
     public void cached(GridCacheEntryEx entry) {
-        assert entry != null;
-
-        assert entry.context() == ctx : "Invalid entry assigned to tx entry [txEntry=" + this +
+        assert entry == null || entry.context() == ctx : "Invalid entry assigned to tx entry [txEntry=" + this +
             ", entry=" + entry + ", ctxNear=" + ctx.isNear() + ", ctxDht=" + ctx.isDht() + ']';
 
         this.entry = entry;

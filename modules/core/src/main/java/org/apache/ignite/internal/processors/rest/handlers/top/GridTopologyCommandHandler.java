@@ -52,7 +52,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_HOST_NAMES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
@@ -291,6 +293,8 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             attrs.remove(ATTR_TX_CONFIG);
             attrs.remove(ATTR_SECURITY_SUBJECT);
             attrs.remove(ATTR_SECURITY_CREDENTIALS);
+            attrs.remove(ATTR_BINARY_CONFIGURATION);
+            attrs.remove(ATTR_NODE_CONSISTENT_ID);
 
             for (Iterator<Map.Entry<String, Object>> i = attrs.entrySet().iterator(); i.hasNext();) {
                 Map.Entry<String, Object> e = i.next();

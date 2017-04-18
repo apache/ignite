@@ -2098,7 +2098,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @return Time in milliseconds.
      */
     protected long awaitTime() {
-        return 10_000;
+        return 20_000;
     }
 
     /**

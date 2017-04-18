@@ -1177,9 +1177,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             foreach (var node in nodes)
             {
-                var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
+                var primaryKey = TestUtils.GetPrimaryKey(_grid1, cacheName, node);
 
-                var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
+                var affinityKey = aff.GetAffinityKey<int, int>(primaryKey);
 
                 _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
@@ -1204,9 +1204,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             foreach (var node in nodes)
             {
-                var primaryKey = Enumerable.Range(1, int.MaxValue).First(x => aff.IsPrimary(node, x));
+                var primaryKey = TestUtils.GetPrimaryKey(_grid1, cacheName, node);
 
-                var affinityKey = _grid1.GetAffinity(cacheName).GetAffinityKey<int, int>(primaryKey);
+                var affinityKey = aff.GetAffinityKey<int, int>(primaryKey);
 
                 var result = _grid1.GetCompute().AffinityCall(cacheName, affinityKey, new ComputeFunc());
 
@@ -1315,7 +1315,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                         new BinaryTypeConfiguration(JavaBinaryCls),
                         new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
                         new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
-                    }
+                    },
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 },
                 SpringConfigUrl = path
             };

@@ -97,3 +97,8 @@ $fa-font-path: '~font-awesome/fonts';
   
   margin: 0;
 }
+
+.icon-cluster {
+  @extend .fa;
+  @extend .fa-sitemap;
+}

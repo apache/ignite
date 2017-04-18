@@ -34,6 +34,8 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -41,29 +43,48 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.console.agent.handlers.ClusterListener;
+import org.apache.ignite.console.agent.handlers.DemoListener;
+import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.log4j.Logger;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import static io.socket.client.Socket.EVENT_CONNECT;
-import static io.socket.client.Socket.EVENT_CONNECTING;
 import static io.socket.client.Socket.EVENT_CONNECT_ERROR;
 import static io.socket.client.Socket.EVENT_DISCONNECT;
 import static io.socket.client.Socket.EVENT_ERROR;
-import static io.socket.client.Socket.EVENT_RECONNECTING;
+import static org.apache.ignite.console.agent.AgentUtils.fromJSON;
+import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 
 /**
  * Control Center Agent launcher.
  */
 public class AgentLauncher {
     /** */
-    private static final Logger log = Logger.getLogger(AgentLauncher.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(AgentLauncher.class);
 
     /** */
-    private static final String EVENT_NODE_REST = "node:rest";
+    private static final String EVENT_CLUSTER_BROADCAST_START = "cluster:broadcast:start";
+
+    /** */
+    private static final String EVENT_CLUSTER_BROADCAST_STOP = "cluster:broadcast:stop";
+
+    /** */
+    private static final String EVENT_CLUSTER_DISCONNECTED = "cluster:disconnected";
+
+    /** */
+    private static final String EVENT_DEMO_BROADCAST_START = "demo:broadcast:start";
+
+    /** */
+    private static final String EVENT_DEMO_BROADCAST_STOP = "demo:broadcast:stop";
 
     /** */
     private static final String EVENT_SCHEMA_IMPORT_DRIVERS = "schemaImport:drivers";
@@ -75,10 +96,24 @@ public class AgentLauncher {
     private static final String EVENT_SCHEMA_IMPORT_METADATA = "schemaImport:metadata";
 
     /** */
-    private static final String EVENT_AGENT_WARNING = "agent:warning";
+    private static final String EVENT_NODE_VISOR_TASK = "node:visorTask";
 
     /** */
-    private static final String EVENT_AGENT_CLOSE = "agent:close";
+    private static final String EVENT_NODE_REST = "node:rest";
+
+    /** */
+    private static final String EVENT_RESET_TOKENS = "agent:reset:token";
+
+    /** */
+    private static final String EVENT_LOG_WARNING = "log:warn";
+
+    static {
+        // Optionally remove existing handlers attached to j.u.l root logger.
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+
+        // Add SLF4JBridgeHandler to j.u.l's root logger.
+        SLF4JBridgeHandler.install();
+    }
 
     /**
      * Create a trust manager that trusts all certificates It is not using a particular keyStore
@@ -86,15 +121,18 @@ public class AgentLauncher {
     private static TrustManager[] getTrustManagers() {
         return new TrustManager[] {
             new X509TrustManager() {
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                /** {@inheritDoc} */
+                @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() {
                     return null;
                 }
 
-                public void checkClientTrusted(
+                /** {@inheritDoc} */
+                @Override public void checkClientTrusted(
                     java.security.cert.X509Certificate[] certs, String authType) {
                 }
 
-                public void checkServerTrusted(
+                /** {@inheritDoc} */
+                @Override public void checkServerTrusted(
                     java.security.cert.X509Certificate[] certs, String authType) {
                 }
             }};
@@ -104,14 +142,13 @@ public class AgentLauncher {
      * On error listener.
      */
     private static final Emitter.Listener onError = new Emitter.Listener() {
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         @Override public void call(Object... args) {
             Throwable e = (Throwable)args[0];
 
             ConnectException ce = X.cause(e, ConnectException.class);
 
             if (ce != null)
-                log.error("Failed to receive response from server (connection refused).");
+                log.error("Failed to establish connection to server (connection refused).");
             else {
                 Exception ignore = X.cause(e, SSLHandshakeException.class);
 
@@ -172,7 +209,25 @@ public class AgentLauncher {
      */
     private static final Emitter.Listener onDisconnect = new Emitter.Listener() {
         @Override public void call(Object... args) {
-            log.error(String.format("Connection closed: %s.", args));
+            log.error("Connection closed: {}", args);
+        }
+    };
+
+    /**
+     * On token reset listener.
+     */
+    private static final Emitter.Listener onLogWarning = new Emitter.Listener() {
+        @Override public void call(Object... args) {
+            log.warn(String.valueOf(args[0]));
+        }
+    };
+
+    /**
+     * On demo start request.
+     */
+    private static final Emitter.Listener onDemoStart = new Emitter.Listener() {
+        @Override public void call(Object... args) {
+            log.warn(String.valueOf(args[0]));
         }
     };
 
@@ -205,7 +260,6 @@ public class AgentLauncher {
     /**
      * @param args Args.
      */
-    @SuppressWarnings("BusyWait")
     public static void main(String[] args) throws Exception {
         log.info("Starting Apache Ignite Web Console Agent...");
 
@@ -236,13 +290,13 @@ public class AgentLauncher {
             File f = AgentUtils.resolvePath(prop);
 
             if (f == null)
-                log.warn("Failed to find agent property file: " + prop);
+                log.warn("Failed to find agent property file: {}", prop);
             else
                 propCfg.load(f.toURI().toURL());
         }
-        catch (IOException ignore) {
+        catch (IOException e) {
             if (!AgentConfiguration.DFLT_CFG_PATH.equals(prop))
-                log.warn("Failed to load agent property file: " + prop, ignore);
+                log.warn("Failed to load agent property file: " + prop, e);
         }
 
         cfg.merge(propCfg);
@@ -314,17 +368,11 @@ public class AgentLauncher {
         }
 
         final Socket client = IO.socket(uri, opts);
-
-        final RestListener restHnd = new RestListener(cfg);
-
-        final DatabaseListener dbHnd = new DatabaseListener(cfg);
+        final RestExecutor restExecutor = new RestExecutor(cfg.nodeUri());
 
         try {
-            Emitter.Listener onConnecting = new Emitter.Listener() {
-                @Override public void call(Object... args) {
-                    log.info("Connecting to: " + cfg.serverUri());
-                }
-            };
+            final ClusterListener clusterLsnr = new ClusterListener(client, restExecutor);
+            final DemoListener demoHnd = new DemoListener(client, restExecutor);
 
             Emitter.Listener onConnect = new Emitter.Listener() {
                 @Override public void call(Object... args) {
@@ -333,7 +381,8 @@ public class AgentLauncher {
                     JSONObject authMsg = new JSONObject();
 
                     try {
-                        authMsg.put("tokens", cfg.tokens());
+                        authMsg.put("tokens", toJSON(cfg.tokens()));
+                        authMsg.put("disableDemo", cfg.disableDemo());
 
                         String clsName = AgentLauncher.class.getSimpleName() + ".class";
 
@@ -353,14 +402,49 @@ public class AgentLauncher {
 
                         client.emit("agent:auth", authMsg, new Ack() {
                             @Override public void call(Object... args) {
-                                // Authentication failed if response contains args.
-                                if (args != null && args.length > 0) {
-                                    onDisconnect.call(args);
+                                if (args != null) {
+                                    if (args[0] instanceof String) {
+                                        log.error((String)args[0]);
 
-                                    System.exit(1);
+                                        System.exit(1);
+                                    }
+
+                                    if (args[0] == null && args[1] instanceof JSONArray) {
+                                        try {
+                                            List<String> activeTokens = fromJSON(args[1], List.class);
+
+                                            if (!F.isEmpty(activeTokens)) {
+                                                Collection<String> missedTokens = cfg.tokens();
+
+                                                cfg.tokens(activeTokens);
+
+                                                missedTokens.removeAll(activeTokens);
+
+                                                if (!F.isEmpty(missedTokens)) {
+                                                    String tokens = F.concat(missedTokens, ", ");
+
+                                                    log.warn("Failed to authenticate with token(s): {}. " +
+                                                        "Please reload agent archive or check settings", tokens);
+                                                }
+
+                                                log.info("Authentication success.");
+
+                                                clusterLsnr.watch();
+
+                                                return;
+                                            }
+                                        }
+                                        catch (Exception e) {
+                                            log.error("Failed to authenticate agent. Please check agent\'s tokens", e);
+
+                                            System.exit(1);
+                                        }
+                                    }
                                 }
 
-                                log.info("Authentication success.");
+                                log.error("Failed to authenticate agent. Please check agent\'s tokens");
+
+                                System.exit(1);
                             }
                         });
                     }
@@ -372,44 +456,52 @@ public class AgentLauncher {
                 }
             };
 
+            DatabaseListener dbHnd = new DatabaseListener(cfg);
+            RestListener restHnd = new RestListener(restExecutor);
+
             final CountDownLatch latch = new CountDownLatch(1);
 
+            log.info("Connecting to: {}", cfg.serverUri());
+
             client
-                .on(EVENT_CONNECTING, onConnecting)
                 .on(EVENT_CONNECT, onConnect)
                 .on(EVENT_CONNECT_ERROR, onError)
-                .on(EVENT_RECONNECTING, onConnecting)
-                .on(EVENT_NODE_REST, restHnd)
+                .on(EVENT_ERROR, onError)
+                .on(EVENT_DISCONNECT, onDisconnect)
+                .on(EVENT_LOG_WARNING, onLogWarning)
+                .on(EVENT_CLUSTER_BROADCAST_START, clusterLsnr.start())
+                .on(EVENT_CLUSTER_BROADCAST_STOP, clusterLsnr.stop())
+                .on(EVENT_DEMO_BROADCAST_START, demoHnd.start())
+                .on(EVENT_DEMO_BROADCAST_STOP, demoHnd.stop())
+                .on(EVENT_RESET_TOKENS, new Emitter.Listener() {
+                    @Override public void call(Object... args) {
+                        String tok = String.valueOf(args[0]);
+
+                        log.warn("Security token has been reset: {}", tok);
+
+                        cfg.tokens().remove(tok);
+
+                        if (cfg.tokens().isEmpty()) {
+                            client.off();
+
+                            latch.countDown();
+                        }
+                    }
+                })
                 .on(EVENT_SCHEMA_IMPORT_DRIVERS, dbHnd.availableDriversListener())
                 .on(EVENT_SCHEMA_IMPORT_SCHEMAS, dbHnd.schemasListener())
                 .on(EVENT_SCHEMA_IMPORT_METADATA, dbHnd.metadataListener())
-                .on(EVENT_ERROR, onError)
-                .on(EVENT_DISCONNECT, onDisconnect)
-                .on(EVENT_AGENT_WARNING, new Emitter.Listener() {
-                    @Override public void call(Object... args) {
-                        log.warn(args[0]);
-                    }
-                })
-                .on(EVENT_AGENT_CLOSE, new Emitter.Listener() {
-                    @Override public void call(Object... args) {
-                        onDisconnect.call(args);
-
-                        client.off();
-
-                        latch.countDown();
-                    }
-                });
+                .on(EVENT_NODE_VISOR_TASK, restHnd)
+                .on(EVENT_NODE_REST, restHnd);
 
             client.connect();
 
             latch.await();
         }
         finally {
+            restExecutor.stop();
+
             client.close();
-
-            restHnd.stop();
-
-            dbHnd.stop();
         }
     }
 }

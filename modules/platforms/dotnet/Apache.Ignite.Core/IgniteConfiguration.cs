@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
- namespace Apache.Ignite.Core
+namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
@@ -40,11 +40,9 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.SwapSpace;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin;
-    using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.Transactions;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
@@ -275,29 +273,9 @@
                     writer.WriteBoolean(false);
                 }
 
-                // Send only descriptors with non-null EqualityComparer to preserve old behavior where
-                // remote nodes can have no BinaryConfiguration.
-
-                if (BinaryConfiguration.TypeConfigurations != null &&
-                    BinaryConfiguration.TypeConfigurations.Any(x => x.EqualityComparer != null))
-                {
-                    // Create a new marshaller to reuse type name resolver mechanism.
-                    var types = new Marshaller(BinaryConfiguration).GetUserTypeDescriptors()
-                        .Where(x => x.EqualityComparer != null).ToList();
-
-                    writer.WriteInt(types.Count);
-
-                    foreach (var type in types)
-                    {
-                        writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
-                        writer.WriteBoolean(type.IsEnum);
-                        BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
-                    }
-                }
-                else
-                {
-                    writer.WriteInt(0);
-                }
+                // Name mapper.
+                var mapper = BinaryConfiguration.NameMapper as BinaryBasicNameMapper;
+                writer.WriteBoolean(mapper != null && mapper.IsSimpleName);
             }
             else
             {
@@ -345,9 +323,6 @@
             }
             else
                 writer.WriteBoolean(false);
-
-            // Swap space
-            SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
 
             // Event storage
             if (EventStorageSpi == null)
@@ -459,25 +434,13 @@
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
 
                 if (r.ReadBoolean())
-                    BinaryConfiguration.CompactFooter = r.ReadBoolean();
-
-                var typeCount = r.ReadInt();
-
-                if (typeCount > 0)
                 {
-                    var types = new List<BinaryTypeConfiguration>(typeCount);
+                    BinaryConfiguration.CompactFooter = r.ReadBoolean();
+                }
 
-                    for (var i = 0; i < typeCount; i++)
-                    {
-                        types.Add(new BinaryTypeConfiguration
-                        {
-                            TypeName = r.ReadString(),
-                            IsEnum = r.ReadBoolean(),
-                            EqualityComparer = BinaryEqualityComparerSerializer.Read(r)
-                        });
-                    }
-
-                    BinaryConfiguration.TypeConfigurations = types;
+                if (r.ReadBoolean())
+                {
+                    BinaryConfiguration.NameMapper = BinaryBasicNameMapper.SimpleNameInstance;
                 }
             }
 
@@ -508,9 +471,6 @@
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
                 };
             }
-
-            // Swap
-            SwapSpaceSpi = SwapSpaceSerializer.Read(r);
 
             // Event storage
             switch (r.ReadByte())
@@ -564,11 +524,12 @@
             JvmOptions = cfg.JvmOptions;
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
-            LifecycleBeans = cfg.LifecycleBeans;
+            LifecycleHandlers = cfg.LifecycleHandlers;
             Logger = cfg.Logger;
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
             PluginConfigurations = cfg.PluginConfigurations;
+            AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
         }
 
         /// <summary>
@@ -579,6 +540,18 @@
         /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
         /// </summary>
         public string IgniteInstanceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether unique <see cref="IgniteInstanceName"/> should be generated.
+        /// <para />
+        /// Set this to true in scenarios where new node should be started regardless of other nodes present within
+        /// current process. In particular, this setting is useful is ASP.NET and IIS environments, where AppDomains
+        /// are loaded and unloaded within a single process during application restarts. Ignite stops all nodes
+        /// on <see cref="AppDomain"/> unload, however, IIS does not wait for previous AppDomain to unload before
+        /// starting up a new one, which may cause "Ignite instance with this name has already been started" errors.
+        /// This setting solves the issue.
+        /// </summary>
+        public bool AutoGenerateIgniteInstanceName { get; set; }
 
         /// <summary>
         /// Gets or sets optional local instance name.
@@ -662,10 +635,10 @@
         public bool SuppressWarnings { get; set; }
 
         /// <summary>
-        /// Lifecycle beans.
+        /// Lifecycle handlers.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<ILifecycleBean> LifecycleBeans { get; set; }
+        public ICollection<ILifecycleHandler> LifecycleHandlers { get; set; }
 
         /// <summary>
         /// Initial amount of memory in megabytes given to JVM. Maps to -Xms Java option.
@@ -952,11 +925,6 @@
         }
 
         /// <summary>
-        /// Gets or sets the swap space SPI.
-        /// </summary>
-        public ISwapSpaceSpi SwapSpaceSpi { get; set; }
-
-        /// <summary>
         /// Gets or sets the configurations for plugins to be started.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
@@ -965,7 +933,7 @@
         /// <summary>
         /// Gets or sets the event storage interface.
         /// <para />
-        /// Only predefined implementations are supported: 
+        /// Only predefined implementations are supported:
         /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
         /// </summary>
         public IEventStorageSpi EventStorageSpi { get; set; }
