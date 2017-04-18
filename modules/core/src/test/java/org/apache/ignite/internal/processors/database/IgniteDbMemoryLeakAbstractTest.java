@@ -53,9 +53,6 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /** */
     private long probeCnt;
 
-    /** */
-    private IgniteCache<Object, Object> cache;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -170,7 +167,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     public void testMemoryLeak() throws Exception {
         final IgniteEx ignite = grid(0);
 
-        cache = cache(ignite);
+        final IgniteCache<Object, Object> cache = cache(ignite);
 
         Runnable target = new Runnable() {
             @Override public void run() {
@@ -199,16 +196,14 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
         while (ex == null && System.nanoTime() < warmUpEndTime)
             Thread.sleep(100);
 
-        if (ex != null) {
-            cache = null;
+        if (ex != null)
             throw ex;
-        }
 
         info("Warming up is ended.");
 
         while (ex == null && System.nanoTime() < endTime) {
             try {
-                check(ignite);
+                check(cache);
             }
             catch (Exception e) {
                 ex = e;
@@ -219,8 +214,6 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
             Thread.sleep(TimeUnit.SECONDS.toMillis(5));
         }
 
-        cache = null;
-
         if (ex != null)
             throw ex;
     }
@@ -228,10 +221,10 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /**
      * Callback to check the current state.
      *
-     * @param ig Ignite instance.
+     * @param cache Cache instance.
      * @throws Exception If failed.
      */
-    protected void check(IgniteEx ig) throws Exception {
+    protected final void check(IgniteCache cache) throws Exception {
         long pagesActual = ((IgniteCacheProxy)cache).context().memoryPolicy().pageMemory().loadedPages();
 
         if (loadedPages > 0) {

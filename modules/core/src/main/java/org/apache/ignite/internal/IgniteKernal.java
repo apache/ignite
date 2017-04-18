@@ -100,7 +100,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -1193,9 +1192,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             Collection<MemoryPolicy> policies = ctx.cache().context().database().memoryPolicies();
 
                             if (!F.isEmpty(policies)) {
-                                for (MemoryPolicy memPlc : policies) {
+                                for (MemoryPolicy memPlc : policies)
                                     loadedPages += memPlc.pageMemory().loadedPages();
-                                }
                             }
 
                             String id = U.id8(localNode().id());
