@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var cache = Cache(i);
 
-                cache.Put(PrimaryKeyForCache(cache), 1);
+                cache.Put(GetPrimaryKeyForCache(cache), 1);
             }
 
             for (int i = 0; i < GridCount(); i++)
@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            int key = PrimaryKeyForCache(cache);
+            int key = GetPrimaryKeyForCache(cache);
 
             cache.Put(key, 1);
 
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            var keys = PrimaryKeysForCache(cache, 5);
+            var keys = GetPrimaryKeysForCache(cache, 5);
 
             Assert.IsFalse(cache.ContainsKeys(keys));
 
@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            int key1 = PrimaryKeyForCache(cache);
+            int key1 = GetPrimaryKeyForCache(cache);
 
             cache.Put(key1, 1);
 
@@ -664,8 +664,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             else
             {
-                key0 = PrimaryKeyForCache(cache0);
-                key1 = PrimaryKeyForCache(Cache(1));
+                key0 = GetPrimaryKeyForCache(cache0);
+                key1 = GetPrimaryKeyForCache(Cache(1));
             }
             
             // Test unchanged expiration.
@@ -776,8 +776,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             else
             {
-                key0 = PrimaryKeyForCache(cache0);
-                key1 = PrimaryKeyForCache(Cache(1));
+                key0 = GetPrimaryKeyForCache(cache0);
+                key1 = GetPrimaryKeyForCache(Cache(1));
             }
 
             // Test zero expiration.
@@ -840,7 +840,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            int key = PrimaryKeyForCache(cache);
+            int key = GetPrimaryKeyForCache(cache);
 
             cache.Put(key, 1);
 
@@ -865,7 +865,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            List<int> keys = PrimaryKeysForCache(cache, 3);
+            List<int> keys = GetPrimaryKeysForCache(cache, 3);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -900,7 +900,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var cache = Cache(i);
 
-                cache.Put(PrimaryKeyForCache(cache, 500), 1);
+                cache.Put(GetPrimaryKeyForCache(cache, 500), 1);
 
                 Assert.IsFalse(cache.IsEmpty());
             }
@@ -915,7 +915,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestClearKey()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 10);
+            var keys = GetPrimaryKeysForCache(cache, 10);
 
             foreach (var key in keys)
                 cache.Put(key, 3);
@@ -939,7 +939,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestClearKeys()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 10);
+            var keys = GetPrimaryKeysForCache(cache, 10);
 
             foreach (var key in keys)
                 cache.Put(key, 3);
@@ -953,7 +953,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestLocalClearKey()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 10);
+            var keys = GetPrimaryKeysForCache(cache, 10);
 
             foreach (var key in keys)
                 cache.Put(key, 3);
@@ -979,7 +979,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestLocalClearKeys()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 10);
+            var keys = GetPrimaryKeysForCache(cache, 10);
 
             foreach (var key in keys)
                 cache.Put(key, 3);
@@ -1087,7 +1087,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            var keys = PrimaryKeysForCache(cache, 2);
+            var keys = GetPrimaryKeysForCache(cache, 2);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -1107,7 +1107,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache().WrapAsync();
 
-            List<int> keys = PrimaryKeysForCache(cache, 2);
+            List<int> keys = GetPrimaryKeysForCache(cache, 2);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -1175,7 +1175,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var cache = Cache(i);
 
-                List<int> keys = PrimaryKeysForCache(cache, 2);
+                List<int> keys = GetPrimaryKeysForCache(cache, 2);
 
                 foreach (int key in keys)
                     cache.Put(key, 1);
@@ -1202,7 +1202,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestLocalSize()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 3);
+            var keys = GetPrimaryKeysForCache(cache, 3);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -1211,7 +1211,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(keys.Take(2).ToArray());
 
-            //Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));  // TODO: IGNITE-4535
+            Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
             Assert.AreEqual(localSize, cache.GetLocalSize(CachePeekMode.All));
 
             cache.Put(keys[2], 3);
@@ -1229,7 +1229,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestEnumerators()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 2);
+            var keys = GetPrimaryKeysForCache(cache, 2);
 
             cache.Put(keys[0], keys[0] + 1);
             cache.Put(keys[1], keys[1] + 1);
@@ -1318,7 +1318,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            int key = PrimaryKeyForCache(cache);
+            int key = GetPrimaryKeyForCache(cache);
 
             cache.Put(key, 1);
 
@@ -1343,7 +1343,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            List<int> keys = PrimaryKeysForCache(cache, 3);
+            List<int> keys = GetPrimaryKeysForCache(cache, 3);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -2477,22 +2477,22 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(expAge, person.Age);
         }
 
-        private static int PrimaryKeyForCache(ICache<int, int> cache)
+        private static int GetPrimaryKeyForCache(ICache<int, int> cache)
         {
-            return PrimaryKeysForCache(cache, 1, 0).First();
+            return GetPrimaryKeysForCacheFrom(cache, 0).First();
         }
 
-        private static int PrimaryKeyForCache(ICache<int, int> cache, int startFrom)
+        private static int GetPrimaryKeyForCache(ICache<int, int> cache, int startFrom)
         {
-            return PrimaryKeysForCache(cache, 1, startFrom).First();
+            return GetPrimaryKeysForCacheFrom(cache, startFrom).First();
         }
 
-        private static List<int> PrimaryKeysForCache(ICache<int, int> cache, int cnt)
+        private static List<int> GetPrimaryKeysForCache(ICache<int, int> cache, int cnt)
         {
-            return PrimaryKeysForCache(cache, cnt, 0).Take(cnt).ToList();
+            return GetPrimaryKeysForCacheFrom(cache, 0).Take(cnt).ToList();
         }
 
-        private static IEnumerable<int> PrimaryKeysForCache(ICache<int, int> cache, int cnt, int startFrom)
+        private static IEnumerable<int> GetPrimaryKeysForCacheFrom(ICache<int, int> cache, int startFrom)
         {
             IClusterNode node = cache.Ignite.GetCluster().GetLocalNode();
 
