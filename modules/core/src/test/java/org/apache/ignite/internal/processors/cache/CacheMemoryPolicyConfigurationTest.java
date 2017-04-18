@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.mem.OutOfMemoryException;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -77,7 +77,7 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that {@link OutOfMemoryException} is thrown when cache is configured with too small MemoryPolicy.
+     * Verifies that {@link IgniteOutOfMemoryException} is thrown when cache is configured with too small MemoryPolicy.
      */
     public void testTooSmallMemoryPolicy() throws Exception {
         memCfg = new MemoryConfiguration();
@@ -109,7 +109,7 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
             Throwable cause = e;
 
             do {
-                if (cause instanceof OutOfMemoryException) {
+                if (cause instanceof IgniteOutOfMemoryException) {
                     oomeThrown = true;
                     break;
                 }
