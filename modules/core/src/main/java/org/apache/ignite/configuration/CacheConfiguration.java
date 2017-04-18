@@ -494,9 +494,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Sets name of {@link MemoryPolicyConfiguration} for this cache.
+     * Sets a name of {@link MemoryPolicyConfiguration} for this cache.
      *
-     * @param memPlcName MemoryPolicyConfiguration name. Can be null (default MemoryPolicyConfiguration will be used) but should not be empty.
+     * @param memPlcName MemoryPolicyConfiguration name. Can be null (default MemoryPolicyConfiguration will be used)
+     *                   but should not be empty.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
@@ -531,6 +532,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Checks if the on-heap cache is enabled for the off-heap based page memory.
+     *
      * @return On-heap cache enabled flag.
      */
     public boolean isOnheapCacheEnabled() {
@@ -538,7 +541,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Configures on-heap cache.
+     * Configures on-heap cache for the off-heap based page memory.
      *
      * @param onheapCache {@code True} if on-heap cache should be enabled.
      * @return {@code this} for chaining.

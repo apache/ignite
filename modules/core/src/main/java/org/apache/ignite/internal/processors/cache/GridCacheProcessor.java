@@ -362,8 +362,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private boolean storesLocallyOnClient(IgniteConfiguration c,
                                           CacheConfiguration cc) {
-        if (c.isClientMode()
-                && c.getMemoryConfiguration() == null) {
+        if (c.isClientMode() && c.getMemoryConfiguration() == null) {
             if (cc.getCacheMode() == LOCAL)
                 return true;
 
