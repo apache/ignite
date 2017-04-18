@@ -178,17 +178,9 @@ namespace Apache.Ignite.Core.Tests
             var grid1 = Ignition.Start(cfg);
 
             Assert.AreEqual("grid1", grid1.Name);
-
-            try
-            {
-                Ignition.Start(cfg);
-
-                Assert.Fail("Start should fail.");
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
+            
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("Ignite instance with this name has already been started: grid1", ex.Message);
         }
 
         /// <summary>
