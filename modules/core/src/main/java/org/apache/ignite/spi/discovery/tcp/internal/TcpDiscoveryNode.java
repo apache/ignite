@@ -123,7 +123,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     /** Version. */
     private IgniteProductVersion ver;
 
-    /** Alive check (used by clients). */
+    /** Alive check time (used by clients). */
     @GridToStringExclude
     private transient long aliveCheckTime;
 
