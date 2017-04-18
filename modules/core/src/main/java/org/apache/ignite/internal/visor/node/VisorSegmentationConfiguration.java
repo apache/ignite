@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +32,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactArray;
 /**
  * Data transfer object for node segmentation configuration properties.
  */
-public class VisorSegmentationConfiguration implements Serializable, LessNamingBean {
+public class VisorSegmentationConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,57 +49,79 @@ public class VisorSegmentationConfiguration implements Serializable, LessNamingB
     private boolean waitOnStart;
 
     /** Whether or not all resolvers should succeed for node to be in correct segment. */
-    private boolean passRequired;
+    private boolean allResolversPassReq;
 
     /**
-     * @param c Grid configuration.
-     * @return Data transfer object for node segmentation configuration properties.
+     * Default constructor.
      */
-    public static VisorSegmentationConfiguration from(IgniteConfiguration c) {
-        VisorSegmentationConfiguration cfg = new VisorSegmentationConfiguration();
+    public VisorSegmentationConfiguration() {
+        // No-op.
+    }
 
-        cfg.plc = c.getSegmentationPolicy();
-        cfg.resolvers = compactArray(c.getSegmentationResolvers());
-        cfg.checkFreq = c.getSegmentCheckFrequency();
-        cfg.waitOnStart = c.isWaitForSegmentOnStart();
-        cfg.passRequired = c.isAllSegmentationResolversPassRequired();
-
-        return cfg;
+    /**
+     * Create data transfer object for node segmentation configuration properties.
+     *
+     * @param c Grid configuration.
+     */
+    public VisorSegmentationConfiguration(IgniteConfiguration c) {
+        plc = c.getSegmentationPolicy();
+        resolvers = compactArray(c.getSegmentationResolvers());
+        checkFreq = c.getSegmentCheckFrequency();
+        waitOnStart = c.isWaitForSegmentOnStart();
+        allResolversPassReq = c.isAllSegmentationResolversPassRequired();
     }
 
     /**
      * @return Segmentation policy.
      */
-    public SegmentationPolicy policy() {
+    public SegmentationPolicy getPolicy() {
         return plc;
     }
 
     /**
      * @return Segmentation resolvers.
      */
-    @Nullable public String resolvers() {
+    @Nullable public String getResolvers() {
         return resolvers;
     }
 
     /**
      * @return Frequency of network segment check by discovery manager.
      */
-    public long checkFrequency() {
+    public long getCheckFrequency() {
         return checkFreq;
     }
 
     /**
      * @return Whether or not node should wait for correct segment on start.
      */
-    public boolean waitOnStart() {
+    public boolean isWaitOnStart() {
         return waitOnStart;
     }
 
     /**
      * @return Whether or not all resolvers should succeed for node to be in correct segment.
      */
-    public boolean passRequired() {
-        return passRequired;
+    public boolean isAllSegmentationResolversPassRequired() {
+        return allResolversPassReq;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeEnum(out, plc);
+        U.writeString(out, resolvers);
+        out.writeLong(checkFreq);
+        out.writeBoolean(waitOnStart);
+        out.writeBoolean(allResolversPassReq);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        plc = SegmentationPolicy.fromOrdinal(in.readByte());
+        resolvers = U.readString(in);
+        checkFreq = in.readLong();
+        waitOnStart = in.readBoolean();
+        allResolversPassReq = in.readBoolean();
     }
 
     /** {@inheritDoc} */

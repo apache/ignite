@@ -3402,8 +3402,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         checkSize(F.asSet("key1", "key2", "key3"));
 
-        atomicClockModeDelay(cache);
-
         IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
         if (async) {
@@ -3429,8 +3427,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         cache.put("key2", 2);
         cache.put("key3", 3);
 
-        atomicClockModeDelay(cache);
-
         if (async) {
             if (oldAsync) {
                 IgniteCache asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
@@ -3453,8 +3449,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         for (int i = 0; i < entryCnt; i++)
             assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
-
-        atomicClockModeDelay(cache);
 
         if (async) {
             if (oldAsync) {

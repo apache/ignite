@@ -84,8 +84,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         c0.putAll(putMap);
 
-        atomicClockModeDelay(c0);
-
         c1.removeAll(new HashSet<>(putMap.keySet()));
 
         for (int i = 0; i < size; i++) {
@@ -120,8 +118,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
-
-        atomicClockModeDelay(prj0);
 
         info(">>> Before second put.");
 

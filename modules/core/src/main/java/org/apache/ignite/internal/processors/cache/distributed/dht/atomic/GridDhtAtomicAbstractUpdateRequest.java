@@ -56,6 +56,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
     /** */
     private static final int DHT_ATOMIC_REPLY_WITHOUT_DELAY = 0x10;
 
+    /** */
+    protected static final int DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK = 0x20;
+
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -341,6 +344,17 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
      * @return Key.
      */
     public abstract KeyCacheObject key(int idx);
+
+    /**
+     * @return Obsolete near cache keys size.
+     */
+    public abstract int obsoleteNearKeysSize();
+
+    /**
+     * @param idx Obsolete near cache key index.
+     * @return Obsolete near cache key.
+     */
+    public abstract KeyCacheObject obsoleteNearKey(int idx);
 
     /**
      * @param updCntr Update counter.

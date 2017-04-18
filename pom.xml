@@ -933,6 +933,13 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>ml</id>
+            <modules>
+                <module>modules/ml</module>
+            </modules>
+        </profile>
     </profiles>
 
     <build>

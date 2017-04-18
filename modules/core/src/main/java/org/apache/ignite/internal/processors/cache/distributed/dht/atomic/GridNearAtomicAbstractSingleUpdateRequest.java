@@ -47,7 +47,6 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
 
     /**
      * Constructor.
-     *
      * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futId Future ID.

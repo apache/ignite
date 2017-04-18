@@ -14,12 +14,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin ignite-form-field-input(name, model, disabled, required, placeholder)
+mixin ignite-field-input(type, name, model, disabled, required, placeholder)
     input.form-control(
         id=`{{ ${name} }}Input`
         name=`{{ ${name} }}`
         placeholder=placeholder
-        type='text'
+        type=type
 
         data-ng-model=model
 
@@ -29,24 +29,30 @@ mixin ignite-form-field-input(name, model, disabled, required, placeholder)
 
         data-ignite-form-panel-field=''
     )&attributes(attributes ? attributes.attributes ? attributes.attributes : attributes: {})
+
+mixin ignite-form-field-input(name, model, disabled, required, placeholder)
+    +ignite-field-input('text', name, model, disabled, required, placeholder)
 
 mixin ignite-form-field-url-input(name, model, disabled, required, placeholder)
-    input.form-control(
-        id=`{{ ${name} }}Input`
-        name=`{{ ${name} }}`
-        placeholder=placeholder
-        type='url'
-
-        data-ng-model=model
-
-        data-ng-required=required && `${required}`
-        data-ng-disabled=disabled && `${disabled}`
-        data-ng-focus='tableReset()'
-
-        data-ignite-form-panel-field=''
-    )&attributes(attributes ? attributes.attributes ? attributes.attributes : attributes: {})
+    +ignite-field-input('url', name, model, disabled, required, placeholder)
 
 mixin ignite-form-field-text(label, model, name, disabled, required, placeholder, tip)
+    -var errLbl = label.substring(0, label.length - 1)
+
+    .ignite-form-field
+        +ignite-form-field__label(label, name, required)
+        .ignite-form-field__control
+            +tooltip(tip, tipOpts)
+
+            if block
+                block
+
+            +form-field-feedback(name, 'required', errLbl + ' could not be empty!')
+
+            .input-tip
+                +ignite-form-field-input(name, model, disabled, required, placeholder)(attributes=attributes)
+
+mixin ignite-form-field-url(label, model, name, required, placeholder, tip)
     -var errLbl = label.substring(0, label.length - 1)
 
     .ignite-form-field
@@ -58,6 +64,25 @@ mixin ignite-form-field-text(label, model, name, disabled, required, placeholder
                 block
 
             +form-field-feedback(name, 'required', errLbl + ' could not be empty!')
+            +form-field-feedback(name, 'url', errLbl + ' should be a valid URL!')
 
             .input-tip
-                +ignite-form-field-input(name, model, disabled, required, placeholder)(attributes=attributes)
+                +ignite-form-field-url-input(name, model, false, required, placeholder)(attributes=attributes)
+
+mixin ignite-form-field-url(label, model, name, required, placeholder, tip)
+    -var errLbl = label.substring(0, label.length - 1)
+
+    .ignite-form-field
+        +ignite-form-field__label(label, name, required)
+        .ignite-form-field__control
+            if tip
+                i.tipField.icon-help(bs-tooltip='' data-title=tip)
+
+            if block
+                block
+
+            +form-field-feedback(name, 'required', errLbl + ' could not be empty!')
+            +form-field-feedback(name, 'url', errLbl + ' should be a valid URL!')
+
+            .input-tip
+                +ignite-form-field-url-input(name, model, false, required, placeholder)(attributes=attributes)

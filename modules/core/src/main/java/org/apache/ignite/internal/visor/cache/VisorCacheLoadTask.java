@@ -26,7 +26,6 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -37,18 +36,18 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  */
 @GridInternal
 public class VisorCacheLoadTask extends
-    VisorOneNodeTask<GridTuple3<Set<String>, Long, Object[]>, Map<String, Integer>> {
+    VisorOneNodeTask<VisorCacheLoadTaskArg, Map<String, Integer>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCachesLoadJob job(GridTuple3<Set<String>, Long, Object[]> arg) {
+    @Override protected VisorCachesLoadJob job(VisorCacheLoadTaskArg arg) {
         return new VisorCachesLoadJob(arg, debug);
     }
 
     /** Job that load caches. */
     private static class VisorCachesLoadJob extends
-        VisorJob<GridTuple3<Set<String>, Long, Object[]>, Map<String, Integer>> {
+        VisorJob<VisorCacheLoadTaskArg, Map<String, Integer>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -56,18 +55,17 @@ public class VisorCacheLoadTask extends
          * @param arg Cache names, ttl and loader arguments.
          * @param debug Debug flag.
          */
-        private VisorCachesLoadJob(GridTuple3<Set<String>, Long, Object[]> arg, boolean debug) {
+        private VisorCachesLoadJob(VisorCacheLoadTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, Integer> run(GridTuple3<Set<String>, Long, Object[]> arg) {
-            Set<String> cacheNames = arg.get1();
-            Long ttl = arg.get2();
-            Object[] ldrArgs = arg.get3();
+        @Override protected Map<String, Integer> run(VisorCacheLoadTaskArg arg) {
+            Set<String> cacheNames = arg.getCacheNames();
+            long ttl = arg.getTtl();
+            Object[] ldrArgs = arg.getLdrArgs();
 
             assert cacheNames != null && !cacheNames.isEmpty();
-            assert ttl != null;
 
             Map<String, Integer> res = U.newHashMap(cacheNames.size());
 
