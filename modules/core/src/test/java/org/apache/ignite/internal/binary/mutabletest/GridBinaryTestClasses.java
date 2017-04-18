@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
@@ -142,6 +143,9 @@ public class GridBinaryTestClasses {
         public Integer i_;
 
         /** */
+        public BigInteger bi_;
+
+        /** */
         public Long l_;
 
         /** */
@@ -149,6 +153,9 @@ public class GridBinaryTestClasses {
 
         /** */
         public Double d_;
+
+        /** */
+        public BigDecimal bd_;
 
         /** */
         public Character c_;
@@ -267,9 +274,11 @@ public class GridBinaryTestClasses {
             b_ = 11;
             s_ = 22;
             i_ = 33;
+            bi_ = new BigInteger("33000000000000");
             l_ = 44L;
             f_ = 55f;
             d_ = 66d;
+            bd_ = new BigDecimal("33000000000000.123456789");
             c_ = 'e';
             z_ = true;
 

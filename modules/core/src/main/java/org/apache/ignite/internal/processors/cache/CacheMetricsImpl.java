@@ -149,18 +149,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getOverflowSize() {
-        try {
-            GridCacheAdapter<?, ?> cache = cctx.cache();
-
-            return cache != null ? cache.overflowSize() : -1;
-        }
-        catch (IgniteCheckedException ignored) {
-            return -1;
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public long getOffHeapGets() {
         return offHeapGets.get();
     }
@@ -222,7 +210,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
         try {
-            return cctx.swap().offheapEntriesCount(true, false, cctx.affinity().affinityTopologyVersion());
+            return cctx.offheap().entriesCount(true, false, cctx.affinity().affinityTopologyVersion());
         }
         catch (IgniteCheckedException ignored) {
             return 0;
@@ -232,7 +220,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
         try {
-            return cctx.swap().offheapEntriesCount(false, true, cctx.affinity().affinityTopologyVersion());
+            return cctx.offheap().entriesCount(false, true, cctx.affinity().affinityTopologyVersion());
         }
         catch (IgniteCheckedException ignored) {
             return 0;
@@ -248,74 +236,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffHeapMaxSize() {
-        return cctx.config().getOffHeapMaxMemory();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapGets() {
-        return swapGets.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapPuts() {
-        return swapPuts.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapRemovals() {
-        return swapRemoves.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapHits() {
-        return swapHits.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapMisses() {
-        return swapMisses.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapEntriesCount() {
-        try {
-            return cctx.cache().swapKeys();
-        }
-        catch (IgniteCheckedException ignored) {
-            return 0;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapSize() {
-        try {
-            return cctx.cache().swapSize();
-        }
-        catch (IgniteCheckedException ignored) {
-            return 0;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapHitPercentage() {
-        long hits0 = swapHits.get();
-        long gets0 = swapGets.get();
-
-        if (hits0 == 0)
-            return 0;
-
-        return (float) hits0 / gets0 * 100.0f;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapMissPercentage() {
-        long misses0 = swapMisses.get();
-        long reads0 = swapGets.get();
-
-        if (misses0 == 0)
-            return 0;
-
-        return (float) misses0 / reads0 * 100.0f;
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -339,14 +260,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getDhtEvictQueueCurrentSize() {
-        GridCacheContext<?, ?> ctx = cctx.isNear() ? dhtCtx : cctx;
-
-        if (ctx == null)
-            return -1;
-
-        GridCacheEvictionManager evictMgr = ctx.evicts();
-
-        return evictMgr != null ? evictMgr.evictQueueSize() : -1;
+        return -1;
     }
 
     /** {@inheritDoc} */
@@ -799,6 +713,14 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ccfg != null && ccfg.isManagementEnabled();
     }
 
+    public long getTotalAllocatedPages() {
+        return 0;
+    }
+
+    public long getTotalEvictedPages() {
+        return 0;
+    }
+
     /**
      * Off-heap read callback.
      *
@@ -844,61 +766,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.onOffHeapEvict();
-    }
-
-    /**
-     * Swap read callback.
-     *
-     * @param hit Hit or miss flag.
-     */
-    public void onSwapRead(boolean hit) {
-        swapGets.incrementAndGet();
-
-        if (hit)
-            swapHits.incrementAndGet();
-        else
-            swapMisses.incrementAndGet();
-
-        if (delegate != null)
-            delegate.onSwapRead(hit);
-    }
-
-    /**
-     * Swap write callback.
-     */
-    public void onSwapWrite() {
-        onSwapWrite(1);
-    }
-
-    /**
-     * Swap write callback.
-     *
-     * @param cnt Amount of entries.
-     */
-    public void onSwapWrite(int cnt) {
-        swapPuts.addAndGet(cnt);
-
-        if (delegate != null)
-            delegate.onSwapWrite(cnt);
-    }
-
-    /**
-     * Swap remove callback.
-     */
-    public void onSwapRemove() {
-        onSwapRemove(1);
-    }
-
-    /**
-     * Swap remove callback.
-     *
-     * @param cnt Amount of entries.
-     */
-    public void onSwapRemove(int cnt) {
-        swapRemoves.addAndGet(cnt);
-
-        if (delegate != null)
-            delegate.onSwapRemove(cnt);
     }
 
     /** {@inheritDoc} */

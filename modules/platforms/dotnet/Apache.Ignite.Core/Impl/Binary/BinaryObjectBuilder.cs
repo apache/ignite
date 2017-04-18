@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly IBinaryTypeDescriptor _desc;
 
         /** Values. */
-        private IDictionary<string, BinaryBuilderField> _vals;
+        private SortedDictionary<string, BinaryBuilderField> _vals;
 
         /** Contextual fields. */
         private IDictionary<int, BinaryBuilderField> _cache;
@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private IBinaryObjectBuilder SetField0(string fieldName, BinaryBuilderField val)
         {
             if (_vals == null)
-                _vals = new Dictionary<string, BinaryBuilderField>();
+                _vals = new SortedDictionary<string, BinaryBuilderField>();
 
             _vals[fieldName] = val;
 
@@ -722,12 +722,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                             if (changeHash)
                             {
                                 // Get from identity resolver.
-                                var comparer = BinaryUtils.GetEqualityComparer(_desc);
-
-                                outHash = comparer.GetHashCode(outStream,
+                                outHash = BinaryArrayEqualityComparer.GetHashCode(outStream,
                                     outStartPos + BinaryObjectHeader.Size,
-                                    schemaPos - outStartPos - BinaryObjectHeader.Size,
-                                    outSchema, outSchemaId, _binary.Marshaller, _desc);
+                                    schemaPos - outStartPos - BinaryObjectHeader.Size);
                             }
 
                             var outHeader = new BinaryObjectHeader(inHeader.TypeId, outHash, outLen, 

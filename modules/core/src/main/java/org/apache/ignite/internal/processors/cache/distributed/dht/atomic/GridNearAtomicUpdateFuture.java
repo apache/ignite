@@ -132,11 +132,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         int remapCnt,
         boolean waitTopFut
     ) {
         super(cctx, cache, syncMode, op, invokeArgs, retval, rawRetval, expiryPlc, filter, subjId, taskNameHash,
-            skipStore, keepBinary, remapCnt, waitTopFut);
+            skipStore, keepBinary, recovery, remapCnt, waitTopFut);
 
         assert vals == null || vals.size() == keys.size();
         assert conflictPutVals == null || conflictPutVals.size() == keys.size();
@@ -151,9 +152,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
     /** {@inheritDoc} */
     @Override public long id() {
-        synchronized (mux) {
-            return futId;
-        }
+        return futId;
     }
 
     /** {@inheritDoc} */
@@ -166,7 +165,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         List<GridNearAtomicCheckUpdateRequest> checkReqs = null;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (futId == 0)
                 return false;
 
@@ -299,7 +298,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         CachePartialUpdateCheckedException err0;
         AffinityTopologyVersion remapTopVer0;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (futId == 0 || futId != res.futureId())
                 return;
 
@@ -372,7 +371,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         boolean rcvAll;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (futId == 0 || futId != res.futureId())
                 return;
 
@@ -534,7 +533,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @return Non null topology version if update should be remapped.
      */
     @Nullable private AffinityTopologyVersion onAllReceived() {
-        assert Thread.holdsLock(mux);
+        assert Thread.holdsLock(this);
         assert futId > 0;
 
         AffinityTopologyVersion remapTopVer0 = null;
@@ -653,7 +652,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         GridDhtTopologyFuture fut = cache.topology().topologyVersionFuture();
 
         if (fut.isDone()) {
-            Throwable err = fut.validateCache(cctx);
+            Throwable err = fut.validateCache(cctx, recovery, false, null, keys);
 
             if (err != null) {
                 onDone(err);
@@ -801,7 +800,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 }
             }
 
-            synchronized (mux) {
+            synchronized (this) {
                 assert this.futId == 0 : this;
                 assert this.topVer == AffinityTopologyVersion.ZERO : this;
 
@@ -866,7 +865,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         boolean rcvAll = false;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (this.futId == 0 || this.futId != futId)
                 return;
 
@@ -938,7 +937,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     private Long onFutureDone() {
         Long id0;
 
-        synchronized (mux) {
+        synchronized (this) {
             id0 = futId;
 
             futId = 0;
@@ -1063,6 +1062,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     needPrimaryRes,
                     skipStore,
                     keepBinary,
+                    recovery,
                     cctx.deploymentEnabled(),
                     keys.size());
 
@@ -1168,6 +1168,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             needPrimaryRes,
             skipStore,
             keepBinary,
+            recovery,
             cctx.deploymentEnabled(),
             1);
 
@@ -1181,9 +1182,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    public String toString() {
-        synchronized (mux) {
-            return S.toString(GridNearAtomicUpdateFuture.class, this, super.toString());
-        }
+    public synchronized String toString() {
+        return S.toString(GridNearAtomicUpdateFuture.class, this, super.toString());
     }
 }

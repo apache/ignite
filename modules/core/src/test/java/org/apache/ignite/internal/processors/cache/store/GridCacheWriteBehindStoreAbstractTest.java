@@ -92,7 +92,6 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         cc.setCacheStoreFactory(singletonFactory(store));

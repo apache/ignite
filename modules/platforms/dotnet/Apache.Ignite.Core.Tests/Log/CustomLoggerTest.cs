@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests.Log
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Resource;
@@ -58,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Log
             using (var ignite = Ignition.Start(cfg))
             {
                 // Check injection
-                Assert.AreEqual(((Ignite) ignite).Proxy, ((TestLogger) cfg.Logger).Ignite);
+                Assert.AreEqual(ignite, ((TestLogger) cfg.Logger).Ignite);
 
                 // Check initial message
                 Assert.IsTrue(TestLogger.Entries[0].Message.StartsWith("Starting Ignite.NET"));
@@ -112,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Log
             Assert.Throws<IgniteException>(() =>
                 Ignition.Start(new IgniteConfiguration(GetConfigWithLogger())
                 {
-                    LifecycleBeans = new[] {new FailBean()}
+                    LifecycleHandlers = new[] {new FailBean()}
                 }));
 
             var err = TestLogger.Entries.First(x => x.Level == LogLevel.Error);
@@ -137,6 +136,7 @@ namespace Apache.Ignite.Core.Tests.Log
                 TestUtils.WaitForCondition(() => TestLogger.Entries.Any(x => x.Exception != null), 3000);
 
                 var errFromJava = TestLogger.Entries.Single(x => x.Exception != null);
+                Assert.IsNotNull(errFromJava.Exception.InnerException);
                 Assert.AreEqual("Error in func.", ((ArithmeticException) errFromJava.Exception.InnerException).Message);
             }
         }
@@ -426,7 +426,7 @@ namespace Apache.Ignite.Core.Tests.Log
         /// <summary>
         /// Failing lifecycle bean.
         /// </summary>
-        private class FailBean : ILifecycleBean
+        private class FailBean : ILifecycleHandler
         {
             public void OnLifecycleEvent(LifecycleEventType evt)
             {

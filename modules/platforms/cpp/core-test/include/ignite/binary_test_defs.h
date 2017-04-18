@@ -158,12 +158,7 @@ namespace ignite
                 return GetBinaryStringHashCode(name);
             }
 
-            static int32_t GetHashCode(const gt::BinaryDummy& obj)
-            {
-                return 0;
-            }
-
-            static bool IsNull(const gt::BinaryDummy& obj)
+            static bool IsNull(const gt::BinaryInner& obj)
             {
                 return false;
             }
@@ -187,7 +182,7 @@ namespace ignite
         template<> 
         struct BinaryType<gt::BinaryInner>
         {
-            static int32_t GetTypeId() 
+            static int32_t GetTypeId()
             { 
                 return GetBinaryStringHashCode("BinaryInner"); 
             }
@@ -197,14 +192,9 @@ namespace ignite
                 dst = "BinaryInner";
             }
 
-            static int32_t GetFieldId(const char* name) 
+            static int32_t GetFieldId(const char* name)
             { 
                 return GetBinaryStringHashCode(name); 
-            }
-
-            static int32_t GetHashCode(const gt::BinaryInner& obj)
-            {
-                return obj.GetValue();
             }
 
             static bool IsNull(const gt::BinaryInner& obj)
@@ -248,11 +238,6 @@ namespace ignite
                 return GetBinaryStringHashCode(name);
             }
 
-            static int32_t GetHashCode(const gt::BinaryOuter& obj)
-            {
-                return obj.GetValue() + obj.GetInner().GetValue();
-            }
-
             static bool IsNull(const gt::BinaryOuter& obj)
             {
                 return obj.GetValue() == 0 && obj.GetInner().GetValue();
@@ -294,11 +279,6 @@ namespace ignite
             static int32_t GetFieldId(const char* name)
             {
                 return GetBinaryStringHashCode(name);
-            }
-
-            static int32_t GetHashCode(const gt::BinaryFields& obj)
-            {
-                return obj.val1 + obj.val2 + obj.rawVal1 + obj.rawVal2;
             }
 
             static bool IsNull(const gt::BinaryFields& obj)
@@ -352,11 +332,6 @@ namespace ignite
             static int32_t GetFieldId(const char* name)
             {
                 return GetBinaryStringHashCode(name);
-            }
-
-            static int32_t GetHashCode(const gt::PureRaw& obj)
-            {
-                return GetBinaryStringHashCode(obj.val1.c_str()) ^ obj.val2;
             }
 
             static bool IsNull(const gt::PureRaw& obj)

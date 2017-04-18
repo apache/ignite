@@ -49,4 +49,11 @@ public interface GridQueryIndexDescriptor {
      * @return Type.
      */
     public QueryIndexType type();
+
+    /**
+     * Gets inline size for SORTED index.
+     *
+     * @return Inline size.
+     */
+    public int inlineSize();
 }

@@ -28,44 +28,7 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="localHost" value="127.0.0.1"/>
-        <property name="connectorConfiguration"><null/></property>
+    <import resource="cache-store-default.xml"/>
 
-        <property name="cacheConfiguration">
-            <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="cache1"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <property name="cacheStoreFactory">
-                        <bean class="org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy.MapStoreFactory"/>
-                    </property>
-
-                    <property name="writeBehindEnabled" value="false"/>
-
-                    <property name="readThrough" value="false"/>
-                    <property name="writeThrough" value="true"/>
-                </bean>
-            </list>
-        </property>
-
-        <property name="discoverySpi">
-            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-                <property name="ipFinder">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                        <property name="addresses">
-                            <list>
-                                <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500</value>
-                            </list>
-                        </property>
-                    </bean>
-                </property>
-                <property name="socketTimeout" value="300" />
-            </bean>
-        </property>
-    </bean>
+    <bean parent="grid.cfg"/>
 </beans>

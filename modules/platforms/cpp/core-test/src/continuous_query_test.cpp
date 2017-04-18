@@ -265,7 +265,6 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestEntry)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestEntry)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(TestEntry)
             IGNITE_BINARY_IS_NULL_FALSE(TestEntry)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(TestEntry)
 
@@ -295,11 +294,6 @@ namespace ignite
             }
 
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-
-            static int32_t GetHashCode(const RangeFilter<K,V>&)
-            {
-                return 0;
-            }
 
             static bool IsNull(const RangeFilter<K,V>&)
             {
@@ -339,7 +333,11 @@ struct ContinuousQueryTestSuiteFixture
      * Constructor.
      */
     ContinuousQueryTestSuiteFixture() :
+#ifdef IGNITE_TESTS_32
+        node(ignite_test::StartNode("cache-query-continuous-32.xml", "node-01")),
+#else
         node(ignite_test::StartNode("cache-query-continuous.xml", "node-01")),
+#endif
         cache(node.GetCache<int, TestEntry>("transactional_no_backup"))
     {
         // No-op.
@@ -369,6 +367,13 @@ void CheckEvents(Cache<int, TestEntry>& cache, Listener<int, TestEntry>& lsnr)
 
     cache.Remove(1);
     lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
+}
+
+IGNITE_EXPORTED_CALL void IgniteModuleInit0(ignite::IgniteBindingContext& context)
+{
+    IgniteBinding binding = context.GetBingding();
+
+    binding.RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
 }
 
 BOOST_FIXTURE_TEST_SUITE(ContinuousQueryTestSuite, ContinuousQueryTestSuiteFixture)
@@ -677,8 +682,6 @@ BOOST_AUTO_TEST_CASE(TestPublicPrivateConstantsConsistence)
 
 BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
 {
-    node.GetBinding().RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
-
     Listener<int, TestEntry> lsnr;
     RangeFilter<int, TestEntry> filter(100, 150);
 
@@ -716,10 +719,13 @@ BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
 
 BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
 {
+#ifdef IGNITE_TESTS_32
+    Ignite node2 = ignite_test::StartNode("cache-query-continuous-32.xml", "node-02");
+    Ignite node3 = ignite_test::StartNode("cache-query-continuous-32.xml", "node-03");
+#else
     Ignite node2 = ignite_test::StartNode("cache-query-continuous.xml", "node-02");
     Ignite node3 = ignite_test::StartNode("cache-query-continuous.xml", "node-03");
-
-    node.GetBinding().RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
+#endif
 
     Listener<int, TestEntry> lsnr;
     RangeFilter<int, TestEntry> filter(100, 150);

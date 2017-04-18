@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -71,13 +70,20 @@ public class GridCacheNearTxForceKeyTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startGrid(1);
 
+        awaitPartitionMapExchange();
+
         // This key should become primary for ignite1.
-        final Integer key = ignite0.configuration().getMarshaller() instanceof OptimizedMarshaller ? 2 : 7;
+        final Integer key = primaryKey(ignite1.cache(null));
 
         assertNull(cache.getAndPut(key, key));
 
-        awaitPartitionMapExchange();
-
         assertTrue(ignite0.affinity(null).isPrimary(ignite1.cluster().localNode(), key));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        stopAllGrids();
     }
 }

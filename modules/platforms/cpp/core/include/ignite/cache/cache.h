@@ -95,7 +95,7 @@ namespace ignite
 
             /**
              * Checks whether this cache contains no key-value mappings.
-             * Semantically equals to Cache.Size(IGNITE_PEEK_MODE_PRIMARY) == 0.
+             * Semantically equals to Cache.Size(CachePeekMode::PRIMARY) == 0.
              *
              * This method should only be used on the valid instance.
              *
@@ -114,7 +114,7 @@ namespace ignite
 
             /**
              * Checks whether this cache contains no key-value mappings.
-             * Semantically equals to Cache.Size(IGNITE_PEEK_MODE_PRIMARY) == 0.
+             * Semantically equals to Cache.Size(CachePeekMode::PRIMARY) == 0.
              *
              * This method should only be used on the valid instance.
              *
@@ -1256,7 +1256,7 @@ namespace ignite
              */
             int32_t LocalSize()
             {
-                return LocalSize(IGNITE_PEEK_MODE_ALL);
+                return LocalSize(CachePeekMode::ALL);
             }
 
             /**
@@ -1269,7 +1269,7 @@ namespace ignite
              */
             int32_t LocalSize(IgniteError& err)
             {
-                return LocalSize(IGNITE_PEEK_MODE_ALL, err);
+                return LocalSize(CachePeekMode::ALL, err);
             }
 
             /**
@@ -1315,7 +1315,7 @@ namespace ignite
              */
             int32_t Size()
             {
-                return Size(ignite::cache::IGNITE_PEEK_MODE_ALL);
+                return Size(ignite::cache::CachePeekMode::ALL);
             }
 
             /**
@@ -1329,7 +1329,7 @@ namespace ignite
              */
             int32_t Size(IgniteError& err)
             {
-                return Size(ignite::cache::IGNITE_PEEK_MODE_ALL, err);
+                return Size(ignite::cache::CachePeekMode::ALL, err);
             }
 
             /**

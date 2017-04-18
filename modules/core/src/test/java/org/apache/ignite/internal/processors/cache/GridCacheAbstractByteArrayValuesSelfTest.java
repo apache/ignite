@@ -30,12 +30,6 @@ public abstract class GridCacheAbstractByteArrayValuesSelfTest extends GridCommo
     /** Regular cache name. */
     protected static final String CACHE_REGULAR = "cache";
 
-    /** Offheap cache name. */
-    protected static final String CACHE_OFFHEAP = "cache_offheap";
-
-    /** Offheap tiered cache name. */
-    protected static final String CACHE_OFFHEAP_TIERED = "cache_offheap_tiered";
-
     /** Key 1. */
     protected static final Integer KEY_1 = 1;
 

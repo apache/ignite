@@ -105,6 +105,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Skip values flag. */
     private boolean skipVals;
 
+    /** Recovery context flag. */
+    private final boolean recovery;
+
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -129,7 +132,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean skipVals
+        boolean skipVals,
+        boolean recovery
     ) {
         assert reader != null;
         assert key != null;
@@ -145,6 +149,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.taskNameHash = taskNameHash;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
+        this.recovery = recovery;
 
         futId = IgniteUuid.randomUuid();
 
@@ -359,7 +364,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 taskName,
                 expiryPlc,
                 skipVals,
-                /*can remap*/true);
+                /*can remap*/true,
+                recovery);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -384,7 +390,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 taskName,
                                 expiryPlc,
                                 skipVals,
-                                /*can remap*/true);
+                                /*can remap*/true,
+                                recovery);
 
                         fut0.listen(createGetFutureListener());
                     }
