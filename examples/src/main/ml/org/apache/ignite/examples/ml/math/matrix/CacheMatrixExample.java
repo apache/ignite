@@ -21,11 +21,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.math.IdentityValueMapper;
-import org.apache.ignite.math.MatrixKeyMapper;
-import org.apache.ignite.math.ValueMapper;
-import org.apache.ignite.math.functions.Functions;
-import org.apache.ignite.math.impls.matrix.CacheMatrix;
+import org.apache.ignite.ml.math.IdentityValueMapper;
+import org.apache.ignite.ml.math.MatrixKeyMapper;
+import org.apache.ignite.ml.math.ValueMapper;
+import org.apache.ignite.ml.math.functions.Functions;
+import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 
 /** */
 public class CacheMatrixExample {
