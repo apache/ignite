@@ -59,7 +59,6 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -98,7 +97,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -967,61 +965,6 @@ public final class GridTestUtils {
             throw new Exception("Ignite home is not a directory [ignite-home=" + dir.getAbsolutePath() + ']');
 
         return ggHome;
-    }
-
-    /**
-     * @return Name of current test based on stack trace. Works when called from JUnit thread and from test method.
-     */
-    public static String getGridTestName() {
-        List<StackTraceElement> trace = Arrays.asList(Thread.currentThread().getStackTrace());
-
-        Collections.reverse(trace);
-
-        int i = 0;
-
-        for (; i < trace.size(); i++) {
-            StackTraceElement e = trace.get(i);
-
-            if (e.getClassName().equals(TestCase.class.getName()) && e.getMethodName().equals("runTest"))
-                break;
-        }
-
-        if (++i >= trace.size())
-            throw new RuntimeException("JUnit TestCase.runTest not found on stack trace");
-
-        for (; i < trace.size() - 1; i++) {
-            StackTraceElement e = trace.get(i);
-
-            String clsName = e.getClassName();
-
-            // Skip reflection related stuff
-            if (!clsName.startsWith("java.lang.") && !clsName.startsWith("sun.reflect."))
-                break;
-        }
-
-        if (i == trace.size())
-            throw new RuntimeException("Non JDK related method not found on stack trace");
-
-        StackTraceElement e = trace.get(i);
-
-        Class<?> cls;
-
-        try {
-            cls = Class.forName(e.getClassName());
-        }
-        catch (ClassNotFoundException ex) {
-            throw new RuntimeException(ex);
-        }
-
-        if (!GridAbstractTest.class.isAssignableFrom(cls))
-            throw new RuntimeException("Grid test not found on stack trace");
-
-        String mtdName = e.getMethodName();
-
-        if (!mtdName.startsWith("test"))
-            throw new RuntimeException("GridTestUtils.getGridTestName must be called from test method");
-
-        return mtdName.substring(4);
     }
 
     /**

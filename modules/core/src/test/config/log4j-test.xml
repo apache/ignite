@@ -108,12 +108,6 @@
     </category>
     -->
 
-    <!--
-	<category name="org.apache.ignite.internal.processors.query">
-        <level value="DEBUG"/>
-    </category>
-    -->
-	
     <!-- Disable all open source debugging. -->
     <category name="org">
         <level value="INFO"/>
