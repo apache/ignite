@@ -33,7 +33,6 @@ import org.apache.ignite.igfs.mapreduce.IgfsTask;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 
@@ -77,7 +76,7 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      *
      * @return IGFS name.
      */
-    @NotNull public String name();
+    public String name();
 
     /**
      * Gets IGFS configuration.

@@ -27,7 +27,6 @@ import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.X;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -56,12 +55,12 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfs(@NotNull String name) {
+    @Nullable @Override public IgniteFileSystem igfs(String name) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IpcServerEndpoint> endpoints(@NotNull String name) {
+    @Override public Collection<IpcServerEndpoint> endpoints(String name) {
         return Collections.emptyList();
     }
 

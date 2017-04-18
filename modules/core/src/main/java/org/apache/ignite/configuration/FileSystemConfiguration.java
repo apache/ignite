@@ -17,7 +17,6 @@
 
 package org.apache.ignite.configuration;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;

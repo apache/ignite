@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -109,7 +108,7 @@ public interface IgniteEx extends Ignite {
      * @param name IGFS name.
      * @return IGFS.
      */
-    @Nullable public IgniteFileSystem igfsx(@NotNull String name);
+    @Nullable public IgniteFileSystem igfsx(String name);
 
     /**
      * Get Hadoop facade.

@@ -39,7 +39,6 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -216,7 +215,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public String name() {
+    @Override public String name() {
         return igfs.name();
     }
 

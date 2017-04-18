@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteClosure;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -248,14 +246,20 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteFileSystem igfs(@NotNull String name) {
+    @Override @Nullable public IgniteFileSystem igfs(String name) {
+        if (name == null)
+            throw new NullPointerException("IGFS name mustn't be null");
+
         IgfsContext igfsCtx = igfsCache.get(name);
 
         return igfsCtx == null ? null : igfsCtx.igfs();
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<IpcServerEndpoint> endpoints(@NotNull String name) {
+    @Override @Nullable public Collection<IpcServerEndpoint> endpoints(String name) {
+        if (name == null)
+            throw new NullPointerException("IGFS name mustn't be null");
+
         IgfsContext igfsCtx = igfsCache.get(name);
 
         return igfsCtx == null ? Collections.<IpcServerEndpoint>emptyList() : igfsCtx.server().endpoints();
