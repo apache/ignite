@@ -276,6 +276,31 @@
                 </plugins>
             </build>
 
+        </profile>
+
+        <profile>
+            <id>ml</id>
+
+            <properties>
+                <ml.folder>src/main/ml</ml.folder>
+            </properties>
+
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
