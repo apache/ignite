@@ -57,7 +57,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -143,7 +142,7 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(@NotNull String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(String name) {
         return F.eq(name, igfs.name()) ? igfs : null;
     }
 
@@ -403,7 +402,7 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFileSystem fileSystem(@NotNull String name) {
+    @Override public IgniteFileSystem fileSystem(String name) {
         IgniteFileSystem res = igfsx(name);
 
         if (res == null)

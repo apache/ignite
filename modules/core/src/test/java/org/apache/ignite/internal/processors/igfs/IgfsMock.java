@@ -34,7 +34,6 @@ import org.apache.ignite.igfs.mapreduce.IgfsTask;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
@@ -158,7 +157,7 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public String name() {
+    @Override public String name() {
         return name;
     }
 

@@ -87,6 +87,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         // Start IGFS instances.
         for (FileSystemConfiguration cfg : cfgs) {
+            assert cfg.getName() != null;
+
             FileSystemConfiguration cfg0 = new FileSystemConfiguration(cfg);
 
             boolean metaClient = true;

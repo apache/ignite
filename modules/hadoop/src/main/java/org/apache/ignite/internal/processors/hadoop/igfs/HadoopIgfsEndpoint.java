@@ -30,7 +30,6 @@ import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -179,7 +178,7 @@ public class HadoopIgfsEndpoint {
     /**
      * @return IGFS name.
      */
-    @NotNull public String igfs() {
+    public String igfs() {
         return igfsName;
     }
 

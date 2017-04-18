@@ -83,7 +83,6 @@ import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -388,7 +387,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(@NotNull String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(String name) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
