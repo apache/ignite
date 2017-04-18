@@ -41,20 +41,6 @@ public class SchemaKey {
         this.depId = depId;
     }
 
-    /**
-     * @return Space.
-     */
-    public String space() {
-        return space;
-    }
-
-    /**
-     * @return Deployment ID.
-     */
-    public IgniteUuid deploymentId() {
-        return depId;
-    }
-
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return 31 * (space != null ? space.hashCode() : 0) + depId.hashCode();

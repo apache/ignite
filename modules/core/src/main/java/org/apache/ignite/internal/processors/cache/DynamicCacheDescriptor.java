@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;

@@ -110,7 +110,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
-import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_SCHEMA;
+import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
 
@@ -228,7 +228,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.start(ctx, busyLock);
         }
 
-        ctx.io().addMessageListener(TOPIC_CACHE_SCHEMA, ioLsnr);
+        ctx.io().addMessageListener(TOPIC_SCHEMA, ioLsnr);
 
         // Schedule queries detail metrics eviction.
         qryDetailMetricsEvictTask = ctx.timeout().schedule(new Runnable() {
@@ -263,7 +263,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
-        ctx.io().removeMessageListener(TOPIC_CACHE_SCHEMA, ioLsnr);
+        ctx.io().removeMessageListener(TOPIC_SCHEMA, ioLsnr);
 
         if (idx != null)
             idx.stop();
@@ -2205,7 +2205,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // Messages must go to dedicated schema pool. We cannot push them to query pool because in this case
             // they could be blocked with other query requests.
-            ctx.io().sendToGridTopic(destNodeId, TOPIC_CACHE_SCHEMA, msg, SCHEMA_POOL);
+            ctx.io().sendToGridTopic(destNodeId, TOPIC_SCHEMA, msg, SCHEMA_POOL);
         }
         catch (IgniteCheckedException e) {
             if (log.isDebugEnabled())
