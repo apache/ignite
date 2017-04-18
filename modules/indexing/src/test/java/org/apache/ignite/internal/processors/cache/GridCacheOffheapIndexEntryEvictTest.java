@@ -35,7 +35,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -63,11 +62,8 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setOffHeapMaxMemory(0);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setMemoryMode(OFFHEAP_TIERED);
         cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setSqlOnheapRowCacheSize(10);
         cacheCfg.setIndexedTypes(Integer.class, TestValue.class);
         cacheCfg.setNearConfiguration(null);
 

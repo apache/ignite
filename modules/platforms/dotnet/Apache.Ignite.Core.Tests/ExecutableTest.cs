@@ -32,8 +32,9 @@ namespace Apache.Ignite.Core.Tests
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for executable.
+    /// Tests for Apache.Ignite.exe.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ExecutableTest
     {
         /** Spring configuration path. */
@@ -440,7 +441,7 @@ namespace Apache.Ignite.Core.Tests
 
             public RemoteConfiguration Invoke()
             {
-                var grid0 = ((IgniteProxy) _grid).Target;
+                var grid0 = (Ignite) _grid;
 
                 var cfg = grid0.Configuration;
 

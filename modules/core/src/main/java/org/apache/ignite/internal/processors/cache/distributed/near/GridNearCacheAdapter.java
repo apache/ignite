@@ -39,10 +39,10 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheLocalConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
@@ -118,7 +118,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public void onReconnected() {
-        map = new GridCacheConcurrentMapImpl(
+        map = new GridCacheLocalConcurrentMap(
             ctx,
             entryFactory(),
             ctx.config().getNearConfiguration().getNearStartSize());
@@ -134,24 +134,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         return dht().preloader();
     }
 
-    /** {@inheritDoc} */
-    @Override public GridCacheMapEntry entryEx(KeyCacheObject key, boolean touch) {
-        GridNearCacheEntry entry = null;
-
-        while (true) {
-            try {
-                entry = (GridNearCacheEntry)super.entryEx(key, touch);
-
-                entry.initializeFromDht(ctx.affinity().affinityTopologyVersion());
-
-                return entry;
-            }
-            catch (GridCacheEntryRemovedException ignore) {
-                if (log.isDebugEnabled())
-                    log.debug("Got removed near entry while initializing from DHT entry (will retry): " + entry);
-            }
-        }
-    }
 
     /** {@inheritDoc} */
     @Override public GridCacheMapEntry entryEx(KeyCacheObject key, AffinityTopologyVersion topVer) {
@@ -398,11 +380,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         super.clearLocallyAll(keys, srv, near, readers);
 
         dht().clearLocallyAll(keys, srv, near, readers);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Cache.Entry<K, V> randomEntry() {
-        return ctx.affinityNode() && ctx.isNear() ? dht().randomEntry() : super.randomEntry();
     }
 
     /** {@inheritDoc} */

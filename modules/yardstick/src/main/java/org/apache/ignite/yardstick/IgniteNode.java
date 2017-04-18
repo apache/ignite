@@ -43,7 +43,6 @@ import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 
 /**
@@ -110,9 +109,6 @@ public class IgniteNode implements BenchmarkServer {
 
                 cc.setWriteSynchronizationMode(args.syncMode());
 
-                if (args.orderMode() != null)
-                    cc.setAtomicWriteOrderMode(args.orderMode());
-
                 cc.setBackups(args.backups());
 
                 if (args.restTcpPort() != 0) {
@@ -124,15 +120,6 @@ public class IgniteNode implements BenchmarkServer {
                         ccc.setHost(args.restTcpHost());
 
                     c.setConnectorConfiguration(ccc);
-                }
-
-                if (args.isOffHeap()) {
-                    cc.setOffHeapMaxMemory(0);
-
-                    if (args.isOffheapValues())
-                        cc.setMemoryMode(OFFHEAP_VALUES);
-                    else
-                        cc.setEvictionPolicy(new LruEvictionPolicy(50000));
                 }
 
                 cc.setReadThrough(args.isStoreEnabled());

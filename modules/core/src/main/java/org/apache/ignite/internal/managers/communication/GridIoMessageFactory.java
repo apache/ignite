@@ -45,8 +45,6 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheEvictionRequest;
-import org.apache.ignite.internal.processors.cache.GridCacheEvictionResponse;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
@@ -89,7 +87,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
@@ -120,8 +117,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
-import org.apache.ignite.internal.processors.clock.GridClockDeltaSnapshotMessage;
-import org.apache.ignite.internal.processors.clock.GridClockDeltaVersion;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
@@ -371,16 +366,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 14:
-                msg = new GridCacheEvictionRequest();
-
-                break;
-
-            case 15:
-                msg = new GridCacheEvictionResponse();
-
-                break;
-
             case 16:
                 msg = new GridCacheTxRecoveryRequest();
 
@@ -516,11 +501,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 45:
-                msg = new GridDhtPartitionSupplyMessage();
-
-                break;
-
             case 46:
                 msg = new GridDhtPartitionsFullMessage();
 
@@ -588,11 +568,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 59:
                 msg = new GridCacheQueryResponse();
-
-                break;
-
-            case 60:
-                msg = new GridClockDeltaSnapshotMessage();
 
                 break;
 
@@ -683,11 +658,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 82:
                 msg = new JobStealingRequest();
-
-                break;
-
-            case 83:
-                msg = new GridClockDeltaVersion();
 
                 break;
 
@@ -842,7 +812,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 114:
-                msg = new GridDhtPartitionSupplyMessageV2();
+                msg = new GridDhtPartitionSupplyMessage();
 
                 break;
 

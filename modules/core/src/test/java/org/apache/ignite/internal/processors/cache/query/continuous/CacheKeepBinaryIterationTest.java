@@ -22,7 +22,6 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -39,11 +38,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -92,27 +88,7 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAtomicOnHeap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            ONHEAP_TIERED
-        );
-
-        doTestScanQuery(ccfg, true, true);
-        doTestScanQuery(ccfg, true, false);
-        doTestScanQuery(ccfg, false, true);
-        doTestScanQuery(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffHeap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_TIERED
-        );
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC);
 
         doTestScanQuery(ccfg, true, true);
         doTestScanQuery(ccfg, true, false);
@@ -124,27 +100,7 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxOnHeap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED
-        );
-
-        doTestScanQuery(ccfg, true, true);
-        doTestScanQuery(ccfg, true, false);
-        doTestScanQuery(ccfg, false, true);
-        doTestScanQuery(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffHeap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED
-        );
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,1, TRANSACTIONAL);
 
         doTestScanQuery(ccfg, true, true);
         doTestScanQuery(ccfg, true, false);
@@ -156,27 +112,7 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAtomicOnHeapLocalEntries() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            ONHEAP_TIERED
-        );
-
-        doTestLocalEntries(ccfg, true, true);
-        doTestLocalEntries(ccfg, true, false);
-        doTestLocalEntries(ccfg, false, true);
-        doTestLocalEntries(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffHeapLocalEntries() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_TIERED
-        );
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC);
 
         doTestLocalEntries(ccfg, true, true);
         doTestLocalEntries(ccfg, true, false);
@@ -188,27 +124,7 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxOnHeapLocalEntries() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED
-        );
-
-        doTestLocalEntries(ccfg, true, true);
-        doTestLocalEntries(ccfg, true, false);
-        doTestLocalEntries(ccfg, false, true);
-        doTestLocalEntries(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffHeapLocalEntries() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED
-        );
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL);
 
         doTestLocalEntries(ccfg, true, true);
         doTestLocalEntries(ccfg, true, false);
@@ -304,9 +220,6 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                     cache0 = cache0.withKeepBinary();
 
                 for (CachePeekMode mode : CachePeekMode.values()) {
-                    if (mode == CachePeekMode.SWAP)
-                        continue;
-
                     int size = 0;
 
                     for (Cache.Entry<Object, Object> e : cache0.localEntries(mode)) {
@@ -332,11 +245,7 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                     if (mode == CachePeekMode.ALL ||
                         mode == CachePeekMode.PRIMARY ||
                         mode == CachePeekMode.BACKUP ||
-                        (mode == CachePeekMode.NEAR && i == 0 &&
-                            ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED &&
-                            ccfg.getNearConfiguration() != null) ||
-                        (mode == CachePeekMode.ONHEAP && ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED) ||
-                        (mode == CachePeekMode.OFFHEAP && ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED))
+                        (mode == CachePeekMode.NEAR && i == 0 && ccfg.getNearConfiguration() != null))
                         assertTrue("Zero result at mode: " + mode, size > 0);
                 }
             }
@@ -363,21 +272,17 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @return Cache configuration.
      */
     protected CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         int backups,
-        CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode) {
+        CacheAtomicityMode atomicityMode) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(backups);

@@ -145,17 +145,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOneBackupOffheap() throws Exception {
-        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false);
-
-        GridTestUtils.setMemoryMode(null, ccfg, GridTestUtils.TestMemoryMode.OFFHEAP_TIERED, 0, 0);
-
-        testGetUpdateMultithreaded(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testGetUpdateMultithreaded(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
         final List<Ignite> putNodes = new ArrayList<>();
 
@@ -327,7 +316,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
             ", near=" + (ccfg.getNearConfiguration() != null) +
             ", store=" + ccfg.isWriteThrough() +
             ", evictPlc=" + (ccfg.getEvictionPolicy() != null) +
-            ", maxOffheap=" + ccfg.getOffHeapMaxMemory()  +
             ']');
     }
 

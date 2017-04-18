@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
 
             var typeName = BinaryUtils.GetTypeName(type);
-            var typeId = BinaryUtils.TypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
+            var typeId = BinaryUtils.TypeId(typeName, _cfg.NameMapper, _cfg.IdMapper);
 
             var registered = _ignite != null && _ignite.BinaryProcessor.RegisterType(typeId, type);
 
@@ -497,8 +497,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             var ser = GetSerializer(_cfg, null, type, typeId, null, null, _log);
 
             desc = desc == null
-                ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
-                    _cfg.DefaultIdMapper, ser, false, null, type.IsEnum, registered)
+                ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.NameMapper,
+                    _cfg.IdMapper, ser, false, null, type.IsEnum, registered)
                 : new BinaryFullTypeDescriptor(desc, type, ser, registered);
 
             if (RegistrationDisabled)
@@ -538,11 +538,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         private void AddUserType(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
         {
             // Get converter/mapper/serializer.
-            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.DefaultNameMapper;
+            IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.NameMapper;
 
-            IBinaryIdMapper idMapper = typeCfg.IdMapper ?? _cfg.DefaultIdMapper;
+            IBinaryIdMapper idMapper = typeCfg.IdMapper ?? _cfg.IdMapper;
 
-            bool keepDeserialized = typeCfg.KeepDeserialized ?? _cfg.DefaultKeepDeserialized;
+            bool keepDeserialized = typeCfg.KeepDeserialized ?? _cfg.KeepDeserialized;
 
             // Try resolving type.
             Type type = typeResolver.ResolveType(typeCfg.TypeName);
@@ -589,7 +589,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinaryIdMapper idMapper, ILogger log)
         {
             var serializer = (typeCfg != null ? typeCfg.Serializer : null) ??
-                             (cfg != null ? cfg.DefaultSerializer : null);
+                             (cfg != null ? cfg.Serializer : null);
 
             if (serializer == null)
             {
@@ -703,7 +703,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             AddSystemType(BinaryUtils.TypeNativeJobHolder, r => new ComputeJobHolder(r));
             AddSystemType(BinaryUtils.TypeComputeJobWrapper, r => new ComputeJobWrapper(r));
-            AddSystemType(BinaryUtils.TypeIgniteProxy, r => new IgniteProxy());
             AddSystemType(BinaryUtils.TypeComputeOutFuncJob, r => new ComputeOutFuncJob(r));
             AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, r => new ComputeOutFuncWrapper(r));
             AddSystemType(BinaryUtils.TypeComputeFuncWrapper, r => new ComputeFuncWrapper(r));

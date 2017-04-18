@@ -55,7 +55,6 @@ include /app/helpers/jade/mixins
                 .panel-tip-container(bs-tooltip='' data-title='Import domain models from database' data-placement='bottom')
                     button.btn.btn-primary(ng-click='showImportDomainModal()') Import from database
                 +save-remove-clone-undo-buttons('domain model')
-                .btn-group.panel-tip-container.pull-right(bs-tooltip='' data-title='Import domain models from demo database' data-placement='bottom')
                 hr
             .bs-affix-fix
             div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')

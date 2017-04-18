@@ -35,7 +35,6 @@ import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -56,8 +55,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -99,9 +96,6 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
     /** */
     private static Random rnd;
-
-    /** */
-    private CacheMemoryMode memMode = ONHEAP_TIERED;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -330,15 +324,6 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         distributedJoins = true;
 
         checkAllCacheCombinationsSet1(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDistributedJoins1Offheap() throws Exception {
-        memMode = OFFHEAP_TIERED;
-
-        testDistributedJoins1();
     }
 
     /**
@@ -737,7 +722,6 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(cacheName);
-        ccfg.setMemoryMode(memMode);
         ccfg.setCacheMode(cacheMode);
 
         if (cacheMode == PARTITIONED)

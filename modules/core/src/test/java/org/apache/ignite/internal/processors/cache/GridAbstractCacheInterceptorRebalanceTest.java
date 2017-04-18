@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -42,7 +41,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -85,7 +83,6 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
 
         ccfg.setInterceptor(interceptor);
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
         ccfg.setBackups(2);
@@ -101,11 +98,6 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
      * @return Cache atomicity mode.
      */
     protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     * @return Cache memory mode;
-     */
-    protected abstract CacheMemoryMode memoryMode();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

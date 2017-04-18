@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -63,8 +62,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -102,9 +99,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
     /** */
     public static final String BACKUP_CACHE_2 = "backup_2";
-
-    /** */
-    public static volatile boolean primaryWriteOrderMode = false;
 
     /** */
     public static volatile boolean near = false;
@@ -173,9 +167,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        if (primaryWriteOrderMode)
-            cacheCfg.setAtomicWriteOrderMode(PRIMARY);
-
         cacheCfg.setRebalanceMode(SYNC);
 
         if (igniteInstanceName.endsWith("1"))
@@ -194,10 +185,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);
         cacheCfg.setBackups(backups);
-        cacheCfg.setOffHeapMaxMemory(0);
-
-        if (isOffHeapTieredMode())
-            cacheCfg.setMemoryMode(OFFHEAP_TIERED);
 
         return cacheCfg;
     }
@@ -218,13 +205,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @return Cache mode.
      */
     protected abstract CacheMode getCacheMode();
-
-    /**
-     * @return {@code True} if {@link CacheMemoryMode#OFFHEAP_TIERED} memory mode should be used.
-     */
-    protected boolean isOffHeapTieredMode() {
-        return false;
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -311,14 +291,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testBackupRestorePrimary() throws Exception {
-        try {
-            primaryWriteOrderMode = true;
-
-            testBackupRestore();
-        }
-        finally {
-            primaryWriteOrderMode = false;
-        }
+        testBackupRestore();
     }
 
     /**

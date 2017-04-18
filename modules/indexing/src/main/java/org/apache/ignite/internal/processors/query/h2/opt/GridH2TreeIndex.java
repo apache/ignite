@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,6 +36,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
+import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
@@ -288,7 +290,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @return Row.
      */
     @Override public GridH2Row findOne(GridH2Row row) {
-        int seg = threadLocalSegment();
+        int seg = segmentForRow(row);
 
         return segments[seg].findOne(row);
     }
@@ -380,12 +382,23 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session ses, boolean first) {
-        throw DbException.throwInternalError();
+        try {
+            int seg = threadLocalSegment();
+
+            IgniteTree t = treeForRead(seg);
+
+            GridH2Row row = (GridH2Row)(first ? t.findFirst() : t.findLast());
+
+            return new SingleRowCursor(row);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -545,6 +558,18 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 rows = tree.subMap(lower, false, upper, false).values();
 
             return new GridCursorIteratorWrapper<>(rows.iterator());
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row findFirst() throws IgniteCheckedException {
+            Map.Entry<GridSearchRowPointer, GridH2Row> first = tree.firstEntry();
+            return (first == null) ? null : first.getValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row findLast() throws IgniteCheckedException {
+            Map.Entry<GridSearchRowPointer, GridH2Row> last = tree.lastEntry();
+            return (last == null) ? null : last.getValue();
         }
 
         /** {@inheritDoc} */

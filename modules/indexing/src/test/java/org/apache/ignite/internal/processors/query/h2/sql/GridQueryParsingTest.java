@@ -118,9 +118,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select 1 from Person p where addrIds in ((1,2,3), (3,4,5))");
         checkQuery("select 1 from Person p where addrId in ((1,))");
         checkQuery("select 1 from Person p " +
-            "where p.addrId in (select a.id from Address a)");
+            "where p.addrId in (select a.id from sch2.Address a)");
         checkQuery("select 1 from Person p " +
-            "where exists(select 1 from Address a where p.addrId = a.id)");
+            "where exists(select 1 from sch2.Address a where p.addrId = a.id)");
         checkQuery("select 42");
         checkQuery("select ()");
         checkQuery("select (1)");
@@ -310,7 +310,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      */
     public void testParseTableFilter() throws Exception {
         Prepared prepared = parse("select Person.old, p1.old, p1.addrId from Person, Person p1 " +
-            "where exists(select 1 from Address a where a.id = p1.addrId)");
+            "where exists(select 1 from sch2.Address a where a.id = p1.addrId)");
 
         GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser(false).parse(prepared);
 

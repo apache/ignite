@@ -398,16 +398,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      *
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
-    @Override public GridCacheEntryEx entryEx(KeyCacheObject key, boolean touch)
-        throws GridDhtInvalidPartitionException {
-        return super.entryEx(key, touch);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
-     */
     @Override public GridCacheEntryEx entryEx(KeyCacheObject key,
         AffinityTopologyVersion topVer) throws GridDhtInvalidPartitionException {
         return super.entryEx(key, topVer);
@@ -543,7 +533,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     CacheObject cacheVal = ctx.toCacheObject(val);
 
-                    entry = entryEx(key, false);
+                    entry = entryEx(key);
 
                     entry.initialValue(cacheVal,
                         ver,
@@ -579,6 +569,21 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
+    @Override public int size() {
+        return (int)sizeLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long sizeLong() {
+        long sum = 0;
+
+        for (GridDhtLocalPartition p : topology().currentLocalPartitions())
+            sum += p.dataStore().size();
+
+        return sum;
+    }
+
+    /** {@inheritDoc} */
     @Override public int primarySize() {
         return (int)primarySizeLong();
     }
@@ -591,7 +596,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         for (GridDhtLocalPartition p : topology().currentLocalPartitions()) {
             if (p.primary(topVer))
-                sum += p.publicSize();
+                sum += p.dataStore().size();
         }
 
         return sum;

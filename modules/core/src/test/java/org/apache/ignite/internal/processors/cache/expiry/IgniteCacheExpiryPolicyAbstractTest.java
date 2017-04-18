@@ -38,7 +38,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -59,7 +58,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -110,22 +108,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cfg.setExpiryPolicyFactory(factory);
 
-        cfg.setMemoryMode(memoryMode());
-
-        if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED)
-            cfg.setOffHeapMaxMemory(0);
-
         if (disableEagerTtl)
             cfg.setEagerTtl(false);
 
         return cfg;
-    }
-
-    /**
-     * @return Cache memory mode.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
     }
 
     /**
@@ -880,7 +866,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         IgniteCache<Integer, Integer> cache1 = jcache(1);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from another node.
@@ -888,7 +874,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 61_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from another node with provided TTL.
@@ -903,7 +889,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 60_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from near node with provided TTL.
@@ -932,7 +918,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (Integer key : vals.keySet())
             checkTtl(key, 60_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         IgniteCache<Integer, Integer> cache1 = jcache(1);
@@ -943,7 +929,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (Integer key : vals.keySet())
             checkTtl(key, 61_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from another node with provided TTL.
@@ -957,7 +943,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         // Try create again.
         cache0.putAll(vals);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from near node with provided TTL.

@@ -144,7 +144,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             plc.setMaxSize(1000);
 
             cc.setEvictionPolicy(plc);
-            cc.setEvictSynchronized(false);
+            cc.setOnheapCacheEnabled(true);
             cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setRebalanceMode(NONE);
 
@@ -427,14 +427,20 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private static final long MAX = 5000;
 
         /** */
+        @AffinityKeyMapped
+        private String affKey;
+
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /**
          * @param msg Message.
          */
-        PerfJob(@Nullable Message msg) {
+        PerfJob(Message msg) {
             super(msg);
+
+            affKey = msg.getTerminalId();
         }
 
         /**
@@ -447,7 +453,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         /**
          * @return Terminal ID.
          */
-        @AffinityKeyMapped
         public String terminalId() {
             return message().getTerminalId();
         }

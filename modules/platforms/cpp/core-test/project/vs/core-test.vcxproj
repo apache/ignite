@@ -34,12 +34,20 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\config\cache-identity.xml" />
+    <None Include="..\..\config\cache-identity-32.xml" />
+    <None Include="..\..\config\cache-identity-default.xml" />
     <None Include="..\..\config\cache-query-continuous.xml" />
     <None Include="..\..\config\cache-query-32.xml" />
     <None Include="..\..\config\cache-query.xml" />
     <None Include="..\..\config\cache-query-default.xml" />
     <None Include="..\..\config\cache-test-32.xml" />
+    <None Include="..\..\config\cache-store-default.xml">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="..\..\config\cache-store.xml">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="..\..\config\cache-store-32.xml">
       <SubType>Designer</SubType>
     </None>
     <None Include="..\..\config\cache-test.xml" />

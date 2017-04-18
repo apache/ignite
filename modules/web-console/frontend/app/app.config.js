@@ -42,6 +42,7 @@ igniteConsoleCfg.config(['$animateProvider', ($animateProvider) => {
 igniteConsoleCfg.config(['$modalProvider', ($modalProvider) => {
     angular.extend($modalProvider.defaults, {
         animation: 'am-fade-and-scale',
+        placement: 'center',
         html: true
     });
 }]);

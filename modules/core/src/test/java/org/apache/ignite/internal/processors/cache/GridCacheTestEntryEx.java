@@ -51,7 +51,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     private long ttl;
 
     /** Version. */
-    private GridCacheVersion ver = new GridCacheVersion(0, 0, 0, 1, 0);
+    private GridCacheVersion ver = new GridCacheVersion(0, 0, 1, 0);
 
     /** Obsolete version. */
     private GridCacheVersion obsoleteVer = ver;
@@ -369,7 +369,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** @inheritDoc */
     @Override public boolean evictInternal(GridCacheVersion obsoleteVer,
-        @Nullable CacheEntryPredicate[] filter) {
+        @Nullable CacheEntryPredicate[] filter, boolean evictOffheap) {
         assert false;
 
         return false;

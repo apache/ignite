@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -62,7 +61,6 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     private CacheConfiguration<String, TestClass> cacheConfiguration(
         CacheMode mode,
         CacheAtomicityMode atomMode,
-        CacheMemoryMode memMode,
         boolean nearEnabled,
         boolean useEvictPlc
     ) {
@@ -70,15 +68,14 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(atomMode);
         ccfg.setCacheMode(mode);
-        ccfg.setMemoryMode(memMode);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         if (nearEnabled)
             ccfg.setNearConfiguration(new NearCacheConfiguration<String, TestClass>());
 
-        if (memMode == CacheMemoryMode.ONHEAP_TIERED && useEvictPlc) {
-            ccfg.setOffHeapMaxMemory(10 * 1024 * 1024);
+        if (useEvictPlc) {
             ccfg.setEvictionPolicy(new FifoEvictionPolicy(50));
+            ccfg.setOnheapCacheEnabled(true);
         }
 
         return ccfg;
@@ -107,17 +104,14 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
         try {
             for (CacheMode mode : CacheMode.values()) {
                 for (CacheAtomicityMode atomMode : CacheAtomicityMode.values()) {
-                    for (CacheMemoryMode memMode : CacheMemoryMode.values()) {
-                        if (mode == CacheMode.PARTITIONED) {
-                            // Near cache makes sense only for partitioned cache.
-                            checkTxCache(CacheMode.PARTITIONED, atomMode, memMode, true, false);
-                        }
-
-                        if (memMode == CacheMemoryMode.ONHEAP_TIERED)
-                            checkTxCache(mode, atomMode, CacheMemoryMode.ONHEAP_TIERED, false, true);
-
-                        checkTxCache(mode, atomMode, memMode, false, false);
+                    if (mode == CacheMode.PARTITIONED) {
+                        // Near cache makes sense only for partitioned cache.
+                        checkTxCache(CacheMode.PARTITIONED, atomMode, true, false);
                     }
+
+                    checkTxCache(CacheMode.PARTITIONED, atomMode, false, true);
+
+                    checkTxCache(CacheMode.PARTITIONED, atomMode, false, false);
                 }
             }
         }
@@ -132,7 +126,6 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     private void checkTxCache(
         CacheMode mode,
         CacheAtomicityMode atomMode,
-        CacheMemoryMode memMode,
         boolean nearEnabled,
         boolean useEvicPlc
     ) throws Exception {
@@ -141,14 +134,13 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
         final CacheConfiguration<String, TestClass> ccfg = cacheConfiguration(
             mode,
             atomMode,
-            memMode,
             nearEnabled,
             useEvicPlc);
 
         final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg);
 
-        info("Checking cache [mode=" + mode + ", atomMode=" + atomMode + ", memMode=" + memMode +
-            ", near=" + nearEnabled + ']');
+        info("Checking cache [mode=" + mode + ", atomMode=" + atomMode + ", near=" + nearEnabled +
+            ", evict=" + useEvicPlc + ']');
 
         try {
             for (int i = 0; i < 30; i++) {
@@ -213,8 +205,10 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
          */
         @Override
         public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             final TestClass testCls = (TestClass)o;
 

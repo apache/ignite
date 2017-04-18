@@ -612,6 +612,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the SelectMany from field collection.
+        /// </summary>
+        [Test]
+        public void TestSelectManySameTable()
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<NotSupportedException>(() => persons.SelectMany(x => x.Value.Name).ToArray());
+
+            Assert.IsTrue(ex.Message.StartsWith("FROM clause must be IQueryable: from Char"));
+        }
+
+        /// <summary>
         /// Tests the group by.
         /// </summary>
         [Test]
@@ -1355,8 +1369,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
                 .ToArray();
 
-            Assert.Greater(res.Length, 0);
-            Assert.Less(res.Length, RoleCount);
+            Assert.AreEqual(res.Length, RoleCount);
 
             // Test distributed join: returns complete results
             persons = personCache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});

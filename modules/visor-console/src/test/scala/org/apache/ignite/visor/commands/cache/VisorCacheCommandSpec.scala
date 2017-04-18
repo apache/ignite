@@ -126,6 +126,10 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
         it("should display correct information for all caches") {
             visor cache "-a"
         }
+
+        it("should scan cache") {
+            visor cache "-c=replicated -scan"
+        }
     }
 }
 

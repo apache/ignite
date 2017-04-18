@@ -32,6 +32,7 @@
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/impl/binary/binary_schema.h"
 #include "ignite/impl/binary/binary_type_manager.h"
+#include "ignite/impl/binary/binary_object_impl.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"
@@ -530,7 +531,7 @@ namespace ignite
                  * @param typ Collection type.
                  * @return Session ID.
                  */
-                int32_t WriteCollection(ignite::binary::CollectionType typ);
+                int32_t WriteCollection(ignite::binary::CollectionType::Type typ);
 
                 /**
                  * Start collection write.
@@ -539,7 +540,7 @@ namespace ignite
                  * @param typ Collection type.
                  * @return Session ID.
                  */
-                int32_t WriteCollection(const char* fieldName, ignite::binary::CollectionType typ);
+                int32_t WriteCollection(const char* fieldName, ignite::binary::CollectionType::Type typ);
 
                 /**
                  * Write values in interval [first, last).
@@ -549,7 +550,7 @@ namespace ignite
                  * @param typ Collection type.
                  */
                 template<typename InputIterator>
-                void WriteCollection(InputIterator first, InputIterator last, ignite::binary::CollectionType typ)
+                void WriteCollection(InputIterator first, InputIterator last, ignite::binary::CollectionType::Type typ)
                 {
                     StartContainerSession(true);
 
@@ -566,7 +567,7 @@ namespace ignite
                  */
                 template<typename InputIterator>
                 void WriteCollection(const char* fieldName, InputIterator first, InputIterator last,
-                    ignite::binary::CollectionType typ)
+                    ignite::binary::CollectionType::Type typ)
                 {
                     StartContainerSession(false);
 
@@ -581,7 +582,7 @@ namespace ignite
                  * @param typ Map type.
                  * @return Session ID.
                  */
-                int32_t WriteMap(ignite::binary::MapType typ);
+                int32_t WriteMap(ignite::binary::MapType::Type typ);
 
                 /**
                  * Start map write.
@@ -590,7 +591,7 @@ namespace ignite
                  * @param typ Map type.
                  * @return Session ID.
                  */
-                int32_t WriteMap(const char* fieldName, ignite::binary::MapType typ);
+                int32_t WriteMap(const char* fieldName, ignite::binary::MapType::Type typ);
 
                 /**
                  * Write collection element.
@@ -680,17 +681,20 @@ namespace ignite
                 template<typename T>
                 void WriteTopObject(const T& obj)
                 {
-                    ignite::binary::BinaryType<T> type;
+                    typedef ignite::binary::BinaryType<T> BType;
 
-                    if (type.IsNull(obj))
+                    if (BType::IsNull(obj))
                         stream->WriteInt8(IGNITE_HDR_NULL);
                     else
                     {
-                        TemplatedBinaryIdResolver<T> idRslvr(type);
-                        ignite::common::concurrent::SharedPointer<BinaryTypeHandler> metaHnd;
+                        TemplatedBinaryIdResolver<T> idRslvr;
+                        common::concurrent::SharedPointer<BinaryTypeHandler> metaHnd;
+
+                        std::string typeName;
+                        BType::GetTypeName(typeName);
 
                         if (metaMgr)
-                            metaHnd = metaMgr->GetHandler(type.GetTypeName(), idRslvr.GetTypeId());
+                            metaHnd = metaMgr->GetHandler(typeName, idRslvr.GetTypeId());
 
                         int32_t pos = stream->Position();
 
@@ -707,7 +711,7 @@ namespace ignite
                         // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offset.
                         stream->Reserve(12);
 
-                        type.Write(writer, obj);
+                        BType::Write(writer, obj);
 
                         writerImpl.PostWrite();
 
@@ -718,9 +722,9 @@ namespace ignite
 
                         // We are using direct constructor here to avoid check-overhead, as we know
                         // at this point that underlying memory contains valid binary object.
-                        ignite::binary::BinaryObject binObj(*stream->GetMemory(), pos, &idRslvr, metaMgr);
+                        BinaryObjectImpl binObj(*stream->GetMemory(), pos, &idRslvr, metaMgr);
 
-                        int32_t hash = BinaryUtils::GetDataHashCode(binObj.impl.GetData(), binObj.impl.GetLength());
+                        int32_t hash = BinaryUtils::GetDataHashCode(binObj.GetData(), binObj.GetLength());
 
                         stream->WriteInt32(hashPos, hash);
                     }
@@ -753,10 +757,10 @@ namespace ignite
                  *
                  * @return Stream.
                  */
-                impl::interop::InteropOutputStream* GetStream();
+                interop::InteropOutputStream* GetStream();
             private:
                 /** Underlying stream. */
-                ignite::impl::interop::InteropOutputStream* stream; 
+                interop::InteropOutputStream* stream; 
                 
                 /** ID resolver. */
                 BinaryIdResolver* idRslvr;
@@ -914,7 +918,7 @@ namespace ignite
                  */
                 template<typename InputIterator>
                 void WriteCollectionWithinSession(InputIterator first, InputIterator last,
-                    ignite::binary::CollectionType typ)
+                    ignite::binary::CollectionType::Type typ)
                 {
                     stream->WriteInt8(IGNITE_TYPE_COLLECTION);
                     stream->Position(stream->Position() + 4);

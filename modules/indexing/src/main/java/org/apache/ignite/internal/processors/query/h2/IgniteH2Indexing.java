@@ -1158,13 +1158,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param enforceJoinOrder Enforce join order of tables.
      * @return Iterable result.
      */
-    private Iterable<List<?>> runQueryTwoStep(final GridCacheContext<?,?> cctx, final GridCacheTwoStepQuery qry,
-        final boolean keepCacheObj, final boolean enforceJoinOrder,
+    private Iterable<List<?>> runQueryTwoStep(
+        final GridCacheContext<?,?> cctx,
+        final GridCacheTwoStepQuery qry,
+        final boolean keepCacheObj,
+        final boolean enforceJoinOrder,
         final int timeoutMillis,
-        final GridQueryCancel cancel) {
+        final GridQueryCancel cancel,
+        final Object[] params
+    ) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
-                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel);
+                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params);
             }
         };
     }
@@ -1254,7 +1259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
-            twoStepQry = cachedQry.twoStepQry.copy(qry.getArgs());
+            twoStepQry = cachedQry.twoStepQry.copy();
             meta = cachedQry.meta;
         }
         else {
@@ -1390,12 +1395,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel = new GridQueryCancel();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel), cancel);
+            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel, qry.getArgs()),
+            cancel);
 
         cursor.fieldsMeta(meta);
 
         if (cachedQry == null && !twoStepQry.explain()) {
-            cachedQry = new TwoStepCachedQuery(meta, twoStepQry.copy(null));
+            cachedQry = new TwoStepCachedQuery(meta, twoStepQry.copy());
             twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
         }
 
@@ -1407,7 +1413,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private void checkCacheIndexSegmentation(List<Integer> caches) {
         if (caches.isEmpty())
-            return; //Nnothing to check
+            return; // Nothing to check
 
         GridCacheSharedContext sharedContext = ctx.cache().context();
 
@@ -1418,12 +1424,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             assert cctx != null;
 
-            if(!cctx.isPartitioned())
+            if (!cctx.isPartitioned())
                 continue;
 
-            if(expectedParallelism == 0)
+            if (expectedParallelism == 0)
                 expectedParallelism = cctx.config().getQueryParallelism();
-            else if (expectedParallelism != 0 && cctx.config().getQueryParallelism() != expectedParallelism)
+            else if (cctx.config().getQueryParallelism() != expectedParallelism)
                 throw new IllegalStateException("Using indexes with different parallelism levels in same query is forbidden.");
         }
     }
@@ -2705,11 +2711,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             int cacheId = CU.cacheId(schema.ccfg.getName());
 
-            idxs.add(createHashIndex(
-                cacheId,
-                "_key_PK_hash",
-                tbl,
-                treeIndexColumns(new ArrayList<IndexColumn>(2), keyCol, affCol)));
+            Index hashIdx = createHashIndex(
+                    cacheId,
+                    "_key_PK_hash",
+                    tbl,
+                    treeIndexColumns(new ArrayList<IndexColumn>(2), keyCol, affCol));
+
+            if (hashIdx != null)
+                idxs.add(hashIdx);
 
             // Add primary key index.
             idxs.add(createSortedIndex(
@@ -2839,7 +2848,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return pkHashIdx;
             }
 
-            return new GridH2TreeIndex(name, tbl, true, cols);
+            return null;
         }
 
         /**

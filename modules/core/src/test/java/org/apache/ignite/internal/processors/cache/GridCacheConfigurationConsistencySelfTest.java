@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityNodeIdHashResolver;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -362,6 +361,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionPolicy(new FifoEvictionPolicy());
+                    cfg.setOnheapCacheEnabled(true);
                     return null;
                 }
             },
@@ -383,6 +383,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionPolicy(new SortedEvictionPolicy());
+                    cfg.setOnheapCacheEnabled(true);
                     return null;
                 }
             },
@@ -390,6 +391,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionPolicy(new FifoEvictionPolicy());
+                    cfg.setOnheapCacheEnabled(true);
                     return null;
                 }
             }
@@ -434,42 +436,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
-                    return null;
-                }
-            }
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDifferentEvictSynchronized() throws Exception {
-        cacheMode = PARTITIONED;
-
-        checkSecondGridStartFails(
-            new C1<CacheConfiguration, Void>() {
-                /** {@inheritDoc} */
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictSynchronized(true);
-
-                    FifoEvictionPolicy plc = new FifoEvictionPolicy();
-
-                    plc.setMaxSize(100);
-
-                    cfg.setEvictionPolicy(plc);
-                    return null;
-                }
-            },
-            new C1<CacheConfiguration, Void>() {
-                /** {@inheritDoc} */
-                @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictSynchronized(false);
-
-                    FifoEvictionPolicy plc = new FifoEvictionPolicy();
-
-                    plc.setMaxSize(100);
-
-                    cfg.setEvictionPolicy(plc);
                     return null;
                 }
             }
@@ -570,19 +536,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 return startGrid(2);
             }
         }, IgniteCheckedException.class, "Affinity partitions count mismatch");
-
-        // Different hash ID resolver.
-        RendezvousAffinityFunction aff0 = new RendezvousAffinityFunction(false, 100);
-
-        aff0.setHashIdResolver(new AffinityNodeIdHashResolver());
-
-        aff = aff0;
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return startGrid(2);
-            }
-        }, IgniteCheckedException.class, "Partitioned cache affinity hash ID resolver class mismatch");
     }
 
     /**
@@ -672,6 +625,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setAffinity(new TestRendezvousAffinityFunction());
 
                 cfg.setEvictionPolicy(new FifoEvictionPolicy());
+                cfg.setOnheapCacheEnabled(true);
 
                 cfg.setCacheStoreFactory(new IgniteCacheAbstractTest.TestStoreFactory());
                 cfg.setReadThrough(true);
@@ -690,6 +644,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setAffinity(new RendezvousAffinityFunction());
 
                 cfg.setEvictionPolicy(new LruEvictionPolicy());
+                cfg.setOnheapCacheEnabled(true);
 
                 cfg.setCacheStoreFactory(null);
 

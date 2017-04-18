@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE(TransactionRollbackOnly)
 
     tx.Close();
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ROLLED_BACK, tx.GetState());
     BOOST_CHECK(tx.IsRollbackOnly());
 
     BOOST_CHECK_EQUAL(1, cache.Get(1));
@@ -211,55 +211,55 @@ BOOST_AUTO_TEST_CASE(TransactionAttributes)
     Transaction tx = transactions.GetTx();
     BOOST_REQUIRE(!tx.IsValid());
 
-    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_OPTIMISTIC,
-        IGNITE_TX_ISOLATION_SERIALIZABLE, 1000, 100);
+    tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC,
+        TransactionIsolation::SERIALIZABLE, 1000, 100);
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_OPTIMISTIC, tx.GetConcurrency());
-    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_SERIALIZABLE, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(TransactionConcurrency::OPTIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(TransactionIsolation::SERIALIZABLE, tx.GetIsolation());
     BOOST_CHECK_EQUAL(1000, tx.GetTimeout());
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ACTIVE, tx.GetState());
 
     tx.Commit();
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_COMMITTED, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::COMMITTED, tx.GetState());
 
     tx = transactions.GetTx();
 
     BOOST_CHECK(!tx.IsValid());
 
-    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_PESSIMISTIC,
-        IGNITE_TX_ISOLATION_READ_COMMITTED, 2000, 10);
+    tx = transactions.TxStart(TransactionConcurrency::PESSIMISTIC,
+        TransactionIsolation::READ_COMMITTED, 2000, 10);
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_PESSIMISTIC, tx.GetConcurrency());
-    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_READ_COMMITTED, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(TransactionConcurrency::PESSIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(TransactionIsolation::READ_COMMITTED, tx.GetIsolation());
     BOOST_CHECK_EQUAL(2000, tx.GetTimeout());
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ACTIVE, tx.GetState());
 
     tx.Rollback();
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ROLLED_BACK, tx.GetState());
 
     tx = transactions.GetTx();
 
     BOOST_CHECK(!tx.IsValid());
 
-    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_OPTIMISTIC,
-        IGNITE_TX_ISOLATION_REPEATABLE_READ, 3000, 0);
+    tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC,
+        TransactionIsolation::REPEATABLE_READ, 3000, 0);
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_OPTIMISTIC, tx.GetConcurrency());
-    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_REPEATABLE_READ, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(TransactionConcurrency::OPTIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(TransactionIsolation::REPEATABLE_READ, tx.GetIsolation());
     BOOST_CHECK_EQUAL(3000, tx.GetTimeout());
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ACTIVE, tx.GetState());
 
     tx.Close();
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ROLLED_BACK, tx.GetState());
 
     tx = transactions.GetTx();
 
@@ -535,7 +535,7 @@ BOOST_AUTO_TEST_CASE(TransactionRollbackOnlyNe)
     if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ROLLED_BACK, tx.GetState());
     BOOST_CHECK(tx.IsRollbackOnly());
 
     BOOST_CHECK_EQUAL(1, cache.Get(1));
@@ -557,64 +557,64 @@ BOOST_AUTO_TEST_CASE(TransactionAttributesNe)
     Transaction tx = transactions.GetTx();
     BOOST_REQUIRE(!tx.IsValid());
 
-    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_OPTIMISTIC,
-        IGNITE_TX_ISOLATION_SERIALIZABLE, 1000, 100, err);
+    tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC,
+        TransactionIsolation::SERIALIZABLE, 1000, 100, err);
 
     if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_OPTIMISTIC, tx.GetConcurrency());
-    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_SERIALIZABLE, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(TransactionConcurrency::OPTIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(TransactionIsolation::SERIALIZABLE, tx.GetIsolation());
     BOOST_CHECK_EQUAL(1000, tx.GetTimeout());
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ACTIVE, tx.GetState());
 
     tx.Commit();
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_COMMITTED, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::COMMITTED, tx.GetState());
 
     tx = transactions.GetTx();
 
     BOOST_CHECK(!tx.IsValid());
 
-    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_PESSIMISTIC,
-        IGNITE_TX_ISOLATION_READ_COMMITTED, 2000, 10, err);
+    tx = transactions.TxStart(TransactionConcurrency::PESSIMISTIC,
+        TransactionIsolation::READ_COMMITTED, 2000, 10, err);
 
     if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_PESSIMISTIC, tx.GetConcurrency());
-    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_READ_COMMITTED, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(TransactionConcurrency::PESSIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(TransactionIsolation::READ_COMMITTED, tx.GetIsolation());
     BOOST_CHECK_EQUAL(2000, tx.GetTimeout());
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ACTIVE, tx.GetState());
 
     tx.Rollback();
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ROLLED_BACK, tx.GetState());
 
     tx = transactions.GetTx();
 
     BOOST_CHECK(!tx.IsValid());
 
-    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_OPTIMISTIC,
-        IGNITE_TX_ISOLATION_REPEATABLE_READ, 3000, 0, err);
+    tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC,
+        TransactionIsolation::REPEATABLE_READ, 3000, 0, err);
 
     if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     BOOST_REQUIRE(transactions.GetTx().IsValid());
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_OPTIMISTIC, tx.GetConcurrency());
-    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_REPEATABLE_READ, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(TransactionConcurrency::OPTIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(TransactionIsolation::REPEATABLE_READ, tx.GetIsolation());
     BOOST_CHECK_EQUAL(3000, tx.GetTimeout());
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ACTIVE, tx.GetState());
 
     tx.Close();
 
-    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+    BOOST_CHECK_EQUAL(TransactionState::ROLLED_BACK, tx.GetState());
 
     tx = transactions.GetTx();
 

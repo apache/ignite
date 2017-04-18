@@ -69,7 +69,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -407,9 +407,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             GridCacheContext cacheCtx = cctx.cacheContext(m.cacheId);
 
                             if (cacheCtx != null) {
-                                if (m instanceof GridDhtPartitionSupplyMessageV2)
+                                if (m instanceof GridDhtPartitionSupplyMessage)
                                     cacheCtx.preloader().handleSupplyMessage(
-                                        idx, id, (GridDhtPartitionSupplyMessageV2)m);
+                                        idx, id, (GridDhtPartitionSupplyMessage)m);
                                 else if (m instanceof GridDhtPartitionDemandMessage)
                                     cacheCtx.preloader().handleDemandMessage(
                                         idx, id, (GridDhtPartitionDemandMessage)m);
@@ -829,6 +829,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         // If this is the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
+            // Check rebalance state & send CacheAffinityChangeMessage if need.
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (!cacheCtx.isLocal()) {
+                    if (cacheCtx == null)
+                        continue;
+
+                    GridDhtPartitionTopology top = null;
+
+                    if (!cacheCtx.isLocal())
+                        top = cacheCtx.topology();
+
+                    if (top != null)
+                        cctx.affinity().checkRebalanceState(top, cacheCtx.cacheId());
+                }
+            }
+
             GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
 
             // No need to send to nodes which did not finish their first exchange.

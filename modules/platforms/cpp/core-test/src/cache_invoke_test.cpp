@@ -132,16 +132,16 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(CacheEntryModifier)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CacheEntryModifier)
 
-            void Write(BinaryWriter& writer, CacheEntryModifier obj)
+            static void Write(BinaryWriter& writer, const CacheEntryModifier& obj)
             {
                 writer.WriteInt32("num", obj.GetNum());
             }
 
-            CacheEntryModifier Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, CacheEntryModifier& dst)
             {
                 int num = reader.ReadInt32("num");
 
-                return CacheEntryModifier(num);
+                dst = CacheEntryModifier(num);
             }
         IGNITE_BINARY_TYPE_END
     }
@@ -242,16 +242,16 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(Divisor)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Divisor)
 
-            void Write(BinaryWriter& writer, Divisor obj)
+            static void Write(BinaryWriter& writer, const Divisor& obj)
             {
                 writer.WriteDouble("scale", obj.GetScale());
             }
 
-            Divisor Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, Divisor& dst)
             {
                 double scale = reader.ReadDouble("scale");
 
-                return Divisor(scale);
+                dst = Divisor(scale);
             }
         IGNITE_BINARY_TYPE_END
     }
@@ -362,16 +362,16 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(CharRemover)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CharRemover)
 
-            void Write(BinaryWriter& writer, CharRemover obj)
+            static void Write(BinaryWriter& writer, const CharRemover& obj)
             {
                 writer.WriteInt8("toRemove", obj.GetCharToRemove());
             }
 
-            CharRemover Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, CharRemover& dst)
             {
                 char toRemove = static_cast<char>(reader.ReadInt8("toRemove"));
 
-                return CharRemover(toRemove);
+                dst = CharRemover(toRemove);
             }
         IGNITE_BINARY_TYPE_END
     }
@@ -396,7 +396,11 @@ struct CacheInvokeTestSuiteFixture
      * Constructor.
      */
     CacheInvokeTestSuiteFixture() :
+#ifdef IGNITE_TESTS_32
+        node(ignite_test::StartNode("cache-query-32.xml", "InvokeTest"))
+#else
         node(ignite_test::StartNode("cache-query.xml", "InvokeTest"))
+#endif
     {
         // No-op.
     }

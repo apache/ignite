@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
@@ -76,16 +75,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     protected IgfsAbstractSelfTest(IgfsMode mode) {
         super(mode);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param mode IGFS mode.
-     * @param memoryMode Memory mode.
-     */
-    protected IgfsAbstractSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
-        super(mode, memoryMode);
     }
 
     /**
@@ -693,7 +682,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         assert dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) > 0;
 
-        igfs.format();
+        igfs.clear();
 
         // Ensure format is not propagated to the secondary file system.
         if (dual) {
@@ -756,7 +745,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     private void checkRootPropertyUpdate(String prop, String setVal, String expGetVal) throws Exception {
         igfs.update(IgfsPath.ROOT, Collections.singletonMap(prop, setVal));
 
-        igfs.format();
+        igfs.clear();
 
         IgfsFile file = igfs.info(IgfsPath.ROOT);
 

@@ -25,7 +25,6 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -129,7 +128,6 @@ public class IgniteCacheQueryCacheDestroySelfTest extends GridCommonAbstractTest
 
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED)
             .setRebalanceMode(CacheRebalanceMode.SYNC)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setRebalanceThrottle(100)
