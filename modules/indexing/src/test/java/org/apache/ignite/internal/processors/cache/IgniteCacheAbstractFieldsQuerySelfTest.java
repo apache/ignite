@@ -369,7 +369,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         for (List<?> row : res)
             X.println("____ : " + row);
 
-        if (cacheMode() == PARTITIONED || !isReplicatedOnly()) {
+        if (cacheMode() == PARTITIONED || (cacheMode() == REPLICATED && !isReplicatedOnly())) {
             assertEquals(2, res.size());
 
             assertTrue(((String)res.get(1).get(0)).contains(GridSqlQuerySplitter.mergeTableIdentifier(0)));
