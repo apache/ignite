@@ -17,6 +17,7 @@
 
 package org.apache.ignite.configuration;
 
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
@@ -24,7 +25,6 @@ import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -241,7 +241,7 @@ public class FileSystemConfiguration {
      *
      * @return IGFS instance name.
      */
-    @NotNull public String getName() {
+    public String getName() {
         return name;
     }
 
@@ -251,7 +251,10 @@ public class FileSystemConfiguration {
      * @param name IGFS instance name.
      * @return {@code this} for chaining.
      */
-    public FileSystemConfiguration setName(@NotNull String name) {
+    public FileSystemConfiguration setName(String name) {
+        if (name == null)
+            throw new NullPointerException("IGFS name mustn't be null");
+
         this.name = name;
 
         return this;
