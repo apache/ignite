@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
 
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -203,7 +203,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
         while (ex == null && System.nanoTime() < endTime) {
             try {
-                check(ignite);
+                check(cache);
             }
             catch (Exception e) {
                 ex = e;
@@ -221,11 +221,11 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /**
      * Callback to check the current state.
      *
-     * @param ig Ignite instance.
+     * @param cache Cache instance.
      * @throws Exception If failed.
      */
-    protected void check(IgniteEx ig) throws Exception {
-        long pagesActual = ig.context().cache().context().database().memoryPolicy(null).pageMemory().loadedPages();
+    protected final void check(IgniteCache cache) throws Exception {
+        long pagesActual = ((IgniteCacheProxy)cache).context().memoryPolicy().pageMemory().loadedPages();
 
         if (loadedPages > 0) {
             delta += pagesActual - loadedPages;
@@ -240,6 +240,10 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
                     actualDelta <= allowedDelta);
             }
         }
+
+        long pagesAllowed = pagesMax();
+
+        assertTrue("Allocated pages count is more than expected [allowed=" + pagesAllowed + ", actual=" + pagesActual + "]", pagesActual < pagesAllowed);
 
         loadedPages = pagesActual;
     }

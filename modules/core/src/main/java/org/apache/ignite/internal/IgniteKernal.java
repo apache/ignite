@@ -1198,10 +1198,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             int loadedPages = 0;
 
-                            for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
-                                MemoryPolicy memPlc = cctx.memoryPolicy();
+                            Collection<MemoryPolicy> policies = ctx.cache().context().database().memoryPolicies();
 
-                                loadedPages += memPlc != null ? memPlc.pageMemory().loadedPages() : 0;
+                            if (!F.isEmpty(policies)) {
+                                for (MemoryPolicy memPlc : policies)
+                                    loadedPages += memPlc.pageMemory().loadedPages();
                             }
 
                             String id = U.id8(localNode().id());
