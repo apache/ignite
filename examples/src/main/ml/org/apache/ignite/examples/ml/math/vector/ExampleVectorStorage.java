@@ -22,10 +22,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 
-import org.apache.ignite.math.VectorStorage;
+import org.apache.ignite.ml.math.VectorStorage;
 
 /**
- * Example vector storage, modeled after {@link org.apache.ignite.math.impls.storage.vector.ArrayVectorStorage}.
+ * Example vector storage, modeled after {@link org.apache.ignite.ml.math.impls.storage.vector.ArrayVectorStorage}.
  */
 class ExampleVectorStorage implements VectorStorage {
     /** */
