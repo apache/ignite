@@ -784,15 +784,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     private void executeSql(String spaceName, String sql) throws IgniteCheckedException {
-        try {
-            Connection conn = connectionForSpace(spaceName);
+        H2Connection conn = takeConnectionForSpace(spaceName);
 
-            try (PreparedStatement stmt = prepareStatement(conn, sql, false)) {
-                stmt.execute();
-            }
+        try {
+            conn.executeUpdate(sql);
         }
-        catch (Exception e) {
+        catch (SQLException e) {
+            onSqlException(conn);
+
             throw new IgniteCheckedException("Failed to execute SQL statement on internal H2 database: " + sql, e);
+        }
+        finally {
+            U.closeQuiet(conn);
         }
     }
 
@@ -3639,7 +3642,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @throws SQLException If failed.
          * @return Created table.
          */
-        public static synchronized GridH2Table createTable(Connection conn, String sql,
+        public static synchronized GridH2Table createTable(H2Connection conn, String sql,
             @Nullable GridH2RowDescriptor rowDesc, H2RowFactory rowFactory, TableDescriptor tblDesc)
             throws SQLException {
             rowDesc0 = rowDesc;
@@ -3647,9 +3650,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             tblDesc0 = tblDesc;
 
             try {
-                try (Statement s = conn.createStatement()) {
-                    s.execute(sql + " engine \"" + H2TableEngine.class.getName() + "\"");
-                }
+                conn.executeUpdate(sql + " engine \"" + H2TableEngine.class.getName() + "\"");
 
                 tblDesc.tbl = resTbl0;
 
