@@ -1098,7 +1098,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Ignore("IGNITE-4535")]
         public void TestEvict()
         {
             var cache = Cache();
@@ -1123,7 +1122,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Ignore("IGNITE-4535")]
         public void TestEvictAllKeys()
         {
             var cache = Cache();
@@ -1474,7 +1472,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(keys.Take(2).ToArray());
 
-            //Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));  // TODO: IGNITE-4535
+            Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
             Assert.AreEqual(localSize, cache.GetLocalSize(CachePeekMode.All));
 
             cache.Put(keys[2], 3);
@@ -1512,10 +1510,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Evict and check peek modes.
             cache.LocalEvict(new List<int> { keys[0] } );
 
-            // TODO: IGNITE-4535
-            //e = cache.GetLocalEntries(CachePeekMode.Onheap);
-            //CheckEnumerator(e.GetEnumerator(), new List<int> { keys[1] });
-            //CheckEnumerator(e.GetEnumerator(), new List<int> { keys[1] });
+            e = cache.GetLocalEntries(CachePeekMode.Onheap);
+            CheckEnumerator(e.GetEnumerator(), new List<int> { keys[1] });
+            CheckEnumerator(e.GetEnumerator(), new List<int> { keys[1] });
 
             e = cache.GetLocalEntries(CachePeekMode.All);
             CheckEnumerator(e.GetEnumerator(), keys);
@@ -1576,7 +1573,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Ignore("IGNITE-4535")]
         public void TestPromote()
         {
             var cache = Cache();
@@ -1601,7 +1597,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Ignore("IGNITE-4535")]
         public void TestPromoteAll()
         {
             var cache = Cache();
