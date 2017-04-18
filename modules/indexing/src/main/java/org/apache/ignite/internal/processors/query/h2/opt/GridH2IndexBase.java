@@ -388,7 +388,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public void remove(Session ses) {
-        throw DbException.getUnsupportedException("remove index");
+        // No-op: destroyed from owning table.
     }
 
     /** {@inheritDoc} */
