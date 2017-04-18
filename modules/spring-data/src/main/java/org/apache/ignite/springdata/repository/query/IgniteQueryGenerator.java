@@ -119,9 +119,9 @@ public class IgniteQueryGenerator {
     /**
      * Add a dynamic part of a query for the pagination support.
      *
-     * @param sql
-     * @param pageable
-     * @return
+     * @param sql Builder instance.
+     * @param pageable Pageable instance.
+     * @return Builder instance.
      */
     public static StringBuilder addPaging(StringBuilder sql, Pageable pageable) {
         if (pageable.getSort() != null)
@@ -135,7 +135,7 @@ public class IgniteQueryGenerator {
     /**
      * Determines whether query is dynamic or not (by list of method parameters)
      *
-     * @param mtd
+     * @param mtd Method.
      * @return type of options
      */
     public static IgniteQuery.Option getOptions(Method mtd) {

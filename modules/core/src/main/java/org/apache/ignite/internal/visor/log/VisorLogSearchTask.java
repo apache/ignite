@@ -48,8 +48,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.textFile;
  * Search text matching in logs
  */
 @GridInternal
-public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchArg,
-    VisorLogSearchTaskResult,
+public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTaskArg, VisorLogSearchTaskResult,
     Collection<VisorLogSearchResult>> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -61,7 +60,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchArg,
     public static final int HALF = LINE_CNT / 2;
 
     /** {@inheritDoc} */
-    @Override protected VisorLogSearchJob job(VisorLogSearchArg arg) {
+    @Override protected VisorLogSearchJob job(VisorLogSearchTaskArg arg) {
         return new VisorLogSearchJob(arg, debug);
     }
 
@@ -87,7 +86,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchArg,
     /**
      * Job to perform search on node.
      */
-    private static class VisorLogSearchJob extends VisorJob<VisorLogSearchArg, Collection<VisorLogSearchResult>> {
+    private static class VisorLogSearchJob extends VisorJob<VisorLogSearchTaskArg, Collection<VisorLogSearchResult>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -95,7 +94,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchArg,
          * @param arg Search descriptor.
          * @param debug Debug flag.
          */
-        private VisorLogSearchJob(VisorLogSearchArg arg, boolean debug) {
+        private VisorLogSearchJob(VisorLogSearchTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -173,7 +172,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchArg,
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorLogSearchResult> run(VisorLogSearchArg arg) {
+        @Override protected Collection<VisorLogSearchResult> run(VisorLogSearchTaskArg arg) {
             URL url = U.resolveIgniteUrl(arg.getFolder());
 
             if (url == null)

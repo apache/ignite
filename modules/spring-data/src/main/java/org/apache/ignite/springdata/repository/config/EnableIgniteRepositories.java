@@ -77,14 +77,14 @@ public @interface EnableIgniteRepositories {
      * for a repository named {@code PersonRepository} the corresponding implementation class will be looked up scanning
      * for {@code PersonRepositoryImpl}.
      *
-     * @return
+     * @return Postfix to be used when looking up custom repository implementations.
      */
     String repositoryImplementationPostfix() default "Impl";
 
     /**
      * Configures the location of where to find the Spring Data named queries properties file.
      *
-     * @return
+     * @return Location of where to find the Spring Data named queries properties file.
      */
     String namedQueriesLocation() default "";
 
@@ -92,7 +92,7 @@ public @interface EnableIgniteRepositories {
      * Returns the key of the {@link QueryLookupStrategy} to be used for lookup queries for query methods. Defaults to
      * {@link Key#CREATE_IF_NOT_FOUND}.
      *
-     * @return
+     * @return Key of the {@link QueryLookupStrategy} to be used for lookup queries for query methods.
      */
     Key queryLookupStrategy() default Key.CREATE_IF_NOT_FOUND;
 
@@ -100,14 +100,14 @@ public @interface EnableIgniteRepositories {
      * Returns the {@link FactoryBean} class to be used for each repository instance. Defaults to
      * {@link IgniteRepositoryFactoryBean}.
      *
-     * @return
+     * @return {@link FactoryBean} class to be used for each repository instance.
      */
     Class<?> repositoryFactoryBeanClass() default IgniteRepositoryFactoryBean.class;
 
     /**
      * Configure the repository base class to be used to create repository proxies for this particular configuration.
      *
-     * @return
+     * @return Repository base class to be used to create repository proxies for this particular configuration.
      */
     Class<?> repositoryBaseClass() default IgniteRepositoryImpl.class;
 

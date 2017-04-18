@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.database;
+namespace Apache.Ignite.Core.Tests.Binary
+{
+    using Apache.Ignite.Core.Binary;
 
-/**
- *
- */
-public class IgniteDbMemoryLeakIndexedTest extends IgniteDbMemoryLeakTest {
-    /** {@inheritDoc} */
-    @Override protected boolean indexingEnabled() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long pagesMax() {
-        return 26_000;
+    /// <summary>
+    /// Builder test with simple names.
+    /// </summary>
+    public class BinaryBuilderSelfTestSimpleName : BinaryBuilderSelfTest
+    {
+        /** <inheritdoc /> */
+        protected override IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.SimpleNameInstance;
+        }
     }
 }

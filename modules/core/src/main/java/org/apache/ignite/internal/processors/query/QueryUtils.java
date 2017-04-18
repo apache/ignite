@@ -615,6 +615,11 @@ public class QueryUtils {
         if (parentEnd >= 0)
             clsName = clsName.substring(parentEnd + 1);
 
+        parentEnd = clsName.lastIndexOf('+');   // .NET parent
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
         return clsName;
     }
 

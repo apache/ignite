@@ -20,82 +20,81 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Set;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Arguments for {@link VisorCacheLoadTask}.
+ * Cache start arguments.
  */
-public class VisorCacheLoadTaskArg extends VisorDataTransferObject {
+public class VisorCacheStartTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cache names to load data. */
-    private Set<String> cacheNames;
+    /** */
+    private boolean near;
 
-    /** Duration a Cache Entry should exist be before it expires after being modified. */
-    private long ttl;
+    /** */
+    private String name;
 
-    /** Optional user arguments to be passed into CacheStore.loadCache(IgniteBiInClosure, Object...) method. */
-    private Object[] ldrArgs;
+    /** */
+    private String cfg;
 
     /**
      * Default constructor.
      */
-    public VisorCacheLoadTaskArg() {
+    public VisorCacheStartTaskArg() {
         // No-op.
     }
 
     /**
-     * @param cacheNames Cache names to load data.
-     * @param ttl Duration a Cache Entry should exist be before it expires after being modified.
-     * @param ldrArgs Optional user arguments to be passed into CacheStore.loadCache(IgniteBiInClosure, Object...) method.
+     * @param near {@code true} if near cache should be started.
+     * @param name Name for near cache.
+     * @param cfg Cache XML configuration.
      */
-    public VisorCacheLoadTaskArg(Set<String> cacheNames, long ttl, Object[] ldrArgs) {
-        this.cacheNames = cacheNames;
-        this.ttl = ttl;
-        this.ldrArgs = ldrArgs;
+    public VisorCacheStartTaskArg(boolean near, String name, String cfg) {
+        this.near = near;
+        this.name = name;
+        this.cfg = cfg;
     }
 
     /**
-     * @return Cache names to load data.
+     * @return {@code true} if near cache should be started.
      */
-    public Set<String> getCacheNames() {
-        return cacheNames;
+    public boolean isNear() {
+        return near;
     }
 
     /**
-     * @return Duration a Cache Entry should exist be before it expires after being modified.
+     * @return Name for near cache.
      */
-    public long getTtl() {
-        return ttl;
+    public String getName() {
+        return name;
     }
 
     /**
-     * @return Optional user arguments to be passed into CacheStore.loadCache(IgniteBiInClosure, Object...) method.
+     * @return Cache XML configuration.
      */
-    public Object[] getLdrArgs() {
-        return ldrArgs;
+    public String getConfiguration() {
+        return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, cacheNames);
-        out.writeLong(ttl);
-        U.writeArray(out, ldrArgs);
+        out.writeBoolean(near);
+        U.writeString(out, name);
+        U.writeString(out, cfg);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheNames = U.readSet(in);
-        ttl = in.readLong();
-        ldrArgs = U.readArray(in);
+        near = in.readBoolean();
+        name = U.readString(in);
+        cfg = U.readString(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheLoadTaskArg.class, this);
+        return S.toString(VisorCacheStartTaskArg.class, this);
     }
 }
