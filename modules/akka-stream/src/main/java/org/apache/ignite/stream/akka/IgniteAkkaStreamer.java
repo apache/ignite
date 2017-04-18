@@ -18,7 +18,6 @@
 package org.apache.ignite.stream.akka;
 
 import akka.stream.javadsl.Sink;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.stream.StreamAdapter;
 import org.jetbrains.annotations.NotNull;
