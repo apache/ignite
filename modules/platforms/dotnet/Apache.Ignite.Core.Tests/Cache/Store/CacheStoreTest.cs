@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             CacheTestStore.ThrowError = true;
             CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
 
-            cache.LocalClear(new[] {1});
+            cache.LocalClear(1);
             CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Get(1)).InnerException);
 
             CacheTestStore.ThrowError = false;
