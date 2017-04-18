@@ -2194,7 +2194,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        public void TestInvokeAll<T>(bool async, int entryCount) where T : AddArgCacheEntryProcessor, new()
+        private void TestInvokeAll<T>(bool async, int entryCount) where T : AddArgCacheEntryProcessor, new()
         {
             var cache = async ? Cache().WrapAsync() : Cache();
 
@@ -2477,22 +2477,22 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(expAge, person.Age);
         }
 
-        protected static int PrimaryKeyForCache(ICache<int, int> cache)
+        private static int PrimaryKeyForCache(ICache<int, int> cache)
         {
             return PrimaryKeysForCache(cache, 1, 0).First();
         }
 
-        protected static int PrimaryKeyForCache(ICache<int, int> cache, int startFrom)
+        private static int PrimaryKeyForCache(ICache<int, int> cache, int startFrom)
         {
             return PrimaryKeysForCache(cache, 1, startFrom).First();
         }
 
-        protected static List<int> PrimaryKeysForCache(ICache<int, int> cache, int cnt)
+        private static List<int> PrimaryKeysForCache(ICache<int, int> cache, int cnt)
         {
             return PrimaryKeysForCache(cache, cnt, 0).Take(cnt).ToList();
         }
 
-        protected static IEnumerable<int> PrimaryKeysForCache(ICache<int, int> cache, int cnt, int startFrom)
+        private static IEnumerable<int> PrimaryKeysForCache(ICache<int, int> cache, int cnt, int startFrom)
         {
             IClusterNode node = cache.Ignite.GetCluster().GetLocalNode();
 
@@ -2501,7 +2501,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return Enumerable.Range(startFrom, int.MaxValue - startFrom).Where(x => aff.IsPrimary(node, x));
         }
 
-        protected static int NearKeyForCache(ICache<int, int> cache)
+        private static int NearKeyForCache(ICache<int, int> cache)
         {
             IClusterNode node = cache.Ignite.GetCluster().GetLocalNode();
 
@@ -2518,7 +2518,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return 0;
         }
 
-        protected static string GetKeyAffinity(ICache<int, int> cache, int key)
+        private static string GetKeyAffinity(ICache<int, int> cache, int key)
         {
             if (cache.Ignite.GetAffinity(cache.Name).IsPrimary(cache.Ignite.GetCluster().GetLocalNode(), key))
                 return "primary";
@@ -2577,7 +2577,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test serializable object.
         /// </summary>
         [Serializable]
-        public class TestSerializableObject
+        private class TestSerializableObject
         {
             public string Name { get; set; }
             public int Id { get; set; }
