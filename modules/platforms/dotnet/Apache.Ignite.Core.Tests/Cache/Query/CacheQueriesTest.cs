@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Queries tests.
     /// </summary>
-    public sealed class CacheQueriesTest
+    public class CacheQueriesTest
     {
         /** Grid count. */
         private const int GridCnt = 2;
@@ -66,7 +66,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         new BinaryTypeConfiguration(typeof (QueryPerson)),
                         new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<QueryPerson>)),
                         new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<BinaryObject>))
-                    }
+                    },
+                    NameMapper = GetNameMapper()
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
@@ -79,6 +80,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 Ignition.Start(cfg);
             }
+        }
+        
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>

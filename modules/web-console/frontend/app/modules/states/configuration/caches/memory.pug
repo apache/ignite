@@ -31,63 +31,11 @@ include /app/helpers/jade/mixins
         .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
             .col-sm-6
                 .settings-row
-                    +dropdown('Mode:', `${model}.memoryMode`, '"memoryMode"', 'true', 'ONHEAP_TIERED',
-                        '[\
-                            {value: "ONHEAP_TIERED", label: "ONHEAP_TIERED"},\
-                            {value: "OFFHEAP_TIERED", label: "OFFHEAP_TIERED"},\
-                            {value: "OFFHEAP_VALUES", label: "OFFHEAP_VALUES"}\
-                        ]',
-                        'Memory modes control whether value is stored in on-heap memory, off-heap memory, or swap space\
-                        <ul>\
-                            <li>\
-                                ONHEAP_TIERED - entries are cached on heap memory first<br/>\
-                                <ul>\
-                                    <li>\
-                                        If offheap memory is enabled and eviction policy evicts an entry from heap memory, entry will be moved to offheap memory<br/>\
-                                        If offheap memory is disabled, then entry is simply discarded\
-                                    </li>\
-                                    <li>\
-                                        If swap space is enabled and offheap memory fills up, then entry will be evicted into swap space<br/>\
-                                        If swap space is disabled, then entry will be discarded. If swap is enabled and offheap memory is disabled, then entry will be evicted directly from heap memory into swap\
-                                    </li>\
-                                </ul>\
-                            </li>\
-                            <li>\
-                                OFFHEAP_TIERED - works the same as ONHEAP_TIERED, except that entries never end up in heap memory and get stored in offheap memory right away<br/>\
-                                Entries get cached in offheap memory first and then get evicted to swap, if one is configured\
-                            </li>\
-                            <li>\
-                                OFFHEAP_VALUES - entry keys will be stored on heap memory, and values will be stored in offheap memory<br/>\
-                                Note that in this mode entries can be evicted only to swap\
-                            </li>\
-                        </ul>')
-                .settings-row(ng-show=`${model}.memoryMode !== 'OFFHEAP_VALUES'`)
-                    +dropdown-required('Off-heap memory:', `${model}.offHeapMode`, '"offHeapMode"', 'true', `${model}.memoryMode === 'OFFHEAP_TIERED'`,
-                        'Disabled',
-                        '[\
-                            {value: -1, label: "Disabled"},\
-                            {value: 1, label: "Limited"},\
-                            {value: 0, label: "Unlimited"}\
-                        ]',
-                        'Off-heap storage mode\
-                        <ul>\
-                            <li>Disabled - Off-heap storage is disabled</li>\
-                            <li>Limited - Off-heap storage has limited size</li>\
-                            <li>Unlimited - Off-heap storage grow infinitely (it is up to user to properly add and remove entries from cache to ensure that off-heap storage does not grow infinitely)</li>\
-                        </ul>')
-                .settings-row(ng-if=`${model}.offHeapMode === 1 && ${model}.memoryMode !== 'OFFHEAP_VALUES'`)
-                    +number-required('Off-heap memory max size:', `${model}.offHeapMaxMemory`, '"offHeapMaxMemory"', 'true',
-                        `${model}.offHeapMode === 1`, 'Enter off-heap memory size', '1',
-                        'Maximum amount of memory available to off-heap storage in bytes')
-                .settings-row
-                    -var onHeapTired = model + '.memoryMode === "ONHEAP_TIERED"'
-                    -var swapEnabled = model + '.swapEnabled'
-                    -var offHeapMaxMemory = model + '.offHeapMaxMemory'
-
-                    +evictionPolicy(`${model}.evictionPolicy`, '"evictionPolicy"', 'true',
-                        onHeapTired  + ' && (' + swapEnabled + '|| _.isNumber(' + offHeapMaxMemory + ') &&' + offHeapMaxMemory + ' >= 0)',
-                        'Optional cache eviction policy<br/>\
-                        Must be set for entries to be evicted from on-heap to off-heap or swap\
+                    +checkbox('On-heap cache enabled', `${model}.onheapCacheEnabled`, '"onheapCacheEnabled"', 'On-heap cache enabled flag')
+                .settings-row(ng-show=`${model}.onheapCacheEnabled`)
+                    +evictionPolicy(`${model}.evictionPolicy`, '"evictionPolicy"', 'true', 'false',
+                        'Cache eviction policy<br/>\
+                        Must be set for entries to be evicted to off-heap\
                         <ul>\
                             <li>Least Recently Used(LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\
                             <li>First In First Out (FIFO) - Eviction policy based on FIFO algorithm and supports batch eviction</li>\
@@ -102,7 +50,5 @@ include /app/helpers/jade/mixins
                         This will save a lot of CPU resources during the load time, because the map would not have to resize.\
                         For example, if you expect to load 10 million entries into cache, you can set this property to 10 000 000.\
                         This will save you from cache internal map resizes.')
-                .settings-row
-                    +checkbox('Swap enabled', `${model}.swapEnabled`, '"swapEnabled"', 'Flag indicating whether swap storage is enabled or not for this cache')
             .col-sm-6
                 +preview-xml-java(model, 'cacheMemory')

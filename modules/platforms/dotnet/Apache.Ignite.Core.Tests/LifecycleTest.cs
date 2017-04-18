@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -83,7 +82,7 @@ namespace Apache.Ignite.Core.Tests
         {
             // 1. Test start events.
             IIgnite grid = Start(CfgNoBeans);
-            Assert.AreEqual(2, grid.GetConfiguration().LifecycleBeans.Count);
+            Assert.AreEqual(2, grid.GetConfiguration().LifecycleHandlers.Count);
 
             Assert.AreEqual(2, BeforeStartEvts.Count);
             CheckEvent(BeforeStartEvts[0], null, null, 0, null);
@@ -123,7 +122,7 @@ namespace Apache.Ignite.Core.Tests
         {
             // 1. Test .Net start events.
             IIgnite grid = Start(CfgBeans);
-            Assert.AreEqual(2, grid.GetConfiguration().LifecycleBeans.Count);
+            Assert.AreEqual(2, grid.GetConfiguration().LifecycleHandlers.Count);
 
             Assert.AreEqual(4, BeforeStartEvts.Count);
             CheckEvent(BeforeStartEvts[0], null, null, 0, null);
@@ -199,7 +198,7 @@ namespace Apache.Ignite.Core.Tests
             cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = cfgPath;
 
-            cfg.LifecycleBeans = new List<ILifecycleBean> { new Bean(), new Bean() };
+            cfg.LifecycleHandlers = new List<ILifecycleHandler> { new Bean(), new Bean() };
 
             return Ignition.Start(cfg);
         }
@@ -214,12 +213,6 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="expProp2">Expected property 2.</param>
         private static void CheckEvent(Event evt, IIgnite expGrid1, IIgnite expGrid2, int expProp1, string expProp2)
         {
-            if (evt.Grid1 != null && evt.Grid1 is IgniteProxy)
-                evt.Grid1 = (evt.Grid1 as IgniteProxy).Target;
-
-            if (evt.Grid2 != null && evt.Grid2 is IgniteProxy)
-                evt.Grid2 = (evt.Grid2 as IgniteProxy).Target;
-
             Assert.AreEqual(expGrid1, evt.Grid1);
             Assert.AreEqual(expGrid2, evt.Grid2);
             Assert.AreEqual(expProp1, evt.Prop1);
@@ -239,7 +232,7 @@ namespace Apache.Ignite.Core.Tests
         }
     }
 
-    public class Bean : AbstractBean, ILifecycleBean
+    public class Bean : AbstractBean, ILifecycleHandler
     {
         [InstanceResource]
         public IIgnite Grid2;

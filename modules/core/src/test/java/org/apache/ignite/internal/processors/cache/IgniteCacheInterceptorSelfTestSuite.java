@@ -39,11 +39,9 @@ public class IgniteCacheInterceptorSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheInterceptorAtomicSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorAtomicNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorAtomicWithStoreSelfTest.class);
-        suite.addTestSuite(GridCacheInterceptorAtomicPrimaryWriteOrderSelfTest.class);
 
         suite.addTestSuite(GridCacheInterceptorAtomicReplicatedSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorAtomicWithStoreReplicatedSelfTest.class);
-        suite.addTestSuite(GridCacheInterceptorAtomicReplicatedPrimaryWriteOrderSelfTest.class);
 
         suite.addTestSuite(GridCacheInterceptorSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorNearEnabledSelfTest.class);

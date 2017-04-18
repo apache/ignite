@@ -58,6 +58,31 @@ include /app/helpers/jade/mixins
                         'Flag indicating whether data can be read from backup<br/>\
                         If not set then always get data from primary node (never from backup)')
                 .settings-row
+                    +dropdown('Partition loss policy:', `${model}.partitionLossPolicy`, '"partitionLossPolicy"', 'true', 'IGNORE',
+                    '[\
+                        {value: "READ_ONLY_SAFE", label: "READ_ONLY_SAFE"},\
+                        {value: "READ_ONLY_ALL", label: "READ_ONLY_ALL"},\
+                        {value: "READ_WRITE_SAFE", label: "READ_WRITE_SAFE"},\
+                        {value: "READ_WRITE_ALL", label: "READ_WRITE_ALL"},\
+                        {value: "IGNORE", label: "IGNORE"}\
+                    ]',
+                    'Partition loss policies:\
+                    <ul>\
+                        <li>READ_ONLY_SAFE - in this mode all writes to the cache will be failed with an exception,\
+                            reads will only be allowed for keys in  non-lost partitions.\
+                            Reads from lost partitions will be failed with an exception.</li>\
+                        <li>READ_ONLY_ALL - in this mode фll writes to the cache will be failed with an exception.\
+                            All reads will proceed as if all partitions were in a consistent state.\
+                            The result of reading from a lost partition is undefined and may be different on different nodes in the cluster.</li>\
+                        <li>READ_WRITE_SAFE - in this mode Aall reads and writes will be allowed for keys in valid partitions.\
+                            All reads and writes for keys in lost partitions will be failed with an exception.</li>\
+                        <li>READ_WRITE_ALL - in this mode all reads and writes will proceed as if all partitions were in a consistent state.\
+                            The result of reading from a lost partition is undefined and may be different on different nodes in the cluster.</li>\
+                        <li>IGNORE - in this mode if partition is lost, reset it state and do not clear intermediate data.\
+                            The result of reading from a previously lost and not cleared partition is undefined and may be different\
+                            on different nodes in the cluster.</li>\
+                    </ul>')
+                .settings-row
                     +checkbox('Copy on read', `${model}.copyOnRead`, '"copyOnRead"',
                         'Flag indicating whether copy of the value stored in cache should be created for cache operation implying return value<br/>\
                         Also if this flag is set copies are created for values passed to CacheInterceptor and to CacheEntryProcessor')

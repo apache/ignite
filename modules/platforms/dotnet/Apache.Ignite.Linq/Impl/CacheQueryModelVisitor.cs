@@ -348,12 +348,27 @@ namespace Apache.Ignite.Linq.Impl
             base.VisitMainFromClause(fromClause, queryModel);
 
             _builder.AppendFormat("from ");
+            ValidateFromClause(fromClause);
             _aliases.AppendAsClause(_builder, fromClause).Append(" ");
 
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
             {
                 _builder.AppendFormat(", ");
+                ValidateFromClause(additionalFrom);
                 _aliases.AppendAsClause(_builder, additionalFrom).Append(" ");
+            }
+        }
+
+        /// <summary>
+        /// Validates from clause.
+        /// </summary>
+        // ReSharper disable once UnusedParameter.Local
+        private static void ValidateFromClause(IFromClause clause)
+        {
+            // Only IQueryable can be used in FROM clause. IEnumerable is not supported.
+            if (!typeof(IQueryable).IsAssignableFrom(clause.FromExpression.Type))
+            {
+                throw new NotSupportedException("FROM clause must be IQueryable: " + clause);
             }
         }
 
