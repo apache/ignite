@@ -532,6 +532,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Checks if the on-heap cache is enabled for the off-heap based page memory.
+     *
      * @return On-heap cache enabled flag.
      */
     public boolean isOnheapCacheEnabled() {
@@ -539,7 +541,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Configures on-heap cache.
+     * Configures on-heap cache for the off-heap based page memory.
      *
      * @param onheapCache {@code True} if on-heap cache should be enabled.
      * @return {@code this} for chaining.
@@ -2261,13 +2263,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode clusterNode) {
+        @Override public boolean apply(ClusterNode node) {
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
             return obj != null && obj.getClass().equals(this.getClass());
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "IgniteAllNodesPredicate []";
         }
     }
 

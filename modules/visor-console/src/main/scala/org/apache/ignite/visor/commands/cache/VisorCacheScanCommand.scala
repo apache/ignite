@@ -18,7 +18,6 @@
 package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
-import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.commands.common.VisorTextTable
 import org.apache.ignite.visor.visor._
 
@@ -139,7 +138,7 @@ class VisorCacheScanCommand {
         val firstPage =
             try
                 executeRandom(groupForDataNode(node, cacheName),
-                    classOf[VisorQueryTask], new VisorQueryArg(cacheName, null, false, false, false, pageSize)) match {
+                    classOf[VisorScanQueryTask], new VisorScanQueryTaskArg(cacheName, null, false, false, false, false, pageSize)) match {
                     case x if x.getError != null =>
                         error(x.getError)
 
