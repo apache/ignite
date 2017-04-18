@@ -52,11 +52,28 @@ namespace Apache.Ignite.Core.Binary
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "typeName");
 
+            var parsedName = TypeNameParser.Parse(name);
+
+            if (parsedName.Generics == null)
+            {
+                // Generics are rare, use simpler logic for the common case.
+                var res = IsSimpleName ? parsedName.GetName() : parsedName.GetFullName();
+                
+                var arr = parsedName.GetArray();
+
+                if (arr != null)
+                {
+                    res += arr;
+                }
+
+                return res;
+            }
+
             var nameFunc = IsSimpleName
                 ? (Func<TypeNameParser, string>) (x => x.GetName())
                 : (x => x.GetFullName());
 
-            return BuildTypeName(TypeNameParser.Parse(name), new StringBuilder(), nameFunc).ToString();
+            return BuildTypeName(parsedName, new StringBuilder(), nameFunc).ToString();
         }
 
         /// <summary>
