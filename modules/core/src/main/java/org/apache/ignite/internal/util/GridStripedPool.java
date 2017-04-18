@@ -123,6 +123,8 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
     public void put(T o) throws E {
         assert o != null;
 
+        cleanup(o);
+
         if (!validate(o)) {
             destroy(o);
             return;
@@ -142,16 +144,25 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
     /**
      * @param o Instance to validate.
      * @return {@code true} If the instance is valid.
+     * @throws E If failed.
      */
     protected abstract boolean validate(T o) throws E;
 
     /**
      * @return New instance.
+     * @throws E If failed.
      */
     protected abstract T create() throws E ;
 
     /**
+     * @param o Instance to cleanup before returning to the pool.
+     * @throws E If failed.
+     */
+    protected abstract void cleanup(T o) throws E;
+
+    /**
      * @param o Destroy the given pooled object.
+     * @throws E If failed.
      */
     protected abstract void destroy(T o) throws E ;
 }

@@ -33,6 +33,7 @@ import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE;
 
 /**
  * Pooled H2 connection with statement cache inside.
@@ -43,7 +44,8 @@ public class H2Connection implements AutoCloseable {
         IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 30_000);
 
     /** */
-    private static final int PREPARED_STMT_CACHE_SIZE = 256;
+    private static final int PREPARED_STMT_CACHE_SIZE = IgniteSystemProperties.getInteger(
+        IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE, 256);
 
     /** */
     private final Connection conn;
@@ -101,6 +103,8 @@ public class H2Connection implements AutoCloseable {
 
         if (F.eq(this.schema, schema))
             return;
+
+        // TODO conn.setSchema(schema);
 
         try {
             stmt.executeUpdate("SET SCHEMA " + schema);
