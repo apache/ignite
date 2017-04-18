@@ -677,11 +677,8 @@ public class GridH2Table extends TableBase {
                         assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
                     }
 
-                    for (GridH2IndexBase idx : tmpIdxs.values()) {
-                        Row res = idx.remove(old);
-
-                        assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + " -> " + idx.getName();
-                    }
+                    for (GridH2IndexBase idx : tmpIdxs.values())
+                        idx.remove(old);
 
                     size.decrement();
                 }

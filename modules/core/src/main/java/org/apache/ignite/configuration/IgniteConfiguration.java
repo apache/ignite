@@ -440,8 +440,8 @@ public class IgniteConfiguration {
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
-    /** Database configuration. */
-    private MemoryConfiguration dbCfg;
+    /** Page memory configuration. */
+    private MemoryConfiguration memCfg;
 
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -481,7 +481,7 @@ public class IgniteConfiguration {
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
-        dbCfg = cfg.getMemoryConfiguration();
+        memCfg = cfg.getMemoryConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -2091,22 +2091,22 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets memory configuration.
+     * Gets page memory configuration.
      *
      * @return Memory configuration.
      */
     public MemoryConfiguration getMemoryConfiguration() {
-        return dbCfg;
+        return memCfg;
     }
 
     /**
-     * Sets memory configuration.
+     * Sets page memory configuration.
      *
-     * @param dbCfg Memory configuration.
+     * @param memCfg Memory configuration.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration dbCfg) {
-        this.dbCfg = dbCfg;
+    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
+        this.memCfg = memCfg;
 
         return this;
     }

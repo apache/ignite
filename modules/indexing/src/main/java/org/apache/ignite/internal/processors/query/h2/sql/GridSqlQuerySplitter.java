@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -43,7 +44,6 @@ import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
 import org.h2.jdbc.JdbcPreparedStatement;
-import org.h2.util.IntArray;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
@@ -67,7 +67,6 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect.W
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect.childIndexForColumn;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion.LEFT_CHILD;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion.RIGHT_CHILD;
-import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.toArray;
 
 /**
  * Splits a single SQL query into two step map-reduce query.
@@ -211,7 +210,7 @@ public class GridSqlQuerySplitter {
             boolean allCollocated = true;
 
             for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys) {
-                Prepared prepared = optimize(h2, conn, mapSqlQry.query(), mapSqlQry.parameters(),
+                Prepared prepared = optimize(h2, conn, mapSqlQry.query(), mapSqlQry.parameters(params),
                     true, enforceJoinOrder);
 
                 allCollocated &= isCollocated((Query)prepared);
@@ -1344,11 +1343,18 @@ public class GridSqlQuerySplitter {
      * @param params All parameters.
      */
     private static void setupParameters(GridCacheSqlQuery sqlQry, GridSqlQuery qryAst, Object[] params) {
-        IntArray paramIdxs = new IntArray(params.length);
+        TreeSet<Integer> paramIdxs = new TreeSet<>();
 
-        params = findParams(qryAst, params, new ArrayList<>(params.length), paramIdxs).toArray();
+        findParamsQuery(qryAst, params, paramIdxs);
 
-        sqlQry.parameters(params, toArray(paramIdxs));
+        int[] paramIdxsArr = new int[paramIdxs.size()];
+
+        int i = 0;
+
+        for (Integer paramIdx : paramIdxs)
+            paramIdxsArr[i++] = paramIdx;
+
+        sqlQry.parameterIndexes(paramIdxsArr);
     }
 
     /**
@@ -1451,9 +1457,8 @@ public class GridSqlQuerySplitter {
     /**
      * @param prnt Table parent element.
      * @param childIdx Child index for the table or alias containing the table.
-     * @return Generated alias.
      */
-    private GridSqlAlias generateUniqueAlias(GridSqlAst prnt, int childIdx) {
+    private void generateUniqueAlias(GridSqlAst prnt, int childIdx) {
         GridSqlAst child = prnt.child(childIdx);
         GridSqlAst tbl = GridSqlAlias.unwrap(child);
 
@@ -1468,8 +1473,6 @@ public class GridSqlQuerySplitter {
 
         // Replace the child in the parent.
         prnt.child(childIdx, uniqueAliasAst);
-
-        return uniqueAliasAst;
     }
 
     /**
@@ -1586,64 +1589,54 @@ public class GridSqlQuerySplitter {
     /**
      * @param qry Select.
      * @param params Parameters.
-     * @param target Extracted parameters.
      * @param paramIdxs Parameter indexes.
-     * @return Extracted parameters list.
      */
-    private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target,
-        IntArray paramIdxs) {
+    private static void findParamsQuery(GridSqlQuery qry, Object[] params, TreeSet<Integer> paramIdxs) {
         if (qry instanceof GridSqlSelect)
-            return findParams((GridSqlSelect)qry, params, target, paramIdxs);
+            findParamsSelect((GridSqlSelect)qry, params, paramIdxs);
+        else {
+            GridSqlUnion union = (GridSqlUnion)qry;
 
-        GridSqlUnion union = (GridSqlUnion)qry;
+            findParamsQuery(union.left(), params, paramIdxs);
+            findParamsQuery(union.right(), params, paramIdxs);
 
-        findParams(union.left(), params, target, paramIdxs);
-        findParams(union.right(), params, target, paramIdxs);
-
-        findParams(qry.limit(), params, target, paramIdxs);
-        findParams(qry.offset(), params, target, paramIdxs);
-
-        return target;
+            findParams(qry.limit(), params, paramIdxs);
+            findParams(qry.offset(), params, paramIdxs);
+        }
     }
 
     /**
      * @param select Select.
      * @param params Parameters.
-     * @param target Extracted parameters.
      * @param paramIdxs Parameter indexes.
-     * @return Extracted parameters list.
      */
-    private static List<Object> findParams(
+    private static void findParamsSelect(
         GridSqlSelect select,
         Object[] params,
-        ArrayList<Object> target,
-        IntArray paramIdxs
+        TreeSet<Integer> paramIdxs
     ) {
         if (params.length == 0)
-            return target;
+            return;
 
         for (GridSqlAst el : select.columns(false))
-            findParams(el, params, target, paramIdxs);
+            findParams(el, params, paramIdxs);
 
-        findParams(select.from(), params, target, paramIdxs);
-        findParams(select.where(), params, target, paramIdxs);
+        findParams(select.from(), params, paramIdxs);
+        findParams(select.where(), params, paramIdxs);
 
         // Don't search in GROUP BY and HAVING since they expected to be in select list.
 
-        findParams(select.limit(), params, target, paramIdxs);
-        findParams(select.offset(), params, target, paramIdxs);
-
-        return target;
+        findParams(select.limit(), params, paramIdxs);
+        findParams(select.offset(), params, paramIdxs);
     }
 
     /**
      * @param el Element.
      * @param params Parameters.
-     * @param target Extracted parameters.
      * @param paramIdxs Parameter indexes.
      */
-    private static void findParams(@Nullable GridSqlAst el, Object[] params, ArrayList<Object> target,
-        IntArray paramIdxs) {
+    private static void findParams(@Nullable GridSqlAst el, Object[] params,
+        TreeSet<Integer> paramIdxs) {
         if (el == null)
             return;
 
@@ -1652,27 +1645,17 @@ public class GridSqlQuerySplitter {
             // Here we will set them to NULL.
             final int idx = ((GridSqlParameter)el).index();
 
-            while (target.size() < idx)
-                target.add(null);
-
             if (params.length <= idx)
                 throw new IgniteException("Invalid number of query parameters. " +
                     "Cannot find " + idx + " parameter.");
 
-            Object param = params[idx];
-
-            if (idx == target.size())
-                target.add(param);
-            else
-                target.set(idx, param);
-
             paramIdxs.add(idx);
         }
         else if (el instanceof GridSqlSubquery)
-            findParams(((GridSqlSubquery)el).subquery(), params, target, paramIdxs);
+            findParamsQuery(((GridSqlSubquery)el).subquery(), params, paramIdxs);
         else {
             for (int i = 0; i < el.size(); i++)
-                findParams((GridSqlAst)el.child(i), params, target, paramIdxs);
+                findParams(el.child(i), params, paramIdxs);
         }
     }
 

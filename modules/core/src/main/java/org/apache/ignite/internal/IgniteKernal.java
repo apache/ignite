@@ -1198,10 +1198,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             int loadedPages = 0;
 
-                            for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
-                                MemoryPolicy memPlc = cctx.memoryPolicy();
+                            Collection<MemoryPolicy> policies = ctx.cache().context().database().memoryPolicies();
 
-                                loadedPages += memPlc != null ? memPlc.pageMemory().loadedPages() : 0;
+                            if (!F.isEmpty(policies)) {
+                                for (MemoryPolicy memPlc : policies)
+                                    loadedPages += memPlc.pageMemory().loadedPages();
                             }
 
                             String id = U.id8(localNode().id());
@@ -2442,10 +2443,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (memCfg == null)
             return;
 
-        U.log(log, "System cache MemoryPolicy size is configured to " +
-                (memCfg.getSystemCacheMemorySize() / (1024 * 1024)) +
-        "MB size. " +
-                "Use MemoryConfiguration.systemCacheMemorySize property to change it.");
+        U.log(log, "System cache's MemoryPolicy size is configured to " +
+            (memCfg.getSystemCacheMemorySize() / (1024 * 1024)) + " MB. " +
+            "Use MemoryConfiguration.systemCacheMemorySize property to change the setting.");
     }
 
     /**
