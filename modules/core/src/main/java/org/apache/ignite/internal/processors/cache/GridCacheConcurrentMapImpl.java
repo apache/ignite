@@ -110,8 +110,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(final AffinityTopologyVersion topVer,
-        KeyCacheObject key, @Nullable final CacheObject val, final boolean create, final boolean touch) {
-
+        KeyCacheObject key, final boolean create, final boolean touch) {
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
         GridCacheMapEntry created0 = null;
@@ -127,7 +126,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
             if (entry == null) {
                 if (create) {
                     if (created0 == null)
-                        created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                        created0 = factory.create(ctx, topVer, key, key.hashCode());
 
                     cur = created = created0;
 
@@ -142,7 +141,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                     if (create) {
                         if (created0 == null)
-                            created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                            created0 = factory.create(ctx, topVer, key, key.hashCode());
 
                         cur = created = created0;
 

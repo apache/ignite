@@ -172,13 +172,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param cctx Cache context.
      * @param key Cache key.
      * @param hash Key hash value.
-     * @param val Entry value.
      */
     protected GridCacheMapEntry(
         GridCacheContext<?, ?> cctx,
         KeyCacheObject key,
-        int hash,
-        CacheObject val
+        int hash
     ) {
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
@@ -190,12 +188,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         this.key = key;
         this.hash = hash;
         this.cctx = cctx;
-
-        val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
-        synchronized (this) {
-            value(val);
-        }
 
         ver = cctx.versions().next();
 
@@ -388,7 +380,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @return {@code True} if start version.
      */
-    public boolean isStartVersion() {
+    private boolean isStartVersion() {
         return ver.nodeOrder() == cctx.localNode().order() && ver.order() == startVer;
     }
 
