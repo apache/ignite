@@ -39,9 +39,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(Foo), typeof(Key), typeof(Key2))
+                {
+                    NameMapper = GetNameMapper()
+                }
             };
 
             Ignition.Start(cfg);
+        }
+
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>
