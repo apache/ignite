@@ -51,9 +51,12 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -77,7 +80,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Partitions per region distribution. */
-    private static final int[] PARTS_PER_REGION = new int[] {100, 200, 300, 400, 24};
+    private static final int[] PARTS_PER_REGION = new int[] {10, 20, 30, 40, 24};
 
     /** Unmapped region id. */
     private static final int UNMAPPED_REGION = PARTS_PER_REGION.length;
@@ -127,6 +130,8 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
 
     /** Deposits per client. */
     public static final int DEPOSITS_PER_CLIENT = 10;
+
+    private GridRandom rnd;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -296,6 +301,8 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        rnd = new GridRandom();
+
         int sum1 = 0;
         for (List<Integer> range : REGION_TO_PART_MAP.values())
             sum1 += range.get(1);
@@ -397,8 +404,6 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
     public void testJoinQueryUnstableTopology() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final GridRandom r = new GridRandom();
-
         final AtomicIntegerArray states = new AtomicIntegerArray(GRIDS_COUNT);
 
         final Ignite client = grid("client");
@@ -410,7 +415,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 while (!stop.get()) {
-                    doTestJoinQuery(client, r.nextInt(1) + 3);
+                    doTestJoinQuery(client, rnd.nextInt(1) + 3);
 
                     int cur = cnt.incrementAndGet();
 
@@ -425,7 +430,7 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 while(!stop.get()) {
-                    int grid = r.nextInt(GRIDS_COUNT);
+                    int grid = rnd.nextInt(GRIDS_COUNT);
 
                     String name = getTestIgniteInstanceName(grid);
 
@@ -441,11 +446,11 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
                         try {
                             stopGrid(grid);
 
-                            Thread.sleep(r.nextInt(NODE_STOP_TIME));
+                            Thread.sleep(rnd.nextInt(NODE_STOP_TIME));
 
                             startGrid(grid);
 
-                            Thread.sleep(r.nextInt(NODE_STOP_TIME));
+                            Thread.sleep(rnd.nextInt(NODE_STOP_TIME));
                         } finally {
                             states.set(grid, 0);
                         }
@@ -456,13 +461,12 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
             }
         }, RESTART_THREADS_CNT);
 
-        grid(0).scheduler().runLocal(new Runnable() {
-            @Override public void run() {
-                stop.set(true);
-            }
-        }, 60, TimeUnit.SECONDS);
-
-        fut2.get();
+        try {
+            fut2.get(60, TimeUnit.SECONDS);
+        }
+        catch (IgniteFutureTimeoutCheckedException ignored) {
+            stop.set(true);
+        }
 
         try {
             fut.get();
@@ -627,26 +631,35 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends GridCommonAbst
         for (int regionId : regions) {
             List<Integer> range = REGION_TO_PART_MAP.get(regionId);
 
-            SqlFieldsQuery qry = new SqlFieldsQuery("select cl.clientId, de.regionId from " +
+            SqlFieldsQuery qry = new SqlFieldsQuery("select cl._KEY, de.depositId, de.regionId from " +
                 "\"cl\".Client cl, \"de\".Deposit de, \"re\".Region re where cl.clientId=de.clientId and de.regionId=re._KEY");
 
-            qry.setPartitions(createRange(range.get(0), range.get(1)));
+            int[] pSet = createRange(range.get(0), 1 + rnd.nextInt(range.get(1) - 1));
+
+            qry.setPartitions(pSet);
 
             try {
                 List<List<?>> rows = cl.query(qry).getAll();
 
-                int expRegionCnt = regionId == 5 ? 0 : PARTS_PER_REGION[regionId - 1] * CLIENTS_PER_PARTITION;
+                for (List<?> row : rows) {
+                    ClientKey key = (ClientKey)row.get(0);
 
-                assertEquals("Clients with deposits", expRegionCnt * DEPOSITS_PER_CLIENT, rows.size());
+                    int p = AFFINITY.partition(key);
+
+                    assertTrue(Arrays.binarySearch(pSet, p) >= 0);
+                }
 
                 // Query must produce only results from single region.
                 for (List<?> row : rows)
-                    assertEquals("Region id", regionId, ((Integer)row.get(1)).intValue());
+                    assertEquals("Region id", regionId, ((Integer)row.get(2)).intValue());
 
                 if (regionId == UNMAPPED_REGION)
                     fail();
             }
             catch (CacheException ignored) {
+                if (X.hasCause(ignored, InterruptedException.class, IgniteInterruptedCheckedException.class))
+                    return; // Allow interruptions.
+
                 if (regionId != UNMAPPED_REGION)
                     fail();
             }

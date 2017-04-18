@@ -612,7 +612,8 @@ public class GridReduceQueryExecutor {
 
                         if (partsMap != null) {
                             // If specific partitions are set for a query we must narrow mapping to related nodes.
-                            qryNodesMap = parts == null ? partsMap : F.viewReadOnly(partsMap, new ProjectionFilter(parts),
+                            qryNodesMap = parts == null ? partsMap : F.viewReadOnly(partsMap,
+                                new ProjectionFilter(parts),
                                 new QueryNodesPredicate(parts, partsMap));
 
                             nodes = qryNodesMap == null ? null : qryNodesMap.keySet();
@@ -1099,7 +1100,13 @@ public class GridReduceQueryExecutor {
             List<ClusterNode> owners = cctx.topology().owners(p);
 
             if (F.isEmpty(owners)) {
-                if (!F.isEmpty(dataNodes(cctx.name(), NONE)))
+                // Handle special case: no mapping for partition is configured.
+                if (F.isEmpty(cctx.affinity().assignment(NONE).get(p))) {
+                    partLocs[p] = Collections.emptySet(); // Mark unmapped partition.
+
+                    continue;
+                }
+                else if (!F.isEmpty(dataNodes(cctx.name(), NONE)))
                     return null; // Retry.
 
                 throw new CacheException("Failed to find data nodes [cache=" + cctx.name() + ", part=" + p + "]");
@@ -1119,6 +1126,9 @@ public class GridReduceQueryExecutor {
 
                 for (int p = 0, parts =  extraCctx.affinity().partitions(); p < parts; p++) {
                     List<ClusterNode> owners = extraCctx.topology().owners(p);
+
+                    if (partLocs[p] == Collections.<ClusterNode>emptySet())
+                        continue; // Skip unmapped partitions.
 
                     if (F.isEmpty(owners)) {
                         if (!F.isEmpty(dataNodes(extraCctx.name(), NONE)))
@@ -1151,6 +1161,9 @@ public class GridReduceQueryExecutor {
                     return null; // Retry.
 
                 for (Set<ClusterNode> partLoc : partLocs) {
+                    if (partLoc == Collections.<ClusterNode>emptySet())
+                        continue; // Skip unmapped partition.
+
                     partLoc.retainAll(dataNodes);
 
                     if (partLoc.isEmpty())
@@ -1166,6 +1179,9 @@ public class GridReduceQueryExecutor {
         for (int p = 0; p < partLocs.length; p++) {
             Set<ClusterNode> pl = partLocs[p];
 
+            if (pl == Collections.<ClusterNode>emptySet())
+                continue;
+
             assert !F.isEmpty(pl) : pl;
 
             ClusterNode n = pl.size() == 1 ? F.first(pl) : F.rand(pl);
@@ -1176,25 +1192,6 @@ public class GridReduceQueryExecutor {
                 res.put(n, parts = new IntArray());
 
             parts.add(p);
-        }
-
-        return res;
-    }
-
-    /**
-     * @param mainSpace Main space.
-     * @param allSpaces All spaces.
-     * @return List of all extra spaces or {@code null} if none.
-     */
-    private List<String> extraSpaces(String mainSpace, Collection<String> allSpaces) {
-        if (F.isEmpty(allSpaces) || (allSpaces.size() == 1 && allSpaces.contains(mainSpace)))
-            return null;
-
-        ArrayList<String> res = new ArrayList<>(allSpaces.size());
-
-        for (String space : allSpaces) {
-            if (!F.eq(space, mainSpace))
-                res.add(space);
         }
 
         return res;
