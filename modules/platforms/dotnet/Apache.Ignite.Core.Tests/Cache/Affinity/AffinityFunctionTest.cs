@@ -93,9 +93,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             try
             {
-                // Check that affinity handles are present
-                TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count - 3, 0);
-                TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count - 3, 0);
+                // Check that affinity handles are present:
+                // TestDynamicCachePredefined and TestSimpleInheritance do not produce extra handles, so "-2" here.
+                TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count - 2, 0);
+                TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count - 2, 0);
 
                 // Destroy all caches
                 _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
