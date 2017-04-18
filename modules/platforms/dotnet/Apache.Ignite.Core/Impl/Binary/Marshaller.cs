@@ -703,7 +703,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             AddSystemType(BinaryUtils.TypeNativeJobHolder, r => new ComputeJobHolder(r));
             AddSystemType(BinaryUtils.TypeComputeJobWrapper, r => new ComputeJobWrapper(r));
-            AddSystemType(BinaryUtils.TypeIgniteProxy, r => new IgniteProxy());
             AddSystemType(BinaryUtils.TypeComputeOutFuncJob, r => new ComputeOutFuncJob(r));
             AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, r => new ComputeOutFuncWrapper(r));
             AddSystemType(BinaryUtils.TypeComputeFuncWrapper, r => new ComputeFuncWrapper(r));
