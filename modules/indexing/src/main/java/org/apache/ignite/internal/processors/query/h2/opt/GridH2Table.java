@@ -267,20 +267,15 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("StatementWithEmptyBody")
-    // TODO: Do not allow null sessions.
-    @Override public boolean lock(@Nullable final Session ses, boolean exclusive, boolean force) {
-        if (ses != null) {
-            Boolean putRes = sessions.putIfAbsent(ses, exclusive);
+    @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
+        Boolean putRes = sessions.putIfAbsent(ses, exclusive);
 
-            // In accordance with base method semantics, we'll return true if we were already exclusively locked
-            if (putRes != null)
-                return putRes;
+        // In accordance with base method semantics, we'll return true if we were already exclusively locked
+        if (putRes != null)
+            return putRes;
 
-            ses.addLock(this);
-        }
+        ses.addLock(this);
 
-        // Prevent concurrent index changes.
         lock(exclusive);
 
         if (destroyed) {
@@ -489,24 +484,16 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    // TODO: Prohibit null sessions.
-    @Override public void unlock(@Nullable Session ses) {
-        Boolean rmRes = null;
+    @Override public void unlock(Session ses) {
+        Boolean exclusive = sessions.remove(ses);
 
-        if (ses != null) {
-            rmRes = sessions.remove(ses);
-
-            // Return if we actually had no lock
-            if (rmRes == null)
-                return;
-        }
-
+        if (exclusive == null)
+            return;
 
         if (snapshotInLock())
             releaseSnapshots();
 
-        if (rmRes != null)
-            unlock(rmRes);
+        unlock(exclusive);
     }
 
     /**
