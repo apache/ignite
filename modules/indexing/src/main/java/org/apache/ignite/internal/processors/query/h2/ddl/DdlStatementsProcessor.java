@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
@@ -58,9 +57,6 @@ public class DdlStatementsProcessor {
     /** Indexing. */
     IgniteH2Indexing idx;
 
-    /** Logger. */
-    private IgniteLogger log;
-
     /**
      * Initialize message handlers and this' fields needed for further operation.
      *
@@ -70,18 +66,15 @@ public class DdlStatementsProcessor {
     public void start(final GridKernalContext ctx, IgniteH2Indexing idx) {
         this.ctx = ctx;
         this.idx = idx;
-
-        log = ctx.log(DdlStatementsProcessor.class);
     }
 
     /**
      * Execute DDL statement.
      *
-     * @param cacheName Cache name.
      * @param stmt H2 statement to parse and execute.
      */
     @SuppressWarnings("unchecked")
-    public QueryCursor<List<?>> runDdlStatement(String cacheName, PreparedStatement stmt)
+    public QueryCursor<List<?>> runDdlStatement(PreparedStatement stmt)
         throws IgniteCheckedException {
         assert stmt instanceof JdbcPreparedStatement;
 
