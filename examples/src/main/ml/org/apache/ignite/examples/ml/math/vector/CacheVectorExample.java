@@ -21,10 +21,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.math.IdentityValueMapper;
-import org.apache.ignite.math.ValueMapper;
-import org.apache.ignite.math.VectorKeyMapper;
-import org.apache.ignite.math.impls.vector.CacheVector;
+import org.apache.ignite.ml.math.IdentityValueMapper;
+import org.apache.ignite.ml.math.ValueMapper;
+import org.apache.ignite.ml.math.VectorKeyMapper;
+import org.apache.ignite.ml.math.impls.vector.CacheVector;
 
 /**
  * This example shows how to use {@link CacheVector} API.
