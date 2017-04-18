@@ -1626,12 +1626,24 @@ namespace Apache.Ignite.Core.Impl.Binary
             return hash;
         }
 
+        /// <summary>
+        /// Cleans the name of the field.
+        /// </summary>
         public static string CleanFieldName(string fieldName)
         {
+            // C# auto property backing field:
             if (fieldName.StartsWith("<", StringComparison.Ordinal)
                 && fieldName.EndsWith(">k__BackingField", StringComparison.Ordinal))
+            {
                 return fieldName.Substring(1, fieldName.IndexOf(">", StringComparison.Ordinal) - 1);
-            
+            }
+
+            // F# backing field:
+            if (fieldName.EndsWith("@", StringComparison.Ordinal))
+            {
+                return fieldName.Substring(0, fieldName.Length - 1);
+            }
+
             return fieldName;
         }
 

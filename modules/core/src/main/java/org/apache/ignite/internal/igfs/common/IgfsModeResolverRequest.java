@@ -15,14 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.internal.igfs.common;
+
+import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.MODE_RESOLVER;
 
 /**
- * Gets payload for Hadoop secondary file system.
+ * Handshake request.
  */
-public interface HadoopPayloadAware {
-    /**
-     * @return Payload.
-     */
-    public Object getPayload();
+public class IgfsModeResolverRequest extends IgfsMessage {
+    /** {@inheritDoc} */
+    @Override public IgfsIpcCommand command() {
+        return MODE_RESOLVER;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void command(IgfsIpcCommand cmd) {
+        // No-op.
+    }
 }
