@@ -69,13 +69,6 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsPaths proxyPaths() {
-        throwUnsupported();
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgfsInputStream open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch)
         throws IgniteException {
         throwUnsupported();

@@ -817,7 +817,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     private <T> IgniteInternalFuture<T> asyncOp(final CO<IgniteInternalFuture<T>> op) {
-        IgniteInternalFuture<T> fail = asyncOpAcquire();
+        IgniteInternalFuture<T> fail = asyncOpAcquire(/*retry*/false);
 
         if (fail != null)
             return fail;
@@ -841,14 +841,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
                     });
 
-                saveFuture(holder, f);
+                saveFuture(holder, f, /*retry*/false);
 
                 return f;
             }
 
             IgniteInternalFuture<T> f = op.apply();
 
-            saveFuture(holder, f);
+            saveFuture(holder, f, /*retry*/false);
 
             return f;
         }
