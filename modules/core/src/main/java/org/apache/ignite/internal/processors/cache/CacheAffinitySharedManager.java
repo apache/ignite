@@ -1738,7 +1738,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param aff Affinity.
          * @param initAff Current affinity.
          */
-        public CacheHolder2(
+        CacheHolder2(
             boolean rebalanceEnabled,
             GridCacheSharedContext cctx,
             GridAffinityAssignmentCache aff,
@@ -1827,6 +1827,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assignments.put(cacheId, cacheAssignment = new HashMap<>());
 
             cacheAssignment.put(part, assignment);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "WaitRebalanceInfo [topVer=" + topVer +
+                ", caches=" + (waitCaches != null ? waitCaches.keySet() : null) + ']';
         }
     }
 }
