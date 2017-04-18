@@ -1328,13 +1328,6 @@ public class IgniteConfiguration {
      * <p>
      * Updating metrics too frequently may have negative performance impact.
      * <p>
-     * The following values are accepted:
-     * <ul>
-     *     <li>{@code -1} metrics are never updated.</li>
-     *     <li>{@code 0} metrics are updated on each job start and finish.</li>
-     *     <li>Positive value defines the actual update frequency. If not provided, then default value
-     *     {@link #DFLT_METRICS_UPDATE_FREQ} is used.</li>
-     * </ul>
      * If not provided, then default value {@link #DFLT_METRICS_UPDATE_FREQ} is used.
      *
      * @return Job metrics update frequency in milliseconds.
@@ -1347,8 +1340,6 @@ public class IgniteConfiguration {
     /**
      * Sets Ignite metrics update frequency in milliseconds.
      * <p>
-     * If set to {@code -1} metrics are never updated.
-     * If set to {@code 0} metrics are updated on each job start and finish.
      * Positive value defines the actual update frequency.
      * If not provided, then default value
      * {@link #DFLT_METRICS_UPDATE_FREQ} is used.
