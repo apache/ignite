@@ -170,11 +170,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartTheSameName()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = "config\\start-test-grid1.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
             var grid1 = Ignition.Start(cfg);
@@ -216,11 +214,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestUsageAfterStop()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = "config\\start-test-grid1.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
             var grid = Ignition.Start(cfg);
@@ -229,16 +225,10 @@ namespace Apache.Ignite.Core.Tests
 
             grid.Dispose();
 
-            try
-            {
-                grid.GetCache<int, int>("cache1");
-
-                Assert.Fail();
-            }
-            catch (InvalidOperationException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
+            var ex = Assert.Throws<InvalidOperationException>(() => grid.GetCache<int, int>("cache1"));
+            Assert.AreEqual("Grid is in invalid state to perform this operation. " +
+                            "It either not started yet or has already being or have stopped " +
+                            "[igniteInstanceName=grid1, state=STOPPED]", ex.Message);
         }
 
         /// <summary>
@@ -285,18 +275,14 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestClientMode()
         {
-            var servCfg = new IgniteConfiguration
+            var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = "config\\start-test-grid1.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
-            var clientCfg = new IgniteConfiguration
+            var clientCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = "config\\start-test-grid2.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
             try
