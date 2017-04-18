@@ -122,6 +122,11 @@ public final class Functions {
         return (a, b) -> a - b * constant;
     }
 
+    /** Function that returns passed constant. */
+    public static final IgniteDoubleFunction<Double> constant(Double c) {
+        return a -> c;
+    }
+
     /**
      * @param b
      */

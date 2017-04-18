@@ -178,6 +178,18 @@ public class QRDecomposition extends DecompositionSupport {
     }
 
     /**
+     * Least squares solution of {@code A*X = B}; {@code returns X}.
+     *
+     * @param vec A vector with as many rows as {@code A}.
+     * @return {@code X<} that minimizes the two norm of {@code Q*R*X - B}.
+     * @throws IllegalArgumentException if {@code B.rows() != A.rows()}.
+     */
+    public Vector solve(Vector vec) {
+        Matrix res = solve(vec.likeMatrix(vec.size(), 1).assignColumn(0, vec));
+        return vec.like(vec.size()).assign(res.viewColumn(0));
+    }
+
+    /**
      * Returns a rough string rendition of a QR.
      */
     @Override public String toString() {
