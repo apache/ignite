@@ -405,12 +405,11 @@ public class GridMapQueryExecutor {
      * @param req Query request.
      */
     private void onQueryRequest(final ClusterNode node, final GridH2QueryRequest req) throws IgniteCheckedException {
-        int[] qryTargetParts = req.queryTargetPartitions();
+        int[] qryParts = req.queryPartitions();
 
         final Map<UUID,int[]> partsMap = req.partitions();
 
-        final int[] parts = qryTargetParts == null ? partsMap == null ? null : partsMap.get(ctx.localNodeId()) :
-            qryTargetParts;
+        final int[] parts = qryParts == null ? partsMap == null ? null : partsMap.get(ctx.localNodeId()) : qryParts;
 
         assert req.caches() != null && !req.caches().isEmpty();
 

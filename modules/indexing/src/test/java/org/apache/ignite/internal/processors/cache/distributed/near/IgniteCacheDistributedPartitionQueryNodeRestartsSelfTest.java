@@ -29,7 +29,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 /**
  * Tests distributed queries over set of partitions on unstable topology.
  * */
-public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends IgniteCacheDistributedPartitionQueryAbstractSelfTest {
+public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
+    extends IgniteCacheDistributedPartitionQueryAbstractSelfTest {
     /** Tests join query within region on unstable topology. */
     public void testJoinQueryUnstableTopology() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
@@ -38,14 +39,12 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends Ig
 
         final Ignite client = grid("client");
 
-        log().info("Starting test");
-
         final AtomicInteger cnt = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 while (!stop.get()) {
-                    doTestJoinQuery(client, rnd.nextInt(1) + 3);
+                    doTestJoinQuery(client, rnd.nextInt(PARTS_PER_REGION.length) + 1);
 
                     int cur = cnt.incrementAndGet();
 

@@ -458,19 +458,19 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
     /**
      * @param orig Query originator.
-     * @param regions Region ids.
+     * @param regionIds Region ids.
      */
-    protected void doTestJoinQuery(Ignite orig, int... regions) {
+    protected void doTestJoinQuery(Ignite orig, int... regionIds) {
         IgniteCache<ClientKey, Client> cl = orig.cache("cl");
 
-        if (regions == null) {
-            regions = new int[PARTS_PER_REGION.length];
+        if (regionIds == null) {
+            regionIds = new int[PARTS_PER_REGION.length];
 
-            for (int i = 0; i < regions.length; i++)
-                regions[i] = i + 1;
+            for (int i = 0; i < regionIds.length; i++)
+                regionIds[i] = i + 1;
         }
 
-        for (int regionId : regions) {
+        for (int regionId : regionIds) {
             List<Integer> range = REGION_TO_PART_MAP.get(regionId);
 
             SqlFieldsQuery qry = new SqlFieldsQuery(JOIN_QRY);

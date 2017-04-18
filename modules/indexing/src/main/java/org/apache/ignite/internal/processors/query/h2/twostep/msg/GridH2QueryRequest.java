@@ -82,9 +82,9 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     @GridDirectMap(keyType = UUID.class, valueType = int[].class)
     private Map<UUID, int[]> parts;
 
-    /** Query target partitions. */
+    /** Query partitions. */
     @GridToStringInclude
-    private int[] qryTargetParts;
+    private int[] qryParts;
 
     /** */
     private int pageSize;
@@ -120,7 +120,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         this.caches = req.caches;
         this.topVer = req.topVer;
         this.parts = req.parts;
-        this.qryTargetParts = req.qryTargetParts;
+        this.qryParts = req.qryParts;
         this.pageSize = req.pageSize;
         this.qrys = req.qrys;
         this.flags = req.flags;
@@ -214,18 +214,18 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
-     * @return Projections.
+     * @return Query partitions.
      */
-    public int[] queryTargetPartitions() {
-        return qryTargetParts;
+    public int[] queryPartitions() {
+        return qryParts;
     }
 
     /**
-     * @param projs Projections.
+     * @param qryParts Query partitions.
      * @return {@code this}.
      */
-    public GridH2QueryRequest queryTargetPartitions(int[] qryTargetParts) {
-        this.qryTargetParts = qryTargetParts;
+    public GridH2QueryRequest queryPartitions(int[] qryParts) {
+        this.qryParts = qryParts;
 
         return this;
     }
@@ -386,7 +386,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeIntArray("projs", qryTargetParts))
+                if (!writer.writeIntArray("qryParts", qryParts))
                     return false;
 
                 writer.incrementState();
@@ -476,7 +476,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 9:
-                qryTargetParts = reader.readIntArray("proj");
+                qryParts = reader.readIntArray("qryParts");
 
                 if (!reader.isLastRead())
                     return false;
