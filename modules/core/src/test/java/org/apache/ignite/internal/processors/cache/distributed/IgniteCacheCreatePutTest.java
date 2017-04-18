@@ -102,7 +102,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartNodes() throws Exception {
-        long stopTime = System.currentTimeMillis() + 2 * 60_000;
+        long stopTime = System.currentTimeMillis() + 60_000;
 
         try {
             int iter = 0;
@@ -153,7 +153,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
         ignite0.createCache(cacheConfiguration("atomic-cache", ATOMIC));
         ignite0.createCache(cacheConfiguration("tx-cache", TRANSACTIONAL));
 
-        final long stopTime = System.currentTimeMillis() + 60_000;
+        final long stopTime = System.currentTimeMillis() + 30_000;
 
         final AtomicInteger updateThreadIdx = new AtomicInteger();
 

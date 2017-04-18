@@ -698,6 +698,13 @@ public abstract class GridAbstractTest extends TestCase {
 
         info("Starting grids: " + cnt);
 
+        if (G.allGrids().isEmpty()) {
+            // Start first grid in single-threaded mode to avoid 2-seconds pause on concurrent grid start.
+            startGrid(init++);
+
+            cnt--;
+        }
+
         final AtomicInteger gridIdx = new AtomicInteger(init);
 
         GridTestUtils.runMultiThreaded(
@@ -712,7 +719,7 @@ public abstract class GridAbstractTest extends TestCase {
             "grid-starter-" + getName()
         );
 
-        assert gridIdx.get() - init == cnt;
+        assertEquals(cnt, gridIdx.get() - init);
 
         return grid(init);
     }
