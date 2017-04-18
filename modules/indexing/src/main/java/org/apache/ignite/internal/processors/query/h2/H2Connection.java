@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.F;
@@ -38,14 +39,22 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_STATEM
 /**
  * Pooled H2 connection with statement cache inside.
  */
-public class H2Connection implements AutoCloseable {
+public final class H2Connection implements AutoCloseable {
     /** The period of clean up the connection from pool. */
-    private final long CLEANUP_PERIOD = IgniteSystemProperties.getLong(
+    private static final long CLEANUP_PERIOD = IgniteSystemProperties.getLong(
         IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 30_000);
 
     /** */
     private static final int PREPARED_STMT_CACHE_SIZE = IgniteSystemProperties.getInteger(
         IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE, 256);
+
+    /** */
+    private static final AtomicIntegerFieldUpdater<H2Connection> closedUpd =
+        AtomicIntegerFieldUpdater.newUpdater(H2Connection.class, "closed");
+
+    /** */
+    @SuppressWarnings("unused")
+    private volatile int closed;
 
     /** */
     private final Connection conn;
@@ -73,12 +82,11 @@ public class H2Connection implements AutoCloseable {
     }
 
     /**
-     * @return Connection.
+     * @param sql SQL.
+     * @param cache If we need to cache the statement for reuse.
+     * @return Prepared statement.
+     * @throws SQLException If failed.
      */
-    public Connection connection() {
-        return conn;
-    }
-
     public PreparedStatement prepare(String sql, boolean cache) throws SQLException {
         PreparedStatement ps = cache ? stmtCache.get(sql) : null;
 
@@ -116,10 +124,19 @@ public class H2Connection implements AutoCloseable {
         this.schema = schema;
     }
 
+    /**
+     * @param sql SQL Command.
+     * @throws SQLException If failed.
+     */
     public void executeUpdate(String sql) throws SQLException {
         stmt.executeUpdate(sql);
     }
 
+    /**
+     * @param sql SQL query.
+     * @return Result set.
+     * @throws SQLException If failed.
+     */
     public ResultSet executeQuery(String sql) throws SQLException {
         return stmt.executeQuery(sql);
     }
@@ -129,23 +146,19 @@ public class H2Connection implements AutoCloseable {
      * @param enforceJoinOrder Enforce join order of tables.
      */
     public void setupConnection(boolean distributedJoins, boolean enforceJoinOrder) {
-        Session s = session(conn);
+        Session s = session();
 
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
     }
 
     public void queryTimeout(int timeout) {
-        session(conn).setQueryTimeout(timeout);
-    }
-
-    private static Session session(Connection c) {
-        return (Session)((JdbcConnection)c).getSession();
+        session().setQueryTimeout(timeout);
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (!conn.isClosed())
+        if (closedUpd.compareAndSet(this, 0, 1) && !conn.isClosed())
             conn.close();
     }
 
@@ -154,14 +167,15 @@ public class H2Connection implements AutoCloseable {
      * @throws SQLException If failed.
      */
     public boolean isValid() throws SQLException {
-        return !conn.isClosed() && (U.currentTimeMillis() - createTime) < CLEANUP_PERIOD;
+        return closed == 0 && !conn.isClosed() &&
+            (U.currentTimeMillis() - createTime) < CLEANUP_PERIOD;
     }
 
     /**
      * @return Session.
      */
     public Session session() {
-        return session(conn);
+        return (Session)((JdbcConnection)conn).getSession();
     }
 
     /**

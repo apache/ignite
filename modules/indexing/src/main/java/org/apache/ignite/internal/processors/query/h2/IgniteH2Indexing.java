@@ -33,7 +33,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -187,6 +186,7 @@ import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_SQL_PLAN_CACHE_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -235,10 +235,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 //        ";TRACE_LEVEL_SYSTEM_OUT=3";
 
     /** */
-    private static final int PREPARED_STMT_CACHE_SIZE = 256;
-
-    /** */
-    private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
+    private static final int TWO_STEP_QRY_CACHE_SIZE = getInteger(
+        IGNITE_DISTRIBUTED_SQL_PLAN_CACHE_SIZE, 1024);
 
     /** Field name for key. */
     public static final String KEY_FIELD_NAME = "_KEY";
@@ -263,6 +261,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         System.setProperty("h2.objectCache", "false");
         System.setProperty("h2.serializeJavaObject", "false");
         System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
+        System.setProperty("h2.consoleTimeout",
+            Integer.toString(3 * 24 * 60 * 60 * 1000)); // 3 days
 
         try {
             COMMAND_FIELD = JdbcPreparedStatement.class.getDeclaredField("command");
@@ -1884,35 +1884,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
 
+        org.h2.Driver.load();
+
         dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
         connPool = new H2ConnectionPool(dbUrl);
 
-        org.h2.Driver.load();
-
-        try {
-            if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
-                Connection c = DriverManager.getConnection(dbUrl);
-
-                int port = getInteger(IGNITE_H2_DEBUG_CONSOLE_PORT, 0);
-
-                WebServer webSrv = new WebServer();
-                Server web = new Server(webSrv, "-webPort", Integer.toString(port));
-                web.start();
-                String url = webSrv.addSession(c);
-
-                U.quietAndInfo(log, "H2 debug console URL: " + url);
-
-                try {
-                    Server.openBrowser(url);
-                }
-                catch (Exception e) {
-                    U.warn(log, "Failed to open browser: " + e.getMessage());
-                }
-            }
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
-        }
+        startH2DebugConsole();
 
         if (ctx == null) {
             // This is allowed in some tests.
@@ -1939,6 +1916,36 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
         // registerMBean(igniteInstanceName, this, GridH2IndexingSpiMBean.class);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void startH2DebugConsole() throws IgniteCheckedException {
+        try {
+            if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
+                Connection c = DriverManager.getConnection(dbUrl);
+
+                int port = getInteger(IGNITE_H2_DEBUG_CONSOLE_PORT, 0);
+
+                WebServer webSrv = new WebServer();
+                Server web = new Server(webSrv, "-webPort", Integer.toString(port));
+                web.start();
+                String url = webSrv.addSession(c);
+
+                U.quietAndInfo(log, "H2 debug console URL: " + url);
+
+                try {
+                    Server.openBrowser(url);
+                }
+                catch (Exception e) {
+                    U.warn(log, "Failed to open browser: " + e.getMessage());
+                }
+            }
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
@@ -2108,9 +2115,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemas.clear();
         space2schema.clear();
 
-        try (Connection c = DriverManager.getConnection(dbUrl);
-             Statement s = c.createStatement()) {
-            s.execute("SHUTDOWN");
+        try (H2Connection c = new H2Connection(dbUrl)) {
+            c.executeUpdate("SHUTDOWN");
         }
         catch (SQLException e) {
             U.error(log, "Failed to shutdown database.", e);
@@ -2434,50 +2440,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             run.cancel();
 
         rdcQryExec.cancelAllQueries();
-    }
-
-    /**
-     * Wrapper to store connection and flag is schema set or not.
-     */
-    private static class ConnectionWrapper {
-        /** */
-        private Connection conn;
-
-        /** */
-        private volatile String schema;
-
-        /**
-         * @param conn Connection to use.
-         */
-        ConnectionWrapper(Connection conn) {
-            this.conn = conn;
-        }
-
-        /**
-         * @return Schema name if schema is set, null otherwise.
-         */
-        public String schema() {
-            return schema;
-        }
-
-        /**
-         * @param schema Schema name set on this connection.
-         */
-        public void schema(@Nullable String schema) {
-            this.schema = schema;
-        }
-
-        /**
-         * @return Connection.
-         */
-        public Connection connection() {
-            return conn;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ConnectionWrapper.class, this);
-        }
     }
 
     /**

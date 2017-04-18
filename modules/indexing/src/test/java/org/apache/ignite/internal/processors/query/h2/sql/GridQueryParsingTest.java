@@ -40,7 +40,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
-import org.h2.jdbc.JdbcConnection;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -80,7 +79,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(String name, String sqlSchema, Class<?> clsK, Class<?> clsV) {
-        CacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cc = defaultCacheConfiguration();
 
         cc.setName(name);
         cc.setCacheMode(CacheMode.PARTITIONED);
@@ -453,23 +452,22 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private JdbcConnection connection() throws Exception {
+    private Session session() throws Exception {
         GridKernalContext ctx = ((IgniteEx)ignite).context();
 
         GridQueryProcessor qryProcessor = ctx.query();
 
         IgniteH2Indexing idx = U.field(qryProcessor, "idx");
 
-        return (JdbcConnection)idx.connectionForSpace(null).connection();
+        return idx.connectionForSpace(null).session();
     }
 
     /**
      * @param sql Sql.
      */
+    @SuppressWarnings("unchecked")
     private <T extends Prepared> T parse(String sql) throws Exception {
-        Session ses = (Session)connection().getSession();
-
-        return (T)ses.prepare(sql);
+        return (T)session().prepare(sql);
     }
 
     /**

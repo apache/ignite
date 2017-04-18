@@ -498,6 +498,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE = "IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE";
 
     /**
+     * Size of the distributed SQL plan cache.
+     * <p>
+     * Default value is {@code 1024}.
+     */
+    public static final String IGNITE_DISTRIBUTED_SQL_PLAN_CACHE_SIZE = "IGNITE_DISTRIBUTED_SQL_PLAN_CACHE_SIZE";
+
+    /**
      * Manages backward compatibility of {@link IgniteServices}. All nodes in cluster must have identical value
      * of this property.
      * <p>

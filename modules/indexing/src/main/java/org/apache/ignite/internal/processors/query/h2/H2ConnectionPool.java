@@ -22,6 +22,7 @@ public final class H2ConnectionPool extends GridStripedPool<H2Connection, SQLExc
      */
     public H2ConnectionPool(String dbUrl) {
         super(32, 4);
+
         this.dbUrl = dbUrl;
     }
 
