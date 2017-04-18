@@ -106,7 +106,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
@@ -116,7 +116,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -1734,7 +1734,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return {@code True} if recordable in debug mode.
      */
     private boolean recordable(TcpDiscoveryAbstractMessage msg) {
-        return !(msg instanceof TcpDiscoveryMetricsMessage) &&
+        return !(msg instanceof TcpDiscoveryMetricsUpdateMessage) &&
             !(msg instanceof TcpDiscoveryStatusCheckMessage) &&
             !(msg instanceof TcpDiscoveryDiscardMessage) &&
             !(msg instanceof TcpDiscoveryConnectionCheckMessage);
@@ -1762,7 +1762,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param msg Message.
      * @param nodeId Node ID.
      */
-    private static void removeMetrics(TcpDiscoveryMetricsMessage msg, UUID nodeId) {
+    private static void removeMetrics(TcpDiscoveryMetricsUpdateMessage msg, UUID nodeId) {
         msg.removeMetrics(nodeId);
         msg.removeCacheMetrics(nodeId);
     }
@@ -2388,10 +2388,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         private long lastTimeStatusMsgSent;
 
         /** Incoming metrics check frequency. */
-        private long metricsCheckFreq = spi.muFreq + 50;
+        private long metricsCheckFreq = 3 * spi.metricsUpdateFreq + 50;
 
-        /** Last time metrics message has been sent. */
-        private long lastTimeMetricsMsgSent;
+        /** Last time metrics update message has been sent. */
+        private long lastTimeMetricsUpdateMsgSent;
 
         /** Time when the last status message has been sent. */
         private long lastTimeConnCheckMsgSent;
@@ -2486,7 +2486,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (spi.failureDetectionTimeoutEnabled())
                 connCheckThreshold = spi.failureDetectionTimeout();
             else
-                connCheckThreshold = Math.min(spi.getSocketTimeout(), spi.muFreq);
+                connCheckThreshold = Math.min(spi.getSocketTimeout(), spi.metricsUpdateFreq);
 
             for (int i = 3; i > 0; i--) {
                 connCheckFreq = connCheckThreshold / i;
@@ -2505,7 +2505,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message to process.
          */
         @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
-            sendMetricsMessage();
+            sendMetricsUpdateMessage();
 
             DebugLogger log = messageLogger(msg);
 
@@ -2558,8 +2558,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
 
-            else if (msg instanceof TcpDiscoveryMetricsMessage)
-                processMetricsMessage((TcpDiscoveryMetricsMessage)msg);
+            else if (msg instanceof TcpDiscoveryMetricsUpdateMessage)
+                processMetricsUpdateMessage((TcpDiscoveryMetricsUpdateMessage)msg);
 
             else if (msg instanceof TcpDiscoveryStatusCheckMessage)
                 processStatusCheckMessage((TcpDiscoveryStatusCheckMessage)msg);
@@ -2597,7 +2597,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             checkConnection();
 
-            sendMetricsMessage();
+            sendMetricsUpdateMessage();
 
             checkMetricsReceiving();
 
@@ -4836,7 +4836,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
-                    U.currentTimeMillis() - locNode.lastUpdateTime() < spi.muFreq) {
+                    U.currentTimeMillis() - locNode.lastUpdateTime() < spi.metricsUpdateFreq) {
                     if (log.isDebugEnabled())
                         log.debug("Status check message discarded (local node receives updates).");
 
@@ -4879,11 +4879,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Processes regular metrics message.
+         * Processes regular metrics update message.
          *
-         * @param msg Metrics message.
+         * @param msg Metrics update message.
          */
-        private void processMetricsMessage(TcpDiscoveryMetricsMessage msg) {
+        private void processMetricsUpdateMessage(TcpDiscoveryMetricsUpdateMessage msg) {
             assert msg != null;
 
             assert !msg.client();
@@ -4892,7 +4892,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (ring.node(msg.creatorNodeId()) == null) {
                 if (log.isDebugEnabled())
-                    log.debug("Discarding metrics message issued by unknown node [msg=" + msg +
+                    log.debug("Discarding metrics update message issued by unknown node [msg=" + msg +
                         ", ring=" + ring + ']');
 
                 return;
@@ -4900,14 +4900,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (isLocalNodeCoordinator() && !locNodeId.equals(msg.creatorNodeId())) {
                 if (log.isDebugEnabled())
-                    log.debug("Discarding metrics message issued by non-coordinator node: " + msg);
+                    log.debug("Discarding metrics update message issued by non-coordinator node: " + msg);
 
                 return;
             }
 
             if (!isLocalNodeCoordinator() && locNodeId.equals(msg.creatorNodeId())) {
                 if (log.isDebugEnabled())
-                    log.debug("Discarding metrics message issued by local node (node is no more coordinator): " +
+                    log.debug("Discarding metrics update message issued by local node (node is no more coordinator): " +
                         msg);
 
                 return;
@@ -4915,7 +4915,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (locNodeId.equals(msg.creatorNodeId()) && !hasMetrics(msg, locNodeId) && msg.senderNodeId() != null) {
                 if (log.isTraceEnabled())
-                    log.trace("Discarding metrics message that has made two passes: " + msg);
+                    log.trace("Discarding metrics update message that has made two passes: " + msg);
 
                 return;
             }
@@ -4924,10 +4924,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (spiStateCopy() == CONNECTED) {
                 if (msg.hasMetrics()) {
-                    for (Map.Entry<UUID, TcpDiscoveryMetricsMessage.MetricsSet> e : msg.metrics().entrySet()) {
+                    for (Map.Entry<UUID, TcpDiscoveryMetricsUpdateMessage.MetricsSet> e : msg.metrics().entrySet()) {
                         UUID nodeId = e.getKey();
 
-                        TcpDiscoveryMetricsMessage.MetricsSet metricsSet = e.getValue();
+                        TcpDiscoveryMetricsUpdateMessage.MetricsSet metricsSet = e.getValue();
 
                         Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics(nodeId) ?
                             msg.cacheMetrics().get(nodeId) : Collections.<Integer, CacheMetrics>emptyMap();
@@ -5033,7 +5033,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @param msg Message.
          */
-        private boolean hasMetrics(TcpDiscoveryMetricsMessage msg, UUID nodeId) {
+        private boolean hasMetrics(TcpDiscoveryMetricsUpdateMessage msg, UUID nodeId) {
             return msg.hasMetrics(nodeId) || msg.hasCacheMetrics(nodeId);
         }
 
@@ -5344,26 +5344,26 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Sends metrics message if needed.
+         * Sends metrics update message if needed.
          */
-        private void sendMetricsMessage() {
-            long elapsed = (lastTimeMetricsMsgSent + spi.muFreq) - U.currentTimeMillis();
+        private void sendMetricsUpdateMessage() {
+            long elapsed = (lastTimeMetricsUpdateMsgSent + spi.metricsUpdateFreq) - U.currentTimeMillis();
 
             if (elapsed > 0 || !isLocalNodeCoordinator())
                 return;
 
-            TcpDiscoveryMetricsMessage msg = new TcpDiscoveryMetricsMessage(getConfiguredNodeId());
+            TcpDiscoveryMetricsUpdateMessage msg = new TcpDiscoveryMetricsUpdateMessage(getConfiguredNodeId());
 
             msg.verify(getLocalNodeId());
 
             msgWorker.addMessage(msg);
 
-            lastTimeMetricsMsgSent = U.currentTimeMillis();
+            lastTimeMetricsUpdateMsgSent = U.currentTimeMillis();
         }
 
         /**
-         * Check the last time a metrics message received. If the time is bigger than {@code metricsCheckTimeout} than
-         * {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
+         * Check the last time a metrics update message received. If the time is bigger than {@code metricsCheckFreq}
+         * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
          */
         private void checkMetricsReceiving() {
             if (lastTimeStatusMsgSent < locNode.lastUpdateTime())
@@ -5956,10 +5956,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                             continue;
                         }
 
-                        TcpDiscoveryClientMetricsMessage metricsMsg = null;
+                        TcpDiscoveryClientMetricsUpdateMessage metricsUpdateMsg = null;
 
-                        if (msg instanceof TcpDiscoveryClientMetricsMessage)
-                            metricsMsg = (TcpDiscoveryClientMetricsMessage)msg;
+                        if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                            metricsUpdateMsg = (TcpDiscoveryClientMetricsUpdateMessage)msg;
                         else
                             msgWorker.addMessage(msg);
 
@@ -5974,8 +5974,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                        if (metricsMsg != null)
-                            processClientMetricsMessage(metricsMsg);
+                        if (metricsUpdateMsg != null)
+                            processClientMetricsUpdateMessage(metricsUpdateMsg);
                     }
                     catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
@@ -6043,11 +6043,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Processes client metrics message.
+         * Processes client metrics update message.
          *
-         * @param msg Metrics message.
+         * @param msg Client metrics update message.
          */
-        private void processClientMetricsMessage(TcpDiscoveryClientMetricsMessage msg) {
+        private void processClientMetricsUpdateMessage(TcpDiscoveryClientMetricsUpdateMessage msg) {
             assert msg.client();
 
             ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
@@ -6055,7 +6055,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (wrk != null)
                 wrk.metrics(msg.metrics());
             else if (log.isDebugEnabled())
-                log.debug("Received metrics message from unknown client node: " + msg);
+                log.debug("Received client metrics update message from unknown client node: " + msg);
         }
 
         /**

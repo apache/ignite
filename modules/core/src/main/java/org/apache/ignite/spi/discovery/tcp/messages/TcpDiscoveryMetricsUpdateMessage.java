@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Metrics message.
+ * Metrics update message.
  * <p>
  * It is sent by coordinator node across the ring once a configured period.
  * Message makes two passes:
@@ -52,7 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * second pass).
  */
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryMetricsMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -72,7 +72,7 @@ public class TcpDiscoveryMetricsMessage extends TcpDiscoveryAbstractMessage {
      *
      * @param creatorNodeId Creator node.
      */
-    public TcpDiscoveryMetricsMessage(UUID creatorNodeId) {
+    public TcpDiscoveryMetricsUpdateMessage(UUID creatorNodeId) {
         super(creatorNodeId);
     }
 
@@ -225,7 +225,7 @@ public class TcpDiscoveryMetricsMessage extends TcpDiscoveryAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryMetricsMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryMetricsUpdateMessage.class, this, "super", super.toString());
     }
 
     /**

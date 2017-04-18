@@ -297,7 +297,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     protected int threadPri = DFLT_THREAD_PRI;
 
     /** Metrics update messages issuing frequency. */
-    protected long muFreq = DFLT_METRICS_UPDATE_FREQ;
+    protected long metricsUpdateFreq = DFLT_METRICS_UPDATE_FREQ;
 
     /** Size of topology snapshots history. */
     protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
@@ -1853,7 +1853,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
             impl = new ServerImpl(this);
         }
 
-        muFreq = ignite.configuration().getMetricsUpdateFrequency();
+        metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();
 
         if (!failureDetectionTimeoutEnabled()) {
             assertParameter(sockTimeout > 0, "sockTimeout > 0");
@@ -1864,7 +1864,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
         assertParameter(netTimeout > 0, "networkTimeout > 0");
         assertParameter(ipFinder != null, "ipFinder != null");
-        assertParameter(muFreq > 0, "metricsUpdateFreq > 0 (inited from igniteConfiguration.MetricsUpdateFrequency)");
+        assertParameter(metricsUpdateFreq > 0, "metricsUpdateFreq > 0 (inited from igniteConfiguration.MetricsUpdateFrequency)");
 
         assertParameter(ipFinderCleanFreq > 0, "ipFinderCleanFreq > 0");
         assertParameter(locPort > 1023, "localPort > 1023");
@@ -1914,7 +1914,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
             log.debug(configInfo("ipFinder", ipFinder));
             log.debug(configInfo("ipFinderCleanFreq", ipFinderCleanFreq));
-            log.debug(configInfo("metricsUpdateFreq", muFreq));
+            log.debug(configInfo("metricsUpdateFreq", metricsUpdateFreq));
             log.debug(configInfo("statsPrintFreq", statsPrintFreq));
         }
 
