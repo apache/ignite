@@ -27,12 +27,16 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -74,7 +78,16 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
-        commSpi.record(GridDhtPartitionsSingleMessage.class, GridDhtPartitionsFullMessage.class);
+        commSpi.record(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                Message msg0 = ((GridIoMessage) msg).message();
+
+                return (msg0.getClass() == GridDhtPartitionsSingleMessage.class ||
+                    msg0.getClass() == GridDhtPartitionsFullMessage.class) &&
+                    ((GridDhtPartitionsAbstractMessage) msg0).exchangeId() != null;
+
+            }
+        });
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -83,13 +96,13 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         {
             CacheConfiguration ccfg = new CacheConfiguration();
             ccfg.setName(AFF1_CACHE1);
-            ccfg.setAffinity(new RendezvousAffinityFunction(false,512));
+            ccfg.setAffinity(new RendezvousAffinityFunction(false, 512));
             ccfgs.add(ccfg);
         }
         {
             CacheConfiguration ccfg = new CacheConfiguration();
             ccfg.setName(AFF1_CACHE2);
-            ccfg.setAffinity(new RendezvousAffinityFunction(false,512));
+            ccfg.setAffinity(new RendezvousAffinityFunction(false, 512));
             ccfgs.add(ccfg);
         }
         {
@@ -142,31 +155,23 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     public void testExchangeMessages() throws Exception {
         ignite(0);
 
-        startGrid(1);
+        final int SRVS = 4;
 
-        awaitPartitionMapExchange();
+        for (int i = 1; i < SRVS; i++) {
+            startGrid(i);
 
-        checkMessages(0, true);
+            awaitPartitionMapExchange();
 
-        startGrid(2);
-
-        awaitPartitionMapExchange();
-
-        checkMessages(0, true);
+            checkMessages(0, true);
+        }
 
         client = true;
 
-        startGrid(3);
+        startGrid(SRVS);
 
         awaitPartitionMapExchange();
 
         checkMessages(0, false);
-
-        stopGrid(0);
-
-        awaitPartitionMapExchange();
-
-        checkMessages(1, true);
     }
 
     /**
