@@ -133,6 +133,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /**
      * @param req Request.
+     * @return {@code this}.
      */
     public GridH2QueryRequest(GridH2QueryRequest req) {
         this.reqId = req.reqId;
@@ -145,6 +146,8 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         this.flags = req.flags;
         this.tbls = req.tbls;
         this.timeout = req.timeout;
+        this.params = req.params;
+        this.paramsBytes = req.paramsBytes;
     }
 
     /**
@@ -449,7 +452,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
 
-            case 9:
+            case 10:
                 if (!writer.writeIntArray("qryParts", qryParts))
                     return false;
 

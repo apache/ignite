@@ -68,11 +68,11 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean distributedJoins;
 
-    /** Partitions for query */
-    private int[] parts;
-
     /** */
     private boolean replicatedOnly;
+
+    /** Partitions for query */
+    private int[] parts;
 
     /**
      * Constructs SQL fields query.
@@ -244,28 +244,6 @@ public class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
-     * Gets partitions for query, in ascending order.
-     */
-    @Nullable public int[] getPartitions() {
-        return parts;
-    }
-
-    /**
-     * Sets partitions for a query.
-     * The query will be executed only on nodes which are primary for specified partitions.
-     * <p>
-     * Note what passed array'll be sorted in place for performance reasons, if it wasn't sorted yet.
-     *
-     * @param parts Partitions.
-     * @return {@code this} for chaining.
-     */
-    public SqlFieldsQuery setPartitions(@Nullable int... parts) {
-        this.parts = prepare(parts);
-
-        return this;
-    }
-
-    /**
      * Specify if the query contains only replicated tables.
      * This is a hint for potentially more effective execution.
      *
@@ -285,6 +263,28 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public boolean isReplicatedOnly() {
         return replicatedOnly;
+    }
+
+    /**
+     * Gets partitions for query, in ascending order.
+     */
+    @Nullable public int[] getPartitions() {
+        return parts;
+    }
+
+    /**
+     * Sets partitions for a query.
+     * The query will be executed only on nodes which are primary for specified partitions.
+     * <p>
+     * Note what passed array'll be sorted in place for performance reasons, if it wasn't sorted yet.
+     *
+     * @param parts Partitions.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setPartitions(@Nullable int... parts) {
+        this.parts = prepare(parts);
+
+        return this;
     }
 
     /** {@inheritDoc} */

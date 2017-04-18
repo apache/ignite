@@ -22,16 +22,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
  * Tests distributed queries over set of partitions on unstable topology.
- * */
+ */
 public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
-    extends IgniteCacheDistributedPartitionQueryAbstractSelfTest {
-    /** Tests join query within region on unstable topology. */
+        extends IgniteCacheDistributedPartitionQueryAbstractSelfTest {
+    /**
+     * Tests join query within region on unstable topology.
+     */
     public void testJoinQueryUnstableTopology() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -42,7 +45,8 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
         final AtomicInteger cnt = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 while (!stop.get()) {
                     doTestJoinQuery(client, rnd.nextInt(PARTS_PER_REGION.length) + 1);
 
@@ -57,8 +61,9 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
         final AtomicIntegerArray restartStats = new AtomicIntegerArray(GRIDS_COUNT);
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                while(!stop.get()) {
+            @Override
+            public Void call() throws Exception {
+                while (!stop.get()) {
                     int grid = rnd.nextInt(GRIDS_COUNT);
 
                     String name = getTestIgniteInstanceName(grid);
@@ -92,20 +97,18 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
 
         try {
             fut2.get(60, TimeUnit.SECONDS);
-        }
-        catch (IgniteFutureTimeoutCheckedException ignored) {
+        } catch (IgniteFutureTimeoutCheckedException ignored) {
             stop.set(true);
         }
 
         try {
             fut.get();
-        }
-        finally {
+        } finally {
             log().info("Queries count: " + cnt.get());
 
             for (int i = 0; i < GRIDS_COUNT; i++)
                 log().info("Grid [name = " + getTestIgniteInstanceName(i) + ", idx=" + i + " ] restarts count: " +
-                    restartStats.get(i));
+                        restartStats.get(i));
         }
     }
 }

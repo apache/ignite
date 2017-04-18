@@ -408,7 +408,6 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param isReplicatedOnly If we must only have replicated caches.
      * @param topVer Topology version.
      * @param cctx Cache context.
      * @param parts Partitions.
@@ -482,16 +481,17 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * @param isReplicatedOnly If we must only have replicated caches.
      * @param topVer Topology version.
      * @param cctx Cache context for main space.
      * @param extraSpaces Extra spaces.
      * @param parts Partitions.
      * @return Data nodes or {@code null} if repartitioning started and we need to retry.
      */
-    private Collection<ClusterNode> stableDataNodes(
-        boolean isReplicatedOnly,
-        AffinityTopologyVersion topVer,
-        final GridCacheContext<?, ?> cctx,
+    private Map<ClusterNode, IntArray> stableDataNodes(
+            boolean isReplicatedOnly,
+            AffinityTopologyVersion topVer,
+            final GridCacheContext<?, ?> cctx,
             List<Integer> extraSpaces,
             int[] parts) {
         Map<ClusterNode, IntArray> map = stableDataNodesMap(topVer, cctx, parts);
@@ -571,9 +571,9 @@ public class GridReduceQueryExecutor {
         boolean keepPortable,
         boolean enforceJoinOrder,
         int timeoutMillis,
-        final int[] parts,
         GridQueryCancel cancel,
-        Object[] params
+        Object[] params,
+        final int[] parts
     ) {
         if (F.isEmpty(params))
             params = EMPTY_PARAMS;
@@ -628,7 +628,7 @@ public class GridReduceQueryExecutor {
                         }
                     }
                 } else {
-                    qryMap = stableDataNodes(topVer, cctx, extraSpaces, parts);
+                    qryMap = stableDataNodes(isReplicatedOnly, topVer, cctx, extraSpaces, parts);
 
                     if (qryMap != null)
                         nodes = qryMap.keySet();

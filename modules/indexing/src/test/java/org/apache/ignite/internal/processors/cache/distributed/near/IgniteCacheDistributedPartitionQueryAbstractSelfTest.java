@@ -45,6 +45,8 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
@@ -131,6 +133,13 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        MemoryConfiguration memCfg = new MemoryConfiguration();
+        memCfg.setDefaultMemoryPolicyName("default");
+        memCfg.setMemoryPolicies(new MemoryPolicyConfiguration().setName("default").setSize(20 * 1024 * 1024));
+
+        cfg.setMemoryConfiguration(memCfg);
+
         TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         spi.setIpFinder(IP_FINDER);
 

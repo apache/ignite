@@ -1566,12 +1566,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (caches.isEmpty())
             return; // Nothing to check
 
-        GridCacheSharedContext sharedContext = ctx.cache().context();
+        GridCacheSharedContext sharedCtx = ctx.cache().context();
 
         int expectedParallelism = 0;
 
         for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = sharedContext.cacheContext(caches.get(i));
+            GridCacheContext cctx = sharedCtx.cacheContext(caches.get(i));
 
             assert cctx != null;
 

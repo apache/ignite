@@ -54,11 +54,11 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private boolean distributedJoins;
 
-    /** Partitions for query */
-    private int[] parts;
-
     /** */
     private boolean replicatedOnly;
+
+    /** Partitions for query */
+    private int[] parts;
 
     /**
      * Constructs query for the given type name and SQL query.
