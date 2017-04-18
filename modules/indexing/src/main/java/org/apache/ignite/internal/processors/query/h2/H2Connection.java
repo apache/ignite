@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
@@ -49,12 +50,12 @@ public final class H2Connection implements AutoCloseable {
         IGNITE_H2_INDEXING_STATEMENT_CACHE_SIZE, 256);
 
     /** */
-    private static final AtomicIntegerFieldUpdater<H2Connection> closedUpd =
-        AtomicIntegerFieldUpdater.newUpdater(H2Connection.class, "closed");
+    private static final AtomicIntegerFieldUpdater<H2Connection> deadUpd =
+        AtomicIntegerFieldUpdater.newUpdater(H2Connection.class, "dead");
 
     /** */
     @SuppressWarnings("unused")
-    private volatile int closed;
+    private volatile int dead;
 
     /** */
     private final Connection conn;
@@ -71,14 +72,25 @@ public final class H2Connection implements AutoCloseable {
     /** */
     private String schema;
 
+    /** */
+    private final H2ConnectionPool pool;
+
     /**
      * @param dbUrl Database URL.
      */
-    public H2Connection(String dbUrl) throws SQLException {
+    public H2Connection(H2ConnectionPool pool, String dbUrl) throws SQLException {
         assert !F.isEmpty(dbUrl): dbUrl;
 
         this.conn = DriverManager.getConnection(dbUrl);
         stmt = conn.createStatement();
+        this.pool = pool;
+    }
+
+    /**
+     * @param qctx Current session query context.
+     */
+    public void setQueryContext(GridH2QueryContext qctx) {
+        H2ConnectionPool.queryContext(session(), qctx);
     }
 
     /**
@@ -156,10 +168,28 @@ public final class H2Connection implements AutoCloseable {
         session().setQueryTimeout(timeout);
     }
 
+    /**
+     * @throws SQLException If failed.
+     */
+    public void destroy() throws SQLException {
+        if (!deadUpd.compareAndSet(this, 0, 1))
+            return;
+
+        Session ses = session();
+
+        if (ses != null)
+            H2ConnectionPool.removeQueryContext(ses);
+
+        if (!conn.isClosed())
+            conn.close();
+    }
+
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (closedUpd.compareAndSet(this, 0, 1) && !conn.isClosed())
-            conn.close();
+        if (pool == null)
+            destroy();
+        else
+            pool.put(this);
     }
 
     /**
@@ -167,7 +197,7 @@ public final class H2Connection implements AutoCloseable {
      * @throws SQLException If failed.
      */
     public boolean isValid() throws SQLException {
-        return closed == 0 && !conn.isClosed() &&
+        return dead == 0 && !conn.isClosed() &&
             (U.currentTimeMillis() - createTime) < CLEANUP_PERIOD;
     }
 

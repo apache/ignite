@@ -17,7 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -43,8 +53,9 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -72,6 +83,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.processors.query.h2.H2ConnectionPool.queryContext;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.LOCAL_ONLY;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
@@ -177,13 +189,13 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @return Index segment ID for current query context.
      */
-    protected int threadLocalSegment() {
-        if(segmentsCount() == 1)
+    protected int threadLocalSegment(Session ses) {
+        if (segmentsCount() == 1)
             return 0;
 
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        GridH2QueryContext qctx = queryContext(ses);
 
-        if(qctx == null)
+        if (qctx == null)
             throw new IllegalStateException("GridH2QueryContext is not initialized.");
 
         return qctx.segment();
@@ -275,7 +287,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Multiplier.
      */
     public final int getDistributedMultiplier(Session ses, TableFilter[] filters, int filter) {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        GridH2QueryContext qctx = queryContext(ses);
 
         // We do optimizations with respect to distributed joins only on PREPARE stage only.
         // Notice that we check for isJoinBatchEnabled, because we can do multiple different
@@ -348,8 +360,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @return Filter for currently running query or {@code null} if none.
      */
-    protected static IndexingQueryFilter threadLocalFilter() {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+    protected static IndexingQueryFilter threadLocalFilter(Session ses) {
+        GridH2QueryContext qctx = queryContext(ses);
 
         return qctx != null ? qctx.filter() : null;
     }
@@ -391,7 +403,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
+        GridH2QueryContext qctx = queryContext(filter.getSession());
 
         if (qctx == null || qctx.distributedJoinMode() == OFF || !getTable().isPartitioned())
             return null;
@@ -415,7 +427,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         boolean isLocal = qctx.distributedJoinMode() == LOCAL_ONLY;
 
-        return new DistributedLookupBatch(cctx, ucast, affColId, isLocal);
+        return new DistributedLookupBatch(filter.getSession(), cctx, ucast, affColId, isLocal);
     }
 
     /**
@@ -1109,13 +1121,18 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** */
         boolean findCalled;
 
+        /** */
+        Session ses;
+
         /**
+         * @param ses Session.
          * @param cctx Cache Cache context.
          * @param ucast Unicast or broadcast query.
          * @param affColId Affinity column ID.
          * @param localQuery Local query flag.
          */
-        DistributedLookupBatch(GridCacheContext<?, ?> cctx, boolean ucast, int affColId, boolean localQuery) {
+        DistributedLookupBatch(Session ses, GridCacheContext<?, ?> cctx, boolean ucast, int affColId, boolean localQuery) {
+            this.ses = ses;
             this.cctx = cctx;
             this.ucast = ucast;
             this.affColId = affColId;
@@ -1169,7 +1186,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 if (qctx == null) {
                     // It is the first call after query begin (may be after reuse),
                     // reinitialize query context and result.
-                    qctx = GridH2QueryContext.get();
+                    qctx = queryContext(ses);
                     res = new ArrayList<>();
 
                     assert qctx != null;

@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.query.h2.H2Connection;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -39,9 +40,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  * Thread local SQL query context which is intended to be accessible from everywhere.
  */
 public class GridH2QueryContext {
-    /** */
-    private static final ThreadLocal<GridH2QueryContext> qctx = new ThreadLocal<>();
-
     /** */
     private static final ConcurrentMap<Key, GridH2QueryContext> qctxs = new ConcurrentHashMap8<>();
 
@@ -253,7 +251,6 @@ public class GridH2QueryContext {
      */
     public void putSnapshot(long idxId, Object snapshot) {
         assert snapshot != null;
-        assert get() == null : "need to snapshot indexes before setting query context for correct visibility";
 
         if (snapshot instanceof GridReservable && !((GridReservable)snapshot).reserve())
             throw new IllegalStateException("Must be already reserved before.");
@@ -370,30 +367,17 @@ public class GridH2QueryContext {
     }
 
     /**
-     * Sets current thread local context. This method must be called when all the non-volatile properties are
-     * already set to ensure visibility for other threads.
+     * Sets current session local query context. This method must be called when all the
+     * non-volatile properties are already set to ensure visibility for other threads.
      *
      * @param x Query context.
      */
-     public static void set(GridH2QueryContext x) {
-         assert qctx.get() == null;
-
+     public static void set(H2Connection c, GridH2QueryContext x) {
          // We need MAP query context to be available to other threads to run distributed joins.
          if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 
-         qctx.set(x);
-    }
-
-    /**
-     * Drops current thread local context.
-     */
-    public static void clearThreadLocal() {
-        GridH2QueryContext x = qctx.get();
-
-        assert x != null;
-
-        qctx.remove();
+         c.setQueryContext(x);
     }
 
     /**
@@ -476,15 +460,6 @@ public class GridH2QueryContext {
             if (key.locNodeId.equals(locNodeId))
                 doClear(key, true);
         }
-    }
-
-    /**
-     * Access current thread local query context (if it was set).
-     *
-     * @return Current thread local query context or {@code null} if the query runs outside of Ignite context.
-     */
-    @Nullable public static GridH2QueryContext get() {
-        return qctx.get();
     }
 
     /**
@@ -641,6 +616,7 @@ public class GridH2QueryContext {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override public boolean equals(Object o) {
             SourceKey srcKey = (SourceKey)o;
 

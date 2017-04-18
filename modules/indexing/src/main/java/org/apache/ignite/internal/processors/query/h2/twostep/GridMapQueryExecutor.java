@@ -574,11 +574,11 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            H2Connection conn = h2.connectionForSpace(mainCctx.name());
+            H2Connection conn = h2.takeConnectionForSpace(mainCctx.name());
 
             conn.setupConnection(distributedJoinMode != OFF, enforceJoinOrder);
 
-            GridH2QueryContext.set(qctx);
+            GridH2QueryContext.set(conn, qctx);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;

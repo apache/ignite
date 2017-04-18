@@ -27,13 +27,30 @@ public final class H2ConnectionPool extends GridStripedPool<H2Connection, SQLExc
     }
 
     /**
-     * @param s Session.
+     * @param ses Session.
      * @return Session local query context.
      */
-    public static GridH2QueryContext queryContext(Session s) {
-        assert s != null;
+    public static GridH2QueryContext queryContext(Session ses) {
+        return ses == null ? null : sesLocQctx.get(ses);
+    }
 
-        return sesLocQctx.get(s);
+    /**
+     * @param s Session.
+     * @param qctx Query context to set for the given session.
+     */
+    static void queryContext(Session s, GridH2QueryContext qctx) {
+        assert s != null;
+        assert qctx != null;
+
+        if (sesLocQctx.put(s, qctx) != null)
+            throw new IllegalStateException();
+    }
+
+    /**
+     * @param ses Session.
+     */
+    public static void removeQueryContext(Session ses) {
+        sesLocQctx.remove(ses);
     }
 
     /** {@inheritDoc} */
@@ -43,7 +60,7 @@ public final class H2ConnectionPool extends GridStripedPool<H2Connection, SQLExc
 
     /** {@inheritDoc} */
     @Override protected H2Connection create() throws SQLException {
-        return new H2Connection(dbUrl);
+        return new H2Connection(this, dbUrl);
     }
 
     /** {@inheritDoc} */
@@ -53,6 +70,6 @@ public final class H2ConnectionPool extends GridStripedPool<H2Connection, SQLExc
 
     /** {@inheritDoc} */
     @Override protected void destroy(H2Connection o) throws SQLException {
-        o.close();
+        o.destroy();
     }
 }

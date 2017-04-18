@@ -127,6 +127,7 @@ public abstract class GridStripedPool<T, E extends Exception> implements AutoClo
 
         if (!validate(o)) {
             destroy(o);
+
             return;
         }
 

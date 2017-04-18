@@ -514,7 +514,7 @@ public class GridReduceQueryExecutor {
             final String space = cctx.name();
 
             final QueryRun r = new QueryRun(qryReqId, qry.originalSql(), space,
-                h2.connectionForSpace(space), qry.mapQueries().size(), qry.pageSize(),
+                h2.takeConnectionForSpace(space), qry.mapQueries().size(), qry.pageSize(),
                 U.currentTimeMillis(), cancel);
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
@@ -734,7 +734,7 @@ public class GridReduceQueryExecutor {
 
                         r.conn.setupConnection(false, enforceJoinOrder);
 
-                        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
+                        GridH2QueryContext.set(r.conn, new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
                             .pageSize(r.pageSize).distributedJoinMode(OFF));
 
                         try {

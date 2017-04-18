@@ -347,9 +347,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param space Space.
      * @return Connection.
      */
-    public H2Connection connectionForSpace(@Nullable String space) {
+    public H2Connection takeConnectionForSpace(@Nullable String space) {
         try {
-            return connectionForThread(schema(space));
+            return takeConnectionForSchema(schema(space));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -389,7 +389,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return DB connection.
      * @throws IgniteCheckedException In case of error.
      */
-    private H2Connection connectionForThread(@Nullable String schema) throws IgniteCheckedException {
+    private H2Connection takeConnectionForSchema(@Nullable String schema) throws IgniteCheckedException {
         try {
             H2Connection c = connPool.take();
 
@@ -435,7 +435,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void executeUpdate(String schema, String sql) throws IgniteCheckedException {
-        H2Connection c = connectionForThread(schema);
+        H2Connection c = takeConnectionForSchema(schema);
 
         try {
             c.executeUpdate(sql);
@@ -446,16 +446,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Failed to execute statement: " + sql, e);
         }
         finally {
-            release(c);
-        }
-    }
-
-    private void release(H2Connection c) {
-        try {
-            connPool.put(c);
-        }
-        catch (SQLException e) {
-            U.error(log, "Failed to add connection to pool.", e);
+            U.closeQuiet(c);
         }
     }
 
@@ -486,7 +477,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param c Connection.
      */
     private void onSqlException(H2Connection c) {
-        U.closeQuiet(c);
+        try {
+            c.destroy();
+        }
+        catch (SQLException e) {
+            U.error(log, "Failed to destroy a connection.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -636,7 +632,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Removing query index table: " + tbl.fullTableName());
 
-        H2Connection c = connectionForThread(tbl.schemaName());
+        H2Connection c = takeConnectionForSchema(tbl.schemaName());
 
         try {
             // NOTE: there is no method dropIndex() for lucene engine correctly working.
@@ -657,7 +653,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ", table=" + tbl.fullTableName() + "]", IgniteQueryErrorCode.TABLE_DROP_FAILED, e);
         }
         finally {
-            release(c);
+            U.closeQuiet(c);
         }
 
         tbl.onDrop();
@@ -716,7 +712,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel)
         throws IgniteCheckedException {
-        final H2Connection conn = connectionForSpace(spaceName);
+        final H2Connection conn = takeConnectionForSpace(spaceName);
 
         conn.setupConnection(false, enforceJoinOrder);
 
@@ -750,9 +746,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
-                assert GridH2QueryContext.get() == null;
-
-                GridH2QueryContext.set(ctx);
+                GridH2QueryContext.set(conn, ctx);
 
                 GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL_FIELDS,
                     spaceName, U.currentTimeMillis(), cancel, true, conn);
@@ -776,7 +770,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public long streamUpdateQuery(@Nullable String spaceName, String qry,
         @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
-        final H2Connection conn = connectionForSpace(spaceName);
+        final H2Connection conn = takeConnectionForSpace(spaceName);
 
         try {
             final PreparedStatement stmt;
@@ -791,7 +785,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return dmlProc.streamUpdateQuery(streamer, stmt, params);
         }
         finally {
-            release(conn);
+            U.closeQuiet(conn);
         }
     }
 
@@ -1122,12 +1116,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String sql = generateQuery(qry, alias, tbl);
 
-        H2Connection conn = connectionForThread(tbl.schemaName());
+        H2Connection conn = takeConnectionForSchema(tbl.schemaName());
 
         try {
             conn.setupConnection(false, false);
 
-            GridH2QueryContext.set(new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter)
+            GridH2QueryContext.set(conn, new GridH2QueryContext(nodeId, nodeId, 0, LOCAL).filter(filter)
                 .distributedJoinMode(OFF));
 
             GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL, spaceName,
@@ -1243,7 +1237,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final String space = cctx.name();
         final String sqlQry = qry.getSql();
 
-        H2Connection c = connectionForSpace(space);
+        H2Connection c = takeConnectionForSpace(space);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
         final boolean distributedJoins = qry.isDistributedJoins() && cctx.isPartitioned();
@@ -1268,7 +1262,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Here we will just parse the statement, no need to optimize it at all.
             c.setupConnection(/*distributedJoins*/false, /*enforceJoinOrder*/true);
 
-            GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
+            GridH2QueryContext.set(c, new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
                 .distributedJoinMode(distributedJoinMode));
 
             PreparedStatement stmt = null;
@@ -1510,7 +1504,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         TableDescriptor tbl = new TableDescriptor(schema, type);
 
-        H2Connection conn = connectionForThread(schemaName);
+        H2Connection conn = takeConnectionForSchema(schemaName);
 
         try {
             createTable(schema, tbl, conn);
@@ -1523,7 +1517,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Failed to register query type: " + type, e);
         }
         finally {
-            release(conn);
+            U.closeQuiet(conn);
         }
 
         return true;
@@ -1824,24 +1818,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return -1;
 
-        H2Connection conn = connectionForSpace(spaceName);
+        H2Connection conn = takeConnectionForSpace(spaceName);
 
         try {
             conn.setupConnection(false, false);
 
-            ResultSet rs = executeSqlQuery(conn, conn.prepare("SELECT COUNT(*) FROM " + tbl.fullTableName(), false),
-                0, null);
+            try (ResultSet rs = executeSqlQuery(conn, conn.prepare("SELECT COUNT(*) FROM " + tbl.fullTableName(), false),
+                0, null)) {
+                if (!rs.next())
+                    throw new IllegalStateException();
 
-            if (!rs.next())
-                throw new IllegalStateException();
-
-            return rs.getLong(1);
+                return rs.getLong(1);
+            }
         }
         catch (SQLException e) {
             throw new IgniteCheckedException(e);
         }
         finally {
-            release(conn);
+            U.closeQuiet(conn);
         }
     }
 
@@ -2115,7 +2109,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemas.clear();
         space2schema.clear();
 
-        try (H2Connection c = new H2Connection(dbUrl)) {
+        try (H2Connection c = new H2Connection(null, dbUrl)) {
             c.executeUpdate("SHUTDOWN");
         }
         catch (SQLException e) {
