@@ -1576,8 +1576,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             }, threads);
         }
 
-        //[Test]
-        //[Category(TestUtils.CATEGORY_INTENSIVE)]
+        [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestAsyncMultithreadedKeepBinary()
         {
             var cache = Cache().WithKeepBinary<CacheTestKey, BinarizablePerson>();
