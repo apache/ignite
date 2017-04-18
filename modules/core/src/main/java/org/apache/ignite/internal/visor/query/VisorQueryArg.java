@@ -43,6 +43,9 @@ public class VisorQueryArg extends VisorDataTransferObject {
     /** Enforce join order flag. */
     private boolean enforceJoinOrder;
 
+    /** Query contains only replicated tables flag.*/
+    private boolean replicatedOnly;
+
     /** Flag whether to execute query locally. */
     private boolean loc;
 
@@ -61,15 +64,17 @@ public class VisorQueryArg extends VisorDataTransferObject {
      * @param qryTxt Query text.
      * @param distributedJoins If {@code true} then distributed joins enabled.
      * @param enforceJoinOrder If {@code true} then enforce join order.
+     * @param replicatedOnly {@code true} then query contains only replicated tables.
      * @param loc Flag whether to execute query locally.
      * @param pageSize Result batch size.
      */
     public VisorQueryArg(String cacheName, String qryTxt,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean loc, int pageSize) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly, boolean loc, int pageSize) {
         this.cacheName = cacheName;
         this.qryTxt = qryTxt;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
+        this.replicatedOnly = replicatedOnly;
         this.loc = loc;
         this.pageSize = pageSize;
     }
@@ -103,7 +108,14 @@ public class VisorQueryArg extends VisorDataTransferObject {
     }
 
     /**
-     * @return {@code true} if query should be executed locally.
+     * @return {@code true} If the query contains only replicated tables.
+     */
+    public boolean isReplicatedOnly() {
+        return replicatedOnly;
+    }
+
+    /**
+     * @return {@code true} If query should be executed locally.
      */
     public boolean isLocal() {
         return loc;

@@ -88,7 +88,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         cache.put(key, 0);
 
         final int THREADS = 5;
-        final int ITERATIONS_PER_THREAD = 10_000;
+        final int ITERATIONS_PER_THREAD = iterations();
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -296,7 +296,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @return Number of iterations.
      */
     protected int iterations() {
-        return 10_000;
+        return 1_000;
     }
 
     /**
