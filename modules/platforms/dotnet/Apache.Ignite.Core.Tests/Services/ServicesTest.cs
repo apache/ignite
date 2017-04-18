@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedMemberInSuper.Global
+// ReSharper disable UnusedMethodReturnValue.Global
+// ReSharper disable UnusedParameter.Global
+// ReSharper disable MemberCanBePrivate.Local
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
@@ -618,9 +622,9 @@ namespace Apache.Ignite.Core.Tests.Services
             if (Grid1 != null)
                 return;
 
-            Grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid1.xml"));
-            Grid2 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid2.xml"));
-            Grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
+            Grid1 = Ignition.Start(GetConfiguration("grid1"));
+            Grid2 = Ignition.Start(GetConfiguration("grid2"));
+            Grid3 = Ignition.Start(GetConfiguration("grid3"));
 
             Grids = new[] { Grid1, Grid2, Grid3 };
         }
@@ -662,16 +666,14 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private IgniteConfiguration GetConfiguration(string springConfigUrl)
+        private IgniteConfiguration GetConfiguration(string name)
         {
             if (!CompactFooter)
-                springConfigUrl = ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
+                name = ComputeApiTestFullFooter.ReplaceFooterSetting(name);
 
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = springConfigUrl,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
+                IgniteInstanceName = name,
                 BinaryConfiguration = new BinaryConfiguration(
                     typeof (TestIgniteServiceBinarizable),
                     typeof (TestIgniteServiceBinarizableErr),
