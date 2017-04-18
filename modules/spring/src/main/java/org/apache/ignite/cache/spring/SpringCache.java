@@ -155,15 +155,15 @@ class SpringCache implements Cache {
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     private <T> T waitAndLoad(CacheEntry entry, Callable<T> valueLoader, long startTime) {
-        long updateTime = entry.updateTime();
-        boolean isUpdated = false;
+        boolean isNotUpdated = true;
 
-        while (!isUpdated) { // the cycle instead of recursion
+        while (isNotUpdated) { // the cycle instead of recursion
+            long updateTime = entry.updateTime();
 
-            while (2000 < (startTime - U.currentTimeMillis()) && !isUpdated) // try to detect failover
-                isUpdated = (updateTime != entry.updateTime());
+            while (2000 < (startTime - U.currentTimeMillis()) && isNotUpdated) // try to detect failover
+                isNotUpdated = (updateTime == entry.updateTime());
 
-            if (updateTime != entry.updateTime()) {
+            if (updateTime == entry.updateTime()) { // the entry is not updated
                 cache.put(entry.getKey(), LOCK);
 
                 return loadAndPut(entry.getKey(), valueLoader);
@@ -176,7 +176,7 @@ class SpringCache implements Cache {
 
             // the lock was updated by another node, try again
             startTime = U.currentTimeMillis();
-            isUpdated = false;
+            isNotUpdated = true;
         }
 
         throw new AssertionError();
