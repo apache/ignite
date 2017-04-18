@@ -518,6 +518,7 @@ namespace Apache.Ignite.Core
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
             PluginConfigurations = cfg.PluginConfigurations;
+            AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
         }
 
         /// <summary>
@@ -528,6 +529,18 @@ namespace Apache.Ignite.Core
         /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
         /// </summary>
         public string IgniteInstanceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether unique <see cref="IgniteInstanceName"/> should be generated.
+        /// <para />
+        /// Set this to true in scenarios where new node should be started regardless of other nodes present within
+        /// current process. In particular, this setting is useful is ASP.NET and IIS environments, where AppDomains
+        /// are loaded and unloaded within a single process during application restarts. Ignite stops all nodes
+        /// on <see cref="AppDomain"/> unload, however, IIS does not wait for previous AppDomain to unload before
+        /// starting up a new one, which may cause "Ignite instance with this name has already been started" errors.
+        /// This setting solves the issue.
+        /// </summary>
+        public bool AutoGenerateIgniteInstanceName { get; set; }
 
         /// <summary>
         /// Gets or sets optional local instance name.
