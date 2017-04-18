@@ -651,11 +651,11 @@ public class GridH2Table extends TableBase {
                 while (++i < len) {
                     GridH2IndexBase idx = index(i);
 
-                    addToIndex(idx, pk, row, old);
+                    addToIndex(idx, pk, row, old, false);
                 }
 
                 for (GridH2IndexBase idx : tmpIdxs.values())
-                    addToIndex(idx, pk, row, old);
+                    addToIndex(idx, pk, row, old, true);
             }
             else {
                 //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
@@ -706,16 +706,19 @@ public class GridH2Table extends TableBase {
      * @param pk Primary key index.
      * @param row Row to add to index.
      * @param old Previous row state, if any.
+     * @param tmp {@code True} if this is proposed index which may be not consistent yet.
      */
-    private void addToIndex(GridH2IndexBase idx, Index pk, GridH2Row row, GridH2Row old) {
+    private void addToIndex(GridH2IndexBase idx, Index pk, GridH2Row row, GridH2Row old, boolean tmp) {
         assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
 
         GridH2Row old2 = idx.put(row);
 
         if (old2 != null) { // Row was replaced in index.
-            if (!eq(pk, old2, old))
-                throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
-                    "not supported [idx=" + idx + ", old=" + old + ", old2=" + old2 + ']');
+            if (!tmp) {
+                if (!eq(pk, old2, old))
+                    throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
+                        "not supported [idx=" + idx + ", old=" + old + ", old2=" + old2 + ']');
+            }
         }
         else if (old != null) // Row was not replaced, need to remove manually.
             idx.removex(old);
