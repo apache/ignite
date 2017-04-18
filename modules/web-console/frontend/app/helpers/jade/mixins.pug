@@ -209,6 +209,12 @@ mixin url(lbl, model, name, required, placeholder, tip)
         if  block
             block
 
+//- Mixin for text field.
+mixin url(lbl, model, name, required, placeholder, tip)
+    +ignite-form-field-url(lbl, model, name, required, placeholder, tip)
+        if  block
+            block
+
 //- Mixin for password field.
 mixin password(lbl, model, name, required, placeholder, tip)
     +ignite-form-field-password(lbl, model, name, false, required, placeholder, tip)
