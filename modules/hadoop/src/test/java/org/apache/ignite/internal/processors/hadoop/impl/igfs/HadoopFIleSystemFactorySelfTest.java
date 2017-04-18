@@ -127,9 +127,8 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         // Create remote instance.
         FileSystem fs = FileSystem.get(URI.create("igfs://primary@127.0.0.1:10500/"), baseConfiguration());
 
-        // Ensure lifecycle callback was invoked.
-        assert START_CNT.get() == 2;
-        assert STOP_CNT.get() == 0;
+        assertEquals(1, START_CNT.get());
+        assertEquals(0, STOP_CNT.get());
 
         // Check file system operations.
         assert fs.exists(PATH_DUAL);
@@ -148,17 +147,16 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         assert secondary.exists(IGFS_PATH_PROXY);
         assert fs.exists(PATH_PROXY);
 
-        // Close file system and ensure that associated factory was notified.
         fs.close();
 
-        assert START_CNT.get() == 2;
-        assert STOP_CNT.get() == 1;
+        assertEquals(1, START_CNT.get());
+        assertEquals(0, STOP_CNT.get());
 
         // Stop primary node and ensure that base factory was notified.
         G.stop(primary.context().kernalContext().grid().name(), true);
 
-        assert START_CNT.get() == 2;
-        assert STOP_CNT.get() == 2;
+        assertEquals(1, START_CNT.get());
+        assertEquals(1, STOP_CNT.get());
     }
 
     /**
