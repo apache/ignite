@@ -29,7 +29,6 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
@@ -60,11 +58,6 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
     }
 
     /** {@inheritDoc} */
@@ -155,10 +148,10 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
-            Object oldValue = storeMap.put(entry.getKey(), entry.getValue());
+            Object oldVal = storeMap.put(entry.getKey(), entry.getValue());
 
-            if (oldValue instanceof Integer && entry.getValue() instanceof Integer) {
-                Integer oldInt = (Integer)oldValue;
+            if (oldVal instanceof Integer && entry.getValue() instanceof Integer) {
+                Integer oldInt = (Integer) oldVal;
                 Integer newInt = (Integer)entry.getValue();
 
                 assertTrue(
