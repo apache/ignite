@@ -272,6 +272,10 @@ namespace Apache.Ignite.Core
                 {
                     writer.WriteBoolean(false);
                 }
+
+                // Name mapper.
+                var mapper = BinaryConfiguration.NameMapper as BinaryBasicNameMapper;
+                writer.WriteBoolean(mapper != null && mapper.IsSimpleName);
             }
             else
             {
@@ -430,7 +434,14 @@ namespace Apache.Ignite.Core
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
 
                 if (r.ReadBoolean())
+                {
                     BinaryConfiguration.CompactFooter = r.ReadBoolean();
+                }
+
+                if (r.ReadBoolean())
+                {
+                    BinaryConfiguration.NameMapper = BinaryBasicNameMapper.SimpleNameInstance;
+                }
             }
 
             // User attributes
