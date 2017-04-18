@@ -2263,13 +2263,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode clusterNode) {
+        @Override public boolean apply(ClusterNode node) {
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
             return obj != null && obj.getClass().equals(this.getClass());
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "IgniteAllNodesPredicate []";
         }
     }
 
