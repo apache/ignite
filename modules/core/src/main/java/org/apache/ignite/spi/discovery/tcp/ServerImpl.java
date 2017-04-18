@@ -2388,7 +2388,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private long lastTimeStatusMsgSent;
 
         /** Incoming metrics check frequency. */
-        private long metricsCheckFreq = (long)spi.muFreq + 50;
+        private long metricsCheckFreq = spi.muFreq + 50;
 
         /** Last time metrics message has been sent. */
         private long lastTimeMetricsMsgSent;
