@@ -119,14 +119,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Gets the configuration.
         /// </summary>
-        private static IgniteConfiguration GetConfig(string gridName = null)
+        private IgniteConfiguration GetConfig(string gridName = null)
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(Person),
-                    typeof(Organization), typeof(Address), typeof(Role), typeof(RoleKey), typeof(Numerics)),
+                    typeof(Organization), typeof(Address), typeof(Role), typeof(RoleKey), typeof(Numerics))
+                {
+                    NameMapper = GetNameMapper()
+                },
                 IgniteInstanceName = gridName
             };
+        }
+
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>

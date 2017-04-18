@@ -91,27 +91,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [TestFixtureSetUp]
         public void SetUp()
         {
-            GC.Collect();
-            TestUtils.JvmDebug = true;
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
+                    {
+                        new BinaryTypeConfiguration(typeof(BinarizableEntry)),
+                        new BinaryTypeConfiguration(typeof(BinarizableFilter)),
+                        new BinaryTypeConfiguration(typeof(KeepBinaryFilter))
+                    }
+                },
+                SpringConfigUrl = "config\\cache-query-continuous.xml",
+                IgniteInstanceName = "grid-1"
+            };
 
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            BinaryConfiguration portCfg = new BinaryConfiguration();
-
-            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
-
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableEntry)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFilter)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(KeepBinaryFilter)));
-
-            portCfg.TypeConfigurations = portTypeCfgs;
-
-            cfg.BinaryConfiguration = portCfg;
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-            cfg.SpringConfigUrl = "config\\cache-query-continuous.xml";
-
-            cfg.IgniteInstanceName = "grid-1";
             grid1 = Ignition.Start(cfg);
             cache1 = grid1.GetCache<int, BinarizableEntry>(cacheName);
 
@@ -1179,7 +1173,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                     IBinaryType meta = val.GetBinaryType();
 
-                    Assert.AreEqual(typeof(BinarizableEntry).Name, meta.TypeName);
+                    Assert.AreEqual(typeof(BinarizableEntry).FullName, meta.TypeName);
                 }
 
                 countDown.Signal();
