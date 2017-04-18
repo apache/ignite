@@ -259,7 +259,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             if (BigDecimal.class == cls)
                 return new BigDecimal(val);
 
-            if (Collection.class == cls)
+            if (Collection.class == cls || List.class == cls)
                 return Arrays.asList(val.split(";"));
 
             if (Set.class == cls)
