@@ -172,11 +172,23 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
             fail("IGFS name mustn't be null");
         }
-        catch (IgniteException e) {
+        catch (NullPointerException e) {
             assertTrue(e.getMessage().contains("IGFS name mustn't be null"));
         }
-        catch (IllegalArgumentException e) {
-            // No-op.
+
+        try {
+            ArrayList<FileSystemConfiguration> fsCfgs = new ArrayList<>(Arrays.asList(g1Cfg.getFileSystemConfiguration()));
+
+            fsCfgs.add(new FileSystemConfiguration()); // IGFS there doesn't have default name.
+
+            g1Cfg.setFileSystemConfiguration(fsCfgs.toArray(new FileSystemConfiguration[fsCfgs.size()]));
+
+            assertFalse(G.start(g1Cfg).cluster().nodes().isEmpty());
+
+            fail("IGFS name mustn't be null");
+        }
+        catch (IgniteException e) {
+            assertTrue(e.getMessage().contains("IGFS name mustn't be null"));
         }
     }
 
