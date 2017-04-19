@@ -1573,8 +1573,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         T2<Long, Long> secondaryTimes = igfsSecondary.times(FILE.toString());
 
-        assertEquals(info.accessTime(), (long) secondaryTimes.get1());
-        assertEquals(info.modificationTime(), (long) secondaryTimes.get2());
+        assertEquals(info.modificationTime(), (long) secondaryTimes.get1());
+        assertEquals(info.accessTime(), (long) secondaryTimes.get2());
 
         try {
             igfs.setTimes(FILE2, MAX_ALIGN_ON_SECOND, MAX_ALIGN_ON_SECOND);
