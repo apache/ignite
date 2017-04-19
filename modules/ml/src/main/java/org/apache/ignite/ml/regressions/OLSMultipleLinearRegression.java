@@ -273,7 +273,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
     @Override
     protected Matrix calculateBetaVariance() {
         int p = getX().columnSize();
-        Matrix rAug = qr.getR().viewPart(0, p - 1, 0, p - 1);;
+        Matrix rAug = MatrixUtil.copy(qr.getR().viewPart(0, p, 0, p));
         Matrix rInv = rAug.inverse();
         return rInv.times(rInv.transpose());
     }

@@ -163,9 +163,12 @@ public class QRDecomposition extends DecompositionSupport {
 
         Matrix r = getR();
 
-        for (int k = Math.min(this.cols, rows) - 1; k > 0; k--) {
+        for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {
             // X[k,] = Y[k,] / R[k,k], note that X[k,] starts with 0 so += is same as =
             x.viewRow(k).map(y.viewRow(k), Functions.plusMult(1 / r.get(k, k)));
+
+            if (k == 0)
+                continue;
 
             // Y[0:(k-1),] -= R[0:(k-1),k] * X[k,]
             Vector rCol = r.viewColumn(k).viewPart(0, k);
@@ -186,7 +189,7 @@ public class QRDecomposition extends DecompositionSupport {
      */
     public Vector solve(Vector vec) {
         Matrix res = solve(vec.likeMatrix(vec.size(), 1).assignColumn(0, vec));
-        return vec.like(vec.size()).assign(res.viewColumn(0));
+        return vec.like(res.rowSize()).assign(res.viewColumn(0));
     }
 
     /**

@@ -146,7 +146,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
             new double[]{-3482258.63459582, 15.0618722713733,
                 -0.358191792925910E-01,-2.02022980381683,
                 -1.03322686717359,-0.511041056535807E-01,
-                1829.15146461355}, 2E-8); //
+                1829.15146461355}, 2E-6); //
 
         // Check expected residuals from R
         double[] residuals = model.estimateResiduals();
@@ -157,7 +157,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
                 455.394094551857,-17.26892711483297,-39.0550425226967,
                 -155.5499735953195,-85.6713080421283,341.9315139607727,
                 -206.7578251937366},
-            1E-8);
+            1E-7);
 
         // Check standard errors from NIST
         double[] errors = model.estimateRegressionParametersStandardErrors();
@@ -188,7 +188,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         TestUtils.assertEquals(betaHat,
             new double[]{-52.99357013868291, 0.07107319907358,
                 -0.42346585566399,-0.57256866841929,
-                -0.41420358884978, 48.41786562001326}, 1E-11);
+                -0.41420358884978, 48.41786562001326}, 1E-8);
 
         // Check standard errors from R
         errors = model.estimateRegressionParametersStandardErrors();
@@ -203,7 +203,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
                 -440.46768772620027, -543.54512853774793, 201.32111639536299, 215.90889365977932,
                 73.09368242049943, 913.21694494481869, 424.82484953610174, -8.56475876776709,
                 -361.32974610842876, 27.34560497213464, 151.28955976355002, -492.49937355336846},
-            1E-10);
+            1E-8);
 
         // Check regression standard error against R
         Assert.assertEquals(475.1655079819517, model.estimateRegressionStandardError(), 1E-10);
