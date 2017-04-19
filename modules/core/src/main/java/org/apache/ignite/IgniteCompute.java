@@ -24,6 +24,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSpis;
+import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
@@ -751,4 +752,14 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     /** {@inheritDoc} */
     @Deprecated
     @Override public IgniteCompute withAsync();
+
+    /**
+     * Gets instance of the compute associated with custom named executor.
+     * All tasks jobs submitted by the components will be processed by thread pool corresponds to named
+     * {@link ExecutorConfiguration}.
+     *
+     * @param name Custom executor name.
+     * @return Instance of this component associated with named executor.
+     */
+    public IgniteCompute withExecutor(@NotNull String name);
 }

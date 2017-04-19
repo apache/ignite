@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -41,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Job execution request.
  */
-public class GridJobExecuteRequest implements Message {
+public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -146,6 +145,9 @@ public class GridJobExecuteRequest implements Message {
     /** */
     private AffinityTopologyVersion topVer;
 
+    /** */
+    private String execName;
+
     /**
      * No-op constructor to support {@link Externalizable} interface.
      */
@@ -182,6 +184,7 @@ public class GridJobExecuteRequest implements Message {
      * @param cacheIds Caches' identifiers to reserve partition.
      * @param part Partition to lock.
      * @param topVer Affinity topology version of job mapping.
+     * @param execName The name of the custom named executor.
      */
     public GridJobExecuteRequest(
             IgniteUuid sesId,
@@ -211,7 +214,8 @@ public class GridJobExecuteRequest implements Message {
             UUID subjId,
             @Nullable int[] cacheIds,
             int part,
-            @Nullable AffinityTopologyVersion topVer) {
+            @Nullable AffinityTopologyVersion topVer,
+            @Nullable String execName) {
         this.top = top;
         assert sesId != null;
         assert jobId != null;
@@ -251,6 +255,7 @@ public class GridJobExecuteRequest implements Message {
         this.idsOfCaches = cacheIds;
         this.part = part;
         this.topVer = topVer;
+        this.execName = execName;
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
     }
@@ -454,6 +459,11 @@ public class GridJobExecuteRequest implements Message {
         return part;
     }
 
+    /** {@inheritDoc} */
+    @Override public String executorName() {
+        return execName;
+    }
+
     /**
      * @return Affinity version which was used to map job
      */
@@ -618,6 +628,12 @@ public class GridJobExecuteRequest implements Message {
 
             case 23:
                 if (!writer.writeString("userVer", userVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeString("executorName", execName))
                     return false;
 
                 writer.incrementState();
@@ -831,6 +847,14 @@ public class GridJobExecuteRequest implements Message {
 
                 reader.incrementState();
 
+            case 24:
+                execName = reader.readString("executorName");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridJobExecuteRequest.class);
@@ -843,7 +867,7 @@ public class GridJobExecuteRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 24;
+        return 25;
     }
 
     /** {@inheritDoc} */
