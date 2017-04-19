@@ -188,7 +188,7 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testEntityCacheNonStrictFails() throws Exception {
+    public void testEntityCacheReadWrite() throws Exception {
         SessionFactory sessionFactory
             = startHibernate(getTestIgniteInstanceName(0));
 
