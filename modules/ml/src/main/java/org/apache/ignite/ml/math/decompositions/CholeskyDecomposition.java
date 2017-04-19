@@ -138,7 +138,7 @@ public class CholeskyDecomposition extends DecompositionSupport {
         }
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void destroy() {
         if (cachedL != null)
             cachedL.destroy();
