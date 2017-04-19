@@ -26,6 +26,8 @@ public interface GridIntIterator {
      */
     public boolean hasNext();
 
-    /** Returns the next int. */
+    /**
+     * @return Next int.
+     */
     public int next();
 }
