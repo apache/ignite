@@ -101,7 +101,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
             List<List<?>> res = cache.query(new SqlFieldsQuery("explain select _key from Geometry where _val && ?")
                 .setArgs(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))")).setLocal(true)).getAll();
 
-            assertTrue("__ explain: " + res, res.get(0).get(0).toString().contains("_val_idx"));
+            assertTrue("__ explain: " + res, res.get(0).get(0).toString().toLowerCase().contains("_val_idx"));
         }
         finally {
             cache.destroy();
@@ -167,7 +167,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
 
             // Check explaint request.
             assertTrue(F.first(cache.query(new SqlFieldsQuery("explain select * from EnemyCamp " +
-                "where coords && 'POINT(25 75)'")).getAll()).get(0).toString().contains("coords_idx"));
+                "where coords && 'POINT(25 75)'")).getAll()).get(0).toString().toLowerCase().contains("coords_idx"));
         }
         finally {
             cache.destroy();

@@ -18,10 +18,10 @@
 package org.apache.ignite.examples.ml.math.vector;
 
 import java.util.Arrays;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.SparseLocalVector;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.impls.vector.SparseLocalVector;
 
-import static org.apache.ignite.math.StorageConstants.RANDOM_ACCESS_MODE;
+import static org.apache.ignite.ml.math.StorageConstants.RANDOM_ACCESS_MODE;
 
 /**
  * This example shows how to use sparse {@link Vector} API.

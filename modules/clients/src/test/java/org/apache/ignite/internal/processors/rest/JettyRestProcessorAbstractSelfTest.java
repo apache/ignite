@@ -66,6 +66,8 @@ import org.apache.ignite.internal.visor.cache.VisorCacheMetadataTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheNodesTask;
+import org.apache.ignite.internal.visor.cache.VisorCachePartitionsTask;
+import org.apache.ignite.internal.visor.cache.VisorCachePartitionsTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStartTaskArg;
@@ -542,7 +544,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testIncorrectPut() throws Exception {
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "key", "key0"));
 
-        assertResponseContainsError(ret, "Failed to find mandatory parameter in request: val");
+        assertResponseContainsError(ret,
+            "Failed to handle request: [req=CACHE_PUT, err=Failed to find mandatory parameter in request: val]");
     }
 
     /**
@@ -1279,6 +1282,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .argument("person"));
 
         info("VisorCacheNodesTask result: " + ret);
+
+        jsonTaskResult(ret);
+
+        ret = content(new VisorGatewayArgument(VisorCachePartitionsTask.class)
+            .forNode(locNode)
+            .argument(VisorCachePartitionsTaskArg.class, "person"));
+
+        info("VisorCachePartitionsTask result: " + ret);
 
         jsonTaskResult(ret);
 

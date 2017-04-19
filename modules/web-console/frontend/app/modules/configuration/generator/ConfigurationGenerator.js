@@ -1169,7 +1169,6 @@ export default class IgniteConfigurationGenerator {
 
             this.igfsIPC(igfs, igfsCfg);
             this.igfsFragmentizer(igfs, igfsCfg);
-            this.igfsDualMode(igfs, igfsCfg);
             this.igfsSecondFS(igfs, igfsCfg);
             this.igfsMisc(igfs, igfsCfg);
 
@@ -1837,15 +1836,6 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
-    // Generate IGFS Dual mode group.
-    static igfsDualMode(igfs, cfg = this.igfsConfigurationBean(igfs)) {
-        cfg.intProperty('dualModeMaxPendingPutsSize')
-            .emptyBeanProperty('dualModePutExecutorService')
-            .intProperty('dualModePutExecutorServiceShutdown');
-
-        return cfg;
-    }
-
     // Generate IGFS miscellaneous group.
     static igfsMisc(igfs, cfg = this.igfsConfigurationBean(igfs)) {
         cfg.intProperty('blockSize')
@@ -1857,7 +1847,6 @@ export default class IgniteConfigurationGenerator {
             .intProperty('perNodeParallelBatchCount')
             .intProperty('prefetchBlocks')
             .intProperty('sequentialReadsBeforePrefetch')
-            .intProperty('trashPurgeTimeout')
             .intProperty('colocateMetadata')
             .intProperty('relaxedConsistency')
             .mapProperty('pathModes', 'pathModes');

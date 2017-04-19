@@ -17,11 +17,11 @@
 
 package org.apache.ignite.examples.ml.math.matrix;
 
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.MatrixStorage;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.matrix.AbstractMatrix;
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.MatrixStorage;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.impls.matrix.AbstractMatrix;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * This example shows how to use {@link Matrix} API based on custom {@link MatrixStorage}.
@@ -82,7 +82,7 @@ public final class MatrixCustomStorageExample {
 
     /**
      * Example of vector with custom storage, modeled after
-     * {@link org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix}.
+     * {@link org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix}.
      */
     static class MatrixCustomStorage extends AbstractMatrix {
         /**
