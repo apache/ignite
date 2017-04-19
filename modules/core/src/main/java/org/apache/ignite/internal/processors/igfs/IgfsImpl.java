@@ -391,7 +391,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String name() {
+    @Override public String name() {
         return cfg.getName();
     }
 
