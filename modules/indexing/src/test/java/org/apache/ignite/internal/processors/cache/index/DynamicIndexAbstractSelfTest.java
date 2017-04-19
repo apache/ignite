@@ -359,7 +359,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @return Random string.
      */
     protected static String randomString() {
-        return UUID.randomUUID().toString();
+        return "random" + UUID.randomUUID().toString().replace("-", "");
     }
 
     /**

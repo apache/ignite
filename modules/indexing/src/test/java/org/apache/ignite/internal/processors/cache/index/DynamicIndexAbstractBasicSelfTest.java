@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -197,7 +198,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             @Override public void run() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
             }
-        }, SchemaOperationException.CODE_INDEX_EXISTS);
+        }, IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
 
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true);
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
@@ -437,7 +438,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             @Override public void run() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, randomString(), idx, false);
             }
-        }, SchemaOperationException.CODE_TABLE_NOT_FOUND);
+        }, IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
@@ -513,7 +514,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             @Override public void run() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
             }
-        }, SchemaOperationException.CODE_COLUMN_NOT_FOUND);
+        }, IgniteQueryErrorCode.COLUMN_NOT_FOUND);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
@@ -590,7 +591,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
             }
-        }, SchemaOperationException.CODE_COLUMN_NOT_FOUND);
+        }, IgniteQueryErrorCode.COLUMN_NOT_FOUND);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
@@ -757,7 +758,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             @Override public void run() throws Exception {
                 dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false);
             }
-        }, SchemaOperationException.CODE_INDEX_NOT_FOUND);
+        }, IgniteQueryErrorCode.INDEX_NOT_FOUND);
 
         dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true);
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
@@ -864,7 +865,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             @Override public void run() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true);
             }
-        }, SchemaOperationException.CODE_GENERIC);
+        }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
@@ -872,7 +873,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             @Override public void run() throws Exception {
                 dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true);
             }
-        }, SchemaOperationException.CODE_GENERIC);
+        }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -988,9 +989,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
             int code = cause0.statusCode();
 
-            // TODO: Re-enable.
-//            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.code() + ']',
-//                expCode, e.code());
+            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + code +
+                ", msg=" + cause.getMessage() + ']', expCode, code);
 
             return;
         }
