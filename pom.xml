@@ -95,6 +95,35 @@
 
     <profiles>
         <profile>
+            <id>all-java</id> <!-- used to update project versions and check all modules compilation -->
+            <modules> <!-- sorted alphabetically -->
+                <module>examples</module>
+                <module>modules/benchmarks</module>
+                <module>modules/geospatial</module>
+                <module>modules/hibernate5</module>
+                <module>modules/hibernate</module>
+                <module>modules/ml</module>
+                <module>modules/schedule</module>
+                <module>modules/web-console/web-agent</module>
+                <module>modules/web-console</module>
+                <module>modules/yardstick</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
+            <modules><!-- sorted alphabetically -->
+                <module>modules/scalar-2.10</module>
+                <module>modules/scalar</module>
+                <module>modules/spark-2.10</module>
+                <module>modules/spark</module>
+                <module>modules/visor-console-2.10</module>
+                <module>modules/visor-console</module>
+                <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>test</id>
             <build>
                 <plugins>
@@ -935,9 +964,9 @@
         </profile>
 
         <profile>
-            <id>math</id>
+            <id>ml</id>
             <modules>
-                <module>modules/math</module>
+                <module>modules/ml</module>
             </modules>
         </profile>
     </profiles>

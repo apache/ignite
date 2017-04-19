@@ -32,8 +32,9 @@ namespace Apache.Ignite.Core.Tests
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for executable.
+    /// Tests for Apache.Ignite.exe.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ExecutableTest
     {
         /** Spring configuration path. */

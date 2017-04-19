@@ -1464,7 +1464,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      */
     @SuppressWarnings("unchecked")
     private IgniteInternalFuture asyncOp(final Callable<?> op) {
-        IgniteInternalFuture fail = asyncOpAcquire();
+        IgniteInternalFuture fail = asyncOpAcquire(/*retry*/false);
 
         if (fail != null)
             return fail;
@@ -1484,14 +1484,14 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                         }
                     });
 
-                saveFuture(holder, f);
+                saveFuture(holder, f, /*retry*/false);
 
                 return f;
             }
 
             IgniteInternalFuture f = ctx.closures().callLocalSafe(op);
 
-            saveFuture(holder, f);
+            saveFuture(holder, f, /*retry*/false);
 
             return f;
         }

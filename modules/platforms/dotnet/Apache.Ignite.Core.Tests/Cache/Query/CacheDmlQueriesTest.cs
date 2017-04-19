@@ -39,9 +39,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(Foo), typeof(Key), typeof(Key2))
+                {
+                    NameMapper = GetNameMapper()
+                }
             };
 
             Ignition.Start(cfg);
+        }
+
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>
@@ -127,11 +138,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(cache.ContainsKey(foos[0].Key));
             Assert.IsTrue(binCache.ContainsKey(
                 binary.GetBuilder(typeof(Key)).SetField("hi", 1).SetField("lo", 2).Build()));
+            Assert.IsTrue(binCache.ContainsKey(  // Fields are sorted.
+                binary.GetBuilder(typeof(Key)).SetField("lo", 2).SetField("hi", 1).Build()));
 
             Assert.IsTrue(cache.ContainsKey(new Key(5, 4)));
             Assert.IsTrue(cache.ContainsKey(foos[1].Key));
             Assert.IsTrue(binCache.ContainsKey(
                 binary.GetBuilder(typeof(Key)).SetField("hi", 4).SetField("lo", 5).Build()));
+            Assert.IsTrue(binCache.ContainsKey(  // Fields are sorted.
+                binary.GetBuilder(typeof(Key)).SetField("lo", 5).SetField("hi", 4).Build()));
         }
 
         /// <summary>

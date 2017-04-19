@@ -22,9 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.IO;
-    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -1628,41 +1626,25 @@ namespace Apache.Ignite.Core.Impl.Binary
             return hash;
         }
 
+        /// <summary>
+        /// Cleans the name of the field.
+        /// </summary>
         public static string CleanFieldName(string fieldName)
         {
+            // C# auto property backing field:
             if (fieldName.StartsWith("<", StringComparison.Ordinal)
                 && fieldName.EndsWith(">k__BackingField", StringComparison.Ordinal))
+            {
                 return fieldName.Substring(1, fieldName.IndexOf(">", StringComparison.Ordinal) - 1);
-            
+            }
+
+            // F# backing field:
+            if (fieldName.EndsWith("@", StringComparison.Ordinal))
+            {
+                return fieldName.Substring(0, fieldName.Length - 1);
+            }
+
             return fieldName;
-        }
-
-        /**
-         * <summary>Convert type name.</summary>
-         * <param name="typeName">Type name.</param>
-         * <param name="converter">Converter.</param>
-         * <returns>Converted name.</returns>
-         */
-        public static string ConvertTypeName(string typeName, IBinaryNameMapper converter)
-        {
-            var typeName0 = typeName;
-
-            try
-            {
-                if (converter != null)
-                    typeName = converter.GetTypeName(typeName);
-            }
-            catch (Exception e)
-            {
-                throw new BinaryObjectException("Failed to convert type name due to converter exception " +
-                    "[typeName=" + typeName + ", converter=" + converter + ']', e);
-            }
-
-            if (typeName == null)
-                throw new BinaryObjectException("Name converter returned null name for type [typeName=" +
-                    typeName0 + ", converter=" + converter + "]");
-
-            return typeName;
         }
 
         /**
@@ -1693,67 +1675,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             return fieldName;
         }
 
-        /**
-         * <summary>Extract simple type name.</summary>
-         * <param name="typeName">Type name.</param>
-         * <returns>Simple type name.</returns>
-         */
-        public static string SimpleTypeName(string typeName)
-        {
-            int idx = typeName.LastIndexOf('.');
-
-            return idx < 0 ? typeName : typeName.Substring(idx + 1);
-        }
-
-        /**
-         * <summary>Resolve type ID.</summary>
-         * <param name="typeName">Type name.</param>
-         * <param name="nameMapper">Name mapper.</param>
-         * <param name="idMapper">ID mapper.</param>
-         */
-        public static int TypeId(string typeName, IBinaryNameMapper nameMapper,
-            IBinaryIdMapper idMapper)
-        {
-            Debug.Assert(typeName != null);
-
-            typeName = ConvertTypeName(typeName, nameMapper);
-
-            int id = 0;
-
-            if (idMapper != null)
-            {
-                try
-                {
-                    id = idMapper.GetTypeId(typeName);
-                }
-                catch (Exception e)
-                {
-                    throw new BinaryObjectException("Failed to resolve type ID due to ID mapper exception " +
-                        "[typeName=" + typeName + ", idMapper=" + idMapper + ']', e);
-                }
-            }
-
-            if (id == 0)
-                id = GetStringHashCode(typeName);
-
-            return id;
-        }
-
         /// <summary>
-        /// Gets the name of the type.
+        /// Gets the SQL name of the type.
         /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns>
-        /// Simple type name for non-generic types; simple type name with appended generic arguments for generic types.
-        /// </returns>
-        public static string GetTypeName(Type type)
+        public static string GetSqlTypeName(Type type)
         {
-            if (!type.IsGenericType)
-                return type.Name;
-
-            var args = type.GetGenericArguments().Select(GetTypeName).Aggregate((x, y) => x + "," + y);
-
-            return string.Format(CultureInfo.InvariantCulture, "{0}[{1}]", type.Name, args);
+            // SQL always uses simple type name without namespace, parent class, etc.
+            return type.FullName;
         }
 
         /**
@@ -1793,31 +1721,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     "[typeId=" + typeId + ", fieldName=" + fieldName + ", idMapper=" + idMapper + ']');
 
             return id;
-        }
-
-        /// <summary>
-        /// Compare contents of two byte array chunks.
-        /// </summary>
-        /// <param name="arr1">Array 1.</param>
-        /// <param name="offset1">Offset 1.</param>
-        /// <param name="len1">Length 1.</param>
-        /// <param name="arr2">Array 2.</param>
-        /// <param name="offset2">Offset 2.</param>
-        /// <param name="len2">Length 2.</param>
-        /// <returns>True if array chunks are equal.</returns>
-        public static bool CompareArrays(byte[] arr1, int offset1, int len1, byte[] arr2, int offset2, int len2)
-        {
-            if (len1 == len2)
-            {
-                for (int i = 0; i < len1; i++)
-                {
-                    if (arr1[offset1 + i] != arr2[offset2 + i])
-                        return false;
-                }
-
-                return true;
-            }
-            return false;
         }
 
         /// <summary>
