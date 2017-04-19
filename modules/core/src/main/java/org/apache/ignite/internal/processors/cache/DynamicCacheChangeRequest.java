@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * Cache start/stop request.
@@ -82,6 +84,9 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** Reset lost partitions flag. */
     private boolean resetLostPartitions;
+
+    /** Dynamic schema. */
+    private QuerySchema schema;
 
     /** */
     private transient boolean exchangeNeeded;
@@ -351,6 +356,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public UUID receivedFrom() {
         return rcvdFrom;
+    }
+
+    /**
+     * @return Dynamic schema.
+     */
+    public QuerySchema schema() {
+        return schema;
+    }
+
+    /**
+     * @param schema Dynamic schema.
+     */
+    public void schema(QuerySchema schema) {
+        this.schema = schema != null ? schema.copy() : null;
     }
 
     /** {@inheritDoc} */

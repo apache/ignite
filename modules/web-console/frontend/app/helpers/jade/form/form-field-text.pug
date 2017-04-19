@@ -43,7 +43,7 @@ mixin ignite-form-field-text(label, model, name, disabled, required, placeholder
         +ignite-form-field__label(label, name, required)
         .ignite-form-field__control
             +tooltip(tip, tipOpts)
-            
+
             if block
                 block
 
@@ -51,6 +51,23 @@ mixin ignite-form-field-text(label, model, name, disabled, required, placeholder
 
             .input-tip
                 +ignite-form-field-input(name, model, disabled, required, placeholder)(attributes=attributes)
+
+mixin ignite-form-field-url(label, model, name, required, placeholder, tip)
+    -var errLbl = label.substring(0, label.length - 1)
+
+    .ignite-form-field
+        +ignite-form-field__label(label, name, required)
+        .ignite-form-field__control
+            +tooltip(tip, tipOpts)
+            
+            if block
+                block
+
+            +form-field-feedback(name, 'required', errLbl + ' could not be empty!')
+            +form-field-feedback(name, 'url', errLbl + ' should be a valid URL!')
+
+            .input-tip
+                +ignite-form-field-url-input(name, model, false, required, placeholder)(attributes=attributes)
 
 mixin ignite-form-field-url(label, model, name, required, placeholder, tip)
     -var errLbl = label.substring(0, label.length - 1)

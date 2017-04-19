@@ -1315,7 +1315,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                         new BinaryTypeConfiguration(JavaBinaryCls),
                         new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
                         new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
-                    }
+                    },
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 },
                 SpringConfigUrl = path
             };

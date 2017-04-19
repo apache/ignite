@@ -24,6 +24,7 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -128,13 +130,38 @@ public interface GridQueryIndexing {
      *
      * @param spaceName Space name.
      * @param qry Text query.
-     * @param type Query return type.
+     * @param typeName Type name.
      * @param filter Space name and key filter.
      * @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(@Nullable String spaceName, String qry,
-        GridQueryTypeDescriptor type, IndexingQueryFilter filter) throws IgniteCheckedException;
+        String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
+
+    /**
+     * Create new index locally.
+     *
+     * @param spaceName Space name.
+     * @param tblName Table name.
+     * @param idxDesc Index descriptor.
+     * @param ifNotExists Ignore operation if index exists (instead of throwing an error).
+     * @param cacheVisitor Cache visitor
+     * @throws IgniteCheckedException if failed.
+     */
+    public void dynamicIndexCreate(@Nullable String spaceName, String tblName, QueryIndexDescriptorImpl idxDesc,
+        boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException;
+
+    /**
+     * Remove index from the space.
+     *
+     * @param spaceName Space name.
+     * @param idxName Index name.
+     * @param ifExists Ignore operation if index does not exist (instead of throwing an error).
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public void dynamicIndexDrop(@Nullable String spaceName, String idxName, boolean ifExists)
+        throws IgniteCheckedException;
 
     /**
      * Registers cache.
@@ -169,17 +196,17 @@ public interface GridQueryIndexing {
      * Unregisters type and removes all corresponding data.
      *
      * @param spaceName Space name.
-     * @param type Type descriptor.
+     * @param typeName Type name.
      * @throws IgniteCheckedException If failed.
      */
-    public void unregisterType(@Nullable String spaceName, GridQueryTypeDescriptor type) throws IgniteCheckedException;
+    public void unregisterType(@Nullable String spaceName, String typeName) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for space, so if space contains multiple indexes
      * the key should be removed from indexes other than one being updated.
      *
      * @param spaceName Space name.
-     * @param type Value type.
+     * @param typeName Type name.
      * @param key Key.
      * @param val Value.
      * @param ver Version.
@@ -187,7 +214,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void store(@Nullable String spaceName,
-        GridQueryTypeDescriptor type,
+        String typeName,
         KeyCacheObject key,
         int partId,
         CacheObject val,
@@ -266,11 +293,11 @@ public interface GridQueryIndexing {
     /**
      * Prepare native statement to retrieve JDBC metadata from.
      *
-     * @param schema Schema.
+     * @param space Schema.
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
-    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException;
+    public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException;
 
     /**
      * Gets space name from database schema.
