@@ -17,7 +17,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.mem.OutOfMemoryException;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 
 /**
  * This class allows defining custom memory policies' configurations with various parameters for Apache Ignite
@@ -86,7 +86,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * it will take empty page from the pool instead of allocating a new one.
      * Increase this parameter if cache can contain very big entries (total size of pages in the pool should be enough
      * to contain largest cache entry).
-     * Increase this parameter if {@link OutOfMemoryException} occurred with enabled page eviction.
+     * Increase this parameter if {@link IgniteOutOfMemoryException} occurred with enabled page eviction.
      */
     private int emptyPagesPoolSize = 100;
 

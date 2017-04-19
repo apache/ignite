@@ -30,6 +30,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheD
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest2;
+import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitionedAtomicConcurrentSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitionedTransactionalConcurrentSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedAtomicConcurrentSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedTransactionalConcurrentSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
@@ -43,6 +47,13 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite 2");
 
+        // Dynamic index create/drop tests.
+        suite.addTestSuite(DynamicIndexPartitionedAtomicConcurrentSelfTest.class);
+        suite.addTestSuite(DynamicIndexPartitionedTransactionalConcurrentSelfTest.class);
+        suite.addTestSuite(DynamicIndexReplicatedAtomicConcurrentSelfTest.class);
+        suite.addTestSuite(DynamicIndexReplicatedTransactionalConcurrentSelfTest.class);
+
+        // Other tests.
         suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);
 
         suite.addTestSuite(IgniteCacheQueryEvictsMultiThreadedSelfTest.class);

@@ -18,8 +18,8 @@
 package org.apache.ignite.examples.ml.math.vector;
 
 import java.util.Arrays;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * This example shows how to use {@link Vector} API.

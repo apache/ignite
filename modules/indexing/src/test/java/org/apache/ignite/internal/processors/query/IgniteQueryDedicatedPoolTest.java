@@ -83,7 +83,6 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         if ("client".equals(gridName))
             cfg.setClientMode(true);
 
-
         cfg.setIndexingSpi(new TestIndexingSpi());
 
         return cfg;

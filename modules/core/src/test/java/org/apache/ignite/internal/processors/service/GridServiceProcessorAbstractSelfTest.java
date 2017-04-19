@@ -30,7 +30,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
@@ -127,6 +129,17 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     protected void startExtraNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++)
             startGrid(nodeCount() + i);
+    }
+
+    /** */
+    protected void startExtraNodes(int servers, int clients) throws Exception {
+        startExtraNodes(servers);
+
+        for (int i = 0; i < clients; i++) {
+            final String nodeName = getTestIgniteInstanceName(nodeCount() + servers + i);
+
+            startGrid(nodeName, getConfiguration(nodeName).setClientMode(true));
+        }
     }
 
     /**
@@ -769,6 +782,21 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         return sum;
+    }
+
+    /**
+     * @param srvcName Service name
+     * @param expectedDeps Expected number of service deployments
+     *
+     */
+    protected boolean waitForDeployment(final String srvcName, final int expectedDeps) throws IgniteInterruptedCheckedException {
+        final Ignite g = randomGrid();
+
+        return GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @Override public boolean applyx() {
+                return actualCount(srvcName, g.services().serviceDescriptors())  == expectedDeps;
+            }
+        }, 1500);
     }
 
     /**

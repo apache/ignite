@@ -119,7 +119,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
             for (TestCommunicationSpi commSpi : commSpis)
                 cnt += commSpi.messagesCount();
 
-            assert cnt == ADDITION_CACHE_NUMBER;
+            assertEquals(ADDITION_CACHE_NUMBER, cnt);
         }
         finally {
             stopAllGrids();
