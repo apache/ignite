@@ -29,15 +29,15 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageExt;
-import org.apache.rocketmq.test.util.MQAdmin;
+import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.stream.rocketmq.TestRocketMQServer.NAME_SERVER_PORT;
@@ -52,9 +52,6 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
 
     /** Test consumer group. */
     private static final String CONSUMER_GRP = "testConsumerGrp";
-
-    /** Test cluster name. */
-    private static final String TEST_CLUSTER = "testCluster";
 
     /** Test server. */
     private static TestRocketMQServer testRocketMQServer;
@@ -168,7 +165,7 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     private void produceData() throws Exception {
-        initTopic(TOPIC_NAME, TEST_IP + ":" + NAME_SERVER_PORT, TEST_CLUSTER);
+        initTopic(TOPIC_NAME, TEST_IP + ":" + NAME_SERVER_PORT);
 
         DefaultMQProducer producer = new DefaultMQProducer("testProducerGrp");
 
@@ -193,14 +190,25 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
      *
      * @param topic Topic.
      * @param nsAddr Nameserver address.
-     * @param clusterName Cluster name.
      * @throws IgniteInterruptedCheckedException If fails.
      */
-    private void initTopic(String topic, String nsAddr, String clusterName) throws IgniteInterruptedCheckedException {
-        assertFalse(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return MQAdmin.createTopic(nsAddr, clusterName, topic, 8, 10);
-            }
-        }, 10_000));
+    private void initTopic(String topic, String nsAddr) throws Exception {
+        DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt();
+        defaultMQAdminExt.setNamesrvAddr(nsAddr);
+        try {
+            defaultMQAdminExt.start();
+
+            TopicConfig topicConfig = new TopicConfig();
+            topicConfig.setTopicName(topic);
+            topicConfig.setReadQueueNums(4);
+            topicConfig.setWriteQueueNums(4);
+
+            defaultMQAdminExt.createAndUpdateTopicConfig(testRocketMQServer.getBrokerAddr(), topicConfig);
+
+            U.sleep(100);
+        }
+        finally {
+            defaultMQAdminExt.shutdown();
+        }
     }
 }

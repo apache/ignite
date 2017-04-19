@@ -48,6 +48,9 @@ class TestRocketMQServer {
     /** Test broker name. */
     private static final String TEST_BROKER = "testBroker";
 
+    /** Test cluster name. */
+    private static final String TEST_CLUSTER = "testCluster";
+
     /** Nameserver. */
     private static NamesrvController nameSrv;
 
@@ -105,6 +108,7 @@ class TestRocketMQServer {
         MessageStoreConfig storeCfg = new MessageStoreConfig();
 
         brokerCfg.setBrokerName(TEST_BROKER);
+        brokerCfg.setBrokerClusterName(TEST_CLUSTER);
         brokerCfg.setBrokerIP1(TEST_IP);
         brokerCfg.setNamesrvAddr(TEST_IP + ":" + NAME_SERVER_PORT);
 
@@ -120,6 +124,15 @@ class TestRocketMQServer {
         broker.start();
 
         log.info("Started broker [" + TEST_BROKER + "] at " + BROKER_PORT);
+    }
+
+    /**
+     * Obtains the broker address.
+     *
+     * @return Broker address.
+     */
+    String getBrokerAddr() {
+        return broker.getBrokerAddr();
     }
 
     /**
