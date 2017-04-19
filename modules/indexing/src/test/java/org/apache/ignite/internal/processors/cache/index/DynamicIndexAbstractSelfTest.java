@@ -29,9 +29,10 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -135,6 +136,13 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         cfg.setMarshaller(new BinaryMarshaller());
 
+        MemoryConfiguration memCfg = new MemoryConfiguration()
+            .setDefaultMemoryPolicyName("default")
+            .setMemoryPolicies(new MemoryPolicyConfiguration().setName("default").setSize(32 * 1024 * 1024L)
+        );
+
+        cfg.setMemoryConfiguration(memCfg);
+
         return optimize(cfg);
     }
 
@@ -165,29 +173,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         ccfg.setBackups(1);
 
         return ccfg;
-    }
-
-    /**
-     * Ensure that schema exception is thrown.
-     *
-     * @param r Runnable.
-     * @param expCode Error code.
-     */
-    protected static void assertSchemaException(RunnableX r, int expCode) {
-        try {
-            r.run();
-        }
-        catch (SchemaOperationException e) {
-            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.code() + ']',
-                expCode, e.code());
-
-            return;
-        }
-        catch (Exception e) {
-            fail("Unexpected exception: " + e);
-        }
-
-        fail(SchemaOperationException.class.getSimpleName() +  " is not thrown.");
     }
 
     /**
@@ -374,7 +359,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @return Random string.
      */
     protected static String randomString() {
-        return UUID.randomUUID().toString();
+        return "random" + UUID.randomUUID().toString().replace("-", "");
     }
 
     /**

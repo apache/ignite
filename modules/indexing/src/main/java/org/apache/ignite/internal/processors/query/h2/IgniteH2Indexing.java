@@ -1717,7 +1717,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     if (DdlStatementsProcessor.isDdlStatement(prepared)) {
                         try {
-                            return ddlProc.runDdlStatement(stmt);
+                            return ddlProc.runDdlStatement(sqlQry, stmt);
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
