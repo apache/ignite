@@ -1164,17 +1164,16 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 for (Integer p : e.getValue().keySet()) {
                     List<ClusterNode> partNodes = p2n[p];
 
-                    if (partNodes == null) {
-                        // Initialize List to size 3 in anticipation that there won't be
-                        // more than 3 nodes per partitions.
-                        partNodes = new ArrayList<>(3);
-                        p2n[p] = partNodes;
-                    }
-
                     ClusterNode node = node(e.getKey());
 
-                    if (node != null && !partNodes.contains(node))
+                    if (node != null && !F.contains(partNodes, node)) {
+                        if (partNodes == null) {
+                            partNodes = new ArrayList<>();
+                            p2n[p] = partNodes;
+                        }
+
                         partNodes.add(node);
+                    }
                 }
             }
 
@@ -1191,7 +1190,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     int p = e.getKey();
                     GridDhtPartitionState state = e.getValue();
 
-                   if (state == MOVING) {
+                    if (state == MOVING) {
                         GridDhtLocalPartition locPart = locParts.get(p);
 
                         assert locPart != null;
@@ -1324,22 +1323,20 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             for (Integer p : parts.keySet()) {
                 List<ClusterNode> partNodes = part2node0[p];
 
-                if (partNodes == null) {
-                    // Initialize HashSet to size 3 in anticipation that there won't be
-                    // more than 3 nodes per partition.
-                    partNodes = new ArrayList<>(3);
-                    part2node0[p] = partNodes;
-                }
+                if (clusterNode != null && !F.contains(partNodes, clusterNode)) {
+                    if (partNodes == null) {
+                        partNodes = new ArrayList<>();
+                        part2node0[p] = partNodes;
+                    }
 
-                if (clusterNode != null && !partNodes.contains(clusterNode))
                     partNodes.add(clusterNode);
+                }
             }
 
-                // Remove obsolete mappings.
-                if (cur != null) {
-                    for (Integer p : F.view(cur.keySet(), F0.notIn (parts.keySet()))) {
-
-                        List<ClusterNode> partNodes = part2node0[p];
+            // Remove obsolete mappings.
+            if (cur != null) {
+                for (Integer p : F.view(cur.keySet(), F0.notIn(parts.keySet()))) {
+                    List<ClusterNode> partNodes = part2node0[p];
 
                     if (partNodes != null && clusterNode != null)
                         changed |= partNodes.remove(clusterNode);
@@ -1753,7 +1750,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             List<ClusterNode> ids = part2node0[p];
 
             if (ids == null) {
-                ids = new ArrayList<>(3);
+                ids = new ArrayList<>();
                 part2node0[p] = ids;
             }
 
