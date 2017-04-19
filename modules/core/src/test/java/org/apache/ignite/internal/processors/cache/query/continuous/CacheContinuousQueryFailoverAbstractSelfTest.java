@@ -85,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -259,13 +260,13 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         int minorVer = ignite0.configuration().isLateAffinityAssignment() ? 1 : 0;
 
-        GridDhtPartitionTopology top0 = ((IgniteKernal)ignite0).context().cache().context().cacheContext(1).topology();
+        GridDhtPartitionTopology top0 = ((IgniteKernal)ignite0).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
 
         assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(1)));
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(2)));
 
         Ignite ignite1 = startGrid(1);
-        GridDhtPartitionTopology top1 = ((IgniteKernal)ignite1).context().cache().context().cacheContext(1).topology();
+        GridDhtPartitionTopology top1 = ((IgniteKernal)ignite1).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
 
         waitRebalanceFinished(ignite0, 2, minorVer);
         waitRebalanceFinished(ignite1, 2, minorVer);
@@ -274,7 +275,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(3)));
 
         Ignite ignite2 = startGrid(2);
-        GridDhtPartitionTopology top2 = ((IgniteKernal)ignite2).context().cache().context().cacheContext(1).topology();
+        GridDhtPartitionTopology top2 = ((IgniteKernal)ignite2).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
 
         waitRebalanceFinished(ignite0, 3, minorVer);
         waitRebalanceFinished(ignite1, 3, minorVer);
@@ -287,7 +288,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         client = true;
 
         Ignite ignite3 = startGrid(3);
-        GridDhtPartitionTopology top3 = ((IgniteKernal)ignite3).context().cache().context().cacheContext(1).topology();
+        GridDhtPartitionTopology top3 = ((IgniteKernal)ignite3).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
 
         assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
         assertTrue(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
@@ -406,7 +407,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         final AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer, minorVer);
 
         final GridDhtPartitionTopology top =
-            ((IgniteKernal)ignite).context().cache().context().cacheContext(1).topology();
+            ((IgniteKernal)ignite).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -1537,7 +1538,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         for (Object info : infos.values()) {
             GridContinuousHandler hnd = GridTestUtils.getFieldValue(info, "hnd");
 
-            if (hnd.isQuery() && hnd.cacheName() == null) {
+            if (hnd.isQuery() && DEFAULT_CACHE_NAME.equals(hnd.cacheName())) {
                 backupQueue = GridTestUtils.getFieldValue(hnd, CacheContinuousQueryHandler.class, "backupQueue");
 
                 break;
