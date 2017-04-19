@@ -58,10 +58,7 @@ public class PivotedVectorView extends AbstractVector {
         this.vec = vec;
     }
 
-    /**
-     *
-     *
-     */
+    /** */
     private PivotedVectorStorage storage() {
         return (PivotedVectorStorage)getStorage();
     }
@@ -74,7 +71,6 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     *
      * @return Parent vector.
      */
     public Vector getBaseVector() {
@@ -82,7 +78,6 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     *
      * @param i Index to pivot.
      * @return  Mapping from external index to internal for given index.
      */
@@ -91,7 +86,6 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     *
      * @param i Index to unpivot.
      * @return Mapping from internal index to external for given index.
      */
@@ -100,7 +94,6 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     *
      * @param idx Index of vector element.
      * @return Vector element at given index.
      */

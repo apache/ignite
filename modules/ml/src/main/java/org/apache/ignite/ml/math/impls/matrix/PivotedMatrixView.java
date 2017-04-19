@@ -128,7 +128,6 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     *
      * @return Parent matrix.
      */
     public Matrix getBaseMatrix() {
@@ -136,7 +135,6 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     *
      * @return Pivot array for rows.
      */
     public int[] rowPivot() {
@@ -144,7 +142,6 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     *
      * @return Pivot array for columns.
      */
     public int[] columnPivot() {
@@ -152,7 +149,6 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     *
      * @param i Index for row pivot.
      * @return Row pivot for given index.
      */
@@ -161,7 +157,6 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     *
      * @param i Index for column pivot.
      * @return Column pivot for given index.
      */
@@ -199,10 +194,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         mtx = (Matrix)in.readObject();
     }
 
-    /**
-     *
-     *
-     */
+    /** */
     private PivotedMatrixStorage storage() {
         return (PivotedMatrixStorage)getStorage();
     }

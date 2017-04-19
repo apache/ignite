@@ -39,7 +39,6 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param rows Amount of rows in the matrix.
      * @param cols Amount of columns in the matrix.
      */
@@ -54,7 +53,6 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
      * @param data Backing data array.
      */
     public DenseOffHeapMatrixStorage(double[][] data) {

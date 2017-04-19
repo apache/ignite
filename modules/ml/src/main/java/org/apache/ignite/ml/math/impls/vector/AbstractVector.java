@@ -71,9 +71,7 @@ public abstract class AbstractVector implements Vector {
     /** Read-only error message. */
     private static final String RO_MSG = "Vector is read-only.";
 
-    /**
-     *
-     */
+    /** */
     private void ensureReadOnly() {
         if (readOnly)
             throw new UnsupportedOperationException(RO_MSG);
@@ -708,7 +706,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     *
      * @param vec Vector to check for valid cardinality.
      */
     protected void checkCardinality(Vector vec) {
@@ -717,7 +714,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     *
      * @param vec Array to check for valid cardinality.
      */
     protected void checkCardinality(double[] vec) {
@@ -726,7 +722,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     *
      * @param arr Array to check for valid cardinality.
      */
     protected void checkCardinality(int[] arr) {

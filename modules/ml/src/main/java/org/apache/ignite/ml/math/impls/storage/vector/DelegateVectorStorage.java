@@ -58,7 +58,6 @@ public class DelegateVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @return Backing vector storage.
      */
     public VectorStorage delegate() {
@@ -66,7 +65,6 @@ public class DelegateVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @return Offset into the backing vector.
      */
     public int offset() {
@@ -74,7 +72,6 @@ public class DelegateVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @return Vector length.
      */
     public int length() {

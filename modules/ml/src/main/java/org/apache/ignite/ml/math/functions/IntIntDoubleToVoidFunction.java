@@ -24,7 +24,6 @@ import java.io.Serializable;
  */
 public interface IntIntDoubleToVoidFunction extends Serializable {
     /**
-     *
      * @param x Row index in the matrix.
      * @param y Column index in the matrix.
      * @param v Value to set at given row and column.

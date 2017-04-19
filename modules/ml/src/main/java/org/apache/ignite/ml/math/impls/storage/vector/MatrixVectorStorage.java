@@ -75,7 +75,6 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @return Starting row in the view.
      */
     int row() {
@@ -83,7 +82,6 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @return Starting column in the view.
      */
     int column() {
@@ -91,7 +89,6 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @return Rows stride in the view.
      */
     int rowStride() {
@@ -99,17 +96,13 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @return Columns stride in the view.
      */
     int columnStride() {
         return colStride;
     }
 
-    /**
-     *
-     *
-     */
+    /** */
     private int getSize() {
         if (rowStride != 0 && colStride != 0) {
             int n1 = (parent.rowSize() - row) / rowStride;

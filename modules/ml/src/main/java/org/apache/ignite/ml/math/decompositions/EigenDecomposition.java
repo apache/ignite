@@ -24,8 +24,8 @@ import org.apache.ignite.ml.math.functions.Functions;
 /**
  * This class provides EigenDecomposition of given matrix. The class is based on
  * class with similar name from <a href="http://mahout.apache.org/">Apache Mahout</a> library.
- *
- * @see <a href=http://mathworld.wolfram.com/EigenDecomposition.html>MathWorld</a>
+ * <p>
+ * @see <a href=http://mathworld.wolfram.com/EigenDecomposition.html>MathWorld</a></p>
  */
 public class EigenDecomposition extends DecompositionSupport {
     /** Row and column dimension (square matrix). */
@@ -40,7 +40,6 @@ public class EigenDecomposition extends DecompositionSupport {
     private final Vector e;
 
     /**
-     *
      * @param matrix Matrix to decompose.
      */
     public EigenDecomposition(Matrix matrix) {
@@ -48,7 +47,6 @@ public class EigenDecomposition extends DecompositionSupport {
     }
 
     /**
-     *
      * @param matrix Matrix to decompose.
      * @param isSymmetric {@code true} if matrix passes symmetry check, {@code false otherwise}.
      */
@@ -294,7 +292,9 @@ public class EigenDecomposition extends DecompositionSupport {
         return hessenBerg;
     }
 
-    /** Symmetric tridiagonal QL algorithm. */
+    /**
+     * Symmetric tridiagonal QL algorithm.
+     */
     private void tql2() {
         //  This is derived from the Algol procedures tql2, by
         //  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for

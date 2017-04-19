@@ -44,7 +44,6 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @param cap Initial capacity.
      */
     public SparseLocalOffHeapVectorStorage(int cap) {
