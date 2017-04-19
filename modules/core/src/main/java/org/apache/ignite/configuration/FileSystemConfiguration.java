@@ -218,7 +218,8 @@ public class FileSystemConfiguration {
      */
     public FileSystemConfiguration setName(String name) {
         if (name == null)
-            throw new NullPointerException("IGFS name mustn't be null");
+            // TODO: IllegalArgumentExcpetion
+            throw new NullPointerException("IGFS name cannot be null");
 
         this.name = name;
 

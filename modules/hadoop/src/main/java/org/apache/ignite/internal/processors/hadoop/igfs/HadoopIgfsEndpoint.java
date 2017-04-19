@@ -129,6 +129,9 @@ public class HadoopIgfsEndpoint {
         else
             throw new IgniteCheckedException("Invalid connection string format: " + connStr);
 
+        // TODO: Throw exception for null name only here
+        // throw new IgniteCheckedException("Invalid connection string format (IGFS name cannot be empty): " + connStr);
+
         host = hostPort.get1();
 
         assert hostPort.get2() != null;

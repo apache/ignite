@@ -165,6 +165,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("NullableProblems")
     public void testLocalNullIgfsNameIsNotSupported() throws Exception {
+        // TODO: Use checkGridStartFails
         try {
             g1IgfsCfg1.setName(null);
 

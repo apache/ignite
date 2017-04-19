@@ -250,7 +250,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @Override @Nullable public IgniteFileSystem igfs(String name) {
         if (name == null)
-            throw new NullPointerException("IGFS name mustn't be null");
+            // TODO: IllegalArgumentExcpetion
+            throw new NullPointerException("IGFS name cannot be null");
 
         IgfsContext igfsCtx = igfsCache.get(name);
 
@@ -260,7 +261,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @Override @Nullable public Collection<IpcServerEndpoint> endpoints(String name) {
         if (name == null)
-            throw new NullPointerException("IGFS name mustn't be null");
+            // TODO: IllegalArgumentExcpetion
+            throw new NullPointerException("IGFS name cannot be null");
 
         IgfsContext igfsCtx = igfsCache.get(name);
 
