@@ -66,7 +66,7 @@ public class CacheNamesSelfTest extends GridCommonAbstractTest {
             assertEquals(3, names.size());
 
             for (String name : names)
-                assertTrue(name == null || name.equals("replicated") || name.equals("partitioned"));
+                assertTrue(DEFAULT_CACHE_NAME.equals(name) || name.equals("replicated") || name.equals("partitioned"));
 
             client = true;
 

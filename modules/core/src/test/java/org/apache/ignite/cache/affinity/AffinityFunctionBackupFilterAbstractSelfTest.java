@@ -182,7 +182,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      */
     @SuppressWarnings("ConstantConditions")
     private void checkPartitions() throws Exception {
-        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
+        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
         int partCnt = aff.partitions();
 
@@ -236,7 +236,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      */
     @SuppressWarnings("ConstantConditions")
     private void checkPartitionsWithAffinityBackupFilter() throws Exception {
-        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
+        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
         int partCnt = aff.partitions();
 

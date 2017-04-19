@@ -142,7 +142,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         // TODO: IGNITE-1525 (test fails with one-phase commit).
         boolean createCache = atomicityMode() == TRANSACTIONAL;
 
-        String cacheName = null;
+        String cacheName = DEFAULT_CACHE_NAME;
 
         if (createCache) {
             CacheConfiguration ccfg = cacheConfiguration();
@@ -229,7 +229,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             }, 1, "starter");
 
             try {
-                checkIncrement(null, invokeAll, null, null);
+                checkIncrement(DEFAULT_CACHE_NAME, invokeAll, null, null);
             }
             finally {
                 stop.set(true);

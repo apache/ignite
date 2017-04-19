@@ -49,9 +49,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
  */
 public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstractTest {
     /** */
-    private static final String CACHE1 = null;
-
-    /** */
     private static final String CACHE2 = "cache2";
 
     /** Grid 1. */
@@ -83,7 +80,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration ccfg1 = cacheConfiguration().setName(CACHE1);
+        CacheConfiguration ccfg1 = cacheConfiguration().setName(DEFAULT_CACHE_NAME);
         CacheConfiguration ccfg2 = cacheConfiguration().setName(CACHE2);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
@@ -553,7 +550,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testTwoCaches() throws Exception {
-        IgniteCache<Integer, String> cache1 = ignite1.cache(CACHE1);
+        IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = ignite1.cache(CACHE2);
 
         final Integer key = primaryKey(cache1);

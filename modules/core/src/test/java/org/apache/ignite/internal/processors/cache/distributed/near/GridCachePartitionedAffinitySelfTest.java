@@ -165,7 +165,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** @throws Exception If failed. */
     @SuppressWarnings("BusyWait")
     private void waitTopologyUpdate() throws Exception {
-        GridTestUtils.waitTopologyUpdate(null, BACKUPS, log());
+        GridTestUtils.waitTopologyUpdate(DEFAULT_CACHE_NAME, BACKUPS, log());
     }
 
     /** @throws Exception If failed. */

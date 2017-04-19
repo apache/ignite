@@ -251,7 +251,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
 
-        checkLocalStore(ignite1, LOCAL_STORE_1, null);
+        checkLocalStore(ignite1, LOCAL_STORE_1, DEFAULT_CACHE_NAME);
 
         final AtomicInteger evtCnt = new AtomicInteger(0);
 
@@ -282,8 +282,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         assertEquals(Ignition.allGrids().size(), 2);
 
-        checkLocalStore(ignite1, LOCAL_STORE_1, null);
-        checkLocalStore(ignite2, LOCAL_STORE_2, null);
+        checkLocalStore(ignite1, LOCAL_STORE_1, DEFAULT_CACHE_NAME);
+        checkLocalStore(ignite2, LOCAL_STORE_2, DEFAULT_CACHE_NAME);
     }
 
 
@@ -411,7 +411,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testLocalStoreCorrespondsAffinityNoBackups() throws Exception {
-        testLocalStoreCorrespondsAffinity(null);
+        testLocalStoreCorrespondsAffinity(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -676,7 +676,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
 
-        checkLocalStore(ignite1, LOCAL_STORE_1, null);
+        checkLocalStore(ignite1, LOCAL_STORE_1, DEFAULT_CACHE_NAME);
 
         // Push entry to swap.
         for (int i = 0; i < KEYS; i++)
@@ -714,8 +714,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         assertEquals(Ignition.allGrids().size(), 2);
 
-        checkLocalStore(ignite1, LOCAL_STORE_1, null);
-        checkLocalStore(ignite2, LOCAL_STORE_2, null);
+        checkLocalStore(ignite1, LOCAL_STORE_1, DEFAULT_CACHE_NAME);
+        checkLocalStore(ignite2, LOCAL_STORE_2, DEFAULT_CACHE_NAME);
     }
 
     /**

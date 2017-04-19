@@ -75,7 +75,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(commSpi);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setBackups(1);
