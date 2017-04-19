@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.functions;
-
-import java.io.Serializable;
+package org.apache.ignite.internal.processors.query.h2;
 
 /**
- * Setter function for matrices.
+ * Geo-indexing test for binary mode.
  */
-public interface IntIntDoubleToVoidFunction extends Serializable {
+public class H2IndexingBinaryGeoSelfTest extends H2IndexingAbstractGeoSelfTest {
     /**
-     * @param x Row index in the matrix.
-     * @param y Column index in the matrix.
-     * @param v Value to set at given row and column.
+     * Constructor.
      */
-    public void apply(int x, int y, double v);
+    public H2IndexingBinaryGeoSelfTest() {
+        super(true, false);
+    }
 }

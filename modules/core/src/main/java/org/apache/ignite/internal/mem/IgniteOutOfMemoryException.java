@@ -23,21 +23,21 @@ import org.apache.ignite.IgniteException;
 /**
  *
  */
-public class OutOfMemoryException extends IgniteException {
+public class IgniteOutOfMemoryException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      *
      */
-    public OutOfMemoryException() {
+    public IgniteOutOfMemoryException() {
         // No-op.
     }
 
     /**
      * @param msg Error message.
      */
-    public OutOfMemoryException(String msg) {
+    public IgniteOutOfMemoryException(String msg) {
         super(msg);
     }
 
@@ -45,7 +45,7 @@ public class OutOfMemoryException extends IgniteException {
      * @param msg Error message.
      * @param e Cause exception.
      */
-    public OutOfMemoryException(String msg, IOException e) {
+    public IgniteOutOfMemoryException(String msg, IOException e) {
         super(msg, e);
     }
 }
