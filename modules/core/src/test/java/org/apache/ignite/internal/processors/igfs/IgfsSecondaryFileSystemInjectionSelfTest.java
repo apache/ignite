@@ -248,7 +248,7 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
+        @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException {
             // No-op.
         }
 

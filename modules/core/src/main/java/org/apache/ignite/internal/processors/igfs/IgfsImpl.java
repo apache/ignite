@@ -1204,9 +1204,9 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = resolveMode(path);
 
                 if (mode == PROXY)
-                    secondaryFs.setTimes(path, accessTime, modificationTime);
+                    secondaryFs.setTimes(path, modificationTime, accessTime);
                 else {
-                    meta.updateTimes(path, accessTime, modificationTime,
+                    meta.updateTimes(path, modificationTime, accessTime,
                         IgfsUtils.isDualMode(mode) ? secondaryFs : null);
                 }
 

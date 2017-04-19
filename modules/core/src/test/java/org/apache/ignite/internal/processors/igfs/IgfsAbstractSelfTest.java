@@ -852,7 +852,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change only access time.
-            igfs.setTimes(path, info.accessTime() + 1000, -1);
+            igfs.setTimes(path, -1, info.accessTime() + 1000);
 
             newInfo = igfs.info(path);
 
@@ -869,7 +869,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change only modification time.
-            igfs.setTimes(path, -1, info.modificationTime() + 1000);
+            igfs.setTimes(path, info.modificationTime() + 1000, -1);
 
             newInfo = igfs.info(path);
 
@@ -886,7 +886,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change both.
-            igfs.setTimes(path, info.accessTime() + 2000, info.modificationTime() + 2000);
+            igfs.setTimes(path, info.modificationTime() + 2000, info.accessTime() + 2000);
 
             newInfo = igfs.info(path);
 
