@@ -166,6 +166,7 @@ public class PlatformConfigurationUtils {
         ccfg.setSqlOnheapRowCacheSize(in.readInt());
         ccfg.setStartSize(in.readInt());
         ccfg.setWriteBehindBatchSize(in.readInt());
+        ccfg.setWriteBehindCoalescing(in.readBoolean());
         ccfg.setWriteBehindEnabled(in.readBoolean());
         ccfg.setWriteBehindFlushFrequency(in.readLong());
         ccfg.setWriteBehindFlushSize(in.readInt());
@@ -791,6 +792,7 @@ public class PlatformConfigurationUtils {
         writer.writeInt(ccfg.getSqlOnheapRowCacheSize());
         writer.writeInt(ccfg.getStartSize());
         writer.writeInt(ccfg.getWriteBehindBatchSize());
+        writer.writeBoolean(ccfg.getWriteBehindCoalescing());
         writer.writeBoolean(ccfg.isWriteBehindEnabled());
         writer.writeLong(ccfg.getWriteBehindFlushFrequency());
         writer.writeInt(ccfg.getWriteBehindFlushSize());
