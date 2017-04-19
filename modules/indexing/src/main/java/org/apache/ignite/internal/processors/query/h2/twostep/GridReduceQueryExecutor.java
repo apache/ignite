@@ -497,7 +497,7 @@ public class GridReduceQueryExecutor {
                     throw new CacheException("Queries running on replicated cache should not contain JOINs " +
                         "with partitioned tables [rCache=" + cctx.name() + ", pCache=" + extraSpace + "]");
 
-                Collection<ClusterNode> extraNodes = stableDataNodesMap(topVer, extraCctx, parts).keySet();
+                Set<ClusterNode> extraNodes = stableDataNodesMap(topVer, extraCctx, parts).keySet();
 
                 if (F.isEmpty(extraNodes))
                     throw new CacheException("Failed to find data nodes for cache: " + extraSpace);
@@ -522,7 +522,7 @@ public class GridReduceQueryExecutor {
                                 ", cache2=" + extraSpace + "]");
                 }
                 else if (!isReplicatedOnly && !extraCctx.isReplicated()) {
-                    if (extraNodes.size() != nodes.size() || !nodes.containsAll(extraNodes))
+                    if (!extraNodes.equals(nodes))
                         if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
