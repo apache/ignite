@@ -179,7 +179,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
         GridStringBuilder sb = new SB("CREATE ")
             .a(spatial ? "SPATIAL " : "")
             .a("INDEX ")
-            .a(idx.getName())
+            .a("\"" + idx.getName() + "\"")
             .a(" ON ")
             .a(QueryUtils.tableName(entity))
             .a(" (");
@@ -333,7 +333,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             assertTrue("__ explain: " + plan, plan.contains("coords_idx"));
 
             if (dynamic)
-                cache.query(new SqlFieldsQuery("DROP INDEX coords_idx")).getAll();
+                cache.query(new SqlFieldsQuery("DROP INDEX \"EnemyCamp_coords_idx\"")).getAll();
         }
         finally {
             cache.destroy();
@@ -582,8 +582,8 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
             }
         }
 
-        final SqlFieldsQuery query = new SqlFieldsQuery("select e._val, c._val from \"enemy\".Enemy e, \"camp\".EnemyCamp c " +
-            "where e.campId = c._key and c.coords && ?").setArgs(lethalArea);
+        final SqlFieldsQuery query = new SqlFieldsQuery("select e._val, c._val from \"enemy\".Enemy e, " +
+            "\"camp\".EnemyCamp c where e.campId = c._key and c.coords && ?").setArgs(lethalArea);
 
         List<List<?>> result = c1.query(query.setDistributedJoins(true)).getAll();
 
