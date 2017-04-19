@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
-    using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
@@ -26,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Closure execution tests for binary objects.
     /// </summary>
+    [TestFixture]
     public class BinarizableClosureTaskTest : ClosureTaskTest
     {
         /// <summary>
@@ -38,18 +38,6 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         /// <param name="fork">Fork flag.</param>
         protected BinarizableClosureTaskTest(bool fork) : base(fork) { }
-
-        /** <inheritDoc /> */
-        protected override ICollection<Type> GetBinaryTypes()
-        {
-            return new []
-            {
-                typeof(BinarizableOutFunc),
-                typeof(BinarizableFunc),
-                typeof(BinarizableResult),
-                typeof(BinarizableException)
-            };
-        }
 
         /** <inheritDoc /> */
         protected override IComputeFunc<object> OutFunc(bool err)
