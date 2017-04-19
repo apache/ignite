@@ -22,8 +22,26 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/common/concurrent.h>
+#include <ignite/future.h>
 
+using namespace ignite;
 using namespace ignite::common::concurrent;
+
+template<typename T>
+std::auto_ptr<T> MakeAuto(const T& val)
+{
+    return std::auto_ptr<T>(new T(val));
+}
+
+inline bool IsFutureError(const IgniteError& err)
+{
+    return err.GetCode() == IgniteError::IGNITE_ERR_FUTURE_STATE;
+}
+
+inline bool IsUnknownError(const IgniteError& err)
+{
+    return err.GetCode() == IgniteError::IGNITE_ERR_UNKNOWN;
+}
 
 BOOST_AUTO_TEST_SUITE(ConcurrentTestSuite)
 
@@ -280,22 +298,104 @@ BOOST_AUTO_TEST_CASE(ManualEventBasic)
 {
     ManualEvent evt;
 
-    bool triggered = evt.Wait(100);
+    bool triggered = evt.WaitFor(100);
     BOOST_CHECK(!triggered);
 
     evt.Set();
 
-    triggered = evt.Wait(100);
+    triggered = evt.WaitFor(100);
     BOOST_REQUIRE(triggered);
 
-    triggered = evt.Wait(100);
+    triggered = evt.WaitFor(100);
     BOOST_REQUIRE(triggered);
 
     evt.Wait();
     evt.Reset();
 
-    triggered = evt.Wait(100);
+    triggered = evt.WaitFor(100);
     BOOST_CHECK(!triggered);
+}
+
+BOOST_AUTO_TEST_CASE(SharedStateIntValue)
+{
+    SharedState<int> sharedState;
+
+    bool set = sharedState.WaitFor(100);
+    BOOST_CHECK(!set);
+
+    sharedState.SetValue(MakeAuto(42));
+
+    set = sharedState.WaitFor(100);
+    BOOST_REQUIRE(set);
+
+    set = sharedState.WaitFor(100);
+    BOOST_REQUIRE(set);
+
+    sharedState.Wait();
+    int val = sharedState.GetValue();
+
+    BOOST_CHECK_EQUAL(val, 42);
+
+    int val2 = sharedState.GetValue();
+
+    BOOST_CHECK_EQUAL(val2, 42);
+
+    BOOST_CHECK_EXCEPTION(sharedState.SetValue(MakeAuto(0)), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(sharedState.SetValue(MakeAuto(42)), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(sharedState.SetError(IgniteError()), IgniteError, IsFutureError);
+}
+
+BOOST_AUTO_TEST_CASE(SharedStateStringValue)
+{
+    SharedState<std::string> sharedState;
+
+    bool set = sharedState.WaitFor(100);
+    BOOST_CHECK(!set);
+
+    sharedState.SetValue(MakeAuto(std::string("Lorem ipsum")));
+
+    set = sharedState.WaitFor(100);
+    BOOST_REQUIRE(set);
+
+    set = sharedState.WaitFor(100);
+    BOOST_REQUIRE(set);
+
+    sharedState.Wait();
+    std::string val = sharedState.GetValue();
+
+    BOOST_CHECK_EQUAL(val, "Lorem ipsum");
+
+    std::string val2 = sharedState.GetValue();
+
+    BOOST_CHECK_EQUAL(val2, "Lorem ipsum");
+
+    BOOST_CHECK_EXCEPTION(sharedState.SetError(IgniteError()), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(sharedState.SetValue(MakeAuto(std::string("Lorem ipsum"))), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(sharedState.SetValue(MakeAuto(std::string("Hello world"))), IgniteError, IsFutureError);
+}
+
+BOOST_AUTO_TEST_CASE(SharedStateIntError)
+{
+    SharedState<int> sharedState;
+
+    bool set = sharedState.WaitFor(100);
+    BOOST_CHECK(!set);
+
+    sharedState.SetError(IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "Test"));
+
+    set = sharedState.WaitFor(100);
+    BOOST_REQUIRE(set);
+
+    set = sharedState.WaitFor(100);
+    BOOST_REQUIRE(set);
+
+    sharedState.Wait();
+
+    BOOST_CHECK_EXCEPTION(sharedState.GetValue(), IgniteError, IsUnknownError);
+
+    BOOST_CHECK_EXCEPTION(sharedState.SetValue(MakeAuto(0)), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(sharedState.SetValue(MakeAuto(42)), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(sharedState.SetError(IgniteError()), IgniteError, IsFutureError);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

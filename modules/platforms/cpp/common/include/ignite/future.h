@@ -58,7 +58,7 @@ namespace ignite
          */
         bool IsSet()
         {
-            return value || error.GetCode() != IgniteError::IGNITE_SUCCESS;
+            return value.get() || error.GetCode() != IgniteError::IGNITE_SUCCESS;
         }
 
         /**
@@ -73,7 +73,7 @@ namespace ignite
 
             if (IsSet())
             {
-                if (value)
+                if (value.get())
                     throw IgniteError(IgniteError::IGNITE_ERR_FUTURE_STATE, "Future value already set");
 
                 if (error.GetCode() != IgniteError::IGNITE_SUCCESS)
@@ -97,7 +97,7 @@ namespace ignite
 
             if (IsSet())
             {
-                if (value)
+                if (value.get())
                     throw IgniteError(IgniteError::IGNITE_ERR_FUTURE_STATE, "Future value already set");
 
                 if (error.GetCode() != IgniteError::IGNITE_SUCCESS)
@@ -141,7 +141,7 @@ namespace ignite
         {
             Wait();
 
-            if (value)
+            if (value.get())
                 return *value;
 
             assert(error.GetCode() != IgniteError::IGNITE_SUCCESS);
