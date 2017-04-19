@@ -15,28 +15,39 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Binary
+namespace Apache.Ignite.Core.Tests.Cache
 {
-    using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
-    using NUnit.Framework;
 
     /// <summary>
-    /// Binary builder self test with dynamic type registration.
+    /// Binary add processor.
     /// </summary>
-    [TestFixture]
-    public class BinaryBuilderSelfTestDynamicRegistration : BinaryBuilderSelfTest
+    public class BinarizableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IBinarizable
     {
         /** <inheritdoc /> */
-        protected override ICollection<BinaryTypeConfiguration> GetTypeConfigurations()
+        public void WriteBinary(IBinaryWriter writer)
         {
-            // The only type to be registered is TestEnumRegistered,
-            // because unregistered enums are handled differently.
+            var w = writer.GetRawWriter();
 
-            return new []
-            {
-                new BinaryTypeConfiguration(typeof(TestEnumRegistered))
-            };
+            w.WriteBoolean(ThrowErr);
+            w.WriteBoolean(ThrowErrBinarizable);
+            w.WriteBoolean(ThrowErrNonSerializable);
+            w.WriteInt(ThrowOnKey);
+            w.WriteBoolean(Remove);
+            w.WriteBoolean(Exists);
+        }
+
+        /** <inheritdoc /> */
+        public void ReadBinary(IBinaryReader reader)
+        {
+            var r = reader.GetRawReader();
+
+            ThrowErr = r.ReadBoolean();
+            ThrowErrBinarizable = r.ReadBoolean();
+            ThrowErrNonSerializable = r.ReadBoolean();
+            ThrowOnKey = r.ReadInt();
+            Remove = r.ReadBoolean();
+            Exists = r.ReadBoolean();
         }
     }
 }

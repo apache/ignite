@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
