@@ -2927,6 +2927,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "Write behind batch size", locAttr.writeBehindBatchSize(), rmtAttr.writeBehindBatchSize(),
                 false);
 
+            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindCacheCoalescing",
+                "Write behind coalescing", locAttr.writeBehindCoalescing(), rmtAttr.writeBehindCoalescing(),
+                false);
+
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeBehindEnabled",
                 "Write behind enabled", locAttr.writeBehindEnabled(), rmtAttr.writeBehindEnabled(), false);
 
