@@ -537,13 +537,14 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
     /**
      * @param type Type name to check.
+     * @param binarySupported True if binary marshaller enable.
      * @return {@code True} if class not found.
      */
-    protected TypeKind kindForName(String type) {
+    protected TypeKind kindForName(String type, boolean binarySupported) {
         if (BUILT_IN_TYPES.contains(type))
             return TypeKind.BUILT_IN;
 
-        if (ignite.configuration().getMarshaller() instanceof BinaryMarshaller)
+        if (binarySupported)
             return TypeKind.BINARY;
 
         try {
@@ -551,9 +552,18 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
             return TypeKind.POJO;
         }
-        catch(ClassNotFoundException e) {
-            throw new CacheException("Can not find class " + type, e);
+        catch (ClassNotFoundException e) {
+            throw new CacheException("Can not find class " + type +
+                ", check your classPath or try to use BinaryMarshaller", e);
         }
+    }
+
+    /**
+     * @param type Type name to check.
+     * @return {@code True} if class not found.
+     */
+    protected TypeKind kindForName(String type) {
+        return kindForName(type, ignite.configuration().getMarshaller() instanceof BinaryMarshaller);
     }
 
     /**
@@ -590,11 +600,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     String keyType = type.getKeyType();
                     String valType = type.getValueType();
 
-                    TypeKind keyKind = kindForName(keyType);
-
-                    if (!binarySupported && keyKind == TypeKind.BINARY)
-                        throw new CacheException("Key type has no class [cache=" + U.maskName(cacheName) +
-                            ", type=" + keyType + "]");
+                    TypeKind keyKind = kindForName(keyType, binarySupported);
 
                     checkTypeConfiguration(cacheName, keyKind, keyType, type.getKeyFields());
 
@@ -604,7 +610,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                         throw new CacheException("Key type must be unique in type metadata [cache=" +
                             U.maskName(cacheName) + ", type=" + keyType + "]");
 
-                    TypeKind valKind = kindForName(valType);
+                    TypeKind valKind = kindForName(valType, binarySupported);
 
                     checkTypeConfiguration(cacheName, valKind, valType, type.getValueFields());
 
