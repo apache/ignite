@@ -109,7 +109,7 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
         // Check size of near entries via reflection because entries is filtered for size() API call.
         IgniteEx igniteEx = (IgniteEx)ignite;
         GridCacheConcurrentMap map = GridTestUtils.getFieldValue(
-            ((GridCacheProxyImpl)igniteEx.cachex(null)).delegate(),
+            ((GridCacheProxyImpl)igniteEx.cachex(DEFAULT_CACHE_NAME)).delegate(),
             GridCacheAdapter.class,
             "map");
 
