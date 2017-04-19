@@ -40,8 +40,7 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
-import org.apache.ignite.stream.scala.akka.IgniteStreamerActor;
-import org.apache.ignite.stream.scala.akka.StreamAdapterIgnite;
+import org.apache.ignite.stream.scala.akka.IgniteAkkaActorStreamer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -145,7 +144,7 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
         dataStreamer.allowOverwrite(true);
         dataStreamer.autoFlushFrequency(1);
 
-        final ActorRef actorRef = system.actorOf(Props.create(IgniteStreamerActor.class, dataStreamer, new MySingleTupleExtractor(), null, grid()), "ignite-streamer");
+        final ActorRef actorRef = system.actorOf(Props.create(IgniteAkkaActorStreamer.class, dataStreamer, new MySingleTupleExtractor(), null), "ignite-streamer");
 
         IgniteCache<Integer, Integer> cache = grid().cache(CACHE_NAME);
 
