@@ -296,20 +296,40 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             }
         }
 
-        checkDefaultPolicyConfiguration(dbCfg.getDefaultMemoryPolicyName(), plcNames);
+        checkDefaultPolicyConfiguration(
+                dbCfg.getDefaultMemoryPolicyName(),
+                dbCfg.getDefaultMemoryPolicySize(),
+                plcNames);
     }
 
     /**
      * @param dfltPlcName Default MemoryPolicy name.
+     * @param dfltPlcSize Default size of MemoryPolicy overridden by user (equals to -1 if wasn't specified by user).
      * @param plcNames All MemoryPolicy names.
      * @throws IgniteCheckedException In case of validation violation.
      */
-    private static void checkDefaultPolicyConfiguration(String dfltPlcName, Set<String> plcNames) throws IgniteCheckedException {
+    private static void checkDefaultPolicyConfiguration(String dfltPlcName,
+                                                        long dfltPlcSize,
+                                                        Set<String> plcNames) throws IgniteCheckedException {
+        if (dfltPlcSize != -1) {
+            if (dfltPlcName != null)
+                throw new IgniteCheckedException("User-defined MemoryPolicy configuration " +
+                        "and defaultMemoryPolicySize properties are set at the same time. " +
+                        "Delete either MemoryConfiguration.defaultMemoryPolicySize property " +
+                        "or configuration of user-defined default MemoryPolicy");
+
+
+            if (dfltPlcSize < MIN_PAGE_MEMORY_SIZE)
+                throw new IgniteCheckedException("User-defined default MemoryPolicy size is less than 1MB. " +
+                        "Use MemoryConfiguration.defaultMemoryPolicySize property to set correct size.");
+        }
+
         if (dfltPlcName != null) {
             if (dfltPlcName.isEmpty())
                 throw new IgniteCheckedException("User-defined default MemoryPolicy name must be non-empty");
             if (!plcNames.contains(dfltPlcName))
-                throw new IgniteCheckedException("User-defined default MemoryPolicy name must be presented among configured MemoryPolices: " + dfltPlcName);
+                throw new IgniteCheckedException("User-defined default MemoryPolicy name " +
+                        "must be presented among configured MemoryPolices: " + dfltPlcName);
         }
     }
 
@@ -319,7 +339,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     private static void checkPolicySize(MemoryPolicyConfiguration plcCfg) throws IgniteCheckedException {
         if (plcCfg.getSize() < MIN_PAGE_MEMORY_SIZE)
-            throw new IgniteCheckedException("MemoryPolicy must have size more than 1MB: " + plcCfg.getName());
+            throw new IgniteCheckedException("MemoryPolicy must have size more than 1MB: MemoryPolicy[name=" +
+                    plcCfg.getName() +
+                    "; size=" +
+                    plcCfg.getSize() +
+                    "]. Use MemoryPolicyConfiguration.size property to set correct size (in bytes)."
+            );
     }
 
     /**

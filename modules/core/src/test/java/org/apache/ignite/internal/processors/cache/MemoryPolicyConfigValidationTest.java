@@ -26,6 +26,15 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
+    /** */
+    private static final String VALID_DEFAULT_MEM_PLC_NAME = "valid_dlft_mem_plc";
+
+    /** */
+    private static final String VALID_USER_MEM_PLC_NAME = "valid_user_mem_plc";
+
+    /** */
+    private static final String MISSING_DEFAULT_MEM_PLC_NAME = "missing_mem_plc";
+
     /** Configuration violation type to check. */
     private ValidationViolationType violationType;
 
@@ -61,9 +70,25 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
             case MISSING_USER_DEFINED_DEFAULT:
                 plcs = createMissingUserDefinedDefault();
 
-                memCfg.setDefaultMemoryPolicyName("missingMemoryPolicyName");
+                memCfg.setDefaultMemoryPolicyName(MISSING_DEFAULT_MEM_PLC_NAME);
 
                 break;
+
+            case TOO_SMALL_USER_DEFINED_DFLT_MEM_PLC_SIZE:
+                memCfg.setDefaultMemoryPolicySize(1);
+
+                break;
+
+            case DEFAULT_SIZE_IS_DEFINED_TWICE:
+                plcs = createValidUserDefault();
+
+                memCfg.setDefaultMemoryPolicyName(VALID_DEFAULT_MEM_PLC_NAME);
+                memCfg.setDefaultMemoryPolicySize(10 * 1014 * 1024);
+
+                break;
+
+            default:
+                fail("Violation type was not configured: " + violationType);
         }
 
         memCfg.setMemoryPolicies(plcs);
@@ -73,14 +98,31 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    private MemoryPolicyConfiguration[] createMissingUserDefinedDefault() {
+    /**
+     *
+     */
+    private MemoryPolicyConfiguration[] createValidUserDefault() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy("presentedPolicyCfg", 10 * 1024 * 1024);
+        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024);
 
         return res;
     }
 
+    /**
+     *
+     */
+    private MemoryPolicyConfiguration[] createMissingUserDefinedDefault() {
+        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
+
+        res[0] = createMemoryPolicy(VALID_USER_MEM_PLC_NAME, 10 * 1024 * 1024);
+
+        return res;
+    }
+
+    /**
+     *
+     */
     private MemoryPolicyConfiguration[] createPlcWithNullName() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
@@ -95,7 +137,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createTooSmallMemoryCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy("dflt", 10);
+        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 10);
 
         return res;
     }
@@ -189,6 +231,25 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     }
 
     /**
+     * User-defined size of default MemoryPolicy must be at least 1MB.
+     */
+    public void testUserDefinedDefaultMemoryTooSmall() throws Exception {
+        violationType = ValidationViolationType.TOO_SMALL_USER_DEFINED_DFLT_MEM_PLC_SIZE;
+
+        doTest(violationType);
+    }
+
+    /**
+     * Defining size of default MemoryPolicy twice with and through <b>defaultMemoryPolicySize</b> property
+     * and using <b>MemoryPolicyConfiguration</b> description is prohibited.
+     */
+    public void testDefaultMemoryPolicySizeDefinedTwice() throws Exception {
+        violationType = ValidationViolationType.DEFAULT_SIZE_IS_DEFINED_TWICE;
+
+        doTest(violationType);
+    }
+
+    /**
      * Tries to start ignite node with invalid configuration and checks that corresponding exception is thrown.
      *
      * @param violationType Configuration violation type.
@@ -226,7 +287,15 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         NULL_NAME_ON_USER_DEFINED_POLICY("User-defined MemoryPolicyConfiguration must have non-null and non-empty name."),
 
         /** */
-        MISSING_USER_DEFINED_DEFAULT("User-defined default MemoryPolicy name must be presented among configured MemoryPolices: ");
+        MISSING_USER_DEFINED_DEFAULT("User-defined default MemoryPolicy name must be presented among configured MemoryPolices: "),
+
+        /** */
+        DEFAULT_SIZE_IS_DEFINED_TWICE("User-defined MemoryPolicy configuration and defaultMemoryPolicySize properties are set at the same time."),
+
+        /** */
+        TOO_SMALL_USER_DEFINED_DFLT_MEM_PLC_SIZE("User-defined default MemoryPolicy size is less than 1MB.");
+
+
 
         /**
          * @param violationMsg Violation message.
