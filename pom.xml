@@ -202,7 +202,7 @@
             <id>release</id>
             <activation>
                 <property>
-                    <name>!skipDefault</name><!--activeByDefault-->
+                    <name>skipDefault</name><!--activeByDefault-->
                 </property>
             </activation>
             <build>
@@ -263,7 +263,7 @@
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
-                                <phase>prepare-package</phase>
+                                <phase>validate</phase>
                                 <configuration>
                                     <target>
                                         <copy todir="${basedir}/target/javadoc/core">
@@ -290,13 +290,13 @@
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
-                                <phase>package</phase>
+                                <phase>initialize</phase>
                                 <configuration>
                                     <target>
                                         <replaceregexp byline="true">
                                             <regexp pattern="pushd &quot;%~dp0&quot;/\.\./\.\.(\s*&amp;::.+)?" />
                                             <substitution expression="pushd &quot;%~dp0&quot;/.." />
-                                            <fileset dir="${basedir}/target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
                                                 <include name="**/*.bat" />
                                             </fileset>
                                         </replaceregexp>
@@ -304,7 +304,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern="IGNITE_HOME_TMP=&quot;\$\(dirname &quot;\$\{IGNITE_HOME_TMP\}&quot;\)&quot;(\s*#.*)?" />
                                             <substitution expression="" />
-                                            <fileset dir="${basedir}/target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
                                                 <include name="**/*.sh" />
                                             </fileset>
                                         </replaceregexp>
@@ -312,7 +312,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern="set SCRIPTS_HOME=%IGNITE_HOME%\\bin(\s*&amp;::.*)?" />
                                             <substitution expression="set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin" />
-                                            <fileset dir="${basedir}/target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
                                                 <include name="**/*.bat" />
                                             </fileset>
                                         </replaceregexp>
@@ -320,7 +320,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern="SCRIPTS_HOME=&quot;\$\{IGNITE_HOME_TMP\}/bin&quot;(\s*#.*)?" />
                                             <substitution expression="SCRIPTS_HOME=&quot;$${IGNITE_HOME_TMP}/bin&quot;" />
-                                            <fileset dir="${basedir}/target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
                                                 <include name="**/*.sh" />
                                             </fileset>
                                         </replaceregexp>
@@ -328,7 +328,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern="\. &quot;\$\{SCRIPTS_HOME\}&quot;/include/build-classpath.sh(\s*#.*)?" />
                                             <substitution expression="" />
-                                            <fileset dir="${basedir}/target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
                                                 <include name="**/*.sh" />
                                             </fileset>
                                         </replaceregexp>
@@ -336,7 +336,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern="call &quot;%SCRIPTS_HOME%\\include\\build-classpath.bat&quot;(\s*&amp;::.*)?" />
                                             <substitution expression="" />
-                                            <fileset dir="${basedir}/target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
                                                 <include name="**/*.bat" />
                                             </fileset>
                                         </replaceregexp>
@@ -344,7 +344,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern="ENABLE_ASSERTIONS=.*" />
                                             <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;" />
-                                            <fileset dir="${basedir}/target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
                                                 <include name="**/*.sh" />
                                             </fileset>
                                         </replaceregexp>
@@ -352,7 +352,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern="ENABLE_ASSERTIONS=.*" />
                                             <substitution expression="ENABLE_ASSERTIONS=0" />
-                                            <fileset dir="${basedir}/target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
                                                 <include name="**/*.bat" />
                                             </fileset>
                                         </replaceregexp>
@@ -360,36 +360,36 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern="-DIGNITE_UPDATE_NOTIFIER=false" />
                                             <substitution expression="" />
-                                            <fileset dir="${basedir}/target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
                                                 <include name="**/*.sh" />
                                                 <include name="**/*.bat" />
                                             </fileset>
                                         </replaceregexp>
 
-                                        <replaceregexp file="${basedir}/target/release-package/examples/pom.xml" byline="true">
+                                        <replaceregexp file="${basedir}/target/release-package-${ignite.edition}/examples/pom.xml" byline="true">
                                             <regexp pattern="to_be_replaced_by_ignite_version" />
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
 
-                                        <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
+                                        <chmod dir="${basedir}/target/release-package-${ignite.edition}" perm="755" includes="**/*.sh" />
 
                                         <!--
                                         Line ending bugfix for builds packaged in MS Windows machine to adjust Linux based
                                         end-of-line characters for Linux shell scripts
                                         -->
-                                        <fixcrlf srcdir="${basedir}/target/release-package" eol="lf" eof="remove">
+                                        <fixcrlf srcdir="${basedir}/target/release-package-${ignite.edition}" eol="lf" eof="remove">
                                             <include name="**/*.sh" />
                                         </fixcrlf>
 
                                         <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}" filemode="755">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.zip.pattern}" filemode="755">
                                                 <include name="**/*.sh" />
                                                 <include name="**/configure" />
                                                 <include name="**/install-sh" />
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.zip.pattern}">
                                                 <exclude name="**/*.sh" />
                                                 <exclude name="**/configure" />
                                                 <exclude name="**/install-sh" />
@@ -411,7 +411,7 @@
                         <executions>
                             <execution>
                                 <id>dependencies</id>
-                                <phase>prepare-package</phase>
+                                <phase>validate</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
@@ -419,7 +419,7 @@
                                     <descriptors>
                                         <descriptor>${basedir}/assembly/dependencies-${ignite.edition}.xml</descriptor>
                                     </descriptors>
-                                    <outputDirectory>${basedir}/target/release-package</outputDirectory>
+                                    <outputDirectory>${basedir}/target/release-package-${ignite.edition}</outputDirectory>
                                     <finalName>libs</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
@@ -427,7 +427,7 @@
 
                             <execution>
                                 <id>release</id>
-                                <phase>prepare-package</phase>
+                                <phase>validate</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
@@ -435,14 +435,14 @@
                                     <descriptors>
                                         <descriptor>assembly/release-${ignite.edition}.xml</descriptor>
                                     </descriptors>
-                                    <finalName>release-package</finalName>
+                                    <finalName>release-package-${ignite.edition}</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
 
                             <execution>
                                 <id>dependencies-visor-console</id>
-                                <phase>prepare-package</phase>
+                                <phase>validate</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
@@ -450,7 +450,7 @@
                                     <descriptors>
                                         <descriptor>assembly/dependencies-visor-console.xml</descriptor>
                                     </descriptors>
-                                    <outputDirectory>target/release-package/bin</outputDirectory>
+                                    <outputDirectory>target/release-package-${ignite.edition}/bin</outputDirectory>
                                     <finalName>include</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
@@ -458,7 +458,7 @@
 
                             <execution>
                                 <id>scala-scripts</id>
-                                <phase>prepare-package</phase>
+                                <phase>validate</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
@@ -466,7 +466,7 @@
                                     <descriptors>
                                         <descriptor>assembly/release-scala.xml</descriptor>
                                     </descriptors>
-                                    <outputDirectory>target/release-package</outputDirectory>
+                                    <outputDirectory>target/release-package-${ignite.edition}</outputDirectory>
                                     <finalName>bin</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
@@ -510,18 +510,18 @@
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
-                                <phase>prepare-package</phase>
+                                <phase>validate</phase>
                                 <configuration>
                                     <target>
-                                        <mkdir dir="${basedir}/target/release-package/benchmarks" />
+                                        <mkdir dir="${basedir}/target/release-package-${ignite.edition}/benchmarks" />
 
-                                        <copy todir="${basedir}/target/release-package/benchmarks/">
+                                        <copy todir="${basedir}/target/release-package-${ignite.edition}/benchmarks/">
                                             <fileset dir="${basedir}/modules/yardstick/target/assembly/"/>
                                         </copy>
 
                                         <!--todo: only required jars should be exported to /benchmarks/libs during compilation-->
                                         <delete>
-                                            <fileset dir="${basedir}/target/release-package/benchmarks/libs/">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/benchmarks/libs/">
                                                 <include name="junit-*.jar" />
                                                 <include name="ignite-apache-license-gen-*.jar" />
                                                 <include name="hamcrest-core-*.jar" />
@@ -531,7 +531,7 @@
 
                                         <!--todo: config structure should be refactored to be the same at "sources" and "released sources"-->
                                         <delete>
-                                            <fileset dir="${basedir}/target/release-package/benchmarks/config/">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/benchmarks/config/">
                                                 <include name="*.*" />
                                                 <exclude name="benchmark.properties"/>
                                                 <exclude name="benchmark-remote.properties"/>
@@ -545,35 +545,35 @@
                                             </fileset>
                                         </delete>
 
-                                        <mkdir dir="${basedir}/target/release-package/benchmarks/sources/src" />
+                                        <mkdir dir="${basedir}/target/release-package-${ignite.edition}/benchmarks/sources/src" />
 
-                                        <copy todir="${basedir}/target/release-package/benchmarks/sources/src/">
+                                        <copy todir="${basedir}/target/release-package-${ignite.edition}/benchmarks/sources/src/">
                                             <fileset dir="${basedir}/modules/yardstick/src"/>
                                         </copy>
 
-                                        <mkdir dir="${basedir}/target/release-package/benchmarks/sources/config" />
+                                        <mkdir dir="${basedir}/target/release-package-${ignite.edition}/benchmarks/sources/config" />
 
-                                        <copy todir="${basedir}/target/release-package/benchmarks/sources/config/">
-                                            <fileset dir="${basedir}/target/release-package/benchmarks/config"/>
+                                        <copy todir="${basedir}/target/release-package-${ignite.edition}/benchmarks/sources/config/">
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/benchmarks/config"/>
                                         </copy>
 
                                         <copy file="${basedir}/modules/yardstick/pom-standalone.xml"
-                                              tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml"/>
+                                              tofile="${basedir}/target/release-package-${ignite.edition}/benchmarks/sources/pom.xml"/>
 
                                         <replaceregexp byline="true">
                                             <regexp pattern="to_be_replaced_by_ignite_version"/>
                                             <substitution expression="${project.version}"/>
-                                            <fileset dir="${basedir}/target/release-package/benchmarks/sources/" >
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/benchmarks/sources/" >
                                                 <include name="pom.xml"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <copy file="${basedir}/modules/yardstick/README.txt"
-                                              tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
+                                              tofile="${basedir}/target/release-package-${ignite.edition}/benchmarks/README.txt" overwrite="true">
                                         </copy>
 
                                         <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt"
-                                              tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
+                                              tofile="${basedir}/target/release-package-${ignite.edition}/benchmarks/sources/DEVNOTES.txt"/>
                                     </target>
                                 </configuration>
                             </execution>
@@ -587,6 +587,7 @@
             <id>benchmarks</id>
             <modules>
                 <module>modules/benchmarks</module>
+                <module>modules/yardstick</module>
             </modules>
         </profile>
 
@@ -653,7 +654,7 @@
                             </execution>
                             <execution>
                                 <id>source-release-assembly-ignite</id>
-                                <phase>package</phase>
+                                <phase>initialize</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
@@ -676,7 +677,7 @@
                         <executions>
                             <execution>
                                 <id>attach-artifact</id><!-- allows to sign *bin.zip files -->
-                                <phase>package</phase>
+                                <phase>initialize</phase>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
@@ -739,7 +740,7 @@
                                 <goals>
                                     <goal>files</goal>
                                 </goals>
-                                <phase>install</phase>
+                                <phase>initialize</phase>
                             </execution>
                         </executions>
                         <configuration>
@@ -771,7 +772,7 @@
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
-                                <phase>install</phase>
+                                <phase>initialize</phase>
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
@@ -973,6 +974,25 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>core-javadoc</id>
+                        <goals>
+                            <goal>aggregate</goal>
+                        </goals>
+                        <phase>process-test-classes</phase>
+                        <configuration>
+                            <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
+                            <destDir>core</destDir>
+                            <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
+                            <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
