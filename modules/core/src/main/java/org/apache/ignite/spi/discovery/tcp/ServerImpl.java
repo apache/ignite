@@ -5554,6 +5554,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ClientMessageWorker clientMsgWrk = null;
 
+            boolean serverSocket;
+
             try {
                 InputStream in;
 
@@ -5644,6 +5646,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // Handshake.
                     TcpDiscoveryHandshakeRequest req = (TcpDiscoveryHandshakeRequest)msg;
 
+                    serverSocket = !req.client();
+
                     UUID nodeId = req.creatorNodeId();
 
                     this.nodeId = nodeId;
@@ -5654,8 +5658,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (req.client())
                         res.clientAck(true);
 
-                    spi.writeToSocket(sock, res, spi.failureDetectionTimeoutEnabled() ?
-                        spi.failureDetectionTimeout() : spi.getSocketTimeout());
+                    spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(serverSocket));
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
@@ -5770,8 +5773,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                long sockTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
-                    spi.getSocketTimeout();
+                long sockTimeout = spi.getEffectiveSocketTimeout(serverSocket);
 
                 while (!isInterrupted()) {
                     try {
@@ -6292,7 +6294,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
 
                         spi.writeToSocket(sock, msg, msgBytes, spi.failureDetectionTimeoutEnabled() ?
-                            spi.failureDetectionTimeout() : spi.getSocketTimeout());
+                            spi.clientFailureDetectionTimeout() : spi.getSocketTimeout());
                     }
                 }
                 else {
@@ -6302,8 +6304,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     assert topologyInitialized(msg) : msg;
 
-                    spi.writeToSocket(sock, msg, msgBytes, spi.failureDetectionTimeoutEnabled() ?
-                        spi.failureDetectionTimeout() : spi.getSocketTimeout());
+                    spi.writeToSocket(sock, msg, msgBytes, spi.getEffectiveSocketTimeout(false));
                 }
 
                 boolean clientFailed = msg instanceof TcpDiscoveryNodeFailedMessage &&

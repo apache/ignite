@@ -34,6 +34,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -53,7 +54,13 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     private final static long FAILURE_THRESHOLD = 10_000;
 
     /** */
+    private final static long CLIENT_FAILURE_THRESHOLD = 30_000;
+
+    /** Failure detection timeout for nodes configuration. */
     private static long failureThreshold = FAILURE_THRESHOLD;
+
+    /** Client failure detection timeout for nodes configuration. */
+    private static long clientFailureThreshold = CLIENT_FAILURE_THRESHOLD;
 
     /** */
     private static boolean useTestSpi;
@@ -61,6 +68,11 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     /** {@inheritDoc} */
     @Override protected boolean useFailureDetectionTimeout() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long clientFailureDetectionTimeout() {
+        return clientFailureThreshold;
     }
 
     /** {@inheritDoc} */
@@ -125,6 +137,111 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             failureThreshold = FAILURE_THRESHOLD;
         }
     }
+
+    /**
+     * Test failure detection time between two server with failure detection.
+     *
+     * @throws Exception in case of error.
+     */
+    public void testFailureTimeoutServerServer() throws Exception {
+        failureThreshold = 5000;
+        clientFailureThreshold = 10000;
+        try {
+            long detectTime = measureFailureDetectedTime(2,0);
+
+            assertTrue("Server node failure detected too fast: " + detectTime + "ms",
+                detectTime > failureThreshold - 100);
+            assertTrue("Server node failure detected too slow:  " + detectTime + "ms",
+                detectTime < clientFailureThreshold);
+        } finally {
+            failureThreshold = FAILURE_THRESHOLD;
+            clientFailureThreshold = CLIENT_FAILURE_THRESHOLD;
+        }
+    }
+
+    /**
+     * Test failure detection time between server and client if client fail with failure detection.
+     *
+     * @throws Exception in case of error.
+     */
+    public void testFailureTimeoutServerClient() throws Exception {
+        failureThreshold = 1000;
+        clientFailureThreshold = 2000;
+        try {
+            long detectTime = measureFailureDetectedTime(1,1);
+
+            assertTrue("Client node failure detected too fast: " + detectTime + "ms",
+                detectTime > clientFailureThreshold - 100);
+            assertTrue("Client node failure detected too slow:  " + detectTime + "ms",
+                detectTime < clientFailureThreshold + 5000);
+        } finally {
+            failureThreshold = FAILURE_THRESHOLD;
+            clientFailureThreshold = CLIENT_FAILURE_THRESHOLD;
+        }
+    }
+
+    /**
+     * Start servers and client, simulate second (server or client) node failure and measure failure detection time.
+     *
+     * @param srvCnt Number of server nodes to start.
+     * @param clientCnt Number of client nodes to start.
+     * @return Failure detection time.
+     * @throws Exception in case of error.
+     */
+    private long measureFailureDetectedTime(int srvCnt, int clientCnt) throws Exception {
+        if (srvCnt > 0)
+            startServerNodes(srvCnt);
+
+        if (clientCnt > 0)
+            startClientNodes(clientCnt);
+
+        checkNodes(srvCnt, clientCnt);
+
+        Ignite firstSrv = G.ignite("server-0");
+        TcpDiscoverySpi firstSpi = (TcpDiscoverySpi)firstSrv.configuration().getDiscoverySpi();
+
+        String secondName = clientCnt > 0 ? "client-0" : "server-1";
+
+        Ignite secondNode = G.ignite(secondName);
+        TcpDiscoverySpi secondSpi = (TcpDiscoverySpi)secondNode.configuration().getDiscoverySpi();
+
+        long failureTime = U.currentTimeMillis();
+
+        final long[] failureDetectTime = new long[1];
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Ignite aliveNode;
+        TcpDiscoverySpi aliveSpi;
+        if (clientCnt == 0) {
+            firstSpi.simulateNodeFailure();
+            aliveNode = secondNode;
+            aliveSpi = secondSpi;
+        }
+        else {
+            secondSpi.simulateNodeFailure();
+            aliveNode = firstSrv;
+            aliveSpi = firstSpi;
+        }
+
+        Thread pinger = new Thread(() -> aliveSpi.pingNode(secondSpi.getLocalNodeId()));
+        pinger.start();
+
+        aliveNode.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                DiscoveryEvent disoEvt = (DiscoveryEvent)evt;
+                failureDetectTime[0] = U.currentTimeMillis();
+                latch.countDown();
+                return true;
+            }
+        }, EVT_NODE_FAILED);
+
+        pinger.join();
+
+        assertTrue("Can't get node failure event", latch.await(15000, TimeUnit.MILLISECONDS));
+
+        return failureDetectTime[0]-failureTime;
+    }
+
 
     /**
      * @throws Exception in case of error.
@@ -288,7 +405,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
      */
     private static class TestTcpDiscoverySpi2 extends TcpDiscoverySpi {
         /** */
-        private long readDelay;
+        private volatile long readDelay;
 
         /** */
         private Exception err;
@@ -296,7 +413,11 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         /** {@inheritDoc} */
         @Override protected <T> T readMessage(Socket sock, @Nullable InputStream in, long timeout)
             throws IOException, IgniteCheckedException {
-            if (readDelay < failureDetectionTimeout()) {
+
+            long currentTimeout = getLocalNode().isClient() ?
+                clientFailureDetectionTimeout() : failureDetectionTimeout();
+
+            if (readDelay < currentTimeout) {
                 try {
                     return super.readMessage(sock, in, timeout);
                 }
