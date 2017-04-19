@@ -779,8 +779,6 @@ public abstract class PagesList extends DataStructure {
 
                     bucketsSize[bucket].incrementAndGet();
 
-                    bucketsSize[bucket].incrementAndGet();
-
                     updateTail(bucket, pageId, nextId);
                 }
                 finally {
