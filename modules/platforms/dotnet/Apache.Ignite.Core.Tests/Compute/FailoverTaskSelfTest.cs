@@ -109,12 +109,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             _gridName = null;
         }
 
-        /** <inheritDoc /> */
-        protected override ICollection<Type> GetBinaryTypes()
-        {
-            return new[] {typeof(TestBinarizableJob)};
-        }
-
         /// <summary>
         /// Test task.
         /// </summary>
