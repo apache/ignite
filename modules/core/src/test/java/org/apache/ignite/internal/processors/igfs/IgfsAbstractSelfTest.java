@@ -864,8 +864,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-                assertEquals(secondaryTimes.get2(), newSecondaryTimes.get1());
                 assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
+                assertEquals(secondaryTimes.get1(), newSecondaryTimes.get1());
             }
 
             // Change only modification time.
@@ -881,7 +881,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
 
-                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get1());
+                assertEquals(newInfo.accessTime(), (long) newSecondaryTimes.get2());
             }
 
             // Change both.
