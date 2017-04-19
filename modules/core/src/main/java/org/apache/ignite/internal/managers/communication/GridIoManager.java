@@ -66,6 +66,7 @@ import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -845,7 +846,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 if (exec != null)
                     exec.execute(c);
                 else {
-                    U.warn(log, "Custom executor '" + execName + "' doesn't exist. " +
+                    LT.warn(log, "Custom executor '" + execName + "' doesn't exist. " +
                         "The message will be processed in the pool specified by policy");
 
                     pools.poolForPolicy(plc).execute(c);

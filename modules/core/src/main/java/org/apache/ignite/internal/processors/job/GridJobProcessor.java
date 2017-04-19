@@ -74,6 +74,7 @@ import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -1283,7 +1284,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 if (customExec != null)
                     customExec.execute(jobWorker);
                 else {
-                    U.warn(log, "Custom executor '" + jobWorker.executorName() + "' doesn't exist. " +
+                    LT.warn(log, "Custom executor '" + jobWorker.executorName() + "' doesn't exist. " +
                         "The job will be submit to public pool: " + jobWorker.getJobId());
 
                     ctx.getExecutorService().execute(jobWorker);
