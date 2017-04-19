@@ -143,6 +143,8 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         spi.setIpFinder(IP_FINDER);
 
+        cfg.setDiscoverySpi(spi);
+
         /** Clients cache */
         CacheConfiguration<ClientKey, Client> clientCfg = new CacheConfiguration<>();
         clientCfg.setName("cl");

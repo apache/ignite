@@ -75,6 +75,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.util.GridIntIterator;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -427,29 +429,10 @@ public class GridReduceQueryExecutor {
 
         List<List<ClusterNode>> assignment = cctx.affinity().assignment(topVer).assignment();
 
-        boolean needPartFilter = parts != null;
+        boolean needPartsFilter = parts != null;
 
-        Iterator<Integer> iter = needPartFilter ? new Iterator<Integer>() {
-            int c = 0;
-
-            @Override public boolean hasNext() {
-                return c < parts.length;
-            }
-
-            @Override public Integer next() {
-                return parts[c++];
-            }
-        } : new Iterator<Integer>() {
-            int c = 0;
-
-            @Override public boolean hasNext() {
-                return c < cctx.affinity().partitions();
-            }
-
-            @Override public Integer next() {
-                return c++;
-            }
-        };
+        GridIntIterator iter = needPartsFilter ? new GridIntList(parts).iterator() :
+            U.forRange(0, cctx.affinity().partitions());
 
         while(iter.hasNext()) {
             int partId = iter.next();
@@ -459,7 +442,7 @@ public class GridReduceQueryExecutor {
             if (partNodes.size() > 0) {
                 ClusterNode prim = partNodes.get(0);
 
-                if (!needPartFilter) {
+                if (!needPartsFilter) {
                     mapping.put(prim, null);
 
                     continue;
