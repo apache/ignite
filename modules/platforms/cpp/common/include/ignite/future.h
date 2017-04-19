@@ -214,7 +214,7 @@ namespace ignite
          */
         void Wait() const
         {
-            SharedState<ValueType>* state0 = state.Get();
+            const SharedState<ValueType>* state0 = state.Get();
 
             assert(state0 != 0);
 
@@ -230,7 +230,7 @@ namespace ignite
          */
         bool WaitFor(int32_t msTimeout) const
         {
-            SharedState<ValueType>* state0 = state.Get();
+            const SharedState<ValueType>* state0 = state.Get();
 
             assert(state0 != 0);
 
@@ -246,7 +246,7 @@ namespace ignite
          */
         const ValueType& GetValue() const
         {
-            SharedState<ValueType>* state0 = state.Get();
+            const SharedState<ValueType>* state0 = state.Get();
 
             assert(state0 != 0);
 
