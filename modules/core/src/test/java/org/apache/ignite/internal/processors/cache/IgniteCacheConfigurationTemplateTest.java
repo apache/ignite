@@ -67,7 +67,7 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
         if (addTemplate) {
-            CacheConfiguration dfltCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+            CacheConfiguration dfltCfg = new CacheConfiguration("*");
 
             dfltCfg.setAtomicityMode(TRANSACTIONAL);
             dfltCfg.setBackups(2);
@@ -228,19 +228,6 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         checkGetOrCreate(ignite1, "org.apache.ignite", 6);
         checkGetOrCreate(ignite2, "org.apache.ignite", 6);
         checkGetOrCreate(ignite3, "org.apache.ignite", 6);
-
-        // Test name '*'.
-        CacheConfiguration template3 = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        template3.setName("*");
-        template3.setBackups(7);
-
-        ignite1.addCacheConfiguration(template3);
-
-        checkGetOrCreate(ignite0, "x", 7);
-        checkGetOrCreate(ignite1, "x", 7);
-        checkGetOrCreate(ignite2, "x", 7);
-        checkGetOrCreate(ignite3, "x", 7);
     }
 
     /**

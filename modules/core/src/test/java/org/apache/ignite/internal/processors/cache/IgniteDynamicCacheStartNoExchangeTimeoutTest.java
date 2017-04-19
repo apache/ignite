@@ -41,7 +41,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -256,11 +256,11 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         assertTrue(client.configuration().isClientMode());
 
-        assertNotNull(client.getOrCreateCache((String)null));
+        assertNotNull(client.getOrCreateCache(DEFAULT_CACHE_NAME));
 
         awaitPartitionMapExchange();
 
-        checkCache(null);
+        checkCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -281,11 +281,11 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         IgniteEx ingite1 = grid(1);
 
-        assertNotNull(ingite1.getOrCreateCache((String)null));
+        assertNotNull(ingite1.getOrCreateCache(DEFAULT_CACHE_NAME));
 
         awaitPartitionMapExchange();
 
-        checkCache(null);
+        checkCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -308,17 +308,17 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         assertTrue(client.configuration().isClientMode());
 
-        assertNotNull(client.getOrCreateCache((String)null));
+        assertNotNull(client.getOrCreateCache(DEFAULT_CACHE_NAME));
 
         awaitPartitionMapExchange();
 
-        checkCache(null);
+        checkCache(DEFAULT_CACHE_NAME);
     }
 
     /**
      * @param name Cache name.
      */
-    private void checkCache(@Nullable String name) {
+    private void checkCache(@NotNull String name) {
         int key = 0;
 
         for (Ignite ignite : G.allGrids()) {

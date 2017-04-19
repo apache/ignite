@@ -544,7 +544,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                         log.info("Started node: " + ignite.name());
 
-                        IgniteCache<Object, Object> cache = ignite.getOrCreateCache((String)null);
+                        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
                         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
@@ -622,7 +622,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                     log.info("Started node: " + ignite.name());
 
-                    IgniteCache<Object, Object> cache = ignite.getOrCreateCache((String)null);
+                    IgniteCache<Object, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
                     for (int i = 0; i < 10; i++) {
                         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();

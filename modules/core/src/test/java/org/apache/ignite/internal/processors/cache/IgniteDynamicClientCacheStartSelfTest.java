@@ -81,7 +81,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     public void testConfiguredCacheOnClientNode() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        final String cacheName = null;
+        final String cacheName = DEFAULT_CACHE_NAME;
 
         Ignite ignite0 = startGrid(0);
 
@@ -126,7 +126,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     public void testNearCacheStartError() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        final String cacheName = null;
+        final String cacheName = DEFAULT_CACHE_NAME;
 
         Ignite ignite0 = startGrid(0);
 
@@ -167,7 +167,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         ccfg.setCacheMode(REPLICATED);
 
-        final String cacheName = null;
+        final String cacheName = DEFAULT_CACHE_NAME;
 
         Ignite ignite0 = startGrid(0);
 
@@ -202,7 +202,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         ccfg.setCacheMode(REPLICATED);
 
-        final String cacheName = null;
+        final String cacheName = DEFAULT_CACHE_NAME;
 
         Ignite ignite0 = startGrid(0);
 
@@ -249,7 +249,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         startGrid(2);
 
-        checkCache(clientNode, null, false, false);
+        checkCache(clientNode, DEFAULT_CACHE_NAME, false, false);
     }
 
     /**
@@ -295,7 +295,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         startGrid(2);
 
-        checkCache(ignite0, null, false, false);
+        checkCache(ignite0, DEFAULT_CACHE_NAME, false, false);
     }
 
     /**

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
