@@ -201,66 +201,6 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
     }
 
     /**
-     * @throws Exception In case of error.
-     */
-    public void testConnectionCheckMessageBackwardCompatibility() throws Exception {
-        TestTcpDiscoverySpi nextSpi = null;
-        TcpDiscoveryNode nextNode = null;
-
-        IgniteProductVersion nextNodeVer = null;
-
-        try {
-            assert firstSpi().connCheckStatusMsgCntSent == 0;
-
-            nextNode = ((ServerImpl)(firstSpi().impl)).ring().nextNode();
-
-            assertNotNull(nextNode);
-
-            nextSpi = null;
-
-            for (int i = 1; i < spis.size(); i++)
-                if (spis.get(i).getLocalNode().id().equals(nextNode.id())) {
-                    nextSpi = (TestTcpDiscoverySpi)spis.get(i);
-                    break;
-                }
-
-            assertNotNull(nextSpi);
-
-            assert nextSpi.connCheckStatusMsgCntReceived == 0;
-
-            nextNodeVer = nextNode.version();
-
-            // Overriding the version of the next node. Connection check message must not been sent to it.
-            nextNode.version(new IgniteProductVersion(TcpDiscoverySpi.FAILURE_DETECTION_MAJOR_VER,
-                (byte)(TcpDiscoverySpi.FAILURE_DETECTION_MINOR_VER - 1), TcpDiscoverySpi.FAILURE_DETECTION_MAINT_VER,
-                0l, null));
-
-            firstSpi().countConnCheckMsg = true;
-            nextSpi.countConnCheckMsg = true;
-
-            Thread.sleep(firstSpi().failureDetectionTimeout() / 2);
-
-            firstSpi().countConnCheckMsg = false;
-            nextSpi.countConnCheckMsg = false;
-
-            int sent = firstSpi().connCheckStatusMsgCntSent;
-            int received = nextSpi.connCheckStatusMsgCntReceived;
-
-            assert sent == 0 : "messages sent: " + sent;
-            assert received == 0 : "messages received: " + received;
-        }
-        finally {
-            firstSpi().resetState();
-
-            if (nextSpi != null)
-                nextSpi.resetState();
-
-            if (nextNode != null && nextNodeVer != null)
-                nextNode.version(nextNodeVer);
-        }
-    }
-
-    /**
      * Returns the first spi with failure detection timeout enabled.
      *
      * @return SPI.
@@ -323,14 +263,14 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 try {
                     Thread.sleep(timeout + 1000);
                 }
-                catch (InterruptedException e) {
-                    // Ignore
+                catch (InterruptedException ignored) {
+                    // No-op.
                 }
 
                 try {
                     timeoutHelper.nextTimeoutChunk(0);
                 }
-                catch (IgniteSpiOperationTimeoutException e) {
+                catch (IgniteSpiOperationTimeoutException ignored) {
                     throw (err = new IgniteSpiOperationTimeoutException("Timeout: openSocketTimeoutWait"));
                 }
             }
@@ -340,8 +280,8 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
             try {
                 Thread.sleep(1500);
             }
-            catch (InterruptedException e) {
-                // Ignore
+            catch (InterruptedException ignored) {
+                // No-op.
             }
 
             return sock;
@@ -369,8 +309,8 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 try {
                     Thread.sleep(timeout);
                 }
-                catch (InterruptedException e) {
-                    // Ignore
+                catch (InterruptedException ignored) {
+                    // No-op.
                 }
             }
             else

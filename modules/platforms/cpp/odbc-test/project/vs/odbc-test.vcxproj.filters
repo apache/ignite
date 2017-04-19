@@ -94,6 +94,9 @@
     <ClCompile Include="..\..\src\sql_system_functions_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\sql_esc_convert_function_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\sql_operators_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -134,10 +137,19 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\queries-test-32.xml">
+      <Filter>Configs</Filter>
+    </None>
     <None Include="..\..\config\queries-test.xml">
       <Filter>Configs</Filter>
     </None>
+    <None Include="..\..\config\queries-test-noodbc-32.xml">
+      <Filter>Configs</Filter>
+    </None>
     <None Include="..\..\config\queries-test-noodbc.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-default.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

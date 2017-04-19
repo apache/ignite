@@ -128,7 +128,7 @@ public class IgniteBenchmarkUtils {
         for (int i = 0; i < extraNodes; i++) {
             IgniteConfiguration nodeCfg = Ignition.loadSpringBean(cfg, "grid.cfg");
 
-            nodeCfg.setGridName("node-" + i);
+            nodeCfg.setIgniteInstanceName("node-" + i);
             nodeCfg.setMetricsLogFrequency(0);
 
             Ignition.start(nodeCfg);

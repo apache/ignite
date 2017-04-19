@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 KeyTypeName = value == null
                     ? null
-                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetSqlTypeName(value));
 
                 _keyType = value;
             }
@@ -141,11 +141,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 ValueTypeName = value == null
                     ? null
-                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetSqlTypeName(value));
 
                 _valueType = value;
             }
         }
+
+        /// <summary>
+        /// Gets or sets the name of the SQL table.
+        /// When not set, value type name is used.
+        /// </summary>
+        public string TableName { get; set; }
 
         /// <summary>
         /// Gets or sets query fields, a map from field name to Java type name. 
@@ -176,6 +182,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         {
             KeyTypeName = reader.ReadString();
             ValueTypeName = reader.ReadString();
+            TableName = reader.ReadString();
 
             var count = reader.ReadInt();
             Fields = count == 0
@@ -199,6 +206,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         {
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);
+            writer.WriteString(TableName);
 
             if (Fields != null)
             {
@@ -283,7 +291,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 ScanAttributes(valType, fields, indexes, null, new HashSet<Type>(), false);
 
             if (fields.Any())
-                Fields = fields;
+                Fields = fields.OrderBy(x => x.Name).ToList();
 
             if (indexes.Any())
                 Indexes = GetGroupIndexes(indexes).ToArray();

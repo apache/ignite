@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 
@@ -36,36 +36,43 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactObject
 /**
  * Data transfer object for node SPIs configuration properties.
  */
-public class VisorSpisConfiguration implements Serializable, LessNamingBean {
+public class VisorSpisConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Discovery SPI. */
-    private IgniteBiTuple<String, Map<String, Object>> discoSpi;
+    private VisorSpiDescription discoSpi;
 
     /** Communication SPI. */
-    private IgniteBiTuple<String, Map<String, Object>> commSpi;
+    private VisorSpiDescription commSpi;
 
     /** Event storage SPI. */
-    private IgniteBiTuple<String, Map<String, Object>> evtSpi;
+    private VisorSpiDescription evtSpi;
 
     /** Collision SPI. */
-    private IgniteBiTuple<String, Map<String, Object>> colSpi;
+    private VisorSpiDescription colSpi;
 
     /** Deployment SPI. */
-    private IgniteBiTuple<String, Map<String, Object>> deploySpi;
+    private VisorSpiDescription deploySpi;
 
     /** Checkpoint SPIs. */
-    private IgniteBiTuple<String, Map<String, Object>>[] cpSpis;
+    private VisorSpiDescription[] cpSpis;
 
     /** Failover SPIs. */
-    private IgniteBiTuple<String, Map<String, Object>>[] failSpis;
+    private VisorSpiDescription[] failSpis;
 
     /** Load balancing SPIs. */
-    private IgniteBiTuple<String, Map<String, Object>>[] loadBalancingSpis;
+    private VisorSpiDescription[] loadBalancingSpis;
 
     /** Indexing SPIs. */
-    private IgniteBiTuple<String, Map<String, Object>>[] indexingSpis;
+    private VisorSpiDescription[] indexingSpis;
+
+    /**
+     * Default constructor.
+     */
+    public VisorSpisConfiguration() {
+        // No-op.
+    }
 
     /**
      * Collects SPI information based on GridSpiConfiguration-annotated methods.
@@ -74,7 +81,7 @@ public class VisorSpisConfiguration implements Serializable, LessNamingBean {
      * @param spi SPI to collect information on.
      * @return Tuple where first component is SPI name and map with properties as second.
      */
-    private static IgniteBiTuple<String, Map<String, Object>> collectSpiInfo(IgniteSpi spi) {
+    private static VisorSpiDescription collectSpiInfo(IgniteSpi spi) {
         Class<? extends IgniteSpi> spiCls = spi.getClass();
 
         HashMap<String, Object> res = new HashMap<>();
@@ -88,13 +95,13 @@ public class VisorSpisConfiguration implements Serializable, LessNamingBean {
                 if (mtdName.startsWith("set")) {
                     String propName = Character.toLowerCase(mtdName.charAt(3)) + mtdName.substring(4);
 
-                    String[] getterNames = new String[] {
-                        "get" + mtdName.substring(3),
-                        "is" + mtdName.substring(3),
-                        "get" + mtdName.substring(3) + "Formatted"
-                    };
-
                     try {
+                        String[] getterNames = new String[] {
+                            "get" + mtdName.substring(3),
+                            "is" + mtdName.substring(3),
+                            "get" + mtdName.substring(3) + "Formatted"
+                        };
+
                         for (String getterName : getterNames) {
                             try {
                                 Method getter = spiCls.getDeclaredMethod(getterName);
@@ -120,103 +127,126 @@ public class VisorSpisConfiguration implements Serializable, LessNamingBean {
             }
         }
 
-        return new IgniteBiTuple<String, Map<String, Object>>(spi.getName(), res);
+        return new VisorSpiDescription(spi.getName(), res);
     }
 
     /**
      * @param spis Array of spi to process.
      * @return Tuple where first component is SPI name and map with properties as second.
      */
-    private static IgniteBiTuple<String, Map<String, Object>>[] collectSpiInfo(IgniteSpi[] spis) {
-        IgniteBiTuple[] res = new IgniteBiTuple[spis.length];
+    private static VisorSpiDescription[] collectSpiInfo(IgniteSpi[] spis) {
+        VisorSpiDescription[] res = new VisorSpiDescription[spis.length];
 
         for (int i = 0; i < spis.length; i++)
             res[i] = collectSpiInfo(spis[i]);
 
-        return (IgniteBiTuple<String, Map<String, Object>>[])res;
+        return res;
     }
 
     /**
+     * Create data transfer object for node SPIs configuration properties.
+     *
      * @param c Grid configuration.
-     * @return Data transfer object for node SPIs configuration properties.
      */
-    public static VisorSpisConfiguration from(IgniteConfiguration c) {
-        VisorSpisConfiguration cfg = new VisorSpisConfiguration();
-
-        cfg.discoSpi = collectSpiInfo(c.getDiscoverySpi());
-        cfg.commSpi = collectSpiInfo(c.getCommunicationSpi());
-        cfg.evtSpi = collectSpiInfo(c.getEventStorageSpi());
-        cfg.colSpi = collectSpiInfo(c.getCollisionSpi());
-        cfg.deploySpi = collectSpiInfo(c.getDeploymentSpi());
-        cfg.cpSpis = collectSpiInfo(c.getCheckpointSpi());
-        cfg.failSpis = collectSpiInfo(c.getFailoverSpi());
-        cfg.loadBalancingSpis = collectSpiInfo(c.getLoadBalancingSpi());
-        cfg.indexingSpis = F.asArray(collectSpiInfo(c.getIndexingSpi()));
-
-        return cfg;
+    public VisorSpisConfiguration(IgniteConfiguration c) {
+        discoSpi = collectSpiInfo(c.getDiscoverySpi());
+        commSpi = collectSpiInfo(c.getCommunicationSpi());
+        evtSpi = collectSpiInfo(c.getEventStorageSpi());
+        colSpi = collectSpiInfo(c.getCollisionSpi());
+        deploySpi = collectSpiInfo(c.getDeploymentSpi());
+        cpSpis = collectSpiInfo(c.getCheckpointSpi());
+        failSpis = collectSpiInfo(c.getFailoverSpi());
+        loadBalancingSpis = collectSpiInfo(c.getLoadBalancingSpi());
+        indexingSpis = F.asArray(collectSpiInfo(c.getIndexingSpi()));
     }
 
     /**
      * @return Discovery SPI.
      */
-    public IgniteBiTuple<String, Map<String, Object>> discoverySpi() {
+    public VisorSpiDescription getDiscoverySpi() {
         return discoSpi;
     }
 
     /**
      * @return Communication SPI.
      */
-    public IgniteBiTuple<String, Map<String, Object>> communicationSpi() {
+    public VisorSpiDescription getCommunicationSpi() {
         return commSpi;
     }
 
     /**
      * @return Event storage SPI.
      */
-    public IgniteBiTuple<String, Map<String, Object>> eventStorageSpi() {
+    public VisorSpiDescription getEventStorageSpi() {
         return evtSpi;
     }
 
     /**
      * @return Collision SPI.
      */
-    public IgniteBiTuple<String, Map<String, Object>> collisionSpi() {
+    public VisorSpiDescription getCollisionSpi() {
         return colSpi;
     }
 
     /**
      * @return Deployment SPI.
      */
-    public IgniteBiTuple<String, Map<String, Object>> deploymentSpi() {
+    public VisorSpiDescription getDeploymentSpi() {
         return deploySpi;
     }
 
     /**
      * @return Checkpoint SPIs.
      */
-    public IgniteBiTuple<String, Map<String, Object>>[] checkpointSpis() {
+    public VisorSpiDescription[] getCheckpointSpis() {
         return cpSpis;
     }
 
     /**
      * @return Failover SPIs.
      */
-    public IgniteBiTuple<String, Map<String, Object>>[] failoverSpis() {
+    public VisorSpiDescription[] getFailoverSpis() {
         return failSpis;
     }
 
     /**
      * @return Load balancing SPIs.
      */
-    public IgniteBiTuple<String, Map<String, Object>>[] loadBalancingSpis() {
+    public VisorSpiDescription[] getLoadBalancingSpis() {
         return loadBalancingSpis;
     }
 
     /**
      * @return Indexing SPIs.
      */
-    public IgniteBiTuple<String, Map<String, Object>>[] indexingSpis() {
+    public VisorSpiDescription[] getIndexingSpis() {
         return indexingSpis;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeObject(discoSpi);
+        out.writeObject(commSpi);
+        out.writeObject(evtSpi);
+        out.writeObject(colSpi);
+        out.writeObject(deploySpi);
+        out.writeObject(cpSpis);
+        out.writeObject(failSpis);
+        out.writeObject(loadBalancingSpis);
+        out.writeObject(indexingSpis);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        discoSpi = (VisorSpiDescription)in.readObject();
+        commSpi = (VisorSpiDescription)in.readObject();
+        evtSpi = (VisorSpiDescription)in.readObject();
+        colSpi = (VisorSpiDescription)in.readObject();
+        deploySpi = (VisorSpiDescription)in.readObject();
+        cpSpis = (VisorSpiDescription[])in.readObject();
+        failSpis = (VisorSpiDescription[])in.readObject();
+        loadBalancingSpis = (VisorSpiDescription[])in.readObject();
+        indexingSpis = (VisorSpiDescription[])in.readObject();
     }
 
     /** {@inheritDoc} */

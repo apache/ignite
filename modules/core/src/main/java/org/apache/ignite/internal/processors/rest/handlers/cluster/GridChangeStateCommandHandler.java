@@ -41,6 +41,7 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
     /** Commands. */
     private static final Collection<GridRestCommand> commands =
         U.sealList(CLUSTER_ACTIVE, CLUSTER_INACTIVE, CLUSTER_CURRENT_STATE);
+
     /**
      * @param ctx Context.
      */

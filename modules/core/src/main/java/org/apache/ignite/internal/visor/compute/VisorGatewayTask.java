@@ -29,21 +29,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -104,8 +109,15 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
         @IgniteInstanceResource
         protected transient IgniteEx ignite;
 
+        /** Auto-inject job context. */
+        @JobContextResource
+        protected transient ComputeJobContext jobCtx;
+
         /** Arguments count. */
         private final int argsCnt;
+
+        /** Future for spawned task. */
+        private transient IgniteFuture fut;
 
         /**
          * Create job with specified argument.
@@ -247,7 +259,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             if (BigDecimal.class == cls)
                 return new BigDecimal(val);
 
-            if (Collection.class == cls)
+            if (Collection.class == cls || List.class == cls)
                 return Arrays.asList(val.split(";"));
 
             if (Set.class == cls)
@@ -265,7 +277,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 byte[] res = new byte[els.length];
 
                 for (int i = 0; i < els.length; i ++)
-                    res[i] =  Byte.valueOf(els[i]);
+                    res[i] = Byte.valueOf(els[i]);
 
                 return res;
             }
@@ -286,6 +298,9 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
+            if (fut != null)
+                return fut.get();
+
             String nidsArg = argument(0);
             String taskName = argument(1);
 
@@ -333,7 +348,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 }
             }
 
-            final Collection<UUID> nids;
+            final List<UUID> nids;
 
             if (nidsArg == null || "null".equals(nidsArg) || nidsArg.isEmpty()) {
                 Collection<ClusterNode> nodes = ignite.cluster().nodes();
@@ -357,8 +372,17 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 }
             }
 
-            return ignite.compute(ignite.cluster().forNodeIds(nids))
-                .execute(taskName, new VisorTaskArgument<>(nids, jobArgs, false));
+            IgniteCompute comp = ignite.compute(ignite.cluster().forNodeIds(nids));
+
+            fut = comp.executeAsync(taskName, new VisorTaskArgument<>(nids, jobArgs, false));
+
+            fut.listen(new CI1<IgniteFuture<Object>>() {
+                @Override public void apply(IgniteFuture<Object> f) {
+                    jobCtx.callcc();
+                }
+            });
+
+            return jobCtx.holdcc();
         }
     }
 }

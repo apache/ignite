@@ -55,8 +55,8 @@ public class IgniteCacheTopologySafeGetSelfTest extends GridCommonAbstractTest {
     private CountDownLatch releaseLatch;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(
             cacheCfg("tx", TRANSACTIONAL, false),
@@ -147,7 +147,7 @@ public class IgniteCacheTopologySafeGetSelfTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> nodeFut = startNodeAsync();
 
             if (failPrimary)
-                stopGrid(1);
+                stopGrid(getTestIgniteInstanceName(1), false, false);
 
             assertEquals(key, ((IgniteKernal)ignite(0)).internalCache("tx").getTopologySafe(key));
             assertEquals(key, ((IgniteKernal)ignite(0)).internalCache("atomic").getTopologySafe(key));

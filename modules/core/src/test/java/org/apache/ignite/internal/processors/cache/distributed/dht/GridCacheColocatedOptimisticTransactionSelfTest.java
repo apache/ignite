@@ -60,8 +60,8 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     private static IgniteCache<Integer, String>[] caches;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -77,7 +77,6 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
         cc.setNearConfiguration(null);
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setEvictSynchronized(false);
 
         c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);

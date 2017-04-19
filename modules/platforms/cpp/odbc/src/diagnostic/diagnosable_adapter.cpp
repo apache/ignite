@@ -25,7 +25,7 @@ namespace ignite
     {
         namespace diagnostic
         {
-            void DiagnosableAdapter::AddStatusRecord(SqlState sqlState,
+            void DiagnosableAdapter::AddStatusRecord(SqlState::Type  sqlState,
                 const std::string& message, int32_t rowNum, int32_t columnNum)
             {
                 if (connection)
@@ -40,7 +40,7 @@ namespace ignite
                 }
             }
 
-            void DiagnosableAdapter::AddStatusRecord(SqlState sqlState, const std::string& message)
+            void DiagnosableAdapter::AddStatusRecord(SqlState::Type  sqlState, const std::string& message)
             {
                 LOG_MSG("Adding new record: " << message);
 

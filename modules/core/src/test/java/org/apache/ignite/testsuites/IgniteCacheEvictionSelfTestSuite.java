@@ -18,25 +18,27 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.GridCacheMemoryModeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePreloadingEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearEvictionSelfTest;
-import org.apache.ignite.internal.processors.cache.eviction.GridCacheBatchEvictUnswapSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionsSelfTest;
-import org.apache.ignite.internal.processors.cache.eviction.GridCacheDistributedEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEmptyEntriesLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEmptyEntriesPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictableEntryEqualsSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionLockUnlockSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionTouchSelfTest;
-import org.apache.ignite.internal.processors.cache.eviction.GridCacheSynchronousEvictionsFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearOnlyNearEvictionPolicySelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionReadThroughTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionTouchOrderTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionMultinodeTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionWithRebalanceTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionMultinodeTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionWithRebalanceTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicySelfTest;
 
 /**
@@ -61,15 +63,18 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheConcurrentEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheConcurrentEvictionConsistencySelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionTouchSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheDistributedEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionLockUnlockSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheBatchEvictUnswapSelfTest.class));
         suite.addTest(new TestSuite(GridCachePreloadingEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEmptyEntriesPartitionedSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEmptyEntriesLocalSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheMemoryModeSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheSynchronousEvictionsFailoverSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictableEntryEqualsSelfTest.class));
+
+        suite.addTest(new TestSuite(RandomLruPageEvictionMultinodeTest.class));
+        suite.addTest(new TestSuite(Random2LruPageEvictionMultinodeTest.class));
+        suite.addTest(new TestSuite(RandomLruPageEvictionWithRebalanceTest.class));
+        suite.addTest(new TestSuite(Random2LruPageEvictionWithRebalanceTest.class));
+        suite.addTest(new TestSuite(PageEvictionTouchOrderTest.class));
+        suite.addTest(new TestSuite(PageEvictionReadThroughTest.class));
 
         return suite;
     }

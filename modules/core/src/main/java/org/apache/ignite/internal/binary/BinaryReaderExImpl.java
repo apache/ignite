@@ -21,6 +21,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
@@ -75,8 +76,10 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.STRING;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.STRING_ARR;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TIME;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TIMESTAMP;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TIMESTAMP_ARR;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TIME_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
@@ -1256,6 +1259,51 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /** {@inheritDoc} */
+    @Override @Nullable public Time readTime(String fieldName) throws BinaryObjectException {
+        return findFieldByName(fieldName) ? this.readTime() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public Time readTime() throws BinaryObjectException {
+        return checkFlagNoHandles(TIME) == Flag.NORMAL ? BinaryUtils.doReadTime(in) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public Time[] readTimeArray(String fieldName) throws BinaryObjectException {
+        return findFieldByName(fieldName) ? this.readTimeArray() : null;
+    }
+
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable Time readTime(int fieldId) throws BinaryObjectException {
+        return findFieldById(fieldId) ? this.readTime() : null;
+    }
+
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable Time[] readTimeArray(int fieldId) throws BinaryObjectException {
+        return findFieldById(fieldId) ? this.readTimeArray() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public Time[] readTimeArray() throws BinaryObjectException {
+        switch (checkFlag(TIME_ARR)) {
+            case NORMAL:
+                return BinaryUtils.doReadTimeArray(in);
+            case HANDLE:
+                return readHandleField();
+            default:
+                return null;
+        }
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T readObject(String fieldName) throws BinaryObjectException {
         try {
@@ -1649,7 +1697,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException If failed.
      */
     @Nullable Object deserialize() throws BinaryObjectException {
-        String newName = ctx.configuration().getGridName();
+        String newName = ctx.configuration().getIgniteInstanceName();
         String oldName = IgniteUtils.setCurrentIgniteName(newName);
 
         try {
@@ -1772,6 +1820,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 break;
 
+            case TIME:
+                obj = BinaryUtils.doReadTime(in);
+
+                break;
+
             case BYTE_ARR:
                 obj = BinaryUtils.doReadByteArray(in);
 
@@ -1837,6 +1890,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 break;
 
+            case TIME_ARR:
+                obj = BinaryUtils.doReadTimeArray(in);
+
+                break;
+
             case OBJ_ARR:
                 obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
 
@@ -1853,7 +1911,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case BINARY_OBJ:
-                obj = BinaryUtils.doReadBinaryObject(in, ctx);
+                obj = BinaryUtils.doReadBinaryObject(in, ctx, false);
 
                 ((BinaryObjectImpl)obj).context(ctx);
 
@@ -1926,7 +1984,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         if (schema == null) {
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
-                BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId);
+                BinaryTypeImpl type = (BinaryTypeImpl) ctx.metadata(typeId, schemaId);
 
                 if (type == null || type.metadata() == null)
                     throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +

@@ -57,7 +57,7 @@ import org.springframework.context.ApplicationContextAware;
  * &lt;bean id="mySpringBean" class="org.apache.ignite.IgniteSpringBean"&gt;
  *     &lt;property name="configuration"&gt;
  *         &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
- *             &lt;property name="gridName" value="mySpringGrid"/&gt;
+ *             &lt;property name="igniteInstanceName" value="mySpringGrid"/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
  * &lt;/bean&gt;
@@ -269,6 +269,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         checkIgnite();
 
         g.resetLostPartitions(cacheNames);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        checkIgnite();
+
+        return g.memoryMetrics();
     }
 
     /** {@inheritDoc} */

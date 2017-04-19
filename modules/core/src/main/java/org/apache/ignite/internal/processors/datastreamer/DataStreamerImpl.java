@@ -1648,9 +1648,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
 
                 GridDeployment dep = null;
-                GridPeerDeployAware jobPda0 = null;
-
-                jobPda0 = jobPda;
+                GridPeerDeployAware jobPda0 = jobPda;
 
                 if (ctx.deploy().enabled() && jobPda0 != null) {
                     try {
@@ -1698,7 +1696,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     topVer);
 
                 try {
-                    ctx.io().send(node, TOPIC_DATASTREAM, req, plc);
+                    ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
 
                     if (log.isDebugEnabled())
                         log.debug("Sent request to node [nodeId=" + node.id() + ", req=" + req + ']');

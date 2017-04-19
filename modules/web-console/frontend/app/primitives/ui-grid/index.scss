@@ -1,0 +1,329 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@import '../../../public/stylesheets/variables';
+
+.ui-grid--ignite {
+    $height: 46px;
+
+    border-top: none;
+
+    [role="button"] {
+      outline: none;
+    }
+
+    .ui-grid-top-panel {
+        background: initial;
+    }
+
+    .ui-grid-canvas {
+        padding-top: 0;
+    }
+
+    .ui-grid-cell {
+        height: $height;
+
+        border-color: transparent;
+    }
+
+    .ui-grid-cell-contents {
+        font-family: Roboto;
+
+        padding: 13px 20px;
+    }
+
+    .ui-grid-render-container-body {
+        .ui-grid-cell {
+            .ui-grid-cell-contents {
+                text-align: left;
+            }
+
+            &.ui-grid-number-cell {
+                .ui-grid-cell-contents {
+                    text-align: right;
+                }
+            }
+
+            &:first-child {
+                .ui-grid-cell-contents {
+                    padding-left: 0;
+                }            
+            }
+        }
+    }
+
+    .ui-grid-header--subcategories {
+        .ui-grid-header-span {
+            background: initial;
+
+            &:first-child {
+                .ui-grid-cell-contents {
+                    padding-left: 0;
+                }
+
+                .ng-hide + .ui-grid-header-cell-row {
+                    .ui-grid-cell-contents,
+                    .ui-grid-filter-container {
+                        padding-left: 0;
+                    }
+                }
+            }
+
+            .ui-grid-cell-contents {
+                color: $gray-light;
+                font-size: 14px;
+                font-weight: normal;
+                font-style: normal;
+                line-height: 18px;
+                text-align: left;
+
+                padding: 8px 20px;
+
+                & > i {
+                    line-height: 18px;
+                }
+            }
+
+            [ng-show] .ui-grid-cell-contents {
+                text-align: center;
+            }
+
+            .ui-grid-filter-container {
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+
+            .ng-hide + .ui-grid-header-cell-row .ui-grid-header-cell {
+                height: 69px;
+            }
+
+            .ng-hide + .ui-grid-header-cell-row {
+                .ui-grid-cell-contents {
+                    padding: 8px 20px;
+                }
+
+                .ui-grid-filter-container {
+                    padding-left: 20px;
+                    padding-right: 20px;
+                }
+            }
+
+            .ui-grid-header-cell-label + span {
+                position: relative;
+            }
+        }
+    }
+
+    .ui-grid-pinned-container {
+        &.ui-grid-pinned-container-left {
+            width: auto;
+
+            .ui-grid-render-container-left {
+                .ui-grid-viewport, 
+                .ui-grid-header-viewport {
+                    width: auto;
+
+                    .ui-grid-canvas {
+                        width: auto;
+                    }
+                }
+            }
+        }
+    }
+
+    .ui-grid-pinned-container-left .ui-grid-header-cell:last-child {
+        max-width: 52px;
+        min-width: 52px;
+
+        border-width: 0;
+    }
+
+    .ui-grid-pinned-container-left .ui-grid-cell:last-child {
+        min-width: 52px;
+        max-width: 52px;
+
+        border-width: 0;
+        background-color: initial;
+    }
+
+    .ui-grid-row {
+        height: $height;
+
+        &:nth-child(odd) {
+            .ui-grid-cell {
+                background-color: initial;
+            }
+        }
+
+        &:nth-child(even) {
+            .ui-grid-cell {
+                background-color: #f9f9f9;
+            }
+        }
+
+        &:not(:first-child) {
+            border-top: 1px solid $table-border-color;
+        }
+
+        &.ui-grid-row-selected > [ui-grid-row] > .ui-grid-cell {
+            background-color: #e5f2f9;
+
+            box-shadow: 0 -1px 0 0 rgba(117, 117, 117, 0.25), 0 1px 0 0 rgba(117, 117, 117, 0.25);
+        }
+    }
+
+    .ui-grid-selection-row-header-buttons {
+        position: relative;
+        opacity: 1;
+
+        &::before {
+            content: '';
+
+            width: 12px;
+            height: 12px;
+
+            margin-left: 0;
+            margin-right: 0;
+
+            border: 1px solid #afafaf;
+            border-radius: 2px;
+            background-color: #FFF;
+
+            box-shadow: inset 0 1px 1px #ccc;
+        }
+
+        &.ui-grid-all-selected,
+        &.ui-grid-row-selected {
+
+            &::before {
+                border-color: #0067b9;
+                background-color: #0067b9;
+
+                box-shadow: none;
+            }
+
+            &::after {
+              content: '';
+
+              position: absolute;
+              top: 4px;
+              left: 4px;
+              
+              width: 4px;
+              height: 8px;
+
+              border: solid #FFF;
+              border-width: 0 2px 2px 0;
+
+              transform: rotate(35deg);
+            }
+        }
+    }
+
+    .ui-grid-header,
+    .ui-grid-viewport {
+        .ui-grid-icon-cancel {
+            right: 20px;
+        }
+
+        .ui-grid-tree-base-row-header-buttons {
+            .ui-grid-icon-plus-squared,
+            .ui-grid-icon-minus-squared,
+            &.ui-grid-icon-plus-squared,
+            &.ui-grid-icon-minus-squared {
+                position: relative;
+                top: 3px;
+
+                display: block;
+                width: 13px;
+                height: 13px;
+
+                margin-top: -1px;
+                margin-left: -4px;
+                margin-right: 0;
+
+                cursor: pointer;
+
+                border: 1px solid #757575;
+                border-radius: 2px;
+                background-color: #757575;
+
+                &::before,
+                &::after {
+                  content: '';
+                }
+            }
+
+            .ui-grid-icon-plus-squared,
+            .ui-grid-icon-minus-squared,
+            &.ui-grid-icon-plus-squared,
+            &.ui-grid-icon-minus-squared {
+                &::before {
+                    position: absolute;
+                    top: 5px;
+                    left: 2px;
+                    
+                    width: 7px;
+                    margin: 0;
+
+                    border-top: 1px solid white;
+                }
+            }
+
+            .ui-grid-icon-plus-squared,
+            &.ui-grid-icon-plus-squared {
+                &::after {
+                    position: absolute;
+                    top: 2px;
+                    left: 5px;
+                    
+                    height: 7px;
+                    margin: 0;
+
+                    border-left: 1px solid white;
+                }
+            }
+        }
+    }
+
+    .ui-grid-pinned-container {
+        .ui-grid-header {
+            .ui-grid-header-cell-row {
+                .ui-grid-header-cell {
+                    border-right: none;
+                    padding-top: 12px;
+
+                    &.disabled {
+                        opacity: .5;
+
+                        .ui-grid-icon-ok {
+                            cursor: default;
+                        }
+                    }
+                }
+            }
+        }
+
+        .ui-grid-viewport {
+            .ui-grid-row {
+                .ui-grid-cell {
+                    border-bottom: none;
+                }
+            }
+        }
+    }
+}

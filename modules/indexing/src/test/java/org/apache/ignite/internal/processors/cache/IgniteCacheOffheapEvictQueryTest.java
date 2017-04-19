@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -51,8 +50,8 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -66,17 +65,12 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setBackups(0);
-        cacheCfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
         cacheCfg.setEvictionPolicy(null);
         cacheCfg.setNearConfiguration(null);
-
-        cacheCfg.setSqlOnheapRowCacheSize(128);
 
         cacheCfg.setIndexedTypes(
             Integer.class, Integer.class
         );
-
-        cacheCfg.setOffHeapMaxMemory(2000); // Small offheap for evictions from offheap to swap.
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -193,7 +187,7 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
 
             X.println("___ all keys removed");
         }
-        catch (IgniteFutureTimeoutCheckedException e) {
+        catch (IgniteFutureTimeoutCheckedException ignored) {
             X.println("___ timeout");
             X.println("___ keys: " + keys.get());
 

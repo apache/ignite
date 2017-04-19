@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -35,6 +36,11 @@ public interface CacheDataRow extends CacheSearchRow {
     public GridCacheVersion version();
 
     /**
+     * @return Cache id. Stored only if memory policy with configured per-page eviction is used.
+     */
+    public int cacheId();
+
+    /**
      * @return Expire time.
      */
     public long expireTime();
@@ -48,4 +54,9 @@ public interface CacheDataRow extends CacheSearchRow {
      * @param link Link for this row.
      */
     public void link(long link);
+
+    /**
+     * @param key Key.
+     */
+    public void key(KeyCacheObject key);
 }

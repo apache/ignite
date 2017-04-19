@@ -40,7 +40,7 @@ namespace ignite
                 // No-op.
             }
 
-            Parameter::Parameter(const ApplicationDataBuffer& buffer, int16_t sqlType, 
+            Parameter::Parameter(const ApplicationDataBuffer& buffer, int16_t sqlType,
                 size_t columnSize, int16_t decDigits) :
                 buffer(buffer),
                 sqlType(sqlType),
@@ -150,15 +150,24 @@ namespace ignite
                         break;
                     }
 
+                    case SQL_TYPE_DATE:
                     case SQL_DATE:
                     {
                         writer.WriteDate(buf.GetDate());
                         break;
                     }
 
+                    case SQL_TYPE_TIMESTAMP:
                     case SQL_TIMESTAMP:
                     {
                         writer.WriteTimestamp(buf.GetTimestamp());
+                        break;
+                    }
+
+                    case SQL_TYPE_TIME:
+                    case SQL_TIME:
+                    {
+                        writer.WriteTime(buf.GetTime());
                         break;
                     }
 
@@ -233,12 +242,12 @@ namespace ignite
                     return;
                 }
 
-                if (buffer.GetType() == type_traits::IGNITE_ODBC_C_TYPE_CHAR ||
-                    buffer.GetType() == type_traits::IGNITE_ODBC_C_TYPE_BINARY)
+                if (buffer.GetType() == type_traits::OdbcNativeType::AI_CHAR ||
+                    buffer.GetType() == type_traits::OdbcNativeType::AI_BINARY)
                 {
                     SqlLen slen = len;
 
-                    if (buffer.GetType() == type_traits::IGNITE_ODBC_C_TYPE_CHAR && slen == SQL_NTSL)
+                    if (buffer.GetType() == type_traits::OdbcNativeType::AI_CHAR && slen == SQL_NTSL)
                     {
                         const char* str = reinterpret_cast<char*>(data);
 

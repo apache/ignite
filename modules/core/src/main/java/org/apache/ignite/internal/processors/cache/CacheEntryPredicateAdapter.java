@@ -50,7 +50,7 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         assert false : this;
 
         return 0;

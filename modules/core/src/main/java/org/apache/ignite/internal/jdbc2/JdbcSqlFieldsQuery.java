@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link SqlFieldsQuery} with JDBC flavor - it has additional flag indicating whether JDBC driver expects
@@ -45,5 +45,61 @@ public final class JdbcSqlFieldsQuery extends SqlFieldsQuery {
      */
     public boolean isQuery() {
         return isQry;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcSqlFieldsQuery setSql(String sql) {
+        super.setSql(sql);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcSqlFieldsQuery setArgs(Object... args) {
+        super.setArgs(args);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcSqlFieldsQuery setTimeout(int timeout, TimeUnit timeUnit) {
+        super.setTimeout(timeout, timeUnit);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcSqlFieldsQuery setCollocated(boolean collocated) {
+        super.setCollocated(collocated);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcSqlFieldsQuery setEnforceJoinOrder(boolean enforceJoinOrder) {
+        super.setEnforceJoinOrder(enforceJoinOrder);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcSqlFieldsQuery setDistributedJoins(boolean distributedJoins) {
+        super.setDistributedJoins(distributedJoins);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcSqlFieldsQuery setPageSize(int pageSize) {
+        super.setPageSize(pageSize);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdbcSqlFieldsQuery setLocal(boolean loc) {
+        super.setLocal(loc);
+
+        return this;
     }
 }

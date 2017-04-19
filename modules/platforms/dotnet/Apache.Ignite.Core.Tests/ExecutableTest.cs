@@ -32,8 +32,9 @@ namespace Apache.Ignite.Core.Tests
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for executable.
+    /// Tests for Apache.Ignite.exe.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ExecutableTest
     {
         /** Spring configuration path. */
@@ -49,34 +50,14 @@ namespace Apache.Ignite.Core.Tests
         private IIgnite _grid;
 
         /// <summary>
-        /// Test fixture set-up routine.
-        /// </summary>
-        [TestFixtureSetUp]
-        public void TestFixtureSetUp()
-        {
-            TestUtils.KillProcesses();
-
-            _grid = Ignition.Start(Configuration(SpringCfgPath));
-        }
-
-        /// <summary>
-        /// Test fixture tear-down routine.
-        /// </summary>
-        [TestFixtureTearDown]
-        public void TestFixtureTearDown()
-        {
-            Ignition.StopAll(true);
-
-            TestUtils.KillProcesses();
-        }
-
-        /// <summary>
         /// Set-up routine.
         /// </summary>
         [SetUp]
         public void SetUp()
         {
             TestUtils.KillProcesses();
+
+            _grid = Ignition.Start(Configuration(SpringCfgPath));
 
             Assert.IsTrue(_grid.WaitTopology(1));
 
@@ -89,6 +70,10 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
+            Ignition.StopAll(true);
+
+            TestUtils.KillProcesses();
+
             IgniteProcess.RestoreConfigurationBackup();
         }
 
@@ -339,8 +324,9 @@ namespace Apache.Ignite.Core.Tests
             checkError("assembly=", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
                                  "'assembly'. See 'Apache.Ignite.exe /help'");
 
-            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
-                                         "Failed to load assembly: x.dll");
+            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: Failed to start " +
+                                         "Ignite.NET, check inner exception for details ---> Apache.Ignite.Core." +
+                                         "Common.IgniteException: Failed to load assembly: x.dll");
 
             checkError("configFileName=wrong.config", "ERROR: System.Configuration.ConfigurationErrorsException: " +
                                                       "Specified config file does not exist: wrong.config");
@@ -455,7 +441,7 @@ namespace Apache.Ignite.Core.Tests
 
             public RemoteConfiguration Invoke()
             {
-                var grid0 = ((IgniteProxy) _grid).Target;
+                var grid0 = (Ignite) _grid;
 
                 var cfg = grid0.Configuration;
 

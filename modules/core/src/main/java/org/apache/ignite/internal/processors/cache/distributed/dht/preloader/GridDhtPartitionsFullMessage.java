@@ -326,13 +326,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                     assert map2 != null : e.getValue();
                     assert map1.size() == map2.size();
 
-                    for (Map.Entry<UUID, GridDhtPartitionMap2> e0 : map2.entrySet()) {
-                        GridDhtPartitionMap2 partMap1 = map1.get(e0.getKey());
+                    for (Map.Entry<UUID, GridDhtPartitionMap> e0 : map2.entrySet()) {
+                        GridDhtPartitionMap partMap1 = map1.get(e0.getKey());
 
                         assert partMap1 != null && partMap1.map().isEmpty() : partMap1;
                         assert !partMap1.hasMovingPartitions() : partMap1;
 
-                        GridDhtPartitionMap2 partMap2 = e0.getValue();
+                        GridDhtPartitionMap partMap2 = e0.getValue();
 
                         assert partMap2 != null;
 
@@ -516,7 +516,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 46;
     }
 

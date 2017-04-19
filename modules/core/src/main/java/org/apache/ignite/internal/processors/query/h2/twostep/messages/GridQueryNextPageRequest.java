@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
-
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -35,6 +34,9 @@ public class GridQueryNextPageRequest implements Message {
     private long qryReqId;
 
     /** */
+    private int segmentId;
+
+    /** */
     private int qry;
 
     /** */
@@ -50,11 +52,13 @@ public class GridQueryNextPageRequest implements Message {
     /**
      * @param qryReqId Query request ID.
      * @param qry Query.
+     * @param segmentId Index segment ID.
      * @param pageSize Page size.
      */
-    public GridQueryNextPageRequest(long qryReqId, int qry, int pageSize) {
+    public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize) {
         this.qryReqId = qryReqId;
         this.qry = qry;
+        this.segmentId = segmentId;
         this.pageSize = pageSize;
     }
 
@@ -70,6 +74,11 @@ public class GridQueryNextPageRequest implements Message {
      */
     public int query() {
         return qry;
+    }
+
+    /** @return Index segment ID */
+    public int segmentId() {
+        return segmentId;
     }
 
     /**
@@ -119,6 +128,12 @@ public class GridQueryNextPageRequest implements Message {
 
                 writer.incrementState();
 
+            case 3:
+                if (!writer.writeInt("segmentId", segmentId))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -156,18 +171,26 @@ public class GridQueryNextPageRequest implements Message {
 
                 reader.incrementState();
 
+            case 3:
+                segmentId = reader.readInt("segmentId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridQueryNextPageRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 108;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 }

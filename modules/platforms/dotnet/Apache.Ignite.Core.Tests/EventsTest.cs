@@ -50,15 +50,6 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private IIgnite[] _grids;
-        
-        /** */
-        public static int IdGen;
-
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
-        {
-            StopGrids();
-        }
 
         /// <summary>
         /// Executes before each test.
@@ -74,7 +65,7 @@ namespace Apache.Ignite.Core.Tests
         /// Executes after each test.
         /// </summary>
         [TearDown]
-        public virtual void TearDown()
+        public void TearDown()
         {
             try
             {
@@ -94,6 +85,15 @@ namespace Apache.Ignite.Core.Tests
                 if (TestContext.CurrentContext.Test.Name.StartsWith("TestEventTypes"))
                     StopGrids(); // clean events for other tests
             }
+        }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            StopGrids();
         }
 
         /// <summary>
@@ -238,9 +238,9 @@ namespace Apache.Ignite.Core.Tests
                 {
                     EventType = EventType.CacheAll,
                     EventObjectType = typeof (CacheEvent),
-                    GenerateEvent = g => g.GetCache<int, int>(null).Put(1, 1),
+                    GenerateEvent = g => g.GetCache<int, int>(null).Put(TestUtils.GetPrimaryKey(g), 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
-                    EventCount = 2
+                    EventCount = 3
                 };
 
                 yield return new EventTestCase
@@ -525,7 +525,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(true, cacheEvent.IsNear);
                 Assert.AreEqual(2, cacheEvent.Key);
                 Assert.AreEqual(expectedGridGuid, cacheEvent.Xid);
-                Assert.AreEqual(null, cacheEvent.LockId);
                 Assert.AreEqual(4, cacheEvent.NewValue);
                 Assert.AreEqual(true, cacheEvent.HasNewValue);
                 Assert.AreEqual(5, cacheEvent.OldValue);
@@ -533,7 +532,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(expectedGuid, cacheEvent.SubjectId);
                 Assert.AreEqual("cloClsName", cacheEvent.ClosureClassName);
                 Assert.AreEqual("taskName", cacheEvent.TaskName);
-                Assert.IsTrue(cacheEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: IsNear="));
+                Assert.IsTrue(cacheEvent.ToShortString().StartsWith("NODE_FAILED: IsNear="));
 
                 var qryExecEvent = EventReader.Read<CacheQueryExecutedEvent>(reader);
                 CheckEventBase(qryExecEvent);
@@ -544,7 +543,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(expectedGuid, qryExecEvent.SubjectId);
                 Assert.AreEqual("taskName", qryExecEvent.TaskName);
                 Assert.AreEqual(
-                    "SWAP_SPACE_CLEARED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
+                    "NODE_FAILED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
                     "SubjectId=00000000-0000-0001-0000-000000000002, TaskName=taskName", qryExecEvent.ToShortString());
 
                 var qryReadEvent = EventReader.Read<CacheQueryReadEvent>(reader);
@@ -560,7 +559,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(3, qryReadEvent.OldValue);
                 Assert.AreEqual(4, qryReadEvent.Row);
                 Assert.AreEqual(
-                    "SWAP_SPACE_CLEARED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
+                    "NODE_FAILED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
                     "SubjectId=00000000-0000-0001-0000-000000000002, TaskName=taskName, Key=1, Value=2, " +
                     "OldValue=3, Row=4", qryReadEvent.ToShortString());
 
@@ -572,18 +571,18 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(2, cacheRebalancingEvent.DiscoveryEventType);
                 Assert.AreEqual(3, cacheRebalancingEvent.DiscoveryTimestamp);
                 Assert.IsTrue(cacheRebalancingEvent.ToShortString().StartsWith(
-                    "SWAP_SPACE_CLEARED: CacheName=cacheName, Partition=1, DiscoveryNode=GridNode"));
+                    "NODE_FAILED: CacheName=cacheName, Partition=1, DiscoveryNode=GridNode"));
 
                 var checkpointEvent = EventReader.Read<CheckpointEvent>(reader);
                 CheckEventBase(checkpointEvent);
                 Assert.AreEqual("cpKey", checkpointEvent.Key);
-                Assert.AreEqual("SWAP_SPACE_CLEARED: Key=cpKey", checkpointEvent.ToShortString());
+                Assert.AreEqual("NODE_FAILED: Key=cpKey", checkpointEvent.ToShortString());
 
                 var discoEvent = EventReader.Read<DiscoveryEvent>(reader);
                 CheckEventBase(discoEvent);
                 Assert.AreEqual(grid.TopologyVersion, discoEvent.TopologyVersion);
                 Assert.AreEqual(grid.GetNodes(), discoEvent.TopologyNodes);
-                Assert.IsTrue(discoEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: EventNode=GridNode"));
+                Assert.IsTrue(discoEvent.ToShortString().StartsWith("NODE_FAILED: EventNode=GridNode"));
 
                 var jobEvent = EventReader.Read<JobEvent>(reader);
                 CheckEventBase(jobEvent);
@@ -593,12 +592,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(locNode, jobEvent.TaskNode);
                 Assert.AreEqual(expectedGridGuid, jobEvent.TaskSessionId);
                 Assert.AreEqual(expectedGuid, jobEvent.TaskSubjectId);
-                Assert.IsTrue(jobEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: TaskName=taskName"));
-
-                var spaceEvent = EventReader.Read<SwapSpaceEvent>(reader);
-                CheckEventBase(spaceEvent);
-                Assert.AreEqual("space", spaceEvent.Space);
-                Assert.IsTrue(spaceEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: Space=space"));
+                Assert.IsTrue(jobEvent.ToShortString().StartsWith("NODE_FAILED: TaskName=taskName"));
 
                 var taskEvent = EventReader.Read<TaskEvent>(reader);
                 CheckEventBase(taskEvent);
@@ -607,8 +601,38 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("taskClsName", taskEvent.TaskClassName);
                 Assert.AreEqual("taskName", taskEvent.TaskName);
                 Assert.AreEqual(expectedGridGuid, taskEvent.TaskSessionId);
-                Assert.IsTrue(taskEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: TaskName=taskName"));
+                Assert.IsTrue(taskEvent.ToShortString().StartsWith("NODE_FAILED: TaskName=taskName"));
             }
+        }
+
+        /// <summary>
+        /// Tests the event store configuration.
+        /// </summary>
+        [Test]
+        public void TestConfiguration()
+        {
+            var cfg = _grid1.GetConfiguration().EventStorageSpi as MemoryEventStorageSpi;
+
+            Assert.IsNotNull(cfg);
+
+            Assert.AreEqual(MemoryEventStorageSpi.DefaultExpirationTimeout, cfg.ExpirationTimeout);
+            Assert.AreEqual(MemoryEventStorageSpi.DefaultMaxEventCount, cfg.MaxEventCount);
+
+            // Test user-defined event storage.
+            var igniteCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = "grid4",
+                EventStorageSpi = new MyEventStorage()
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(igniteCfg));
+            Assert.AreEqual("Failed to start Ignite.NET, check inner exception for details", ex.Message);
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Unsupported IgniteConfiguration.EventStorageSpi: " +
+                            "'Apache.Ignite.Core.Tests.MyEventStorage'. Supported implementations: " +
+                            "'Apache.Ignite.Core.Events.NoopEventStorageSpi', " +
+                            "'Apache.Ignite.Core.Events.MemoryEventStorageSpi'.", ex.InnerException.Message);
         }
 
         /// <summary>
@@ -621,7 +645,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(locNode, evt.Node);
             Assert.AreEqual("msg", evt.Message);
-            Assert.AreEqual(EventType.SwapSpaceCleared, evt.Type);
+            Assert.AreEqual(EventType.NodeFailed, evt.Type);
             Assert.IsNotNullOrEmpty(evt.Name);
             Assert.AreNotEqual(Guid.Empty, evt.Id.GlobalId);
             Assert.IsTrue(Math.Abs((evt.Timestamp - DateTime.UtcNow).TotalSeconds) < 20, 
@@ -629,8 +653,8 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.Greater(evt.LocalOrder, 0);
 
-            Assert.IsTrue(evt.ToString().Contains("[Name=SWAP_SPACE_CLEARED"));
-            Assert.IsTrue(evt.ToShortString().StartsWith("SWAP_SPACE_CLEARED"));
+            Assert.IsTrue(evt.ToString().Contains("[Name=NODE_FAILED"));
+            Assert.IsTrue(evt.ToShortString().StartsWith("NODE_FAILED"));
         }
 
         /// <summary>
@@ -667,7 +691,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private static IgniteConfiguration Configuration(string springConfigUrl)
+        private static IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
             return new IgniteConfiguration
             {
@@ -680,7 +704,8 @@ namespace Apache.Ignite.Core.Tests
                     {
                         new BinaryTypeConfiguration(typeof (RemoteEventBinarizableFilter))
                     }
-                }
+                },
+                EventStorageSpi = new MemoryEventStorageSpi()
             };
         }
 
@@ -714,7 +739,7 @@ namespace Apache.Ignite.Core.Tests
 
             cache.Clear();
 
-            cache.Put(1, 1);
+            cache.Put(TestUtils.GetPrimaryKey(g), 1);
 
             cache.Query(new ScanQuery<int, int>()).GetAll();
         }
@@ -747,6 +772,11 @@ namespace Apache.Ignite.Core.Tests
                     Assert.AreEqual(false, cacheEvent.HasNewValue);
                     Assert.AreEqual(null, cacheEvent.NewValue);
                 }
+                else if (cacheEvent.Type == EventType.CacheEntryDestroyed)
+                {
+                    Assert.IsFalse(cacheEvent.HasNewValue);
+                    Assert.IsFalse(cacheEvent.HasOldValue);
+                }
                 else
                 {
                     Assert.Fail("Unexpected event type");
@@ -762,9 +792,9 @@ namespace Apache.Ignite.Core.Tests
             if (_grid1 != null)
                 return;
 
-            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid1.xml"));
+            _grid2 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid2.xml"));
+            _grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
 
             _grids = new[] {_grid1, _grid2, _grid3};
         }
@@ -1069,5 +1099,10 @@ namespace Apache.Ignite.Core.Tests
         {
             throw new NotImplementedException();
         }
+    }
+
+    public class MyEventStorage : IEventStorageSpi
+    {
+        // No-op.
     }
 }

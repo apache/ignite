@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
+import templateUrl from 'views/configuration/domains-import.tpl.pug';
+
 // Controller for Domain model screen.
 export default ['domainsController', [
-    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteAgentMonitor', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes',
-    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, IgniteAgentMonitor, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes) {
+    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'AgentManager', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData',
+    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Input, Loading, ModelNormalizer, UnsavedChangesGuard, agentMgr, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes, ActivitiesData) {
         UnsavedChangesGuard.install($scope);
 
         const emptyDomain = {empty: true};
@@ -409,12 +411,12 @@ export default ['domainsController', [
         $scope.$watch('importDomain.displayedTables', $scope.selectTable);
 
         // Pre-fetch modal dialogs.
-        const importDomainModal = $modal({scope: $scope, templateUrl: '/configuration/domains-import.html', show: false});
+        const importDomainModal = $modal({scope: $scope, templateUrl, show: false});
 
         const hideImportDomain = importDomainModal.hide;
 
         importDomainModal.hide = function() {
-            IgniteAgentMonitor.stopWatch();
+            agentMgr.stopWatch();
 
             hideImportDomain();
         };
@@ -459,7 +461,15 @@ export default ['domainsController', [
 
                 $scope.importDomain.loadingOptions = LOADING_JDBC_DRIVERS;
 
-                IgniteAgentMonitor.startWatch({text: 'Back to Domain models', goal: 'import domain model from database'})
+                agentMgr.startWatch('Back to Domain models', 'import domain model from database')
+                    .then(() => {
+                        ActivitiesData.post({
+                            group: 'configuration',
+                            action: 'configuration/import/model'
+                        });
+
+                        return true;
+                    })
                     .then(importDomainModal.$promise)
                     .then(importDomainModal.show)
                     .then(() => {
@@ -476,7 +486,7 @@ export default ['domainsController', [
                         $scope.jdbcDriverJars = [];
                         $scope.ui.selectedJdbcDriverJar = {};
 
-                        return IgniteAgentMonitor.drivers()
+                        return agentMgr.drivers()
                             .then((drivers) => {
                                 $scope.ui.packageName = $scope.ui.packageNameUserInput;
 
@@ -520,19 +530,19 @@ export default ['domainsController', [
          * Load list of database schemas.
          */
         function _loadSchemas() {
-            IgniteAgentMonitor.awaitAgent()
+            agentMgr.awaitAgent()
                 .then(function() {
                     $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
                     Loading.start('importDomainFromDb');
 
                     if ($root.IgniteDemoMode)
-                        return IgniteAgentMonitor.schemas($scope.demoConnection);
+                        return agentMgr.schemas($scope.demoConnection);
 
                     const preset = $scope.selectedPreset;
 
                     _savePreset(preset);
 
-                    return IgniteAgentMonitor.schemas(preset);
+                    return agentMgr.schemas(preset);
                 })
                 .then(function(schemas) {
                     $scope.importDomain.schemas = _.map(schemas, function(schema) {
@@ -664,7 +674,7 @@ export default ['domainsController', [
          * Load list of database tables.
          */
         function _loadTables() {
-            IgniteAgentMonitor.awaitAgent()
+            agentMgr.awaitAgent()
                 .then(function() {
                     $scope.importDomain.loadingOptions = LOADING_TABLES;
                     Loading.start('importDomainFromDb');
@@ -680,7 +690,7 @@ export default ['domainsController', [
                             preset.schemas.push(schema.name);
                     });
 
-                    return IgniteAgentMonitor.tables(preset);
+                    return agentMgr.tables(preset);
                 })
                 .then(function(tables) {
                     _importCachesOrTemplates = [DFLT_PARTITIONED_CACHE, DFLT_REPLICATED_CACHE].concat($scope.caches);
@@ -1419,7 +1429,7 @@ export default ['domainsController', [
 
                 item.cacheStoreChanges = [];
 
-                _.forEach(item.caches, function(cacheId) {
+                _.forEach(item.caches, (cacheId) => {
                     const cache = _.find($scope.caches, {value: cacheId}).cache;
 
                     const change = LegacyUtils.autoCacheStoreConfiguration(cache, [item]);
@@ -1434,9 +1444,7 @@ export default ['domainsController', [
         };
 
         function _domainNames() {
-            return _.map($scope.domains, function(domain) {
-                return domain.valueType;
-            });
+            return _.map($scope.domains, (domain) => domain.valueType);
         }
 
         function _newNameIsValidJavaClass(newName) {
@@ -1447,7 +1455,7 @@ export default ['domainsController', [
         // Save domain model with new name.
         $scope.cloneItem = function() {
             if ($scope.tableReset(true) && validate($scope.backupItem)) {
-                Clone.confirm($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then(function(newName) {
+                Input.clone($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then((newName) => {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;

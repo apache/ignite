@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -65,8 +64,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
@@ -179,7 +178,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(null)) {
                 streamer.addData(1, "1");
             }
-            catch (CacheException ex) {
+            catch (CacheException ignored) {
                 failed = true;
             }
         }
@@ -212,13 +211,13 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
                 streamer.flush();
             }
-            catch (IllegalStateException ex) {
+            catch (IllegalStateException ignored) {
                 try {
                     fut.get();
 
                     fail("DataStreamer ignores failed streaming.");
                 }
-                catch (CacheServerNotFoundException ignored) {
+                catch (CacheServerNotFoundException ignored2) {
                     // No-op.
                 }
 
@@ -248,40 +247,5 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             cacheCfg.setNodeFilter(F.alwaysFalse());
 
         return cacheCfg;
-    }
-
-    /**
-     *
-     */
-    private static class TestObject implements Serializable {
-        /** */
-        private int val;
-
-        /**
-         */
-        private TestObject() {
-            // No-op.
-        }
-
-        /**
-         * @param val Value.
-         */
-        private TestObject(int val) {
-            this.val = val;
-        }
-
-        public Integer val() {
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            return obj instanceof TestObject && ((TestObject)obj).val == val;
-        }
     }
 }

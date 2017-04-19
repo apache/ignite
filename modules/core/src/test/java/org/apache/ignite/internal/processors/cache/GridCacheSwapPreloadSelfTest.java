@@ -57,8 +57,8 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     private CacheMode cacheMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -73,7 +73,6 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setRebalanceMode(SYNC);
-        cacheCfg.setEvictSynchronized(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         if (cacheMode == PARTITIONED)

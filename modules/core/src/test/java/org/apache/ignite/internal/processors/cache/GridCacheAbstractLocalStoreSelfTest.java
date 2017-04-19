@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -63,8 +62,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -104,9 +101,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public static final String BACKUP_CACHE_2 = "backup_2";
 
     /** */
-    public static volatile boolean primaryWriteOrderMode = false;
-
-    /** */
     public static volatile boolean near = false;
 
     /**
@@ -117,18 +111,18 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cacheCfg = cache(gridName, null, 0);
+        CacheConfiguration cacheCfg = cache(igniteInstanceName, null, 0);
 
         cacheCfg.setAffinity(new RendezvousAffinityFunction());
 
-        CacheConfiguration cacheBackup1Cfg = cache(gridName, BACKUP_CACHE_1, 1);
+        CacheConfiguration cacheBackup1Cfg = cache(igniteInstanceName, BACKUP_CACHE_1, 1);
 
         cacheBackup1Cfg.setAffinity(new RendezvousAffinityFunction());
 
-        CacheConfiguration cacheBackup2Cfg = cache(gridName, BACKUP_CACHE_2, 2);
+        CacheConfiguration cacheBackup2Cfg = cache(igniteInstanceName, BACKUP_CACHE_2, 2);
 
         cacheBackup2Cfg.setAffinity(new RendezvousAffinityFunction());
 
@@ -158,13 +152,13 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param cacheName Cache name.
      * @param backups Number of backups.
      * @return Configuration.
      */
     @SuppressWarnings("unchecked")
-    private CacheConfiguration cache(String gridName, String cacheName, int backups) {
+    private CacheConfiguration cache(String igniteInstanceName, String cacheName, int backups) {
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setName(cacheName);
@@ -173,20 +167,17 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        if (primaryWriteOrderMode)
-            cacheCfg.setAtomicWriteOrderMode(PRIMARY);
-
         cacheCfg.setRebalanceMode(SYNC);
 
-        if (gridName.endsWith("1"))
+        if (igniteInstanceName.endsWith("1"))
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_1));
-        else if (gridName.endsWith("2"))
+        else if (igniteInstanceName.endsWith("2"))
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_2));
-        else if (gridName.endsWith("3"))
+        else if (igniteInstanceName.endsWith("3"))
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_3));
-        else if (gridName.endsWith("4"))
+        else if (igniteInstanceName.endsWith("4"))
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_4));
-        else if (gridName.endsWith("5"))
+        else if (igniteInstanceName.endsWith("5"))
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_5));
         else
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_6));
@@ -194,10 +185,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);
         cacheCfg.setBackups(backups);
-        cacheCfg.setOffHeapMaxMemory(0);
-
-        if (isOffHeapTieredMode())
-            cacheCfg.setMemoryMode(OFFHEAP_TIERED);
 
         return cacheCfg;
     }
@@ -218,13 +205,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @return Cache mode.
      */
     protected abstract CacheMode getCacheMode();
-
-    /**
-     * @return {@code True} if {@link CacheMemoryMode#OFFHEAP_TIERED} memory mode should be used.
-     */
-    protected boolean isOffHeapTieredMode() {
-        return false;
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -311,14 +291,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testBackupRestorePrimary() throws Exception {
-        try {
-            primaryWriteOrderMode = true;
-
-            testBackupRestore();
-        }
-        finally {
-            primaryWriteOrderMode = false;
-        }
+        testBackupRestore();
     }
 
     /**
