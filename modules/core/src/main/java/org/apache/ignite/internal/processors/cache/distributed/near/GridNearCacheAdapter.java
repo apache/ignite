@@ -371,6 +371,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
+    @Override public void localPromote(Collection<? extends K> keys) {
+        dht().localPromote(keys);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean clearLocally(K key) {
         return super.clearLocally(key) | dht().clearLocally(key);
     }

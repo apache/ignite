@@ -4451,6 +4451,40 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void localPromote(Collection<? extends K> keys) {
+        if (!F.isEmpty(keys)) {
+            for (K key : keys) {
+                while (true) {
+                    GridCacheEntryEx e = null;
+
+                    try {
+                        e = entryEx(key);
+
+                        e.unswap();
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        // Retry.
+                    }
+                    catch (GridDhtInvalidPartitionException ignore) {
+                        break;
+                    }
+                    catch (IgniteCheckedException ex) {
+                        U.error(log, "Failed to promote key to on-heap storage: " + key, ex);
+
+                        break;
+                    }
+                    finally {
+                        if (e != null)
+                            ctx.evicts().touch(e, AffinityTopologyVersion.NONE);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * @param filter Filters to evaluate.
      * @return Entry set.

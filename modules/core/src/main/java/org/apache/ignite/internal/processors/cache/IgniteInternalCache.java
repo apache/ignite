@@ -1009,6 +1009,13 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public void evictAll(@Nullable Collection<? extends K> keys);
 
     /**
+     * Attempts to create an on-heap copy of the key-value mapping for the keys provided.
+     *
+     * @param keys Keys to promote.
+     */
+    public void localPromote(Collection<? extends K> keys);
+
+    /**
      * Clears all entries from this cache only if the entry is not
      * currently locked or participating in a transaction.
      * <p>

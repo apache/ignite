@@ -337,6 +337,11 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
+    @Override public void localPromote(Collection keys) {
+        delegate.localPromote(transform(keys));
+    }
+
+    /** {@inheritDoc} */
     @Override public void clearLocally(boolean srv, boolean near, boolean readers) {
         delegate.clearLocally(srv, near, readers);
     }

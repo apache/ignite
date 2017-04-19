@@ -1042,6 +1042,18 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
+    @Override public void localPromote(Collection<? extends K> keys) {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            delegate.localPromote(keys);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void clearLocally(boolean srv, boolean near, boolean readers) {
         CacheOperationContext prev = gate.enter(opCtx);
 
