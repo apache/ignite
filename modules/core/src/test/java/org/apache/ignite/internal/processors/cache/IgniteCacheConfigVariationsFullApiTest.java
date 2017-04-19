@@ -4101,8 +4101,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         assertNull(cache.localPeek("key"));
 
-        cache.localPromote(Collections.singleton(key));
-
         assertNull(cache.localPeek(key, ONHEAP));
 
         assertTrue(cache.localSize() == 0);

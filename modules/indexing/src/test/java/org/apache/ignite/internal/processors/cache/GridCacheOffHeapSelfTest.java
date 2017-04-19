@@ -120,33 +120,6 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that entries in cache are correct after being unswapped.
-     * If entry is still swapped, it will be unswapped in this method.
-     *
-     * @param cache Cache.
-     * @param lowerBound Lower key bound.
-     * @param upperBound Upper key bound.
-     * @throws Exception In case of error.
-     */
-    private void checkEntries(IgniteCache<Integer, CacheValue> cache, int lowerBound, int upperBound) throws Exception {
-        for (int i = lowerBound; i < upperBound; i++) {
-            cache.localPromote(Collections.singleton(i));
-
-            GridCacheEntryEx entry = dht(cache).entryEx(i);
-
-            assert entry != null;
-            assert entry.key() != null;
-
-            CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
-
-            assertNotNull("Value null for key: " + i, val);
-            assertEquals(entry.key().value(entry.context().cacheObjectContext(), false), (Integer)val.value());
-
-            assertEquals(entry.version(), versions.get(i));
-        }
-    }
-
-    /**
      *
      */
     private static class CacheValue {
