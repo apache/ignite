@@ -29,11 +29,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
@@ -43,7 +44,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache atomic reference implementation.
  */
-public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicReferenceEx<T>, Externalizable {
+public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicReferenceEx<T>, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -213,7 +214,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private Callable<Boolean> internalSet(final T val) {
         return retryTopologySafe(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
+                try (GridNearTxLocal tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
 
                     if (ref == null)
@@ -247,7 +248,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private Callable<T> internalCompareAndSetAndGet(final T expVal, final T newVal) {
         return retryTopologySafe(new Callable<T>() {
             @Override public T call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
+                try (GridNearTxLocal tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
 
                     if (ref == null)
@@ -280,6 +281,17 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         });
     }
 
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        this.atomicView = kctx.cache().atomicsCache();
+        this.ctx = atomicView.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
+    }
+
     /**
      * Check removed status.
      *
@@ -305,6 +317,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                 throw removedError();
             }
         }
+
+
     }
 
     /**

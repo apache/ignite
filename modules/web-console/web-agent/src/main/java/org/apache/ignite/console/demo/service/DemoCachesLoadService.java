@@ -33,6 +33,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.console.demo.AgentDemoUtils;
 import org.apache.ignite.console.demo.model.Car;
@@ -119,11 +120,9 @@ public class DemoCachesLoadService implements Service {
 
     /** {@inheritDoc} */
     @Override public void init(ServiceContext ctx) throws Exception {
-        ignite.createCache(cacheCountry());
-        ignite.createCache(cacheDepartment());
-        ignite.createCache(cacheEmployee());
-        ignite.createCache(cacheCar());
-        ignite.createCache(cacheParking());
+        ignite.getOrCreateCaches(Arrays.asList(
+            cacheCountry(), cacheDepartment(), cacheEmployee(), cacheCar(), cacheParking()
+        ));
 
         populateCacheEmployee();
         populateCacheCar();
@@ -202,13 +201,14 @@ public class DemoCachesLoadService implements Service {
      * @param name cache name.
      * @return Cache configuration with basic properties set.
      */
-    private static <K, V> CacheConfiguration<K, V> cacheConfiguration(String name) {
-        CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(name);
+    private static CacheConfiguration cacheConfiguration(String name) {
+        CacheConfiguration ccfg = new CacheConfiguration<>(name);
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setQueryDetailMetricsSize(10);
         ccfg.setStartSize(100);
         ccfg.setStatisticsEnabled(true);
+        ccfg.setSqlFunctionClasses(SQLFunctions.class);
 
         return ccfg;
     }
@@ -216,8 +216,8 @@ public class DemoCachesLoadService implements Service {
     /**
      * Configure cacheCountry.
      */
-    private static <K, V> CacheConfiguration<K, V> cacheCountry() {
-        CacheConfiguration<K, V> ccfg = cacheConfiguration(COUNTRY_CACHE_NAME);
+    private static CacheConfiguration cacheCountry() {
+        CacheConfiguration ccfg = cacheConfiguration(COUNTRY_CACHE_NAME);
 
         // Configure cacheCountry types.
         Collection<QueryEntity> qryEntities = new ArrayList<>();
@@ -247,8 +247,8 @@ public class DemoCachesLoadService implements Service {
     /**
      * Configure cacheEmployee.
      */
-    private static <K, V> CacheConfiguration<K, V> cacheDepartment() {
-        CacheConfiguration<K, V> ccfg = cacheConfiguration(DEPARTMENT_CACHE_NAME);
+    private static CacheConfiguration cacheDepartment() {
+        CacheConfiguration ccfg = cacheConfiguration(DEPARTMENT_CACHE_NAME);
 
         // Configure cacheDepartment types.
         Collection<QueryEntity> qryEntities = new ArrayList<>();
@@ -278,8 +278,8 @@ public class DemoCachesLoadService implements Service {
     /**
      * Configure cacheEmployee.
      */
-    private static <K, V> CacheConfiguration<K, V> cacheEmployee() {
-        CacheConfiguration<K, V> ccfg = cacheConfiguration(EMPLOYEE_CACHE_NAME);
+    private static CacheConfiguration cacheEmployee() {
+        CacheConfiguration ccfg = cacheConfiguration(EMPLOYEE_CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setBackups(1);
@@ -312,7 +312,6 @@ public class DemoCachesLoadService implements Service {
         type.setFields(qryFlds);
 
         // Indexes for EMPLOYEE.
-        Collection<QueryIndex> indexes = new ArrayList<>();
 
         QueryIndex idx = new QueryIndex();
 
@@ -324,6 +323,8 @@ public class DemoCachesLoadService implements Service {
         indFlds.put("lastName", Boolean.FALSE);
 
         idx.setFields(indFlds);
+
+        Collection<QueryIndex> indexes = new ArrayList<>();
 
         indexes.add(idx);
         indexes.add(new QueryIndex("salary", QueryIndexType.SORTED, false, "EMP_SALARY"));
@@ -338,8 +339,8 @@ public class DemoCachesLoadService implements Service {
     /**
      * Configure cacheEmployee.
      */
-    private static <K, V> CacheConfiguration<K, V> cacheParking() {
-        CacheConfiguration<K, V> ccfg = cacheConfiguration(PARKING_CACHE_NAME);
+    private static CacheConfiguration cacheParking() {
+        CacheConfiguration ccfg = cacheConfiguration(PARKING_CACHE_NAME);
 
         // Configure cacheParking types.
         Collection<QueryEntity> qryEntities = new ArrayList<>();
@@ -369,8 +370,8 @@ public class DemoCachesLoadService implements Service {
     /**
      * Configure cacheEmployee.
      */
-    private static <K, V> CacheConfiguration<K, V> cacheCar() {
-        CacheConfiguration<K, V> ccfg = cacheConfiguration(CAR_CACHE_NAME);
+    private static CacheConfiguration cacheCar() {
+        CacheConfiguration ccfg = cacheConfiguration(CAR_CACHE_NAME);
 
         // Configure cacheCar types.
         Collection<QueryEntity> qryEntities = new ArrayList<>();
@@ -452,5 +453,29 @@ public class DemoCachesLoadService implements Service {
 
         if (ignite.log().isDebugEnabled())
             ignite.log().debug("DEMO: Finished cars population.");
+    }
+
+    /**
+     * Utility class with custom SQL functions.
+     */
+    public static class SQLFunctions {
+        /**
+         * Sleep function to simulate long running queries.
+         *
+         * @param x Time to sleep.
+         * @return Return specified argument.
+         */
+        @QuerySqlFunction
+        public static long sleep(long x) {
+            if (x >= 0)
+                try {
+                    Thread.sleep(x);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
+                }
+
+            return x;
+        }
     }
 }

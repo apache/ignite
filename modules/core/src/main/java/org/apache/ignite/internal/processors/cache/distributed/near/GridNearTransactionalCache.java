@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -121,6 +120,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializeBinary,
+        final boolean recovery,
         final boolean skipVals,
         boolean canRemap,
         final boolean needVer
@@ -133,7 +133,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (keyCheck)
             validateCacheKeys(keys);
 
-        IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
+        GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -141,7 +141,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
+                @Override public IgniteInternalFuture<Map<K, V>> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
                     return tx.getAllAsync(ctx,
                         readyTopVer,
                         ctx.cacheKeysView(keys),
@@ -149,9 +149,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         skipVals,
                         false,
                         skipStore,
+                        recovery,
                         needVer);
                 }
-            }, opCtx);
+            }, opCtx, /*retry*/false);
         }
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
@@ -162,6 +163,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             subjId,
             taskName,
             deserializeBinary,
+            recovery,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             skipStore,
@@ -184,6 +186,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer) {
@@ -201,7 +204,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             skipVals,
             /*can remap*/true,
             needVer,
-            /*keepCacheObjects*/true);
+            /*keepCacheObjects*/true,
+            recovery);
 
         // init() will register future for responses if it has remote mappings.
         fut.init(topVer);
@@ -377,7 +381,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 log.debug("Node requesting lock left grid (lock request will be ignored): " + req);
 
                             if (tx != null)
-                                tx.rollback();
+                                tx.rollbackRemoteTx();
 
                             return null;
                         }
@@ -460,7 +464,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary());
+            opCtx != null && opCtx.isKeepBinary(),
+            opCtx != null && opCtx.recovery());
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);

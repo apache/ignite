@@ -25,7 +25,6 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -81,8 +80,8 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -186,9 +185,9 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
             for (int i = 0; i < keyCnt; i++) {
                 assertNull(near(cache1).peekEx(i));
-                assertNotNull((dht(cache1).peekEx(i)));
+                assertNotNull((dht(cache1).localPeek(i, null, null)));
 
-                assertEquals(Integer.toString(i), cache1.localPeek(i, CachePeekMode.ONHEAP));
+                assertEquals(Integer.toString(i), cache1.localPeek(i));
             }
 
             int nodeCnt = 3;
@@ -202,7 +201,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                 IgniteCache<Integer, String> c = g.cache(null);
 
                 for (int i = 0; i < keyCnt; i++)
-                    assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
+                    assertNull(c.localPeek(i));
             }
 
             Collection<Integer> keys = new LinkedList<>();
@@ -226,12 +225,12 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                     IgniteCache<Integer, String> c = gg.cache(null);
 
                     for (int i = 0; i < keyCnt; i++)
-                        assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
+                        assertNull(c.localPeek(i));
                 }
             }
 
             for (Integer i : keys)
-                assertEquals(i.toString(), cache1.localPeek(i, CachePeekMode.ONHEAP));
+                assertEquals(i.toString(), cache1.localPeek(i));
         }
         catch (Error | Exception e) {
             error("Test failed.", e);
@@ -256,7 +255,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
             if (DEBUG)
                 g.events().localListen(new IgnitePredicate<Event>() {
                     @Override public boolean apply(Event evt) {
-                        info("\n>>> Preload event [grid=" + g.name() + ", evt=" + evt + ']');
+                        info("\n>>> Preload event [igniteInstanceName=" + g.name() + ", evt=" + evt + ']');
 
                         return true;
                     }

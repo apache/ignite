@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -83,8 +84,8 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     private static final int MULTITHREADED_TEST_KEYS = 100;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -313,7 +314,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
      * @param c Test iteration closure.
      * @throws Exception If failed.
      */
-    public void commitMultithreaded(final IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>> c) throws Exception {
+    private void commitMultithreaded(final IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>> c) throws Exception {
         final long stopTime = System.currentTimeMillis() + 10_000;
 
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
@@ -343,7 +344,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                     for (int i = 1; i < NODES; i++) {
                         IgniteCache<Integer, Integer> cache = ignite(i).cache(null);
 
-                        if (!val.equals(cache.get(key0)))
+                        if (!Objects.equals(val, cache.get(key0)))
                             return false;
                     }
                     return true;

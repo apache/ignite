@@ -69,6 +69,9 @@ public class GridCacheTwoStepQuery {
     /** */
     private List<Integer> extraCaches;
 
+    /** */
+    private boolean local;
+
     /**
      * @param originalSql Original query SQL.
      * @param schemas Schema names in query.
@@ -92,7 +95,7 @@ public class GridCacheTwoStepQuery {
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean distributedJoins() {
         return distributedJoins;
@@ -143,12 +146,23 @@ public class GridCacheTwoStepQuery {
 
     /**
      * @param qry SQL Query.
-     * @return {@code this}.
      */
-    public GridCacheTwoStepQuery addMapQuery(GridCacheSqlQuery qry) {
+    public void addMapQuery(GridCacheSqlQuery qry) {
         mapQrys.add(qry);
+    }
 
-        return this;
+    /**
+     * @return {@code true} If all the map queries contain only replicated tables.
+     */
+    public boolean isReplicatedOnly() {
+        assert !mapQrys.isEmpty();
+
+        for (int i = 0; i < mapQrys.size(); i++) {
+            if (mapQrys.get(i).isPartitioned())
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -229,10 +243,23 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param args New arguments to copy with.
+     * @return {@code True} If query is local.
+     */
+    public boolean isLocal() {
+        return local;
+    }
+
+    /**
+     * @param local Local query flag.
+     */
+    public void local(boolean local) {
+        this.local = local;
+    }
+
+    /**
      * @return Copy.
      */
-    public GridCacheTwoStepQuery copy(Object[] args) {
+    public GridCacheTwoStepQuery copy() {
         assert !explain;
 
         GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, schemas, tbls);
@@ -240,13 +267,13 @@ public class GridCacheTwoStepQuery {
         cp.caches = caches;
         cp.extraCaches = extraCaches;
         cp.spaces = spaces;
-        cp.rdc = rdc.copy(args);
+        cp.rdc = rdc.copy();
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
 
         for (int i = 0; i < mapQrys.size(); i++)
-            cp.mapQrys.add(mapQrys.get(i).copy(args));
+            cp.mapQrys.add(mapQrys.get(i).copy());
 
         return cp;
     }

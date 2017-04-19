@@ -17,70 +17,67 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import java.io.Serializable;
-import org.apache.ignite.internal.LessNamingBean;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for information about keys in cache partition.
  */
-public class VisorCachePartition implements Serializable, LessNamingBean {
+public class VisorCachePartition extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private int part;
+    private int partId;
 
     /** */
-    private int heap;
+    private long cnt;
 
-    /** */
-    private long offheap;
-
-    /** */
-    private long swap;
+    /**
+     * Default constructor.
+     */
+    public VisorCachePartition() {
+        // No-op.
+    }
 
     /**
      * Full constructor.
      *
-     * @param part Partition id.
-     * @param heap Number of keys in heap.
-     * @param offheap Number of keys in offheap.
-     * @param swap Number of keys in swap.
+     * @param partId Partition id.
+     * @param cnt Number of keys in partition.
      */
-    public VisorCachePartition(int part, int heap, long offheap, long swap) {
-        this.part = part;
-        this.heap = heap;
-        this.offheap = offheap;
-        this.swap = swap;
+    public VisorCachePartition(int partId, long cnt) {
+        this.partId = partId;
+        this.cnt = cnt;
     }
 
     /**
      * @return Partition id.
      */
-    public int partition() {
-        return part;
+    public int getPartitionId() {
+        return partId;
     }
 
     /**
-     * @return Number of keys in heap.
+     * @return Number of keys in partition.
      */
-    public int heap() {
-        return heap;
+    public long getCount() {
+        return cnt;
     }
 
-    /**
-     * @return Number of keys in offheap.
-     */
-    public long offheap() {
-        return offheap;
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeInt(partId);
+        out.writeLong(cnt);
     }
 
-    /**
-     * @return Number of keys in swap.
-     */
-    public long swap() {
-        return swap;
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        partId = in.readInt();
+        cnt = in.readLong();
     }
 
     /** {@inheritDoc} */

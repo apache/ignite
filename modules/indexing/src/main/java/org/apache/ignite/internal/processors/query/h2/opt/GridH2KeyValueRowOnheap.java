@@ -51,4 +51,12 @@ public class GridH2KeyValueRowOnheap extends GridH2AbstractKeyValueRow {
     @Override protected Value getOffheapValue(int col) {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public long pointer() {
+        if (link == 0)
+            return super.pointer();
+
+        return link;
+    }
 }

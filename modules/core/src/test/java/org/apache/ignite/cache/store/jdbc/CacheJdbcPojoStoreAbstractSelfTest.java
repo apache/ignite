@@ -131,8 +131,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -219,7 +219,6 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         cc.setName(CACHE_NAME);
         cc.setCacheMode(PARTITIONED);
         cc.setAtomicityMode(transactional ? TRANSACTIONAL : ATOMIC);
-        cc.setSwapEnabled(false);
         cc.setWriteBehindEnabled(false);
 
         CacheJdbcPojoStoreFactory<Object, Object> storeFactory = new CacheJdbcPojoStoreFactory<>();

@@ -136,7 +136,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
     }
 
@@ -586,7 +586,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Affinity processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Affinity processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   affMapSize: " + affMap.size());
     }
 

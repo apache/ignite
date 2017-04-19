@@ -57,7 +57,7 @@ public class GridPortProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Started port processor.");
     }
@@ -193,7 +193,7 @@ public class GridPortProcessor extends GridProcessorAdapter {
         }
 
         X.println(">>>");
-        X.println(">>> Task session processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Task session processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  recsSize: " + recsSize);
         X.println(">>>  lsnrsSize: " + lsnrsSize);
     }

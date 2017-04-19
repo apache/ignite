@@ -49,7 +49,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /**
      * Starts session processor.
      */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Session processor started.");
     }
@@ -177,7 +177,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Task session processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Task session processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  sesMapSize: " + sesMap.size());
     }
 }

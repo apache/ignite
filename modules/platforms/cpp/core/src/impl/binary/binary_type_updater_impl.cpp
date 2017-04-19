@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
+#include <iterator>
+
 #include "ignite/impl/binary/binary_type_updater_impl.h"
 #include "ignite/impl/interop/interop_output_stream.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
-#include "ignite/binary/binary_raw_writer.h"
+#include "ignite/binary/binary_writer.h"
+#include "ignite/binary/binary_reader.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -33,8 +36,17 @@ namespace ignite
     {
         namespace binary
         {
-            /** Operation: metadata update. */
-            const int32_t OP_PUT_META = 3;
+            struct Operation
+            {
+                enum Type
+                {
+                    /** Operation: metadata get. */
+                    GET_META = 1,
+
+                    /** Operation: metadata update. */
+                    PUT_META = 3
+                };
+            };
 
             BinaryTypeUpdaterImpl::BinaryTypeUpdaterImpl(IgniteEnvironment& env, jobject javaRef) :
                 env(env),
@@ -48,33 +60,35 @@ namespace ignite
                 JniContext::Release(javaRef);
             }
 
-            bool BinaryTypeUpdaterImpl::Update(Snap* snap, IgniteError* err)
+            bool BinaryTypeUpdaterImpl::Update(const Snap& snap, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
                 SharedPointer<InteropMemory> mem = env.AllocateMemory();
 
                 InteropOutputStream out(mem.Get());
-                BinaryWriterImpl writer(&out, NULL);
+                BinaryWriterImpl writer(&out, 0);
                 BinaryRawWriter rawWriter(&writer);
 
                 // We always pass only one meta at a time in current implementation for simplicity.
                 rawWriter.WriteInt32(1);
 
-                rawWriter.WriteInt32(snap->GetTypeId());
-                rawWriter.WriteString(snap->GetTypeName());
-                rawWriter.WriteString(NULL); // Affinity key is not supported for now.
+                rawWriter.WriteInt32(snap.GetTypeId());
+                rawWriter.WriteString(snap.GetTypeName());
+                rawWriter.WriteString(0); // Affinity key is not supported for now.
                 
-                if (snap->HasFields())
+                if (snap.HasFields())
                 {
-                    std::map<std::string, int32_t>* fields = snap->GetFields();
+                    const Snap::FieldMap& fields = snap.GetFieldMap();
 
-                    rawWriter.WriteInt32(static_cast<int32_t>(fields->size()));
+                    rawWriter.WriteInt32(static_cast<int32_t>(fields.size()));
 
-                    for (std::map<std::string, int32_t>::iterator it = fields->begin(); it != fields->end(); ++it)
+                    for (Snap::FieldMap::const_iterator it = fields.begin(); it != fields.end(); ++it)
                     {
+                        const BinaryFieldMeta& fieldMeta = it->second;
+
                         rawWriter.WriteString(it->first);
-                        rawWriter.WriteInt32(it->second);
+                        fieldMeta.Write(rawWriter);
                     }
                 }
                 else
@@ -86,14 +100,70 @@ namespace ignite
 
                 out.Synchronize();
 
-                long long res = env.Context()->TargetInStreamOutLong(javaRef, OP_PUT_META, mem.Get()->PointerLong(), &jniErr);
+                long long res = env.Context()->TargetInStreamOutLong(javaRef, Operation::PUT_META, mem.Get()->PointerLong(), &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
-                    return res == 1;
-                else
-                    return false;
+                return jniErr.code == IGNITE_JNI_ERR_SUCCESS && res == 1;
+            }
+
+            SPSnap BinaryTypeUpdaterImpl::GetMeta(int32_t typeId, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> outMem = env.AllocateMemory();
+                SharedPointer<InteropMemory> inMem = env.AllocateMemory();
+
+                InteropOutputStream out(outMem.Get());
+                BinaryWriterImpl writer(&out, 0);
+
+                writer.WriteInt32(typeId);
+
+                out.Synchronize();
+
+                env.Context()->TargetInStreamOutStream(javaRef, Operation::GET_META,
+                    outMem.Get()->PointerLong(), inMem.Get()->PointerLong(), &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+                    return SPSnap();
+
+                InteropInputStream in(inMem.Get());
+                BinaryReaderImpl reader(&in);
+                BinaryRawReader rawReader(&reader);
+
+                bool found = rawReader.ReadBool();
+
+                if (!found)
+                    return SPSnap();
+
+                int32_t readTypeId = rawReader.ReadInt32();
+
+                assert(typeId == readTypeId);
+
+                std::string typeName = rawReader.ReadString();
+
+                SPSnap res(new Snap(typeName, readTypeId));
+
+                // Skipping affinity key field name.
+                rawReader.ReadString();
+                
+                int32_t fieldsNum = rawReader.ReadInt32();
+
+                for (int32_t i = 0; i < fieldsNum; ++i)
+                {
+                    std::string fieldName = rawReader.ReadString();
+                    BinaryFieldMeta fieldMeta;
+                    fieldMeta.Read(rawReader);
+
+                    res.Get()->AddField(fieldMeta.GetFieldId(), fieldName, fieldMeta.GetTypeId());
+                }
+
+                // Skipping isEnum info.
+                rawReader.ReadBool();
+
+                return res;
             }
         }
     }

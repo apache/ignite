@@ -32,11 +32,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.util.typedef.internal.CU.retryTopologySafe;
@@ -46,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache count down latch implementation.
  */
-public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatchEx, Externalizable {
+public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatchEx, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -282,7 +283,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 internalLatch = CU.outTx(
                     retryTopologySafe(new Callable<CountDownLatch>() {
                         @Override public CountDownLatch call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
+                            try (GridNearTxLocal tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheCountDownLatchValue val = latchView.get(key);
 
                                 if (val == null) {
@@ -335,6 +336,17 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 throw U.convertException(e);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        this.latchView = kctx.cache().atomicsCache();
+        this.ctx = latchView.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
     }
 
     /** {@inheritDoc} */
@@ -407,7 +419,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
+            try (GridNearTxLocal tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
                 GridCacheCountDownLatchValue latchVal = latchView.get(key);
 
                 if (latchVal == null) {

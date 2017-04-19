@@ -18,6 +18,7 @@
 import angular from 'angular';
 
 import DEMO_INFO from 'app/data/demo-info.json';
+import templateUrl from 'views/templates/demo-info.tpl.pug';
 
 angular
 .module('ignite-console.demo', [
@@ -116,7 +117,7 @@ angular
         return items;
     }];
 }])
-.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'IgniteAgentMonitor', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMonitor) => {
+.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMonitor) => {
     const scope = $rootScope.$new();
 
     let closePromise = null;
@@ -129,9 +130,8 @@ angular
     }
 
     const dialog = $modal({
-        templateUrl: '/templates/demo-info.html',
+        templateUrl,
         scope,
-        placement: 'center',
         show: false,
         backdrop: 'static'
     });
@@ -145,7 +145,7 @@ angular
     scope.downloadAgent = () => {
         const lnk = document.createElement('a');
 
-        lnk.setAttribute('href', '/api/v1/agent/download/zip');
+        lnk.setAttribute('href', '/api/v1/agent/downloads/agent');
         lnk.setAttribute('target', '_self');
         lnk.setAttribute('download', null);
         lnk.style.display = 'none';

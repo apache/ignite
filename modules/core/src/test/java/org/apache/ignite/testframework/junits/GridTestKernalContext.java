@@ -64,6 +64,8 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 null,
                 null,
                 null,
+                null,
+                null,
                 U.allPluginProviders()
         );
 
@@ -79,7 +81,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public void start() throws IgniteCheckedException {
         for (GridComponent comp : this)
-            comp.start();
+            comp.start(config().isActiveOnStart());
     }
 
     /**
@@ -98,11 +100,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridTestKernalContext.class, this, super.toString());
-    }
-
     /**
      * Sets system executor service.
      *
@@ -112,7 +109,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         this.sysExecSvc = sysExecSvc;
     }
 
-
     /**
      * Sets executor service.
      *
@@ -120,5 +116,10 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public void setExecutorService(ExecutorService execSvc){
         this.execSvc = execSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridTestKernalContext.class, this, super.toString());
     }
 }

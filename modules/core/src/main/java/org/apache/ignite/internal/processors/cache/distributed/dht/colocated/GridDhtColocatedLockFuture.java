@@ -36,6 +36,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -56,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -82,7 +82,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 /**
  * Colocated cache lock future.
  */
-public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture<Boolean>
+public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityFuture<Boolean>
     implements GridCacheMvccFuture<Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -105,6 +105,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private final long threadId;
 
     /** Keys to lock. */
+    @GridToStringInclude
     private Collection<KeyCacheObject> keys;
 
     /** Future ID. */
@@ -160,6 +161,12 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /** Keep binary. */
     private final boolean keepBinary;
 
+    /** */
+    private final boolean recovery;
+
+    /** */
+    private int miniId;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -183,7 +190,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean recovery
+    ) {
         super(CU.boolReducer());
 
         assert keys != null;
@@ -199,8 +208,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         this.filter = filter;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.recovery = recovery;
 
-        ignoreInterrupts(true);
+        ignoreInterrupts();
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
@@ -449,13 +459,11 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /**
      * @return Keys for which locks requested from remote nodes but response isn't received.
      */
-    public Set<IgniteTxKey> requestedKeys() {
-        synchronized (sync) {
-            if (timeoutObj != null && timeoutObj.requestedKeys != null)
-                return timeoutObj.requestedKeys;
+    public synchronized Set<IgniteTxKey> requestedKeys() {
+        if (timeoutObj != null && timeoutObj.requestedKeys != null)
+            return timeoutObj.requestedKeys;
 
-            return requestedKeys0();
-        }
+        return requestedKeys0();
     }
 
     /**
@@ -485,9 +493,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @return Mini future.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (sync) {
+        synchronized (this) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
@@ -499,7 +507,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -639,9 +647,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
-            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
-                if (fut.topologyVersion().equals(topVer)){
-                    Throwable err = fut.validateCache(cctx);
+            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
+                if (fut.topologyVersion().equals(topVer)) {
+                    Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                     if (err != null) {
                         onDone(err);
@@ -692,7 +700,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
-                Throwable err = fut.validateCache(cctx);
+                Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                 if (err != null) {
                     onDone(err);
@@ -862,7 +870,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     if (txEntry != null) {
                         entry = (GridDistributedCacheEntry)txEntry.cached();
 
-                        if (entry != null && !(loc ^ entry.detached())) {
+                        if (entry != null && loc == entry.detached()) {
                             entry = cctx.colocated().entryExx(key, topVer, true);
 
                             txEntry.cached(entry);
@@ -911,10 +919,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         !topLocked &&
                                         (tx == null || !tx.hasRemoteLocks());
 
-                                        first = false;
-                                    }
+                                    first = false;
+                                }
 
-                                    req = new GridNearLockRequest(
+                                    assert !implicitTx() && !implicitSingleTx() : tx;req = new GridNearLockRequest(
                                         cctx.cacheId(),
                                         topVer,
                                         cctx.nodeId(),
@@ -922,8 +930,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         futId,
                                         lockVer,
                                         inTx(),
-                                        implicitTx(),
-                                        implicitSingleTx(),
                                         read,
                                         retval,
                                         isolation(),
@@ -936,13 +942,13 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         inTx() ? tx.taskNameHash() : 0,
                                         read ? createTtl : -1L,
                                         read ? accessTtl : -1L,
-                                        skipStore,
-                                        keepBinary,
-                                        clientFirst,
-                                        cctx.deploymentEnabled());
+                                    skipStore,
+                                    keepBinary,
+                                    clientFirst,
+                                    cctx.deploymentEnabled());
 
-                                    mapping.request(req);
-                                }
+                                mapping.request(req);
+                            }
 
                             distributedKeys.add(key);
 
@@ -978,9 +984,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     assert tx == null || marked;
                 }
             }
-
-            if (inTx() && req != null)
-                req.hasTransforms(tx.hasTransforms());
 
             if (!distributedKeys.isEmpty()) {
                 mapping.distributedKeys(distributedKeys);
@@ -1049,7 +1052,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         if (node.isLocal())
             lockLocally(mappedKeys, req.topologyVersion());
         else {
-            final MiniFuture fut = new MiniFuture(node, mappedKeys);
+            final MiniFuture fut = new MiniFuture(node, mappedKeys, ++miniId);
 
             req.miniId(fut.futureId());
 
@@ -1341,7 +1344,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 log.debug("Timed out waiting for lock response: " + this);
 
             if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
-                synchronized (sync) {
+                synchronized (GridDhtColocatedLockFuture.this) {
                     requestedKeys = requestedKeys0();
 
                     clear(); // Stop response processing.
@@ -1390,10 +1393,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      */
     private class MiniFuture extends GridFutureAdapter<Boolean> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** Node ID. */
         @GridToStringExclude
@@ -1409,19 +1409,22 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         /**
          * @param node Node.
          * @param keys Keys.
+         * @param futId Mini future ID.
          */
         MiniFuture(
             ClusterNode node,
-            Collection<KeyCacheObject> keys
+            Collection<KeyCacheObject> keys,
+            int futId
         ) {
             this.node = node;
             this.keys = keys;
+            this.futId = futId;
         }
 
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 

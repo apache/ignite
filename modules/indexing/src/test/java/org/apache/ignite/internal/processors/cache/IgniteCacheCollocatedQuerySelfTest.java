@@ -65,8 +65,8 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -79,7 +79,6 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setBackups(1);
         cacheCfg.setIndexedTypes(
             AffinityUuid.class, Purchase.class

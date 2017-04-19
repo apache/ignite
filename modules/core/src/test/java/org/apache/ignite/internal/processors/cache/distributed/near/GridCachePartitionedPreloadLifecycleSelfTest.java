@@ -42,8 +42,8 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
     private int gridCnt = 5;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
         c.getTransactionConfiguration().setDefaultTxIsolation(TransactionIsolation.READ_COMMITTED);
@@ -56,7 +56,6 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
         cc1.setWriteSynchronizationMode(FULL_SYNC);
         cc1.setRebalanceMode(preloadMode);
         cc1.setEvictionPolicy(null);
-        cc1.setSwapEnabled(false);
         cc1.setCacheStoreFactory(null);
         cc1.setEvictionPolicy(null);
 

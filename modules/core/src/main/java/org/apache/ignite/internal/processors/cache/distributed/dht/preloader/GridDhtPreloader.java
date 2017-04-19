@@ -36,7 +36,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -48,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -62,7 +62,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -74,19 +73,14 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 
 /**
  * DHT cache preloader.
  */
 public class GridDhtPreloader extends GridCachePreloaderAdapter {
-    /**
-     * Rebalancing was refactored at version 1.5.0, but backward compatibility to previous implementation was saved.
-     * Node automatically chose communication protocol depends on remote node's version.
-     * Backward compatibility may be removed at Ignite 2.x.
-     */
-    public static final IgniteProductVersion REBALANCING_VER_2_SINCE = IgniteProductVersion.fromString("1.5.0");
-
     /** Default preload resend timeout. */
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
 
@@ -194,9 +188,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         cctx.shared().affinity().onCacheCreated(cctx);
 
         supplier = new GridDhtPartitionSupplier(cctx);
-        demander = new GridDhtPartitionDemander(cctx, demandLock);
+        demander = new GridDhtPartitionDemander(cctx);
 
-        supplier.start();
         demander.start();
 
         cctx.events().addListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
@@ -213,7 +206,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"LockAcquiredButNotSafelyReleased"})
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop() {
         if (log.isDebugEnabled())
             log.debug("DHT rebalancer onKernalStop callback.");
@@ -272,7 +265,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = cctx.dht().topology();
 
-        if (!cctx.rebalanceEnabled())
+        if (!cctx.rebalanceEnabled() || !cctx.shared().kernalContext().state().active())
             return new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
 
         int partCnt = cctx.affinity().partitions();
@@ -389,7 +382,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessageV2 s) {
+    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s) {
         if (!enterBusy())
             return;
 
@@ -424,6 +417,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forceRebalance,
+        Collection<String> caches,
         int cnt,
         Runnable next,
         @Nullable GridFutureAdapter<Boolean> forcedRebFut) {
@@ -518,46 +512,40 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 GridCacheEntryEx entry = null;
 
-                if (cctx.isSwapOrOffheapEnabled()) {
-                    while (true) {
-                        try {
-                            entry = cctx.dht().entryEx(k);
+                while (true) {
+                    try {
+                        entry = cctx.dht().entryEx(k);
 
-                            entry.unswap();
+                        entry.unswap();
 
-                            break;
+                        GridCacheEntryInfo info = entry.info();
+
+                        if (info == null) {
+                            assert entry.obsolete() : entry;
+
+                            continue;
                         }
-                        catch (GridCacheEntryRemovedException ignore) {
-                            if (log.isDebugEnabled())
-                                log.debug("Got removed entry: " + k);
-                        }
-                        catch (GridDhtInvalidPartitionException ignore) {
-                            if (log.isDebugEnabled())
-                                log.debug("Local node is no longer an owner: " + p);
 
-                            res.addMissed(k);
+                        if (!info.isNew())
+                            res.addInfo(info);
 
-                            break;
-                        }
+                        cctx.evicts().touch(entry, msg.topologyVersion());
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Got removed entry: " + k);
+                    }
+                    catch (GridDhtInvalidPartitionException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Local node is no longer an owner: " + p);
+
+                        res.addMissed(k);
+
+                        break;
                     }
                 }
-                else
-                    entry = cctx.dht().peekEx(k);
-
-                // If entry is null, then local partition may have left
-                // after the message was received. In that case, we are
-                // confident that primary node knows of any changes to the key.
-                if (entry != null) {
-                    GridCacheEntryInfo info = entry.info();
-
-                    if (info != null && !info.isNew())
-                        res.addInfo(info);
-
-                    if (cctx.isSwapOrOffheapEnabled())
-                        cctx.evicts().touch(entry, msg.topologyVersion());
-                }
-                else if (log.isDebugEnabled())
-                    log.debug("Key is not present in DHT cache: " + k);
             }
 
             if (log.isDebugEnabled())
@@ -590,7 +578,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             GridDhtForceKeysFuture<?, ?> f = forceKeyFuts.get(msg.futureId());
 
             if (f != null)
-                f.onResult(node.id(), msg);
+                f.onResult(msg);
             else if (log.isDebugEnabled())
                 log.debug("Receive force key response for unknown future (is it duplicate?) [nodeId=" + node.id() +
                     ", res=" + msg + ']');
@@ -619,14 +607,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 AffinityAssignment assignment = cctx.affinity().assignment(topVer);
 
-                boolean newAffMode = node.version().compareTo(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0;
-
                 GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
                     topVer,
-                    assignment.assignment(),
-                    newAffMode);
+                    assignment.assignment());
 
-                if (newAffMode && cctx.affinity().affinityCache().centralizedAffinityFunction()) {
+                if (cctx.affinity().affinityCache().centralizedAffinityFunction()) {
                     assert assignment.idealAssignment() != null;
 
                     res.idealAffinityAssignment(assignment.idealAssignment());
@@ -691,7 +676,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @param keys Keys to request.
      * @return Future for request.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
+    @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
         if (!needForceKeys())
             return null;
@@ -806,6 +791,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             if (part != null)
                                 try {
                                     part.tryEvict();
+
+                                    GridDhtPartitionState state = part.state();
+
+                                    if (state == RENTING || ((state == MOVING || state == OWNING) && part.shouldBeRenting()))
+                                        partsToEvict.push(part);
                                 }
                                 catch (Throwable ex) {
                                     if (cctx.kernalContext().isStopping()) {
@@ -843,7 +833,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void dumpDebugInfo() {
         if (!forceKeyFuts.isEmpty()) {
-            U.warn(log, "Pending force key futures [cache=" + cctx.name() +"]:");
+            U.warn(log, "Pending force key futures [cache=" + cctx.name() + "]:");
 
             for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
                 U.warn(log, ">>> " + fut);
@@ -873,7 +863,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (log.isDebugEnabled())
                 log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
 
-            onMessage(node , msg);
+            onMessage(node, msg);
         }
 
         /**

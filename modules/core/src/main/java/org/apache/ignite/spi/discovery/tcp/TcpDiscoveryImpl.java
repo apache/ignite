@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -231,10 +232,20 @@ abstract class TcpDiscoveryImpl {
     public abstract void failNode(UUID nodeId, @Nullable String warning);
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @throws IgniteSpiException If failed.
      */
-    public abstract void spiStart(@Nullable String gridName) throws IgniteSpiException;
+    public abstract void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException;
+
+    /**
+     * Will start TCP server if applicable and not started yet.
+     *
+     * @return Port this instance bound to.
+     * @throws IgniteSpiException If failed.
+     */
+    public int boundPort() throws IgniteSpiException {
+        return 0;
+    }
 
     /**
      * @throws IgniteSpiException If failed.
@@ -257,6 +268,13 @@ abstract class TcpDiscoveryImpl {
 
         return t.isAlive() ? "alive" : "dead";
     }
+
+    /**
+     * Leave cluster and try to join again.
+     *
+     * @throws IgniteSpiException If failed.
+     */
+    public abstract void reconnect() throws IgniteSpiException;
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>

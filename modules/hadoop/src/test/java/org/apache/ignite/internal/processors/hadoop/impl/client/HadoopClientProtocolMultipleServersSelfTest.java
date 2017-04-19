@@ -83,8 +83,8 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getConnectorConfiguration().setPort(restPort++);
 
@@ -97,7 +97,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     private void beforeJob() throws Exception {
         IgniteFileSystem igfs = grid(0).fileSystem(HadoopAbstractSelfTest.igfsName);
 
-        igfs.format();
+        igfs.clear();
 
         igfs.mkdirs(new IgfsPath(PATH_INPUT));
 

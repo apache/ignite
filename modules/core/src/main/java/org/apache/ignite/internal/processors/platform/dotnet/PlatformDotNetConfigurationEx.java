@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
+import java.util.List;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
@@ -25,6 +26,7 @@ import org.apache.ignite.internal.processors.platform.entityframework.PlatformDo
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionCacheExtension;
+import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.jetbrains.annotations.Nullable;
 
@@ -98,11 +100,28 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
         return logger;
     }
 
+    /** {@inheritDoc} */
+    @Override public PlatformDotNetConfigurationEx setBinaryConfiguration(PlatformDotNetBinaryConfiguration binaryCfg) {
+        super.setBinaryConfiguration(binaryCfg);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformDotNetConfigurationEx setAssemblies(List<String> assemblies) {
+        super.setAssemblies(assemblies);
+
+        return this;
+    }
+
     /**
      * @param warnings Warnings.
+     * @return {@code this} for chaining.
      */
-    public void warnings(Collection<String> warnings) {
+    public PlatformDotNetConfigurationEx warnings(Collection<String> warnings) {
         this.warnings = warnings;
+
+        return this;
     }
 
     /**

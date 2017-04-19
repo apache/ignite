@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,7 +49,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -75,8 +76,10 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setLateAffinityAssignment(true);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -88,7 +91,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestCacheStoreAdapter()));
 
-        if (getTestGridName(0).equals(gridName)) {
+        if (getTestIgniteInstanceName(0).equals(igniteInstanceName)) {
             if (client)
                 cfg.setClientMode(true);
 
@@ -101,9 +104,9 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         if (!configured) {
             ccfg.setNodeFilter(new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
-                    String name = node.attribute(ATTR_GRID_NAME).toString();
+                    String name = node.attribute(ATTR_IGNITE_INSTANCE_NAME).toString();
 
-                    return !getTestGridName(0).equals(name);
+                    return !getTestIgniteInstanceName(0).equals(name);
                 }
             });
         }
@@ -346,9 +349,22 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         assertCacheSize();
     }
 
-    /** Asserts cache size. */
-    protected void assertCacheSize() {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+    /**
+     * @throws Exception If failed.
+     */
+    private void assertCacheSize() throws Exception {
+        final IgniteCache<Integer, String> cache = grid(0).cache(null);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                int size = cache.size(CachePeekMode.PRIMARY);
+
+                if (size != KEYS_CNT)
+                    log.info("Cache size: " + size);
+
+                return size == KEYS_CNT;
+            }
+        }, 2 * 60_000);
 
         assertEquals("Data lost.", KEYS_CNT, cache.size(CachePeekMode.PRIMARY));
 

@@ -109,7 +109,7 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         sched = new Scheduler();
 
         sched.start();
@@ -126,7 +126,7 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Schedule processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Schedule processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   schedFutsSize: " + schedFuts.size());
     }
 }

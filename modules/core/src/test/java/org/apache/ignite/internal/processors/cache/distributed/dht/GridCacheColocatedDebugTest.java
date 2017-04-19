@@ -72,8 +72,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -88,7 +88,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 30));
         cacheCfg.setBackups(1);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
 
         if (storeEnabled) {
             cacheCfg.setCacheStoreFactory(singletonFactory(new GridCacheTestStore()));

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -102,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryUtils.TypeString] = new BinarySystemReader<string>(BinaryUtils.ReadString);
 
             // 4. Guid.
-            ReadHandlers[BinaryUtils.TypeGuid] = new BinarySystemReader<Guid?>(BinaryUtils.ReadGuid);
+            ReadHandlers[BinaryUtils.TypeGuid] = new BinarySystemReader<Guid?>(s => BinaryUtils.ReadGuid(s));
 
             // 5. Primitive arrays.
             ReadHandlers[BinaryUtils.TypeArrayBool] = new BinarySystemReader<bool[]>(BinaryUtils.ReadBooleanArray);
@@ -169,8 +168,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 var handler = FindWriteHandler(t, out supportsHandles);
 
-                return handler == null ? null : new BinarySystemWriteHandler(handler, supportsHandles, 
-                    handler == WriteSerializable);
+                return handler == null ? null : new BinarySystemWriteHandler(handler, supportsHandles);
             });
         }
 
@@ -191,8 +189,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteString;
             if (type == typeof(decimal))
                 return WriteDecimal;
-            if (type == typeof(DateTime))
-                return WriteDate;
             if (type == typeof(Guid))
                 return WriteGuid;
             if (type == typeof (BinaryObject))
@@ -201,6 +197,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteBinaryEnum;
             if (type.IsEnum)
                 return WriteEnum;
+            if (type == typeof(Ignite))
+                return WriteIgnite;
 
             // All types below can be written as handles.
             supportsHandles = true;
@@ -251,15 +249,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Enums.
                 if (elemType.IsEnum || elemType == typeof(BinaryEnum))
                     return WriteEnumArray;
-                
-                // Object array.
-                if (elemType == typeof (object) || elemType == typeof (IBinaryObject) ||
-                    elemType == typeof (BinaryObject))
-                    return WriteArray;
-            }
 
-            if (type.IsSerializable)
-                return WriteSerializable;
+                // Object array.
+                return WriteArray;
+            }
 
             return null;
         }
@@ -312,16 +305,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(BinaryUtils.TypeDecimal);
 
             BinaryUtils.WriteDecimal((decimal)obj, ctx.Stream);
-        }
-        
-        /// <summary>
-        /// Write date.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteDate(BinaryWriter ctx, object obj)
-        {
-            ctx.Write(new DateTimeHolder((DateTime) obj));
         }
         
         /// <summary>
@@ -527,25 +510,25 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryUtils.WriteGuidArray((Guid?[])obj, ctx.Stream);
         }
-        
-        /**
-         * <summary>Write enum array.</summary>
-         */
+
+        /// <summary>
+        /// Writes the enum array.
+        /// </summary>
         private static void WriteEnumArray(BinaryWriter ctx, object obj)
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayEnum);
 
-            BinaryUtils.WriteArray((Array)obj, ctx);
+            BinaryUtils.WriteArray((Array) obj, ctx);
         }
 
-        /**
-         * <summary>Write array.</summary>
-         */
+        /// <summary>
+        /// Writes the array.
+        /// </summary>
         private static void WriteArray(BinaryWriter ctx, object obj)
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArray);
 
-            BinaryUtils.WriteArray((Array)obj, ctx);
+            BinaryUtils.WriteArray((Array) obj, ctx);
         }
 
         /**
@@ -599,16 +582,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.WriteInt(binEnum.EnumValue);
         }
 
-        /// <summary>
-        /// Writes serializable.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        /// <param name="o">The object.</param>
-        private static void WriteSerializable(BinaryWriter writer, object o)
-        {
-            writer.Write(new SerializableObjectHolder(o));
-        }
-
         /**
          * <summary>Read enum array.</summary>
          */
@@ -619,13 +592,36 @@ namespace Apache.Ignite.Core.Impl.Binary
             return BinaryUtils.ReadTypedArray(ctx, true, elemType);
         }
 
-        /**
-         * <summary>Read array.</summary>
-         */
+        /// <summary>
+        /// Reads the array.
+        /// </summary>
         private static object ReadArray(BinaryReader ctx, Type type)
         {
-            var elemType = type.GetElementType() ?? typeof(object);
+            var elemType = type.GetElementType();
 
+            if (elemType == null)
+            {
+                if (ctx.Mode == BinaryMode.ForceBinary)
+                {
+                    // Forced binary mode: use object because primitives are not represented as IBinaryObject.
+                    elemType = typeof(object);
+                }
+                else
+                {
+                    // Infer element type from typeId.
+                    var typeId = ctx.ReadInt();
+
+                    if (typeId != BinaryUtils.ObjTypeId)
+                    {
+                        elemType = ctx.Marshaller.GetDescriptor(true, typeId, true).Type;
+                    }
+
+                    return BinaryUtils.ReadTypedArray(ctx, false, elemType ?? typeof(object));
+                }
+            }
+
+            // Element type is known, no need to check typeId.
+            // In case of incompatible types we'll get exception either way.
             return BinaryUtils.ReadTypedArray(ctx, true, elemType);
         }
 
@@ -643,6 +639,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static object ReadDictionary(BinaryReader ctx, Type type)
         {
             return BinaryUtils.ReadDictionary(ctx, null);
+        }
+                
+        /// <summary>
+        /// Write Ignite.
+        /// </summary>
+        private static void WriteIgnite(BinaryWriter ctx, object obj)
+        {
+            ctx.Stream.WriteByte(BinaryUtils.HdrNull);
         }
 
         /**
@@ -794,23 +798,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** */
         private readonly bool _supportsHandles;
 
-        /** */
-        private readonly bool _isSerializable;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="BinarySystemWriteHandler" /> class.
         /// </summary>
         /// <param name="writeAction">The write action.</param>
         /// <param name="supportsHandles">Handles flag.</param>
-        /// <param name="isSerializable">Determines whether this handler writes objects as serializable.</param>
-        public BinarySystemWriteHandler(Action<BinaryWriter, object> writeAction, bool supportsHandles, 
-            bool isSerializable)
+        public BinarySystemWriteHandler(Action<BinaryWriter, object> writeAction, bool supportsHandles)
         {
             Debug.Assert(writeAction != null);
 
             _writeAction = writeAction;
             _supportsHandles = supportsHandles;
-            _isSerializable = isSerializable;
         }
 
         /// <summary>
@@ -829,14 +827,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool SupportsHandles
         {
             get { return _supportsHandles; }
-        }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether this handler writes objects as serializable
-        /// </summary>
-        public bool IsSerializable
-        {
-            get { return _isSerializable; }
         }
     }
 }

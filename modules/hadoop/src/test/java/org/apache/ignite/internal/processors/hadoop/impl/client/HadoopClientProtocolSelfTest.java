@@ -129,7 +129,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).fileSystem(HadoopAbstractSelfTest.igfsName).format();
+        grid(0).fileSystem(HadoopAbstractSelfTest.igfsName).clear();
 
         setupLockFile.delete();
         mapLockFile.delete();
@@ -482,7 +482,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
         conf.set(MRConfig.FRAMEWORK_NAME, IgniteHadoopClientProtocolProvider.FRAMEWORK_NAME);
         conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + port);
 
-        conf.set("fs.defaultFS", "igfs://:" + getTestGridName(0) + "@/");
+        conf.set("fs.defaultFS", "igfs://@/");
 
         return conf;
     }

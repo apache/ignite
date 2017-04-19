@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.visor.event;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObjectInput;
+import org.apache.ignite.internal.visor.VisorDataTransferObjectOutput;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +36,14 @@ public class VisorGridDeploymentEvent extends VisorGridEvent {
     private static final long serialVersionUID = 0L;
 
     /** Deployment alias. */
-    private final String alias;
+    private String alias;
+
+    /**
+     * Default constructor.
+     */
+    public VisorGridDeploymentEvent() {
+        // No-op.
+    }
 
     /**
      * Create event with given parameters.
@@ -62,8 +75,32 @@ public class VisorGridDeploymentEvent extends VisorGridEvent {
     /**
      * @return Deployment alias.
      */
-    public String alias() {
+    public String getAlias() {
         return alias;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        try (VisorDataTransferObjectOutput dtout = new VisorDataTransferObjectOutput(out)) {
+            dtout.writeByte(super.getProtocolVersion());
+            super.writeExternalData(dtout);
+        }
+
+        U.writeString(out, alias);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        try (VisorDataTransferObjectInput dtin = new VisorDataTransferObjectInput(in)) {
+            super.readExternalData(dtin.readByte(), dtin);
+        }
+
+        alias = U.readString(in);
     }
 
     /** {@inheritDoc} */

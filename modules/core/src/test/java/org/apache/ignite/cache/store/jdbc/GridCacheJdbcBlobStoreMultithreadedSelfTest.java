@@ -87,8 +87,8 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -101,7 +101,6 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             cc.setCacheMode(PARTITIONED);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setSwapEnabled(false);
             cc.setAtomicityMode(TRANSACTIONAL);
             cc.setBackups(1);
 

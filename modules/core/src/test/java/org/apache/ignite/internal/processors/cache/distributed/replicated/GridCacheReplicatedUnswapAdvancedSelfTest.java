@@ -30,7 +30,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -45,8 +44,8 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -57,13 +56,10 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setSwapEnabled(true);
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
-        if (getTestGridName(1).equals(gridName) || cfg.getMarshaller() instanceof BinaryMarshaller)
+        if (getTestIgniteInstanceName(1).equals(igniteInstanceName) || cfg.getMarshaller() instanceof BinaryMarshaller)
             cfg.setClassLoader(getExternalClassLoader());
 
         return cfg;
@@ -73,6 +69,8 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testUnswapAdvanced() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4551");
+
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 

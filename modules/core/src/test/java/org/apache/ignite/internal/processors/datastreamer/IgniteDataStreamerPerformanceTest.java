@@ -58,8 +58,8 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     private String[] vals = new String[2048];
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -83,7 +83,6 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
             cc.setNearConfiguration(null);
             cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setStartSize(ENTRY_CNT / GRID_CNT);
-            cc.setSwapEnabled(false);
 
             cc.setBackups(1);
 

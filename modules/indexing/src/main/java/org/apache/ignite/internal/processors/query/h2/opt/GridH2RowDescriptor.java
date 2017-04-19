@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -64,12 +66,19 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      *
      * @param key Key.
      * @param val Value.
+     * @param ver Version.
      * @param expirationTime Expiration time in millis.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, long expirationTime)
+    public GridH2Row createRow(KeyCacheObject key, int part, @Nullable CacheObject val, GridCacheVersion ver, long expirationTime)
         throws IgniteCheckedException;
+
+    /**
+     * @param link Link to get row for.
+     * @return Cached row.
+     */
+    public GridH2Row cachedRow(long link);
 
     /**
      * @param key Cache key.
@@ -132,7 +141,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     /**
      * @param row Deserialized offheap row to cache in heap.
      */
-    public void cache(GridH2KeyValueRowOffheap row);
+    public void cache(GridH2Row row);
 
     /**
      * @param ptr Offheap pointer to remove from cache.
@@ -163,9 +172,4 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return {@code True} if index should support snapshots.
      */
     public boolean snapshotableIndex();
-
-    /**
-     * @return Escape all identifiers.
-     */
-    public boolean quoteAllIdentifiers();
 }

@@ -71,8 +71,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -81,8 +81,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setCacheStoreFactory(singletonFactory(store));
         ccfg.setReadThrough(true);
@@ -379,7 +379,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
                 assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
                     entry.hasValue());
                 assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
-                    entry.rawGetOrUnmarshal(false).value(cache.ctx.cacheObjectContext(), false));
+                    entry.rawGet().value(cache.ctx.cacheObjectContext(), false));
             }
 
             if (cache.isNear()) {
@@ -392,7 +392,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
                     assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
                         entry.hasValue());
                     assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
-                        entry.rawGetOrUnmarshal(false).value(cache.ctx.cacheObjectContext(), false));
+                        entry.rawGet().value(cache.ctx.cacheObjectContext(), false));
                 }
             }
         }

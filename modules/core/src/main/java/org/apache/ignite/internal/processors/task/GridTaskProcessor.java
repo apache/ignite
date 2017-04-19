@@ -140,7 +140,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void start(boolean activeOnStart) {
         ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(TOPIC_JOB_SIBLINGS, new JobSiblingsMessageListener());
@@ -152,7 +152,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
         tasksMetaCache = ctx.security().enabled() && !ctx.isDaemon() ?
             ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
 
@@ -421,7 +421,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         try {
             return taskMetaCache().localPeek(
-                new GridTaskNameHashKey(taskNameHash), CachePeekModes.ONHEAP_ONLY, null);
+                new GridTaskNameHashKey(taskNameHash), null, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -608,6 +608,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         if (subjId == null)
             subjId = ctx.localNodeId();
 
+        boolean internal = false;
+
+        if (dep == null || taskCls == null)
+            assert deployEx != null;
+        else
+            internal = dep.internalTask(task, taskCls);
+
         // Creates task session with task name and task version.
         GridTaskSessionImpl ses = ctx.session().createTaskSession(
             sesId,
@@ -621,7 +628,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             Collections.<ComputeJobSibling>emptyList(),
             Collections.emptyMap(),
             fullSup,
-            dep != null && dep.internalTask(task, taskCls),
+            internal,
             subjId);
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
@@ -1097,7 +1104,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Task processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Task processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  tasksSize: " + tasks.size());
     }
 
@@ -1311,7 +1318,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
 
-                    ctx.io().send(nodeId, topic,
+                    ctx.io().sendToCustomTopic(nodeId, topic,
                         new GridJobSiblingsResponse(
                             loc ? siblings : null,
                             loc ? null : U.marshal(marsh, siblings)),

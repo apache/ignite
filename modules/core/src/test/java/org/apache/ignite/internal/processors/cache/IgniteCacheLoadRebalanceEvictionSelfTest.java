@@ -61,8 +61,8 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
     private static final int ENTRIES_CNT = 10000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -75,12 +75,11 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
 
         CacheConfiguration<String, byte[]> cacheCfg = new CacheConfiguration<>();
         cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cacheCfg.setEvictSynchronized(false);
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setReadFromBackup(true);
         cacheCfg.setEvictionPolicy(evictionPolicy);
-        cacheCfg.setOffHeapMaxMemory(1024 * 1024 * 1024L);
+        cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setStatisticsEnabled(true);
 
         cacheCfg.setWriteThrough(false);

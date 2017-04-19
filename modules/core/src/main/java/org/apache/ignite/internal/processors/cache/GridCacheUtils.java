@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -85,7 +86,6 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -97,7 +97,6 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -151,9 +150,6 @@ public class GridCacheUtils {
 
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
-
-    /** Marshaller system cache name. */
-    public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
 
     /** */
     public static final String CONTINUOUS_QRY_LOG_CATEGORY = "org.apache.ignite.continuous.query";
@@ -334,10 +330,6 @@ public class GridCacheUtils {
             return "Cache extended entry to key converter.";
         }
     };
-
-    /** NoopSwapSpaceSpi used attribute. */
-    private static final String NOOP_SWAP_SPACE_SPI_ATTR_NAME = U.spiAttribute(new NoopSwapSpaceSpi(),
-        IgniteNodeAttributes.ATTR_SPI_CLASS);
 
     /**
      * Ensure singleton.
@@ -894,7 +886,7 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, IgniteInternalCache prj,
+    public static GridNearTxLocal txStartInternal(GridCacheContext ctx, IgniteInternalCache prj,
         TransactionConcurrency concurrency, TransactionIsolation isolation) {
         assert ctx != null;
         assert prj != null;
@@ -927,18 +919,6 @@ public class GridCacheUtils {
      */
     public static void unwindEvicts(GridCacheContext ctx) {
         assert ctx != null;
-
-        ctx.evicts().unwind();
-
-        ctx.swap().unwindOffheapEvicts();
-
-        if (ctx.isNear()) {
-            GridCacheContext dhtCtx = ctx.near().dht().context();
-
-            dhtCtx.evicts().unwind();
-
-            dhtCtx.swap().unwindOffheapEvicts();
-        }
 
         ctx.ttl().expire();
     }
@@ -981,12 +961,11 @@ public class GridCacheUtils {
     public static byte[] versionToBytes(GridCacheVersion ver) {
         assert ver != null;
 
-        byte[] bytes = new byte[28];
+        byte[] bytes = new byte[20];
 
         U.intToBytes(ver.topologyVersion(), bytes, 0);
-        U.longToBytes(ver.globalTime(), bytes, 4);
-        U.longToBytes(ver.order(), bytes, 12);
-        U.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 20);
+        U.longToBytes(ver.order(), bytes, 4);
+        U.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 12);
 
         return bytes;
     }
@@ -1118,10 +1097,6 @@ public class GridCacheUtils {
         if (!U.overridesEqualsAndHashCode(key))
             throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
                 key.getClass().getName());
-
-        if (U.isHashCodeEmpty(key))
-            throw new IllegalArgumentException("Cache key created with BinaryBuilder is missing hash code - " +
-                "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
     }
 
     /**
@@ -1146,21 +1121,12 @@ public class GridCacheUtils {
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
         cache.setEvictionPolicy(null);
-        cache.setSwapEnabled(false);
         cache.setCacheStoreFactory(null);
         cache.setNodeFilter(CacheConfiguration.ALL_NODES);
         cache.setEagerTtl(true);
         cache.setRebalanceMode(SYNC);
 
         return cache;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return {@code True} if this is marshaller system cache.
-     */
-    public static boolean isMarshallerCache(String cacheName) {
-        return MARSH_CACHE_NAME.equals(cacheName);
     }
 
     /**
@@ -1184,7 +1150,7 @@ public class GridCacheUtils {
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isMarshallerCache(cacheName) || isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
+        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
             isAtomicsCache(cacheName);
     }
 
@@ -1268,7 +1234,7 @@ public class GridCacheUtils {
     public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
         TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
 
-        try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
+        try (GridNearTxLocal tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);
 
             tx.commit();
@@ -1521,7 +1487,7 @@ public class GridCacheUtils {
      * @return {@code True} if node is not client node and pass given filter.
      */
     public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
-        return !clientNode(node) && filter.apply(node);
+        return !node.isDaemon() && !clientNode(node) && filter.apply(node);
     }
 
     /**
@@ -1699,16 +1665,6 @@ public class GridCacheUtils {
         }
 
         return res;
-    }
-
-    /**
-     * Checks if swap is enabled on node.
-     *
-     * @param node Node
-     * @return {@code true} if swap is enabled, {@code false} otherwise.
-     */
-    public static boolean isSwapEnabled(ClusterNode node) {
-        return !node.attributes().containsKey(NOOP_SWAP_SPACE_SPI_ATTR_NAME);
     }
 
     /**

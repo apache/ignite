@@ -29,11 +29,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -45,7 +46,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache atomic stamped implementation.
  */
-public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicStampedEx<T, S>, Externalizable {
+public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicStampedEx<T, S>, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -267,7 +268,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private Callable<Boolean> internalSet(final T val, final S stamp) {
         return retryTopologySafe(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
+                try (GridNearTxLocal tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
 
                     if (stmp == null)
@@ -305,7 +306,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         final IgniteClosure<S, S> newStampClos) {
         return retryTopologySafe(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
+                try (GridNearTxLocal tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
 
                     if (stmp == null)
@@ -397,6 +398,17 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                 throw removedError();
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        this.atomicView = kctx.cache().atomicsCache();
+        this.ctx = atomicView.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
     }
 
     /**

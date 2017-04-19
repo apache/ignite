@@ -208,7 +208,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\queries-default.xml" />
+    <None Include="..\..\config\queries-test-noodbc-32.xml" />
     <None Include="..\..\config\queries-test-noodbc.xml" />
+    <None Include="..\..\config\queries-test-default.xml" />
+    <None Include="..\..\config\queries-test-32.xml" />
     <None Include="..\..\config\queries-test.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

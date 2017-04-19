@@ -22,7 +22,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
  */
 public abstract class GridSqlStatement {
     /** */
-    protected GridSqlElement limit;
+    protected GridSqlAst limit;
     /** */
     private boolean explain;
 
@@ -30,6 +30,11 @@ public abstract class GridSqlStatement {
      * @return Generate sql.
      */
     public abstract String getSQL();
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return getSQL();
+    }
 
     /**
      * @param explain Explain.
@@ -51,14 +56,14 @@ public abstract class GridSqlStatement {
     /**
      * @param limit Limit.
      */
-    public void limit(GridSqlElement limit) {
+    public void limit(GridSqlAst limit) {
         this.limit = limit;
     }
 
     /**
      * @return Limit.
      */
-    public GridSqlElement limit() {
+    public GridSqlAst limit() {
         return limit;
     }
 }

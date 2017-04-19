@@ -35,13 +35,14 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,7 +54,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache sequence implementation.
  */
-public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenceEx, Externalizable {
+public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenceEx, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -486,7 +487,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private Callable<Long> internalUpdate(final long l, final boolean updated) {
         return retryTopologySafe(new Callable<Long>() {
             @Override public Long call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ)) {
+                try (GridNearTxLocal tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicSequenceValue seq = seqView.get(key);
 
                     checkRemoved();
@@ -556,6 +557,17 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                 }
             }
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        this.seqView = kctx.cache().atomicsCache();
+        this.ctx = seqView.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
     }
 
     /** {@inheritDoc} */
