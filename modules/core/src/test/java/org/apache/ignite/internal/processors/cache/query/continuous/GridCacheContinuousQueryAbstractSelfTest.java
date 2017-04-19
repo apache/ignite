@@ -198,6 +198,20 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         }
 
+        // Wait for all routines are unregistered
+        GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                for (int i = 0; i < gridCount(); i++) {
+                    GridContinuousProcessor proc = grid(i).context().continuous();
+
+                    if(((Map)U.field(proc, "rmtInfos")).size() > 0)
+                        return false;
+                }
+
+                return true;
+            }
+        }, 3000);
+
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = grid(i).context().continuous();
 
@@ -1005,7 +1019,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 CacheQueryReadEvent qe = (CacheQueryReadEvent)evt;
 
                 assertEquals(CONTINUOUS.name(), qe.queryType());
-                assertNull(qe.cacheName());
+                assertEquals(DEFAULT_CACHE_NAME, qe.cacheName());
 
                 assertEquals(grid(0).localNode().id(), qe.subjectId());
 
@@ -1029,7 +1043,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                 CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
                 assertEquals(CONTINUOUS.name(), qe.queryType());
-                assertNull(qe.cacheName());
+                assertEquals(DEFAULT_CACHE_NAME, qe.cacheName());
 
                 assertEquals(grid(0).localNode().id(), qe.subjectId());
 
