@@ -607,8 +607,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         List<ClusterNode> nodes = cctx.affinity().nodesByKey(cacheKey, topVer);
 
         if (F.isEmpty(nodes))
-            throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
-                "left the grid).");
+            throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all " +
+                    "partition nodes left the grid): " + cctx.name());
 
         ClusterNode primary = nodes.get(0);
 
