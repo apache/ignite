@@ -19,10 +19,12 @@ namespace Apache.Ignite.Core.Tests.Binary
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
+    using NUnit.Framework;
 
     /// <summary>
     /// Binary builder self test with dynamic type registration.
     /// </summary>
+    [TestFixture]
     public class BinaryBuilderSelfTestDynamicRegistration : BinaryBuilderSelfTest
     {
         /** <inheritdoc /> */
