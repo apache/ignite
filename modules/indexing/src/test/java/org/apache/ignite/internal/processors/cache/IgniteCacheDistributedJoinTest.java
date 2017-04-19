@@ -57,7 +57,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
 
         spi.setIpFinder(IP_FINDER);
 
-        CacheConfiguration<Integer, A> ccfga = new CacheConfiguration<>();
+        CacheConfiguration<Integer, A> ccfga = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfga.setName("a");
         ccfga.setSqlSchema("A");
@@ -66,7 +66,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         ccfga.setCacheMode(CacheMode.PARTITIONED);
         ccfga.setIndexedTypes(Integer.class, A.class);
 
-        CacheConfiguration<Integer, B> ccfgb = new CacheConfiguration<>();
+        CacheConfiguration<Integer, B> ccfgb = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfgb.setName("b");
         ccfgb.setSqlSchema("B");
@@ -75,7 +75,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         ccfgb.setCacheMode(CacheMode.PARTITIONED);
         ccfgb.setIndexedTypes(Integer.class, B.class);
 
-        CacheConfiguration<Integer, C> ccfgc = new CacheConfiguration<>();
+        CacheConfiguration<Integer, C> ccfgc = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfgc.setName("c");
         ccfgc.setSqlSchema("C");

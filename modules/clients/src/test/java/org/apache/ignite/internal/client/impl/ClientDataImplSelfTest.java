@@ -260,7 +260,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     public void testAffinity() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return data.affinity(null);
+                return data.affinity(DEFAULT_CACHE_NAME);
             }
         }, NullPointerException.class, "Ouch! Argument cannot be null: key");
     }

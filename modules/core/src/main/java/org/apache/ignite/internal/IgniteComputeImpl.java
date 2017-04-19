@@ -38,6 +38,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
@@ -114,7 +115,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job) {
+    @Override public void affinityRun(@NotNull String cacheName, Object affKey, IgniteRunnable job) {
+        CU.validateCacheName(cacheName);
+
         try {
             saveOrGet(affinityRunAsync0(cacheName, affKey, job));
         }
@@ -124,8 +127,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> affinityRunAsync(@Nullable String cacheName, Object affKey,
+    @Override public IgniteFuture<Void> affinityRunAsync(@NotNull String cacheName, Object affKey,
         IgniteRunnable job) throws IgniteException {
+        CU.validateCacheName(cacheName);
+
         return (IgniteFuture<Void>)createFuture(affinityRunAsync0(cacheName, affKey, job));
     }
 
@@ -164,6 +169,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public void affinityRun(@NotNull Collection<String> cacheNames, Object affKey, IgniteRunnable job) {
+        CU.validateCacheNames(cacheNames);
+
         try {
             saveOrGet(affinityRunAsync0(cacheNames, affKey, job));
         }
@@ -175,6 +182,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, Object affKey,
         IgniteRunnable job) throws IgniteException {
+        CU.validateCacheNames(cacheNames);
+
         return (IgniteFuture<Void>)createFuture(affinityRunAsync0(cacheNames, affKey, job));
     }
 
@@ -217,6 +226,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public void affinityRun(@NotNull Collection<String> cacheNames, int partId, IgniteRunnable job) {
+        CU.validateCacheNames(cacheNames);
+
         try {
             saveOrGet(affinityRunAsync0(cacheNames, partId, job));
         }
@@ -228,6 +239,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, int partId,
         IgniteRunnable job) throws IgniteException {
+        CU.validateCacheNames(cacheNames);
+
         return (IgniteFuture<Void>)createFuture(affinityRunAsync0(cacheNames, partId, job));
     }
 
@@ -259,7 +272,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) {
+    @Override public <R> R affinityCall(@NotNull String cacheName, Object affKey, IgniteCallable<R> job) {
+        CU.validateCacheName(cacheName);
+
         try {
             return saveOrGet(affinityCallAsync0(cacheName, affKey, job));
         }
@@ -269,8 +284,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> affinityCallAsync(@Nullable String cacheName, Object affKey,
+    @Override public <R> IgniteFuture<R> affinityCallAsync(@NotNull String cacheName, Object affKey,
         IgniteCallable<R> job) throws IgniteException {
+        CU.validateCacheName(cacheName);
+
         return createFuture(affinityCallAsync0(cacheName, affKey, job));
     }
 
@@ -310,6 +327,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(@NotNull Collection<String> cacheNames, Object affKey, IgniteCallable<R> job) {
+        CU.validateCacheNames(cacheNames);
+
         try {
             return saveOrGet(affinityCallAsync0(cacheNames, affKey, job));
         }
@@ -321,6 +340,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, Object affKey,
         IgniteCallable<R> job) throws IgniteException {
+        CU.validateCacheNames(cacheNames);
+
         return createFuture(affinityCallAsync0(cacheNames, affKey, job));
     }
 
@@ -363,6 +384,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(@NotNull Collection<String> cacheNames, int partId, IgniteCallable<R> job) {
+        CU.validateCacheNames(cacheNames);
+
         try {
             return saveOrGet(affinityCallAsync0(cacheNames, partId, job));
         }
@@ -374,6 +397,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, int partId,
         IgniteCallable<R> job) throws IgniteException {
+        CU.validateCacheNames(cacheNames);
+
         return createFuture(affinityCallAsync0(cacheNames, partId, job));
     }
 

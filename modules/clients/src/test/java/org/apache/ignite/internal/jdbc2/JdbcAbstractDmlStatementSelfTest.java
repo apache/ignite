@@ -147,9 +147,9 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).clear();
+        grid(0).cache(DEFAULT_CACHE_NAME).clear();
 
-        assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
+        assertEquals(0, grid(0).cache(DEFAULT_CACHE_NAME).size(CachePeekMode.ALL));
 
         conn.close();
         assertTrue(conn.isClosed());

@@ -37,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.OTHER;
@@ -81,7 +82,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @param clsV Class v.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String name, Class<?> clsK, Class<?> clsV) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String name, Class<?> clsK, Class<?> clsV) {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
         cache.setName(name);

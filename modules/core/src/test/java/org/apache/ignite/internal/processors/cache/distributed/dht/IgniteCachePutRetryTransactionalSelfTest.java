@@ -143,7 +143,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
                 int base = th * FACTOR;
 
                 Ignite ignite = ignite(0);
-                final IgniteCache<Object, Object> cache = ignite.cache(null);
+                final IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 try {
                     for (int i = 0; i < FACTOR; i++) {
@@ -179,7 +179,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
 
         // Verify contents of the cache.
         for (int g = 0; g < GRID_CNT; g++) {
-            IgniteCache<Object, Object> cache = ignite(g).cache(null);
+            IgniteCache<Object, Object> cache = ignite(g).cache(DEFAULT_CACHE_NAME);
 
             for (int th = 0; th < threads; th++) {
                 int base = th * FACTOR;
@@ -234,7 +234,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
 
                 while (!finished.get()) {
                     try {
-                        IgniteCache<Integer, Integer> cache = ignite(0).cache(null);
+                        IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
                         Integer val = ++iter;
 

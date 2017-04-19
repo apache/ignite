@@ -63,11 +63,11 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
 
         spi.setIpFinder(IP_FINDER);
 
-        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setIndexedTypes(Integer.class, Integer.class);
         ccfg.setName(CACHE_NAME);
 
-        CacheConfiguration<?, ?> ccfg2 = new CacheConfiguration<>();
+        CacheConfiguration<?, ?> ccfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg2.setIndexedTypes(Integer.class, ValueObj.class);
         ccfg2.setName(CACHE_NAME_2);
 

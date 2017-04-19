@@ -148,6 +148,9 @@ public abstract class GridAbstractTest extends TestCase {
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
 
     /** */
+    protected static final String DEFAULT_CACHE_NAME = "default";
+
+    /** */
     private transient boolean startGrid;
 
     /** */
@@ -1517,7 +1520,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return New cache configuration with modified defaults.
      */
     public static CacheConfiguration defaultCacheConfiguration() {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setStartSize(1024);
         cfg.setAtomicityMode(TRANSACTIONAL);

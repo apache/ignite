@@ -55,7 +55,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        IgniteCache<Object, Object> cache = ig0.cache(null);
+        IgniteCache<Object, Object> cache = ig0.cache(DEFAULT_CACHE_NAME);
 
         IgniteFuture fut1 = cache.rebalance();
 

@@ -47,6 +47,9 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_SWAPPED;
  */
 public class GridCacheSwapLoadTest {
     /** */
+    public static final String DEFAULT_CACHE_NAME = "test-cache";
+
+    /** */
     private static final int LOG_MOD = 10000;
 
     /** */
@@ -212,7 +215,7 @@ public class GridCacheSwapLoadTest {
 
         return GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() {
-                IgniteCache<Integer, Integer> cache = g.cache(null);
+                IgniteCache<Integer, Integer> cache = g.cache(DEFAULT_CACHE_NAME);
 
                 assert cache != null;
 
@@ -244,7 +247,7 @@ public class GridCacheSwapLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     getRemoveStartedLatch.await();
 
-                    IgniteCache<Integer, Integer> cache = g.cache(null);
+                    IgniteCache<Integer, Integer> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     assert cache != null;
 
@@ -278,7 +281,7 @@ public class GridCacheSwapLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     getRemoveStartedLatch.await();
 
-                    IgniteCache<Integer, Integer> cache = g.cache(null);
+                    IgniteCache<Integer, Integer> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     assert cache != null;
 

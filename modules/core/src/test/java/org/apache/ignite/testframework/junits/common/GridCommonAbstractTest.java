@@ -95,6 +95,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -128,7 +129,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).cache(null);
+        return grid(idx).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -171,7 +172,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("unchecked")
     protected <K, V> IgniteCache<K, V> jcache(Ignite ig,
         CacheConfiguration ccfg,
-        String name,
+        @NotNull String name,
         Class<K> clsK,
         Class<V> clsV) {
         CacheConfiguration<K, V> cc = new CacheConfiguration<>(ccfg);
@@ -193,7 +194,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("unchecked")
     protected <K, V> IgniteCache<K, V> jcache(Ignite ig,
         CacheConfiguration ccfg,
-        String name) {
+        @NotNull String name) {
         CacheConfiguration<K, V> cc = new CacheConfiguration<>(ccfg);
         cc.setName(name);
 
@@ -214,7 +215,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridCacheAdapter<K, V> internalCache(int idx) {
-        return ((IgniteKernal)grid(idx)).internalCache(null);
+        return ((IgniteKernal)grid(idx)).internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -259,7 +260,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {
-        return grid().cache(null);
+        return grid().cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -280,7 +281,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridLocalCache<K, V> local() {
-        return (GridLocalCache<K, V>)((IgniteKernal)grid()).<K, V>internalCache();
+        return (GridLocalCache<K, V>)((IgniteKernal)grid()).<K, V>internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -427,7 +428,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache.
      */
     protected <K, V> GridNearCacheAdapter<K, V> near() {
-        return ((IgniteKernal)grid()).<K, V>internalCache().context().near();
+        return ((IgniteKernal)grid()).<K, V>internalCache(DEFAULT_CACHE_NAME).context().near();
     }
 
     /**
@@ -435,7 +436,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache.
      */
     protected <K, V> GridNearCacheAdapter<K, V> near(int idx) {
-        return ((IgniteKernal)grid(idx)).<K, V>internalCache().context().near();
+        return ((IgniteKernal)grid(idx)).<K, V>internalCache(DEFAULT_CACHE_NAME).context().near();
     }
 
     /**
@@ -443,7 +444,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Colocated cache.
      */
     protected <K, V> GridDhtColocatedCache<K, V> colocated(int idx) {
-        return (GridDhtColocatedCache<K, V>)((IgniteKernal)grid(idx)).<K, V>internalCache();
+        return (GridDhtColocatedCache<K, V>)((IgniteKernal)grid(idx)).<K, V>internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -1299,13 +1300,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
 
-        Affinity<Integer> aff = allGrids.get(0).affinity(null);
+        Affinity<Integer> aff = allGrids.get(0).affinity(DEFAULT_CACHE_NAME);
 
         Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
 
         for (Ignite ignite : allGrids) {
             if (!nodes.contains(ignite.cluster().localNode()))
-                return ignite.cache(null);
+                return ignite.cache(DEFAULT_CACHE_NAME);
         }
 
         fail();

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -221,17 +222,17 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forCacheNodes(String cacheName) {
+    @Override public ClusterGroup forCacheNodes(@NotNull String cacheName) {
         return cluster.forCacheNodes(cacheName);
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forDataNodes(String cacheName) {
+    @Override public ClusterGroup forDataNodes(@NotNull String cacheName) {
         return cluster.forDataNodes(cacheName);
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forClientNodes(String cacheName) {
+    @Override public ClusterGroup forClientNodes(@NotNull String cacheName) {
         return cluster.forClientNodes(cacheName);
     }
 

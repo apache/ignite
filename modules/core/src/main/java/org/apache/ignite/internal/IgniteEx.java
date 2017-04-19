@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,17 +49,7 @@ public interface IgniteEx extends Ignite {
      * @param name Cache name.
      * @return Cache instance for given name or <tt>null</tt> if one does not exist.
      */
-    @Nullable public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name);
-
-    /**
-     * Gets default cache instance if one is configured or <tt>null</tt> otherwise returning even non-public caches.
-     * The {@link IgniteInternalCache#name()} method on default instance returns <tt>null</tt>.
-     *
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @return Default cache instance.
-     */
-    @Nullable public <K, V> IgniteInternalCache<K, V> cachex();
+    @Nullable public <K, V> IgniteInternalCache<K, V> cachex(@NotNull String name);
 
     /**
      * Gets configured cache instance that satisfy all provided predicates including non-public caches. If no

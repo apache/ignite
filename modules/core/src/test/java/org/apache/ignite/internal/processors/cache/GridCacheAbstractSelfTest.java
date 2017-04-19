@@ -369,7 +369,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache(int idx) {
-        return ignite(idx).cache(null);
+        return ignite(idx).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -381,7 +381,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             throw new UnsupportedOperationException("Operation can't be done automatically via proxy. " +
                 "Send task with this logic on remote jvm instead.");
 
-        return ((IgniteKernal)grid(idx)).<String, Integer>internalCache().context();
+        return ((IgniteKernal)grid(idx)).<String, Integer>internalCache(DEFAULT_CACHE_NAME).context();
     }
 
     /**

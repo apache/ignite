@@ -93,8 +93,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-        IgniteCache<Object, Object> c0 = grid(0).cache(null);
-        IgniteCache<Object, Object> c1 = grid(1).cache(null);
+        IgniteCache<Object, Object> c0 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> c1 = grid(1).cache(DEFAULT_CACHE_NAME);
 
         c0.putAll(putMap);
 
@@ -120,8 +120,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i);
 
-        IgniteCache<Object, Object> prj0 = grid(0).cache(null);
-        IgniteCache<Object, Object> prj1 = grid(1).cache(null);
+        IgniteCache<Object, Object> prj0 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> prj1 = grid(1).cache(DEFAULT_CACHE_NAME);
 
         prj0.putAll(putMap);
 
@@ -154,7 +154,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         final int size = 10;
 
-        IgniteCache<Object, Object> cache0 = grid(0).cache(null);
+        IgniteCache<Object, Object> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < size; i++) {
             info("Putting value [i=" + i + ']');
@@ -197,7 +197,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
-            Affinity<Object> aff = ignite(i).affinity(null);
+            Affinity<Object> aff = ignite(i).affinity(DEFAULT_CACHE_NAME);
 
             info("Affinity nodes [nodes=" + F.nodeIds(aff.mapKeyToPrimaryAndBackups("key")) +
                 ", locNode=" + ignite(i).cluster().localNode().id() + ']');
@@ -231,12 +231,12 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             IgniteCache<String, Integer> c = jcache(i);
 
-            if (grid(i).affinity(null).isBackup(grid(i).localNode(), "key")) {
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isBackup(grid(i).localNode(), "key")) {
                 assert c.localPeek("key", NEAR) == null;
 
                 assert c.localPeek("key", PRIMARY, BACKUP) == 1;
             }
-            else if (!grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), "key")) {
+            else if (!grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), "key")) {
                 // Initialize near reader.
                 assertEquals((Integer)1, jcache(i).get("key"));
 
@@ -283,15 +283,15 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Generating keys for test [nodes=" + ignite0.name() + ", " + ignite1.name() + ", " + ignite2.name() + ']');
 
-        IgniteCache<String, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<String, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         int val = 0;
 
         for (int i = 0; i < 10_000 && keys.size() < 5; i++) {
             String key = String.valueOf(i);
 
-            if (ignite(0).affinity(null).isPrimary(ignite0.localNode(), key) &&
-                ignite(0).affinity(null).isBackup(ignite1.localNode(), key)) {
+            if (ignite(0).affinity(DEFAULT_CACHE_NAME).isPrimary(ignite0.localNode(), key) &&
+                ignite(0).affinity(DEFAULT_CACHE_NAME).isBackup(ignite1.localNode(), key)) {
                 keys.add(key);
 
                 cache0.put(key, val++);
@@ -302,7 +302,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("Finished generating keys for test.");
 
-        IgniteCache<String, Integer> cache2 = ignite2.cache(null);
+        IgniteCache<String, Integer> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
         assertEquals(Integer.valueOf(0), cache2.get(keys.get(0)));
         assertEquals(Integer.valueOf(1), cache2.get(keys.get(1)));
@@ -310,7 +310,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertEquals(0, cache0.localSize(NEAR));
         assertEquals(5, cache0.localSize(CachePeekMode.ALL) - cache0.localSize(NEAR));
 
-        IgniteCache<String, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<String, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         assertEquals(0, cache1.localSize(NEAR));
         assertEquals(5, cache1.localSize(CachePeekMode.ALL) - cache1.localSize(NEAR));
@@ -358,7 +358,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         if (!isMultiJvm())
             info("All affinity nodes: " + affinityNodes());
 
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         info("Cache affinity nodes: " + affinity(cache).mapKeyToPrimaryAndBackups(key));
 
@@ -471,9 +471,9 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         /** {@inheritDoc} */
         @Override public void run(int idx) throws Exception {
-            assertEquals(0, ((IgniteKernal)ignite).<String, Integer>internalCache().context().tm().idMapSize());
+            assertEquals(0, ((IgniteKernal)ignite).<String, Integer>internalCache(DEFAULT_CACHE_NAME).context().tm().idMapSize());
 
-            IgniteCache<Object, Object> cache = ignite.cache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
             ClusterNode node = ((IgniteKernal)ignite).localNode();
 
             for (int k = 0; k < size; k++) {
@@ -490,7 +490,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     private static class IsNearTask extends TestIgniteIdxRunnable {
         /** {@inheritDoc} */
         @Override public void run(int idx) throws Exception {
-            assertTrue(((IgniteKernal)ignite).internalCache().context().isNear());
+            assertTrue(((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME).context().isNear());
         }
     }
 }

@@ -148,7 +148,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid(0).cache(null).removeAll();
+        grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -550,7 +550,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testContainsKey() throws Exception {
-        grid(0).cache(null).put("key0", "val0");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CONTAINS_KEY.key(), "key", "key0"));
 
@@ -561,8 +561,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testContainesKeys() throws Exception {
-        grid(0).cache(null).put("key0", "val0");
-        grid(0).cache(null).put("key1", "val1");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("key1", "val1");
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CONTAINS_KEYS.key(),
             "k1", "key0", "k2", "key1"));
@@ -574,27 +574,27 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testGetAndPut() throws Exception {
-        grid(0).cache(null).put("key0", "val0");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET_AND_PUT.key(), "key", "key0", "val", "val1"));
 
         assertCacheOperation(ret, "val0");
 
-        assertEquals("val1", grid(0).cache(null).get("key0"));
+        assertEquals("val1", grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetAndPutIfAbsent() throws Exception {
-        grid(0).cache(null).put("key0", "val0");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT.key(),
             "key", "key0", "val", "val1"));
 
         assertCacheOperation(ret, "val0");
 
-        assertEquals("val0", grid(0).cache(null).get("key0"));
+        assertEquals("val0", grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
     }
 
     /**
@@ -606,77 +606,77 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertCacheOperation(ret, true);
 
-        assertEquals("val1", grid(0).cache(null).get("key0"));
+        assertEquals("val1", grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRemoveValue() throws Exception {
-        grid(0).cache(null).put("key0", "val0");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE_VALUE.key(),
             "key", "key0", "val", "val1"));
 
         assertCacheOperation(ret, false);
 
-        assertEquals("val0", grid(0).cache(null).get("key0"));
+        assertEquals("val0", grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
 
         ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE_VALUE.key(),
             "key", "key0", "val", "val0"));
 
         assertCacheOperation(ret, true);
 
-        assertNull(grid(0).cache(null).get("key0"));
+        assertNull(grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetAndRemove() throws Exception {
-        grid(0).cache(null).put("key0", "val0");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET_AND_REMOVE.key(),
             "key", "key0"));
 
         assertCacheOperation(ret, "val0");
 
-        assertNull(grid(0).cache(null).get("key0"));
+        assertNull(grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReplaceValue() throws Exception {
-        grid(0).cache(null).put("key0", "val0");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REPLACE_VALUE.key(),
             "key", "key0", "val", "val1", "val2", "val2"));
 
         assertCacheOperation(ret, false);
 
-        assertEquals("val0", grid(0).cache(null).get("key0"));
+        assertEquals("val0", grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
 
         ret = content(F.asMap("cmd", GridRestCommand.CACHE_REPLACE_VALUE.key(),
             "key", "key0", "val", "val1", "val2", "val0"));
 
         assertCacheOperation(ret, true);
 
-        assertEquals("val1", grid(0).cache(null).get("key0"));
+        assertEquals("val1", grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetAndReplace() throws Exception {
-        grid(0).cache(null).put("key0", "val0");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("key0", "val0");
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET_AND_REPLACE.key(),
             "key", "key0", "val", "val1"));
 
         assertCacheOperation(ret, "val0");
 
-        assertEquals("val1", grid(0).cache(null).get("key0"));
+        assertEquals("val1", grid(0).cache(DEFAULT_CACHE_NAME).get("key0"));
     }
 
     /**
@@ -1642,9 +1642,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        grid(0).cache(null).put("1", "1");
-        grid(0).cache(null).put("2", "2");
-        grid(0).cache(null).put("3", "3");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("1", "1");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("2", "2");
+        grid(0).cache(DEFAULT_CACHE_NAME).put("3", "3");
 
         Map<String, String> params = new HashMap<>();
         params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());

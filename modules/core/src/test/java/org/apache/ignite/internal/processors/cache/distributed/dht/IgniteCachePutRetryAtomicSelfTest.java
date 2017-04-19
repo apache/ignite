@@ -49,7 +49,7 @@ public class IgniteCachePutRetryAtomicSelfTest extends IgniteCachePutRetryAbstra
     public void testPutInsideTransaction() throws Exception {
         ignite(0).createCache(cacheConfiguration(false, false));
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName("tx-cache");
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -74,7 +74,7 @@ public class IgniteCachePutRetryAtomicSelfTest extends IgniteCachePutRetryAbstra
             try {
                 IgniteTransactions txs = ignite(0).transactions();
 
-                IgniteCache<Object, Object> cache = ignite(0).cache(null);
+                IgniteCache<Object, Object> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
                 long stopTime = System.currentTimeMillis() + 60_000;
 

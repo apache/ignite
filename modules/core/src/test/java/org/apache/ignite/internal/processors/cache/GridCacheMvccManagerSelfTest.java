@@ -100,7 +100,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGridsMultiThreaded(gridCnt);
 
-            IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             Transaction tx = ignite.transactions().txStart();
 
@@ -109,8 +109,8 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
             tx.commit();
 
             for (int i = 0; i < gridCnt; i++) {
-                assert ((IgniteKernal)grid(i)).internalCache().context().mvcc().localCandidates().isEmpty();
-                assert ((IgniteKernal)grid(i)).internalCache().context().mvcc().remoteCandidates().isEmpty();
+                assert ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME).context().mvcc().localCandidates().isEmpty();
+                assert ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME).context().mvcc().remoteCandidates().isEmpty();
             }
         }
         finally {

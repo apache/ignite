@@ -89,7 +89,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
      * @throws Exception If failed.
      */
     public void testIndexReferences() throws Exception {
-        IgniteCache<Integer, TestBinary> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestBinary> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         String fieldOneVal = "123";
         int fieldTwoVal = 123;
@@ -97,7 +97,7 @@ public abstract class GridBinaryDuplicateIndexObjectsAbstractSelfTest extends Gr
 
         cache.put(key, new TestBinary(fieldOneVal, fieldTwoVal));
 
-        IgniteCache<Integer, BinaryObject> prj = grid(0).cache(null).withKeepBinary();
+        IgniteCache<Integer, BinaryObject> prj = grid(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
         BinaryObject cacheVal = prj.get(key);
 

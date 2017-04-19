@@ -58,7 +58,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(ATOMIC);
@@ -98,7 +98,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
         qry.setLocalListener(lsnr);
 
-        QueryCursor<?> cur = clientNode.cache(null).query(qry);
+        QueryCursor<?> cur = clientNode.cache(DEFAULT_CACHE_NAME).query(qry);
 
         for (int i = 0; i < 10; i++) {
             log.info("Start iteration: " + i);
@@ -107,7 +107,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
             Ignite joined1 = startGrid(4);
 
-            IgniteCache<Object, Object> joinedCache1 = joined1.cache(null);
+            IgniteCache<Object, Object> joinedCache1 = joined1.cache(DEFAULT_CACHE_NAME);
 
             joinedCache1.put(primaryKey(joinedCache1), 1);
 
@@ -117,7 +117,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
             Ignite joined2 = startGrid(5);
 
-            IgniteCache<Object, Object> joinedCache2 = joined2.cache(null);
+            IgniteCache<Object, Object> joinedCache2 = joined2.cache(DEFAULT_CACHE_NAME);
 
             joinedCache2.put(primaryKey(joinedCache2), 2);
 
@@ -154,13 +154,13 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
             qry.setLocalListener(lsnr);
 
-            QueryCursor<?> cur = clientNode.cache(null).query(qry);
+            QueryCursor<?> cur = clientNode.cache(DEFAULT_CACHE_NAME).query(qry);
 
             lsnr.latch = new CountDownLatch(1);
 
             Ignite joined1 = startGrid(4);
 
-            IgniteCache<Object, Object> joinedCache1 = joined1.cache(null);
+            IgniteCache<Object, Object> joinedCache1 = joined1.cache(DEFAULT_CACHE_NAME);
 
             joinedCache1.put(primaryKey(joinedCache1), 1);
 
@@ -172,7 +172,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
             Ignite joined2 = startGrid(5);
 
-            IgniteCache<Object, Object> joinedCache2 = joined2.cache(null);
+            IgniteCache<Object, Object> joinedCache2 = joined2.cache(DEFAULT_CACHE_NAME);
 
             joinedCache2.put(primaryKey(joinedCache2), 2);
 
@@ -209,7 +209,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
                 @Override public IgniteCache<Integer, Integer> apply() {
                     ++cnt;
 
-                    return grid(CLIENT_ID).cache(null);
+                    return grid(CLIENT_ID).cache(DEFAULT_CACHE_NAME);
                 }
             };
 
@@ -219,7 +219,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
         qry.setLocalListener(lsnr);
 
-        QueryCursor<?> cur = clnNode.cache(null).query(qry);
+        QueryCursor<?> cur = clnNode.cache(DEFAULT_CACHE_NAME).query(qry);
 
         boolean first = true;
 

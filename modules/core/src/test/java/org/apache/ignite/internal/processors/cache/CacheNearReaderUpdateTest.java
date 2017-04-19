@@ -343,7 +343,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         int backups,
         boolean storeEnabled,
         boolean nearCache) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(TRANSACTIONAL);

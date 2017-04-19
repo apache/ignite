@@ -62,7 +62,7 @@ public class CacheNoValueClassOnServerTestClient {
             if (nodes != 2)
                 throw new Exception("Unexpected nodes number: " + nodes);
 
-            IgniteCache<Integer, Person> cache = ignite.cache(null);
+            IgniteCache<Integer, Person> cache = ignite.cache("default");
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, new Person("name-" + i));
