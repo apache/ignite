@@ -107,7 +107,7 @@ public class HibernateNaturalIdRegion extends HibernateTransactionalDataRegion i
 
         /** {@inheritDoc} */
         @Override public boolean afterUpdate(SharedSessionContractImplementor ses, Object key, Object val, SoftLock lock) throws CacheException {
-            return stgy.afterUpdate(key, val, lock);
+            return stgy.afterUpdate(key, val);
         }
     }
 }

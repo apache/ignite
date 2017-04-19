@@ -37,7 +37,7 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
      * @param ignite Grid.
      * @param cache Region cache.
      */
-    public HibernateGeneralDataRegion(HibernateRegionFactory factory, String name,
+    HibernateGeneralDataRegion(HibernateRegionFactory factory, String name,
         Ignite ignite, HibernateCacheProxy cache) {
         super(factory, name, ignite, cache);
     }
@@ -46,7 +46,8 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
     @Nullable @Override public Object get(SharedSessionContractImplementor ses, Object key) throws CacheException {
         try {
             return cache.get(key);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -55,7 +56,8 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
     @Override public void put(SharedSessionContractImplementor ses, Object key, Object val) throws CacheException {
         try {
             cache.put(key, val);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
@@ -67,6 +69,11 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
 
     /** {@inheritDoc} */
     @Override public void evictAll() throws CacheException {
-        HibernateAccessStrategyAdapter.evictAll(cache);
+        try {
+            HibernateAccessStrategyAdapter.evictAll(cache);
+        }
+        catch (IgniteCheckedException e) {
+            throw HibernateRegionFactory.EXCEPTION_CONVERTER.convert(e);
+        }
     }
 }

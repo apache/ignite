@@ -45,7 +45,7 @@ public class HibernateRegion implements Region {
      * @param ignite Grid.
      * @param cache Region cache.
      */
-    public HibernateRegion(HibernateRegionFactory factory, String name, Ignite ignite, HibernateCacheProxy cache) {
+    HibernateRegion(HibernateRegionFactory factory, String name, Ignite ignite, HibernateCacheProxy cache) {
         this.factory = factory;
         this.name = name;
         this.ignite = ignite;

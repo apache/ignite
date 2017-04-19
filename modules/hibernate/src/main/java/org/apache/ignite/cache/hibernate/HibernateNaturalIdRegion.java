@@ -50,8 +50,11 @@ public class HibernateNaturalIdRegion extends HibernateTransactionalDataRegion i
      * @param cache Region cache,
      * @param dataDesc Region data description.
      */
-    public HibernateNaturalIdRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, HibernateCacheProxy cache, CacheDataDescription dataDesc) {
+    HibernateNaturalIdRegion(HibernateRegionFactory factory,
+        String name,
+        Ignite ignite,
+        HibernateCacheProxy cache,
+        CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
 
@@ -94,7 +97,7 @@ public class HibernateNaturalIdRegion extends HibernateTransactionalDataRegion i
 
         /** {@inheritDoc} */
         @Override public boolean afterUpdate(Object key, Object val, SoftLock lock) throws CacheException {
-            return stgy.afterUpdate(key, val, lock);
+            return stgy.afterUpdate(key, val);
         }
     }
 }

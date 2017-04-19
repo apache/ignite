@@ -27,12 +27,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class HibernateAbstractRegionAccessStrategy implements RegionAccessStrategy {
     /** */
-    protected final HibernateAccessStrategyAdapter stgy;
+    final HibernateAccessStrategyAdapter stgy;
 
     /**
      * @param stgy Access strategy implementation.
      */
-    protected HibernateAbstractRegionAccessStrategy(HibernateAccessStrategyAdapter stgy) {
+    HibernateAbstractRegionAccessStrategy(HibernateAccessStrategyAdapter stgy) {
         this.stgy = stgy;
     }
 
@@ -58,22 +58,26 @@ public abstract class HibernateAbstractRegionAccessStrategy implements RegionAcc
 
     /** {@inheritDoc} */
     @Nullable @Override public SoftLock lockItem(Object key, Object ver) throws CacheException {
-        return stgy.lock(key);
+        stgy.lock(key);
+
+        return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public SoftLock lockRegion() throws CacheException {
-        return stgy.lockRegion();
+        stgy.lockRegion();
+
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public void unlockRegion(SoftLock lock) throws CacheException {
-        stgy.unlockRegion(lock);
+        stgy.unlockRegion();
     }
 
     /** {@inheritDoc} */
     @Override public void unlockItem(Object key, SoftLock lock) throws CacheException {
-        stgy.unlock(key, lock);
+        stgy.unlock(key);
     }
 
     /** {@inheritDoc} */

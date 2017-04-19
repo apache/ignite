@@ -43,10 +43,8 @@ import org.hibernate.cfg.Configuration;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.DFLT_ACCESS_TYPE_PROPERTY;
-import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.DFLT_CACHE_NAME_PROPERTY;
-import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.IGNITE_INSTANCE_NAME_PROPERTY;
-import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.REGION_CACHE_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_CACHE_NAME_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.REGION_CACHE_PROPERTY;
 import static org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY;
 import static org.hibernate.cfg.AvailableSettings.GENERATE_STATISTICS;
 import static org.hibernate.cfg.AvailableSettings.HBM2DDL_AUTO;
@@ -142,7 +140,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         cfg.addAnnotatedClass(Entity3.class);
         cfg.addAnnotatedClass(Entity4.class);
 
-        cfg.setProperty(DFLT_ACCESS_TYPE_PROPERTY, AccessType.NONSTRICT_READ_WRITE.name());
+        cfg.setProperty(HibernateAccessStrategyFactory.DFLT_ACCESS_TYPE_PROPERTY, AccessType.NONSTRICT_READ_WRITE.name());
 
         cfg.setProperty(HBM2DDL_AUTO, "create");
 
@@ -156,7 +154,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         cfg.setProperty(RELEASE_CONNECTIONS, "on_close");
 
-        cfg.setProperty(IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
+        cfg.setProperty(HibernateAccessStrategyFactory.IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
 
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY1_NAME, "cache1");
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY2_NAME, "cache2");
@@ -170,14 +168,14 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * Tests property {@link HibernateRegionFactory#REGION_CACHE_PROPERTY}.
+     * Tests property {@link HibernateAccessStrategyFactory#REGION_CACHE_PROPERTY}.
      */
     public void testPerRegionCacheProperty() {
         testCacheUsage(1, 1, 0, 1, 1);
     }
 
     /**
-     * Tests property {@link HibernateRegionFactory#DFLT_CACHE_NAME_PROPERTY}.
+     * Tests property {@link HibernateAccessStrategyFactory#DFLT_CACHE_NAME_PROPERTY}.
      */
     public void testDefaultCache() {
         dfltCache = true;

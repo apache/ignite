@@ -70,7 +70,7 @@ public class HibernateCollectionRegion extends HibernateTransactionalDataRegion 
      * @param cache Region cache.
      * @param dataDesc Region data description.
      */
-    public HibernateCollectionRegion(HibernateRegionFactory factory, String name,
+    HibernateCollectionRegion(HibernateRegionFactory factory, String name,
         Ignite ignite, HibernateCacheProxy cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }

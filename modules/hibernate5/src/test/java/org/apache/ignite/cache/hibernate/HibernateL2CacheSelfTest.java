@@ -65,9 +65,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.DFLT_ACCESS_TYPE_PROPERTY;
-import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.IGNITE_INSTANCE_NAME_PROPERTY;
-import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.REGION_CACHE_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_ACCESS_TYPE_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.IGNITE_INSTANCE_NAME_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.REGION_CACHE_PROPERTY;
 import static org.hibernate.cfg.Environment.CACHE_REGION_FACTORY;
 import static org.hibernate.cfg.Environment.GENERATE_STATISTICS;
 import static org.hibernate.cfg.Environment.HBM2DDL_AUTO;
@@ -1113,8 +1113,6 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNaturalIdCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1084");
-
         for (AccessType accessType : accessTypes())
             testNaturalIdCache(accessType);
     }
@@ -1227,7 +1225,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 fail("Commit must fail.");
             }
-            catch (ConstraintViolationException e) {
+            catch (PersistenceException e) {
                 log.info("Expected exception: " + e);
 
                 tx.rollback();

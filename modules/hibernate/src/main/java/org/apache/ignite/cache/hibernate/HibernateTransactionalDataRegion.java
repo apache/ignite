@@ -18,16 +18,12 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.TransactionConfiguration;
-import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.CollectionRegion;
 import org.hibernate.cache.spi.EntityRegion;
 import org.hibernate.cache.spi.NaturalIdRegion;
 import org.hibernate.cache.spi.TransactionalDataRegion;
 import org.hibernate.cache.spi.access.AccessType;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Implementation of {@link TransactionalDataRegion} (transactional means that
@@ -46,7 +42,7 @@ public class HibernateTransactionalDataRegion extends HibernateRegion implements
      * @param cache Region cache.
      * @param dataDesc Region data description.
      */
-    public HibernateTransactionalDataRegion(HibernateRegionFactory factory, String name,
+    HibernateTransactionalDataRegion(HibernateRegionFactory factory, String name,
         Ignite ignite, HibernateCacheProxy cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache);
 
@@ -67,38 +63,19 @@ public class HibernateTransactionalDataRegion extends HibernateRegion implements
      * @param accessType Hibernate L2 cache access type.
      * @return Access strategy for given access type.
      */
-    protected HibernateAccessStrategyAdapter createAccessStrategy(AccessType accessType) {
+    HibernateAccessStrategyAdapter createAccessStrategy(AccessType accessType) {
         switch (accessType) {
             case READ_ONLY:
-                return new HibernateReadOnlyAccessStrategy(ignite, cache);
+                return factory.accessStrategyFactory().createReadOnlyStrategy(cache);
 
             case NONSTRICT_READ_WRITE:
-                return new HibernateNonStrictAccessStrategy(ignite, cache, factory.threadLocalForCache(cache.name()));
+                return factory.accessStrategyFactory().createNonStrictReadWriteStrategy(cache);
 
             case READ_WRITE:
-                if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
-                    throw new CacheException("Hibernate READ-WRITE access strategy must have Ignite cache with " +
-                        "'TRANSACTIONAL' atomicity mode: " + cache.name());
-
-                return new HibernateReadWriteAccessStrategy(ignite, cache, factory.threadLocalForCache(cache.name()));
+                return factory.accessStrategyFactory().createReadWriteStrategy(cache);
 
             case TRANSACTIONAL:
-                if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
-                    throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite cache with " +
-                        "'TRANSACTIONAL' atomicity mode: " + cache.name());
-
-                TransactionConfiguration txCfg = ignite.configuration().getTransactionConfiguration();
-
-                if (txCfg == null ||
-                    (txCfg.getTxManagerFactory() == null
-                    && txCfg.getTxManagerLookupClassName() == null
-                    && cache.configuration().getTransactionManagerLookupClassName() == null)) {
-                    throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite with " +
-                                "Factory<TransactionManager> configured (see IgniteConfiguration." +
-                                "getTransactionConfiguration().setTxManagerFactory()): " + cache.name());
-                }
-
-                return new HibernateTransactionalAccessStrategy(ignite, cache);
+                return factory.accessStrategyFactory().createTransactionalStrategy(cache);
 
             default:
                 throw new IllegalArgumentException("Unknown Hibernate access type: " + accessType);

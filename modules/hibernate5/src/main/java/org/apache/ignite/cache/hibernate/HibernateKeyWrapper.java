@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.hibernate;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.hibernate.cache.internal.DefaultCacheKeysFactory;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -26,7 +27,7 @@ import org.hibernate.persister.entity.EntityPersister;
 /**
  * Hibernate cache key wrapper.
  */
-public class HibernateKeyWrapper {
+public class HibernateKeyWrapper implements Serializable {
     /** Key. */
     private final Object key;
 

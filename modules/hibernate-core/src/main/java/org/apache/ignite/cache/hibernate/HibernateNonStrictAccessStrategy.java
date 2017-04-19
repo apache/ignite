@@ -17,20 +17,16 @@
 
 package org.apache.ignite.cache.hibernate;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.typedef.F;
-import org.hibernate.cache.CacheException;
-import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cache.spi.access.SoftLock;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Implementation of {@link AccessType#NONSTRICT_READ_WRITE} cache access strategy.
+ * Implementation of NONSTRICT_READ_WRITE cache access strategy.
  * <p>
  * Configuration of L2 cache and per-entity cache access strategy can be set in the
  * Hibernate configuration file:
@@ -65,27 +61,29 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
      * @param ignite Grid.
      * @param cache Cache.
      * @param writeCtx Thread local instance used to track updates done during one Hibernate transaction.
+     * @param eConverter Exception converter.
      */
-    protected HibernateNonStrictAccessStrategy(Ignite ignite, HibernateCacheProxy cache, ThreadLocal writeCtx) {
-        super(ignite, cache);
+    HibernateNonStrictAccessStrategy(Ignite ignite,
+        HibernateCacheProxy cache,
+        ThreadLocal writeCtx,
+        HibernateExceptionConverter eConverter) {
+        super(ignite, cache, eConverter);
 
         this.writeCtx = (ThreadLocal<WriteContext>)writeCtx;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected SoftLock lock(Object key) throws CacheException {
+    @Override public void lock(Object key) {
         WriteContext ctx = writeCtx.get();
 
         if (ctx == null)
             writeCtx.set(ctx = new WriteContext());
 
         ctx.locked(key);
-
-        return null;
     }
 
     /** {@inheritDoc} */
-    @Override protected void unlock(Object key, SoftLock lock) throws CacheException {
+    @Override public void unlock(Object key) {
         try {
             WriteContext ctx = writeCtx.get();
 
@@ -96,23 +94,23 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
             }
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean update(Object key, Object val) throws CacheException {
+    @Override public boolean update(Object key, Object val) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean afterUpdate(Object key, Object val, SoftLock lock) throws CacheException {
+    @Override public boolean afterUpdate(Object key, Object val) {
         WriteContext ctx = writeCtx.get();
 
         if (ctx != null) {
             ctx.updated(key, val);
 
-            unlock(key, lock);
+            unlock(key);
 
             return true;
         }
@@ -121,24 +119,24 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean insert(Object key, Object val) throws CacheException {
+    @Override public boolean insert(Object key, Object val) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean afterInsert(Object key, Object val) throws CacheException {
+    @Override public boolean afterInsert(Object key, Object val) {
         try {
             cache.put(key, val);
 
             return true;
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void remove(Object key) throws CacheException {
+    @Override public void remove(Object key) {
         WriteContext ctx = writeCtx.get();
 
         if (ctx != null)
@@ -188,7 +186,7 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
          */
         void updated(Object key, Object val) {
             if (updates == null)
-                updates = new GridLeanMap<>();
+                updates = new LinkedHashMap<>();
 
             updates.put(key, val);
         }

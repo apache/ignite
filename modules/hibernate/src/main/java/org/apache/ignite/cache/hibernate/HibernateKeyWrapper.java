@@ -17,12 +17,13 @@
 
 package org.apache.ignite.cache.hibernate;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Hibernate cache key wrapper.
  */
-public class HibernateKeyWrapper {
+public class HibernateKeyWrapper implements Serializable {
     /** Key. */
     private final Object key;
 

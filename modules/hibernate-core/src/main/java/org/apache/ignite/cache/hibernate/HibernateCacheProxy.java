@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.hibernate.core;
+package org.apache.ignite.cache.hibernate;
 
 import java.util.Collection;
 import java.util.HashMap;

@@ -19,13 +19,9 @@ package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.hibernate.cache.CacheException;
-import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cache.spi.access.SoftLock;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Implementation of {@link AccessType#READ_ONLY} cache access strategy.
+ * Implementation of READ_ONLY cache access strategy.
  * <p>
  * Configuration of L2 cache and per-entity cache access strategy can be set in the
  * Hibernate configuration file:
@@ -56,52 +52,55 @@ import org.jetbrains.annotations.Nullable;
  */
 public class HibernateReadOnlyAccessStrategy extends HibernateAccessStrategyAdapter {
     /**
-     * @param ignite Grid.
+     * @param ignite Node.
      * @param cache Cache.
+     * @param eConverter Exception converter.
      */
-    public HibernateReadOnlyAccessStrategy(Ignite ignite, HibernateCacheProxy cache) {
-        super(ignite, cache);
+    public HibernateReadOnlyAccessStrategy(Ignite ignite,
+        HibernateCacheProxy cache,
+        HibernateExceptionConverter eConverter) {
+        super(ignite, cache, eConverter);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean insert(Object key, Object val) throws CacheException {
+    @Override public boolean insert(Object key, Object val) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean afterInsert(Object key, Object val) throws CacheException {
+    @Override public boolean afterInsert(Object key, Object val) {
         try {
             cache.put(key, val);
 
             return true;
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected SoftLock lock(Object key) throws CacheException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void unlock(Object key, SoftLock lock) throws CacheException {
+    @Override public void lock(Object key) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override protected void remove(Object key) throws CacheException {
+    @Override public void unlock(Object key) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean update(Object key, Object val) throws CacheException {
+    @Override public void remove(Object key) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean update(Object key, Object val) {
         throw new UnsupportedOperationException("Updates are not supported for read-only access strategy.");
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean afterUpdate(Object key, Object val, SoftLock lock) throws CacheException {
+    @Override public boolean afterUpdate(Object key, Object val) {
         throw new UnsupportedOperationException("Updates are not supported for read-only access strategy.");
     }
 }

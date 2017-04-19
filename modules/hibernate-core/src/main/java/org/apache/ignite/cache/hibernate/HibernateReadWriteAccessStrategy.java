@@ -23,15 +23,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.GridLeanSet;
-import org.hibernate.cache.CacheException;
-import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cache.spi.access.SoftLock;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Implementation of {@link AccessType#READ_WRITE} cache access strategy.
+ * Implementation of READ_WRITE cache access strategy.
  * <p>
  * Configuration of L2 cache and per-entity cache access strategy can be set in the
  * Hibernate configuration file:
@@ -67,14 +64,17 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
      * @param cache Cache.
      * @param txCtx Thread local instance used to track updates done during one Hibernate transaction.
      */
-    protected HibernateReadWriteAccessStrategy(Ignite ignite, HibernateCacheProxy cache, ThreadLocal txCtx) {
-        super(ignite, cache);
+    protected HibernateReadWriteAccessStrategy(Ignite ignite,
+        HibernateCacheProxy cache,
+        ThreadLocal txCtx,
+        HibernateExceptionConverter eConverter) {
+        super(ignite, cache, eConverter);
 
         this.txCtx = (ThreadLocal<TxContext>)txCtx;
     }
 
     /** {@inheritDoc} */
-    @Override protected Object get(Object key) throws CacheException {
+    @Override public Object get(Object key) {
         boolean success = false;
 
         try {
@@ -85,7 +85,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             return o;
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
         finally {
             if (!success)
@@ -94,7 +94,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     }
 
     /** {@inheritDoc} */
-    @Override protected void putFromLoad(Object key, Object val) throws CacheException {
+    @Override public void putFromLoad(Object key, Object val) {
         boolean success = false;
 
         try {
@@ -103,7 +103,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             success = true;
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
         finally {
             if (!success)
@@ -112,7 +112,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     }
 
     /** {@inheritDoc} */
-    @Override protected SoftLock lock(Object key) throws CacheException {
+    @Override public void lock(Object key) {
         boolean success = false;
 
         try {
@@ -126,11 +126,9 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             ctx.locked(key);
 
             success = true;
-
-            return null;
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
         finally {
             if (!success)
@@ -139,7 +137,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     }
 
     /** {@inheritDoc} */
-    @Override protected void unlock(Object key, SoftLock lock) throws CacheException {
+    @Override public void unlock(Object key) {
         boolean success = false;
 
         try {
@@ -151,7 +149,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             success = true;
         }
         catch (Exception e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
         finally {
             if (!success)
@@ -160,12 +158,12 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean update(Object key, Object val) throws CacheException {
+    @Override public boolean update(Object key, Object val) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean afterUpdate(Object key, Object val, SoftLock lock) throws CacheException {
+    @Override public boolean afterUpdate(Object key, Object val) {
         boolean success = false;
         boolean res = false;
 
@@ -185,7 +183,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             return res;
         }
         catch (Exception e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
         finally {
             if (!success)
@@ -194,12 +192,12 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean insert(Object key, Object val) throws CacheException {
+    @Override public boolean insert(Object key, Object val) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean afterInsert(Object key, Object val) throws CacheException {
+    @Override public boolean afterInsert(Object key, Object val) {
         boolean success = false;
 
         try {
@@ -210,7 +208,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             return true;
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
         finally {
             if (!success)
@@ -219,7 +217,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     }
 
     /** {@inheritDoc} */
-    @Override protected void remove(Object key) throws CacheException {
+    @Override public void remove(Object key) {
         boolean success = false;
 
         try {
@@ -231,7 +229,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             success = true;
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
         finally {
             if (!success)
@@ -243,9 +241,8 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
      *
      * @param ctx Transaction context.
      * @param key Key.
-     * @throws CacheException If failed.
      */
-    private void unlock(TxContext ctx, Object key) throws CacheException {
+    private void unlock(TxContext ctx, Object key) {
         if (ctx.unlocked(key)) { // Finish transaction if last key is unlocked.
             txCtx.remove();
 

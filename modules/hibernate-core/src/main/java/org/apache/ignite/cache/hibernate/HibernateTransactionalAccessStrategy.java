@@ -20,13 +20,10 @@ package org.apache.ignite.cache.hibernate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.hibernate.cache.CacheException;
-import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cache.spi.access.SoftLock;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Implementation of {@link AccessType#TRANSACTIONAL} cache access strategy.
+ * Implementation of {TRANSACTIONAL cache access strategy.
  * <p>
  * It is supposed that this strategy is used in JTA environment and Hibernate and
  * {@link IgniteInternalCache} corresponding to the L2 cache region are configured to use the same transaction manager.
@@ -60,82 +57,85 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /**
      * @param ignite Grid.
      * @param cache Cache.
+     * @param eConverter Exception converter.
      */
-    public HibernateTransactionalAccessStrategy(Ignite ignite, HibernateCacheProxy cache) {
-        super(ignite, cache);
+    HibernateTransactionalAccessStrategy(Ignite ignite,
+        HibernateCacheProxy cache,
+        HibernateExceptionConverter eConverter) {
+        super(ignite, cache, eConverter);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object get(Object key) throws CacheException {
+    @Nullable @Override public Object get(Object key) {
         try {
             return cache.get(key);
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void putFromLoad(Object key, Object val) throws CacheException {
+    @Override public void putFromLoad(Object key, Object val) {
         try {
             cache.put(key, val);
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected SoftLock lock(Object key) throws CacheException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void unlock(Object key, SoftLock lock) throws CacheException {
+    @Override public void lock(Object key) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean update(Object key, Object val) throws CacheException {
+    @Override public void unlock(Object key) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean update(Object key, Object val) {
         try {
             cache.put(key, val);
 
             return true;
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean afterUpdate(Object key, Object val, SoftLock lock) throws CacheException {
+    @Override public boolean afterUpdate(Object key, Object val) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean insert(Object key, Object val) throws CacheException {
+    @Override public boolean insert(Object key, Object val) {
         try {
             cache.put(key, val);
 
             return true;
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean afterInsert(Object key, Object val) throws CacheException {
+    @Override public boolean afterInsert(Object key, Object val) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override protected void remove(Object key) throws CacheException {
+    @Override public void remove(Object key) {
         try {
             cache.remove(key);
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
     }
 }

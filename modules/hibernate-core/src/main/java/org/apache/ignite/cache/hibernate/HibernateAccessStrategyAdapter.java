@@ -23,25 +23,16 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.hibernate.core.HibernateCacheProxy;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.hibernate.cache.CacheException;
-import org.hibernate.cache.spi.access.CollectionRegionAccessStrategy;
-import org.hibernate.cache.spi.access.EntityRegionAccessStrategy;
-import org.hibernate.cache.spi.access.NaturalIdRegionAccessStrategy;
-import org.hibernate.cache.spi.access.RegionAccessStrategy;
-import org.hibernate.cache.spi.access.SoftLock;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Common interface used to implement Hibernate L2 cache access strategies ({@link RegionAccessStrategy},
- * {@link EntityRegionAccessStrategy} and {@link CollectionRegionAccessStrategy}).
+ * Common interface used to implement Hibernate L2 cache access strategies.
  * <p>
  * The expected sequences of steps related to various CRUD operations executed by Hibernate are:
  * <p>
@@ -95,6 +86,9 @@ public abstract class HibernateAccessStrategyAdapter {
     /** */
     protected final HibernateCacheProxy cache;
 
+    /** */
+    private final HibernateExceptionConverter eConverter;
+
     /** Grid. */
     protected final Ignite ignite;
 
@@ -102,187 +96,164 @@ public abstract class HibernateAccessStrategyAdapter {
     protected final IgniteLogger log;
 
     /**
-     * @param ignite Grid.
+     * @param ignite Node.
      * @param cache Cache.
+     * @param eConverter Exception converter.
      */
-    protected HibernateAccessStrategyAdapter(Ignite ignite, HibernateCacheProxy cache) {
+    protected HibernateAccessStrategyAdapter(Ignite ignite,
+        HibernateCacheProxy cache,
+        HibernateExceptionConverter eConverter) {
         this.cache = cache;
         this.ignite = ignite;
+        this.eConverter = eConverter;
 
-        log = ignite.log();
+        log = ignite.log().getLogger(getClass());
     }
 
     /**
-     * Gets value from cache. Used by {@link RegionAccessStrategy#get}.
-     *
+     * @param e Exception.
+     * @return Runtime exception to be thrown.
+     */
+    final RuntimeException convertException(Exception e) {
+        return eConverter.convert(e);
+    }
+
+    /**
      * @param key Key.
      * @return Cached value.
-     * @throws CacheException If failed.
      */
-    @Nullable protected Object get(Object key) throws CacheException {
+    @Nullable public Object get(Object key) {
         try {
             return cache.get(key);
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
     }
 
     /**
-     * Puts in cache value loaded from the database. Used by {@link RegionAccessStrategy#putFromLoad}.
-     *
      * @param key Key.
      * @param val Value.
      * @param minimalPutOverride MinimalPut flag
-     * @throws CacheException If failed.
      */
-    protected void putFromLoad(Object key, Object val, boolean minimalPutOverride) throws CacheException {
+    public void putFromLoad(Object key, Object val, boolean minimalPutOverride) {
         putFromLoad(key, val);
     }
 
     /**
-     * Puts in cache value loaded from the database. Used by {@link RegionAccessStrategy#putFromLoad}.
+     * Puts in cache value loaded from the database.
      *
      * @param key Key.
      * @param val Value.
-     * @throws CacheException If failed.
      */
-    protected void putFromLoad(Object key, Object val) throws CacheException {
+    public void putFromLoad(Object key, Object val) {
         try {
             cache.put(key, val);
         }
         catch (IgniteCheckedException e) {
-            throw new CacheException(e);
+            throw convertException(e);
         }
     }
 
     /**
      * Called during database transaction execution before Hibernate attempts to update or remove given key.
-     * Used by {@link RegionAccessStrategy#lockItem}.
      *
      * @param key Key.
-     * @return Lock representation or {@code null}.
-     * @throws CacheException If failed.
      */
-    @Nullable protected abstract SoftLock lock(Object key) throws CacheException;
+    public abstract void lock(Object key);
 
     /**
      * Called after Hibernate failed to update or successfully removed given key.
-     * Used by {@link RegionAccessStrategy#unlockItem}.
      *
      * @param key Key.
-     * @param lock The lock previously obtained from {@link #lock}
-     * @throws CacheException If failed.
      */
-    protected abstract void unlock(Object key, SoftLock lock) throws CacheException;
+    public abstract void unlock(Object key);
 
     /**
      * Called after Hibernate updated object in the database but before transaction completed.
-     * Used by {@link EntityRegionAccessStrategy#update} and {@link NaturalIdRegionAccessStrategy#update}.
      *
      * @param key Key.
      * @param val Value.
      * @return {@code True} if operation updated cache.
-     * @throws CacheException If failed.
      */
-    protected abstract boolean update(Object key, Object val) throws CacheException;
+    public abstract boolean update(Object key, Object val);
 
     /**
      * Called after Hibernate updated object in the database and transaction successfully completed.
-     * Used by {@link EntityRegionAccessStrategy#afterUpdate} and {@link NaturalIdRegionAccessStrategy#afterUpdate}.
      *
      * @param key Key.
      * @param val Value.
-     * @param lock The lock previously obtained from {@link #lock}
      * @return {@code True} if operation updated cache.
-     * @throws CacheException If failed.
      */
-    protected abstract boolean afterUpdate(Object key, Object val, SoftLock lock) throws CacheException;
+    public abstract boolean afterUpdate(Object key, Object val);
 
     /**
      * Called after Hibernate inserted object in the database but before transaction completed.
-     * Used by {@link EntityRegionAccessStrategy#insert} and {@link NaturalIdRegionAccessStrategy#insert}.
      *
      * @param key Key.
      * @param val Value.
      * @return {@code True} if operation updated cache.
-     * @throws CacheException If failed.
      */
-    protected abstract boolean insert(Object key, Object val) throws CacheException;
+    public abstract boolean insert(Object key, Object val);
 
     /**
      * Called after Hibernate inserted object in the database and transaction successfully completed.
-     * Used by {@link EntityRegionAccessStrategy#afterInsert} and {@link NaturalIdRegionAccessStrategy#afterInsert}.
      *
      * @param key Key.
      * @param val Value.
      * @return {@code True} if operation updated cache.
-     * @throws CacheException If failed.
      */
-    protected abstract boolean afterInsert(Object key, Object val) throws CacheException;
+    public abstract boolean afterInsert(Object key, Object val);
 
     /**
      * Called after Hibernate removed object from database but before transaction completed.
-     * Used by {@link RegionAccessStrategy#remove}.
      *
      * @param key Key,
-     * @throws CacheException If failed.
      */
-    protected abstract void remove(Object key) throws CacheException;
+    public abstract void remove(Object key);
 
     /**
      * Called to remove object from cache without regard to transaction.
-     * Used by {@link RegionAccessStrategy#evict}.
      *
      * @param key Key.
-     * @throws CacheException If failed.
      */
-    protected void evict(Object key) throws CacheException {
+    public void evict(Object key) {
         evict(ignite, cache, key);
     }
 
     /**
      * Called to remove all data from cache without regard to transaction.
-     * Used by {@link RegionAccessStrategy#evictAll}.
-     *
-     * @throws CacheException If failed.
      */
-    protected void evictAll() throws CacheException {
-        evictAll(cache);
-    }
-
-    /**
-     * Called during database transaction execution before Hibernate executed
-     * update operation which should invalidate entire cache region.
-     * Used by {@link RegionAccessStrategy#lockRegion}.
-     *
-     * @throws CacheException If failed.
-     * @return Lock representation or {@code null}.
-     */
-    @Nullable protected SoftLock lockRegion() throws CacheException {
-        return null;
-    }
-
-    /**
-     * Called after transaction clearing entire cache region completed.
-     * Used by {@link RegionAccessStrategy#unlockRegion}.
-     *
-     * @param lock The lock previously obtained from {@link #lockRegion}
-     * @throws CacheException If failed.
-     */
-    protected void unlockRegion(SoftLock lock) throws CacheException {
-        // No-op.
+    public void evictAll() {
+        try {
+            evictAll(cache);
+        }
+        catch (IgniteCheckedException e) {
+            throw convertException(e);
+        }
     }
 
     /**
      * Called during database transaction execution to clear entire cache region after
      * Hibernate executed database update, but before transaction completed.
-     * Used by {@link RegionAccessStrategy#removeAll}.
-     *
-     * @throws CacheException If failed.
      */
-    protected final void removeAll() throws CacheException {
+    public final void removeAll() {
         evictAll();
+    }
+
+    /**
+     * Called during database transaction execution before Hibernate executed
+     * update operation which should invalidate entire cache region.
+     */
+    public void lockRegion() {
+        // No-op.
+    }
+
+    /**
+     * Called after transaction clearing entire cache region completed.
+     */
+    public void unlockRegion() {
+        // No-op.
     }
 
     /**
@@ -291,32 +262,21 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param ignite Grid.
      * @param cache Cache.
      * @param key Key.
-     * @throws CacheException If failed.
      */
-    static void evict(Ignite ignite, HibernateCacheProxy cache, Object key) throws CacheException {
-        try {
-            key = cache.keyTransformer().transform(key);
+    public static void evict(Ignite ignite, HibernateCacheProxy cache, Object key) {
+        key = cache.keyTransformer().transform(key);
 
-            ignite.compute(ignite.cluster()).call(new ClearKeyCallable(key, cache.name()));
-        }
-        catch (IgniteException e) {
-            throw new CacheException(e);
-        }
+        ignite.compute(ignite.cluster()).call(new ClearKeyCallable(key, cache.name()));
     }
 
     /**
      * Called to remove all data from cache without regard to transaction.
      *
      * @param cache Cache.
-     * @throws CacheException If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    static void evictAll(IgniteInternalCache<Object,Object> cache) throws CacheException {
-        try {
-            cache.clear();
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
+    public static void evictAll(IgniteInternalCache<Object, Object> cache) throws IgniteCheckedException {
+        cache.clear();
     }
 
     /**
