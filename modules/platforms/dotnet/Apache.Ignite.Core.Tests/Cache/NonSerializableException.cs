@@ -15,23 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+namespace Apache.Ignite.Core.Tests.Cache
+{
+    using System;
+    using Apache.Ignite.Core.Binary;
 
-import org.apache.ignite.configuration.CacheConfiguration;
+    /// <summary>
+    /// Non-serializable exception.
+    /// </summary>
+    public class NonSerializableException : Exception, IBinarizable
+    {
+        /** <inheritdoc /> */
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new Exception("ExpectedException");
+        }
 
-/**
- * Test for segmented geo index.
- */
-public class GridH2IndexingSegmentedGeoSelfTest extends GridH2IndexingGeoSelfTest {
-    /** */
-    private static int QRY_PARALLELISM_LVL = 7;
-
-    /** {@inheritDoc} */
-    @Override
-    protected <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned,
-        Class<?>... idxTypes) throws Exception {
-        final CacheConfiguration<K, V> ccfg = super.cacheConfig(name, partitioned, idxTypes);
-
-        return ccfg.setQueryParallelism(partitioned ? QRY_PARALLELISM_LVL : 1);
+        /** <inheritdoc /> */
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new Exception("ExpectedException");
+        }
     }
 }

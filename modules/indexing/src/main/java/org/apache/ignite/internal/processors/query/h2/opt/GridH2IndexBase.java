@@ -426,9 +426,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
 
-        boolean isLocal = qctx.distributedJoinMode() == LOCAL_ONLY;
-
-        return new DistributedLookupBatch(filter.getSession(), cctx, ucast, affColId, isLocal);
+        return new DistributedLookupBatch(filter.getSession(), cctx, ucast, affColId);
     }
 
     /**
@@ -1099,9 +1097,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         final int affColId;
 
         /** */
-        private final boolean localQuery;
-
-        /** */
         GridH2QueryContext qctx;
 
         /** */
@@ -1130,14 +1125,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param cctx Cache Cache context.
          * @param ucast Unicast or broadcast query.
          * @param affColId Affinity column ID.
-         * @param localQuery Local query flag.
          */
-        DistributedLookupBatch(Session ses, GridCacheContext<?, ?> cctx, boolean ucast, int affColId, boolean localQuery) {
+        DistributedLookupBatch(Session ses, GridCacheContext<?, ?> cctx, boolean ucast, int affColId) {
             this.ses = ses;
             this.cctx = cctx;
             this.ucast = ucast;
             this.affColId = affColId;
-            this.localQuery = localQuery;
         }
 
         /**
@@ -1209,25 +1202,26 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             Object affKey = affColId == -1 ? null : getAffinityKey(firstRow, lastRow);
 
+            boolean locQry = localQuery();
+
             List<SegmentKey> segmentKeys;
-            Future<Cursor> fut;
 
             if (affKey != null) {
                 // Affinity key is provided.
                 if (affKey == EXPLICIT_NULL) // Affinity key is explicit null, we will not find anything.
                     return false;
 
-                segmentKeys = F.asList(rangeSegment(cctx, qctx, affKey, localQuery));
+                segmentKeys = F.asList(rangeSegment(cctx, qctx, affKey, locQry));
             }
             else {
                 // Affinity key is not provided or is not the same in upper and lower bounds, we have to broadcast.
                 if (broadcastSegments == null)
-                    broadcastSegments = broadcastSegments(qctx, cctx, localQuery);
+                    broadcastSegments = broadcastSegments(qctx, cctx, locQry);
 
                 segmentKeys = broadcastSegments;
             }
 
-            if (localQuery && segmentKeys.isEmpty())
+            if (locQry && segmentKeys.isEmpty())
                 return false; // Nothing to do
 
             assert !F.isEmpty(segmentKeys) : segmentKeys;
@@ -1268,7 +1262,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     batchFull = true;
             }
 
-            fut = new DoneFuture<>(segmentKeys.size() == 1 ?
+            Future<Cursor> fut = new DoneFuture<>(segmentKeys.size() == 1 ?
                 new UnicastCursor(rangeId, segmentKeys, rangeStreams) :
                 new BroadcastCursor(rangeId, segmentKeys, rangeStreams));
 
@@ -1280,6 +1274,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** {@inheritDoc} */
         @Override public boolean isBatchFull() {
             return batchFull;
+        }
+
+        /**
+         * @return {@code True} if local query execution is enforced.
+         */
+        private boolean localQuery() {
+            assert qctx != null : "Missing query context: " + this;
+
+            return qctx.distributedJoinMode() == LOCAL_ONLY;
         }
 
         /**

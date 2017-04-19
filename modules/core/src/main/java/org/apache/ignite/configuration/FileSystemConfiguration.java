@@ -76,9 +76,6 @@ public class FileSystemConfiguration {
     /** Default IPC endpoint enabled flag. */
     public static final boolean DFLT_IPC_ENDPOINT_ENABLED = true;
 
-    /** Default value of whether to initialize default path modes. */
-    public static final boolean DFLT_INIT_DFLT_PATH_MODES = false;
-
     /** Default value of metadata co-location flag. */
     public static final boolean DFLT_COLOCATE_META = true;
 
@@ -145,9 +142,6 @@ public class FileSystemConfiguration {
     /** Maximum range length. */
     private long maxTaskRangeLen;
 
-    /** Whether to initialize default path modes. */
-    private boolean initDfltPathModes = DFLT_INIT_DFLT_PATH_MODES;
-
     /** Metadata co-location flag. */
     private boolean colocateMeta = DFLT_COLOCATE_META;
 
@@ -191,7 +185,6 @@ public class FileSystemConfiguration {
         fragmentizerThrottlingBlockLen = cfg.getFragmentizerThrottlingBlockLength();
         fragmentizerThrottlingDelay = cfg.getFragmentizerThrottlingDelay();
         secondaryFs = cfg.getSecondaryFileSystem();
-        initDfltPathModes = cfg.isInitializeDefaultPathModes();
         ipcEndpointCfg = cfg.getIpcEndpointConfiguration();
         ipcEndpointEnabled = cfg.isIpcEndpointEnabled();
         maxSpace = cfg.getMaxSpaceSize();
@@ -209,12 +202,11 @@ public class FileSystemConfiguration {
     }
 
     /**
-     * Gets IGFS instance name. If {@code null}, then instance with default
-     * name will be used.
+     * Gets IGFS instance name.
      *
      * @return IGFS instance name.
      */
-    @Nullable public String getName() {
+    public String getName() {
         return name;
     }
 
@@ -225,6 +217,9 @@ public class FileSystemConfiguration {
      * @return {@code this} for chaining.
      */
     public FileSystemConfiguration setName(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
         this.name = name;
 
         return this;
@@ -579,15 +574,6 @@ public class FileSystemConfiguration {
      * <p>
      * If path doesn't correspond to any specified prefix or mappings are not provided, then
      * {@link #getDefaultMode()} is used.
-     * <p>
-     * If {@link #isInitializeDefaultPathModes()} is set to {@code true}, the following path modes will be created
-     * by default:
-     * <li>{@code /ignite/primary} and all it's sub-folders will always work in {@code PRIMARY} mode.</li>
-     * <p>
-     * And in case secondary file system URI is provided:
-     * <li>{@code /ignite/proxy} and all it's sub-folders will always work in {@code PROXY} mode.</li>
-     * <li>{@code /ignite/sync} and all it's sub-folders will always work in {@code DUAL_SYNC} mode.</li>
-     * <li>{@code /ignite/async} and all it's sub-folders will always work in {@code DUAL_ASYNC} mode.</li>
      *
      * @return Map of paths to {@code IGFS} modes.
      */
@@ -644,6 +630,7 @@ public class FileSystemConfiguration {
      * Sets delay in milliseconds for which fragmentizer is paused.
      *
      * @param fragmentizerThrottlingDelay Delay in milliseconds.
+     * @return {@code this} for chaining.
      */
     public FileSystemConfiguration setFragmentizerThrottlingDelay(long fragmentizerThrottlingDelay) {
         this.fragmentizerThrottlingDelay = fragmentizerThrottlingDelay;
@@ -754,43 +741,6 @@ public class FileSystemConfiguration {
      */
     public FileSystemConfiguration setMaximumTaskRangeLength(long maxTaskRangeLen) {
         this.maxTaskRangeLen = maxTaskRangeLen;
-
-        return this;
-    }
-
-    /**
-     * Get whether to initialize default path modes.
-     * <p>
-     * When set to {@code true} Ignite will automatically create the following path modes:
-     * <ul>
-     *     <li>{@code /ignite/primary} - will work in {@link IgfsMode#PRIMARY} mode;</li>
-     *     <li>{@code /ignite/sync} - will work in {@link IgfsMode#DUAL_SYNC} mode (only if secondary file system
-     *         is set);</li>
-     *     <li>{@code /ignite/async} - will work in {@link IgfsMode#DUAL_ASYNC} mode (only if secondary file system
-     *         is set);</li>
-     *     <li>{@code /ignite/proxy} - will work in {@link IgfsMode#PROXY} mode (only if secondary file system
-     *         is set).</li>
-     * </ul>
-     * See {@link #getPathModes()} for more information about path modes.
-     * <p>
-     * Defaults to {@link #DFLT_INIT_DFLT_PATH_MODES}.
-     *
-     * @return {@code True} if default path modes will be initialized.
-     */
-    public boolean isInitializeDefaultPathModes() {
-        return initDfltPathModes;
-    }
-
-    /**
-     * Set whether to initialize default path modes.
-     * <p>
-     * See {@link #isInitializeDefaultPathModes()} for more information.
-     *
-     * @param initDfltPathModes Whether to initialize default path modes.
-     * @return {@code this} for chaining.
-     */
-    public FileSystemConfiguration setInitializeDefaultPathModes(boolean initDfltPathModes) {
-        this.initDfltPathModes = initDfltPathModes;
 
         return this;
     }
