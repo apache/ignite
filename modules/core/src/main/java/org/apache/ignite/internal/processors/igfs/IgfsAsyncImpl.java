@@ -258,7 +258,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) {
+    @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) {
         igfs.setTimes(path, accessTime, modificationTime);
     }
 
