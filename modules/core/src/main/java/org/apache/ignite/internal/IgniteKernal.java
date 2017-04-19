@@ -3224,6 +3224,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteFileSystem fileSystem(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
         guard();
 
         try {
@@ -3242,7 +3245,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
         guard();
 
         try {

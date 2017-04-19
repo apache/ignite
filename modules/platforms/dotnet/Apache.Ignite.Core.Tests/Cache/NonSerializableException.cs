@@ -15,28 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Binary
+namespace Apache.Ignite.Core.Tests.Cache
 {
-    using System.Collections.Generic;
+    using System;
     using Apache.Ignite.Core.Binary;
-    using NUnit.Framework;
 
     /// <summary>
-    /// Binary builder self test with dynamic type registration.
+    /// Non-serializable exception.
     /// </summary>
-    [TestFixture]
-    public class BinaryBuilderSelfTestDynamicRegistration : BinaryBuilderSelfTest
+    public class NonSerializableException : Exception, IBinarizable
     {
         /** <inheritdoc /> */
-        protected override ICollection<BinaryTypeConfiguration> GetTypeConfigurations()
+        public void WriteBinary(IBinaryWriter writer)
         {
-            // The only type to be registered is TestEnumRegistered,
-            // because unregistered enums are handled differently.
+            throw new Exception("ExpectedException");
+        }
 
-            return new []
-            {
-                new BinaryTypeConfiguration(typeof(TestEnumRegistered))
-            };
+        /** <inheritdoc /> */
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new Exception("ExpectedException");
         }
     }
 }
