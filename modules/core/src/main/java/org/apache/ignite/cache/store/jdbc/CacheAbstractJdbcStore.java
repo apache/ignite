@@ -562,13 +562,16 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         if (BUILT_IN_TYPES.contains(type))
             return TypeKind.BUILT_IN;
 
+        if (ignite.configuration().getMarshaller() instanceof BinaryMarshaller)
+            return TypeKind.BINARY;
+
         try {
             Class.forName(type);
 
             return TypeKind.POJO;
         }
-        catch(ClassNotFoundException ignored) {
-            return TypeKind.BINARY;
+        catch(ClassNotFoundException e) {
+            throw new CacheException("Can not find class " + type, e);
         }
     }
 
@@ -655,16 +658,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     checkTypeConfiguration(cacheName, valKind, valType, type.getValueFields());
 
                     entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, keyKind, valKind, sqlEscapeAll));
-
-                    // Add one more binding to binary typeId for POJOs,
-                    // because object could be passed to store in binary format.
-                    if (binarySupported && keyKind == TypeKind.POJO) {
-                        keyTypeId = typeIdForTypeName(TypeKind.BINARY, keyType);
-
-                        valKind = valKind == TypeKind.POJO ? TypeKind.BINARY : valKind;
-
-                        entryMappings.put(keyTypeId, new EntryMapping(cacheName, dialect, type, TypeKind.BINARY, valKind, sqlEscapeAll));
-                    }
                 }
 
                 Map<String, Map<Object, EntryMapping>> mappings = new HashMap<>(cacheMappings);
