@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.hibernate;
+package org.apache.ignite.cache.hibernate.core;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -77,7 +77,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /**
      * @return HibernateKeyTransformer
      */
-    HibernateKeyTransformer keyTransformer(){
+    public HibernateKeyTransformer keyTransformer(){
         return keyTransformer;
     }
 

@@ -91,6 +91,7 @@
         <module>modules/flink</module>
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
+        <module>modules/hibernate-core</module>
     </modules>
 
     <profiles>

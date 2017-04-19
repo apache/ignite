@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.hibernate;
+package org.apache.ignite.cache.hibernate.core;
 
 /**
  * An interface for transforming hibernate keys to Ignite keys.
