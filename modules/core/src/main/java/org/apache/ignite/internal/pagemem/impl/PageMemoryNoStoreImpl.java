@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
@@ -254,7 +255,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         if (relPtr == INVALID_REL_PTR)
             throw new OutOfMemoryException();
 
-        assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0;
+        assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
 
         // Assign page ID according to flags and partition ID.
         long pageId = PageIdUtils.pageId(partId, flags, (int)relPtr);

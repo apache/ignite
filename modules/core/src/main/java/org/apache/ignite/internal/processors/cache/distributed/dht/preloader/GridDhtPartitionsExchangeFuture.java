@@ -1357,7 +1357,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private StartSnapshotOperationAckDiscoveryMessage getSnapshotOperationMessage() {
         // If it's a snapshot operation request, synchronously wait for backup start.
-        if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+        if (discoEvt != null && discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
             DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
             if (customMsg instanceof StartSnapshotOperationAckDiscoveryMessage)
