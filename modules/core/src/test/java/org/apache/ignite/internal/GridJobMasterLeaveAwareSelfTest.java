@@ -417,7 +417,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
                 ClusterNode node = F.first(prj.nodes());
 
-                return compute(prj).affinityRunAsync((String)null, keyForNode(aff, node), new TestRunnable());
+                return compute(prj).affinityRunAsync(DEFAULT_CACHE_NAME, keyForNode(aff, node), new TestRunnable());
             }
         });
     }
@@ -432,7 +432,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
                 ClusterNode node = F.first(prj.nodes());
 
-                return compute(prj).affinityCallAsync((String)null, keyForNode(aff, node), new TestCallable());
+                return compute(prj).affinityCallAsync(DEFAULT_CACHE_NAME, keyForNode(aff, node), new TestCallable());
             }
         });
     }

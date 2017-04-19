@@ -120,7 +120,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         startGrid(1);
 
         for (int i = 0; i < KEY_CNT; i++)
-            grid(i % 2).compute().affinityRun((String)null, new TestAffinityKey(1, "1"), new NoopClosure());
+            grid(i % 2).compute().affinityRun(DEFAULT_CACHE_NAME, new TestAffinityKey(1, "1"), new NoopClosure());
     }
 
     /**

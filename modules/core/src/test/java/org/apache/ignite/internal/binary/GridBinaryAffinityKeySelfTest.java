@@ -155,17 +155,17 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
             assertEquals(aff.mapKeyToNode(i), aff.mapKeyToNode(cacheObj));
 
-            assertEquals(i, affProc.affinityKey(null, i));
+            assertEquals(i, affProc.affinityKey(DEFAULT_CACHE_NAME, i));
 
-            assertEquals(i, affProc.affinityKey(null, new TestObject(i)));
+            assertEquals(i, affProc.affinityKey(DEFAULT_CACHE_NAME, new TestObject(i)));
 
-            assertEquals(i, affProc.affinityKey(null, cacheObj));
+            assertEquals(i, affProc.affinityKey(DEFAULT_CACHE_NAME, cacheObj));
 
-            assertEquals(affProc.mapKeyToNode(null, i), affProc.mapKeyToNode(null, new TestObject(i)));
+            assertEquals(affProc.mapKeyToNode(DEFAULT_CACHE_NAME, i), affProc.mapKeyToNode(DEFAULT_CACHE_NAME, new TestObject(i)));
 
-            assertEquals(affProc.mapKeyToNode(null, i), affProc.mapKeyToNode(null, cacheObj));
+            assertEquals(affProc.mapKeyToNode(DEFAULT_CACHE_NAME, i), affProc.mapKeyToNode(DEFAULT_CACHE_NAME, cacheObj));
 
-            assertEquals(affProc.mapKeyToNode(null, new AffinityKey(0, i)), affProc.mapKeyToNode(null, i));
+            assertEquals(affProc.mapKeyToNode(DEFAULT_CACHE_NAME, new AffinityKey(0, i)), affProc.mapKeyToNode(DEFAULT_CACHE_NAME, i));
         }
     }
 
@@ -178,7 +178,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             nodeId.set(null);
 
-            grid(0).compute().affinityRun((String)null, new TestObject(i), new IgniteRunnable() {
+            grid(0).compute().affinityRun(DEFAULT_CACHE_NAME, new TestObject(i), new IgniteRunnable() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
@@ -189,7 +189,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
             assertEquals(aff.mapKeyToNode(i).id(), nodeId.get());
 
-            grid(0).compute().affinityRun((String)null, new AffinityKey(0, i), new IgniteRunnable() {
+            grid(0).compute().affinityRun(DEFAULT_CACHE_NAME, new AffinityKey(0, i), new IgniteRunnable() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
@@ -211,7 +211,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             nodeId.set(null);
 
-            grid(0).compute().affinityCall((String)null, new TestObject(i), new IgniteCallable<Object>() {
+            grid(0).compute().affinityCall(DEFAULT_CACHE_NAME, new TestObject(i), new IgniteCallable<Object>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
