@@ -18,7 +18,15 @@
 package org.apache.ignite.cache.spring;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -28,6 +36,9 @@ import org.springframework.cache.support.SimpleValueWrapper;
 class SpringCache implements Cache {
     /** */
     private static final Object NULL = new NullValue();
+
+    /** */
+    private static final Object LOCK = new LockValue();
 
     /** */
     private final IgniteCache<Object, Object> cache;
@@ -63,7 +74,7 @@ class SpringCache implements Cache {
     @Override public <T> T get(Object key, Class<T> type) {
         Object val = cache.get(key);
 
-        if (NULL.equals(val))
+        if (NULL.equals(val) || LOCK.equals(val))
             val = null;
 
         if (val != null && type != null && !type.isInstance(val))
@@ -73,12 +84,44 @@ class SpringCache implements Cache {
         return (T)val;
     }
 
+    /** */
+    private final Map<Object, Object> instanceKeyLocks = Collections.synchronizedMap(new WeakHashMap<>());
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T get(Object key, Callable<T> valueLoader) {
+        // This is a workaround solution
+        // "cache.invoke(key, new ValueLoaderEntryProcessor<T>(), valueLoader)" method
+        // doesn't work properly with Spring AOP - @Cacheable(sync = true)
+        instanceKeyLocks.putIfAbsent(key, key);
+
+        synchronized (instanceKeyLocks.get(key)) {
+            long startTime = U.currentTimeMillis();
+
+            Object val = cache.getAndPutIfAbsent(key, LOCK);
+
+            if (val == null)
+                return loadAndPut(key, valueLoader);
+
+            if (val.equals(LOCK)) {
+                // it is the lock of another node
+                CacheEntry entry = cache.getEntry(key);
+                val = entry.getValue();
+
+                if (val.equals(LOCK))
+                    return waitAndLoad(entry, valueLoader, startTime);
+            }
+
+            return (T)fromStoreValue(val);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void put(Object key, Object val) {
         if (val == null)
             cache.withSkipStore().put(key, NULL);
         else
-            cache.put(key, val);
+            cache.put(key, toStoreValue(val));
     }
 
     /** {@inheritDoc} */
@@ -104,21 +147,99 @@ class SpringCache implements Cache {
     }
 
     /**
+     * @param entry CacheEntry.
+     * @param valueLoader ValueLoader.
+     * @param startTime Invocation start time.
+     * @param <T> Type of return type.
+     * @return Value.
+     */
+    @SuppressWarnings({"unchecked"})
+    private <T> T waitAndLoad(CacheEntry entry, Callable<T> valueLoader, long startTime) {
+        final int timeout = 2000;
+
+        while (true) { // the cycle instead of recursion
+            long updateTime = entry.updateTime();
+
+            while (timeout < (startTime - U.currentTimeMillis()) && (updateTime == entry.updateTime())) // try to detect failover
+                Thread.yield();
+
+            if (updateTime == entry.updateTime()) { // the entry hasn't been updated during the timeout
+                cache.put(entry.getKey(), LOCK);
+
+                return loadAndPut(entry.getKey(), valueLoader);
+            }
+
+            Object val = entry.getValue();
+
+            if (!val.equals(LOCK))
+                return (T)fromStoreValue(val);
+
+            // the lock was updated by another node, try again
+            startTime = U.currentTimeMillis();
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @param valueLoader Value loader.
+     * @param <T> Type of return type.
+     * @return Loaded value.
+     */
+    @SuppressWarnings("unchecked")
+    private <T> T loadAndPut(Object key, Callable<T> valueLoader) {
+        Object val;
+
+        try {
+            val = valueLoader.call();
+        }
+        catch (Exception e) {
+            throw new ValueRetrievalException(key, valueLoader, e);
+        }
+
+        cache.put(key, toStoreValue(val));
+
+        return (T)val;
+    }
+
+    /**
      * @param val Cache value.
      * @return Wrapped value.
      */
     private static ValueWrapper fromValue(Object val) {
         assert val != null;
 
-        return new SimpleValueWrapper(NULL.equals(val) ? null : val);
+        return new SimpleValueWrapper(fromStoreValue(val));
     }
 
-    /**
-     */
+    /** */
     private static class NullValue implements Serializable {
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             return this == o || (o != null && getClass() == o.getClass());
         }
+    }
+
+    /** */
+    private static class LockValue implements Serializable {
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return this == o || (o != null && getClass() == o.getClass());
+        }
+    }
+
+    /**
+     * @param val User value.
+     * @return Value to store.
+     */
+    private static Object toStoreValue(@Nullable Object val) {
+        return val == null ? NULL : val;
+    }
+
+    /**
+     * @param val Stored value.
+     * @return User value.
+     */
+    @Nullable private static Object fromStoreValue(@NotNull Object val) {
+        return (NULL.equals(val) || LOCK.equals(val)) ? null : val;
     }
 }
