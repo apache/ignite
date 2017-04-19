@@ -33,7 +33,6 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
-    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -669,9 +668,6 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private IgniteConfiguration GetConfiguration(string name, bool client = false)
         {
-            if (!CompactFooter)
-                name = ComputeApiTestFullFooter.ReplaceFooterSetting(name);
-
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = name,
@@ -681,7 +677,8 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof(PlatformComputeBinarizable),
                     typeof(BinarizableObject))
                 {
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance,
+                    CompactFooter = CompactFooter
                 },
                 CacheConfiguration = new[] {new CacheConfiguration(CacheName)},
                 ClientMode = client
