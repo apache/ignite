@@ -2096,7 +2096,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         @Nullable ClassProperty parent) {
         if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = QueryUtils._VAL + "_idx";
+                String idxName = cls.getSimpleName() + "_" + QueryUtils._VAL + "_idx";
 
                 type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
@@ -2524,6 +2524,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          */
         private IndexDescriptor(QueryIndexType type) {
             this(type, -1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return null;
         }
 
         /** {@inheritDoc} */
