@@ -1434,14 +1434,13 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /**
          * @param hash Hash code.
          * @param link Link.
-         * @param partId Partition ID.
+         * @param part Partition ID.
          * @param rowData Required row data.
          */
         DataRow(int hash, long link, int part, CacheDataRowAdapter.RowData rowData) {
             super(link);
 
             this.hash = hash;
-
             this.part = part;
 
             try {
