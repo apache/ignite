@@ -82,9 +82,11 @@ public class HitRateMetricsSandbox extends JFrame {
      * @param args Args.
      */
     public static void main(String[] args) {
-        EventQueue.invokeLater(() -> {
-            HitRateMetricsSandbox s = new HitRateMetricsSandbox();
-            s.setVisible(true);
+        EventQueue.invokeLater(new Runnable() {
+            @Override public void run() {
+                HitRateMetricsSandbox s = new HitRateMetricsSandbox();
+                s.setVisible(true);
+            }
         });
     }
 }
