@@ -114,7 +114,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cacheCfg = cache(igniteInstanceName, null, 0);
+        CacheConfiguration cacheCfg = cache(igniteInstanceName, DEFAULT_CACHE_NAME, 0);
 
         cacheCfg.setAffinity(new RendezvousAffinityFunction());
 
@@ -217,7 +217,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testEvict() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.cache(null).withExpiryPolicy(new CreatedExpiryPolicy(
+        IgniteCache<Object, Object> cache = ignite1.cache(DEFAULT_CACHE_NAME).withExpiryPolicy(new CreatedExpiryPolicy(
             new Duration(TimeUnit.MILLISECONDS, 100L)));
 
         // Putting entry.
@@ -245,7 +245,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testPrimaryNode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.cache(null);
+        IgniteCache<Object, Object> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
         // Populate cache and check that local store has all value.
         for (int i = 0; i < KEYS; i++)
@@ -271,7 +271,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
             boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     // Partition count which must be transferred to 2'nd node.
-                    int parts = ignite2.affinity(null).allPartitions(ignite2.cluster().localNode()).length;
+                    int parts = ignite2.affinity(DEFAULT_CACHE_NAME).allPartitions(ignite2.cluster().localNode()).length;
 
                     return evtCnt.get() >= parts;
                 }
@@ -670,7 +670,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testSwap() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.cache(null);
+        IgniteCache<Object, Object> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
         // Populate cache and check that local store has all value.
         for (int i = 0; i < KEYS; i++)
@@ -703,7 +703,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
             boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     // Partition count which must be transferred to 2'nd node.
-                    int parts = ignite2.affinity(null).allPartitions(ignite2.cluster().localNode()).length;
+                    int parts = ignite2.affinity(DEFAULT_CACHE_NAME).allPartitions(ignite2.cluster().localNode()).length;
 
                     return evtCnt.get() >= parts;
                 }

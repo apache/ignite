@@ -149,7 +149,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(String name,
         CacheMode cacheMode,
         CacheWriteSynchronizationMode writeSync) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setCacheMode(cacheMode);

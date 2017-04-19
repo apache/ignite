@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Test for segmented geo index.
@@ -28,7 +29,7 @@ public class GridH2IndexingSegmentedGeoSelfTest extends GridH2IndexingGeoSelfTes
 
     /** {@inheritDoc} */
     @Override
-    protected <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned,
+    protected <K, V> CacheConfiguration<K, V> cacheConfig(@NotNull String name, boolean partitioned,
         Class<?>... idxTypes) throws Exception {
         final CacheConfiguration<K, V> ccfg = super.cacheConfig(name, partitioned, idxTypes);
 

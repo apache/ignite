@@ -220,7 +220,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
      */
     private IgniteConfiguration config(String name, TcpDiscoveryVmIpFinder ipFinder) throws Exception {
         // Data cache configuration.
-        CacheConfiguration dataCcfg = new CacheConfiguration();
+        CacheConfiguration dataCcfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         dataCcfg.setCacheMode(CacheMode.REPLICATED);
         dataCcfg.setAtomicityMode(TRANSACTIONAL);
@@ -229,7 +229,7 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         dataCcfg.setMaxConcurrentAsyncOperations(1);
 
         // Meta cache configuration.
-        CacheConfiguration metaCcfg = new CacheConfiguration();
+        CacheConfiguration metaCcfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         metaCcfg.setCacheMode(CacheMode.REPLICATED);
         metaCcfg.setAtomicityMode(TRANSACTIONAL);

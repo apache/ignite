@@ -79,7 +79,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testConfiguredCacheOnClientNode() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         final String cacheName = null;
 
@@ -93,7 +93,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         checkCache(ignite1, cacheName, false, false);
 
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setNearConfiguration(new NearCacheConfiguration());
 
@@ -124,7 +124,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testNearCacheStartError() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         final String cacheName = null;
 
@@ -163,7 +163,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testReplicatedCacheClient() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(REPLICATED);
 
@@ -196,7 +196,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testReplicatedWithNearCacheClient() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setNearConfiguration(new NearCacheConfiguration());
 
@@ -239,13 +239,13 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         client = false;
 
-        ignite0.createCache(new CacheConfiguration<>());
+        ignite0.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        clientNode.cache(null);
+        clientNode.cache(DEFAULT_CACHE_NAME);
 
-        clientNode.cache(null).close();
+        clientNode.cache(DEFAULT_CACHE_NAME).close();
 
-        clientNode.cache(null);
+        clientNode.cache(DEFAULT_CACHE_NAME);
 
         startGrid(2);
 
@@ -275,7 +275,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         Ignite ignite1 = startGrid(1);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setNodeFilter(new CachePredicate(F.asList(ignite0.name())));
 
@@ -284,14 +284,14 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
         else {
             ignite1.createCache(ccfg);
 
-            assertNull(((IgniteKernal)ignite0).context().cache().internalCache(null));
+            assertNull(((IgniteKernal)ignite0).context().cache().internalCache(DEFAULT_CACHE_NAME));
         }
 
-        assertNotNull(ignite0.cache(null));
+        assertNotNull(ignite0.cache(DEFAULT_CACHE_NAME));
 
-        ignite0.cache(null).close();
+        ignite0.cache(DEFAULT_CACHE_NAME).close();
 
-        assertNotNull(ignite0.cache(null));
+        assertNotNull(ignite0.cache(DEFAULT_CACHE_NAME));
 
         startGrid(2);
 
@@ -321,9 +321,9 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
             assertEquals(near, disco.cacheNearNode(node, cacheName));
 
             if (srv)
-                assertTrue(ignite0.affinity(null).primaryPartitions(node).length > 0);
+                assertTrue(ignite0.affinity(DEFAULT_CACHE_NAME).primaryPartitions(node).length > 0);
             else
-                assertEquals(0, ignite0.affinity(null).primaryPartitions(node).length);
+                assertEquals(0, ignite0.affinity(DEFAULT_CACHE_NAME).primaryPartitions(node).length);
         }
 
         assertNotNull(ignite.cache(cacheName));

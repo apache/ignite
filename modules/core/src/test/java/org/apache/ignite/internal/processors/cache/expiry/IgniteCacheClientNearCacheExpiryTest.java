@@ -86,7 +86,7 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
 
         assertTrue(ignite.configuration().isClientMode());
 
-        IgniteCache<Object, Object> cache = ignite.cache(null);
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         assertTrue(((IgniteCacheProxy)cache).context().isNear());
 

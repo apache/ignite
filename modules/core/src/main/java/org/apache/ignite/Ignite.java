@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -249,7 +250,7 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of started cache.
      * @throws CacheException If a cache with the same name already exists or other error occurs.
      */
-    public <K, V> IgniteCache<K, V> createCache(String cacheName) throws CacheException;
+    public <K, V> IgniteCache<K, V> createCache(@NotNull String cacheName) throws CacheException;
 
     /**
      * Gets existing cache with the given name or creates new one with the given configuration.
@@ -271,7 +272,7 @@ public interface Ignite extends AutoCloseable {
      * @return Existing or newly created cache.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) throws CacheException;
+    public <K, V> IgniteCache<K, V> getOrCreateCache(@NotNull String cacheName) throws CacheException;
 
     /**
      * Gets existing caches with the given name or created one with the given configuration.
@@ -340,7 +341,7 @@ public interface Ignite extends AutoCloseable {
      * @return Cache instance.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg)
+    public <K, V> IgniteCache<K, V> createNearCache(@NotNull String cacheName, NearCacheConfiguration<K, V> nearCfg)
         throws CacheException;
 
     /**
@@ -351,7 +352,7 @@ public interface Ignite extends AutoCloseable {
      * @return {@code IgniteCache} instance.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg)
+    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@NotNull String cacheName, NearCacheConfiguration<K, V> nearCfg)
         throws CacheException;
 
     /**
@@ -360,7 +361,7 @@ public interface Ignite extends AutoCloseable {
      * @param cacheName Cache name to stop.
      * @throws CacheException If error occurs.
      */
-    public void destroyCache(String cacheName) throws CacheException;
+    public void destroyCache(@NotNull String cacheName) throws CacheException;
 
     /**
      * Stops dynamically started caches.
@@ -378,7 +379,7 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of the cache for the specified name.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> cache(@Nullable String name) throws CacheException;
+    public <K, V> IgniteCache<K, V> cache(@NotNull String name) throws CacheException;
 
     /**
      * Gets the collection of names of currently available caches.
@@ -402,11 +403,11 @@ public interface Ignite extends AutoCloseable {
      * is responsible for loading external data into in-memory data grid. For more information
      * refer to {@link IgniteDataStreamer} documentation.
      *
-     * @param cacheName Cache name ({@code null} for default cache).
+     * @param cacheName Cache name.
      * @return Data streamer.
      * @throws IllegalStateException If node is stopping.
      */
-    public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) throws IllegalStateException;
+    public <K, V> IgniteDataStreamer<K, V> dataStreamer(@NotNull String cacheName) throws IllegalStateException;
 
     /**
      * Gets an instance of IGFS (Ignite In-Memory File System). If one is not
@@ -595,7 +596,7 @@ public interface Ignite extends AutoCloseable {
      * @param <K> Cache key type.
      * @return Affinity.
      */
-    public <K> Affinity<K> affinity(String cacheName);
+    public <K> Affinity<K> affinity(@NotNull String cacheName);
 
     /**
      * Checks Ignite grid is active or not active.

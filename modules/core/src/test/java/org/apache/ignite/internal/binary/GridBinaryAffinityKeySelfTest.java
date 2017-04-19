@@ -78,7 +78,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         cfg.setMarshaller(new BinaryMarshaller());
 
         if (!igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT))) {
-            CacheConfiguration cacheCfg = new CacheConfiguration();
+            CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             cacheCfg.setCacheMode(PARTITIONED);
 
@@ -108,7 +108,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
         try (Ignite igniteNoCache = startGrid(GRID_CNT)) {
             try {
-                igniteNoCache.cache(null);
+                igniteNoCache.cache(DEFAULT_CACHE_NAME);
             }
             catch (IllegalArgumentException ignore) {
                 // Expected error.
@@ -123,14 +123,14 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkAffinity(Ignite ignite) throws Exception {
-        Affinity<Object> aff = ignite.affinity(null);
+        Affinity<Object> aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
         GridAffinityProcessor affProc = ((IgniteKernal)ignite).context().affinity();
 
         IgniteCacheObjectProcessor cacheObjProc = ((IgniteKernal)ignite).context().cacheObjects();
 
         CacheObjectContext cacheObjCtx = cacheObjProc.contextForCache(
-            ignite.cache(null).getConfiguration(CacheConfiguration.class));
+            ignite.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class));
 
         for (int i = 0; i < 1000; i++) {
             assertEquals(i, aff.affinityKey(i));
@@ -173,7 +173,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityRun() throws Exception {
-        Affinity<Object> aff = grid(0).affinity(null);
+        Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 1000; i++) {
             nodeId.set(null);
@@ -206,7 +206,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityCall() throws Exception {
-        Affinity<Object> aff = grid(0).affinity(null);
+        Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 1000; i++) {
             nodeId.set(null);

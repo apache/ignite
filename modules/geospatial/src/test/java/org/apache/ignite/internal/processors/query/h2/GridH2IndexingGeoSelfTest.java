@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Geo-indexing test.
@@ -76,7 +77,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    protected <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned,
+    protected <K, V> CacheConfiguration<K, V> cacheConfig(@NotNull String name, boolean partitioned,
         Class<?>... idxTypes) throws Exception {
         return new CacheConfiguration<K, V>(name)
             .setName(name)

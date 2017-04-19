@@ -386,6 +386,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConfiguration cc,
         CacheType cacheType,
         @Nullable CacheStore cfgStore) throws IgniteCheckedException {
+        assertParameter(cc.getName() != null && !cc.getName().isEmpty(), "name is null or empty");
+
         if (cc.getCacheMode() == REPLICATED) {
             if (cc.getNearConfiguration() != null &&
                 ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName())) {

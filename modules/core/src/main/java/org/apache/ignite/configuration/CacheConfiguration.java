@@ -72,10 +72,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -381,7 +383,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * @param name Cache name.
      */
-    public CacheConfiguration(String name) {
+    public CacheConfiguration(@NotNull String name) {
+        CU.validateCacheName(name);
+
         this.name = name;
     }
 
@@ -475,11 +479,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache name.
      *
-     * @param name Cache name. May be <tt>null</tt>, but may not be empty string.
+     * @param name Cache name. Can not be <tt>null</tt> or empty.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setName(String name) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
+    public CacheConfiguration<K, V> setName(@NotNull String name) {
+        CU.validateCacheName(name);
 
         this.name = name;
 

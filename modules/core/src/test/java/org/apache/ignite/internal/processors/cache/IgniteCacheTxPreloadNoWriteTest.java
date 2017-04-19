@@ -57,7 +57,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -98,18 +98,18 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
     private void txNoWrite(boolean commit) throws Exception {
         Ignite ignite0 = startGrid(0);
 
-        Affinity<Integer> aff = ignite0.affinity(null);
+        Affinity<Integer> aff = ignite0.affinity(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Integer, Object> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Object> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
-        try (IgniteDataStreamer<Integer, Object> streamer = ignite0.dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, Object> streamer = ignite0.dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = 0; i < 1000; i++)
                 streamer.addData(i + 10000, new byte[1024]);
         }
 
         Ignite ignite1 = startGrid(1);
 
-        Integer key = primaryKey(ignite1.cache(null));
+        Integer key = primaryKey(ignite1.cache(DEFAULT_CACHE_NAME));
 
         // Want test scenario when ignite1 is new primary node, but ignite0 is still partition owner.
         assertTrue(aff.isPrimary(ignite1.cluster().localNode(), key));
@@ -121,7 +121,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
                 tx.commit();
         }
 
-        GridCacheAdapter cacheAdapter = ((IgniteKernal)ignite(0)).context().cache().internalCache();
+        GridCacheAdapter cacheAdapter = ((IgniteKernal)ignite(0)).context().cache().internalCache(DEFAULT_CACHE_NAME);
 
         // Check all transactions are finished.
         assertEquals(0, cacheAdapter.context().tm().idMapSize());

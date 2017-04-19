@@ -80,7 +80,7 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
                 @Override public void apply(Integer idx) {
                     Ignite ignite = ignite(idx);
 
-                    ignite.getOrCreateCache(new CacheConfiguration<>());
+                    ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
                 }
             }, NODES, "cache-thread");
 
@@ -98,7 +98,7 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
                 @Override public void apply(Integer idx) {
                     Ignite ignite = ignite(idx);
 
-                    ignite.destroyCache(null);
+                    ignite.destroyCache(DEFAULT_CACHE_NAME);
                 }
             }, NODES, "cache-thread");
 

@@ -29,6 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -55,8 +56,8 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setName("igfs");
-        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(null));
-        igfsCfg.setDataCacheConfiguration(cacheConfiguration(null));
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
@@ -64,7 +65,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);

@@ -187,7 +187,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME1);
         ccfg.setNodeFilter(cacheNodeFilter);
@@ -1423,7 +1423,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                             cacheClosure(rnd, caches, cacheName, srvs, srvIdx);
                         }
                         else
-                            cacheClosure(rnd, caches, null, srvs, srvIdx);
+                            cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
                         startNode(srvName, ++topVer, false);
 
@@ -1469,7 +1469,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                             cacheClosure(rnd, caches, cacheName, srvs, srvIdx);
                         }
                         else
-                            cacheClosure(rnd, caches, null, srvs, srvIdx);
+                            cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
                         startNode(clientName, ++topVer, true);
 
@@ -1574,7 +1574,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         log.info("Start server: " + srvName);
 
-        cacheClosure(rnd, caches, null, srvs, srvIdx);
+        cacheClosure(rnd, caches, DEFAULT_CACHE_NAME, srvs, srvIdx);
 
         startNode(srvName, ++topVer, false);
 

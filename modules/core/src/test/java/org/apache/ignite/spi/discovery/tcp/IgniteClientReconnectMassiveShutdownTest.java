@@ -133,7 +133,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
         assertTrue(client.configuration().isClientMode());
 
-        final CacheConfiguration<String, Integer> cfg = new CacheConfiguration<>();
+        final CacheConfiguration<String, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -302,7 +302,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                 Object val = cache.get(key);
 
                 for (int i = srvsToKill; i < GRID_CNT; i++)
-                    assertEquals(val, ignite(i).cache(null).get(key));
+                    assertEquals(val, ignite(i).cache(DEFAULT_CACHE_NAME).get(key));
             }
         }
         finally {

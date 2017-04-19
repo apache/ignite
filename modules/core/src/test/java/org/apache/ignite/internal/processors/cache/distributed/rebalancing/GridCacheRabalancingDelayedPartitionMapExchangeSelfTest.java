@@ -102,7 +102,7 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
     public void test() throws Exception {
         IgniteKernal ignite = (IgniteKernal)startGrid(0);
 
-        CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setName(CACHE);
         cfg.setCacheMode(CacheMode.PARTITIONED);

@@ -145,7 +145,7 @@ public class IgniteCacheEntryListenerExpiredEventsTest extends GridCommonAbstrac
     private CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);

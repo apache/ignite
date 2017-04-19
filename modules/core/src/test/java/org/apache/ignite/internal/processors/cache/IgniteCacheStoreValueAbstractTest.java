@@ -125,9 +125,9 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
         startGrids();
 
-        IgniteCache<TestKey, TestValue> cache = grid(0).cache(null);
+        IgniteCache<TestKey, TestValue> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        Affinity<Object> aff = grid(0).affinity(null);
+        Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         final List<WeakReference<Object>> refs = new ArrayList<>();
 
@@ -142,7 +142,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             checkNoValue(aff, key);
 
             for (int g = 0; g < gridCount(); g++)
-                assertNotNull(grid(g).cache(null).get(key));
+                assertNotNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
             checkNoValue(aff, key);
 
@@ -159,16 +159,16 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             checkNoValue(aff, key);
 
             for (int g = 0; g < gridCount(); g++)
-                assertNotNull(grid(g).cache(null).get(key));
+                assertNotNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
             checkNoValue(aff, key);
 
             cache.remove(key);
 
             for (int g = 0; g < gridCount(); g++)
-                assertNull(grid(g).cache(null).get(key));
+                assertNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.addData(key, val);
             }
 
@@ -176,7 +176,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
             cache.remove(key);
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 streamer.addData(key, val);
@@ -204,7 +204,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         checkNoValue(aff, key);
 
         for (int g = 0; g < gridCount(); g++)
-            assertNotNull(grid(g).cache(null).get(key));
+            assertNotNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
         checkNoValue(aff, key);
 
@@ -296,9 +296,9 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
         startGrids();
 
-        IgniteCache<TestKey, TestValue> cache = grid(0).cache(null);
+        IgniteCache<TestKey, TestValue> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        Affinity<Object> aff = grid(0).affinity(null);
+        Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100; i++) {
             TestKey key = new TestKey(i);
@@ -309,7 +309,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             checkHasValue(aff, key);
 
             for (int g = 0; g < gridCount(); g++)
-                assertNotNull(grid(g).cache(null).get(key));
+                assertNotNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
             checkHasValue(aff, key);
 
@@ -326,16 +326,16 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             checkHasValue(aff, key);
 
             for (int g = 0; g < gridCount(); g++)
-                assertNotNull(grid(g).cache(null).get(key));
+                assertNotNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
             checkHasValue(aff, key);
 
             cache.remove(key);
 
             for (int g = 0; g < gridCount(); g++)
-                assertNull(grid(g).cache(null).get(key));
+                assertNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.addData(key, val);
             }
 
@@ -343,7 +343,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
             cache.remove(key);
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 streamer.addData(key, val);

@@ -62,6 +62,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -140,13 +141,13 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleKeyCommitFromPrimary() throws Exception {
-        singleKeyCommitFromPrimary(cacheConfiguration(null, PRIMARY_SYNC, 1, true, false));
+        singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
-        singleKeyCommitFromPrimary(cacheConfiguration(null, PRIMARY_SYNC, 2, false, false));
+        singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
 
-        singleKeyCommitFromPrimary(cacheConfiguration(null, PRIMARY_SYNC, 2, false, true));
+        singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, true));
 
-        singleKeyCommitFromPrimary(cacheConfiguration(null, PRIMARY_SYNC, 3, false, false));
+        singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 3, false, false));
     }
 
     /**
@@ -229,7 +230,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             Ignite node = ignite(i);
 
             if (node != ignite)
-                assertNull(node.cache(null).localPeek(key));
+                assertNull(node.cache(DEFAULT_CACHE_NAME).localPeek(key));
         }
 
         commSpi0.stopBlock(true);
@@ -253,18 +254,18 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleKeyPrimaryNodeFail1() throws Exception {
-        singleKeyPrimaryNodeLeft(cacheConfiguration(null, PRIMARY_SYNC, 1, true, false));
+        singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
-        singleKeyPrimaryNodeLeft(cacheConfiguration(null, PRIMARY_SYNC, 2, false, false));
+        singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSingleKeyPrimaryNodeFail2() throws Exception {
-        singleKeyPrimaryNodeLeft(cacheConfiguration(null, PRIMARY_SYNC, 2, true, false));
+        singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, true, false));
 
-        singleKeyPrimaryNodeLeft(cacheConfiguration(null, PRIMARY_SYNC, 3, false, false));
+        singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 3, false, false));
     }
 
     /**
@@ -378,13 +379,13 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleKeyCommit() throws Exception {
-        singleKeyCommit(cacheConfiguration(null, PRIMARY_SYNC, 1, true, false));
+        singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
-        singleKeyCommit(cacheConfiguration(null, PRIMARY_SYNC, 2, false, false));
+        singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
 
-        singleKeyCommit(cacheConfiguration(null, PRIMARY_SYNC, 2, false, true));
+        singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, true));
 
-        singleKeyCommit(cacheConfiguration(null, PRIMARY_SYNC, 3, false, false));
+        singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 3, false, false));
     }
 
     /**
@@ -486,9 +487,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             if (nearCache
                 && node == client &&
                 !node.affinity(ccfg.getName()).isPrimaryOrBackup(node.cluster().localNode(), key))
-                assertEquals("Invalid value for node: " + i, key, ignite(i).cache(null).localPeek(key));
+                assertEquals("Invalid value for node: " + i, key, ignite(i).cache(DEFAULT_CACHE_NAME).localPeek(key));
             else
-                assertNull("Invalid value for node: " + i, ignite(i).cache(null).localPeek(key));
+                assertNull("Invalid value for node: " + i, ignite(i).cache(DEFAULT_CACHE_NAME).localPeek(key));
         }
 
         commSpi0.stopBlock(true);
@@ -520,13 +521,13 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWaitPrimaryResponse() throws Exception {
-        checkWaitPrimaryResponse(cacheConfiguration(null, PRIMARY_SYNC, 1, true, false));
+        checkWaitPrimaryResponse(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
-        checkWaitPrimaryResponse(cacheConfiguration(null, PRIMARY_SYNC, 2, false, false));
+        checkWaitPrimaryResponse(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
 
-        checkWaitPrimaryResponse(cacheConfiguration(null, PRIMARY_SYNC, 2, false, true));
+        checkWaitPrimaryResponse(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, true));
 
-        checkWaitPrimaryResponse(cacheConfiguration(null, PRIMARY_SYNC, 3, false, false));
+        checkWaitPrimaryResponse(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 3, false, false));
     }
 
     /**
@@ -658,7 +659,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOnePhaseMessages() throws Exception {
-        checkOnePhaseMessages(cacheConfiguration(null, PRIMARY_SYNC, 1, false, false));
+        checkOnePhaseMessages(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, false, false));
     }
 
     /**
@@ -1072,12 +1073,12 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @param nearCache If {@code true} configures near cache.
      * @return Cache configuration.
      */
-    private CacheConfiguration<Object, Object> cacheConfiguration(String name,
+    private CacheConfiguration<Object, Object> cacheConfiguration(@NotNull String name,
         CacheWriteSynchronizationMode syncMode,
         int backups,
         boolean store,
         boolean nearCache) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setAtomicityMode(TRANSACTIONAL);

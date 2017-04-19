@@ -114,7 +114,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache() {
-        return grid(0).cache(null);
+        return grid(0).cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */

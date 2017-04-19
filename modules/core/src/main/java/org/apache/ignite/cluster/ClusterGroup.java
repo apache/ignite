@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -161,7 +162,7 @@ public interface ClusterGroup {
      * @param cacheName Cache name.
      * @return Cluster group over nodes that have specified cache running.
      */
-    public ClusterGroup forCacheNodes(String cacheName);
+    public ClusterGroup forCacheNodes(@NotNull String cacheName);
 
     /**
      * Creates a cluster group for all data nodes that have the cache with the specified name running.
@@ -169,7 +170,7 @@ public interface ClusterGroup {
      * @param cacheName Cache name.
      * @return Cluster group over nodes that have the cache with the specified name running.
      */
-    public ClusterGroup forDataNodes(String cacheName);
+    public ClusterGroup forDataNodes(@NotNull String cacheName);
 
     /**
      * Creates a cluster group for all client nodes that access cache with the specified name.
@@ -177,7 +178,7 @@ public interface ClusterGroup {
      * @param cacheName Cache name.
      * @return Cluster group over nodes that have the specified cache running.
      */
-    public ClusterGroup forClientNodes(String cacheName);
+    public ClusterGroup forClientNodes(@NotNull String cacheName);
 
     /**
      * Gets cluster group consisting from the nodes in this cluster group excluding the local node.
