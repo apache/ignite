@@ -19,10 +19,12 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.IO;
+    using NUnit.Framework;
 
     /// <summary>
     /// Compute API test with compact footers disabled.
     /// </summary>
+    [TestFixture]
     public class ComputeApiTestFullFooter : ComputeApiTest
     {
         /// <summary>
@@ -49,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Replaces the footer setting.
         /// </summary>
-        public static string ReplaceFooterSetting(string path)
+        internal static string ReplaceFooterSetting(string path)
         {
             var text = File.ReadAllText(path).Replace(
                 "property name=\"compactFooter\" value=\"true\"",
