@@ -329,6 +329,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean activeOnStart)  throws IgniteCheckedException {
+        if (ctx.config().isDaemon())
+            return;
+
         ctx.service().onContinuousProcessorStarted(ctx);
     }
 
