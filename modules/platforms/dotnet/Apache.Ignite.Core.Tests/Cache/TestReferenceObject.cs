@@ -15,28 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Binary
+namespace Apache.Ignite.Core.Tests.Cache
 {
-    using System.Collections.Generic;
-    using Apache.Ignite.Core.Binary;
-    using NUnit.Framework;
-
     /// <summary>
-    /// Binary builder self test with dynamic type registration.
+    /// Test object with self-reference.
     /// </summary>
-    [TestFixture]
-    public class BinaryBuilderSelfTestDynamicRegistration : BinaryBuilderSelfTest
+    public class TestReferenceObject
     {
-        /** <inheritdoc /> */
-        protected override ICollection<BinaryTypeConfiguration> GetTypeConfigurations()
-        {
-            // The only type to be registered is TestEnumRegistered,
-            // because unregistered enums are handled differently.
+        public TestReferenceObject Obj;
 
-            return new []
-            {
-                new BinaryTypeConfiguration(typeof(TestEnumRegistered))
-            };
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        public TestReferenceObject()
+        {
+            // No-op.
+        }
+
+        public TestReferenceObject(TestReferenceObject obj)
+        {
+            Obj = obj;
         }
     }
 }
