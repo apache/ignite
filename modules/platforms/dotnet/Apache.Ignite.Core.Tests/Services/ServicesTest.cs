@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-// ReSharper disable UnusedMemberInSuper.Global
-// ReSharper disable UnusedMethodReturnValue.Global
-// ReSharper disable UnusedParameter.Global
-// ReSharper disable MemberCanBePrivate.Local
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
@@ -27,12 +23,12 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
+    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -622,9 +618,9 @@ namespace Apache.Ignite.Core.Tests.Services
             if (Grid1 != null)
                 return;
 
-            Grid1 = Ignition.Start(GetConfiguration("grid1"));
-            Grid2 = Ignition.Start(GetConfiguration("grid2"));
-            Grid3 = Ignition.Start(GetConfiguration("grid3", true));
+            Grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid1.xml"));
+            Grid2 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid2.xml"));
+            Grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
 
             Grids = new[] { Grid1, Grid2, Grid3 };
         }
@@ -666,22 +662,24 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private IgniteConfiguration GetConfiguration(string name, bool client = false)
+        private IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
-            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            if (!CompactFooter)
+                springConfigUrl = ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
+
+            return new IgniteConfiguration
             {
-                IgniteInstanceName = name,
+                SpringConfigUrl = springConfigUrl,
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
                 BinaryConfiguration = new BinaryConfiguration(
-                    typeof(TestIgniteServiceBinarizable),
-                    typeof(TestIgniteServiceBinarizableErr),
-                    typeof(PlatformComputeBinarizable),
-                    typeof(BinarizableObject))
+                    typeof (TestIgniteServiceBinarizable),
+                    typeof (TestIgniteServiceBinarizableErr),
+                    typeof (PlatformComputeBinarizable),
+                    typeof (BinarizableObject))
                 {
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance,
-                    CompactFooter = CompactFooter
-                },
-                CacheConfiguration = new[] {new CacheConfiguration(CacheName)},
-                ClientMode = client
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                }
             };
         }
 

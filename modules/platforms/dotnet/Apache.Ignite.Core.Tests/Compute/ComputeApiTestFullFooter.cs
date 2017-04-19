@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Replaces the footer setting.
         /// </summary>
-        private static string ReplaceFooterSetting(string path)
+        internal static string ReplaceFooterSetting(string path)
         {
             var text = File.ReadAllText(path).Replace(
                 "property name=\"compactFooter\" value=\"true\"",
