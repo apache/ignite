@@ -87,7 +87,6 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setOffHeapMaxMemory(1024L * 1024L * 1024L);
         cacheCfg.setIndexedTypes(Integer.class, CacheValue.class);
 
         cfg.setCacheConfiguration(cacheCfg);

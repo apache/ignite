@@ -19,7 +19,7 @@ package org.apache.ignite.cache.affinity.local;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -50,7 +50,7 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
         ccfg.setBackups(1);
         ccfg.setName(CACHE1);
         ccfg.setCacheMode(CacheMode.LOCAL);
-        ccfg.setAffinity(new FairAffinityFunction());
+        ccfg.setAffinity(new RendezvousAffinityFunction());
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;

@@ -22,9 +22,15 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,15 +38,19 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
+import org.h2.message.DbException;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -115,6 +125,12 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testParseSelectAndUnion() throws Exception {
+        checkQuery("select 1 from Person p where addrIds in ((1,2,3), (3,4,5))");
+        checkQuery("select 1 from Person p where addrId in ((1,))");
+        checkQuery("select 1 from Person p " +
+            "where p.addrId in (select a.id from sch2.Address a)");
+        checkQuery("select 1 from Person p " +
+            "where exists(select 1 from sch2.Address a where p.addrId = a.id)");
         checkQuery("select 42");
         checkQuery("select ()");
         checkQuery("select (1)");
@@ -318,7 +334,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testParseTableFilter() throws Exception {
-        Prepared prepared = parse("select Person.old, p1.old from Person, Person p1");
+        Prepared prepared = parse("select Person.old, p1.old, p1.addrId from Person, Person p1 " +
+            "where exists(select 1 from sch2.Address a where a.id = p1.addrId)");
 
         GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser(false).parse(prepared);
 
@@ -341,6 +358,21 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         // Alias in FROM must be included in column.
         assertSame(tbl2Alias, col2.expressionInFrom());
+
+        // In EXISTS we must correctly reference the column from the outer query.
+        GridSqlAst exists = select.where();
+        GridSqlSubquery subqry = exists.child();
+        GridSqlSelect subSelect = subqry.child();
+
+        GridSqlColumn p1AddrIdCol = (GridSqlColumn)select.column(2);
+
+        assertEquals("ADDRID", p1AddrIdCol.column().getName());
+        assertSame(tbl2Alias, p1AddrIdCol.expressionInFrom());
+
+        GridSqlColumn p1AddrIdColExists = subSelect.where().child(1);
+        assertEquals("ADDRID", p1AddrIdCol.column().getName());
+
+        assertSame(tbl2Alias, p1AddrIdColExists.expressionInFrom());
     }
 
     /** */
@@ -446,6 +478,206 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
+    public void testParseCreateIndex() throws Exception {
+        assertCreateIndexEquals(
+            buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED, "name", true),
+            "create index on Person (name)");
+
+        assertCreateIndexEquals(
+            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.SORTED, "name", true),
+            "create index idx on Person (name ASC)");
+
+        assertCreateIndexEquals(
+            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.GEOSPATIAL, "name", true),
+            "create spatial index sch1.idx on sch1.Person (name ASC)");
+
+        assertCreateIndexEquals(
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED, "name", true),
+            "create index if not exists sch1.idx on sch1.Person (name)");
+
+        // When we specify schema for the table and don't specify it for the index, resulting schema is table's
+        assertCreateIndexEquals(
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED, "name", false),
+            "create index if not exists idx on sch1.Person (name dEsC)");
+
+        assertCreateIndexEquals(
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.GEOSPATIAL, "old", true, "name", false),
+            "create spatial index if not exists idx on Person (old, name desc)");
+
+        // Schemas for index and table must match
+        assertParseThrows("create index if not exists sch2.idx on sch1.Person (name)",
+            DbException.class, "Schema name must match [90080-191]");
+
+        assertParseThrows("create hash index if not exists idx on Person (name)",
+            IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
+
+        assertParseThrows("create unique index if not exists idx on Person (name)",
+            IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
+
+        assertParseThrows("create primary key on Person (name)",
+            IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
+
+        assertParseThrows("create primary key hash on Person (name)",
+            IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
+
+        assertParseThrows("create index on Person (name nulls first)",
+            IgniteSQLException.class, "NULLS FIRST and NULLS LAST modifiers are not supported for index columns");
+
+        assertParseThrows("create index on Person (name desc nulls last)",
+            IgniteSQLException.class, "NULLS FIRST and NULLS LAST modifiers are not supported for index columns");
+    }
+
+    /**
+     *
+     */
+    public void testParseDropIndex() throws Exception {
+        // Schema that is not set defaults to default schema of connection which is empty string
+        assertDropIndexEquals(buildDropIndex("idx", "sch1", false), "drop index idx");
+        assertDropIndexEquals(buildDropIndex("idx", "sch1", true), "drop index if exists idx");
+        assertDropIndexEquals(buildDropIndex("idx", "sch1", true), "drop index if exists sch1.idx");
+        assertDropIndexEquals(buildDropIndex("idx", "sch1", false), "drop index sch1.idx");
+
+        // Message is null as long as it may differ from system to system, so we just check for exceptions
+        assertParseThrows("drop index schema2.", DbException.class, null);
+        assertParseThrows("drop index", DbException.class, null);
+        assertParseThrows("drop index if exists", DbException.class, null);
+        assertParseThrows("drop index if exists schema2.", DbException.class, null);
+    }
+
+    /**
+     * @param sql Statement.
+     * @param exCls Exception class.
+     * @param msg Expected message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void assertParseThrows(final String sql, Class<? extends Exception> exCls, String msg) {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Prepared p = parse(sql);
+
+                return new GridSqlQueryParser(false).parse(p);
+            }
+        }, exCls, msg);
+    }
+
+    /**
+     * Parse SQL and compare it to expected instance.
+     */
+    private void assertCreateIndexEquals(GridSqlCreateIndex exp, String sql) throws Exception {
+        Prepared prepared = parse(sql);
+
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+
+        assertTrue(stmt instanceof GridSqlCreateIndex);
+
+        assertCreateIndexEquals(exp, (GridSqlCreateIndex) stmt);
+    }
+
+    /**
+     * Parse SQL and compare it to expected instance of DROP INDEX.
+     */
+    private void assertDropIndexEquals(GridSqlDropIndex exp, String sql) throws Exception {
+        Prepared prepared = parse(sql);
+
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+
+        assertTrue(stmt instanceof GridSqlDropIndex);
+
+        assertDropIndexEquals(exp, (GridSqlDropIndex) stmt);
+    }
+
+    /**
+     * Test two instances of {@link GridSqlDropIndex} for equality.
+     */
+    private static void assertDropIndexEquals(GridSqlDropIndex exp, GridSqlDropIndex actual) {
+        assertEqualsIgnoreCase(exp.name(), actual.name());
+        assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
+        assertEquals(exp.ifExists(), actual.ifExists());
+    }
+
+    /**
+     *
+     */
+    private static GridSqlDropIndex buildDropIndex(String name, String schema, boolean ifExists) {
+        GridSqlDropIndex res = new GridSqlDropIndex();
+
+        res.name(name);
+        res.schemaName(schema);
+        res.ifExists(ifExists);
+
+        return res;
+    }
+
+    /**
+     * Test two instances of {@link GridSqlCreateIndex} for equality.
+     */
+    private static void assertCreateIndexEquals(GridSqlCreateIndex exp, GridSqlCreateIndex actual) {
+        assertEquals(exp.ifNotExists(), actual.ifNotExists());
+        assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
+        assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
+
+        assertEqualsIgnoreCase(exp.index().getName(), actual.index().getName());
+
+        Iterator<Map.Entry<String, Boolean>> expFldsIt = exp.index().getFields().entrySet().iterator();
+        Iterator<Map.Entry<String, Boolean>> actualFldsIt = actual.index().getFields().entrySet().iterator();
+
+        while (expFldsIt.hasNext()) {
+            assertTrue(actualFldsIt.hasNext());
+
+            Map.Entry<String, Boolean> expEntry = expFldsIt.next();
+            Map.Entry<String, Boolean> actualEntry = actualFldsIt.next();
+
+            assertEqualsIgnoreCase(expEntry.getKey(), actualEntry.getKey());
+            assertEquals(expEntry.getValue(), actualEntry.getValue());
+        }
+
+        assertFalse(actualFldsIt.hasNext());
+
+        assertEquals(exp.index().getIndexType(), actual.index().getIndexType());
+    }
+
+    /**
+     *
+     */
+    private static void assertEqualsIgnoreCase(String exp, String actual) {
+        assertEquals((exp == null), (actual == null));
+
+        if (exp != null)
+            assertTrue(exp.equalsIgnoreCase(actual));
+    }
+
+    /**
+     *
+     */
+    private static GridSqlCreateIndex buildCreateIndex(String name, String tblName, String schemaName, boolean ifNotExists,
+        QueryIndexType type, Object... flds) {
+        QueryIndex idx = new QueryIndex();
+
+        idx.setName(name);
+
+        assert !F.isEmpty(flds) && flds.length % 2 == 0;
+
+        LinkedHashMap<String, Boolean> trueFlds = new LinkedHashMap<>();
+
+        for (int i = 0; i < flds.length / 2; i++)
+            trueFlds.put((String)flds[i * 2], (Boolean)flds[i * 2 + 1]);
+
+        idx.setFields(trueFlds);
+        idx.setIndexType(type);
+
+        GridSqlCreateIndex res = new GridSqlCreateIndex();
+
+        res.schemaName(schemaName);
+        res.tableName(tblName);
+        res.ifNotExists(ifNotExists);
+        res.index(idx);
+
+        return res;
+    }
+
+    /**
+     *
+     */
     private JdbcConnection connection() throws Exception {
         GridKernalContext ctx = ((IgniteEx)ignite).context();
 
@@ -501,7 +733,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         System.out.println(normalizeSql(res));
 
-        assertSqlEquals(prepared.getPlanSQL(), res);
+        assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(), prepared.getSQL()), res);
     }
 
     @QuerySqlFunction
@@ -529,6 +761,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         @QuerySqlField(index = true)
         public int addrId;
+
+        @QuerySqlField
+        public Integer[] addrIds;
 
         @QuerySqlField(index = true)
         public int old;

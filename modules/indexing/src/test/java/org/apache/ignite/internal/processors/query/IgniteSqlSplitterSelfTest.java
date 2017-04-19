@@ -21,14 +21,17 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -59,6 +62,9 @@ import org.springframework.util.StringUtils;
 @SuppressWarnings("unchecked")
 public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /** */
+    private static final int CLIENT = 7;
+
+    /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
@@ -80,14 +86,16 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    @Override
-    protected long getTestTimeout() {
-        return 100_000_000;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, false);
+        Ignition.setClientMode(true);
+        try {
+            startGrid(CLIENT);
+        }
+        finally {
+            Ignition.setClientMode(false);
+        }
     }
 
     /** {@inheritDoc} */
@@ -154,22 +162,69 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    public void testReplicatedOnlyTables() {
-        doTestReplicatedOnlyTables(1);
+    public void testReplicatedTablesUsingPartitionedCache() {
+        doTestReplicatedTablesUsingPartitionedCache(1, false, false);
     }
 
     /**
      */
-    public void testReplicatedOnlyTablesSegmented() {
-        doTestReplicatedOnlyTables(5);
+    public void testReplicatedTablesUsingPartitionedCacheSegmented() {
+        doTestReplicatedTablesUsingPartitionedCache(5, false, false);
     }
 
     /**
      */
-    private void doTestReplicatedOnlyTables(int segments) {
-        IgniteCache<Integer,Value> p = ignite(0).getOrCreateCache(cacheConfig("p", true,
+    public void testReplicatedTablesUsingPartitionedCacheClient() {
+        doTestReplicatedTablesUsingPartitionedCache(1, true, false);
+    }
+
+    /**
+     */
+    public void testReplicatedTablesUsingPartitionedCacheSegmentedClient() {
+        doTestReplicatedTablesUsingPartitionedCache(5, true, false);
+    }
+
+    /**
+     */
+    public void testReplicatedTablesUsingPartitionedCacheRO() {
+        doTestReplicatedTablesUsingPartitionedCache(1, false, true);
+    }
+
+    /**
+     */
+    public void testReplicatedTablesUsingPartitionedCacheSegmentedRO() {
+        doTestReplicatedTablesUsingPartitionedCache(5, false, true);
+    }
+
+    /**
+     */
+    public void testReplicatedTablesUsingPartitionedCacheClientRO() {
+        doTestReplicatedTablesUsingPartitionedCache(1, true, true);
+    }
+
+    /**
+     */
+    public void testReplicatedTablesUsingPartitionedCacheSegmentedClientRO() {
+        doTestReplicatedTablesUsingPartitionedCache(5, true, true);
+    }
+
+    /**
+     */
+    private SqlFieldsQuery query(String sql, boolean replicatedOnly) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+
+        if (replicatedOnly)
+            qry.setReplicatedOnly(true);
+
+        return qry;
+    }
+
+    /**
+     */
+    private void doTestReplicatedTablesUsingPartitionedCache(int segments, boolean client, boolean replicatedOnlyFlag) {
+        IgniteCache<Integer,Value> p = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("p", true,
             Integer.class, Value.class).setQueryParallelism(segments));
-        IgniteCache<Integer,Value> r = ignite(0).getOrCreateCache(cacheConfig("r", false,
+        IgniteCache<Integer,Value> r = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("r", false,
             Integer.class, Value.class));
 
         try {
@@ -179,15 +234,100 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 r.put(i, new Value(i, -i));
 
             // Query data from replicated table using partitioned cache.
-            assertEquals(cnt, p.query(new SqlFieldsQuery("select 1 from \"r\".Value")).getAll().size());
+            assertEquals(cnt, p.query(query("select 1 from \"r\".Value", replicatedOnlyFlag))
+                .getAll().size());
 
-            List<List<?>> res = p.query(new SqlFieldsQuery("select count(1) from \"r\".Value")).getAll();
+            List<List<?>> res = p.query(query("select count(1) from \"r\".Value", replicatedOnlyFlag)).getAll();
             assertEquals(1, res.size());
             assertEquals(cnt, ((Number)res.get(0).get(0)).intValue());
         }
         finally {
             p.destroy();
             r.destroy();
+        }
+    }
+
+    public void testPartitionedTablesUsingReplicatedCache() {
+        doTestPartitionedTablesUsingReplicatedCache(1, false);
+    }
+
+    public void testPartitionedTablesUsingReplicatedCacheSegmented() {
+        doTestPartitionedTablesUsingReplicatedCache(7, false);
+    }
+
+    public void testPartitionedTablesUsingReplicatedCacheClient() {
+        doTestPartitionedTablesUsingReplicatedCache(1, true);
+    }
+
+    public void testPartitionedTablesUsingReplicatedCacheSegmentedClient() {
+        doTestPartitionedTablesUsingReplicatedCache(7, true);
+    }
+
+    /**
+     */
+    private void doTestPartitionedTablesUsingReplicatedCache(int segments, boolean client) {
+        IgniteCache<Integer,Value> p = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("p", true,
+            Integer.class, Value.class).setQueryParallelism(segments));
+        IgniteCache<Integer,Value> r = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("r", false,
+            Integer.class, Value.class));
+
+        try {
+            int cnt = 1000;
+
+            for (int i = 0; i < cnt; i++)
+                p.put(i, new Value(i, -i));
+
+            // Query data from replicated table using partitioned cache.
+            assertEquals(cnt, r.query(new SqlFieldsQuery("select 1 from \"p\".Value")).getAll().size());
+
+            List<List<?>> res = r.query(new SqlFieldsQuery("select count(1) from \"p\".Value")).getAll();
+            assertEquals(1, res.size());
+            assertEquals(cnt, ((Number)res.get(0).get(0)).intValue());
+        }
+        finally {
+            p.destroy();
+            r.destroy();
+        }
+    }
+
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public void testExists() {
+        IgniteCache<Integer,Person2> x = ignite(0).getOrCreateCache(cacheConfig("x", true,
+            Integer.class, Person2.class));
+        IgniteCache<Integer,Person2> y = ignite(0).getOrCreateCache(cacheConfig("y", true,
+            Integer.class, Person2.class));
+
+        try {
+            GridRandom rnd = new GridRandom();
+
+            Set<Integer> intersects = new HashSet<>();
+
+            for (int i = 0; i < 3000; i++) {
+                int r = rnd.nextInt(3);
+
+                if (r != 0)
+                    x.put(i, new Person2(i, "pers_x_" + i));
+
+                if (r != 1)
+                    y.put(i, new Person2(i, "pers_y_" + i));
+
+                if (r == 2)
+                    intersects.add(i);
+            }
+
+            assertFalse(intersects.isEmpty());
+
+            List<List<?>> res = x.query(new SqlFieldsQuery("select _key from \"x\".Person2 px " +
+                "where exists(select 1 from \"y\".Person2 py where px._key = py._key)")).getAll();
+
+            assertEquals(intersects.size(), res.size());
+
+            for (List<?> row : res)
+                assertTrue(intersects.contains(row.get(0)));
+        }
+        finally {
+            x.destroy();
+            y.destroy();
         }
     }
 
@@ -273,7 +413,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             info("Plan: " + plan);
 
-            assertTrue(plan.contains("grpIdx"));
+            assertTrue("_explain: " + plan, plan.toLowerCase().contains("grpidx"));
 
             // Sorted list
             List<GroupIndexTestValue> list = F.asList(

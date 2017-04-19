@@ -184,15 +184,12 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
  * <li>Node local port number (see {@link #setLocalPort(int)})</li>
  * <li>Local port range (see {@link #setLocalPortRange(int)}</li>
  * <li>Connections per node (see {@link #setConnectionsPerNode(int)})</li>
- * <li>Connection buffer flush frequency (see {@link #setConnectionBufferFlushFrequency(long)})</li>
- * <li>Connection buffer size (see {@link #setConnectionBufferSize(int)})</li>
  * <li>Idle connection timeout (see {@link #setIdleConnectionTimeout(long)})</li>
  * <li>Direct or heap buffer allocation (see {@link #setDirectBuffer(boolean)})</li>
  * <li>Direct or heap buffer allocation for sending (see {@link #setDirectSendBuffer(boolean)})</li>
  * <li>Count of selectors and selector threads for NIO server (see {@link #setSelectorsCount(int)})</li>
  * <li>{@code TCP_NODELAY} socket option for sockets (see {@link #setTcpNoDelay(boolean)})</li>
  * <li>Message queue limit (see {@link #setMessageQueueLimit(int)})</li>
- * <li>Minimum buffered message count (see {@link #setMinimumBufferedMessageCount(int)})</li>
  * <li>Connect timeout (see {@link #setConnectTimeout(long)})</li>
  * <li>Maximum connect timeout (see {@link #setMaxConnectTimeout(long)})</li>
  * <li>Reconnect attempts count (see {@link #setReconnectCount(int)})</li>
@@ -1394,63 +1391,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
-     * Sets connection buffer size. If set to {@code 0} connection buffer is disabled.
-     *
-     * @param connBufSize Connection buffer size.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    @IgniteSpiConfiguration(optional = true)
-    public void setConnectionBufferSize(int connBufSize) {
-        // No-op.
-    }
-
-    /**
-     * Gets connection buffer size.
-     * <p>
-     * If set to {@code 0} connection buffer is disabled.
-     *
-     * @return Connection buffer size.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    public int getConnectionBufferSize() {
-        return 0;
-    }
-
-    /**
-     * Sets connection buffer flush frequency.
-     * <p>
-     * Client connections to other nodes in topology use buffered output.
-     * This frequency defines how often system will advice to flush
-     * connection buffer.
-     * <p>
-     * This property is used only if {@link #getConnectionBufferSize()} is greater than {@code 0}.
-     *
-     * @param connBufFlushFreq Flush frequency.
-     * @see #getConnectionBufferSize()
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    @IgniteSpiConfiguration(optional = true)
-    public void setConnectionBufferFlushFrequency(long connBufFlushFreq) {
-        // No-op.
-    }
-
-    /**
-     * Gets connection buffer size.
-     * <p>
-     * If set to {@code 0} connection buffer is disabled.
-     *
-     * @return Connection buffer size.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    public long getConnectionBufferFlushFrequency() {
-        return 0;
-    }
-
-    /**
      * Sets connect timeout used when establishing connection
      * with remote nodes.
      * <p>
@@ -1772,31 +1712,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         this.slowClientQueueLimit = slowClientQueueLimit;
 
         return this;
-    }
-
-    /**
-     * Sets the minimum number of messages for this SPI, that are buffered
-     * prior to sending.
-     *
-     * @param minBufferedMsgCnt Minimum buffered message count.
-     * @deprecated Not used any more.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    @Deprecated
-    public void setMinimumBufferedMessageCount(int minBufferedMsgCnt) {
-        // No-op.
-    }
-
-    /**
-     * Gets the minimum number of messages for this SPI, that are buffered
-     * prior to sending.
-     *
-     * @return Minimum buffered message count.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    public int getMinimumBufferedMessageCount() {
-        return 0;
     }
 
     /** {@inheritDoc} */
@@ -3394,10 +3309,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             assert sslHnd != null;
 
                             buf = ByteBuffer.allocate(1000);
+                            buf.order(ByteOrder.nativeOrder());
 
                             ByteBuffer decode = ByteBuffer.allocate(2 * buf.capacity());
-
-                            buf.order(ByteOrder.nativeOrder());
+                            decode.order(ByteOrder.nativeOrder());
 
                             for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                                 int read = ch.read(buf);
@@ -4883,24 +4798,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         /** {@inheritDoc} */
-        @Deprecated
-        @Override public int getConnectionBufferSize() {
-            return TcpCommunicationSpi.this.getConnectionBufferSize();
-        }
-
-        /** {@inheritDoc} */
-        @Deprecated
-        @Override public void setConnectionBufferFlushFrequency(long connBufFlushFreq) {
-            TcpCommunicationSpi.this.setConnectionBufferFlushFrequency(connBufFlushFreq);
-        }
-
-        /** {@inheritDoc} */
-        @Deprecated
-        @Override public long getConnectionBufferFlushFrequency() {
-            return TcpCommunicationSpi.this.getConnectionBufferFlushFrequency();
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean isDirectBuffer() {
             return TcpCommunicationSpi.this.isDirectBuffer();
         }
@@ -4943,12 +4840,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** {@inheritDoc} */
         @Override public int getSlowClientQueueLimit() {
             return TcpCommunicationSpi.this.getSlowClientQueueLimit();
-        }
-
-        /** {@inheritDoc} */
-        @Deprecated
-        @Override public int getMinimumBufferedMessageCount() {
-            return TcpCommunicationSpi.this.getMinimumBufferedMessageCount();
         }
 
         /** {@inheritDoc} */

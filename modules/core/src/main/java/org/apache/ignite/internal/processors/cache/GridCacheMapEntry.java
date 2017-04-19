@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -43,6 +42,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -809,6 +810,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean touch = false;
 
         try {
+            ensureFreeSpace();
+
             synchronized (this) {
                 long ttl = ttlExtras();
 
@@ -907,6 +910,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         Object val0 = null;
 
         long updateCntr0;
+
+        ensureFreeSpace();
 
         synchronized (this) {
             checkObsolete();
@@ -1640,6 +1645,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert cctx.atomic() && !detached();
 
         AtomicCacheUpdateClosure c;
+
+        if (!primary && !isNear())
+            ensureFreeSpace();
 
         synchronized (this) {
             checkObsolete();
@@ -2567,6 +2575,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridDrType drType,
         boolean fromStore
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        ensureFreeSpace();
+
         synchronized (this) {
             checkObsolete();
 
@@ -2578,11 +2588,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 unswap(false);
 
                 if (!isNew()) {
-                    if (cctx.atomic()) {
-                        boolean ignoreTime = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
-
-                        update = ATOMIC_VER_COMPARATOR.compare(this.ver, ver, ignoreTime) < 0;
-                    }
+                    if (cctx.atomic())
+                        update = ATOMIC_VER_COMPARATOR.compare(this.ver, ver) < 0;
                     else
                         update = this.ver.compareTo(ver) < 0;
                 }
@@ -3368,6 +3375,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
+        GridCacheEntryRemovedException {
+        synchronized (this) {
+            if (isInternal())
+                return;
+
+            checkObsolete();
+
+            unswap(false);
+
+            if (val != null)
+                clo.apply(key, partition(), val, ver, expireTimeUnlocked(), link);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> EvictableEntry<K, V> wrapEviction() {
         return new CacheEvictableEntryImpl<>(this);
     }
@@ -3375,6 +3398,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public synchronized <K, V> CacheEntryImplEx<K, V> wrapVersioned() {
         return new CacheEntryImplEx<>(key.<K>value(cctx.cacheObjectContext(), false), null, ver);
+    }
+
+    /**
+     * Evicts necessary number of data pages if per-page eviction is configured in current {@link MemoryPolicy}.
+     */
+    private void ensureFreeSpace() throws IgniteCheckedException {
+        // Deadlock alert: evicting data page causes removing (and locking) all entries on the page one by one.
+        assert !Thread.holdsLock(this);
+
+        cctx.shared().database().ensureFreeSpace(cctx.memoryPolicy());
     }
 
     /**
@@ -3387,8 +3420,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evictInternal(GridCacheVersion obsoleteVer, @Nullable CacheEntryPredicate[] filter)
+    @Override public boolean evictInternal(
+        GridCacheVersion obsoleteVer,
+        @Nullable CacheEntryPredicate[] filter,
+        boolean evictOffheap)
         throws IgniteCheckedException {
+
         boolean marked = false;
 
         try {
@@ -3410,6 +3447,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
                         // Nullify value after swap.
                         value(null);
+
+                        if (evictOffheap)
+                            removeValue();
 
                         marked = true;
 
@@ -3450,6 +3490,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
                             // Nullify value after swap.
                             value(null);
+
+                            if (evictOffheap)
+                                removeValue();
 
                             marked = true;
 
@@ -3637,14 +3680,24 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *  Increments public size of map.
      */
     protected void incrementMapPublicSize() {
-        cctx.incrementPublicSize(this);
+        GridDhtLocalPartition locPart = localPartition();
+
+        if (locPart != null)
+            locPart.incrementPublicSize(this);
+        else
+            cctx.incrementPublicSize(this);
     }
 
     /**
      * Decrements public size of map.
      */
     protected void decrementMapPublicSize() {
-        cctx.decrementPublicSize(this);
+        GridDhtLocalPartition locPart = localPartition();
+
+        if (locPart != null)
+            locPart.decrementPublicSize(this);
+        else
+            cctx.decrementPublicSize(this);
     }
 
     /**
@@ -4234,7 +4287,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             // Incorporate conflict version into new version if needed.
             if (conflictVer != null && conflictVer != newVer) {
                 newVer = new GridCacheVersionEx(newVer.topologyVersion(),
-                    newVer.globalTime(),
                     newVer.order(),
                     newVer.nodeOrder(),
                     newVer.dataCenterId(),
@@ -4611,8 +4663,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 assert conflictCtx != null;
 
-                boolean ignoreTime = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
-
                 // Use old value?
                 if (conflictCtx.isUseOld()) {
                     GridCacheVersion newConflictVer = conflictVer != null ? conflictVer : newVer;
@@ -4621,7 +4671,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (!entry.isStartVersion() &&                                                        // Not initial value,
                         verCheck &&                                                                       // and atomic version check,
                         oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&                 // and data centers are equal,
-                        ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer, ignoreTime) == 0 && // and both versions are equal,
+                        ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer) == 0 && // and both versions are equal,
                         cctx.writeThrough() &&                                                            // and store is enabled,
                         primary)                                                                          // and we are primary.
                     {
@@ -4679,11 +4729,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private void versionCheck(@Nullable IgniteBiTuple<Object, Exception> invokeRes) throws IgniteCheckedException {
             GridCacheContext cctx = entry.context();
 
-            boolean ignoreTime = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
-
             if (verCheck) {
-                if (!entry.isStartVersion() && ATOMIC_VER_COMPARATOR.compare(entry.ver, newVer, ignoreTime) >= 0) {
-                    if (ATOMIC_VER_COMPARATOR.compare(entry.ver, newVer, ignoreTime) == 0 && cctx.writeThrough() && primary) {
+                if (!entry.isStartVersion() && ATOMIC_VER_COMPARATOR.compare(entry.ver, newVer) >= 0) {
+                    if (ATOMIC_VER_COMPARATOR.compare(entry.ver, newVer) == 0 && cctx.writeThrough() && primary) {
                         if (log.isDebugEnabled())
                             log.debug("Received entry update with same version as current (will update store) " +
                                 "[entry=" + this + ", newVer=" + newVer + ']');
@@ -4718,7 +4766,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
             else
-                assert entry.isStartVersion() || ATOMIC_VER_COMPARATOR.compare(entry.ver, newVer, ignoreTime) <= 0 :
+                assert entry.isStartVersion() || ATOMIC_VER_COMPARATOR.compare(entry.ver, newVer) <= 0 :
                     "Invalid version for inner update [isNew=" + entry.isStartVersion() + ", entry=" + this + ", newVer=" + newVer + ']';
         }
 

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
@@ -34,7 +33,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -75,12 +73,12 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
             CheckDefaultValueAttributes(new TcpCommunicationSpi());
             CheckDefaultValueAttributes(new RendezvousAffinityFunction());
-            CheckDefaultValueAttributes(new FairAffinityFunction());
             CheckDefaultValueAttributes(new NearCacheConfiguration());
             CheckDefaultValueAttributes(new FifoEvictionPolicy());
             CheckDefaultValueAttributes(new LruEvictionPolicy());
             CheckDefaultValueAttributes(new AtomicConfiguration());
             CheckDefaultValueAttributes(new TransactionConfiguration());
+            CheckDefaultValueAttributes(new MemoryEventStorageSpi());
         }
 
         /// <summary>
@@ -183,11 +181,15 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("affKey", typ.AffinityKeyFieldName);
                 Assert.AreEqual(false, typ.KeepDeserialized);
 
-                CollectionAssert.AreEqual(new[] {"fld1", "fld2"},
-                    ((BinaryFieldEqualityComparer)typ.EqualityComparer).FieldNames);
-
                 Assert.IsNotNull(resCfg.PluginConfigurations);
                 Assert.AreEqual(cfg.PluginConfigurations, resCfg.PluginConfigurations);
+
+                var eventCfg = cfg.EventStorageSpi as MemoryEventStorageSpi;
+                var resEventCfg = resCfg.EventStorageSpi as MemoryEventStorageSpi;
+                Assert.IsNotNull(eventCfg);
+                Assert.IsNotNull(resEventCfg);
+                Assert.AreEqual(eventCfg.ExpirationTimeout, resEventCfg.ExpirationTimeout);
+                Assert.AreEqual(eventCfg.MaxEventCount, resEventCfg.MaxEventCount);
             }
         }
 
@@ -523,12 +525,16 @@ namespace Apache.Ignite.Core.Tests
                             TypeName = "myType",
                             IsEnum = true,
                             AffinityKeyFieldName = "affKey",
-                            KeepDeserialized = false,
-                            EqualityComparer = new BinaryFieldEqualityComparer("fld1", "fld2")
+                            KeepDeserialized = false
                         }
                     }
                 },
-                PluginConfigurations = new[] { new TestIgnitePluginConfiguration() }
+                PluginConfigurations = new[] { new TestIgnitePluginConfiguration() },
+                EventStorageSpi = new MemoryEventStorageSpi
+                {
+                    ExpirationTimeout = TimeSpan.FromSeconds(5),
+                    MaxEventCount = 10
+                }
             };
         }
     }

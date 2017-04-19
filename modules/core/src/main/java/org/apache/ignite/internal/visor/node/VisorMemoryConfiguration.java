@@ -17,26 +17,27 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for memory configuration.
  */
-public class VisorMemoryConfiguration implements Serializable {
+public class VisorMemoryConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** File cache allocation path. */
-    private String fileCacheAllocationPath;
-
-    /** Amount of memory allocated for the page cache. */
-    private long pageCacheSize;
+    /** Size of memory for system cache. */
+    private long sysCacheMemSize;
 
     /** Page size. */
     private int pageSize;
@@ -51,6 +52,13 @@ public class VisorMemoryConfiguration implements Serializable {
     private List<VisorMemoryPolicyConfiguration> memPlcs;
 
     /**
+     * Default constructor.
+     */
+    public VisorMemoryConfiguration() {
+        // No-op.
+    }
+
+    /**
      * Create data transfer object.
      *
      * @param memCfg Memory configuration.
@@ -58,6 +66,7 @@ public class VisorMemoryConfiguration implements Serializable {
     public VisorMemoryConfiguration(MemoryConfiguration memCfg) {
         assert memCfg != null;
 
+        sysCacheMemSize = memCfg.getSystemCacheMemorySize();
         pageSize = memCfg.getPageSize();
         concLvl = memCfg.getConcurrencyLevel();
         dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
@@ -80,17 +89,10 @@ public class VisorMemoryConfiguration implements Serializable {
     }
 
     /**
-     * @return File allocation path.
+     * @return Size of memory for system cache.
      */
-    public String fileCacheAllocationPath() {
-        return fileCacheAllocationPath;
-    }
-
-    /**
-     * @return Page cache size, in bytes.
-     */
-    public long pageCacheSize() {
-        return pageCacheSize;
+    public long getSystemCacheMemorySize() {
+        return sysCacheMemSize;
     }
 
     /**
@@ -112,5 +114,28 @@ public class VisorMemoryConfiguration implements Serializable {
      */
     public List<VisorMemoryPolicyConfiguration> getMemoryPolicies() {
         return memPlcs;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(sysCacheMemSize);
+        out.writeInt(pageSize);
+        out.writeInt(concLvl);
+        U.writeString(out, dfltMemPlcName);
+        U.writeCollection(out, memPlcs);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        sysCacheMemSize = in.readLong();
+        pageSize = in.readInt();
+        concLvl = in.readInt();
+        dfltMemPlcName = U.readString(in);
+        memPlcs = U.readList(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorMemoryConfiguration.class, this);
     }
 }

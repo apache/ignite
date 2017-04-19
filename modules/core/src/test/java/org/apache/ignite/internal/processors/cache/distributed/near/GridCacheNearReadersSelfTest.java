@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -82,7 +83,6 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         cacheCfg.setRebalanceMode(NONE);
 
         cacheCfg.setAffinity(aff);
-        cacheCfg.setEvictSynchronized(true);
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setBackups(aff.backups());
 
@@ -219,6 +219,9 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
                 try {
                     return !e1f.readers().contains(n2.id());
                 }
+                catch (GridCacheEntryRemovedException ignored) {
+                    return true;
+                }
                 catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -226,7 +229,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         }, 5000);
 
         // Node 1 still has node2 in readers map.
-        assertFalse(e1.readers().contains(n2.id()));
+        assertFalse(((GridDhtCacheEntry)dht(cache1).entryEx(1)).readers().contains(n2.id()));
     }
 
     /** @throws Exception If failed. */

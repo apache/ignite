@@ -18,7 +18,6 @@
 package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.Parameter;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -66,24 +65,12 @@ public class IgniteBenchmarkArguments {
     private int nearCacheSize;
 
     /** */
-    @Parameter(names = {"-wom", "--writeOrderMode"}, description = "Write ordering mode")
-    private CacheAtomicWriteOrderMode orderMode;
-
-    /** */
     @Parameter(names = {"-txc", "--txConcurrency"}, description = "Transaction concurrency")
     private TransactionConcurrency txConcurrency = TransactionConcurrency.PESSIMISTIC;
 
     /** */
     @Parameter(names = {"-txi", "--txIsolation"}, description = "Transaction isolation")
     private TransactionIsolation txIsolation = TransactionIsolation.REPEATABLE_READ;
-
-    /** */
-    @Parameter(names = {"-ot", "--offheapTiered"}, description = "Tiered offheap")
-    private boolean offheapTiered;
-
-    /** */
-    @Parameter(names = {"-ov", "--offheapValuesOnly"}, description = "Offheap values only")
-    private boolean offheapVals;
 
     /** */
     @Parameter(names = {"-rtp", "--restPort"}, description = "REST TCP port")
@@ -281,38 +268,10 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
-     * @return Cache write ordering mode.
-     */
-    public CacheAtomicWriteOrderMode orderMode() {
-        return orderMode;
-    }
-
-    /**
      * @return Backups.
      */
     public int backups() {
         return backups;
-    }
-
-    /**
-     * @return Offheap tiered.
-     */
-    public boolean isOffheapTiered() {
-        return offheapTiered;
-    }
-
-    /**
-     * @return Offheap values.
-     */
-    public boolean isOffheapValues() {
-        return offheapVals;
-    }
-
-    /**
-     * @return {@code True} if any offheap is enabled.
-     */
-    public boolean isOffHeap() {
-        return offheapTiered || offheapVals;
     }
 
     /**
@@ -467,8 +426,7 @@ public class IgniteBenchmarkArguments {
      */
     public String description() {
         return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
-            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency + "-rd=" + restartDelay +
-            "-rs=" + restartSleep;
+            "-txc=" + txConcurrency + "-rd=" + restartDelay + "-rs=" + restartSleep;
     }
 
     /** {@inheritDoc} */

@@ -26,7 +26,7 @@ namespace Apache.Ignite.Examples.Datagrid
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
 
     /// <summary>
     /// This example demonstrates on how to configure a multi-tiered Ignite cache that will store data in different 
@@ -69,8 +69,6 @@ namespace Apache.Ignite.Examples.Datagrid
                     {
                         MaxSize = 10 // Maximum number of entries that will be stored in Java heap. 
                     },
-                    // Limit off-heap to roughly 10 entries. Actual entry count will be lower due to metadata overhead.
-                    OffHeapMaxMemory = EntrySize * 10,
                 };
 
                 ICache<int, byte[]> cache = ignite.GetOrCreateCache<int, byte[]>(cacheCfg);

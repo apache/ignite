@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Transactions;
@@ -38,294 +37,32 @@ namespace Apache.Ignite.Core.Tests.Cache
     using NUnit.Framework;
 
     /// <summary>
-    ///
-    /// </summary>
-    class CacheTestKey
-    {
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="id">ID.</param>
-        public CacheTestKey(int id)
-        {
-            Id = id;
-        }
-
-        /// <summary>
-        /// ID.
-        /// </summary>
-        public int Id
-        {
-            get;
-            set;
-        }
-
-        /** <inheritdoc /> */
-        public override bool Equals(object obj)
-        {
-            CacheTestKey other = obj as CacheTestKey;
-
-            return other != null && Id == other.Id;
-        }
-
-        /** <inheritdoc /> */
-        public override int GetHashCode()
-        {
-            return Id;
-        }
-
-        /** <inheritdoc /> */
-        public override string ToString()
-        {
-            return new StringBuilder()
-                .Append(typeof(CacheTestKey).Name)
-                .Append(" [id=").Append(Id)
-                .Append(']').ToString();
-        }
-    }
-
-    /// <summary>
-    ///
-    /// </summary>
-    class TestReferenceObject
-    {
-        public TestReferenceObject Obj;
-
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        public TestReferenceObject()
-        {
-            // No-op.
-        }
-
-        public TestReferenceObject(TestReferenceObject obj)
-        {
-            Obj = obj;
-        }
-    }
-
-    [Serializable]
-    public class TestSerializableObject
-    {
-        public string Name { get; set; }
-        public int Id { get; set; }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-
-            var other = (TestSerializableObject) obj;
-            return obj.GetType() == GetType() && (string.Equals(Name, other.Name) && Id == other.Id);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return ((Name != null ? Name.GetHashCode() : 0) * 397) ^ Id;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Cache entry processor that adds argument value to the entry value.
-    /// </summary>
-    [Serializable]
-    public class AddArgCacheEntryProcessor : ICacheEntryProcessor<int, int, int, int>
-    {
-        // Expected exception text
-        public const string ExceptionText = "Exception from AddArgCacheEntryProcessor.";
-
-        // Error flag
-        public bool ThrowErr { get; set; }
-
-        // Error flag
-        public bool ThrowErrBinarizable { get; set; }
-
-        // Error flag
-        public bool ThrowErrNonSerializable { get; set; }
-
-        // Key value to throw error on
-        public int ThrowOnKey { get; set; }
-
-        // Remove flag
-        public bool Remove { get; set; }
-
-        // Exists flag
-        public bool Exists { get; set; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AddArgCacheEntryProcessor"/> class.
-        /// </summary>
-        public AddArgCacheEntryProcessor()
-        {
-            Exists = true;
-            ThrowOnKey = -1;
-        }
-
-        /** <inheritdoc /> */
-        int ICacheEntryProcessor<int, int, int, int>.Process(IMutableCacheEntry<int, int> entry, int arg)
-        {
-            if (ThrowOnKey < 0 || ThrowOnKey == entry.Key)
-            {
-                if (ThrowErr)
-                    throw new Exception(ExceptionText);
-
-                if (ThrowErrBinarizable)
-                    throw new BinarizableTestException {Info = ExceptionText};
-
-                if (ThrowErrNonSerializable)
-                    throw new NonSerializableException();
-            }
-
-            Assert.AreEqual(Exists, entry.Exists);
-
-            if (Remove)
-                entry.Remove();
-            else
-                entry.Value = entry.Value + arg;
-            
-            return entry.Value;
-        }
-
-        /** <inheritdoc /> */
-        public int Process(IMutableCacheEntry<int, int> entry, int arg)
-        {
-            throw new Exception("Invalid method");
-        }
-    }
-
-    /// <summary>
-    /// Binary add processor.
-    /// </summary>
-    public class BinarizableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IBinarizable
-    {
-        /** <inheritdoc /> */
-        public void WriteBinary(IBinaryWriter writer)
-        {
-            var w = writer.GetRawWriter();
-
-            w.WriteBoolean(ThrowErr);
-            w.WriteBoolean(ThrowErrBinarizable);
-            w.WriteBoolean(ThrowErrNonSerializable);
-            w.WriteInt(ThrowOnKey);
-            w.WriteBoolean(Remove);
-            w.WriteBoolean(Exists);
-        }
-
-        /** <inheritdoc /> */
-        public void ReadBinary(IBinaryReader reader)
-        {
-            var r = reader.GetRawReader();
-
-            ThrowErr = r.ReadBoolean();
-            ThrowErrBinarizable = r.ReadBoolean();
-            ThrowErrNonSerializable = r.ReadBoolean();
-            ThrowOnKey = r.ReadInt();
-            Remove = r.ReadBoolean();
-            Exists = r.ReadBoolean();
-        }
-    }
-
-    /// <summary>
-    /// Non-serializable processor.
-    /// </summary>
-    public class NonSerializableCacheEntryProcessor : AddArgCacheEntryProcessor, IBinarizable
-    {
-        /** <inheritdoc /> */
-        public void WriteBinary(IBinaryWriter writer)
-        {
-            throw new Exception("ExpectedException");
-        }
-
-        /** <inheritdoc /> */
-        public void ReadBinary(IBinaryReader reader)
-        {
-            throw new Exception("ExpectedException");
-        }
-    }
-
-    /// <summary>
-    /// Binary exception.
-    /// </summary>
-    public class BinarizableTestException : Exception, IBinarizable
-    {
-        /// <summary>
-        /// Gets or sets exception info.
-        /// </summary>
-        public string Info { get; set; }
-
-        /** <inheritdoc /> */
-        public override string Message
-        {
-            get { return Info; }
-        }
-
-        /** <inheritdoc /> */
-        public void WriteBinary(IBinaryWriter writer)
-        {
-            writer.GetRawWriter().WriteString(Info);
-        }
-
-        /** <inheritdoc /> */
-        public void ReadBinary(IBinaryReader reader)
-        {
-            Info = reader.GetRawReader().ReadString();
-        }
-    }
-
-    /// <summary>
-    /// Non-serializable exception.
-    /// </summary>
-    public class NonSerializableException : Exception, IBinarizable
-    {
-        /** <inheritdoc /> */
-        public void WriteBinary(IBinaryWriter writer)
-        {
-            throw new Exception("ExpectedException");
-        }
-
-        /** <inheritdoc /> */
-        public void ReadBinary(IBinaryReader reader)
-        {
-            throw new Exception("ExpectedException");
-        }
-    }
-
-    /// <summary>
-    ///
+    /// Base cache test.
     /// </summary>
     [SuppressMessage("ReSharper", "UnusedVariable")]
-    public abstract class CacheAbstractTest {
+    public abstract class CacheAbstractTest 
+    {
         /// <summary>
-        ///
+        /// Fixture setup.
         /// </summary>
         [TestFixtureSetUp]
-        public virtual void StartGrids() {
+        public void StartGrids()
+        {
             TestUtils.KillProcesses();
 
-            IgniteConfiguration cfg = new IgniteConfiguration();
+            IgniteConfiguration cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration(
+                    typeof(BinarizablePerson),
+                    typeof(CacheTestKey),
+                    typeof(TestReferenceObject),
+                    typeof(BinarizableAddArgCacheEntryProcessor),
+                    typeof(BinarizableTestException)),
+                SpringConfigUrl = "config\\native-client-test-cache.xml"
+            };
 
-            BinaryConfiguration portCfg = new BinaryConfiguration();
-
-            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
-
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizablePerson)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(CacheTestKey)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestReferenceObject)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableAddArgCacheEntryProcessor)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTestException)));
-
-            portCfg.TypeConfigurations = portTypeCfgs;
-
-            cfg.BinaryConfiguration = portCfg;
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-            cfg.SpringConfigUrl = "config\\native-client-test-cache.xml";
-
-            for (int i = 0; i < GridCount(); i++) {
+            for (int i = 0; i < GridCount(); i++)
+            {
                 cfg.IgniteInstanceName = "grid-" + i;
 
                 Ignition.Start(cfg);
@@ -335,19 +72,19 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        ///
+        /// Fixture teardown.
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void StopGrids() {
-            for (int i = 0; i < GridCount(); i++)
-                Ignition.Stop("grid-" + i, true);
+        public void StopGrids()
+        {
+            Ignition.StopAll(true);
         }
 
         /// <summary>
         ///
         /// </summary>
         [SetUp]
-        public virtual void BeforeTest()
+        public void BeforeTest()
         {
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
         }
@@ -356,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         ///
         /// </summary>
         [TearDown]
-        public virtual void AfterTest() {
+        public void AfterTest() {
             for (int i = 0; i < GridCount(); i++) 
                 Cache(i).WithKeepBinary<object, object>().RemoveAll();
 
@@ -378,35 +115,35 @@ namespace Apache.Ignite.Core.Tests.Cache
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
         }
 
-        public IIgnite GetIgnite(int idx)
+        protected static IIgnite GetIgnite(int idx)
         {
             return Ignition.GetIgnite("grid-" + idx);
         }
 
-        public ICache<int, int> Cache(int idx) {
+        private ICache<int, int> Cache(int idx) {
             return Cache<int, int>(idx);
         }
 
-        public ICache<TK, TV> Cache<TK, TV>(int idx) {
+        private ICache<TK, TV> Cache<TK, TV>(int idx) {
             return GetIgnite(idx).GetCache<TK, TV>(CacheName());
         }
 
-        public ICache<int, int> Cache()
+        protected ICache<int, int> Cache()
         {
             return Cache<int, int>(0);
         }
 
-        public ICache<TK, TV> Cache<TK, TV>()
+        private ICache<TK, TV> Cache<TK, TV>()
         {
             return Cache<TK, TV>(0);
         }
 
-        public ICacheAffinity Affinity()
+        private ICacheAffinity Affinity()
         {
             return GetIgnite(0).GetAffinity(CacheName());
         }
 
-        public ITransactions Transactions
+        protected ITransactions Transactions
         {
             get { return GetIgnite(0).GetTransactions(); }
         }
@@ -452,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var cache = Cache(i);
 
-                cache.Put(PrimaryKeyForCache(cache), 1);
+                cache.Put(GetPrimaryKeyForCache(cache), 1);
             }
 
             for (int i = 0; i < GridCount(); i++)
@@ -468,7 +205,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            int key = PrimaryKeyForCache(cache);
+            int key = GetPrimaryKeyForCache(cache);
 
             cache.Put(key, 1);
 
@@ -481,7 +218,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            var keys = PrimaryKeysForCache(cache, 5);
+            var keys = GetPrimaryKeysForCache(cache, 5);
 
             Assert.IsFalse(cache.ContainsKeys(keys));
 
@@ -497,7 +234,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            int key1 = PrimaryKeyForCache(cache);
+            int key1 = GetPrimaryKeyForCache(cache);
 
             cache.Put(key1, 1);
 
@@ -565,7 +302,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(4, 4);
             cache.Put(5, 5);
 
-            IDictionary<int, int> map = cache.GetAll(new List<int> { 0, 1, 2, 5 });
+            var map = cache.GetAll(new List<int> {0, 1, 2, 5}).ToDictionary(x => x.Key, x => x.Value);
 
             Assert.AreEqual(3, map.Count);
 
@@ -582,7 +319,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(2, 2);
             cache.Put(3, 3);
 
-            var map = cache.GetAll(new List<int> { 0, 1, 2 });
+            var map = cache.GetAll(new List<int> {0, 1, 2}).ToDictionary(x => x.Key, x => x.Value);
 
             Assert.AreEqual(2, map.Count);
 
@@ -912,7 +649,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Expiry policy tests.
         /// </summary>
-        public void TestWithExpiryPolicy(Func<ICache<int, int>, IExpiryPolicy, ICache<int, int>> withPolicyFunc, 
+        private void TestWithExpiryPolicy(Func<ICache<int, int>, IExpiryPolicy, ICache<int, int>> withPolicyFunc, 
             bool origCache)
         {
             ICache<int, int> cache0 = Cache(0);
@@ -927,8 +664,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             else
             {
-                key0 = PrimaryKeyForCache(cache0);
-                key1 = PrimaryKeyForCache(Cache(1));
+                key0 = GetPrimaryKeyForCache(cache0);
+                key1 = GetPrimaryKeyForCache(Cache(1));
             }
             
             // Test unchanged expiration.
@@ -1039,8 +776,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             else
             {
-                key0 = PrimaryKeyForCache(cache0);
-                key1 = PrimaryKeyForCache(Cache(1));
+                key0 = GetPrimaryKeyForCache(cache0);
+                key1 = GetPrimaryKeyForCache(Cache(1));
             }
 
             // Test zero expiration.
@@ -1103,7 +840,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            int key = PrimaryKeyForCache(cache);
+            int key = GetPrimaryKeyForCache(cache);
 
             cache.Put(key, 1);
 
@@ -1128,7 +865,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            List<int> keys = PrimaryKeysForCache(cache, 3);
+            List<int> keys = GetPrimaryKeysForCache(cache, 3);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -1163,7 +900,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var cache = Cache(i);
 
-                cache.Put(PrimaryKeyForCache(cache, 500), 1);
+                cache.Put(GetPrimaryKeyForCache(cache, 500), 1);
 
                 Assert.IsFalse(cache.IsEmpty());
             }
@@ -1178,7 +915,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestClearKey()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 10);
+            var keys = GetPrimaryKeysForCache(cache, 10);
 
             foreach (var key in keys)
                 cache.Put(key, 3);
@@ -1202,7 +939,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestClearKeys()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 10);
+            var keys = GetPrimaryKeysForCache(cache, 10);
 
             foreach (var key in keys)
                 cache.Put(key, 3);
@@ -1216,7 +953,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestLocalClearKey()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 10);
+            var keys = GetPrimaryKeysForCache(cache, 10);
 
             foreach (var key in keys)
                 cache.Put(key, 3);
@@ -1242,7 +979,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestLocalClearKeys()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 10);
+            var keys = GetPrimaryKeysForCache(cache, 10);
 
             foreach (var key in keys)
                 cache.Put(key, 3);
@@ -1350,7 +1087,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            var keys = PrimaryKeysForCache(cache, 2);
+            var keys = GetPrimaryKeysForCache(cache, 2);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -1370,7 +1107,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache().WrapAsync();
 
-            List<int> keys = PrimaryKeysForCache(cache, 2);
+            List<int> keys = GetPrimaryKeysForCache(cache, 2);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -1438,7 +1175,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 var cache = Cache(i);
 
-                List<int> keys = PrimaryKeysForCache(cache, 2);
+                List<int> keys = GetPrimaryKeysForCache(cache, 2);
 
                 foreach (int key in keys)
                     cache.Put(key, 1);
@@ -1465,7 +1202,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestLocalSize()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 3);
+            var keys = GetPrimaryKeysForCache(cache, 3);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -1474,7 +1211,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalEvict(keys.Take(2).ToArray());
 
-            //Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));  // TODO: IGNITE-4535
+            Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
             Assert.AreEqual(localSize, cache.GetLocalSize(CachePeekMode.All));
 
             cache.Put(keys[2], 3);
@@ -1492,7 +1229,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void TestEnumerators()
         {
             var cache = Cache();
-            var keys = PrimaryKeysForCache(cache, 2);
+            var keys = GetPrimaryKeysForCache(cache, 2);
 
             cache.Put(keys[0], keys[0] + 1);
             cache.Put(keys[1], keys[1] + 1);
@@ -1581,7 +1318,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            int key = PrimaryKeyForCache(cache);
+            int key = GetPrimaryKeyForCache(cache);
 
             cache.Put(key, 1);
 
@@ -1606,7 +1343,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            List<int> keys = PrimaryKeysForCache(cache, 3);
+            List<int> keys = GetPrimaryKeysForCache(cache, 3);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -1839,8 +1576,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             }, threads);
         }
 
-        //[Test]
-        //[Category(TestUtils.CATEGORY_INTENSIVE)]
+        [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestAsyncMultithreadedKeepBinary()
         {
             var cache = Cache().WithKeepBinary<CacheTestKey, BinarizablePerson>();
@@ -2457,7 +2194,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-        public void TestInvokeAll<T>(bool async, int entryCount) where T : AddArgCacheEntryProcessor, new()
+        private void TestInvokeAll<T>(bool async, int entryCount) where T : AddArgCacheEntryProcessor, new()
         {
             var cache = async ? Cache().WrapAsync() : Cache();
 
@@ -2470,7 +2207,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Existing entries
             var res = cache.InvokeAll(entries.Keys, new T(), arg);
 
-            var results = res.OrderBy(x => x.Key).Select(x => x.Value.Result);
+            var results = res.OrderBy(x => x.Key).Select(x => x.Result);
             var expectedResults = entries.OrderBy(x => x.Key).Select(x => x.Value + arg);
             
             Assert.IsTrue(results.SequenceEqual(expectedResults));
@@ -2482,13 +2219,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Remove entries
             res = cache.InvokeAll(entries.Keys, new T {Remove = true}, arg);
 
-            Assert.IsTrue(res.All(x => x.Value.Result == 0));
+            Assert.IsTrue(res.All(x => x.Result == 0));
             Assert.AreEqual(0, cache.GetAll(entries.Keys).Count);
 
             // Non-existing entries
             res = cache.InvokeAll(entries.Keys, new T {Exists = false}, arg);
 
-            Assert.IsTrue(res.All(x => x.Value.Result == arg));
+            Assert.IsTrue(res.All(x => x.Result == arg));
             Assert.IsTrue(cache.GetAll(entries.Keys).All(x => x.Value == arg)); 
 
             // Test exceptions
@@ -2511,9 +2248,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 if (procRes.Key == errKey)
                     // ReSharper disable once AccessToForEachVariableInClosure
-                    AssertThrowsCacheEntryProcessorException(() => { var x = procRes.Value.Result; }, exceptionText);
+                    AssertThrowsCacheEntryProcessorException(() => { var x = procRes.Result; }, exceptionText);
                 else
-                    Assert.Greater(procRes.Value.Result, 0);
+                    Assert.Greater(procRes.Result, 0);
             }
         }
 
@@ -2710,9 +2447,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
 
             // Check keepBinary for GetAll operation.
-            var allObjs1 = binCache.GetAll(keys);
+            var allObjs1 = binCache.GetAll(keys).ToDictionary(x => x.Key, x => x.Value);
 
-            var allObjs2 = binCache.GetAll(keys);
+            var allObjs2 = binCache.GetAll(keys).ToDictionary(x => x.Key, x => x.Value);
 
             for (int i = 0; i < cnt; i++)
             {
@@ -2740,22 +2477,22 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(expAge, person.Age);
         }
 
-        protected static int PrimaryKeyForCache(ICache<int, int> cache)
+        private static int GetPrimaryKeyForCache(ICache<int, int> cache)
         {
-            return PrimaryKeysForCache(cache, 1, 0).First();
+            return GetPrimaryKeysForCacheFrom(cache, 0).First();
         }
 
-        protected static int PrimaryKeyForCache(ICache<int, int> cache, int startFrom)
+        private static int GetPrimaryKeyForCache(ICache<int, int> cache, int startFrom)
         {
-            return PrimaryKeysForCache(cache, 1, startFrom).First();
+            return GetPrimaryKeysForCacheFrom(cache, startFrom).First();
         }
 
-        protected static List<int> PrimaryKeysForCache(ICache<int, int> cache, int cnt)
+        private static List<int> GetPrimaryKeysForCache(ICache<int, int> cache, int cnt)
         {
-            return PrimaryKeysForCache(cache, cnt, 0).Take(cnt).ToList();
+            return GetPrimaryKeysForCacheFrom(cache, 0).Take(cnt).ToList();
         }
 
-        protected static IEnumerable<int> PrimaryKeysForCache(ICache<int, int> cache, int cnt, int startFrom)
+        private static IEnumerable<int> GetPrimaryKeysForCacheFrom(ICache<int, int> cache, int startFrom)
         {
             IClusterNode node = cache.Ignite.GetCluster().GetLocalNode();
 
@@ -2764,7 +2501,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return Enumerable.Range(startFrom, int.MaxValue - startFrom).Where(x => aff.IsPrimary(node, x));
         }
 
-        protected static int NearKeyForCache(ICache<int, int> cache)
+        private static int NearKeyForCache(ICache<int, int> cache)
         {
             IClusterNode node = cache.Ignite.GetCluster().GetLocalNode();
 
@@ -2781,7 +2518,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return 0;
         }
 
-        protected static string GetKeyAffinity(ICache<int, int> cache, int key)
+        private static string GetKeyAffinity(ICache<int, int> cache, int key)
         {
             if (cache.Ignite.GetAffinity(cache.Name).IsPrimary(cache.Ignite.GetCluster().GetLocalNode(), key))
                 return "primary";
@@ -2834,6 +2571,33 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.TryLocalPeek(key, out val, CachePeekMode.Onheap);
 
             return val;
+        }
+
+        /// <summary>
+        /// Test serializable object.
+        /// </summary>
+        [Serializable]
+        private class TestSerializableObject
+        {
+            public string Name { get; set; }
+            public int Id { get; set; }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+
+                var other = (TestSerializableObject)obj;
+                return obj.GetType() == GetType() && (string.Equals(Name, other.Name) && Id == other.Id);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return ((Name != null ? Name.GetHashCode() : 0) * 397) ^ Id;
+                }
+            }
         }
     }
 }

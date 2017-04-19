@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
@@ -58,6 +59,9 @@ import org.jetbrains.annotations.Nullable;
 public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final int JOB_ARG_IDX = 3;
 
     /** Auto-injected grid instance. */
     @IgniteInstanceResource
@@ -133,24 +137,23 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
         }
 
         /**
-         * Cast argument to target class.
+         * Construct job argument.
          *
          * @param cls Class.
-         * @param idx Argument index.
          */
-        @Nullable private Object toObject(Class cls, int idx) throws ClassNotFoundException {
-            String arg = argument(idx);
+        @Nullable private Object toJobArgument(Class cls) throws ClassNotFoundException {
+            String arg = argument(JOB_ARG_IDX);
 
             if (cls == Collection.class || cls == Set.class) {
                 Class<?> itemsCls = Class.forName(arg);
 
                 Collection<Object> res = cls == Collection.class ? new ArrayList<>() : new HashSet<>();
 
-                String items = argument(idx + 1);
+                String items = argument(JOB_ARG_IDX + 1);
 
                 if (items != null) {
                     for (String item : items.split(";"))
-                        res.add(toSimpleObject(itemsCls, item));
+                        res.add(toObject(itemsCls, item));
                 }
 
                 return res;
@@ -159,20 +162,20 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             if (cls == IgniteBiTuple.class) {
                 Class<?> keyCls = Class.forName(arg);
 
-                String valClsName = argument(idx + 1);
+                String valClsName = argument(JOB_ARG_IDX + 1);
 
                 assert valClsName != null;
 
                 Class<?> valCls = Class.forName(valClsName);
 
-                return new IgniteBiTuple<>(toSimpleObject(keyCls, (String)argument(idx + 2)),
-                    toSimpleObject(valCls, (String)argument(idx + 3)));
+                return new IgniteBiTuple<>(toObject(keyCls, (String)argument(JOB_ARG_IDX + 2)),
+                    toObject(valCls, (String)argument(JOB_ARG_IDX + 3)));
             }
 
             if (cls == Map.class) {
                 Class<?> keyCls = Class.forName(arg);
 
-                String valClsName = argument(idx + 1);
+                String valClsName = argument(JOB_ARG_IDX + 1);
 
                 assert valClsName != null;
 
@@ -180,7 +183,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
                 Map<Object, Object> res = new HashMap<>();
 
-                String entries = argument(idx + 2);
+                String entries = argument(JOB_ARG_IDX + 2);
 
                 if (entries != null) {
                     for (String entry : entries.split(";")) {
@@ -189,8 +192,8 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
                             assert values.length >= 1;
 
-                            res.put(toSimpleObject(keyCls, values[0]),
-                                values.length > 1 ? toSimpleObject(valCls, values[1]) : null);
+                            res.put(toObject(keyCls, values[0]),
+                                values.length > 1 ? toObject(valCls, values[1]) : null);
                         }
                     }
                 }
@@ -199,8 +202,8 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             }
 
             if (cls == GridTuple3.class) {
-                String v2ClsName = argument(idx + 1);
-                String v3ClsName = argument(idx + 2);
+                String v2ClsName = argument(JOB_ARG_IDX + 1);
+                String v3ClsName = argument(JOB_ARG_IDX + 2);
 
                 assert v2ClsName != null;
                 assert v3ClsName != null;
@@ -209,20 +212,20 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 Class<?> v2Cls = Class.forName(v2ClsName);
                 Class<?> v3Cls = Class.forName(v3ClsName);
 
-                return new GridTuple3<>(toSimpleObject(v1Cls, (String)argument(idx + 3)), toSimpleObject(v2Cls,
-                    (String)argument(idx + 4)), toSimpleObject(v3Cls, (String)argument(idx + 5)));
+                return new GridTuple3<>(toObject(v1Cls, (String)argument(JOB_ARG_IDX + 3)), toObject(v2Cls,
+                    (String)argument(JOB_ARG_IDX + 4)), toObject(v3Cls, (String)argument(JOB_ARG_IDX + 5)));
             }
 
-            return toSimpleObject(cls, arg);
+            return toObject(cls, arg);
         }
 
         /**
-         * Cast from string representation to target class.
+         * Construct from string representation to target class.
          *
          * @param cls Target class.
          * @return Object constructed from string.
          */
-        @Nullable private Object toSimpleObject(Class cls, String val) {
+        @Nullable private Object toObject(Class cls, String val) {
             if (val == null  || "null".equals(val))
                 return null;
 
@@ -259,7 +262,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             if (BigDecimal.class == cls)
                 return new BigDecimal(val);
 
-            if (Collection.class == cls)
+            if (Collection.class == cls || List.class == cls)
                 return Arrays.asList(val.split(";"));
 
             if (Set.class == cls)
@@ -277,7 +280,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 byte[] res = new byte[els.length];
 
                 for (int i = 0; i < els.length; i ++)
-                    res[i] =  Byte.valueOf(els[i]);
+                    res[i] = Byte.valueOf(els[i]);
 
                 return res;
             }
@@ -297,6 +300,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public Object execute() throws IgniteException {
             if (fut != null)
                 return fut.get();
@@ -317,46 +321,63 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                     if (argCls == Void.class)
                         jobArgs = null;
                     else if (isBuildInObject(argCls))
-                        jobArgs = toObject(argCls, 3);
+                        jobArgs = toJobArgument(argCls);
                     else {
-                        int beanArgsCnt = argsCnt - 3;
+                        int beanArgsCnt = argsCnt - JOB_ARG_IDX;
 
                         for (Constructor ctor : argCls.getDeclaredConstructors()) {
                             Class[] types = ctor.getParameterTypes();
 
                             if (types.length == beanArgsCnt) {
-                                Object[] initargs = new Object[beanArgsCnt];
+                                Object[] initArgs = new Object[beanArgsCnt];
 
                                 for (int i = 0; i < beanArgsCnt; i++) {
-                                    String val = argument(i + 3);
+                                    String val = argument(i + JOB_ARG_IDX);
 
-                                    initargs[i] = toSimpleObject(types[i], val);
+                                    initArgs[i] = toObject(types[i], val);
                                 }
 
-                                jobArgs = ctor.newInstance(initargs);
+                                jobArgs = ctor.newInstance(initArgs);
 
                                 break;
                             }
                         }
 
-                        if (jobArgs == null)
-                            throw new IgniteException("Failed to execute task [task name=" + taskName + "]");
+                        if (jobArgs == null) {
+                            Object[] args = new Object[beanArgsCnt];
+
+                            for (int i = 0; i < beanArgsCnt; i++)
+                                args[i] = argument(i + JOB_ARG_IDX);
+
+                            throw new IgniteException("Failed to find constructor for task argument " +
+                                "[taskName=" + taskName + ", argsCnt=" + args.length +
+                                ", args=" + Arrays.toString(args) + "]");
+                        }
                     }
                 }
                 catch (Exception e) {
-                    throw new IgniteException("Failed to execute task [task name=" + taskName + "]", e);
+                    throw new IgniteException("Failed to construct job argument [taskName=" + taskName + "]", e);
                 }
             }
 
-            final Collection<UUID> nids;
+            final List<UUID> nids;
 
-            if (nidsArg == null || "null".equals(nidsArg) || nidsArg.isEmpty()) {
-                Collection<ClusterNode> nodes = ignite.cluster().nodes();
+            if (F.isEmpty(nidsArg) || "null".equals(nidsArg)) {
+                try {
+                    if (VisorOneNodeTask.class.isAssignableFrom(Class.forName(taskName)))
+                        nids = Collections.singletonList(ignite.localNode().id());
+                    else {
+                        Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
-                nids = new ArrayList<>(nodes.size());
+                        nids = new ArrayList<>(nodes.size());
 
-                for (ClusterNode node : nodes)
-                    nids.add(node.id());
+                        for (ClusterNode node : nodes)
+                            nids.add(node.id());
+                    }
+                }
+                catch (ClassNotFoundException e) {
+                    throw new IgniteException("Failed to find task class:" + taskName, e);
+                }
             }
             else {
                 String[] items = nidsArg.split(";");
@@ -367,7 +388,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                     try {
                         nids.add(UUID.fromString(item));
                     } catch (IllegalArgumentException ignore) {
-                        // No-op.
+                        ignite.log().warning("Failed to parse node id [taskName=" + taskName + ", nid=" + item + "]");
                     }
                 }
             }

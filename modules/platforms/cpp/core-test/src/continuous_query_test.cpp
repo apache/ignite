@@ -265,66 +265,56 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestEntry)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestEntry)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(TestEntry)
             IGNITE_BINARY_IS_NULL_FALSE(TestEntry)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(TestEntry)
 
-            void Write(BinaryWriter& writer, const TestEntry& obj)
+            static void Write(BinaryWriter& writer, const TestEntry& obj)
             {
                 writer.WriteInt32("value", obj.value);
             }
 
-            TestEntry Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, TestEntry& dst)
             {
-                TestEntry res;
-                res.value = reader.ReadInt32("value");
-
-                return res;
+                dst.value = reader.ReadInt32("value");
             }
         };
 
         template<typename K, typename V>
         struct BinaryType< RangeFilter<K,V> >
         {
-            int32_t GetTypeId()
+            static int32_t GetTypeId()
             {
                 return GetBinaryStringHashCode("RangeFilter");
             }
 
-            std::string GetTypeName()
+            static void GetTypeName(std::string& dst)
             {
-                return "RangeFilter";
+                dst = "RangeFilter";
 
             }
+
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
 
-            int32_t GetHashCode(const RangeFilter<K,V>&)
-            {
-                return 0;
-            }
-
-            bool IsNull(const RangeFilter<K,V>&)
+            static bool IsNull(const RangeFilter<K,V>&)
             {
                 return false;
             }
 
-            RangeFilter<K,V> GetNull()
+            static void GetNull(RangeFilter<K, V>& dst)
             {
-                return RangeFilter<K,V>();
+                dst = RangeFilter<K,V>();
             }
 
-            void Write(BinaryWriter& writer, const RangeFilter<K,V>& obj)
+            static void Write(BinaryWriter& writer, const RangeFilter<K,V>& obj)
             {
                 writer.WriteObject("rangeBegin", obj.rangeBegin);
                 writer.WriteObject("rangeEnd", obj.rangeEnd);
             }
 
-            RangeFilter<K,V> Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, RangeFilter<K, V>& dst)
             {
-                K begin = reader.ReadObject<K>("rangeBegin");
-                K end = reader.ReadObject<K>("rangeEnd");
-
-                return RangeFilter<K,V>(begin, end);
+                dst.rangeBegin = reader.ReadObject<K>("rangeBegin");
+                dst.rangeEnd = reader.ReadObject<K>("rangeEnd");
             }
         };
     }
@@ -377,6 +367,13 @@ void CheckEvents(Cache<int, TestEntry>& cache, Listener<int, TestEntry>& lsnr)
 
     cache.Remove(1);
     lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
+}
+
+IGNITE_EXPORTED_CALL void IgniteModuleInit0(ignite::IgniteBindingContext& context)
+{
+    IgniteBinding binding = context.GetBingding();
+
+    binding.RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
 }
 
 BOOST_FIXTURE_TEST_SUITE(ContinuousQueryTestSuite, ContinuousQueryTestSuiteFixture)
@@ -685,8 +682,6 @@ BOOST_AUTO_TEST_CASE(TestPublicPrivateConstantsConsistence)
 
 BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
 {
-    node.GetBinding().RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
-
     Listener<int, TestEntry> lsnr;
     RangeFilter<int, TestEntry> filter(100, 150);
 
@@ -724,10 +719,13 @@ BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
 
 BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
 {
+#ifdef IGNITE_TESTS_32
+    Ignite node2 = ignite_test::StartNode("cache-query-continuous-32.xml", "node-02");
+    Ignite node3 = ignite_test::StartNode("cache-query-continuous-32.xml", "node-03");
+#else
     Ignite node2 = ignite_test::StartNode("cache-query-continuous.xml", "node-02");
     Ignite node3 = ignite_test::StartNode("cache-query-continuous.xml", "node-03");
-
-    node.GetBinding().RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
+#endif
 
     Listener<int, TestEntry> lsnr;
     RangeFilter<int, TestEntry> filter(100, 150);

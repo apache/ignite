@@ -1897,8 +1897,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                         for (Iterator<KeyCacheObject> it = missed.keySet().iterator(); it.hasNext(); ) {
                             KeyCacheObject cacheKey = it.next();
 
-                            K keyVal =
-                                (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx.cacheObjectContext(), false));
+                            K keyVal = (K)(keepCacheObjects ? cacheKey
+                                : cacheCtx.cacheObjectContext()
+                                .unwrapBinaryIfNeeded(cacheKey, !deserializeBinary, false));
 
                             if (retMap.containsKey(keyVal))
                                 it.remove();
@@ -2673,6 +2674,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key, topVer);
 
                                 try {
+                                    cacheCtx.shared().database().ensureFreeSpace(cacheCtx.memoryPolicy());
+
                                     EntryGetResult verVal = entry.versionedValue(cacheVal,
                                         ver,
                                         null,
@@ -3949,7 +3952,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
     private <T> IgniteInternalFuture<T> nonInterruptable(IgniteInternalFuture<T> fut) {
         // Safety.
         if (fut instanceof GridFutureAdapter)
-            ((GridFutureAdapter)fut).ignoreInterrupts(true);
+            ((GridFutureAdapter)fut).ignoreInterrupts();
 
         return fut;
     }

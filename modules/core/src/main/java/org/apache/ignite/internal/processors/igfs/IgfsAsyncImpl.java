@@ -58,9 +58,9 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void format() {
+    @Override public void clear() {
         try {
-            saveOrGet(igfs.formatAsync0());
+            saveOrGet(igfs.clearAsync0());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -68,8 +68,8 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> formatAsync() throws IgniteException {
-        return igfs.formatAsync();
+    @Override public IgniteFuture<Void> clearAsync() throws IgniteException {
+        return igfs.clearAsync();
     }
 
     /** {@inheritDoc} */
@@ -151,11 +151,6 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     /** {@inheritDoc} */
     @Override public IgfsContext context() {
         return igfs.context();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgfsPaths proxyPaths() {
-        return igfs.proxyPaths();
     }
 
     /** {@inheritDoc} */

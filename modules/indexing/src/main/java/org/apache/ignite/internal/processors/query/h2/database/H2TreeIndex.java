@@ -40,6 +40,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
+import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
@@ -302,12 +303,23 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session session, boolean b) {
-        throw new UnsupportedOperationException();
+        try {
+            int seg = threadLocalSegment();
+
+            H2Tree tree = treeForRead(seg);
+
+            GridH2Row row = b ? tree.findFirst(): tree.findLast();
+
+            return new SingleRowCursor(row);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
     }
 
     /** {@inheritDoc} */

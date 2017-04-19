@@ -230,13 +230,58 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                using (var ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
                     IgniteInstanceName = "grid2",
                     ClientMode = clientMode
-                }))
+                };
+
+                using (var ignite2 = Ignition.Start(cfg))
                 {
                     Test(ignite1, ignite2);
+                }
+
+                // Test twice to verify double registration.
+                using (var ignite2 = Ignition.Start(cfg))
+                {
+                    Test(ignite1, ignite2);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tests the situation where newly joined node attempts registration of a known type.
+        /// </summary>
+        [Test]
+        public void TestTwoGridsStartStop([Values(false, true)] bool clientMode)
+        {
+            using (Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    IgniteInstanceName = "grid2",
+                    ClientMode = clientMode
+                };
+
+                using (var ignite2 = Ignition.Start(cfg))
+                {
+                    var cache = ignite2.CreateCache<int, Foo>(new CacheConfiguration("foos")
+                    {
+                        CacheMode = CacheMode.Replicated
+                    });
+
+                    cache[1] = new Foo();
+                }
+
+                using (var ignite2 = Ignition.Start(cfg))
+                {
+                    var cache = ignite2.GetCache<int, Foo>("foos");
+
+                    // ignite2 does not know that Foo class is registered in cluster, and attempts to register.
+                    cache[2] = new Foo();
+
+                    Assert.AreEqual(0, cache[1].Int);
+                    Assert.AreEqual(0, cache[2].Int);
                 }
             }
         }
@@ -248,7 +293,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestJavaInterop()
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                }
+            };
+
+            using (var ignite = Ignition.Start(cfg))
             {
                 var cacheCfg = new CacheConfiguration(null, new QueryEntity(typeof(PlatformComputeBinarizable))
                 {
@@ -280,15 +333,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void Test(IIgnite ignite1, IIgnite ignite2)
         {
-            const string cacheName = "cache";
+            var cfg = new CacheConfiguration("cache") {CacheMode = CacheMode.Partitioned};
 
             // Put on one grid.
-            var cache1 = ignite1.CreateCache<int, object>(cacheName);
+            var cache1 = ignite1.GetOrCreateCache<int, object>(cfg);
             cache1[1] = new Foo {Int = 1, Str = "1"};
             cache1[2] = ignite1.GetBinary().GetBuilder(typeof (Bar)).SetField("Int", 5).SetField("Str", "s").Build();
 
             // Get on another grid.
-            var cache2 = ignite2.GetCache<int, Foo>(cacheName);
+            var cache2 = ignite2.GetOrCreateCache<int, Foo>(cfg);
             var foo = cache2[1];
 
             Assert.AreEqual(1, foo.Int);

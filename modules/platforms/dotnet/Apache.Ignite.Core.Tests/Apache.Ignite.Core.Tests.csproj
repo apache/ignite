@@ -68,9 +68,12 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
     <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestDynamicRegistration.cs" />
+    <Compile Include="Binary\BinaryNameMapperTest.cs" />
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
+    <Compile Include="Binary\BinarySelfTestSimpleName.cs" />
     <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
     <Compile Include="Binary\JavaBinaryInteropTest.cs" />
     <Compile Include="Binary\JavaTypeMappingTest.cs" />
@@ -80,15 +83,26 @@
     <Compile Include="Binary\Serializable\ObjectReferenceTests.cs" />
     <Compile Include="Binary\Serializable\PrimitivesTest.cs" />
     <Compile Include="Binary\Serializable\SqlDmlTest.cs" />
+    <Compile Include="Binary\TypeNameParserTest.cs" />
     <Compile Include="Binary\TypeResolverTest.cs" />
+    <Compile Include="Cache\AddArgCacheEntryProcessor.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyTest.cs" />
     <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
+    <Compile Include="Cache\BinarizableAddArgCacheEntryProcessor.cs" />
+    <Compile Include="Cache\BinarizableTestException.cs" />
     <Compile Include="Cache\CacheMetricsTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
+    <Compile Include="Cache\CacheTestKey.cs" />
+    <Compile Include="Cache\NonSerializableCacheEntryProcessor.cs" />
+    <Compile Include="Cache\NonSerializableException.cs" />
     <Compile Include="Cache\Query\CacheDmlQueriesTest.cs" />
     <Compile Include="Cache\CacheAbstractTransactionalTest.cs" />
+    <Compile Include="Cache\Query\CacheDmlQueriesTestSimpleName.cs" />
+    <Compile Include="Cache\Query\CacheLinqTestSimpleName.cs" />
+    <Compile Include="Cache\Query\CacheQueriesTestSimpleName.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
     <Compile Include="Cache\Store\NamedNodeCacheStoreTest.cs" />
+    <Compile Include="Cache\TestReferenceObject.cs" />
     <Compile Include="Collections\MultiValueDictionaryTest.cs" />
     <Compile Include="Collections\ReadOnlyCollectionTest.cs" />
     <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
@@ -104,9 +118,6 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
-    <Compile Include="Plugin\Cache\CachePlugin.cs" />
-    <Compile Include="Plugin\Cache\CachePluginConfiguration.cs" />
-    <Compile Include="Plugin\Cache\CachePluginTest.cs" />
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />

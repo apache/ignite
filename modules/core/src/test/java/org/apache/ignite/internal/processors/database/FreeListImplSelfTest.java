@@ -38,6 +38,9 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.database.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -316,7 +319,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, pageSize, true);
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, pageSize, new MemoryMetricsImpl(null), true);
 
         pageMem.start();
 
@@ -333,7 +336,11 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-        return new FreeListImpl(1, "freelist", pageMem, null, null, metaPageId, true);
+        MemoryMetricsImpl metrics = new MemoryMetricsImpl(null);
+
+        MemoryPolicy memPlc = new MemoryPolicy(pageMem, null, metrics, new NoOpPageEvictionTracker());
+
+        return new FreeListImpl(1, "freelist", metrics, memPlc, null, null, metaPageId, true);
     }
 
     /**
@@ -359,7 +366,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         private TestDataRow(int keySize, int valSize) {
             key = new TestCacheObject(keySize);
             val = new TestCacheObject(valSize);
-            ver = new GridCacheVersion(keySize, valSize, 0L, 1);
+            ver = new GridCacheVersion(keySize, valSize, 1);
         }
 
         /** {@inheritDoc} */
@@ -405,6 +412,11 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hash() {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int cacheId() {
+            return 0;
         }
     }
 

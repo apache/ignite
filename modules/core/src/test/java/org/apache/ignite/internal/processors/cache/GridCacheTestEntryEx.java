@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +52,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     private long ttl;
 
     /** Version. */
-    private GridCacheVersion ver = new GridCacheVersion(0, 0, 0, 1, 0);
+    private GridCacheVersion ver = new GridCacheVersion(0, 0, 1, 0);
 
     /** Obsolete version. */
     private GridCacheVersion obsoleteVer = ver;
@@ -369,7 +370,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** @inheritDoc */
     @Override public boolean evictInternal(GridCacheVersion obsoleteVer,
-        @Nullable CacheEntryPredicate[] filter) {
+        @Nullable CacheEntryPredicate[] filter, boolean evictOffheap) {
         assert false;
 
         return false;
@@ -850,6 +851,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public boolean hasLockCandidate(long threadId) throws GridCacheEntryRemovedException {
         return localCandidate(threadId) != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
+        GridCacheEntryRemovedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */

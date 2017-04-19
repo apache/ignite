@@ -56,6 +56,7 @@
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
+        <module>modules/spring-data</module>
         <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
@@ -93,6 +94,35 @@
     </modules>
 
     <profiles>
+        <profile>
+            <id>all-java</id> <!-- used to update project versions and check all modules compilation -->
+            <modules> <!-- sorted alphabetically -->
+                <module>examples</module>
+                <module>modules/benchmarks</module>
+                <module>modules/geospatial</module>
+                <module>modules/hibernate5</module>
+                <module>modules/hibernate</module>
+                <module>modules/ml</module>
+                <module>modules/schedule</module>
+                <module>modules/web-console/web-agent</module>
+                <module>modules/web-console</module>
+                <module>modules/yardstick</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
+            <modules><!-- sorted alphabetically -->
+                <module>modules/scalar-2.10</module>
+                <module>modules/scalar</module>
+                <module>modules/spark-2.10</module>
+                <module>modules/spark</module>
+                <module>modules/visor-console-2.10</module>
+                <module>modules/visor-console</module>
+                <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
         <profile>
             <id>test</id>
             <build>
@@ -162,6 +192,7 @@
             <id>lgpl</id>
             <modules>
                 <module>modules/hibernate</module>
+                <module>modules/hibernate5</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
@@ -336,11 +367,6 @@
                                         </replaceregexp>
 
                                         <replaceregexp file="${basedir}/target/release-package/examples/pom.xml" byline="true">
-                                            <regexp pattern="to_be_replaced_by_ignite_version" />
-                                            <substitution expression="${project.version}" />
-                                        </replaceregexp>
-
-                                        <replaceregexp file="${basedir}/target/release-package/examples/schema-import/pom.xml" byline="true">
                                             <regexp pattern="to_be_replaced_by_ignite_version" />
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
@@ -605,7 +631,6 @@
             <id>examples</id>
             <modules>
                 <module>examples</module>
-                <module>examples/schema-import</module>
             </modules>
         </profile>
 
@@ -788,125 +813,10 @@
         </profile>
 
         <profile>
-            <id>java8-schema-import</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/lib/ext/jfxrt.jar</exists>
-                </file>
-            </activation>
-            <modules>
-                <module>modules/schema-import</module>
-                <module>modules/schema-import-db</module>
-            </modules>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-
-                        <executions>
-                            <execution>
-                                <id>dependencies-schema-import</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package/bin</outputDirectory>
-                                    <finalName>include</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>schema-import-scripts</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/release-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package</outputDirectory>
-                                    <finalName>bin</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>schema-import</id>
-            <activation>
-                <file>
-                    <exists>${java.home}/lib/jfxrt.jar</exists>
-                </file>
-            </activation>
-            <modules>
-                <module>modules/schema-import</module>
-                <module>modules/schema-import-db</module>
-            </modules>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <inherited>false</inherited>
-
-                        <executions>
-                            <execution>
-                                <id>dependencies-schema-import</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package/bin</outputDirectory>
-                                    <finalName>include</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>schema-import-scripts</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/release-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package</outputDirectory>
-                                    <finalName>bin</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>web-console</id>
             <modules>
                 <module>modules/web-console</module>
                 <module>modules/web-console/web-agent</module>
-                <module>modules/schema-import-db</module>
             </modules>
         </profile>
 
@@ -1051,6 +961,13 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>ml</id>
+            <modules>
+                <module>modules/ml</module>
+            </modules>
         </profile>
     </profiles>
 

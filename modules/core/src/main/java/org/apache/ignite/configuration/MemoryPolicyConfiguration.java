@@ -17,64 +17,200 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.mem.OutOfMemoryException;
 
 /**
- * Configuration bean used for creating {@link MemoryPolicy} instances.
+ * This class allows defining custom memory policies' configurations with various parameters for Apache Ignite
+ * page memory (see {@link MemoryConfiguration}. For each configured memory policy Apache Ignite instantiates
+ * respective memory regions with different parameters like maximum size, eviction policy, swapping options, etc.
+ * An Apache Ignite cache can be mapped to a particular policy using
+ * {@link CacheConfiguration#setMemoryPolicyName(String)} method.
+ * <p>Sample configuration below shows how to configure several memory policies:</p>
+ * <pre>
+ *     {@code
+ *     <property name="memoryConfiguration">
+ *         <bean class="org.apache.ignite.configuration.MemoryConfiguration">
+ *             <property name="defaultMemoryPolicyName" value="Default_Region"/>
+ *             <property name="pageSize" value="4096"/>
+ *
+ *             <property name="memoryPolicies">
+ *                 <list>
+ *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+ *                          <property name="name" value="Default_Region"/>
+ *                          <property name="size" value="#{100 * 1024 * 1024}"/>
+ *                      </bean>
+ *
+ *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+ *                          <property name="name" value="20MB_Region_Eviction"/>
+ *                          <property name="size" value="#{20 * 1024 * 1024}"/>
+ *                          <property name="pageEvictionMode" value="RANDOM_2_LRU"/>
+ *                      </bean>
+ *
+ *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+ *                          <property name="name" value="25MB_Region_Swapping"/>
+ *                          <property name="size" value="#{25 * 1024 * 1024}"/>
+ *                          <property name="swapFilePath" value="memoryPolicyExampleSwap"/>
+ *                      </bean>
+ *                  </list>
+ *              </property>
+ *     }
+ * </pre>
  */
 public final class MemoryPolicyConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Unique name of MemoryPolicy. */
+    /** Memory policy name. */
     private String name;
 
-    /** Size in bytes of {@link PageMemory} in bytes that will be created for this configuration. */
+    /** Memory policy maximum size. */
     private long size;
 
-    /** Path for memory mapped file (won't be created if not configured). */
+    /** An optional path to a memory mapped file for this memory policy. */
     private String swapFilePath;
 
+    /** An algorithm for memory pages eviction. */
+    private DataPageEvictionMode pageEvictionMode = DataPageEvictionMode.DISABLED;
+
     /**
-     * Unique name of MemoryPolicy.
+     * A threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the page
+     * memory will start the eviction only after 90% memory region (defined by this policy) is occupied.
+     */
+    private double evictionThreshold = 0.9;
+
+    /**
+     * TODO: not clear description.
+     *
+     * When {@link #evictionThreshold} is reached, allocation of new data pages is prevented by maintaining this
+     * amount of evicted data pages in the pool. If any thread needs free page to store cache entry,
+     * it will take empty page from the pool instead of allocating a new one.
+     * Increase this parameter if cache can contain very big entries (total size of pages in the pool should be enough
+     * to contain largest cache entry).
+     * Increase this parameter if {@link OutOfMemoryException} occurred with enabled page eviction.
+     */
+    private int emptyPagesPoolSize = 100;
+
+    /**
+     * Gets memory policy name.
+     *
+     * @return Memory policy name.
      */
     public String getName() {
         return name;
     }
 
     /**
-     * @param name Unique name of MemoryPolicy.
+     * Sets memory policy name. The name must be non empty and must not be equal to the reserved 'sysMemPlc' one.
+     *
+     * @param name Memory policy name.
      */
-    public void setName(String name) {
+    public MemoryPolicyConfiguration setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /**
-     * Size in bytes of {@link PageMemory} in bytes that will be created for this configuration.
+     * Maximum memory region size defined by this memory policy. If the whole data can not fit into the memory region
+     * an out of memory exception will be thrown.
+     *
+     * @return Size in bytes.
      */
     public long getSize() {
         return size;
     }
 
     /**
-     * Size in bytes of {@link PageMemory} in bytes that will be created for this configuration.
+     * Sets maximum memory region size defined by this memory policy. The total size can not be less than 1 MB (TODO: double check)
+     * due to internal requirements.
      */
-    public void setSize(long size) {
+    public MemoryPolicyConfiguration setSize(long size) {
         this.size = size;
+
+        return this;
     }
 
     /**
-     * @return Path for memory mapped file (won't be created if not configured).
+     * A path to the memory-mapped file the memory region defined by this memory policy will be mapped to. Having
+     * the path set, allows relying on swapping capabilities of an underlying operating system for the memory region.
+     *
+     * @return A path to the memory-mapped file or {@code null} if this feature is not used for the memory region defined
+     *         by this memory policy.
      */
     public String getSwapFilePath() {
         return swapFilePath;
     }
 
     /**
-     * @param swapFilePath Path for memory mapped file (won't be created if not configured)..
+     * Sets a path to the memory-mapped file.
+     *
+     * @param swapFilePath A Path to the memory mapped file.
      */
-    public void setSwapFilePath(String swapFilePath) {
+    public MemoryPolicyConfiguration setSwapFilePath(String swapFilePath) {
         this.swapFilePath = swapFilePath;
+
+        return this;
+    }
+
+    /**
+     * Gets memory pages eviction mode. If {@link DataPageEvictionMode#DISABLED} is used (default) then an out of
+     * memory exception will be thrown if the memory region usage, defined by this memory policy, goes beyond its
+     * capacity which is {@link #getSize()}.
+     *
+     * @return Memory pages eviction algorithm. {@link DataPageEvictionMode#DISABLED} used by default.
+     */
+    public DataPageEvictionMode getPageEvictionMode() {
+        return pageEvictionMode;
+    }
+
+    /**
+     * Sets memory pages eviction mode.
+     *
+     * @param evictionMode Eviction mode.
+     */
+    public MemoryPolicyConfiguration setPageEvictionMode(DataPageEvictionMode evictionMode) {
+        pageEvictionMode = evictionMode;
+
+        return this;
+    }
+
+    /**
+     * Gets a threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the
+     * page memory will start the eviction only after 90% of the memory region (defined by this policy) is occupied.
+     *
+     * @return Memory pages eviction threshold.
+     */
+    public double getEvictionThreshold() {
+        return evictionThreshold;
+    }
+
+    /**
+     * Sets memory pages eviction threshold.
+     *
+     * @param evictionThreshold Eviction threshold.
+     */
+    public MemoryPolicyConfiguration setEvictionThreshold(double evictionThreshold) {
+        this.evictionThreshold = evictionThreshold;
+
+        return this;
+    }
+
+    /**
+     * TODO: document clearly
+     * Gets empty pages pool size.
+     */
+    public int getEmptyPagesPoolSize() {
+        return emptyPagesPoolSize;
+    }
+
+    /**
+     * Sets empty pages pool size.
+     *
+     * @param emptyPagesPoolSize Empty pages pool size.
+     */
+    public MemoryPolicyConfiguration setEmptyPagesPoolSize(int emptyPagesPoolSize) {
+        this.emptyPagesPoolSize = emptyPagesPoolSize;
+
+        return this;
     }
 }

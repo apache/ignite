@@ -73,6 +73,7 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -99,7 +100,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -111,7 +111,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
@@ -170,7 +169,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
@@ -309,6 +308,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     @GridToStringExclude
     private ObjectName qryExecSvcMBean;
+
+    /** */
+    @GridToStringExclude
+    private ObjectName schemaExecSvcMBean;
 
     /** */
     @GridToStringExclude
@@ -695,6 +698,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param idxExecSvc Indexing executor service.
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
+     * @param schemaExecSvc Schema executor service.
      * @param errHnd Error handler to use for notification about startup problems.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
@@ -703,6 +707,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
         final ExecutorService execSvc,
+        final ExecutorService svcExecSvc,
         final ExecutorService sysExecSvc,
         final StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
@@ -714,6 +719,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
+        ExecutorService schemaExecSvc,
         GridAbsClosure errHnd
     )
         throws IgniteCheckedException
@@ -816,6 +822,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 gw,
                 utilityCachePool,
                 execSvc,
+                svcExecSvc,
                 sysExecSvc,
                 stripedExecSvc,
                 p2pExecSvc,
@@ -827,6 +834,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 idxExecSvc,
                 callbackExecSvc,
                 qryExecSvc,
+                schemaExecSvc,
                 plugins
             );
 
@@ -907,29 +915,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            try {
-                startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
-                startProcessor(new GridClockSyncProcessor(ctx));
-                startProcessor(new GridAffinityProcessor(ctx));
-                startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
-                startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
-                startProcessor(new GridCacheProcessor(ctx));
-                startProcessor(new GridClusterStateProcessor(ctx));
-                startProcessor(new GridQueryProcessor(ctx));
-                startProcessor(new OdbcProcessor(ctx));
-                startProcessor(new GridServiceProcessor(ctx));
-                startProcessor(new GridTaskSessionProcessor(ctx));
-                startProcessor(new GridJobProcessor(ctx));
-                startProcessor(new GridTaskProcessor(ctx));
-                startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
-                startProcessor(new GridRestProcessor(ctx));
-                startProcessor(new DataStreamProcessor(ctx));
-                startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
-                startProcessor(new GridContinuousProcessor(ctx));
-                startProcessor(createHadoopComponent());
-                startProcessor(new DataStructuresProcessor(ctx));
-                startProcessor(createComponent(PlatformProcessor.class, ctx));
-                startProcessor(new GridMarshallerMappingProcessor(ctx));
+            try {startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
+            startProcessor(new  GridAffinityProcessor(ctx));
+            startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
+            startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
+            startProcessor(new GridCacheProcessor(ctx));startProcessor(new GridClusterStateProcessor(ctx));
+            startProcessor(new GridQueryProcessor(ctx));
+            startProcessor(new OdbcProcessor(ctx));
+            startProcessor(new GridServiceProcessor(ctx));
+            startProcessor(new GridTaskSessionProcessor(ctx));
+            startProcessor(new GridJobProcessor(ctx));
+            startProcessor(new GridTaskProcessor(ctx));
+            startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
+            startProcessor(new GridRestProcessor(ctx));
+            startProcessor(new DataStreamProcessor(ctx));
+            startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
+            startProcessor(new GridContinuousProcessor(ctx));
+            startProcessor(createHadoopComponent());
+            startProcessor(new DataStructuresProcessor(ctx));
+            startProcessor(createComponent(PlatformProcessor.class, ctx));
+            startProcessor(new GridMarshallerMappingProcessor(ctx));
 
                 // Start plugins.
                 for (PluginProvider provider : ctx.plugins().allProviders()) {
@@ -1021,7 +1026,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Register MBeans.
             registerKernalMBean();
             registerLocalNodeMBean();
-            registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc, qryExecSvc);
+            registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc, qryExecSvc,
+                schemaExecSvc);
+
             registerStripedExecutorMBean(stripedExecSvc);
 
             // Lifecycle bean notifications.
@@ -1191,10 +1198,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             int loadedPages = 0;
 
-                            for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
-                                MemoryPolicy memPlc = cctx.memoryPolicy();
+                            Collection<MemoryPolicy> policies = ctx.cache().context().database().memoryPolicies();
 
-                                loadedPages += memPlc != null ? memPlc.pageMemory().loadedPages() : 0;
+                            if (!F.isEmpty(policies)) {
+                                for (MemoryPolicy memPlc : policies)
+                                    loadedPages += memPlc.pageMemory().loadedPages();
                             }
 
                             String id = U.id8(localNode().id());
@@ -1612,11 +1620,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param execSvc
-     * @param sysExecSvc
-     * @param p2pExecSvc
-     * @param mgmtExecSvc
-     * @param restExecSvc
+     * @param execSvc Public executor service.
+     * @param sysExecSvc System executor service.
+     * @param p2pExecSvc P2P executor service.
+     * @param mgmtExecSvc Management executor service.
+     * @param restExecSvc Query executor service.
+     * @param schemaExecSvc Schema executor service.
      * @throws IgniteCheckedException If failed.
      */
     private void registerExecutorMBeans(ExecutorService execSvc,
@@ -1624,12 +1633,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService restExecSvc,
-        ExecutorService qryExecSvc) throws IgniteCheckedException {
+        ExecutorService qryExecSvc,
+        ExecutorService schemaExecSvc) throws IgniteCheckedException {
         pubExecSvcMBean = registerExecutorMBean(execSvc, "GridExecutionExecutor");
         sysExecSvcMBean = registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(p2pExecSvc, "GridClassLoadingExecutor");
         qryExecSvcMBean = registerExecutorMBean(qryExecSvc, "GridQueryExecutor");
+        schemaExecSvcMBean = registerExecutorMBean(schemaExecSvc, "GridSchemaExecutor");
 
         ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
 
@@ -2152,6 +2163,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     unregisterMBean(locNodeMBean) &
                     unregisterMBean(restExecSvcMBean) &
                     unregisterMBean(qryExecSvcMBean) &
+                    unregisterMBean(schemaExecSvcMBean) &
                     unregisterMBean(stripedExecSvcMBean)
             ))
                 errOnStop = false;
@@ -2428,10 +2440,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackMemoryConfiguration() {
         MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
 
-        U.log(log, "System cache MemoryPolicy size is configured to " +
-                (memCfg.getSystemCacheMemorySize() / (1024 * 1024)) +
-        "MB size. " +
-                "Use MemoryConfiguration.systemCacheMemorySize property to change it.");
+        if (memCfg == null)
+            return;
+
+        U.log(log, "System cache's MemoryPolicy size is configured to " +
+            (memCfg.getSystemCacheMemorySize() / (1024 * 1024)) + " MB. " +
+            "Use MemoryConfiguration.systemCacheMemorySize property to change the setting.");
     }
 
     /**
@@ -3366,6 +3380,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        return ctx.cache().context().database().memoryMetrics();
     }
 
     /** {@inheritDoc} */

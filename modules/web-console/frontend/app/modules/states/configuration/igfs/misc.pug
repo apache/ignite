@@ -55,7 +55,7 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
                 .settings-row
                     +number('Block size:', `${model}.blockSize`, '"blockSize"', 'true', '65536', '0', 'File data block size in bytes')
                 .settings-row
-                    +number('Stream buffer size:', `${model}.streamBufferSize`, '"streamBufferSize"', 'true', '65536', '0', 'Read/write buffer size for IGFS stream operations in bytes')
+                    +number('Buffer size:', `${model}.bufferSize`, '"bufferSize"', 'true', '65536', '0', 'Read/write buffer size for IGFS stream operations in bytes')
                 .settings-row
                     +number('Maximum space size:', `${model}.maxSpaceSize`, '"maxSpaceSize"', 'true', '0', '0', 'Maximum space available for data cache to store file system entries')
                 .settings-row
@@ -70,8 +70,6 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
                     +number('Prefetch blocks:', `${model}.prefetchBlocks`, '"prefetchBlocks"', 'true', '0', '0', 'Number of pre-fetched blocks if specific file chunk is requested')
                 .settings-row
                     +number('Sequential reads before prefetch:', `${model}.sequentialReadsBeforePrefetch`, '"sequentialReadsBeforePrefetch"', 'true', '0', '0', 'Amount of sequential block reads before prefetch is triggered')
-                .settings-row
-                    +number('Trash purge timeout:', `${model}.trashPurgeTimeout`, '"trashPurgeTimeout"', 'true', '1000', '0', 'Maximum timeout awaiting for trash purging in case data cache oversize is detected')
                 .settings-row
                     +checkbox('Colocate metadata', `${model}.colocateMetadata`, '"colocateMetadata"', 'Whether to co-locate metadata on a single node')
                 .settings-row

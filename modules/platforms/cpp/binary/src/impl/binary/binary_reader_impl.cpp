@@ -37,7 +37,7 @@ namespace ignite
         {
             BinaryReaderImpl::BinaryReaderImpl(InteropInputStream* stream, BinaryIdResolver* idRslvr,
                 int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff,
-                int32_t footerBegin, int32_t footerEnd, BinaryOffsetType schemaType) :
+                int32_t footerBegin, int32_t footerEnd, BinaryOffsetType::Type schemaType) :
                 stream(stream), idRslvr(idRslvr), pos(pos), usrType(usrType), typeId(typeId), 
                 hashCode(hashCode), len(len), rawOff(rawOff), rawMode(false), elemIdGen(0), elemId(0),
                 elemCnt(-1), elemRead(0), footerBegin(footerBegin), footerEnd(footerEnd), schemaType(schemaType)
@@ -48,7 +48,7 @@ namespace ignite
             BinaryReaderImpl::BinaryReaderImpl(InteropInputStream* stream) :
                 stream(stream), idRslvr(NULL), pos(0), usrType(false), typeId(0), hashCode(0), len(0),
                 rawOff(0), rawMode(true), elemIdGen(0), elemId(0), elemCnt(-1), elemRead(0), footerBegin(-1),
-                footerEnd(-1), schemaType(OFFSET_TYPE_FOUR_BYTES)
+                footerEnd(-1), schemaType(BinaryOffsetType::FOUR_BYTES)
             {
                 // No-op.
             }
@@ -556,19 +556,19 @@ namespace ignite
                 return StartContainerSession(false, IGNITE_TYPE_ARRAY, size);
             }
 
-            int32_t BinaryReaderImpl::ReadCollection(CollectionType* typ, int32_t* size)
+            int32_t BinaryReaderImpl::ReadCollection(CollectionType::Type* typ, int32_t* size)
             {
                 int32_t id = StartContainerSession(true, IGNITE_TYPE_COLLECTION, size);
 
                 if (*size == -1)
-                    *typ = IGNITE_COLLECTION_UNDEFINED;
+                    *typ = CollectionType::UNDEFINED;
                 else
-                    *typ = static_cast<CollectionType>(stream->ReadInt8());
+                    *typ = static_cast<CollectionType::Type>(stream->ReadInt8());
 
                 return id;
             }
 
-            int32_t BinaryReaderImpl::ReadCollection(const char* fieldName, CollectionType* typ, int32_t* size)
+            int32_t BinaryReaderImpl::ReadCollection(const char* fieldName, CollectionType::Type* typ, int32_t* size)
             {
                 CheckRawMode(false);
                 CheckSingleMode(true);
@@ -578,7 +578,7 @@ namespace ignite
 
                 if (fieldPos <= 0)
                 {
-                    *typ = IGNITE_COLLECTION_UNDEFINED;
+                    *typ = CollectionType::UNDEFINED;
                     *size = -1;
 
                     return ++elemIdGen;
@@ -589,26 +589,26 @@ namespace ignite
                 int32_t id = StartContainerSession(false, IGNITE_TYPE_COLLECTION, size);
 
                 if (*size == -1)
-                    *typ = IGNITE_COLLECTION_UNDEFINED;
+                    *typ = CollectionType::UNDEFINED;
                 else
-                    *typ = static_cast<CollectionType>(stream->ReadInt8());
+                    *typ = static_cast<CollectionType::Type>(stream->ReadInt8());
 
                 return id;
             }
 
-            int32_t BinaryReaderImpl::ReadMap(MapType* typ, int32_t* size)
+            int32_t BinaryReaderImpl::ReadMap(MapType::Type* typ, int32_t* size)
             {
                 int32_t id = StartContainerSession(true, IGNITE_TYPE_MAP, size);
 
                 if (*size == -1)
-                    *typ = IGNITE_MAP_UNDEFINED;
+                    *typ = MapType::UNDEFINED;
                 else
-                    *typ = static_cast<MapType>(stream->ReadInt8());
+                    *typ = static_cast<MapType::Type>(stream->ReadInt8());
 
                 return id;
             }
 
-            int32_t BinaryReaderImpl::ReadMap(const char* fieldName, MapType* typ, int32_t* size)
+            int32_t BinaryReaderImpl::ReadMap(const char* fieldName, MapType::Type* typ, int32_t* size)
             {
                 CheckRawMode(false);
                 CheckSingleMode(true);
@@ -618,7 +618,7 @@ namespace ignite
 
                 if (fieldPos <= 0)
                 {
-                    *typ = IGNITE_MAP_UNDEFINED;
+                    *typ = MapType::UNDEFINED;
                     *size = -1;
 
                     return ++elemIdGen;
@@ -629,32 +629,32 @@ namespace ignite
                 int32_t id = StartContainerSession(false, IGNITE_TYPE_MAP, size);
 
                 if (*size == -1)
-                    *typ = IGNITE_MAP_UNDEFINED;
+                    *typ = MapType::UNDEFINED;
                 else
-                    *typ = static_cast<MapType>(stream->ReadInt8());
+                    *typ = static_cast<MapType::Type>(stream->ReadInt8());
 
                 return id;
             }
 
-            CollectionType BinaryReaderImpl::ReadCollectionTypeUnprotected()
+            CollectionType::Type BinaryReaderImpl::ReadCollectionTypeUnprotected()
             {
                 int32_t size = ReadCollectionSizeUnprotected();
                 if (size == -1)
-                    return IGNITE_COLLECTION_UNDEFINED;
+                    return CollectionType::UNDEFINED;
 
-                CollectionType typ = static_cast<CollectionType>(stream->ReadInt8());
+                CollectionType::Type typ = static_cast<CollectionType::Type>(stream->ReadInt8());
 
                 return typ;
             }
 
-            CollectionType BinaryReaderImpl::ReadCollectionType()
+            CollectionType::Type BinaryReaderImpl::ReadCollectionType()
             {
                 InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
                 
                 return ReadCollectionTypeUnprotected();
             }
 
-            CollectionType BinaryReaderImpl::ReadCollectionType(const char* fieldName)
+            CollectionType::Type BinaryReaderImpl::ReadCollectionType(const char* fieldName)
             {
                 CheckRawMode(false);
                 CheckSingleMode(true);
@@ -665,7 +665,7 @@ namespace ignite
                 int32_t fieldPos = FindField(fieldId);
 
                 if (fieldPos <= 0)
-                    return IGNITE_COLLECTION_UNDEFINED;
+                    return CollectionType::UNDEFINED;
 
                 stream->Position(fieldPos);
 
@@ -892,7 +892,7 @@ namespace ignite
 
                 switch (schemaType)
                 {
-                    case OFFSET_TYPE_ONE_BYTE:
+                    case BinaryOffsetType::ONE_BYTE:
                     {
                         for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 5)
                         {
@@ -904,7 +904,7 @@ namespace ignite
                         break;
                     }
 
-                    case OFFSET_TYPE_TWO_BYTES:
+                    case BinaryOffsetType::TWO_BYTES:
                     {
                         for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 6)
                         {
@@ -916,7 +916,7 @@ namespace ignite
                         break;
                     }
 
-                    case OFFSET_TYPE_FOUR_BYTES:
+                    case BinaryOffsetType::FOUR_BYTES:
                     {
                         for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 8)
                         {

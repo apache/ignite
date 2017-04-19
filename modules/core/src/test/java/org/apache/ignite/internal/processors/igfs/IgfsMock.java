@@ -69,13 +69,6 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsPaths proxyPaths() {
-        throwUnsupported();
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgfsInputStream open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch)
         throws IgniteException {
         throwUnsupported();
@@ -261,12 +254,12 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void format() throws IgniteException {
+    @Override public void clear() throws IgniteException {
         throwUnsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> formatAsync() throws IgniteException {
+    @Override public IgniteFuture<Void> clearAsync() throws IgniteException {
         throwUnsupported();
 
         return null;

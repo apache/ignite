@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -78,27 +78,9 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** 2KB value size in bytes. */
     private static int TWO_KB_VAL_SIZE;
 
-    /** Cache mode. */
-    private CacheMode mode;
-
-    /** Near cache enabled flag. */
-    private boolean nearEnabled;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg.setCacheMode(mode);
-        cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-
-        if (mode == PARTITIONED)
-            cacheCfg.setBackups(0);
-
-        cfg.setCacheConfiguration(cacheCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -128,12 +110,38 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+
+        startGrids(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * @param nearEnabled {@code True} if near cache should be enabled.
+     * @param mode Cache mode.
+     * @return Created cache.
+     */
+    private IgniteCache<Integer, Value> testCache(boolean nearEnabled, CacheMode mode) {
+        CacheConfiguration<Integer, Value> cacheCfg = defaultCacheConfiguration();
+
+        cacheCfg.setCacheMode(mode);
+        cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration<Integer, Value>() : null);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        if (mode == PARTITIONED)
+            cacheCfg.setBackups(0);
+
+        return ignite(0).createCache(cacheCfg);
     }
 
     /**
      * Creates an instance of Marshaller that is used by caches during the test run.
      *
-     * @return
+     * @return Marshaller.
      */
     protected Marshaller createMarshaller() throws IgniteCheckedException {
         Marshaller marsh = new OptimizedMarshaller();
@@ -161,11 +169,9 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testLocal() throws Exception {
-        mode = LOCAL;
+        IgniteCache<Integer, Value> cache = testCache(false, LOCAL);
 
         try {
-            IgniteCache<Integer, Value> cache = startGrid().cache(null);
-
             cache.put(1, new Value(new byte[1024]));
             cache.put(2, new Value(new byte[2048]));
 
@@ -180,17 +186,15 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 internalCache.entryEx(2).memorySize());
         }
         finally {
-            stopAllGrids();
+            ignite(0).destroyCache(cache.getName());
         }
     }
 
     /** @throws Exception If failed. */
     public void testReplicated() throws Exception {
-        mode = REPLICATED;
+        IgniteCache<Integer, Value> cache = testCache(false, REPLICATED);
 
         try {
-            IgniteCache<Integer, Value> cache = startGrid().cache(null);
-
             cache.put(1, new Value(new byte[1024]));
             cache.put(2, new Value(new byte[2048]));
 
@@ -205,18 +209,15 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 extrasSize(internalCache.entryEx(2)), internalCache.entryEx(2).memorySize());
         }
         finally {
-            stopAllGrids();
+            ignite(0).destroyCache(cache.getName());
         }
     }
 
     /** @throws Exception If failed. */
     public void testPartitionedNearEnabled() throws Exception {
-        mode = PARTITIONED;
-        nearEnabled = true;
+        IgniteCache<Integer, Value> cache = testCache(true, PARTITIONED);
 
         try {
-            startGridsMultiThreaded(2);
-
             int[] keys = new int[3];
 
             int key = 0;
@@ -260,18 +261,15 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 extrasSize(cache1.entryEx(keys[2])), cache1.entryEx(keys[2]).memorySize());
         }
         finally {
-            stopAllGrids();
+            ignite(0).destroyCache(cache.getName());
         }
     }
 
     /** @throws Exception If failed. */
     public void testPartitionedNearDisabled() throws Exception {
-        mode = PARTITIONED;
-        nearEnabled = false;
+        IgniteCache<Integer, Value> cache = testCache(false, PARTITIONED);
 
         try {
-            startGridsMultiThreaded(2);
-
             int[] keys = new int[3];
 
             int key = 0;
@@ -295,20 +293,20 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             assertNotNull(jcache(1).get(keys[1]));
             assertNotNull(jcache(1).get(keys[2]));
 
-            GridCacheAdapter<Object, Object> cache = dht(jcache(0));
+            GridCacheAdapter<Object, Object> cache0 = dht(jcache(0));
 
             // All values are stored in PageMemory, cache entry size shouldn't depend on value size
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache.entryEx(keys[0])), cache.entryEx(keys[0]).memorySize());
+                extrasSize(cache0.entryEx(keys[0])), cache0.entryEx(keys[0]).memorySize());
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache.entryEx(keys[1])), cache.entryEx(keys[1]).memorySize());
+                extrasSize(cache0.entryEx(keys[1])), cache0.entryEx(keys[1]).memorySize());
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache.entryEx(keys[2])), cache.entryEx(keys[2]).memorySize());
+                extrasSize(cache0.entryEx(keys[2])), cache0.entryEx(keys[2]).memorySize());
 
             // Do not test other node since there are no backups.
         }
         finally {
-            stopAllGrids();
+            ignite(0).destroyCache(cache.getName());
         }
     }
 

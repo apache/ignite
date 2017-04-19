@@ -28,7 +28,6 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
@@ -48,11 +47,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -104,36 +100,9 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            null,
-            false);
-
-        randomOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTieredIndexing() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            null,
-            true);
-
-        randomOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicOffheapEviction() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             ATOMIC,
-            ONHEAP_TIERED,
             new LruEvictionPolicy<>(10),
             false);
 
@@ -146,34 +115,7 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
     public void testAtomicOffheapEvictionIndexing() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             ATOMIC,
-            ONHEAP_TIERED,
             new LruEvictionPolicy<>(10),
-            true);
-
-        randomOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            null,
-            false);
-
-        randomOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTieredIndexing() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            null,
             true);
 
         randomOperations(ccfg);
@@ -185,7 +127,6 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
     public void testTxOffheapEviction() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             new LruEvictionPolicy<>(10),
             false);
 
@@ -198,7 +139,6 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
     public void testTxOffheapEvictionIndexing() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             new LruEvictionPolicy<>(10),
             true);
 
@@ -391,7 +331,6 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
     /**
      * @param cacheMode Cache mode.
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @param evictionPlc Eviction policy.
      * @param indexing Indexing flag.
      * @return Cache configuration.
@@ -399,18 +338,15 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
     private CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode,
         @Nullable  EvictionPolicy<Object, Object> evictionPlc,
         boolean indexing) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setEvictionPolicy(evictionPlc);
-        ccfg.setOffHeapMaxMemory(0);
+        ccfg.setOnheapCacheEnabled(evictionPlc != null);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(1);

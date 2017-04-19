@@ -25,11 +25,10 @@ import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.commons.io.Charsets;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
-import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.h2.result.SortOrder;
 import org.h2.value.CompareMode;
@@ -140,15 +139,18 @@ public class InlineIndexHelperTest extends TestCase {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            new MemoryMetricsImpl(null),
             false);
 
         pageMem.start();
-        Page page = null;
+
+        long pageId = 0L;
+        long page = 0L;
 
         try {
-            FullPageId fullId = new FullPageId(pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA), CACHE_ID);
-            page = pageMem.page(fullId.cacheId(), fullId.pageId());
-            long pageAddr = page.getForReadPointer();
+            pageId = pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA);
+            page = pageMem.acquirePage(CACHE_ID, pageId);
+            long pageAddr = pageMem.readLock(CACHE_ID, pageId, page);
 
             int off = 0;
 
@@ -166,8 +168,8 @@ public class InlineIndexHelperTest extends TestCase {
             assertEquals("aaa", ih.get(pageAddr, off, 3 + 5).getString());
         }
         finally {
-            if (page != null)
-                pageMem.releasePage(page);
+            if (page != 0L)
+                pageMem.releasePage(CACHE_ID, pageId, page);
             pageMem.stop();
         }
     }
@@ -183,15 +185,18 @@ public class InlineIndexHelperTest extends TestCase {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            new MemoryMetricsImpl(null),
             false);
 
         pageMem.start();
-        Page page = null;
+
+        long pageId = 0L;
+        long page = 0L;
 
         try {
-            FullPageId fullId = new FullPageId(pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA), CACHE_ID);
-            page = pageMem.page(fullId.cacheId(), fullId.pageId());
-            long pageAddr = page.getForReadPointer();
+            pageId = pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA);
+            page = pageMem.acquirePage(CACHE_ID, pageId);
+            long pageAddr = pageMem.readLock(CACHE_ID, pageId, page);
 
             int off = 0;
 
@@ -210,8 +215,8 @@ public class InlineIndexHelperTest extends TestCase {
             assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, ih.get(pageAddr, off, 3 + 5).getBytes()));
         }
         finally {
-            if (page != null)
-                pageMem.releasePage(page);
+            if (page != 0L)
+                pageMem.releasePage(CACHE_ID, pageId, page);
             pageMem.stop();
         }
     }
@@ -295,15 +300,18 @@ public class InlineIndexHelperTest extends TestCase {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            new MemoryMetricsImpl(null),
             false);
 
         pageMem.start();
-        Page page = null;
+
+        long pageId = 0L;
+        long page = 0L;
 
         try {
-            FullPageId fullId = new FullPageId(pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA), CACHE_ID);
-            page = pageMem.page(fullId.cacheId(), fullId.pageId());
-            long pageAddr = page.getForReadPointer();
+            pageId = pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA);
+            page = pageMem.acquirePage(CACHE_ID, pageId);
+            long pageAddr = pageMem.readLock(CACHE_ID, pageId, page);
 
             int off = 0;
             int max = 255;
@@ -321,8 +329,8 @@ public class InlineIndexHelperTest extends TestCase {
             assertEquals(v2.getObject(), v22.getObject());
         }
         finally {
-            if (page != null)
-                pageMem.releasePage(page);
+            if (page != 0L)
+                pageMem.releasePage(CACHE_ID, pageId, page);
             pageMem.stop();
         }
     }

@@ -15,7 +15,6 @@
     limitations under the License.
 
 include /app/helpers/jade/mixins
-include /app/components/ui-grid-settings/ui-grid-settings
 
 mixin btn-toolbar(btn, click, tip, focusId)
     i.btn.btn-default.fa(class=btn ng-click=click bs-tooltip='' data-title=tip ignite-on-click-focus=focusId data-trigger='hover' data-placement='bottom')
@@ -134,10 +133,8 @@ mixin table-result-heading-query
                 +result-toolbar
         .col-xs-4
             .pull-right
-                .btn-group(ng-disabled='paragraph.loading')
-                    button.btn.btn-primary(ng-click='exportCsv(paragraph)' bs-tooltip data-title='{{actionTooltip(paragraph, "export", false)}}') Export
-                    button.btn.btn-primary.dropdown-toggle(id='export-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='exportDropdown' data-placement='bottom-right')
-                        span.caret
+                -var actions = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
+                +btn-group(actions, '{{ actionTooltip(paragraph, "export", false) }}')(ng-disabled='paragraph.loading')
 
 mixin table-result-heading-scan
     .total.row
@@ -151,10 +148,8 @@ mixin table-result-heading-scan
                 +result-toolbar
         .col-xs-4
             .pull-right
-                .btn-group(ng-disabled='paragraph.loading')
-                    button.btn.btn-primary(ng-click='exportCsv(paragraph)' bs-tooltip data-title='{{actionTooltip(paragraph, "export", false)}}') Export
-                    button.btn.btn-primary.dropdown-toggle(id='export-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='exportDropdown' data-placement='bottom-right')
-                        span.caret
+                -var actions = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
+                +btn-group(actions, '{{ actionTooltip(paragraph, "export", false) }}')(ng-disabled='paragraph.loading')
 
 mixin table-result-body
     .grid(ui-grid='paragraph.gridOptions' ui-grid-resize-columns ui-grid-exporter)

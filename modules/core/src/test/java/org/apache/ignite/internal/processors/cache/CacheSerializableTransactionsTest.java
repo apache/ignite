@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -82,7 +83,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.testframework.GridTestUtils.TestMemoryMode;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -2578,8 +2578,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         String readCacheName,
         String writeCacheName,
         final boolean entry,
-        final AtomicInteger putKey) throws Exception
-    {
+        final AtomicInteger putKey) throws Exception {
         final int THREADS = 64;
 
         final IgniteCache<Integer, Integer> readCache = ignite.cache(readCacheName);
@@ -3065,7 +3064,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
 
             try (Transaction tx = client2.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                assertEquals(1, (Object) cache2.get(key));
+                assertEquals(1, (Object)cache2.get(key));
                 cache2.put(key, 2);
 
                 tx.commit();
@@ -3266,7 +3265,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             ignite0.createCache(ccfg1);
 
-            CacheConfiguration<Integer, Integer> ccfg2=
+            CacheConfiguration<Integer, Integer> ccfg2 =
                 cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false);
 
             ccfg2.setName(CACHE2);
@@ -4008,42 +4007,35 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAccountTx1() throws Exception {
-        accountTx(false, false, false, false, TestMemoryMode.HEAP);
+        accountTx(false, false, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountTx2() throws Exception {
-        accountTx(true, false, false, false, TestMemoryMode.HEAP);
+        accountTx(true, false, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountTxWithNonSerializable() throws Exception {
-        accountTx(false, false, true, false, TestMemoryMode.HEAP);
+        accountTx(false, false, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountTxNearCache() throws Exception {
-        accountTx(false, true, false, false, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAccountTxOffheapTiered() throws Exception {
-        accountTx(false, false, false, false, TestMemoryMode.OFFHEAP_TIERED);
+        accountTx(false, true, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountTxNodeRestart() throws Exception {
-        accountTx(false, false, false, true, TestMemoryMode.HEAP);
+        accountTx(false, false, false, true);
     }
 
     /**
@@ -4051,19 +4043,15 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @param nearCache If {@code true} near cache is enabled.
      * @param nonSer If {@code true} starts threads executing non-serializable transactions.
      * @param restart If {@code true} restarts one node.
-     * @param memMode Test memory mode.
      * @throws Exception If failed.
      */
     private void accountTx(final boolean getAll,
         final boolean nearCache,
         final boolean nonSer,
-        final boolean restart,
-        TestMemoryMode memMode) throws Exception {
+        final boolean restart) throws Exception {
         final Ignite srv = ignite(1);
 
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false);
-
-        GridTestUtils.setMemoryMode(null, ccfg, memMode, 1, 64);
 
         final String cacheName = srv.createCache(ccfg).getName();
 
@@ -4346,12 +4334,18 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
 
             {
-                // Offheap.
+                // Eviction.
                 CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false);
                 ccfg.setName("cache3");
                 ccfg.setRebalanceMode(SYNC);
 
-                GridTestUtils.setMemoryMode(null, ccfg, TestMemoryMode.OFFHEAP_TIERED, 1, 64);
+                LruEvictionPolicy plc = new LruEvictionPolicy();
+
+                plc.setMaxSize(100);
+
+                ccfg.setEvictionPolicy(plc);
+
+                ccfg.setOnheapCacheEnabled(true);
 
                 srv.createCache(ccfg);
 
@@ -4542,7 +4536,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
         }
         finally {
-                destroyCache(cacheName);
+            destroyCache(cacheName);
         }
     }
 
@@ -4881,15 +4875,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, true, true));
         ccfgs.add(cacheConfiguration(PARTITIONED, FULL_SYNC, 2, true, true));
 
-        // Swap and offheap enabled.
-        for (GridTestUtils.TestMemoryMode memMode : GridTestUtils.TestMemoryMode.values()) {
-            CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false);
-
-            GridTestUtils.setMemoryMode(null, ccfg, memMode, 1, 64);
-
-            ccfgs.add(ccfg);
-        }
-
         return ccfgs;
     }
 
@@ -4903,7 +4888,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             ", near=" + (ccfg.getNearConfiguration() != null) +
             ", store=" + ccfg.isWriteThrough() +
             ", evictPlc=" + (ccfg.getEvictionPolicy() != null) +
-            ", maxOffheap=" + ccfg.getOffHeapMaxMemory()  +
             ']');
     }
 

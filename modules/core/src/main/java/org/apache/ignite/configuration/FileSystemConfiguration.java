@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 
 /**
  * {@code IGFS} configuration. More than one file system can be configured within grid.
@@ -46,9 +45,6 @@ public class FileSystemConfiguration {
 
     /** Default fragmentizer concurrent files. */
     public static final int DFLT_FRAGMENTIZER_CONCURRENT_FILES = 0;
-
-    /** Default fragmentizer local writes ratio. */
-    public static final float DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO = 0.8f;
 
     /** Fragmentizer enabled property. */
     public static final boolean DFLT_FRAGMENTIZER_ENABLED = true;
@@ -74,17 +70,11 @@ public class FileSystemConfiguration {
     /** Default read/write buffers size (bytes). */
     public static final int DFLT_BUF_SIZE = 1 << 16;
 
-    /** Default trash directory purge await timeout in case data cache oversize is detected. */
-    public static final long DFLT_TRASH_PURGE_TIMEOUT = 1000;
-
     /** Default management port. */
     public static final int DFLT_MGMT_PORT = 11400;
 
     /** Default IPC endpoint enabled flag. */
     public static final boolean DFLT_IPC_ENDPOINT_ENABLED = true;
-
-    /** Default value of whether to initialize default path modes. */
-    public static final boolean DFLT_INIT_DFLT_PATH_MODES = false;
 
     /** Default value of metadata co-location flag. */
     public static final boolean DFLT_COLOCATE_META = true;
@@ -140,9 +130,6 @@ public class FileSystemConfiguration {
     /** Fragmentizer concurrent files. */
     private int fragmentizerConcurrentFiles = DFLT_FRAGMENTIZER_CONCURRENT_FILES;
 
-    /** Fragmentizer local writes ratio. */
-    private float fragmentizerLocWritesRatio = DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO;
-
     /** Fragmentizer enabled flag. */
     private boolean fragmentizerEnabled = DFLT_FRAGMENTIZER_ENABLED;
 
@@ -152,23 +139,8 @@ public class FileSystemConfiguration {
     /** Maximum space. */
     private long maxSpace;
 
-    /** Trash purge await timeout. */
-    private long trashPurgeTimeout = DFLT_TRASH_PURGE_TIMEOUT;
-
-    /** Dual mode PUT operations executor service. */
-    private ExecutorService dualModePutExec;
-
-    /** Dual mode PUT operations executor service shutdown flag. */
-    private boolean dualModePutExecShutdown;
-
-    /** Maximum amount of data in pending puts. */
-    private long dualModeMaxPendingPutsSize;
-
     /** Maximum range length. */
     private long maxTaskRangeLen;
-
-    /** Whether to initialize default path modes. */
-    private boolean initDfltPathModes = DFLT_INIT_DFLT_PATH_MODES;
 
     /** Metadata co-location flag. */
     private boolean colocateMeta = DFLT_COLOCATE_META;
@@ -204,20 +176,15 @@ public class FileSystemConfiguration {
          * Must preserve alphabetical order!
          */
         blockSize = cfg.getBlockSize();
-        bufSize = cfg.getStreamBufferSize();
+        bufSize = cfg.getBufferSize();
         colocateMeta = cfg.isColocateMetadata();
         dataCacheCfg = cfg.getDataCacheConfiguration();
         dfltMode = cfg.getDefaultMode();
-        dualModeMaxPendingPutsSize = cfg.getDualModeMaxPendingPutsSize();
-        dualModePutExec = cfg.getDualModePutExecutorService();
-        dualModePutExecShutdown = cfg.getDualModePutExecutorServiceShutdown();
         fragmentizerConcurrentFiles = cfg.getFragmentizerConcurrentFiles();
-        fragmentizerLocWritesRatio = cfg.getFragmentizerLocalWritesRatio();
         fragmentizerEnabled = cfg.isFragmentizerEnabled();
         fragmentizerThrottlingBlockLen = cfg.getFragmentizerThrottlingBlockLength();
         fragmentizerThrottlingDelay = cfg.getFragmentizerThrottlingDelay();
         secondaryFs = cfg.getSecondaryFileSystem();
-        initDfltPathModes = cfg.isInitializeDefaultPathModes();
         ipcEndpointCfg = cfg.getIpcEndpointConfiguration();
         ipcEndpointEnabled = cfg.isIpcEndpointEnabled();
         maxSpace = cfg.getMaxSpaceSize();
@@ -231,7 +198,6 @@ public class FileSystemConfiguration {
         prefetchBlocks = cfg.getPrefetchBlocks();
         relaxedConsistency = cfg.isRelaxedConsistency();
         seqReadsBeforePrefetch = cfg.getSequentialReadsBeforePrefetch();
-        trashPurgeTimeout = cfg.getTrashPurgeTimeout();
         updateFileLenOnFlush = cfg.isUpdateFileLengthOnFlush();
     }
 
@@ -411,7 +377,7 @@ public class FileSystemConfiguration {
      *
      * @return Read/write buffers size (bytes).
      */
-    public int getStreamBufferSize() {
+    public int getBufferSize() {
         return bufSize;
     }
 
@@ -421,7 +387,7 @@ public class FileSystemConfiguration {
      * @param bufSize Read/write buffers size for stream operations (bytes) or {@code 0} to reset default value.
      * @return {@code this} for chaining.
      */
-    public FileSystemConfiguration setStreamBufferSize(int bufSize) {
+    public FileSystemConfiguration setBufferSize(int bufSize) {
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
         this.bufSize = bufSize == 0 ? DFLT_BUF_SIZE : bufSize;
@@ -606,15 +572,6 @@ public class FileSystemConfiguration {
      * <p>
      * If path doesn't correspond to any specified prefix or mappings are not provided, then
      * {@link #getDefaultMode()} is used.
-     * <p>
-     * If {@link #isInitializeDefaultPathModes()} is set to {@code true}, the following path modes will be created
-     * by default:
-     * <li>{@code /ignite/primary} and all it's sub-folders will always work in {@code PRIMARY} mode.</li>
-     * <p>
-     * And in case secondary file system URI is provided:
-     * <li>{@code /ignite/proxy} and all it's sub-folders will always work in {@code PROXY} mode.</li>
-     * <li>{@code /ignite/sync} and all it's sub-folders will always work in {@code DUAL_SYNC} mode.</li>
-     * <li>{@code /ignite/async} and all it's sub-folders will always work in {@code DUAL_ASYNC} mode.</li>
      *
      * @return Map of paths to {@code IGFS} modes.
      */
@@ -662,7 +619,6 @@ public class FileSystemConfiguration {
      * Gets throttle delay for fragmentizer.
      *
      * @return Throttle delay in milliseconds.
-     * @return {@code this} for chaining.
      */
     public long getFragmentizerThrottlingDelay() {
         return fragmentizerThrottlingDelay;
@@ -672,6 +628,7 @@ public class FileSystemConfiguration {
      * Sets delay in milliseconds for which fragmentizer is paused.
      *
      * @param fragmentizerThrottlingDelay Delay in milliseconds.
+     * @return {@code this} for chaining.
      */
     public FileSystemConfiguration setFragmentizerThrottlingDelay(long fragmentizerThrottlingDelay) {
         this.fragmentizerThrottlingDelay = fragmentizerThrottlingDelay;
@@ -683,7 +640,6 @@ public class FileSystemConfiguration {
      * Gets number of files that can be processed by fragmentizer concurrently.
      *
      * @return Number of files to process concurrently.
-     * @return {@code this} for chaining.
      */
     public int getFragmentizerConcurrentFiles() {
         return fragmentizerConcurrentFiles;
@@ -697,41 +653,6 @@ public class FileSystemConfiguration {
      */
     public FileSystemConfiguration setFragmentizerConcurrentFiles(int fragmentizerConcurrentFiles) {
         this.fragmentizerConcurrentFiles = fragmentizerConcurrentFiles;
-
-        return this;
-    }
-
-    /**
-     * Gets amount of local memory (in % of local IGFS max space size) available for local writes
-     * during file creation.
-     * <p>
-     * If current IGFS space size is less than {@code fragmentizerLocalWritesRatio * maxSpaceSize},
-     * then file blocks will be written to the local node first and then asynchronously distributed
-     * among cluster nodes (fragmentized).
-     * <p>
-     * Default value is {@link #DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO}.
-     *
-     * @return Ratio for local writes space.
-     *
-     * @deprecated Parameter is no longer used.
-     */
-    @Deprecated
-    public float getFragmentizerLocalWritesRatio() {
-        return fragmentizerLocWritesRatio;
-    }
-
-    /**
-     * Sets ratio for space available for local file writes.
-     *
-     * @param fragmentizerLocWritesRatio Ratio for local file writes.
-     * @see #getFragmentizerLocalWritesRatio()
-     *
-     * @deprecated Parameter is no longer used.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public FileSystemConfiguration setFragmentizerLocalWritesRatio(float fragmentizerLocWritesRatio) {
-        this.fragmentizerLocWritesRatio = fragmentizerLocWritesRatio;
 
         return this;
     }
@@ -780,114 +701,6 @@ public class FileSystemConfiguration {
     }
 
     /**
-     * Gets maximum timeout awaiting for trash purging in case data cache oversize is detected.
-     *
-     * @return Maximum timeout awaiting for trash purging in case data cache oversize is detected.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public long getTrashPurgeTimeout() {
-        return trashPurgeTimeout;
-    }
-
-    /**
-     * Sets maximum timeout awaiting for trash purging in case data cache oversize is detected.
-     *
-     * @param trashPurgeTimeout Maximum timeout awaiting for trash purging in case data cache oversize is detected.
-     * @deprecated Not used any more.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public FileSystemConfiguration setTrashPurgeTimeout(long trashPurgeTimeout) {
-        this.trashPurgeTimeout = trashPurgeTimeout;
-
-        return this;
-    }
-
-    /**
-     * Get DUAL mode put operation executor service. This executor service will process cache PUT requests for
-     * data which came from the secondary file system and about to be written to IGFS data cache.
-     * In case no executor service is provided, default one will be created with maximum amount of threads equals
-     * to amount of processor cores.
-     *
-     * @return Get DUAL mode put operation executor service.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    @Nullable public ExecutorService getDualModePutExecutorService() {
-        return dualModePutExec;
-    }
-
-    /**
-     * Set DUAL mode put operations executor service.
-     *
-     * @param dualModePutExec Dual mode put operations executor service.
-     * @deprecated Not used any more.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public FileSystemConfiguration setDualModePutExecutorService(ExecutorService dualModePutExec) {
-        this.dualModePutExec = dualModePutExec;
-
-        return this;
-    }
-
-    /**
-     * Get DUAL mode put operation executor service shutdown flag.
-     *
-     * @return DUAL mode put operation executor service shutdown flag.
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public boolean getDualModePutExecutorServiceShutdown() {
-        return dualModePutExecShutdown;
-    }
-
-    /**
-     * Set DUAL mode put operations executor service shutdown flag.
-     *
-     * @param dualModePutExecShutdown Dual mode put operations executor service shutdown flag.
-     * @deprecated Not used any more.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public FileSystemConfiguration setDualModePutExecutorServiceShutdown(boolean dualModePutExecShutdown) {
-        this.dualModePutExecShutdown = dualModePutExecShutdown;
-
-        return this;
-    }
-
-    /**
-     * Get maximum amount of pending data read from the secondary file system and waiting to be written to data
-     * cache. {@code 0} or negative value stands for unlimited size.
-     * <p>
-     * By default this value is set to {@code 0}. It is recommended to set positive value in case your
-     * application performs frequent reads of large amount of data from the secondary file system in order to
-     * avoid issues with increasing GC pauses or out-of-memory error.
-     *
-     * @return Maximum amount of pending data read from the secondary file system
-     * @deprecated Not used any more.
-     */
-    @Deprecated
-    public long getDualModeMaxPendingPutsSize() {
-        return dualModeMaxPendingPutsSize;
-    }
-
-    /**
-     * Set maximum amount of data in pending put operations.
-     *
-     * @param dualModeMaxPendingPutsSize Maximum amount of data in pending put operations.
-     * @deprecated Not used any more.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public FileSystemConfiguration setDualModeMaxPendingPutsSize(long dualModeMaxPendingPutsSize) {
-        this.dualModeMaxPendingPutsSize = dualModeMaxPendingPutsSize;
-
-        return this;
-    }
-
-    /**
      * Get maximum default range size of a file being split during IGFS task execution. When IGFS task is about to
      * be executed, it requests file block locations first. Each location is defined as {@link org.apache.ignite.igfs.mapreduce.IgfsFileRange} which
      * has length. In case this parameter is set to positive value, then IGFS will split single file range into smaller
@@ -926,43 +739,6 @@ public class FileSystemConfiguration {
      */
     public FileSystemConfiguration setMaximumTaskRangeLength(long maxTaskRangeLen) {
         this.maxTaskRangeLen = maxTaskRangeLen;
-
-        return this;
-    }
-
-    /**
-     * Get whether to initialize default path modes.
-     * <p>
-     * When set to {@code true} Ignite will automatically create the following path modes:
-     * <ul>
-     *     <li>{@code /ignite/primary} - will work in {@link IgfsMode#PRIMARY} mode;</li>
-     *     <li>{@code /ignite/sync} - will work in {@link IgfsMode#DUAL_SYNC} mode (only if secondary file system
-     *         is set);</li>
-     *     <li>{@code /ignite/async} - will work in {@link IgfsMode#DUAL_ASYNC} mode (only if secondary file system
-     *         is set);</li>
-     *     <li>{@code /ignite/proxy} - will work in {@link IgfsMode#PROXY} mode (only if secondary file system
-     *         is set).</li>
-     * </ul>
-     * See {@link #getPathModes()} for more information about path modes.
-     * <p>
-     * Defaults to {@link #DFLT_INIT_DFLT_PATH_MODES}.
-     *
-     * @return {@code True} if default path modes will be initialized.
-     */
-    public boolean isInitializeDefaultPathModes() {
-        return initDfltPathModes;
-    }
-
-    /**
-     * Set whether to initialize default path modes.
-     * <p>
-     * See {@link #isInitializeDefaultPathModes()} for more information.
-     *
-     * @param initDfltPathModes Whether to initialize default path modes.
-     * @return {@code this} for chaining.
-     */
-    public FileSystemConfiguration setInitializeDefaultPathModes(boolean initDfltPathModes) {
-        this.initDfltPathModes = initDfltPathModes;
 
         return this;
     }

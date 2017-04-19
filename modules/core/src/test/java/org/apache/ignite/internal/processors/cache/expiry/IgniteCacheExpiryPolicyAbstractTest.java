@@ -38,7 +38,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -48,6 +47,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -59,7 +59,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -110,22 +109,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cfg.setExpiryPolicyFactory(factory);
 
-        cfg.setMemoryMode(memoryMode());
-
-        if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED)
-            cfg.setOffHeapMaxMemory(0);
-
         if (disableEagerTtl)
             cfg.setEagerTtl(false);
 
         return cfg;
-    }
-
-    /**
-     * @return Cache memory mode.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
     }
 
     /**
@@ -880,7 +867,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         IgniteCache<Integer, Integer> cache1 = jcache(1);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from another node.
@@ -888,7 +875,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 61_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from another node with provided TTL.
@@ -903,7 +890,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 60_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from near node with provided TTL.
@@ -932,7 +919,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (Integer key : vals.keySet())
             checkTtl(key, 60_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         IgniteCache<Integer, Integer> cache1 = jcache(1);
@@ -943,7 +930,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (Integer key : vals.keySet())
             checkTtl(key, 61_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from another node with provided TTL.
@@ -957,7 +944,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         // Try create again.
         cache0.putAll(vals);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == CLOCK)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from near node with provided TTL.
@@ -1053,6 +1040,49 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         // Check client NearCache.
         assertNull(cache.localPeek(key, CachePeekMode.NEAR));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearExpiresWithCacheStore() throws Exception {
+        if(cacheMode() != PARTITIONED)
+            return;
+
+        factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1));
+
+        nearCache = true;
+
+        startGridsMultiThreaded(gridCount());
+
+        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+
+        ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
+
+        Ignite client = startGrid("client", clientCfg);
+
+        CacheConfiguration ccfg = cacheConfiguration("testCache");
+
+        ccfg.setCacheStoreFactory(FactoryBuilder.factoryOf(GridCacheTestStore.class));
+//        ccfg.setExpiryPolicyFactory( CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(ccfg);
+
+        Integer key = 1;
+
+        cache.put(key, 1);
+
+        // Make entry cached in client NearCache.
+        assertEquals(1, cache.get(key));
+
+        assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
+
+        waitExpired(key);
+
+        for(int i = 0; i < gridCount(); i++)
+            assertNull(jcache(i).localPeek(key, CachePeekMode.BACKUP, CachePeekMode.PRIMARY));
+
+        assertEquals(null, cache.get(key));
     }
 
     /**

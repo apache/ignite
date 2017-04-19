@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedParameter.Global
 #pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
@@ -24,7 +26,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -50,12 +52,6 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private IIgnite[] _grids;
-        
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
-        {
-            StopGrids();
-        }
 
         /// <summary>
         /// Executes before each test.
@@ -71,7 +67,7 @@ namespace Apache.Ignite.Core.Tests
         /// Executes after each test.
         /// </summary>
         [TearDown]
-        public virtual void TearDown()
+        public void TearDown()
         {
             try
             {
@@ -91,6 +87,15 @@ namespace Apache.Ignite.Core.Tests
                 if (TestContext.CurrentContext.Test.Name.StartsWith("TestEventTypes"))
                     StopGrids(); // clean events for other tests
             }
+        }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            StopGrids();
         }
 
         /// <summary>
@@ -235,7 +240,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     EventType = EventType.CacheAll,
                     EventObjectType = typeof (CacheEvent),
-                    GenerateEvent = g => g.GetCache<int, int>(null).Put(1, 1),
+                    GenerateEvent = g => g.GetCache<int, int>(null).Put(TestUtils.GetPrimaryKey(g), 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
                     EventCount = 3
                 };
@@ -603,6 +608,36 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the event store configuration.
+        /// </summary>
+        [Test]
+        public void TestConfiguration()
+        {
+            var cfg = _grid1.GetConfiguration().EventStorageSpi as MemoryEventStorageSpi;
+
+            Assert.IsNotNull(cfg);
+
+            Assert.AreEqual(MemoryEventStorageSpi.DefaultExpirationTimeout, cfg.ExpirationTimeout);
+            Assert.AreEqual(MemoryEventStorageSpi.DefaultMaxEventCount, cfg.MaxEventCount);
+
+            // Test user-defined event storage.
+            var igniteCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = "grid4",
+                EventStorageSpi = new MyEventStorage()
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(igniteCfg));
+            Assert.AreEqual("Failed to start Ignite.NET, check inner exception for details", ex.Message);
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Unsupported IgniteConfiguration.EventStorageSpi: " +
+                            "'Apache.Ignite.Core.Tests.MyEventStorage'. Supported implementations: " +
+                            "'Apache.Ignite.Core.Events.NoopEventStorageSpi', " +
+                            "'Apache.Ignite.Core.Events.MemoryEventStorageSpi'.", ex.InnerException.Message);
+        }
+
+        /// <summary>
         /// Checks base event fields serialization.
         /// </summary>
         /// <param name="evt">The evt.</param>
@@ -658,20 +693,14 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private static IgniteConfiguration Configuration(string springConfigUrl)
+        private static IgniteConfiguration GetConfiguration(string name, bool client = false)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = springConfigUrl,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new List<BinaryTypeConfiguration>
-                    {
-                        new BinaryTypeConfiguration(typeof (RemoteEventBinarizableFilter))
-                    }
-                }
+                IgniteInstanceName = name,
+                EventStorageSpi = new MemoryEventStorageSpi(),
+                CacheConfiguration = new [] {new CacheConfiguration() },
+                ClientMode = client
             };
         }
 
@@ -705,7 +734,7 @@ namespace Apache.Ignite.Core.Tests
 
             cache.Clear();
 
-            cache.Put(1, 1);
+            cache.Put(TestUtils.GetPrimaryKey(g), 1);
 
             cache.Query(new ScanQuery<int, int>()).GetAll();
         }
@@ -758,9 +787,9 @@ namespace Apache.Ignite.Core.Tests
             if (_grid1 != null)
                 return;
 
-            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid1 = Ignition.Start(GetConfiguration("grid1"));
+            _grid2 = Ignition.Start(GetConfiguration("grid2"));
+            _grid3 = Ignition.Start(GetConfiguration("grid3", true));
 
             _grids = new[] {_grid1, _grid2, _grid3};
         }
@@ -941,42 +970,6 @@ namespace Apache.Ignite.Core.Tests
     }
 
     /// <summary>
-    /// Binary remote event filter.
-    /// </summary>
-    public class RemoteEventBinarizableFilter : IEventFilter<IEvent>, IBinarizable
-    {
-        /** */
-        private int _type;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RemoteEventBinarizableFilter"/> class.
-        /// </summary>
-        /// <param name="type">The event type.</param>
-        public RemoteEventBinarizableFilter(int type)
-        {
-            _type = type;
-        }
-
-        /** <inheritdoc /> */
-        public bool Invoke(IEvent evt)
-        {
-            return evt.Type == _type;
-        }
-
-        /** <inheritdoc /> */
-        public void WriteBinary(IBinaryWriter writer)
-        {
-            writer.GetRawWriter().WriteInt(_type);
-        }
-
-        /** <inheritdoc /> */
-        public void ReadBinary(IBinaryReader reader)
-        {
-            _type = reader.GetRawReader().ReadInt();
-        }
-    }
-
-    /// <summary>
     /// Event test case.
     /// </summary>
     public class EventTestCase
@@ -1065,5 +1058,10 @@ namespace Apache.Ignite.Core.Tests
         {
             throw new NotImplementedException();
         }
+    }
+
+    public class MyEventStorage : IEventStorageSpi
+    {
+        // No-op.
     }
 }

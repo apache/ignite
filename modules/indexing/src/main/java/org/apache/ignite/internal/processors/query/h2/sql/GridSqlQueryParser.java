@@ -28,9 +28,16 @@ import java.util.List;
 import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
+import org.h2.command.ddl.CreateIndex;
+import org.h2.command.ddl.DropIndex;
+import org.h2.command.ddl.SchemaCommand;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
 import org.h2.command.dml.Insert;
@@ -45,6 +52,7 @@ import org.h2.expression.Alias;
 import org.h2.expression.CompareLike;
 import org.h2.expression.Comparison;
 import org.h2.expression.ConditionAndOr;
+import org.h2.expression.ConditionExists;
 import org.h2.expression.ConditionIn;
 import org.h2.expression.ConditionInConstantSet;
 import org.h2.expression.ConditionInSelect;
@@ -62,8 +70,10 @@ import org.h2.expression.ValueExpression;
 import org.h2.index.ViewIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
+import org.h2.schema.Schema;
 import org.h2.table.Column;
 import org.h2.table.FunctionTable;
+import org.h2.table.IndexColumn;
 import org.h2.table.RangeTable;
 import org.h2.table.Table;
 import org.h2.table.TableBase;
@@ -78,6 +88,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperatio
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.DIVIDE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL_NULL_SAFE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EXISTS;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IN;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NOT_NULL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NULL;
@@ -184,7 +195,10 @@ public class GridSqlQueryParser {
         "compareType");
 
     /** */
-    private static final Getter<ConditionInSelect, Query> QUERY = getter(ConditionInSelect.class, "query");
+    private static final Getter<ConditionInSelect, Query> QUERY_IN = getter(ConditionInSelect.class, "query");
+
+    /** */
+    private static final Getter<ConditionExists, Query> QUERY_EXISTS = getter(ConditionExists.class, "query");
 
     /** */
     private static final Getter<CompareLike, Expression> LEFT = getter(CompareLike.class, "left");
@@ -295,6 +309,48 @@ public class GridSqlQueryParser {
     /** */
     private static final Getter<Command, Prepared> PREPARED =
         GridSqlQueryParser.<Command, Prepared>getter(CommandContainer.class, "prepared");
+
+    /** */
+    private static final Getter<CreateIndex, String> CREATE_INDEX_NAME = getter(CreateIndex.class, "indexName");
+
+    /** */
+    private static final Getter<CreateIndex, String> CREATE_INDEX_TABLE_NAME = getter(CreateIndex.class, "tableName");
+
+    /** */
+    private static final Getter<CreateIndex, IndexColumn[]> CREATE_INDEX_COLUMNS = getter(CreateIndex.class,
+        "indexColumns");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_SPATIAL = getter(CreateIndex.class, "spatial");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_PRIMARY_KEY = getter(CreateIndex.class,
+        "primaryKey");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_UNIQUE = getter(CreateIndex.class, "unique");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_HASH = getter(CreateIndex.class, "hash");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_IF_NOT_EXISTS = getter(CreateIndex.class,
+        "ifNotExists");
+
+    /** */
+    private static final Getter<IndexColumn, String> INDEX_COLUMN_NAME = getter(IndexColumn.class, "columnName");
+
+    /** */
+    private static final Getter<IndexColumn, Integer> INDEX_COLUMN_SORT_TYPE = getter(IndexColumn.class, "sortType");
+
+    /** */
+    private static final Getter<DropIndex, String> DROP_INDEX_NAME = getter(DropIndex.class, "indexName");
+
+    /** */
+    private static final Getter<DropIndex, Boolean> DROP_INDEX_IF_EXISTS = getter(DropIndex.class, "ifExists");
+
+    /** */
+    private static final Getter<SchemaCommand, Schema> SCHEMA_COMMAND_SCHEMA = getter(SchemaCommand.class, "schema");
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -658,6 +714,72 @@ public class GridSqlQueryParser {
         return res;
     }
 
+
+
+    /**
+     * Parse {@code DROP INDEX} statement.
+     *
+     * @param dropIdx {@code DROP INDEX} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#drop_index">H2 {@code DROP INDEX} spec.</a>
+     */
+    private GridSqlDropIndex parseDropIndex(DropIndex dropIdx) {
+        GridSqlDropIndex res = new GridSqlDropIndex();
+
+        res.name(DROP_INDEX_NAME.get(dropIdx));
+        res.schemaName(SCHEMA_COMMAND_SCHEMA.get(dropIdx).getName());
+        res.ifExists(DROP_INDEX_IF_EXISTS.get(dropIdx));
+
+        return res;
+    }
+
+    /**
+     * Parse {@code CREATE INDEX} statement.
+     *
+     * @param createIdx {@code CREATE INDEX} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#create_index">H2 {@code CREATE INDEX} spec.</a>
+     */
+    private GridSqlCreateIndex parseCreateIndex(CreateIndex createIdx) {
+        if (CREATE_INDEX_HASH.get(createIdx) || CREATE_INDEX_PRIMARY_KEY.get(createIdx) ||
+            CREATE_INDEX_UNIQUE.get(createIdx))
+            throw new IgniteSQLException("Only SPATIAL modifier is supported for CREATE INDEX",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        GridSqlCreateIndex res = new GridSqlCreateIndex();
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(createIdx);
+
+        String tblName = CREATE_INDEX_TABLE_NAME.get(createIdx);
+
+        res.schemaName(schema.getName());
+        res.tableName(tblName);
+        res.ifNotExists(CREATE_INDEX_IF_NOT_EXISTS.get(createIdx));
+
+        QueryIndex idx = new QueryIndex();
+
+        idx.setName(CREATE_INDEX_NAME.get(createIdx));
+        idx.setIndexType(CREATE_INDEX_SPATIAL.get(createIdx) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+
+        IndexColumn[] cols = CREATE_INDEX_COLUMNS.get(createIdx);
+
+        LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>(cols.length);
+
+        for (IndexColumn col : CREATE_INDEX_COLUMNS.get(createIdx)) {
+            int sortType = INDEX_COLUMN_SORT_TYPE.get(col);
+
+            if ((sortType & SortOrder.NULLS_FIRST) != 0 || (sortType & SortOrder.NULLS_LAST) != 0)
+                throw new IgniteSQLException("NULLS FIRST and NULLS LAST modifiers are not supported for index columns",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
+        }
+
+        idx.setFields(flds);
+
+        res.index(idx);
+
+        return res;
+    }
+
     /**
      * @param sortOrder Sort order.
      * @param qry Query.
@@ -720,6 +842,12 @@ public class GridSqlQueryParser {
 
         if (stmt instanceof Explain)
             return parse(EXPLAIN_COMMAND.get((Explain)stmt)).explain(true);
+
+        if (stmt instanceof CreateIndex)
+            return parseCreateIndex((CreateIndex)stmt);
+
+        if (stmt instanceof DropIndex)
+            return parseDropIndex((DropIndex)stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
     }
@@ -944,7 +1072,7 @@ public class GridSqlQueryParser {
 
             res.addChild(parseExpression(LEFT_CIS.get((ConditionInSelect)expression), calcTypes));
 
-            Query qry = QUERY.get((ConditionInSelect)expression);
+            Query qry = QUERY_IN.get((ConditionInSelect)expression);
 
             res.addChild(parseQueryExpression(qry));
 
@@ -1043,6 +1171,16 @@ public class GridSqlQueryParser {
 
             for (Expression expr : exprs)
                 res.addChild(parseExpression(expr, calcTypes));
+
+            return res;
+        }
+
+        if (expression instanceof ConditionExists) {
+            Query qry = QUERY_EXISTS.get((ConditionExists)expression);
+
+            GridSqlOperation res = new GridSqlOperation(EXISTS);
+
+            res.addChild(parseQueryExpression(qry));
 
             return res;
         }

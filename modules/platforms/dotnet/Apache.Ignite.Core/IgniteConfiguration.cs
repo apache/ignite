@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
@@ -272,29 +273,9 @@ namespace Apache.Ignite.Core
                     writer.WriteBoolean(false);
                 }
 
-                // Send only descriptors with non-null EqualityComparer to preserve old behavior where
-                // remote nodes can have no BinaryConfiguration.
-
-                if (BinaryConfiguration.TypeConfigurations != null &&
-                    BinaryConfiguration.TypeConfigurations.Any(x => x.EqualityComparer != null))
-                {
-                    // Create a new marshaller to reuse type name resolver mechanism.
-                    var types = new Marshaller(BinaryConfiguration).GetUserTypeDescriptors()
-                        .Where(x => x.EqualityComparer != null).ToList();
-
-                    writer.WriteInt(types.Count);
-
-                    foreach (var type in types)
-                    {
-                        writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
-                        writer.WriteBoolean(type.IsEnum);
-                        BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
-                    }
-                }
-                else
-                {
-                    writer.WriteInt(0);
-                }
+                // Name mapper.
+                var mapper = BinaryConfiguration.NameMapper as BinaryBasicNameMapper;
+                writer.WriteBoolean(mapper != null && mapper.IsSimpleName);
             }
             else
             {
@@ -343,7 +324,33 @@ namespace Apache.Ignite.Core
             else
                 writer.WriteBoolean(false);
 
-            // Plugins
+            // Event storage
+            if (EventStorageSpi == null)
+            {
+                writer.WriteByte(0);
+            }
+            else if (EventStorageSpi is NoopEventStorageSpi)
+            {
+                writer.WriteByte(1);
+            }
+            else
+            {
+                var memEventStorage = EventStorageSpi as MemoryEventStorageSpi;
+
+                if (memEventStorage == null)
+                {
+                    throw new IgniteException(string.Format(
+                        "Unsupported IgniteConfiguration.EventStorageSpi: '{0}'. " +
+                        "Supported implementations: '{1}', '{2}'.",
+                        EventStorageSpi.GetType(), typeof(NoopEventStorageSpi), typeof(MemoryEventStorageSpi)));
+                }
+
+                writer.WriteByte(2);
+
+                memEventStorage.Write(writer);
+            }
+
+            // Plugins (should be last)
             if (PluginConfigurations != null)
             {
                 var pos = writer.Stream.Position;
@@ -427,25 +434,13 @@ namespace Apache.Ignite.Core
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
 
                 if (r.ReadBoolean())
-                    BinaryConfiguration.CompactFooter = r.ReadBoolean();
-
-                var typeCount = r.ReadInt();
-
-                if (typeCount > 0)
                 {
-                    var types = new List<BinaryTypeConfiguration>(typeCount);
+                    BinaryConfiguration.CompactFooter = r.ReadBoolean();
+                }
 
-                    for (var i = 0; i < typeCount; i++)
-                    {
-                        types.Add(new BinaryTypeConfiguration
-                        {
-                            TypeName = r.ReadString(),
-                            IsEnum = r.ReadBoolean(),
-                            EqualityComparer = BinaryEqualityComparerSerializer.Read(r)
-                        });
-                    }
-
-                    BinaryConfiguration.TypeConfigurations = types;
+                if (r.ReadBoolean())
+                {
+                    BinaryConfiguration.NameMapper = BinaryBasicNameMapper.SimpleNameInstance;
                 }
             }
 
@@ -475,6 +470,17 @@ namespace Apache.Ignite.Core
                     DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
                 };
+            }
+
+            // Event storage
+            switch (r.ReadByte())
+            {
+                case 1: EventStorageSpi = new NoopEventStorageSpi();
+                    break;
+
+                case 2:
+                    EventStorageSpi = MemoryEventStorageSpi.Read(r);
+                    break;
             }
         }
 
@@ -518,11 +524,12 @@ namespace Apache.Ignite.Core
             JvmOptions = cfg.JvmOptions;
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
-            LifecycleBeans = cfg.LifecycleBeans;
+            LifecycleHandlers = cfg.LifecycleHandlers;
             Logger = cfg.Logger;
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
             PluginConfigurations = cfg.PluginConfigurations;
+            AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
         }
 
         /// <summary>
@@ -533,6 +540,18 @@ namespace Apache.Ignite.Core
         /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
         /// </summary>
         public string IgniteInstanceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether unique <see cref="IgniteInstanceName"/> should be generated.
+        /// <para />
+        /// Set this to true in scenarios where new node should be started regardless of other nodes present within
+        /// current process. In particular, this setting is useful is ASP.NET and IIS environments, where AppDomains
+        /// are loaded and unloaded within a single process during application restarts. Ignite stops all nodes
+        /// on <see cref="AppDomain"/> unload, however, IIS does not wait for previous AppDomain to unload before
+        /// starting up a new one, which may cause "Ignite instance with this name has already been started" errors.
+        /// This setting solves the issue.
+        /// </summary>
+        public bool AutoGenerateIgniteInstanceName { get; set; }
 
         /// <summary>
         /// Gets or sets optional local instance name.
@@ -616,10 +635,10 @@ namespace Apache.Ignite.Core
         public bool SuppressWarnings { get; set; }
 
         /// <summary>
-        /// Lifecycle beans.
+        /// Lifecycle handlers.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<ILifecycleBean> LifecycleBeans { get; set; }
+        public ICollection<ILifecycleHandler> LifecycleHandlers { get; set; }
 
         /// <summary>
         /// Initial amount of memory in megabytes given to JVM. Maps to -Xms Java option.
@@ -910,5 +929,13 @@ namespace Apache.Ignite.Core
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<IPluginConfiguration> PluginConfigurations { get; set; }
+
+        /// <summary>
+        /// Gets or sets the event storage interface.
+        /// <para />
+        /// Only predefined implementations are supported:
+        /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
+        /// </summary>
+        public IEventStorageSpi EventStorageSpi { get; set; }
     }
 }

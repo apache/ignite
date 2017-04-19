@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.pool;
 
+import java.util.Arrays;
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -24,9 +26,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
-
-import java.util.Arrays;
-import java.util.concurrent.Executor;
 
 /**
  * Processor which abstracts out thread pool management.
@@ -123,6 +122,11 @@ public class PoolProcessor extends GridProcessorAdapter {
 
                 return ctx.getIgfsExecutorService();
 
+            case GridIoPolicy.SERVICE_POOL:
+                assert ctx.getServiceExecutorService() != null : "Service pool is not configured.";
+
+                return ctx.getServiceExecutorService();
+
             case GridIoPolicy.DATA_STREAMER_POOL:
                 assert ctx.getDataStreamerExecutorService() != null : "Data streamer pool is not configured.";
 
@@ -132,6 +136,11 @@ public class PoolProcessor extends GridProcessorAdapter {
                 assert ctx.getQueryExecutorService() != null : "Query pool is not configured.";
 
                 return ctx.getQueryExecutorService();
+
+            case GridIoPolicy.SCHEMA_POOL:
+                assert ctx.getSchemaExecutorService() != null : "Query pool is not configured.";
+
+                return ctx.getSchemaExecutorService();
 
             default: {
                 if (plc < 0)

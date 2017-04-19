@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -250,6 +252,29 @@ public class DataPageIO extends PageIO {
      */
     private int getDirectCount(long pageAddr) {
         return PageUtils.getByte(pageAddr, DIRECT_CNT_OFF) & 0xFF;
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param c Closure.
+     * @param <T> Closure return type.
+     * @return Collection of closure results for all items in page.
+     * @throws IgniteCheckedException In case of error in closure body.
+     */
+    public <T> List<T> forAllItems(long pageAddr, CC<T> c) throws IgniteCheckedException {
+        long pageId = getPageId(pageAddr);
+
+        int cnt = getDirectCount(pageAddr);
+
+        List<T> res = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; i++) {
+            long link = PageIdUtils.link(pageId, i);
+
+            res.add(c.apply(link));
+        }
+
+        return res;
     }
 
     /**
@@ -1007,7 +1032,8 @@ public class DataPageIO extends PageIO {
         final int keySize = row.key().valueBytesLength(null);
         final int valSize = row.value().valueBytesLength(null);
 
-        int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.KEY, keySize, valSize);
+        int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.CACHE_ID, keySize, valSize);
+        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.KEY, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VERSION, keySize, valSize);
@@ -1039,28 +1065,36 @@ public class DataPageIO extends PageIO {
         final int prevLen;
         final int curLen;
 
+        int cacheIdSize = row.cacheId() == 0 ? 0 : 4;
+
         switch (type) {
-            case KEY:
+            case CACHE_ID:
                 prevLen = 0;
-                curLen = keySize;
+                curLen = cacheIdSize;
+
+                break;
+
+            case KEY:
+                prevLen = cacheIdSize;
+                curLen = cacheIdSize + keySize;
 
                 break;
 
             case EXPIRE_TIME:
-                prevLen = keySize;
-                curLen = keySize + 8;
+                prevLen = cacheIdSize + keySize;
+                curLen = cacheIdSize + keySize + 8;
 
                 break;
 
             case VALUE:
-                prevLen = keySize + 8;
-                curLen = keySize + valSize + 8;
+                prevLen = cacheIdSize + keySize + 8;
+                curLen = cacheIdSize + keySize + valSize + 8;
 
                 break;
 
             case VERSION:
-                prevLen = keySize + valSize + 8;
-                curLen = keySize + valSize + CacheVersionIO.size(row.version(), false) + 8;
+                prevLen = cacheIdSize + keySize + valSize + 8;
+                curLen = cacheIdSize + keySize + valSize + CacheVersionIO.size(row.version(), false) + 8;
 
                 break;
 
@@ -1075,6 +1109,8 @@ public class DataPageIO extends PageIO {
 
         if (type == EntryPart.EXPIRE_TIME)
             writeExpireTimeFragment(buf, row.expireTime(), rowOff, len, prevLen);
+        else if (type == EntryPart.CACHE_ID)
+            writeCacheIdFragment(buf, row.cacheId(), rowOff, len, prevLen);
         else if (type != EntryPart.VERSION) {
             // Write key or value.
             final CacheObject co = type == EntryPart.KEY ? row.key() : row.value();
@@ -1139,6 +1175,32 @@ public class DataPageIO extends PageIO {
     }
 
     /**
+     * @param buf Buffer.
+     * @param cacheId Cache ID.
+     * @param rowOff Row offset.
+     * @param len Length.
+     * @param prevLen Prev length.
+     */
+    private void writeCacheIdFragment(ByteBuffer buf, int cacheId, int rowOff, int len, int prevLen) {
+        if (cacheId == 0)
+            return;
+
+        int size = 4;
+
+        if (size <= len)
+            buf.putInt(cacheId);
+        else {
+            ByteBuffer cacheIdBuf = ByteBuffer.allocate(size);
+
+            cacheIdBuf.order(buf.order());
+
+            cacheIdBuf.putInt(cacheId);
+
+            buf.put(cacheIdBuf.array(), rowOff - prevLen, len);
+        }
+    }
+
+    /**
      *
      */
     private enum EntryPart {
@@ -1152,7 +1214,10 @@ public class DataPageIO extends PageIO {
         VERSION,
 
         /** */
-        EXPIRE_TIME
+        EXPIRE_TIME,
+
+        /** */
+        CACHE_ID
     }
 
     /**
@@ -1326,14 +1391,22 @@ public class DataPageIO extends PageIO {
     ) throws IgniteCheckedException {
         long addr = pageAddr + dataOff;
 
+        int cacheIdSize = row.cacheId() != 0 ? 4 : 0;
+
         if (newRow) {
             PageUtils.putShort(addr, 0, (short)payloadSize);
             addr += 2;
 
+            if (cacheIdSize != 0) {
+                PageUtils.putInt(addr, 0, row.cacheId());
+
+                addr += cacheIdSize;
+            }
+
             addr += row.key().putValue(addr);
         }
         else
-            addr += (2 + row.key().valueBytesLength(null));
+            addr += (2 + cacheIdSize + row.key().valueBytesLength(null));
 
         addr += row.value().putValue(addr);
 
@@ -1357,5 +1430,21 @@ public class DataPageIO extends PageIO {
         dataOff += 2;
 
         PageUtils.putBytes(pageAddr, dataOff, payload);
+    }
+
+    /**
+     * Defines closure interface for applying computations to data page items.
+     *
+     * @param <T> Closure return type.
+     */
+    public interface CC<T> {
+        /**
+         * Closure body.
+         *
+         * @param link Link to item.
+         * @return Closure return value.
+         * @throws IgniteCheckedException In case of error in closure body.
+         */
+        public T apply(long link) throws IgniteCheckedException;
     }
 }

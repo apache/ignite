@@ -29,7 +29,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,7 +37,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -214,10 +212,6 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
         ccfgs.add(cacheConfiguration("c2", atomicityMode, new RendezvousAffinityFunction(), 1));
         ccfgs.add(cacheConfiguration("c3", atomicityMode, new RendezvousAffinityFunction(false, 10), 0));
 
-        ccfgs.add(cacheConfiguration("c4", atomicityMode, new FairAffinityFunction(), 0));
-        ccfgs.add(cacheConfiguration("c5", atomicityMode, new FairAffinityFunction(), 1));
-        ccfgs.add(cacheConfiguration("c6", atomicityMode, new FairAffinityFunction(false, 10), 0));
-
         return ccfgs;
     }
 
@@ -238,7 +232,6 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
         ccfg.setName(name);
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setAffinity(aff);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;

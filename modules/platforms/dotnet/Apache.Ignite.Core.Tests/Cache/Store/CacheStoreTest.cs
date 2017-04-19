@@ -23,9 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
@@ -52,16 +50,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public virtual void BeforeTests()
         {
-            var cfg = new IgniteConfiguration
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = GridName,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\native-client-test-cache-store.xml",
-                BinaryConfiguration = new BinaryConfiguration(typeof (Key), typeof (Value))
-            };
-
-            Ignition.Start(cfg);
+            });
         }
 
         /// <summary>
@@ -156,7 +149,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.NotNull(meta);
 
-            Assert.AreEqual("Value", meta.TypeName);
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Cache.Store.Value", meta.TypeName);
         }
 
         /// <summary>
@@ -331,7 +324,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             for (int i = 0; i < 10; i++)
                 keys.Add(i);
 
-            IDictionary<int, string> loaded = cache.GetAll(keys);
+            IDictionary<int, string> loaded = cache.GetAll(keys).ToDictionary(x => x.Key, x => x.Value);
 
             Assert.AreEqual(10, loaded.Count);
 
@@ -696,13 +689,5 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             throw new Exception("Expected exception in ExceptionalEntryFilter");
         }
-    }
-
-    /// <summary>
-    /// Filter that can't be serialized.
-    /// </summary>
-    public class InvalidCacheEntryFilter : CacheEntryFilter
-    {
-        // No-op.
     }
 }

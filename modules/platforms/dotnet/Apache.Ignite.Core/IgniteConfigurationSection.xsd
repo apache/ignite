@@ -39,13 +39,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="cacheAtomicWriteOrderMode" final="restriction">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="Clock" />
-            <xs:enumeration value="Primary" />
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:simpleType name="cacheRebalanceMode" final="restriction">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Sync" />
@@ -144,20 +137,6 @@
                                                             </xs:attribute>
                                                         </xs:complexType>
                                                     </xs:element>
-                                                    <xs:element name="equalityComparer" minOccurs="0">
-                                                        <xs:annotation>
-                                                            <xs:documentation>
-                                                                Equality comparer to compute hash codes and compare objects in IBinaryObject form.
-                                                            </xs:documentation>
-                                                        </xs:annotation>
-                                                        <xs:complexType>
-                                                            <xs:attribute name="type" type="xs:string" use="required">
-                                                                <xs:annotation>
-                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
-                                                                </xs:annotation>
-                                                            </xs:attribute>
-                                                        </xs:complexType>
-                                                    </xs:element>
                                                 </xs:all>
                                                 <xs:attribute name="typeName" type="xs:string">
                                                     <xs:annotation>
@@ -198,7 +177,7 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="defaultNameMapper" minOccurs="0">
+                            <xs:element name="nameMapper" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>Default name mapper.</xs:documentation>
                                 </xs:annotation>
@@ -210,7 +189,7 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="defaultIdMapper" minOccurs="0">
+                            <xs:element name="idMapper" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>Default ID mapper.</xs:documentation>
                                 </xs:annotation>
@@ -222,7 +201,7 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="defaultSerializer" minOccurs="0">
+                            <xs:element name="serializer" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>Default serializer.</xs:documentation>
                                 </xs:annotation>
@@ -235,7 +214,7 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:all>
-                        <xs:attribute name="defaultKeepDeserialized" type="xs:boolean">
+                        <xs:attribute name="keepDeserialized" type="xs:boolean">
                             <xs:annotation>
                                 <xs:documentation>Default keep deserialized flag.</xs:documentation>
                             </xs:annotation>
@@ -568,35 +547,6 @@
                                             <xs:documentation>Write synchronization mode. This mode controls whether the main caller should wait for update on other nodes to complete or not.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
-                                    <xs:attribute name="evictSynchronized" type="xs:boolean">
-                                        <xs:annotation>
-                                            <xs:documentation>
-                                                Flag indicating whether eviction is synchronized between primary, backup and near nodes. If this parameter is true and swap is disabled then ICache.LocalEvict will involve all nodes where an entry is kept. If this property is set to false then eviction is done independently on different cache nodes. Note that it's not recommended to set this value to true if cache store is configured since it will allow to significantly improve cache performance.
-                                            </xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>Size of the key buffer for synchronized evictions.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="evictSynchronizedConcurrencyLevel" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>
-                                                Concurrency level for synchronized evictions. This flag only makes sense with EvictSynchronized set to true. When synchronized evictions are enabled, it is possible that local eviction policy will try to evict entries faster than evictions can be synchronized with backup or near nodes. This value specifies how many concurrent synchronous eviction sessions should be allowed before the system is forced to wait and let synchronous evictions catch up with the eviction policy.
-                                            </xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="evictSynchronizedTimeout" type="xs:string">
-                                        <xs:annotation>
-                                            <xs:documentation>Timeout for synchronized evictions</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="maxEvictionOverflowRatio" type="xs:decimal">
-                                        <xs:annotation>
-                                            <xs:documentation>This value denotes the maximum size of eviction queue in percents of cache size in case of distributed cache (replicated and partitioned) and using synchronized eviction</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
                                     <xs:attribute name="startSize" type="xs:int">
                                         <xs:annotation>
                                             <xs:documentation>Initial cache size which will be used to pre-create internal hash table after start.</xs:documentation>
@@ -612,11 +562,6 @@
                                     <xs:attribute name="atomicityMode" type="cacheAtomicityMode">
                                         <xs:annotation>
                                             <xs:documentation>Cache atomicity mode.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="atomicWriteOrderMode" type="cacheAtomicWriteOrderMode">
-                                        <xs:annotation>
-                                            <xs:documentation>Cache write ordering mode.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                     <xs:attribute name="backups" type="xs:int">
@@ -777,13 +722,13 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="lifecycleBeans" minOccurs="0">
+                <xs:element name="lifecycleHandlers" minOccurs="0">
                     <xs:annotation>
-                        <xs:documentation>Lifecycle beans.</xs:documentation>
+                        <xs:documentation>Lifecycle event handlers.</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element maxOccurs="unbounded" name="iLifecycleBean">
+                            <xs:element maxOccurs="unbounded" name="iLifecycleHandler">
                                 <xs:complexType>
                                     <xs:attribute name="type" type="xs:string" use="required">
                                         <xs:annotation>
@@ -1153,6 +1098,28 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="eventStorageSpi" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Event storage space SPI.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="expirationTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Expiration timeout for stored events. Negative for unlimited.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="maxEventCount" type="xs:long">
+                            <xs:annotation>
+                                <xs:documentation>Maximum event count to store.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="pluginConfigurations" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Plugin configurations.</xs:documentation>
@@ -1183,6 +1150,11 @@
             <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Local Ignite instance name to be used with Ignition.GetIgnite.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="autoGenerateIgniteInstanceName" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Generate unique igniteInstanceName automatically.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="jvmDllPath" type="xs:string">

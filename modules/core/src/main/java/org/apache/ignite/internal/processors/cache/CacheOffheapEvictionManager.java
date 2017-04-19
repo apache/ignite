@@ -22,14 +22,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO GG-11140.
- *
- * Temporary implementation, ignores configured EvictionPolicy, evictions to be reconsidered as
- * part of GG-11140.
  *
  */
 public class CacheOffheapEvictionManager extends GridCacheManagerAdapter implements CacheEvictionManager {
@@ -50,7 +47,7 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
                 return;
             }
 
-            boolean evicted = e.evictInternal(cctx.versions().next(), null);
+            boolean evicted = e.evictInternal(GridCacheVersionManager.EVICT_VER, null, false);
 
             if (evicted)
                 cctx.cache().removeEntry(e);
@@ -58,11 +55,6 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unwind() {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -74,17 +66,7 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public int evictQueueSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public void batchEvict(Collection<?> keys, @Nullable GridCacheVersion obsoleteVer) {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean evictSyncOrNearSync() {
-        return false;
     }
 }

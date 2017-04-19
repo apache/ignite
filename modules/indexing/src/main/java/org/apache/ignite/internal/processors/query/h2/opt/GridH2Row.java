@@ -174,4 +174,9 @@ public abstract class GridH2Row implements GridSearchRowPointer, CacheDataRow, R
     @Override public int hash() {
         throw new UnsupportedOperationException();
     }
+
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return 0;
+    }
 }

@@ -16,8 +16,10 @@
  */
 package org.apache.ignite.internal.processors.cache.database;
 
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.database.evict.PageEvictionTracker;
 
 /**
  * Memory policy provides access to objects configured with {@link MemoryPolicyConfiguration} configuration.
@@ -27,14 +29,29 @@ public class MemoryPolicy {
     private final PageMemory pageMem;
 
     /** */
+    private final MemoryMetrics memMetrics;
+
+    /** */
     private final MemoryPolicyConfiguration cfg;
 
+    /** */
+    private final PageEvictionTracker evictionTracker;
+
     /**
-     * @param pageMem Page mem.
+     * @param pageMem PageMemory instance.
+     * @param memMetrics MemoryMetrics instance.
+     * @param cfg Configuration of given MemoryPolicy.
+     * @param evictionTracker Eviction tracker.
      */
-    public MemoryPolicy(PageMemory pageMem, MemoryPolicyConfiguration cfg) {
+    public MemoryPolicy(
+        PageMemory pageMem,
+        MemoryPolicyConfiguration cfg,
+        MemoryMetrics memMetrics,
+        PageEvictionTracker evictionTracker) {
         this.pageMem = pageMem;
+        this.memMetrics = memMetrics;
         this.cfg = cfg;
+        this.evictionTracker = evictionTracker;
     }
 
     /**
@@ -49,5 +66,19 @@ public class MemoryPolicy {
      */
     public MemoryPolicyConfiguration config() {
         return cfg;
+    }
+
+    /**
+     * @return Memory Metrics.
+     */
+    public MemoryMetrics memoryMetrics() {
+        return memMetrics;
+    }
+
+    /**
+     *
+     */
+    public PageEvictionTracker evictionTracker() {
+        return evictionTracker;
     }
 }

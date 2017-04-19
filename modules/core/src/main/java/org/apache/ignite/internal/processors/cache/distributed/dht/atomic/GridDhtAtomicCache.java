@@ -86,6 +86,8 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.nio.GridNioBackPressureControl;
+import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -99,7 +101,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -108,6 +112,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
@@ -693,7 +698,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
-        return (V) update0(
+        return (V)update0(
             key,
             val,
             null,
@@ -812,7 +817,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @SuppressWarnings("unchecked")
     private <T> IgniteInternalFuture<T> asyncOp(final CO<IgniteInternalFuture<T>> op) {
-        IgniteInternalFuture<T> fail = asyncOpAcquire();
+        IgniteInternalFuture<T> fail = asyncOpAcquire(/*retry*/false);
 
         if (fail != null)
             return fail;
@@ -836,14 +841,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         }
                     });
 
-                saveFuture(holder, f);
+                saveFuture(holder, f, /*retry*/false);
 
                 return f;
             }
 
             IgniteInternalFuture<T> f = op.apply();
 
-            saveFuture(holder, f);
+            saveFuture(holder, f, /*retry*/false);
 
             return f;
         }
@@ -879,8 +884,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
-        Object... args) throws IgniteCheckedException
-    {
+        Object... args) throws IgniteCheckedException {
         return invokeAll0(false, keys, entryProcessor, args).get();
     }
 
@@ -1795,6 +1799,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     // Do not check topology version if topology was locked on near node by
                     // external transaction or explicit lock.
                     if (req.topologyLocked() || !needRemap(req.topologyVersion(), top.topologyVersion())) {
+                        ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
+
                         locked = lockEntries(req, req.topologyVersion());
 
                         boolean hasNear = ctx.discovery().cacheNearNode(node, name());
@@ -1823,7 +1829,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (req.size() > 1 &&                    // Several keys ...
                             writeThrough() && !req.skipStore() && // and store is enabled ...
                             !ctx.store().isLocal() &&             // and this is not local store ...
-                                                                  // (conflict resolver should be used for local store)
+                            // (conflict resolver should be used for local store)
                             !ctx.dr().receiveEnabled()            // and no DR.
                             ) {
                             // This method can only be used when there are no replicated entries in the batch.
@@ -1868,8 +1874,26 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         res.returnValue(retVal);
 
-                        if (dhtFut != null)
+                        if (dhtFut != null) {
+                            if (req.writeSynchronizationMode() == PRIMARY_SYNC
+                                // To avoid deadlock disable back-pressure for sender data node.
+                                && !ctx.discovery().cacheAffinityNode(ctx.discovery().node(nodeId), ctx.name())
+                                && !dhtFut.isDone()) {
+                                final IgniteRunnable tracker = GridNioBackPressureControl.threadTracker();
+
+                                if (tracker != null && tracker instanceof GridNioMessageTracker) {
+                                    ((GridNioMessageTracker)tracker).onMessageReceived();
+
+                                    dhtFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                                        @Override public void apply(IgniteInternalFuture<Void> fut) {
+                                            ((GridNioMessageTracker)tracker).onMessageProcessed();
+                                        }
+                                    });
+                                }
+                            }
+
                             ctx.mvcc().addAtomicFuture(dhtFut.id(), dhtFut);
+                        }
                     }
                     else {
                         // Should remap all keys.
@@ -2199,7 +2223,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (intercept) {
                         CacheObject old = entry.innerGet(
                             null,
-                             null,
+                            null,
                             /*read through*/ctx.loadPreviousValue(),
                             /*metrics*/true,
                             /*event*/true,
@@ -2811,8 +2835,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param req Request with keys to lock.
      * @param topVer Topology version to lock on.
      * @return Collection of locked entries.
-     * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown,
-     *      locks are released.
+     * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown, locks
+     * are released.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private List<GridDhtCacheEntry> lockEntries(GridNearAtomicAbstractUpdateRequest req, AffinityTopologyVersion topVer)
@@ -2882,7 +2906,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param locked Locked entries.
      * @param topVer Topology version.
      */
-    private void unlockEntries(Collection<GridDhtCacheEntry> locked, AffinityTopologyVersion topVer) {
+    private void unlockEntries(List<GridDhtCacheEntry> locked, AffinityTopologyVersion topVer) {
         // Process deleted entries before locks release.
         assert ctx.deferredDelete() : this;
 
@@ -2890,8 +2914,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Enqueue entries while holding locks.
         Collection<KeyCacheObject> skip = null;
 
+        int size = locked.size();
+
         try {
-            for (GridCacheMapEntry entry : locked) {
+            for (int i = 0; i < size; i++) {
+                GridCacheMapEntry entry = locked.get(i);
                 if (entry != null && entry.deleted()) {
                     if (skip == null)
                         skip = U.newHashSet(locked.size());
@@ -2904,27 +2931,30 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
             // an attempt to use cleaned resources.
             // That's why releasing locks in the finally block..
-            for (GridCacheMapEntry entry : locked) {
+            for (int i = 0; i < size; i++) {
+                GridCacheMapEntry entry = locked.get(i);
                 if (entry != null)
                     GridUnsafe.monitorExit(entry);
             }
         }
 
         // Try evict partitions.
-        for (GridDhtCacheEntry entry : locked) {
+        for (int i = 0; i < size; i++) {
+            GridDhtCacheEntry entry = locked.get(i);
             if (entry != null)
                 entry.onUnlock();
         }
 
         ctx.shared().database().checkpointReadUnlock();
 
-        if (skip != null && skip.size() == locked.size())
+        if (skip != null && skip.size() == size)
             // Optimization.
             return;
 
         // Must touch all entries since update may have deleted entries.
         // Eviction manager will remove empty entries.
-        for (GridCacheMapEntry entry : locked) {
+        for (int i = 0; i < size; i++) {
+            GridCacheMapEntry entry = locked.get(i);
             if (entry != null && (skip == null || !skip.contains(entry.key())))
                 ctx.evicts().touch(entry, topVer);
         }
@@ -2933,8 +2963,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param entry Entry to check.
      * @param req Update request.
-     * @param res Update response. If filter evaluation failed, key will be added to failed keys and method
-     *      will return false.
+     * @param res Update response. If filter evaluation failed, key will be added to failed keys and method will return
+     * false.
      * @return {@code True} if filter evaluation succeeded.
      */
     private boolean checkFilter(GridCacheEntryEx entry, GridNearAtomicAbstractUpdateRequest req,
@@ -3193,29 +3223,30 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (log.isDebugEnabled())
                                 log.debug("Got removed entry while updating backup value (will retry): " + key);
 
-                        entry = null;
-                    }
-                    finally {
-                        if (entry != null)
-                            ctx.evicts().touch(entry, req.topologyVersion());
+                            entry = null;
+                        }
+                        finally {
+                            if (entry != null)
+                                ctx.evicts().touch(entry, req.topologyVersion());
+                        }
                     }
                 }
-            }
-            catch (NodeStoppingException e){
-                U.error(log, "Failed to update key on backup (local node is stopping):" + key, e);
+                catch (NodeStoppingException e){
+                    U.error(log, "Failed to update key on backup (local node is stopping):" + key, e);
 
-                return;
-            }
-            catch (GridDhtInvalidPartitionException ignored) {
-                // Ignore.
-            }
-            catch (IgniteCheckedException e) {
-                IgniteCheckedException err = new IgniteCheckedException("Failed to update key on backup node: " + key, e);
+                    return;
+                }
+                catch (GridDhtInvalidPartitionException ignored) {
+                    // Ignore.
+                }
+                catch (IgniteCheckedException e) {
+                    IgniteCheckedException err = new IgniteCheckedException("Failed to update key on backup node: " + key, e);
 
-                if (nearRes != null)
-                    nearRes.addFailedKey(key, err);
+                    if (nearRes != null)
+                        nearRes.addFailedKey(key, err);
 
-                U.error(log, "Failed to update key on backup node: " + key, e);}
+                    U.error(log, "Failed to update key on backup node: " + key, e);
+                }
             }
         }
         finally {
@@ -3369,7 +3400,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send deferred DHT update response to remote node [" +
+            U.error(log, "Failed to send deferredDHT  update response to remote node [" +
                 "futIds=" + msg.futureIds() + ", node=" + primaryId + ']', e);
         }
     }

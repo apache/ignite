@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -82,26 +81,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default rebalance batch size in bytes. </summary>
         public const int DefaultRebalanceBatchSize = 512*1024; // 512K
 
-        /// <summary> Default maximum eviction queue ratio. </summary>
-        public const float DefaultMaxEvictionOverflowRatio = 10;
-
-        /// <summary> Default eviction synchronized flag. </summary>
-        public const bool DefaultEvictSynchronized = false;
-
-        /// <summary> Default eviction key buffer size for batching synchronized evicts. </summary>
-        public const int DefaultEvictSynchronizedKeyBufferSize = 1024;
-
-        /// <summary> Default synchronous eviction timeout. </summary>
-        public static readonly TimeSpan DefaultEvictSynchronizedTimeout = TimeSpan.FromMilliseconds(10000);
-
-        /// <summary> Default synchronous eviction concurrency level. </summary>
-        public const int DefaultEvictSynchronizedConcurrencyLevel = 4;
-
         /// <summary> Default value for eager ttl flag. </summary>
         public const bool DefaultEagerTtl = true;
-
-        /// <summary> Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. </summary>
-        public const long DefaultOffHeapMaxMemory = -1;
 
         /// <summary> Default value for 'maxConcurrentAsyncOps'. </summary>
         public const int DefaultMaxConcurrentAsyncOperations = 500;
@@ -171,24 +152,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
             CacheMode = DefaultCacheMode;
             CopyOnRead = DefaultCopyOnRead;
             EagerTtl = DefaultEagerTtl;
-            EvictSynchronizedKeyBufferSize = DefaultEvictSynchronizedKeyBufferSize;
-            EvictSynchronized = DefaultEvictSynchronized;
-            EvictSynchronizedConcurrencyLevel = DefaultEvictSynchronizedConcurrencyLevel;
-            EvictSynchronizedTimeout = DefaultEvictSynchronizedTimeout;
             Invalidate = DefaultInvalidate;
             KeepBinaryInStore = DefaultKeepVinaryInStore;
             LoadPreviousValue = DefaultLoadPreviousValue;
             LockTimeout = DefaultLockTimeout;
             LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
             MaxConcurrentAsyncOperations = DefaultMaxConcurrentAsyncOperations;
-            MaxEvictionOverflowRatio = DefaultMaxEvictionOverflowRatio;
-            OffHeapMaxMemory = DefaultOffHeapMaxMemory;
             ReadFromBackup = DefaultReadFromBackup;
             RebalanceBatchSize = DefaultRebalanceBatchSize;
             RebalanceMode = DefaultRebalanceMode;
             RebalanceThrottle = DefaultRebalanceThrottle;
             RebalanceTimeout = DefaultRebalanceTimeout;
-            SqlOnheapRowCacheSize = DefaultSqlOnheapRowCacheSize;
             StartSize = DefaultStartSize;
             WriteBehindBatchSize = DefaultWriteBehindBatchSize;
             WriteBehindEnabled = DefaultWriteBehindEnabled;
@@ -231,24 +205,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
             Debug.Assert(((BinaryReader) reader).Marshaller == BinaryUtils.Marshaller);
 
             AtomicityMode = (CacheAtomicityMode) reader.ReadInt();
-            AtomicWriteOrderMode = (CacheAtomicWriteOrderMode) reader.ReadInt();
             Backups = reader.ReadInt();
             CacheMode = (CacheMode) reader.ReadInt();
             CopyOnRead = reader.ReadBoolean();
             EagerTtl = reader.ReadBoolean();
-            EvictSynchronized = reader.ReadBoolean();
-            EvictSynchronizedConcurrencyLevel = reader.ReadInt();
-            EvictSynchronizedKeyBufferSize = reader.ReadInt();
-            EvictSynchronizedTimeout = reader.ReadLongAsTimespan();
             Invalidate = reader.ReadBoolean();
             KeepBinaryInStore = reader.ReadBoolean();
             LoadPreviousValue = reader.ReadBoolean();
             LockTimeout = reader.ReadLongAsTimespan();
             LongQueryWarningTimeout = reader.ReadLongAsTimespan();
             MaxConcurrentAsyncOperations = reader.ReadInt();
-            MaxEvictionOverflowRatio = reader.ReadFloat();
             Name = reader.ReadString();
-            OffHeapMaxMemory = reader.ReadLong();
             ReadFromBackup = reader.ReadBoolean();
             RebalanceBatchSize = reader.ReadInt();
             RebalanceDelay = reader.ReadLongAsTimespan();
@@ -256,7 +223,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             RebalanceThrottle = reader.ReadLongAsTimespan();
             RebalanceTimeout = reader.ReadLongAsTimespan();
             SqlEscapeAll = reader.ReadBoolean();
-            SqlOnheapRowCacheSize = reader.ReadInt();
             StartSize = reader.ReadInt();
             WriteBehindBatchSize = reader.ReadInt();
             WriteBehindEnabled = reader.ReadBoolean();
@@ -294,24 +260,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
             Debug.Assert(((BinaryWriter) writer).Marshaller == BinaryUtils.Marshaller);
 
             writer.WriteInt((int) AtomicityMode);
-            writer.WriteInt((int) AtomicWriteOrderMode);
             writer.WriteInt(Backups);
             writer.WriteInt((int) CacheMode);
             writer.WriteBoolean(CopyOnRead);
             writer.WriteBoolean(EagerTtl);
-            writer.WriteBoolean(EvictSynchronized);
-            writer.WriteInt(EvictSynchronizedConcurrencyLevel);
-            writer.WriteInt(EvictSynchronizedKeyBufferSize);
-            writer.WriteLong((long) EvictSynchronizedTimeout.TotalMilliseconds);
             writer.WriteBoolean(Invalidate);
             writer.WriteBoolean(KeepBinaryInStore);
             writer.WriteBoolean(LoadPreviousValue);
             writer.WriteLong((long) LockTimeout.TotalMilliseconds);
             writer.WriteLong((long) LongQueryWarningTimeout.TotalMilliseconds);
             writer.WriteInt(MaxConcurrentAsyncOperations);
-            writer.WriteFloat(MaxEvictionOverflowRatio);
             writer.WriteString(Name);
-            writer.WriteLong(OffHeapMaxMemory);
             writer.WriteBoolean(ReadFromBackup);
             writer.WriteInt(RebalanceBatchSize);
             writer.WriteLong((long) RebalanceDelay.TotalMilliseconds);
@@ -319,7 +278,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteLong((long) RebalanceThrottle.TotalMilliseconds);
             writer.WriteLong((long) RebalanceTimeout.TotalMilliseconds);
             writer.WriteBoolean(SqlEscapeAll);
-            writer.WriteInt(SqlOnheapRowCacheSize);
             writer.WriteInt(StartSize);
             writer.WriteInt(WriteBehindBatchSize);
             writer.WriteBoolean(WriteBehindEnabled);
@@ -377,12 +335,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     }
                     else
                     {
-                        if (!cachePlugin.GetType().IsSerializable)
-                        {
-                            throw new InvalidOperationException("Invalid cache configuration: " +
-                                                                "ICachePluginConfiguration should be Serializable.");
-                        }
-
                         writer.WriteBoolean(false);
                         writer.WriteObject(cachePlugin);
                     }
@@ -414,51 +366,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// caller should wait for update on other nodes to complete or not.
         /// </summary>
         public CacheWriteSynchronizationMode WriteSynchronizationMode { get; set; }
-
-        /// <summary>
-        /// Gets or sets flag indicating whether eviction is synchronized between primary, backup and near nodes.        
-        /// If this parameter is true and swap is disabled then <see cref="ICache{TK,TV}.LocalEvict"/>
-        /// will involve all nodes where an entry is kept.  
-        /// If this property is set to false then eviction is done independently on different cache nodes.        
-        /// Note that it's not recommended to set this value to true if cache store is configured since it will allow 
-        /// to significantly improve cache performance.
-        /// </summary>
-        [DefaultValue(DefaultEvictSynchronized)]
-        public bool EvictSynchronized { get; set; }
-
-        /// <summary>
-        /// Gets or sets size of the key buffer for synchronized evictions.
-        /// </summary>
-        [DefaultValue(DefaultEvictSynchronizedKeyBufferSize)]
-        public int EvictSynchronizedKeyBufferSize { get; set; }
-
-        /// <summary>
-        /// Gets or sets concurrency level for synchronized evictions. 
-        /// This flag only makes sense with <see cref="EvictSynchronized"/> set to true. 
-        /// When synchronized evictions are enabled, it is possible that local eviction policy will try 
-        /// to evict entries faster than evictions can be synchronized with backup or near nodes. 
-        /// This value specifies how many concurrent synchronous eviction sessions should be allowed 
-        /// before the system is forced to wait and let synchronous evictions catch up with the eviction policy.       
-        /// </summary>
-        [DefaultValue(DefaultEvictSynchronizedConcurrencyLevel)]
-        public int EvictSynchronizedConcurrencyLevel { get; set; }
-
-        /// <summary>
-        /// Gets or sets timeout for synchronized evictions
-        /// </summary>
-        [DefaultValue(typeof(TimeSpan), "00:00:10")]
-        public TimeSpan EvictSynchronizedTimeout { get; set; }
-
-        /// <summary>
-        /// This value denotes the maximum size of eviction queue in percents of cache size 
-        /// in case of distributed cache (replicated and partitioned) and using synchronized eviction
-        /// <para/>        
-        /// That queue is used internally as a buffer to decrease network costs for synchronized eviction. 
-        /// Once queue size reaches specified value all required requests for all entries in the queue 
-        /// are sent to remote nodes and the queue is cleared.
-        /// </summary>
-        [DefaultValue(DefaultMaxEvictionOverflowRatio)]
-        public float MaxEvictionOverflowRatio { get; set; }
 
         /// <summary>
         /// Gets or sets flag indicating whether expired cache entries will be eagerly removed from cache. 
@@ -507,11 +414,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultAtomicityMode)]
         public CacheAtomicityMode AtomicityMode { get; set; }
-
-        /// <summary>
-        /// Gets or sets cache write ordering mode.
-        /// </summary>
-        public CacheAtomicWriteOrderMode AtomicWriteOrderMode { get; set; }
 
         /// <summary>
         /// Gets or sets number of nodes used to back up single partition for 
@@ -621,16 +523,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public TimeSpan RebalanceThrottle { get; set; }
 
         /// <summary>
-        /// Gets or sets maximum amount of memory available to off-heap storage. Possible values are
-        /// -1 means that off-heap storage is disabled. 0 means that Ignite will not limit off-heap storage 
-        /// (it's up to user to properly add and remove entries from cache to ensure that off-heap storage 
-        /// does not grow indefinitely.
-        /// Any positive value specifies the limit of off-heap storage in bytes.
-        /// </summary>
-        [DefaultValue(DefaultOffHeapMaxMemory)]
-        public long OffHeapMaxMemory { get; set; }
-
-        /// <summary>
         /// Gets or sets flag indicating whether data can be read from backup.
         /// </summary>
         [DefaultValue(DefaultReadFromBackup)]
@@ -655,13 +547,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// also allows having special characters in table and field names.
         /// </summary>
         public bool SqlEscapeAll { get; set; }
-
-        /// <summary>
-        /// Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
-        /// This setting only makes sense when offheap is enabled for this cache.
-        /// </summary>
-        [DefaultValue(DefaultSqlOnheapRowCacheSize)]
-        public int SqlOnheapRowCacheSize { get; set; }
 
         /// <summary>
         /// Gets or sets the factory for underlying persistent storage for read-through and write-through operations.
@@ -715,7 +600,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets the affinity function to provide mapping from keys to nodes.
         /// <para />
         /// Predefined implementations:
-        /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
+        /// <see cref="RendezvousAffinityFunction"/>.
         /// </summary>
         public IAffinityFunction AffinityFunction { get; set; }
 

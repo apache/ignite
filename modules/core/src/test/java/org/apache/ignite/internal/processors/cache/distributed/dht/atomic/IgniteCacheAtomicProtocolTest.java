@@ -37,7 +37,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -106,7 +105,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
                 @Override public boolean apply(GridIoMessage msg) {
                     Object msg0 = msg.message();
 
-                    return (msg0 instanceof GridDhtPartitionSupplyMessage || msg0 instanceof GridDhtPartitionSupplyMessageV2)
+                    return (msg0 instanceof GridDhtPartitionSupplyMessage)
                         && ((GridCacheMessage)msg0).cacheId() == CU.cacheId(TEST_CACHE);
                 }
             });

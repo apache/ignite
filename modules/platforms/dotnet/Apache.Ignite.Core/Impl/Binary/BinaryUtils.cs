@@ -22,9 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.IO;
-    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -32,9 +30,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
-    /**
-     * <summary>Utilities for binary serialization.</summary>
-     */
+    /// <summary>
+    /// Utilities for binary serialization.
+    /// </summary>
     internal static class BinaryUtils
     {
         /** Header of NULL object. */
@@ -78,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: boolean. */
         public const byte TypeBool = 8;
-        
+
         /** Type: decimal. */
         public const byte TypeDecimal = 30;
 
@@ -135,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: map. */
         public const byte TypeDictionary = 25;
-        
+
         /** Type: binary object. */
         public const byte TypeBinary = 27;
 
@@ -144,12 +142,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: enum array. */
         public const byte TypeArrayEnum = 29;
-        
+
         /** Type: native job holder. */
         public const byte TypeNativeJobHolder = 77;
-
-        /** Type: Ignite proxy. */
-        public const byte TypeIgniteProxy = 74;
 
         /** Type: function wrapper. */
         public const byte TypeComputeOutFuncJob = 80;
@@ -177,7 +172,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: entry predicate holder. */
         public const byte TypeCacheEntryPredicateHolder = 90;
-        
+
         /** Type: message filter holder. */
         public const byte TypeMessageListenerHolder = 92;
 
@@ -198,24 +193,18 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Collection: linked list. */
         public const byte CollectionLinkedList = 2;
-        
+
         /** Map: custom. */
         public const byte MapCustom = 0;
 
         /** Map: hash map. */
         public const byte MapHashMap = 1;
-        
+
         /** Byte "0". */
         public const byte ByteZero = 0;
 
-        /** Byte "1". */
-        public const byte ByteOne = 1;
-
         /** Indicates object array. */
         public const int ObjTypeId = -1;
-
-        /** Length of array size. */
-        public const int LengthArraySize = 4;
 
         /** Int type. */
         public static readonly Type TypInt = typeof(int);
@@ -228,13 +217,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Ticks for Java epoch. */
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
-        
+
         /** Bindig flags for static search. */
         private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /** System marshaller. */
         private static readonly Marshaller Marsh = new Marshaller(
-            new BinaryConfiguration {CompactFooter = false})
+            new BinaryConfiguration { CompactFooter = false })
         {
             RegistrationDisabled = true
         };
@@ -337,26 +326,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (sbyte* res0 = res)
             {
-                stream.Read((byte*) res0, len);
+                stream.Read((byte*)res0, len);
             }
-
-            return res;
-        }
-
-        /**
-         * <summary>Read byte array.</summary>
-         * <param name="data">Data.</param>
-         * <param name="pos">Position.</param>
-         * <returns>Value.</returns>
-         */
-        public static byte[] ReadByteArray(byte[] data, int pos) {
-            int len = ReadInt(data, pos);
-
-            pos += 4;
-
-            byte[] res = new byte[len];
-
-            Buffer.BlockCopy(data, pos, res, 0, len);
 
             return res;
         }
@@ -386,7 +357,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (ushort* res0 = res)
             {
-                stream.Read((byte*) res0, len * 2);
+                stream.Read((byte*)res0, len * 2);
             }
 
             return res;
@@ -400,42 +371,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static short[] ReadShortArray(IBinaryStream stream)
         {
             return stream.ReadShortArray(stream.ReadInt());
-        }
-
-        /**
-         * <summary>Read int value.</summary>
-         * <param name="data">Data array.</param>
-         * <param name="pos">Position.</param>
-         * <returns>Value.</returns>
-         */
-        public static int ReadInt(byte[] data, int pos) {
-            int val = data[pos];
-
-            val |= data[pos + 1] << 8;
-            val |= data[pos + 2] << 16;
-            val |= data[pos + 3] << 24;
-
-            return val;
-        }
-
-        /**
-         * <summary>Read long value.</summary>
-         * <param name="data">Data array.</param>
-         * <param name="pos">Position.</param>
-         * <returns>Value.</returns>
-         */
-        public static long ReadLong(byte[] data, int pos) {
-            long val = (long)(data[pos]) << 0;
-
-            val |= (long)(data[pos + 1]) << 8;
-            val |= (long)(data[pos + 2]) << 16;
-            val |= (long)(data[pos + 3]) << 24;
-            val |= (long)(data[pos + 4]) << 32;
-            val |= (long)(data[pos + 5]) << 40;
-            val |= (long)(data[pos + 6]) << 48;
-            val |= (long)(data[pos + 7]) << 56;
-
-            return val;
         }
 
         /**
@@ -473,7 +408,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (uint* res0 = res)
             {
-                stream.Read((byte*) res0, len * 4);
+                stream.Read((byte*)res0, len * 4);
             }
 
             return res;
@@ -514,7 +449,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (ulong* res0 = res)
             {
-                stream.Read((byte*) res0, len * 8);
+                stream.Read((byte*)res0, len * 8);
             }
 
             return res;
@@ -620,7 +555,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
         }
-        
+
         /// <summary>
         /// Write nullable date array.
         /// </summary>
@@ -642,7 +577,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     stream.WriteByte(HdrNull);
             }
         }
-        
+
         /**
          * <summary>Write string in UTF8 encoding.</summary>
          * <param name="val">String.</param>
@@ -737,7 +672,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="arr">The bytes.</param>
         /// <returns>Resulting string.</returns>
-        public static string Utf8BytesToString(byte[] arr)
+        private static string Utf8BytesToString(byte[] arr)
         {
             if (!UseStringSerializationVer2)
                 return Utf8.GetString(arr);
@@ -861,28 +796,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /**
-         * <summary>Read string array in UTF8 encoding.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>String array.</returns>
-         */
-        public static string[] ReadStringArray(IBinaryStream stream)
-        {
-            int len = stream.ReadInt();
-
-            string[] vals = new string[len];
-
-            for (int i = 0; i < len; i++)
-                vals[i] = ReadString(stream);
-
-            return vals;
-        }
-
-        /**
          * <summary>Write decimal value.</summary>
          * <param name="val">Decimal value.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteDecimal(decimal val, IBinaryStream stream) 
+        public static void WriteDecimal(decimal val, IBinaryStream stream)
         {
             // Vals are:
             // [0] = lo
@@ -890,12 +808,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             // [2] = high
             // [3] = flags
             int[] vals = decimal.GetBits(val);
-            
+
             // Get start index skipping leading zeros.
             int idx = vals[2] != 0 ? 2 : vals[1] != 0 ? 1 : vals[0] != 0 ? 0 : -1;
-                        
+
             // Write scale and negative flag.
-            int scale = (vals[3] & 0x00FF0000) >> 16; 
+            int scale = (vals[3] & 0x00FF0000) >> 16;
 
             stream.WriteInt(scale);
 
@@ -910,7 +828,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 int len = (idx + 1) << 2;
-                
+
                 // Write data.
                 for (int i = idx; i >= 0; i--)
                 {
@@ -920,7 +838,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     int part16 = (curPart >> 16) & 0xFF;
                     int part8 = (curPart >> 8) & 0xFF;
                     int part0 = curPart & 0xFF;
-                    
+
                     if (i == idx)
                     {
                         // Possibly skipping some values here.
@@ -929,7 +847,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                             if ((part24 & 0x80) == 0x80)
                             {
                                 stream.WriteInt(len + 1);
-                                
+
                                 stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
 
                                 neg = false;
@@ -954,7 +872,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                             }
                             else
                                 stream.WriteInt(len - 1);
-                            
+
                             stream.WriteByte((byte)(neg ? ((sbyte)part16 | -0x80) : part16));
                             stream.WriteByte((byte)part8);
                             stream.WriteByte((byte)part0);
@@ -971,7 +889,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                             }
                             else
                                 stream.WriteInt(len - 2);
-                            
+
                             stream.WriteByte((byte)(neg ? ((sbyte)part8 | -0x80) : part8));
                             stream.WriteByte((byte)part0);
                         }
@@ -1026,7 +944,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 throw new BinaryObjectException("Decimal value scale overflow (must be between 0 and 28): " + scale);
 
             if (mag.Length > 13)
-                throw new BinaryObjectException("Decimal magnitude overflow (must be less than 96 bits): " + 
+                throw new BinaryObjectException("Decimal magnitude overflow (must be less than 96 bits): " +
                     mag.Length * 8);
 
             if (mag.Length == 13 && mag[0] != 0)
@@ -1110,7 +1028,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var bytes = guid.ToByteArray();
 
-            var bytes0 = (byte*) &guid;
+            var bytes0 = (byte*)&guid;
 
             for (var i = 0; i < bytes.Length; i++)
                 if (bytes[i] != bytes0[i])
@@ -1131,7 +1049,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var ptr = &jguid;
 
-            stream.Write((byte*) ptr, 16);
+            stream.Write((byte*)ptr, 16);
         }
 
         /// <summary>
@@ -1139,7 +1057,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="val">The value.</param>
         /// <param name="stream">The stream.</param>
-        public static unsafe void WriteGuidSlow(Guid val, IBinaryStream stream)
+        private static unsafe void WriteGuidSlow(Guid val, IBinaryStream stream)
         {
             var bytes = val.ToByteArray();
             byte* jBytes = stackalloc byte[16];
@@ -1163,7 +1081,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             jBytes[13] = bytes[10]; // f
             jBytes[14] = bytes[9]; // e
             jBytes[15] = bytes[8]; // d
-            
+
             stream.Write(jBytes, 16);
         }
 
@@ -1177,13 +1095,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             JavaGuid jguid;
 
-            var ptr = (byte*) &jguid;
+            var ptr = (byte*)&jguid;
 
             stream.Read(ptr, 16);
 
             var dotnetGuid = new GuidAccessor(jguid);
 
-            return *(Guid*) (&dotnetGuid);
+            return *(Guid*)(&dotnetGuid);
         }
 
         /// <summary>
@@ -1244,23 +1162,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /**
-         * <summary>Read GUID array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>GUID array.</returns>
-         */
-        public static Guid?[] ReadGuidArray(IBinaryStream stream)
-        {
-            int len = stream.ReadInt();
-
-            Guid?[] vals = new Guid?[len];
-
-            for (int i = 0; i < len; i++)
-                vals[i] = ReadGuid(stream);
-
-            return vals;
-        }
-
         /// <summary>
         /// Write array.
         /// </summary>
@@ -1313,7 +1214,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 result = ArrayReaders.GetOrAdd(elementType, t =>
                     DelegateConverter.CompileFunc<Func<BinaryReader, bool, object>>(null,
                         MtdhReadArray.MakeGenericMethod(t),
-                        new[] {typeof (BinaryReader), typeof (bool)}, new[] {false, false, true}));
+                        new[] { typeof(BinaryReader), typeof(bool) }, new[] { false, false, true }));
 
             return result(ctx, typed);
         }
@@ -1375,22 +1276,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static void WriteCollection(ICollection val, BinaryWriter ctx)
         {
             var valType = val.GetType();
-            
+
             byte colType;
 
             if (valType.IsGenericType)
             {
                 var genType = valType.GetGenericTypeDefinition();
 
-                if (genType == typeof (List<>))
+                if (genType == typeof(List<>))
                     colType = CollectionArrayList;
-                else if (genType == typeof (LinkedList<>))
+                else if (genType == typeof(LinkedList<>))
                     colType = CollectionLinkedList;
                 else
                     colType = CollectionCustom;
             }
             else
-                colType = valType == typeof (ArrayList) ? CollectionArrayList : CollectionCustom;
+                colType = valType == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
 
             WriteCollection(val, ctx, colType);
         }
@@ -1444,7 +1345,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.AddHandle(pos - 1, res);
 
             if (adder == null)
-                adder = (col, elem) => ((ArrayList) col).Add(elem);
+                adder = (col, elem) => ((ArrayList)col).Add(elem);
 
             for (int i = 0; i < len; i++)
                 adder.Invoke(res, ctx.Deserialize<object>());
@@ -1467,10 +1368,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var genType = valType.GetGenericTypeDefinition();
 
-                dictType = genType == typeof (Dictionary<,>) ? MapHashMap : MapCustom;
+                dictType = genType == typeof(Dictionary<,>) ? MapHashMap : MapCustom;
             }
             else
-                dictType = valType == typeof (Hashtable) ? MapHashMap : MapCustom;
+                dictType = valType == typeof(Hashtable) ? MapHashMap : MapCustom;
 
             WriteDictionary(val, ctx, dictType);
         }
@@ -1555,7 +1456,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="enumType">The enum type.</param>
         /// <param name="marshaller">The marshaller.</param>
         /// <returns>Enum type id.</returns>
-        public static int GetEnumTypeId(Type enumType, Marshaller marshaller)
+        private static int GetEnumTypeId(Type enumType, Marshaller marshaller)
         {
             if (Enum.GetUnderlyingType(enumType) == TypInt)
             {
@@ -1628,50 +1529,33 @@ namespace Apache.Ignite.Core.Impl.Binary
             return hash;
         }
 
+        /// <summary>
+        /// Cleans the name of the field.
+        /// </summary>
         public static string CleanFieldName(string fieldName)
         {
+            // C# auto property backing field:
             if (fieldName.StartsWith("<", StringComparison.Ordinal)
                 && fieldName.EndsWith(">k__BackingField", StringComparison.Ordinal))
+            {
                 return fieldName.Substring(1, fieldName.IndexOf(">", StringComparison.Ordinal) - 1);
-            
+            }
+
+            // F# backing field:
+            if (fieldName.EndsWith("@", StringComparison.Ordinal))
+            {
+                return fieldName.Substring(0, fieldName.Length - 1);
+            }
+
             return fieldName;
         }
 
-        /**
-         * <summary>Convert type name.</summary>
-         * <param name="typeName">Type name.</param>
-         * <param name="converter">Converter.</param>
-         * <returns>Converted name.</returns>
-         */
-        public static string ConvertTypeName(string typeName, IBinaryNameMapper converter)
-        {
-            var typeName0 = typeName;
-
-            try
-            {
-                if (converter != null)
-                    typeName = converter.GetTypeName(typeName);
-            }
-            catch (Exception e)
-            {
-                throw new BinaryObjectException("Failed to convert type name due to converter exception " +
-                    "[typeName=" + typeName + ", converter=" + converter + ']', e);
-            }
-
-            if (typeName == null)
-                throw new BinaryObjectException("Name converter returned null name for type [typeName=" +
-                    typeName0 + ", converter=" + converter + "]");
-
-            return typeName;
-        }
-
-        /**
-         * <summary>Convert field name.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <param name="converter">Converter.</param>
-         * <returns>Converted name.</returns>
-         */
-        public static string ConvertFieldName(string fieldName, IBinaryNameMapper converter)
+        /// <summary>
+        /// Convert field name.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="converter">Converter.</param>
+        private static string ConvertFieldName(string fieldName, IBinaryNameMapper converter)
         {
             var fieldName0 = fieldName;
 
@@ -1693,67 +1577,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             return fieldName;
         }
 
-        /**
-         * <summary>Extract simple type name.</summary>
-         * <param name="typeName">Type name.</param>
-         * <returns>Simple type name.</returns>
-         */
-        public static string SimpleTypeName(string typeName)
-        {
-            int idx = typeName.LastIndexOf('.');
-
-            return idx < 0 ? typeName : typeName.Substring(idx + 1);
-        }
-
-        /**
-         * <summary>Resolve type ID.</summary>
-         * <param name="typeName">Type name.</param>
-         * <param name="nameMapper">Name mapper.</param>
-         * <param name="idMapper">ID mapper.</param>
-         */
-        public static int TypeId(string typeName, IBinaryNameMapper nameMapper,
-            IBinaryIdMapper idMapper)
-        {
-            Debug.Assert(typeName != null);
-
-            typeName = ConvertTypeName(typeName, nameMapper);
-
-            int id = 0;
-
-            if (idMapper != null)
-            {
-                try
-                {
-                    id = idMapper.GetTypeId(typeName);
-                }
-                catch (Exception e)
-                {
-                    throw new BinaryObjectException("Failed to resolve type ID due to ID mapper exception " +
-                        "[typeName=" + typeName + ", idMapper=" + idMapper + ']', e);
-                }
-            }
-
-            if (id == 0)
-                id = GetStringHashCode(typeName);
-
-            return id;
-        }
-
         /// <summary>
-        /// Gets the name of the type.
+        /// Gets the SQL name of the type.
         /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns>
-        /// Simple type name for non-generic types; simple type name with appended generic arguments for generic types.
-        /// </returns>
-        public static string GetTypeName(Type type)
+        public static string GetSqlTypeName(Type type)
         {
-            if (!type.IsGenericType)
-                return type.Name;
-
-            var args = type.GetGenericArguments().Select(GetTypeName).Aggregate((x, y) => x + "," + y);
-
-            return string.Format(CultureInfo.InvariantCulture, "{0}[{1}]", type.Name, args);
+            // SQL always uses simple type name without namespace, parent class, etc.
+            return type.FullName;
         }
 
         /**
@@ -1789,35 +1619,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 id = GetStringHashCode(fieldName);
 
             if (id == 0)
-                throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " + 
+                throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " +
                     "[typeId=" + typeId + ", fieldName=" + fieldName + ", idMapper=" + idMapper + ']');
 
             return id;
-        }
-
-        /// <summary>
-        /// Compare contents of two byte array chunks.
-        /// </summary>
-        /// <param name="arr1">Array 1.</param>
-        /// <param name="offset1">Offset 1.</param>
-        /// <param name="len1">Length 1.</param>
-        /// <param name="arr2">Array 2.</param>
-        /// <param name="offset2">Offset 2.</param>
-        /// <param name="len2">Length 2.</param>
-        /// <returns>True if array chunks are equal.</returns>
-        public static bool CompareArrays(byte[] arr1, int offset1, int len1, byte[] arr2, int offset2, int len2)
-        {
-            if (len1 == len2)
-            {
-                for (int i = 0; i < len1; i++)
-                {
-                    if (arr1[offset1 + i] != arr2[offset2 + i])
-                        return false;
-                }
-
-                return true;
-            }
-            return false;
         }
 
         /// <summary>
@@ -1911,7 +1716,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             high = diff / TimeSpan.TicksPerMillisecond;
 
-            low = (int)(diff % TimeSpan.TicksPerMillisecond) * 100; 
+            low = (int)(diff % TimeSpan.TicksPerMillisecond) * 100;
         }
 
         /// <summary>
@@ -1972,10 +1777,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 // Read the rest.
-                cfg.DefaultNameMapper = CreateInstance<IBinaryNameMapper>(reader);
-                cfg.DefaultIdMapper = CreateInstance<IBinaryIdMapper>(reader);
-                cfg.DefaultSerializer = CreateInstance<IBinarySerializer>(reader);
-                cfg.DefaultKeepDeserialized = reader.ReadBoolean();
+                cfg.NameMapper = CreateInstance<IBinaryNameMapper>(reader);
+                cfg.IdMapper = CreateInstance<IBinaryIdMapper>(reader);
+                cfg.Serializer = CreateInstance<IBinarySerializer>(reader);
+                cfg.KeepDeserialized = reader.ReadBoolean();
             }
             else
                 cfg = null;
@@ -1998,7 +1803,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static unsafe float IntToFloatBits(int val)
         {
-            return *(float*) &val;
+            return *(float*)&val;
         }
 
         /// <summary>
@@ -2006,17 +1811,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static unsafe double LongToDoubleBits(long val)
         {
-            return *(double*) &val;
-        }
-
-        /// <summary>
-        /// Gets the equality comparer.
-        /// </summary>
-        public static IBinaryEqualityComparer GetEqualityComparer(IBinaryTypeDescriptor descriptor)
-        {
-            var res = descriptor != null ? descriptor.EqualityComparer : null;
-
-            return res ?? BinaryArrayEqualityComparer.Instance;
+            return *(double*)&val;
         }
 
         /// <summary>
@@ -2082,7 +1877,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             [FieldOffset(0)] public readonly ulong CBA;
             [FieldOffset(8)] public readonly ulong KJIHGFED;
             [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
-            [FieldOffset(0)] public unsafe fixed byte Bytes [16];
+            [FieldOffset(0)]
+            public unsafe fixed byte Bytes[16];
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JavaGuid"/> struct.

@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractPartitionedByteArrayValuesSelfTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -38,17 +37,8 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
     /** Offheap cache name. */
     protected static final String CACHE_ATOMIC_OFFHEAP = "cache_atomic_offheap";
 
-    /** Offheap tiered cache name. */
-    protected static final String CACHE_ATOMIC_OFFHEAP_TIERED = "cache_atomic_offheap_tiered";
-
     /** Atomic caches. */
     private static IgniteCache<Integer, Object>[] cachesAtomic;
-
-    /** Atomic offheap caches. */
-    private static IgniteCache<Integer, Object>[] cachesAtomicOffheap;
-
-    /** Atomic offheap caches. */
-    private static IgniteCache<Integer, Object>[] cachesAtomicOffheapTiered;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -58,26 +48,8 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
 
         atomicCacheCfg.setName(CACHE_ATOMIC);
         atomicCacheCfg.setAtomicityMode(ATOMIC);
-        atomicCacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
-        CacheConfiguration atomicOffheapCacheCfg = offheapCacheConfiguration0();
-
-        atomicOffheapCacheCfg.setName(CACHE_ATOMIC_OFFHEAP);
-        atomicOffheapCacheCfg.setAtomicityMode(ATOMIC);
-        atomicOffheapCacheCfg.setAtomicWriteOrderMode(PRIMARY);
-
-        CacheConfiguration atomicOffheapTieredCacheCfg = offheapTieredCacheConfiguration();
-
-        atomicOffheapTieredCacheCfg.setName(CACHE_ATOMIC_OFFHEAP_TIERED);
-        atomicOffheapTieredCacheCfg.setAtomicityMode(ATOMIC);
-        atomicOffheapTieredCacheCfg.setAtomicWriteOrderMode(PRIMARY);
-
-        c.setCacheConfiguration(cacheConfiguration(),
-            offheapCacheConfiguration(),
-            offheapTieredCacheConfiguration(),
-            atomicCacheCfg,
-            atomicOffheapCacheCfg,
-            atomicOffheapTieredCacheCfg);
+        c.setCacheConfiguration(cacheConfiguration(), atomicCacheCfg);
 
         c.setPeerClassLoadingEnabled(peerClassLoading());
 
@@ -97,21 +69,14 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
         int gridCnt = gridCount();
 
         cachesAtomic = new IgniteCache[gridCnt];
-        cachesAtomicOffheap = new IgniteCache[gridCnt];
-        cachesAtomicOffheapTiered = new IgniteCache[gridCnt];
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < gridCount(); i++)
             cachesAtomic[i] = ignites[i].cache(CACHE_ATOMIC);
-            cachesAtomicOffheap[i] = ignites[i].cache(CACHE_ATOMIC_OFFHEAP);
-            cachesAtomicOffheapTiered[i] = ignites[i].cache(CACHE_ATOMIC_OFFHEAP_TIERED);
-        }
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         cachesAtomic = null;
-        cachesAtomicOffheap = null;
-        cachesAtomicOffheapTiered = null;
 
         super.afterTestsStopped();
     }
@@ -123,24 +88,6 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
      */
     public void testAtomic() throws Exception {
         testAtomic0(cachesAtomic);
-    }
-
-    /**
-     * Test atomic offheap cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheap() throws Exception {
-        testAtomic0(cachesAtomicOffheap);
-    }
-
-    /**
-     * Test atomic offheap cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTiered() throws Exception {
-        testAtomic0(cachesAtomicOffheapTiered);
     }
 
     /**

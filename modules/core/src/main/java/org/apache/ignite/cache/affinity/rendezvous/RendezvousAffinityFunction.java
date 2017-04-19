@@ -22,25 +22,21 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
-import org.apache.ignite.cache.affinity.AffinityNodeHashResolver;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -48,7 +44,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,22 +79,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Comparator. */
     private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR = new HashComparator();
 
-    /** Thread local message digest. */
-    private ThreadLocal<MessageDigest> digest = new ThreadLocal<MessageDigest>() {
-        @Override protected MessageDigest initialValue() {
-            try {
-                return MessageDigest.getInstance("MD5");
-            }
-            catch (NoSuchAlgorithmException e) {
-                assert false : "Should have failed in constructor";
-
-                throw new IgniteException("Failed to obtain message digest (digest was available in constructor)", e);
-            }
-        }
-    };
-
     /** Number of partitions. */
     private int parts;
+
+    /** Mask to use in calculation when partitions count is power of 2. */
+    private transient int mask = -1;
 
     /** Exclude neighbors flag. */
     private boolean exclNeighbors;
@@ -114,13 +98,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      *  the second is a list of nodes that are already assigned for a given partition (the first node in the list
      *  is primary). */
     private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
-
-    /** Hash ID resolver. */
-    private AffinityNodeHashResolver hashIdRslvr = null;
-
-    /** Ignite instance. */
-    @IgniteInstanceResource
-    private Ignite ignite;
 
     /** Logger instance. */
     @LoggerResource
@@ -189,15 +166,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <=" + CacheConfiguration.MAX_PARTITIONS_COUNT);
 
         this.exclNeighbors = exclNeighbors;
-        this.parts = parts;
-        this.backupFilter = backupFilter;
 
-        try {
-            MessageDigest.getInstance("MD5");
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new IgniteException("Failed to obtain MD5 message digest instance.", e);
-        }
+        setPartitions(parts);
+
+        this.backupFilter = backupFilter;
     }
 
     /**
@@ -217,54 +189,21 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Sets total number of partitions.
+     * Sets total number of partitions.If the number of partitions is a power of two,
+     * the PowerOfTwo hashing method will be used.  Otherwise the Standard hashing
+     * method will be applied.
      *
      * @param parts Total number of partitions.
      * @return {@code this} for chaining.
      */
     public RendezvousAffinityFunction setPartitions(int parts) {
-        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
+        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT,
+            "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
+        A.ensure(parts > 0, "parts > 0");
 
         this.parts = parts;
 
-        return this;
-    }
-
-    /**
-     * Gets hash ID resolver for nodes. This resolver is used to provide
-     * alternate hash ID, other than node ID.
-     * <p>
-     * Node IDs constantly change when nodes get restarted, which causes them to
-     * be placed on different locations in the hash ring, and hence causing
-     * repartitioning. Providing an alternate hash ID, which survives node restarts,
-     * puts node on the same location on the hash ring, hence minimizing required
-     * repartitioning.
-     *
-     * @return Hash ID resolver.
-     */
-    @Deprecated
-    public AffinityNodeHashResolver getHashIdResolver() {
-        return hashIdRslvr;
-    }
-
-    /**
-     * Sets hash ID resolver for nodes. This resolver is used to provide
-     * alternate hash ID, other than node ID.
-     * <p>
-     * Node IDs constantly change when nodes get restarted, which causes them to
-     * be placed on different locations in the hash ring, and hence causing
-     * repartitioning. Providing an alternate hash ID, which survives node restarts,
-     * puts node on the same location on the hash ring, hence minimizing required
-     * repartitioning.
-     *
-     * @param hashIdRslvr Hash ID resolver.
-     *
-     * @deprecated Use {@link IgniteConfiguration#setConsistentId(Serializable)} instead.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated
-    public RendezvousAffinityFunction setHashIdResolver(AffinityNodeHashResolver hashIdRslvr) {
-        this.hashIdRslvr = hashIdRslvr;
+        mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
 
         return this;
     }
@@ -363,125 +302,100 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @return Node hash.
      */
     public Object resolveNodeHash(ClusterNode node) {
-        if (hashIdRslvr != null)
-            return hashIdRslvr.resolve(node);
-        else
-            return node.consistentId();
+        return node.consistentId();
     }
 
     /**
      * Returns collection of nodes (primary first) for specified partition.
      *
-     * @param d Message digest.
      * @param part Partition.
      * @param nodes Nodes.
-     * @param nodesHash Serialized nodes hashes.
      * @param backups Number of backups.
      * @param neighborhoodCache Neighborhood.
      * @return Assignment.
      */
-    public List<ClusterNode> assignPartition(MessageDigest d,
-        int part,
+    public List<ClusterNode> assignPartition(int part,
         List<ClusterNode> nodes,
-        Map<ClusterNode, byte[]> nodesHash,
         int backups,
         @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
         if (nodes.size() <= 1)
             return nodes;
 
-        if (d == null)
-            d = digest.get();
+        IgniteBiTuple<Long, ClusterNode> [] hashArr =
+            (IgniteBiTuple<Long, ClusterNode> [])new IgniteBiTuple[nodes.size()];
 
-        List<IgniteBiTuple<Long, ClusterNode>> lst = new ArrayList<>(nodes.size());
+        for (int i = 0; i < nodes.size(); i++) {
+            ClusterNode node = nodes.get(i);
 
-        try {
-            for (int i = 0; i < nodes.size(); i++) {
-                ClusterNode node = nodes.get(i);
+            Object nodeHash = resolveNodeHash(node);
 
-                byte[] nodeHashBytes = nodesHash.get(node);
+            long hash = hash(nodeHash.hashCode(), part);
 
-                if (nodeHashBytes == null) {
-                    Object nodeHash = resolveNodeHash(node);
-
-                    byte[] nodeHashBytes0 = U.marshal(ignite.configuration().getMarshaller(), nodeHash);
-
-                    // Add 4 bytes for partition bytes.
-                    nodeHashBytes = new byte[nodeHashBytes0.length + 4];
-
-                    System.arraycopy(nodeHashBytes0, 0, nodeHashBytes, 4, nodeHashBytes0.length);
-
-                    nodesHash.put(node, nodeHashBytes);
-                }
-
-                U.intToBytes(part, nodeHashBytes, 0);
-
-                d.reset();
-
-                byte[] bytes = d.digest(nodeHashBytes);
-
-                long hash =
-                    (bytes[0] & 0xFFL)
-                        | ((bytes[1] & 0xFFL) << 8)
-                        | ((bytes[2] & 0xFFL) << 16)
-                        | ((bytes[3] & 0xFFL) << 24)
-                        | ((bytes[4] & 0xFFL) << 32)
-                        | ((bytes[5] & 0xFFL) << 40)
-                        | ((bytes[6] & 0xFFL) << 48)
-                        | ((bytes[7] & 0xFFL) << 56);
-
-                lst.add(F.t(hash, node));
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            hashArr[i] = F.t(hash, node);
         }
 
-        Collections.sort(lst, COMPARATOR);
+        final int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
 
-        int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
+        Iterable<ClusterNode> sortedNodes = new LazyLinearSortedContainer(hashArr, primaryAndBackups);
+
+        // REPLICATED cache case
+        if (backups == Integer.MAX_VALUE)
+            return replicatedAssign(nodes, sortedNodes);
+
+        Iterator<ClusterNode> it = sortedNodes.iterator();
 
         List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
 
-        ClusterNode primary = lst.get(0).get2();
+        Collection<ClusterNode> allNeighbors = new HashSet<>();
+
+        ClusterNode primary = it.next();
 
         res.add(primary);
 
+        if (exclNeighbors)
+            allNeighbors.addAll(neighborhoodCache.get(primary.id()));
+
         // Select backups.
         if (backups > 0) {
-            for (int i = 1; i < lst.size() && res.size() < primaryAndBackups; i++) {
-                IgniteBiTuple<Long, ClusterNode> next = lst.get(i);
-
-                ClusterNode node = next.get2();
+            while (it.hasNext() && res.size() < primaryAndBackups) {
+                ClusterNode node = it.next();
 
                 if (exclNeighbors) {
-                    Collection<ClusterNode> allNeighbors = GridCacheUtils.neighborsForNodes(neighborhoodCache, res);
-
-                    if (!allNeighbors.contains(node))
+                    if (!allNeighbors.contains(node)) {
                         res.add(node);
+
+                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                    }
                 }
-                else if (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
-                    res.add(next.get2());
-                else if (backupFilter != null && backupFilter.apply(primary, node))
-                    res.add(next.get2());
-                else if (affinityBackupFilter == null && backupFilter == null)
-                    res.add(next.get2());
+                else if ((backupFilter != null && backupFilter.apply(primary, node))
+                    || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
+                    || (affinityBackupFilter == null && backupFilter == null) ) {
+                    res.add(node);
+
+                    if (exclNeighbors)
+                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                }
             }
         }
 
         if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
             // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
-            for (int i = 1; i < lst.size() && res.size() < primaryAndBackups; i++) {
-                IgniteBiTuple<Long, ClusterNode> next = lst.get(i);
+            it = sortedNodes.iterator();
 
-                ClusterNode node = next.get2();
+            it.next();
+
+            while (it.hasNext() && res.size() < primaryAndBackups) {
+                ClusterNode node = it.next();
 
                 if (!res.contains(node))
-                    res.add(next.get2());
+                    res.add(node);
             }
 
             if (!exclNeighborsWarn) {
                 LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
-                    "because topology has no enough nodes to assign backups.");
+                        "because topology has no enough nodes to assign backups.",
+                    "Affinity function excludeNeighbors property is ignored " +
+                        "because topology has no enough nodes to assign backups.");
 
                 exclNeighborsWarn = true;
             }
@@ -490,6 +404,53 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         assert res.size() <= primaryAndBackups;
 
         return res;
+    }
+
+    /**
+     * Creates assignment for REPLICATED cache
+     *
+     * @param nodes Topology.
+     * @param sortedNodes Sorted for specified partitions nodes.
+     * @return Assignment.
+     */
+    private List<ClusterNode> replicatedAssign(List<ClusterNode> nodes, Iterable<ClusterNode> sortedNodes) {
+        ClusterNode primary = sortedNodes.iterator().next();
+
+        List<ClusterNode> res = new ArrayList<>(nodes.size());
+
+        res.add(primary);
+
+        for (ClusterNode n : nodes)
+            if (!n.equals(primary))
+                res.add(n);
+
+        assert res.size() == nodes.size() : "Not enough backups: " + res.size();
+
+        return res;
+    }
+
+    /**
+     * The pack partition number and nodeHash.hashCode to long and mix it by hash function based on the Wang/Jenkins
+     * hash.
+     *
+     * @param key0 Hash key.
+     * @param key1 Hash key.
+     * @see <a href="https://gist.github.com/badboy/6267743#64-bit-mix-functions">64 bit mix functions</a>
+     * @return Long hash key.
+     */
+    private static long hash(int key0, int key1) {
+        long key = (key0 & 0xFFFFFFFFL)
+            | ((key1 & 0xFFFFFFFFL) << 32);
+
+        key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+        key ^= (key >>> 24);
+        key += (key << 3) + (key << 8); // key * 265
+        key ^= (key >>> 14);
+        key += (key << 2) + (key << 4); // key * 21
+        key ^= (key >>> 28);
+        key += (key << 31);
+
+        return key;
     }
 
     /** {@inheritDoc} */
@@ -508,6 +469,12 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
                 "Make sure that an affinity key that is used is initialized properly.");
 
+        if (mask >= 0) {
+            int h;
+
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
+
         return U.safeAbs(key.hashCode() % parts);
     }
 
@@ -518,19 +485,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
             GridCacheUtils.neighbors(affCtx.currentTopologySnapshot()) : null;
 
-        MessageDigest d = digest.get();
-
         List<ClusterNode> nodes = affCtx.currentTopologySnapshot();
 
-        Map<ClusterNode, byte[]> nodesHash = U.newHashMap(nodes.size());
-
         for (int i = 0; i < parts; i++) {
-            List<ClusterNode> partAssignment = assignPartition(d,
-                i,
-                nodes,
-                nodesHash,
-                affCtx.backups(),
-                neighborhoodCache);
+            List<ClusterNode> partAssignment = assignPartition(i, nodes, affCtx.backups(), neighborhoodCache);
 
             assignments.add(partAssignment);
         }
@@ -547,16 +505,15 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(parts);
         out.writeBoolean(exclNeighbors);
-        out.writeObject(hashIdRslvr);
         out.writeObject(backupFilter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        parts = in.readInt();
+        setPartitions(in.readInt());
+
         exclNeighbors = in.readBoolean();
-        hashIdRslvr = (AffinityNodeHashResolver)in.readObject();
         backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
     }
 
@@ -571,6 +528,85 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         @Override public int compare(IgniteBiTuple<Long, ClusterNode> o1, IgniteBiTuple<Long, ClusterNode> o2) {
             return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :
                 o1.get2().id().compareTo(o2.get2().id());
+        }
+    }
+
+    /**
+     * Sorts the initial array with linear sort algorithm array
+     */
+    private static class LazyLinearSortedContainer implements Iterable<ClusterNode> {
+        /** Initial node-hash array. */
+        private final IgniteBiTuple<Long, ClusterNode>[] arr;
+
+        /** Count of the sorted elements */
+        private int sorted;
+
+        /**
+         * @param arr Node / partition hash list.
+         * @param needFirstSortedCnt Estimate count of elements to return by iterator.
+         */
+        LazyLinearSortedContainer(IgniteBiTuple<Long, ClusterNode>[] arr, int needFirstSortedCnt) {
+            this.arr = arr;
+
+            if (needFirstSortedCnt > (int)Math.log(arr.length)) {
+                Arrays.sort(arr, COMPARATOR);
+
+                sorted = arr.length;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<ClusterNode> iterator() {
+            return new SortIterator();
+        }
+
+        /**
+         *
+         */
+        private class SortIterator implements Iterator<ClusterNode> {
+            /** Index of the first unsorted element. */
+            private int cur;
+
+            /** {@inheritDoc} */
+            @Override public boolean hasNext() {
+                return cur < arr.length;
+            }
+
+            /** {@inheritDoc} */
+            @Override public ClusterNode next() {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+
+                if (cur < sorted)
+                    return arr[cur++].get2();
+
+                IgniteBiTuple<Long, ClusterNode> min = arr[cur];
+
+                int minIdx = cur;
+
+                for (int i = cur + 1; i < arr.length; i++) {
+                    if (COMPARATOR.compare(arr[i], min) < 0) {
+                        minIdx = i;
+
+                        min = arr[i];
+                    }
+                }
+
+                if (minIdx != cur) {
+                    arr[minIdx] = arr[cur];
+
+                    arr[cur] = min;
+                }
+
+                sorted = cur++;
+
+                return min.get2();
+            }
+
+            /** {@inheritDoc} */
+            @Override public void remove() {
+                throw new UnsupportedOperationException("Remove doesn't supported");
+            }
         }
     }
 }

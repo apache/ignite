@@ -20,6 +20,7 @@
 #endif
 
 #include <sstream>
+#include <iterator>
 
 #include <boost/test/unit_test.hpp>
 
@@ -244,11 +245,10 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(QueryPerson)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(QueryPerson)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(QueryPerson)
             IGNITE_BINARY_IS_NULL_FALSE(QueryPerson)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryPerson)
 
-            void Write(BinaryWriter& writer, QueryPerson obj)
+            static void Write(BinaryWriter& writer, const QueryPerson& obj)
             {
                 writer.WriteString("name", obj.GetName());
                 writer.WriteInt32("age", obj.GetAge());
@@ -256,14 +256,14 @@ namespace ignite
                 writer.WriteTimestamp("recordCreated", obj.GetCreationTime());
             }
 
-            QueryPerson Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, QueryPerson& dst)
             {
                 std::string name = reader.ReadString("name");
                 int age = reader.ReadInt32("age");
                 Date birthday = reader.ReadDate("birthday");
                 Timestamp recordCreated = reader.ReadTimestamp("recordCreated");
             
-                return QueryPerson(name, age, birthday, recordCreated);
+                dst = QueryPerson(name, age, birthday, recordCreated);
             }
         IGNITE_BINARY_TYPE_END
 
@@ -274,22 +274,21 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(QueryRelation)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(QueryRelation)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(QueryRelation)
             IGNITE_BINARY_IS_NULL_FALSE(QueryRelation)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryRelation)
 
-            void Write(BinaryWriter& writer, QueryRelation obj)
+            static void Write(BinaryWriter& writer, QueryRelation obj)
             {
                 writer.WriteInt32("personId", obj.GetPersonId());
                 writer.WriteInt32("someVal", obj.GetHobbyId());
             }
 
-            QueryRelation Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, QueryRelation& dst)
             {
                 int32_t personId = reader.ReadInt32("personId");
                 int32_t someVal = reader.ReadInt32("someVal");
 
-                return QueryRelation(personId, someVal);
+                dst = QueryRelation(personId, someVal);
             }
         IGNITE_BINARY_TYPE_END
     }
@@ -321,16 +320,7 @@ int CountRecords(Cursor& cur)
 template<typename Cursor>
 void CheckHasNextFail(Cursor& cur)
 {
-    try
-    {
-        cur.HasNext();
-
-        BOOST_FAIL("Must fail.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);
-    }
+    BOOST_CHECK_EXCEPTION(cur.HasNext(), IgniteError, ignite_test::IsGenericError);
 }
 
 /**
@@ -341,16 +331,7 @@ void CheckHasNextFail(Cursor& cur)
 template<typename Cursor>
 void CheckGetNextFail(Cursor& cur)
 {
-    try
-    {
-        cur.GetNext();
-
-        BOOST_FAIL("Must fail.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);
-    }
+    BOOST_CHECK_EXCEPTION(cur.GetNext(), IgniteError, ignite_test::IsGenericError);
 }
 
 /**
@@ -360,18 +341,21 @@ void CheckGetNextFail(Cursor& cur)
  */
 void CheckGetAllFail(QueryCursor<int, QueryPerson>& cur)
 {
-    try 
-    {
-        std::vector<CacheEntry<int, QueryPerson> > res;
+    std::vector<CacheEntry<int, QueryPerson> > res;
 
-        cur.GetAll(res);
+    BOOST_CHECK_EXCEPTION(cur.GetAll(res), IgniteError, ignite_test::IsGenericError);
+}
 
-        BOOST_FAIL("Must fail.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);
-    }
+/**
+ * Ensure that iter version of GetAll() fails.
+ *
+ * @param cur Cursor.
+ */
+void CheckGetAllFailIter(QueryCursor<int, QueryPerson>& cur)
+{
+    std::vector<CacheEntry<int, QueryPerson> > res;
+
+    BOOST_CHECK_EXCEPTION(cur.GetAll(std::back_inserter(res)), IgniteError, ignite_test::IsGenericError);
 }
 
 /**
@@ -417,12 +401,29 @@ void CheckEmptyGetAll(QueryCursor<int, QueryPerson>& cur)
 }
 
 /**
+ * Check empty result through iter version of GetAll().
+ *
+ * @param cur Cursor.
+ */
+void CheckEmptyGetAllIter(QueryCursor<int, QueryPerson>& cur)
+{
+    std::vector<CacheEntry<int, QueryPerson> > res;
+
+    cur.GetAll(std::back_inserter(res));
+
+    BOOST_REQUIRE(res.size() == 0);
+
+    CheckHasNextFail(cur);
+    CheckGetNextFail(cur);
+}
+
+/**
  * Check single result through iteration.
  *
  * @param cur Cursor.
- * @param key1 Key.
- * @param name1 Name.
- * @param age1 Age.
+ * @param key Key.
+ * @param name Name.
+ * @param age Age.
  */
 void CheckSingle(QueryCursor<int, QueryPerson>& cur, int key, const std::string& name, int age)
 {
@@ -472,9 +473,9 @@ void CheckSingle(QueryFieldsCursor& cur, int key, const std::string& name, int a
  * Check single result through GetAll().
  *
  * @param cur Cursor.
- * @param key1 Key.
- * @param name1 Name.
- * @param age1 Age.
+ * @param key Key.
+ * @param name Name.
+ * @param age Age.
  */
 void CheckSingleGetAll(QueryCursor<int, QueryPerson>& cur, int key, const std::string& name, int age)
 {
@@ -486,11 +487,40 @@ void CheckSingleGetAll(QueryCursor<int, QueryPerson>& cur, int key, const std::s
     CheckGetNextFail(cur);
     CheckGetAllFail(cur);
 
-    BOOST_REQUIRE(res.size() == 1);
+    BOOST_CHECK_EQUAL(res.size(), 1);
 
-    BOOST_REQUIRE(res[0].GetKey() == 1);    
-    BOOST_REQUIRE(res[0].GetValue().GetName().compare(name) == 0);
-    BOOST_REQUIRE(res[0].GetValue().GetAge() == age);
+    BOOST_CHECK_EQUAL(res[0].GetKey(), key);
+    BOOST_CHECK_EQUAL(res[0].GetValue().GetName(), name);
+    BOOST_CHECK_EQUAL(res[0].GetValue().GetAge(), age);
+
+    CheckHasNextFail(cur);
+    CheckGetNextFail(cur);
+    CheckGetAllFail(cur);
+}
+
+/**
+ * Check single result through iter version of GetAll().
+ *
+ * @param cur Cursor.
+ * @param key Key.
+ * @param name Name.
+ * @param age Age.
+ */
+void CheckSingleGetAllIter(QueryCursor<int, QueryPerson>& cur, int key, const std::string& name, int age)
+{
+    std::vector<CacheEntry<int, QueryPerson> > res;
+
+    cur.GetAll(std::back_inserter(res));
+
+    CheckHasNextFail(cur);
+    CheckGetNextFail(cur);
+    CheckGetAllFail(cur);
+
+    BOOST_CHECK_EQUAL(res.size(), 1);
+
+    BOOST_CHECK_EQUAL(res[0].GetKey(), key);
+    BOOST_CHECK_EQUAL(res[0].GetValue().GetName(), name);
+    BOOST_CHECK_EQUAL(res[0].GetValue().GetAge(), age);
 
     CheckHasNextFail(cur);
     CheckGetNextFail(cur);
@@ -523,18 +553,18 @@ void CheckMultiple(QueryCursor<int, QueryPerson>& cur, int key1, const std::stri
 
         if (entry.GetKey() == key1)
         {
-            BOOST_REQUIRE(entry.GetValue().GetName().compare(name1) == 0);
-            BOOST_REQUIRE(entry.GetValue().GetAge() == age1);            
+            BOOST_CHECK_EQUAL(entry.GetValue().GetName(), name1);
+            BOOST_CHECK_EQUAL(entry.GetValue().GetAge(), age1);
         }
         else if (entry.GetKey() == key2)
         {
-            BOOST_REQUIRE(entry.GetValue().GetName().compare(name2) == 0);
-            BOOST_REQUIRE(entry.GetValue().GetAge() == age2);            
+            BOOST_CHECK_EQUAL(entry.GetValue().GetName(), name2);
+            BOOST_CHECK_EQUAL(entry.GetValue().GetAge(), age2);
         }
         else
             BOOST_FAIL("Unexpected entry.");
     }
-    
+
     BOOST_REQUIRE(!cur.HasNext());
 
     CheckGetNextFail(cur);
@@ -563,7 +593,7 @@ void CheckMultipleGetAll(QueryCursor<int, QueryPerson>& cur, int key1, const std
     CheckGetNextFail(cur);
     CheckGetAllFail(cur);
 
-    BOOST_REQUIRE(res.size() == 2);
+    BOOST_REQUIRE_EQUAL(res.size(), 2);
 
     for (int i = 0; i < 2; i++)
     {
@@ -571,13 +601,56 @@ void CheckMultipleGetAll(QueryCursor<int, QueryPerson>& cur, int key1, const std
 
         if (entry.GetKey() == key1)
         {
-            BOOST_REQUIRE(entry.GetValue().GetName().compare(name1) == 0);
-            BOOST_REQUIRE(entry.GetValue().GetAge() == age1);            
+            BOOST_CHECK_EQUAL(entry.GetValue().GetName(), name1);
+            BOOST_CHECK_EQUAL(entry.GetValue().GetAge(), age1);
         }
         else if (entry.GetKey() == key2)
         {
-            BOOST_REQUIRE(entry.GetValue().GetName().compare(name2) == 0);
-            BOOST_REQUIRE(entry.GetValue().GetAge() == age2);
+            BOOST_CHECK_EQUAL(entry.GetValue().GetName(), name2);
+            BOOST_CHECK_EQUAL(entry.GetValue().GetAge(), age2);
+        }
+        else
+            BOOST_FAIL("Unexpected entry.");
+    }
+}
+
+/**
+ * Check multiple results through iter verion of GetAll().
+ *
+ * @param cur Cursor.
+ * @param key1 Key 1.
+ * @param name1 Name 1.
+ * @param age1 Age 1.
+ * @param key2 Key 2.
+ * @param name2 Name 2.
+ * @param age2 Age 2.
+ */
+void CheckMultipleGetAllIter(QueryCursor<int, QueryPerson>& cur, int key1, const std::string& name1,
+    int age1, int key2, const std::string& name2, int age2)
+{
+    std::vector<CacheEntry<int, QueryPerson> > res;
+
+    cur.GetAll(std::back_inserter(res));
+
+    CheckHasNextFail(cur);
+    CheckGetNextFail(cur);
+    CheckGetAllFail(cur);
+
+    BOOST_REQUIRE_EQUAL(res.size(), 2);
+
+    for (int i = 0; i < 2; i++)
+    {
+        CacheEntry<int, QueryPerson> entry = res[i];
+
+        if (entry.GetKey() == key1)
+        {
+            BOOST_CHECK_EQUAL(entry.GetValue().GetName(), name1);
+            BOOST_CHECK_EQUAL(entry.GetValue().GetAge(), age1);
+        }
+        else if (entry.GetKey() == key2)
+        {
+            BOOST_CHECK_EQUAL(entry.GetValue().GetName(), name2);
+            BOOST_CHECK_EQUAL(entry.GetValue().GetAge(), age2);
         }
         else
             BOOST_FAIL("Unexpected entry.");
@@ -712,6 +785,9 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     cursor = cache.Query(qry);
     CheckEmptyGetAll(cursor);
 
+    cursor = cache.Query(qry);
+    CheckEmptyGetAllIter(cursor);
+
     // Test simple query.
     cache.Put(1, QueryPerson("A1", 10, MakeDateGmt(1990, 03, 18),
         MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
@@ -725,6 +801,9 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     cursor = cache.Query(qry);
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
+    cursor = cache.Query(qry);
+    CheckSingleGetAllIter(cursor, 1, "A1", 10);
+
     // Test simple distributed joins query.
     BOOST_CHECK(!qry.IsDistributedJoins());
     qry.SetDistributedJoins(true);
@@ -735,6 +814,9 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
 
     cursor = cache.Query(qry);
     CheckSingleGetAll(cursor, 1, "A1", 10);
+
+    cursor = cache.Query(qry);
+    CheckSingleGetAllIter(cursor, 1, "A1", 10);
 
     qry.SetDistributedJoins(false);
 
@@ -749,6 +831,9 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     cursor = cache.Query(qry);
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
+    cursor = cache.Query(qry);
+    CheckSingleGetAllIter(cursor, 1, "A1", 10);
+
     // Test query with arguments.
     qry.SetSql("age < ? AND name = ?");
     qry.AddArgument<int>(20);
@@ -760,6 +845,9 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     cursor = cache.Query(qry);
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
+    cursor = cache.Query(qry);
+    CheckSingleGetAllIter(cursor, 1, "A1", 10);
+
     // Test query returning multiple entries.
     qry = SqlQuery("QueryPerson", "age < 30");
 
@@ -768,6 +856,9 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
 
     cursor = cache.Query(qry);
     CheckMultipleGetAll(cursor, 1, "A1", 10, 2, "A2", 20);
+
+    cursor = cache.Query(qry);
+    CheckMultipleGetAllIter(cursor, 1, "A1", 10, 2, "A2", 20);
 }
 
 /**
@@ -835,6 +926,9 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
     cursor = cache.Query(qry);
     CheckEmptyGetAll(cursor);
 
+    cursor = cache.Query(qry);
+    CheckEmptyGetAllIter(cursor);
+
     // Test simple query.
     cache.Put(1, QueryPerson("A1", 10, MakeDateGmt(1990, 03, 18),
         MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
@@ -848,6 +942,9 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
     cursor = cache.Query(qry);
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
+    cursor = cache.Query(qry);
+    CheckSingleGetAllIter(cursor, 1, "A1", 10);
+
     // Test simple local query.
     qry.SetLocal(true);
 
@@ -857,6 +954,9 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
     cursor = cache.Query(qry);
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
+    cursor = cache.Query(qry);
+    CheckSingleGetAllIter(cursor, 1, "A1", 10);
+
     // Test query returning multiple entries.
     qry = TextQuery("QueryPerson", "A*");
 
@@ -865,6 +965,9 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
 
     cursor = cache.Query(qry);
     CheckMultipleGetAll(cursor, 1, "A1", 10, 2, "A2", 20);
+
+    cursor = cache.Query(qry);
+    CheckMultipleGetAllIter(cursor, 1, "A1", 10, 2, "A2", 20);
 }
 
 /**
@@ -884,6 +987,9 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     cursor = cache.Query(qry);
     CheckEmptyGetAll(cursor);
 
+    cursor = cache.Query(qry);
+    CheckEmptyGetAllIter(cursor);
+
     // Test simple query.
     cache.Put(1, QueryPerson("A1", 10, MakeDateGmt(1990, 03, 18),
         MakeTimestampGmt(2016, 02, 10, 17, 39, 34, 579304685)));
@@ -894,6 +1000,9 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     cursor = cache.Query(qry);
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
+    cursor = cache.Query(qry);
+    CheckSingleGetAllIter(cursor, 1, "A1", 10);
+
     // Test query returning multiple entries.
     cache.Put(2, QueryPerson("A2", 20, MakeDateGmt(1989, 10, 26),
         MakeTimestampGmt(2016, 02, 10, 17, 39, 35, 678403201)));
@@ -903,6 +1012,9 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
 
     cursor = cache.Query(qry);
     CheckMultipleGetAll(cursor, 1, "A1", 10, 2, "A2", 20);
+
+    cursor = cache.Query(qry);
+    CheckMultipleGetAllIter(cursor, 1, "A1", 10, 2, "A2", 20);
 }
 
 /**
@@ -1696,16 +1808,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryPageSingle)
  */
 BOOST_AUTO_TEST_CASE(TestFieldsQueryPageZero)
 {
-    try
-    {
-        CheckFieldsQueryPages(0, 100, 0);
-
-        BOOST_FAIL("Exception expected.");
-    }
-    catch (IgniteError&)
-    {
-        // Expected.
-    }
+    BOOST_CHECK_THROW(CheckFieldsQueryPages(0, 100, 0), IgniteError);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

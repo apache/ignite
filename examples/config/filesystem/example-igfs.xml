@@ -50,13 +50,6 @@
         Configuration below demonstrates how to setup a IgniteFs node with file data.
     -->
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <!-- Set to false to allow non-serializable objects in examples, default is true. -->
-                <property name="requireSerializable" value="false"/>
-            </bean>
-        </property>
-
         <property name="fileSystemConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.FileSystemConfiguration">

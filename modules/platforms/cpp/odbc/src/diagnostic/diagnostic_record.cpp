@@ -102,7 +102,7 @@ namespace ignite
         namespace diagnostic
         {
             DiagnosticRecord::DiagnosticRecord() :
-                sqlState(SQL_STATE_UNKNOWN),
+                sqlState(SqlState::UNKNOWN),
                 message(),
                 connectionName(),
                 serverName(),
@@ -113,7 +113,7 @@ namespace ignite
                 // No-op.
             }
 
-            DiagnosticRecord::DiagnosticRecord(SqlState sqlState,
+            DiagnosticRecord::DiagnosticRecord(SqlState::Type sqlState,
                 const std::string& message, const std::string& connectionName,
                 const std::string& serverName, int32_t rowNum, int32_t columnNum) :
                 sqlState(sqlState),
@@ -221,67 +221,67 @@ namespace ignite
             {
                 switch (sqlState)
                 {
-                    case SQL_STATE_01004_DATA_TRUNCATED:
+                    case SqlState::S01004_DATA_TRUNCATED:
                         return STATE_01004;
 
-                    case SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE:
+                    case SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE:
                         return STATE_01S00;
 
-                    case SQL_STATE_01S01_ERROR_IN_ROW:
+                    case SqlState::S01S01_ERROR_IN_ROW:
                         return STATE_01S01;
 
-                    case SQL_STATE_22026_DATA_LENGTH_MISMATCH:
+                    case SqlState::S22026_DATA_LENGTH_MISMATCH:
                         return STATE_22026;
 
-                    case SQL_STATE_24000_INVALID_CURSOR_STATE:
+                    case SqlState::S24000_INVALID_CURSOR_STATE:
                         return STATE_24000;
 
-                    case SQL_STATE_07009_INVALID_DESCRIPTOR_INDEX:
+                    case SqlState::S07009_INVALID_DESCRIPTOR_INDEX:
                         return STATE_07009;
 
-                    case SQL_STATE_08001_CANNOT_CONNECT:
+                    case SqlState::S08001_CANNOT_CONNECT:
                         return STATE_08001;
 
-                    case SQL_STATE_08002_ALREADY_CONNECTED:
+                    case SqlState::S08002_ALREADY_CONNECTED:
                         return STATE_08002;
 
-                    case SQL_STATE_08003_NOT_CONNECTED:
+                    case SqlState::S08003_NOT_CONNECTED:
                         return STATE_08003;
 
-                    case SQL_STATE_HY000_GENERAL_ERROR:
+                    case SqlState::SHY000_GENERAL_ERROR:
                         return STATE_HY000;
 
-                    case SQL_STATE_HY001_MEMORY_ALLOCATION:
+                    case SqlState::SHY001_MEMORY_ALLOCATION:
                         return STATE_HY001;
 
-                    case SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE:
+                    case SqlState::SHY003_INVALID_APPLICATION_BUFFER_TYPE:
                         return STATE_HY003;
 
-                    case SQL_STATE_HY009_INVALID_USE_OF_NULL_POINTER:
+                    case SqlState::SHY009_INVALID_USE_OF_NULL_POINTER:
                         return STATE_HY009;
 
-                    case SQL_STATE_HY010_SEQUENCE_ERROR:
+                    case SqlState::SHY010_SEQUENCE_ERROR:
                         return STATE_HY010;
 
-                    case SQL_STATE_HY090_INVALID_STRING_OR_BUFFER_LENGTH:
+                    case SqlState::SHY090_INVALID_STRING_OR_BUFFER_LENGTH:
                         return STATE_HY090;
 
-                    case SQL_STATE_HY092_OPTION_TYPE_OUT_OF_RANGE:
+                    case SqlState::SHY092_OPTION_TYPE_OUT_OF_RANGE:
                         return STATE_HY092;
 
-                    case SQL_STATE_HY105_INVALID_PARAMETER_TYPE:
+                    case SqlState::SHY105_INVALID_PARAMETER_TYPE:
                         return STATE_HY105;
 
-                    case SQL_STATE_HY106_FETCH_TYPE_OUT_OF_RANGE:
+                    case SqlState::SHY106_FETCH_TYPE_OUT_OF_RANGE:
                         return STATE_HY106;
 
-                    case SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED:
+                    case SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED:
                         return STATE_HYC00;
 
-                    case SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT:
+                    case SqlState::SHYT01_CONNECTIOIN_TIMEOUT:
                         return STATE_HYT01;
 
-                    case SQL_STATE_IM001_FUNCTION_NOT_SUPPORTED:
+                    case SqlState::SIM001_FUNCTION_NOT_SUPPORTED:
                         return STATE_IM001;
 
                     default:

@@ -94,7 +94,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
-import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
@@ -1488,6 +1488,9 @@ public class IgnitionEx {
         /** Executor service. */
         private ThreadPoolExecutor execSvc;
 
+        /** Executor service for services. */
+        private ThreadPoolExecutor svcExecSvc;
+
         /** System executor service. */
         private ThreadPoolExecutor sysExecSvc;
 
@@ -1523,6 +1526,9 @@ public class IgnitionEx {
 
         /** Query executor service. */
         private ThreadPoolExecutor qryExecSvc;
+
+        /** Query executor service. */
+        private ThreadPoolExecutor schemaExecSvc;
 
         /** Grid state. */
         private volatile IgniteState state = STOPPED;
@@ -1689,6 +1695,18 @@ public class IgnitionEx {
 
             execSvc.allowCoreThreadTimeOut(true);
 
+            validateThreadPoolSize(cfg.getServiceThreadPoolSize(), "service");
+
+            svcExecSvc = new IgniteThreadPoolExecutor(
+                "svc",
+                cfg.getGridName(),
+                cfg.getServiceThreadPoolSize(),
+                cfg.getServiceThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            svcExecSvc.allowCoreThreadTimeOut(true);
+
             validateThreadPoolSize(cfg.getSystemThreadPoolSize(), "system");
 
             sysExecSvc = new IgniteThreadPoolExecutor(
@@ -1830,6 +1848,16 @@ public class IgnitionEx {
 
             qryExecSvc.allowCoreThreadTimeOut(true);
 
+            schemaExecSvc = new IgniteThreadPoolExecutor(
+                "schema",
+                cfg.getIgniteInstanceName(),
+                2,
+                2,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            schemaExecSvc.allowCoreThreadTimeOut(true);
+
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
@@ -1845,6 +1873,7 @@ public class IgnitionEx {
                     myCfg,
                     utilityCacheExecSvc,
                     execSvc,
+                    svcExecSvc,
                     sysExecSvc,
                     stripedExecSvc,
                     p2pExecSvc,
@@ -1856,6 +1885,7 @@ public class IgnitionEx {
                     idxExecSvc,
                     callbackExecSvc,
                     qryExecSvc,
+                    schemaExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -2086,12 +2116,12 @@ public class IgnitionEx {
 
             initializeDefaultCacheConfiguration(myCfg);
 
-            if (myCfg.getMemoryConfiguration() == null) {
-                MemoryConfiguration dbCfg = new MemoryConfiguration();
+            if (!myCfg.isClientMode() && myCfg.getMemoryConfiguration() == null) {
+                MemoryConfiguration memCfg = new MemoryConfiguration();
 
-                dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+                memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-                myCfg.setMemoryConfiguration(dbCfg);
+                myCfg.setMemoryConfiguration(memCfg);
             }
 
             return myCfg;
@@ -2174,7 +2204,7 @@ public class IgnitionEx {
                 cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
             if (cfg.getEventStorageSpi() == null)
-                cfg.setEventStorageSpi(new MemoryEventStorageSpi());
+                cfg.setEventStorageSpi(new NoopEventStorageSpi());
 
             if (cfg.getCheckpointSpi() == null)
                 cfg.setCheckpointSpi(new NoopCheckpointSpi());
@@ -2447,6 +2477,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), qryExecSvc, log);
 
             qryExecSvc = null;
+
+            U.shutdownNow(getClass(), schemaExecSvc, log);
+
+            schemaExecSvc = null;
 
             U.shutdownNow(getClass(), stripedExecSvc, log);
 

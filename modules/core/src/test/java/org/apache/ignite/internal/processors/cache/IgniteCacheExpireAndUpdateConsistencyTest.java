@@ -33,7 +33,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -53,8 +52,6 @@ import org.apache.ignite.transactions.Transaction;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -108,56 +105,42 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testAtomic1() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 0));
+        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, 0));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomic2() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 1));
+        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, 1));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomic3() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 2));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheap() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 1));
+        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, 2));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTx1() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, ONHEAP_TIERED, 0));
+        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, 0));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTx2() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, ONHEAP_TIERED, 1));
+        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, 1));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTx3() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, ONHEAP_TIERED, 2));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheap() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 1));
+        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, 2));
     }
 
     /**
@@ -347,18 +330,14 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
 
     /**
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @param backups Number of backups.
      * @return Cache configuration.
      */
-    private CacheConfiguration<TestKey, TestValue> cacheConfiguration(CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode,
-        int backups) {
+    private CacheConfiguration<TestKey, TestValue> cacheConfiguration(CacheAtomicityMode atomicityMode, int backups) {
         CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>();
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setBackups(backups);
 

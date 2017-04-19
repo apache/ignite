@@ -35,8 +35,6 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.clock.GridClockSource;
-import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
@@ -169,13 +167,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Timeout processor.
      */
     public GridTimeoutProcessor timeout();
-
-    /**
-     * Gets time processor.
-     *
-     * @return Time processor.
-     */
-    public GridClockSyncProcessor clockSync();
 
     /**
      * Gets resource processor.
@@ -421,13 +412,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridIndexingManager indexing();
 
     /**
-     * Gets grid time source.
-     *
-     * @return Time source.
-     */
-    public GridClockSource timeSource();
-
-    /**
      * Gets data structures processor.
      *
      * @return Data structures processor.
@@ -497,6 +481,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *      requests and user messages sent to the node.
      */
     public ExecutorService getExecutorService();
+
+    /**
+     * Executor service that is in charge of processing service proxy invocations.
+     *
+     * @return Thread pool implementation to be used in grid for service proxy invocations.
+     */
+    public ExecutorService getServiceExecutorService();
 
     /**
      * Executor service that is in charge of processing internal system messages.
@@ -571,6 +562,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Thread pool implementation to be used in grid for query messages.
      */
     public ExecutorService getQueryExecutorService();
+
+    /**
+     * Executor service that is in charge of processing schema change messages.
+     *
+     * @return Executor service that is in charge of processing schema change messages.
+     */
+    public ExecutorService getSchemaExecutorService();
 
     /**
      * Gets exception registry.

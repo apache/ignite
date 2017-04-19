@@ -29,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -122,17 +123,23 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
      * @throws Exception In case of error.
      */
     public void testAddedDeploymentInfo() throws Exception {
-        GridCacheIoManager ioMgr = cacheIoManager();
+        GridCacheContext ctx = cacheContext();
 
-        TestMessage msg = new TestMessage();
+        if (grid(0).configuration().getMarshaller() instanceof BinaryMarshaller)
+            assertFalse(ctx.deploymentEnabled());
+        else {
+            GridCacheIoManager ioMgr = cacheIoManager();
 
-        assertNull(msg.deployInfo());
+            TestMessage msg = new TestMessage();
 
-        msg.addDepInfo = true;
+            assertNull(msg.deployInfo());
 
-        IgniteUtils.invoke(GridCacheIoManager.class, ioMgr, "onSend", msg, grid(1).cluster().localNode().id());
+            msg.addDepInfo = true;
 
-        assertNotNull(msg.deployInfo());
+            IgniteUtils.invoke(GridCacheIoManager.class, ioMgr, "onSend", msg, grid(1).cluster().localNode().id());
+
+            assertNotNull(msg.deployInfo());
+        }
     }
 
     /**

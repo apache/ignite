@@ -91,9 +91,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Binary\BinaryArrayEqualityComparer.cs" />
+    <Compile Include="Binary\BinaryBasicNameMapper.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
-    <Compile Include="Impl\Binary\BinaryFieldEqualityComparer.cs" />
+    <Compile Include="Events\IEventStorageSpi.cs" />
+    <Compile Include="Events\MemoryEventStorageSpi.cs" />
+    <Compile Include="Events\NoopEventStorageSpi.cs" />
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Common\JavaException.cs" />
     <Compile Include="DataStructures\Configuration\Package-Info.cs" />
@@ -101,18 +103,15 @@
     <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
-    <Compile Include="Impl\Binary\BinaryEqualityComparerSerializer.cs" />
+    <Compile Include="Impl\Binary\BinaryArrayEqualityComparer.cs" />
     <Compile Include="Impl\Binary\BinaryProcessor.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
-    <Compile Include="Impl\Binary\IBinaryEqualityComparer.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
     <Compile Include="Cache\Affinity\AffinityKey.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyMappedAttribute.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionContext.cs" />
     <Compile Include="Cache\Affinity\AffinityTopologyVersion.cs" />
-    <Compile Include="Cache\Affinity\Fair\FairAffinityFunction.cs" />
-    <Compile Include="Cache\Affinity\Fair\Package-Info.cs" />
     <Compile Include="Cache\Affinity\IAffinityFunction.cs" />
     <Compile Include="Cache\Affinity\Package-Info.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\Package-Info.cs" />
@@ -193,6 +192,7 @@
     <Compile Include="Impl\Binary\DeserializationCallbackProcessor.cs" />
     <Compile Include="Impl\Binary\ReflectionUtils.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Binary\TypeNameParser.cs" />
     <Compile Include="Impl\Cache\Store\CacheStore.cs" />
     <Compile Include="Impl\Cache\Store\ICacheStoreInternal.cs" />
     <Compile Include="Impl\Transactions\CacheTransactionManager.cs" />
@@ -224,7 +224,6 @@
     <Compile Include="Compute\IComputeReducer.cs" />
     <Compile Include="Compute\IComputeTask.cs" />
     <Compile Include="Cache\Configuration\CacheAtomicityMode.cs" />
-    <Compile Include="Cache\Configuration\CacheAtomicWriteOrderMode.cs" />
     <Compile Include="Cache\Configuration\CacheConfiguration.cs" />
     <Compile Include="Cache\Configuration\CacheMode.cs" />
     <Compile Include="Cache\Configuration\CacheRebalanceMode.cs" />
@@ -362,7 +361,6 @@
     <Compile Include="Impl\ExceptionUtils.cs" />
     <Compile Include="Impl\Ignite.cs" />
     <Compile Include="Impl\IgniteManager.cs" />
-    <Compile Include="Impl\IgniteProxy.cs" />
     <Compile Include="Impl\Log\JavaLogger.cs" />
     <Compile Include="Impl\PlatformTarget.cs" />
     <Compile Include="Impl\IgniteUtils.cs" />
@@ -370,7 +368,7 @@
     <Compile Include="Impl\Handle\HandleRegistry.cs" />
     <Compile Include="Impl\Handle\IHandle.cs" />
     <Compile Include="Impl\IInteropCallback.cs" />
-    <Compile Include="Impl\LifecycleBeanHolder.cs" />
+    <Compile Include="Impl\LifecycleHandlerHolder.cs" />
     <Compile Include="Impl\Memory\InteropExternalMemory.cs" />
     <Compile Include="Impl\Memory\InteropMemoryUtils.cs" />
     <Compile Include="Impl\Memory\IPlatformMemory.cs" />
@@ -422,14 +420,10 @@
     <Compile Include="Impl\Binary\Structure\BinaryStructureJumpTable.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureUpdate.cs" />
     <Compile Include="Impl\Binary\TypeResolver.cs" />
-    <Compile Include="Impl\Plugin\Cache\CachePluginProcessor.cs" />
-    <Compile Include="Impl\Plugin\Cache\CachePluginProviderProxy.cs" />
-    <Compile Include="Impl\Plugin\Cache\ICachePluginProviderProxy.cs" />
     <Compile Include="Impl\Plugin\IPluginProviderProxy.cs" />
     <Compile Include="Impl\Plugin\PluginContext.cs" />
     <Compile Include="Impl\Plugin\PluginProcessor.cs" />
     <Compile Include="Impl\Plugin\PluginProviderProxy.cs" />
-    <Compile Include="Impl\Plugin\Cache\CachePluginContext.cs" />
     <Compile Include="Impl\Resource\IResourceInjector.cs" />
     <Compile Include="Impl\Resource\ResourceFieldInjector.cs" />
     <Compile Include="Impl\Resource\ResourceMethodInjector.cs" />
@@ -466,7 +460,7 @@
     <Compile Include="Log\LogLevel.cs" />
     <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
-    <Compile Include="Lifecycle\ILifecycleBean.cs" />
+    <Compile Include="Lifecycle\ILifecycleHandler.cs" />
     <Compile Include="Lifecycle\LifecycleEventType.cs" />
     <Compile Include="Messaging\IMessageListener.cs" />
     <Compile Include="Messaging\IMessaging.cs" />
@@ -486,7 +480,6 @@
     <Compile Include="Binary\BinaryObjectException.cs" />
     <Compile Include="Binary\BinaryTypeConfiguration.cs" />
     <Compile Include="Binary\BinaryTypeNames.cs" />
-    <Compile Include="Plugin\Cache\CachePluginProviderTypeAttribute.cs" />
     <Compile Include="Plugin\IPluginConfiguration.cs" />
     <Compile Include="Plugin\IPluginContext.cs" />
     <Compile Include="Plugin\IPluginProvider.cs" />
@@ -494,8 +487,6 @@
     <Compile Include="Plugin\PluginNotFoundException.cs" />
     <Compile Include="Plugin\PluginProviderTypeAttribute.cs" />
     <Compile Include="Plugin\Cache\ICachePluginConfiguration.cs" />
-    <Compile Include="Plugin\Cache\ICachePluginContext.cs" />
-    <Compile Include="Plugin\Cache\ICachePluginProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource\InstanceResourceAttribute.cs" />
     <Compile Include="Resource\Package-Info.cs" />

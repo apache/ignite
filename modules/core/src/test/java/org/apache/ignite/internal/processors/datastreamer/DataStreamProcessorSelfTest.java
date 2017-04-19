@@ -132,8 +132,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             cc.setWriteSynchronizationMode(FULL_SYNC);
 
-            cc.setEvictSynchronized(false);
-
             if (store != null) {
                 cc.setCacheStoreFactory(new IgniteReflectionFactory<CacheStore>(TestStore.class));
                 cc.setReadThrough(true);

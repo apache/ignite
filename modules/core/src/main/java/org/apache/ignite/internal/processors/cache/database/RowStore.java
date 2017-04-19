@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -53,15 +52,6 @@ public class RowStore {
 
         coctx = cctx.cacheObjectContext();
         pageMem = cctx.memoryPolicy().pageMemory();
-    }
-
-    /**
-     * @param pageId Page ID.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final Page page(long pageId) throws IgniteCheckedException {
-        return pageMem.page(cctx.cacheId(), pageId);
     }
 
     /**

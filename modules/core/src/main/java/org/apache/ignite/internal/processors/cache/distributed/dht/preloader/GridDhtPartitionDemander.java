@@ -580,7 +580,7 @@ public class GridDhtPartitionDemander {
     public void handleSupplyMessage(
         int idx,
         final UUID id,
-        final GridDhtPartitionSupplyMessageV2 supply
+        final GridDhtPartitionSupplyMessage supply
     ) {
         AffinityTopologyVersion topVer = supply.topologyVersion();
 

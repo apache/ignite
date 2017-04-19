@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.v2;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.MapContext;
 import org.apache.hadoop.mapreduce.OutputCommitter;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -79,8 +80,9 @@ public class HadoopV2Context extends JobContextImpl implements MapContext, Reduc
 
         taskAttemptID = ctx.attemptId();
 
-        conf.set("mapreduce.job.id", taskAttemptID.getJobID().toString());
-        conf.set("mapreduce.task.id", taskAttemptID.getTaskID().toString());
+        conf.set(MRJobConfig.ID, taskAttemptID.getJobID().toString());
+        conf.set(MRJobConfig.TASK_ID, taskAttemptID.getTaskID().toString());
+        conf.set(MRJobConfig.TASK_ATTEMPT_ID, taskAttemptID.toString());
 
         output = ctx.output();
         input = ctx.input();
