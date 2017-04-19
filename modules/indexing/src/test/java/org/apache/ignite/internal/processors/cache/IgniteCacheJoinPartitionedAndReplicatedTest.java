@@ -179,6 +179,8 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testJoin() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5016");
+
         Ignite client = grid(2);
 
         IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);

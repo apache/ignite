@@ -15,37 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.mem;
+package org.apache.ignite.internal.processors.cache.index;
 
-import java.io.IOException;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 
-/**
- *
- */
-public class OutOfMemoryException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     *
-     */
-    public OutOfMemoryException() {
-        // No-op.
+/** */
+public class H2DynamicIndexAtomicPartitionedSelfTest extends H2DynamicIndexAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 
-    /**
-     * @param msg Error message.
-     */
-    public OutOfMemoryException(String msg) {
-        super(msg);
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 
-    /**
-     * @param msg Error message.
-     * @param e Cause exception.
-     */
-    public OutOfMemoryException(String msg, IOException e) {
-        super(msg, e);
+    /** {@inheritDoc} */
+    @Override protected boolean nearCache() {
+        return false;
     }
 }

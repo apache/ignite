@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+package org.apache.ignite.internal.processors.cache.index;
 
 /**
- * Geo-indexing test for binary mode.
+ * Test dynamic schema operations from client node.
  */
-public class GridBinaryH2IndexingGeoSelfTest extends GridH2IndexingGeoSelfTest {
+public class DynamicIndexClientBasicSelfTest extends DynamicIndexAbstractBasicSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
+    @Override protected int nodeIndex() {
+        return IDX_CLI;
     }
 }

@@ -15,23 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Test for segmented geo index.
+ * Index operation cancellation token.
  */
-public class GridH2IndexingSegmentedGeoSelfTest extends GridH2IndexingGeoSelfTest {
-    /** */
-    private static int QRY_PARALLELISM_LVL = 7;
+public class SchemaIndexOperationCancellationToken {
+    /** Cancel flag. */
+    private final AtomicBoolean flag = new AtomicBoolean();
+
+    /**
+     * Get cancel state.
+     *
+     * @return {@code True} if cancelled.
+     */
+    public boolean isCancelled() {
+        return flag.get();
+    }
+
+    /**
+     * Do cancel.
+     *
+     * @return {@code True} if cancel flag was set by this call.
+     */
+    public boolean cancel() {
+        return flag.compareAndSet(false, true);
+    }
 
     /** {@inheritDoc} */
-    @Override
-    protected <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned,
-        Class<?>... idxTypes) throws Exception {
-        final CacheConfiguration<K, V> ccfg = super.cacheConfig(name, partitioned, idxTypes);
-
-        return ccfg.setQueryParallelism(partitioned ? QRY_PARALLELISM_LVL : 1);
+    @Override public String toString() {
+        return S.toString(SchemaIndexOperationCancellationToken.class, this);
     }
 }
