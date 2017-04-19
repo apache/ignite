@@ -170,7 +170,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
+    @Override public long globalSpace() throws IgniteCheckedException {
         return igfs.globalSpace();
     }
 

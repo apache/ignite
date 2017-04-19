@@ -454,18 +454,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.igfsDataSpaceMax();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isMongoDataCache() {
         CacheOperationContext prev = gate.enter(opCtx);
 

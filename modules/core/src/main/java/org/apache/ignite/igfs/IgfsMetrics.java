@@ -32,15 +32,6 @@ public interface IgfsMetrics {
     public long localSpaceSize();
 
     /**
-     * Gets maximum amount of data that can be stored on local node. This metrics is either
-     * equal to {@link org.apache.ignite.configuration.FileSystemConfiguration#getMaxSpaceSize()}, or, if it is {@code 0}, equal to
-     * {@code 80%} of maximum heap size allocated for JVM.
-     *
-     * @return Maximum IGFS local space size.
-     */
-    public long maxSpaceSize();
-
-    /**
     * Get used space in bytes used in the secondary file system.
     * <p>
     * This is a global metric.

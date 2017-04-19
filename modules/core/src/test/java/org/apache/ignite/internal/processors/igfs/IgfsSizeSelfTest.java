@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsInputStream;
-import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteEx;
@@ -39,17 +38,14 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.jsr166.ThreadLocalRandom8;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -87,14 +83,10 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** Whether near cache is enabled (applicable for PARTITIONED cache only). */
     private boolean nearEnabled;
 
-    /** IGFS maximum space. */
-    private long igfsMaxData;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cacheMode = null;
         nearEnabled = false;
-        igfsMaxData = 0;
 
         mgmtPort = 11400;
     }
@@ -113,7 +105,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setName(IGFS_NAME);
         igfsCfg.setBlockSize(BLOCK_SIZE);
         igfsCfg.setFragmentizerEnabled(false);
-        igfsCfg.setMaxSpaceSize(igfsMaxData);
         igfsCfg.setManagementPort(++mgmtPort);
 
         CacheConfiguration dataCfg = defaultCacheConfiguration();
@@ -198,18 +189,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         cacheMode = REPLICATED;
 
         check();
-    }
-
-    /**
-     * Ensure that exception is thrown in case PARTITIONED cache is oversized.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPartitionedOversize() throws Exception {
-        cacheMode = PARTITIONED;
-        nearEnabled = true;
-
-        checkOversize();
     }
 
     /**
@@ -378,55 +357,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
             assert 0 == cache.igfsDataSpaceUsed() : "Size counter is not 0: " + cache.igfsDataSpaceUsed();
         }
-    }
-
-    /**
-     * Ensure that an exception is thrown in case of IGFS oversize.
-     *
-     * @throws Exception If failed.
-     */
-    private void checkOversize() throws Exception {
-        igfsMaxData = BLOCK_SIZE;
-
-        startUp();
-
-        final IgfsPath path = new IgfsPath("/file");
-
-        // This write is expected to be successful.
-        IgfsOutputStream os = igfs(0).create(path, false);
-        os.write(chunk(BLOCK_SIZE - 1));
-        os.close();
-
-        // This write must be successful as well.
-        os = igfs(0).append(path, false);
-        os.write(chunk(1));
-        os.close();
-
-        // This write must fail w/ exception.
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream osErr = igfs(0).append(path, false);
-
-                try {
-                    osErr.write(chunk(BLOCK_SIZE));
-                    osErr.close();
-
-                    return null;
-                }
-                catch (IOException e) {
-                    Throwable e0 = e;
-
-                    while (e0.getCause() != null)
-                        e0 = e0.getCause();
-
-                    throw (Exception)e0;
-                }
-                finally {
-                    U.closeQuiet(osErr);
-                }
-            }
-        }, IgfsOutOfSpaceException.class, "Failed to write data block (IGFS maximum data size exceeded) [used=" +
-            igfsMaxData + ", allowed=" + igfsMaxData + ']');
     }
 
     /**

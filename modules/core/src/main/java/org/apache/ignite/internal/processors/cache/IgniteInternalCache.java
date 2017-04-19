@@ -1719,13 +1719,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long igfsDataSpaceUsed();
 
     /**
-     * Get maximum space available for IGFS.
-     *
-     * @return Amount of space available for IGFS in bytes.
-     */
-    public long igfsDataSpaceMax();
-
-    /**
      * Checks whether this cache is Mongo data cache.
      *
      * @return {@code True} if this cache is mongo data cache.

@@ -44,11 +44,10 @@ public interface IgfsEx extends IgniteFileSystem {
     /**
      * Gets global space counters.
      *
-     * @return Tuple in which first component is used space on all nodes,
-     *      second is available space on all nodes.
+     * @return Used space on all nodes.
      * @throws IgniteCheckedException If task execution failed.
      */
-    public IgfsStatus globalSpace() throws IgniteCheckedException;
+    public long globalSpace() throws IgniteCheckedException;
 
     /**
      * Enables, disables or clears sampling flag.

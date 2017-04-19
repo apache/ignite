@@ -346,7 +346,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
     @Override public FsStatus getFsStatus() throws IOException {
         IgfsStatus status = rmtClient.fsStatus();
 
-        return new FsStatus(status.spaceTotal(), status.spaceUsed(), status.spaceTotal() - status.spaceUsed());
+        return new FsStatus(-1, status.spaceUsed(), -1);
     }
 
     /** {@inheritDoc} */

@@ -239,13 +239,6 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * @return Maximum number of bytes for IGFS data cache.
-     */
-    public long maxSpaceSize() {
-        return (igfsCtx.configuration().getMaxSpaceSize() <= 0) ? 0 : dataCachePrj.igfsDataSpaceMax();
-    }
-
-    /**
      * Generates next affinity key for local node based on current topology. If previous affinity key maps
      * on local node, return previous affinity key to prevent unnecessary file map growth.
      *
@@ -1022,27 +1015,6 @@ public class IgfsDataManager extends IgfsManager {
      */
     private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,
         byte[] data, int blockSize) throws IgniteCheckedException {
-        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-            final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
-
-            if (completionFut == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Missing completion future for file write request (most likely exception occurred " +
-                        "which will be thrown upon stream close) [fileId=" + fileId + ']');
-
-                return;
-            }
-
-            IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
-                "(IGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
-
-            completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
-                igfsCtx.kernalContext().localNodeId(), e));
-
-            return;
-        }
-
         // No affinity key present, just concat and return.
         if (colocatedKey.affinityKey() == null) {
             dataCachePrj.invoke(colocatedKey, new UpdateProcessor(startOff, data));
@@ -1097,14 +1069,6 @@ public class IgfsDataManager extends IgfsManager {
     @SuppressWarnings("unchecked")
     private IgniteInternalFuture<?> storeBlocksAsync(Map<IgfsBlockKey, byte[]> blocks) {
         assert !blocks.isEmpty();
-
-        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-            return new GridFinishedFuture<Object>(
-                new IgfsOutOfSpaceException("Failed to write data block (IGFS maximum data size " +
-                    "exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                    ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']'));
-        }
-
         return dataCachePrj.putAllAsync(blocks);
     }
 

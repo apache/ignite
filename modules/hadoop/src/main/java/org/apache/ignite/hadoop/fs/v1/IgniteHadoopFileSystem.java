@@ -736,7 +736,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             IgfsPathSummary sum = rmtClient.contentSummary(convert(f));
 
             return new ContentSummary(sum.totalLength(), sum.filesCount(), sum.directoriesCount(),
-                -1, sum.totalLength(), rmtClient.fsStatus().spaceTotal());
+                -1, sum.totalLength(), -1);
         }
         finally {
             leaveBusy();
