@@ -27,9 +27,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -2330,11 +2330,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         /** */
         @GridToStringInclude
-        private final Set<String> keyProperties = new HashSet<>();
+        private final Set<String> keyProperties = new LinkedHashSet<>();
 
         /** */
         @GridToStringInclude
-        private final Map<String, IndexDescriptor> indexes = new HashMap<>();
+        private final Map<String, IndexDescriptor> indexes = new LinkedHashMap<>();
 
         /** */
         private IndexDescriptor fullTextIdx;
@@ -2563,7 +2563,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             if (descending) {
                 if (descendings == null)
-                    descendings = new HashSet<>();
+                    descendings = new LinkedHashSet<>();
 
                 descendings.add(field);
             }
