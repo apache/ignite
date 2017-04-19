@@ -22,14 +22,20 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
+import javax.cache.CacheException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -343,13 +349,21 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        assertSchemaException(new RunnableX() {
-            @Override public void run() throws Exception {
-                dynamicIndexCreate(randomString(), TBL_NAME, idx, false);
-            }
-        }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
+        try {
+            queryProcessor(node()).dynamicIndexCreate(randomString(), TBL_NAME, idx, false).get();
+        }
+        catch (SchemaOperationException e) {
+            assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+            assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+
+            return;
+        }
+        catch (Exception e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        fail(SchemaOperationException.class.getSimpleName() +  " is not thrown.");
     }
 
     /**
@@ -816,13 +830,21 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     private void checkDropNoCache(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
         initialize(mode, atomicityMode, near);
 
-        assertSchemaException(new RunnableX() {
-            @Override public void run() throws Exception {
-                dynamicIndexDrop(randomString(), "my_idx", false);
-            }
-        }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
+        try {
+            queryProcessor(node()).dynamicIndexDrop(randomString(), "my_idx", false).get();
+        }
+        catch (SchemaOperationException e) {
+            assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+            assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+
+            return;
+        }
+        catch (Exception e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        fail(SchemaOperationException.class.getSimpleName() +  " is not thrown.");
     }
 
     /**
@@ -947,6 +969,39 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
+     * Ensure that schema exception is thrown.
+     *
+     * @param r Runnable.
+     * @param expCode Error code.
+     */
+    protected static void assertSchemaException(RunnableX r, int expCode) {
+        try {
+            r.run();
+        }
+        catch (CacheException e) {
+            Throwable cause = e.getCause();
+
+            assertTrue(cause != null);
+            assertTrue("Unexpected cause: " + cause.getClass().getName(), cause instanceof IgniteSQLException);
+
+            IgniteSQLException cause0 = (IgniteSQLException)cause;
+
+            int code = cause0.statusCode();
+
+            // TODO: Re-enable.
+//            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.code() + ']',
+//                expCode, e.code());
+
+            return;
+        }
+        catch (Exception e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
+    }
+
+    /**
      * Synchronously create index.
      *
      * @param space Space.
@@ -957,7 +1012,30 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      */
     private void dynamicIndexCreate(String space, String tblName, QueryIndex idx, boolean ifNotExists)
         throws Exception {
-        queryProcessor(node()).dynamicIndexCreate(space, tblName, idx, ifNotExists).get();
+        GridStringBuilder sql = new SB("CREATE INDEX ")
+            .a(ifNotExists ? "IF NOT EXISTS " : "")
+            .a("\"" + idx.getName() + "\"")
+            .a(" ON ")
+            .a(tblName)
+            .a(" (");
+
+        boolean first = true;
+
+        for (Map.Entry<String, Boolean> fieldEntry : idx.getFields().entrySet()) {
+            if (first)
+                first = false;
+            else
+                sql.a(", ");
+
+            String name = fieldEntry.getKey();
+            boolean asc = fieldEntry.getValue();
+
+            sql.a("\"" + name + "\"").a(" ").a(asc ? "ASC" : "DESC");
+        }
+
+        sql.a(')');
+
+        executeSql(space, sql.toString());
     }
 
     /**
@@ -969,6 +1047,20 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @throws Exception if failed.
      */
     private void dynamicIndexDrop(String space, String idxName, boolean ifExists) throws Exception {
-        queryProcessor(node()).dynamicIndexDrop(space, idxName, ifExists).get();
+        String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + "\"" + idxName + "\"";
+
+        executeSql(space, sql);
+    }
+
+    /**
+     * Execute SQL.
+     *
+     * @param space Space.
+     * @param sql SQL.
+     */
+    private void executeSql(String space, String sql) {
+        log.info("Executing DDL: " + sql);
+
+        node().cache(space).query(new SqlFieldsQuery(sql)).getAll();
     }
 }
