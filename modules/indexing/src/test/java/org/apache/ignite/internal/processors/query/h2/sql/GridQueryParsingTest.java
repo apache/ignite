@@ -295,7 +295,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testParseTableFilter() throws Exception {
-        Prepared prepared = parse("select Person.old, p1.old from Person, Person p1");
+        Prepared prepared = parse("select Person.old, p1.old, p1.addrId from Person, Person p1 " +
+            "where exists(select 1 from Address a where a.id = p1.addrId)");
 
         GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser(false).parse(prepared);
 
@@ -318,44 +319,11 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         // Alias in FROM must be included in column.
         assertSame(tbl2Alias, col2.expressionInFrom());
-    }
-
-    /**
-     * Query AST transformation heavily depends on this behavior.
-     *
-     * @throws Exception If failed.
-     */
-    public void testParseTableFilter() throws Exception {
-        Prepared prepared = parse("select Person.old, p1.old, p1.addrId from Person, Person p1 " +
-            "where exists(select 1 from Address a where a.id = p1.addrId)");
-
-        GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser().parse(prepared);
-
-        GridSqlJoin join = (GridSqlJoin)select.from();
-
-        GridSqlTable tbl1 = (GridSqlTable)join.leftTable();
-        GridSqlAlias tbl2Alias = (GridSqlAlias)join.rightTable();
-        GridSqlTable tbl2 = tbl2Alias.child();
-
-        // Must be distinct objects, even if it is the same table.
-        //assertNotSame(tbl1, tbl2);
-
-        assertNotNull(tbl1.dataTable());
-        assertNotNull(tbl2.dataTable());
-        assertSame(tbl1.dataTable(), tbl2.dataTable());
-
-        GridSqlColumn col1 = (GridSqlColumn)select.column(0);
-        GridSqlColumn col2 = (GridSqlColumn)select.column(1);
-
-        assertSame(tbl1, col1.expressionInFrom());
-
-        // Alias in FROM must be included in column.
-        assertSame(tbl2Alias, col2.expressionInFrom());
 
         // In EXISTS we must correctly reference the column from the outer query.
-        GridSqlElement exists = select.where();
+        GridSqlAst exists = select.where();
         GridSqlSubquery subqry = exists.child();
-        GridSqlSelect subSelect = (GridSqlSelect)subqry.select();
+        GridSqlSelect subSelect = subqry.child();
 
         GridSqlColumn p1AddrIdCol = (GridSqlColumn)select.column(2);
 

@@ -1053,7 +1053,7 @@ public class GridSqlQueryParser {
 
             GridSqlOperation res = new GridSqlOperation(EXISTS);
 
-            res.addChild(new GridSqlSubquery(parse(qry, null)));
+            res.addChild(parseQueryExpression(qry));
 
             return res;
         }
