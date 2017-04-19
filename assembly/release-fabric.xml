@@ -34,6 +34,16 @@
         <componentDescriptor>release-fabric-base.xml</componentDescriptor>
     </componentDescriptors>
 
+    <fileSets>
+        <fileSet>
+            <directory>target/javadoc/core</directory>
+            <outputDirectory>/docs/javadoc</outputDirectory>
+            <excludes>
+                <exclude>**/hibernate/**</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+
     <files>
         <file>
             <source>examples/pom-standalone.xml</source>

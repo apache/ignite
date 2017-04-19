@@ -225,11 +225,6 @@
         </fileSet>
 
         <fileSet>
-            <directory>target/javadoc/core</directory>
-            <outputDirectory>/docs/javadoc</outputDirectory>
-        </fileSet>
-
-        <fileSet>
             <directory>modules/scalar/target/site/scaladocs</directory>
             <outputDirectory>/docs/scaladoc/scalar</outputDirectory>
         </fileSet>

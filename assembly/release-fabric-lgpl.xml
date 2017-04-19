@@ -34,6 +34,11 @@
         <componentDescriptor>release-fabric-base.xml</componentDescriptor>
     </componentDescriptors>
 
+    <fileSet>
+        <directory>target/javadoc/core</directory>
+        <outputDirectory>/docs/javadoc</outputDirectory>
+    </fileSet>
+
     <files>
         <file>
             <source>examples/pom-standalone-lgpl.xml</source>
