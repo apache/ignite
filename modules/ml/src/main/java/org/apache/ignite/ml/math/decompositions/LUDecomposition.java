@@ -274,7 +274,11 @@ public class LUDecomposition extends DecompositionSupport {
         return determinant;
     }
 
-    /** */
+    /**
+     *
+     * @param b Vector to solve using this decomposition.
+     * @return Solution vector.
+     */
     public Vector solve(Vector b) {
         final int m = pivot.size();
 
@@ -310,7 +314,11 @@ public class LUDecomposition extends DecompositionSupport {
         return b.like(m).assign(bp);
     }
 
-    /** */
+    /**
+     *
+     * @param b Matrix to solve using this decomposition.
+     * @return Solution matrix.
+     */
     public Matrix solve(Matrix b) {
         final int m = pivot.size();
 

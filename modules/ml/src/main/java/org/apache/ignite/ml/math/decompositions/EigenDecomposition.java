@@ -39,12 +39,19 @@ public class EigenDecomposition extends DecompositionSupport {
     /** Array for internal storage of eigenvalues. */
     private final Vector e;
 
-    /** */
+    /**
+     *
+     * @param matrix Matrix to decompose.
+     */
     public EigenDecomposition(Matrix matrix) {
         this(matrix, isSymmetric(matrix));
     }
 
-    /** */
+    /**
+     *
+     * @param matrix Matrix to decompose.
+     * @param isSymmetric {@code true} if matrix passes symmetry check, {@code false otherwise}.
+     */
     public EigenDecomposition(Matrix matrix, boolean isSymmetric) {
         n = matrix.columnSize();
 
@@ -69,7 +76,7 @@ public class EigenDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Return the eigen vector matrix
+     * Return the eigen vector matrix.
      *
      * @return V
      */
@@ -85,7 +92,9 @@ public class EigenDecomposition extends DecompositionSupport {
     }
 
     /**
-     * Return the imaginary parts of the eigenvalues
+     * Return the imaginary parts of the eigenvalues.
+     *
+     * @return Vector of imaginary parts.
      */
     public Vector getImagEigenvalues() {
         return e;
