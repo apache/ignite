@@ -753,26 +753,25 @@ public class GridReduceQueryExecutor {
 
                 if (send(nodes,
                         new GridH2QueryRequest()
-                            .requestId(qryReqId)
-                            .topologyVersion(topVer)
-                            .pageSize(r.pageSize)
-                            .caches(qry.caches())
-                            .tables(distributedJoins ? qry.tables() : null)
-                            .partitions(convert(partsMap))
-                            .queries(mapQrys)
-                            .parameters(params)
-                            .flags(flags)
-                            .timeout(timeoutMillis),
+                                .requestId(qryReqId)
+                                .topologyVersion(topVer)
+                                .pageSize(r.pageSize)
+                                .caches(qry.caches())
+                                .tables(distributedJoins ? qry.tables() : null)
+                                .partitions(convert(partsMap))
+                                .queries(mapQrys)
+                                .parameters(params)
+                                .flags(flags)
+                                .timeout(timeoutMillis),
                         parts == null ? null : new ExplicitPartitionsSpecializer(qryMap),
-                    false)) {
-
+                        false)) {
                     awaitAllReplies(r, nodes, cancel);
 
                     Object state = r.state.get();
 
                     if (state != null) {
                         if (state instanceof CacheException) {
-                            CacheException err = (CacheException)state;
+                            CacheException err = (CacheException) state;
 
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
@@ -787,7 +786,7 @@ public class GridReduceQueryExecutor {
                             retry = true;
 
                             // If remote node asks us to retry then we have outdated full partition map.
-                            h2.awaitForReadyTopologyVersion((AffinityTopologyVersion)state);
+                            h2.awaitForReadyTopologyVersion((AffinityTopologyVersion) state);
                         }
                     }
                 }
@@ -1571,7 +1570,7 @@ public class GridReduceQueryExecutor {
         if (parts == null)
             return partsMap;
 
-        Map<ClusterNode, IntArray> cp = new HashMap<>();
+        Map<ClusterNode, IntArray> cp = U.newHashMap(partsMap.size());
 
         for (Map.Entry<ClusterNode, IntArray> entry : partsMap.entrySet()) {
             IntArray filtered = new IntArray(parts.length);
