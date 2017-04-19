@@ -787,7 +787,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     throw new CacheException(
                         "Using both partitions and distributed JOINs is not supported for the same query");
 
-                if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
                 if ((p.isReplicatedOnly() && isReplicatedDataNode()) || ctx.isLocal() || qry.isLocal())
                      return (QueryCursor<R>)ctx.kernalContext().query().queryLocal(ctx, p,
                                 opCtxCall != null && opCtxCall.isKeepBinary());
