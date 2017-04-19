@@ -44,23 +44,14 @@
 
         <dependency>
             <groupId>org.apache.rocketmq</groupId>
-            <artifactId>rocketmq-client</artifactId>
+            <artifactId>rocketmq-broker</artifactId>
             <version>${rocketmq.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.rocketmq</groupId>
-            <artifactId>rocketmq-test</artifactId>
+            <artifactId>rocketmq-namesrv</artifactId>
             <version>${rocketmq.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.rocketmq</groupId>
-            <artifactId>rocketmq-test</artifactId>
-            <version>${rocketmq.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
