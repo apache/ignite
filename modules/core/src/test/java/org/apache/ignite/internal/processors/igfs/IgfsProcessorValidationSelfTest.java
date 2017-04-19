@@ -165,32 +165,22 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("NullableProblems")
     public void testLocalNullIgfsNameIsNotSupported() throws Exception {
-        // TODO: Use checkGridStartFails
         try {
             g1IgfsCfg1.setName(null);
 
-            assertFalse(G.start(g1Cfg).cluster().nodes().isEmpty());
-
-            fail("IGFS name mustn't be null");
+            fail("IGFS name cannot be null");
         }
-        catch (NullPointerException e) {
-            assertTrue(e.getMessage().contains("IGFS name mustn't be null"));
+        catch (IllegalArgumentException e) {
+            // No-op.
         }
 
-        try {
-            ArrayList<FileSystemConfiguration> fsCfgs = new ArrayList<>(Arrays.asList(g1Cfg.getFileSystemConfiguration()));
+        ArrayList<FileSystemConfiguration> fsCfgs = new ArrayList<>(Arrays.asList(g1Cfg.getFileSystemConfiguration()));
 
-            fsCfgs.add(new FileSystemConfiguration()); // IGFS there doesn't have default name.
+        fsCfgs.add(new FileSystemConfiguration()); // IGFS doesn't have default name (name == null).
 
-            g1Cfg.setFileSystemConfiguration(fsCfgs.toArray(new FileSystemConfiguration[fsCfgs.size()]));
+        g1Cfg.setFileSystemConfiguration(fsCfgs.toArray(new FileSystemConfiguration[fsCfgs.size()]));
 
-            assertFalse(G.start(g1Cfg).cluster().nodes().isEmpty());
-
-            fail("IGFS name mustn't be null");
-        }
-        catch (IgniteException e) {
-            assertTrue(e.getMessage().contains("IGFS name mustn't be null"));
-        }
+        checkGridStartFails(g1Cfg, "IGFS name cannot be null", true);
     }
 
     /**

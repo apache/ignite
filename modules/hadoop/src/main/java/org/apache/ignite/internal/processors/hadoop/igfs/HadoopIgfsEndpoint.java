@@ -96,25 +96,19 @@ public class HadoopIgfsEndpoint {
         IgniteBiTuple<String, Integer> hostPort;
 
         if (tokens.length == 1) {
-            throw new IgniteCheckedException("Invalid connection string format. IGFS name must be specified: "
-                + connStr);
+            igfsName = null;
+
+            hostPort = hostPort(connStr, connStr);
         }
         else if (tokens.length == 2) {
             String authStr = tokens[0];
 
-            if (authStr.isEmpty()) {
-                throw new IgniteCheckedException("Invalid connection string format. IGFS name must be specified: "
-                    + connStr);
-            }
+            if (authStr.isEmpty())
+                igfsName = null;
             else {
                 String[] authTokens = authStr.split(":", -1);
 
-                if (F.isEmpty(authTokens[0])) {
-                    throw new IgniteCheckedException("Invalid connection string format. IGFS name must be specified: "
-                        + connStr);
-                }
-
-                igfsName = authTokens[0];
+                igfsName = F.isEmpty(authTokens[0]) ? null : authTokens[0];
 
                 if (authTokens.length == 2) {
                     if (!LOG_WARN_GUARD.get() && LOG_WARN_GUARD.compareAndSet(false, true))
@@ -129,8 +123,10 @@ public class HadoopIgfsEndpoint {
         else
             throw new IgniteCheckedException("Invalid connection string format: " + connStr);
 
-        // TODO: Throw exception for null name only here
-        // throw new IgniteCheckedException("Invalid connection string format (IGFS name cannot be empty): " + connStr);
+        if (igfsName == null) {
+            throw new IgniteCheckedException("Invalid connection string format (IGFS name cannot be empty): "
+                + connStr);
+        }
 
         host = hostPort.get1();
 
