@@ -15,23 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+namespace Apache.Ignite.Core.Tests.Cache
+{
+    using System;
+    using Apache.Ignite.Core.Binary;
 
-import org.apache.ignite.configuration.CacheConfiguration;
+    /// <summary>
+    /// Binary exception.
+    /// </summary>
+    public class BinarizableTestException : Exception, IBinarizable
+    {
+        /// <summary>
+        /// Gets or sets exception info.
+        /// </summary>
+        public string Info { get; set; }
 
-/**
- * Test for segmented geo index.
- */
-public class GridH2IndexingSegmentedGeoSelfTest extends GridH2IndexingGeoSelfTest {
-    /** */
-    private static int QRY_PARALLELISM_LVL = 7;
+        /** <inheritdoc /> */
+        public override string Message
+        {
+            get { return Info; }
+        }
 
-    /** {@inheritDoc} */
-    @Override
-    protected <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned,
-        Class<?>... idxTypes) throws Exception {
-        final CacheConfiguration<K, V> ccfg = super.cacheConfig(name, partitioned, idxTypes);
+        /** <inheritdoc /> */
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            writer.GetRawWriter().WriteString(Info);
+        }
 
-        return ccfg.setQueryParallelism(partitioned ? QRY_PARALLELISM_LVL : 1);
+        /** <inheritdoc /> */
+        public void ReadBinary(IBinaryReader reader)
+        {
+            Info = reader.GetRawReader().ReadString();
+        }
     }
 }

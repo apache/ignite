@@ -204,7 +204,8 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        fail("Index not found [cacheName=" + cacheName + ", tlbName=" + tblName + ", idxName=" + idxName + ']');
+        fail("Index not found [node=" + node.name() + ", cacheName=" + cacheName + ", tlbName=" + tblName +
+            ", idxName=" + idxName + ']');
     }
 
     /**
@@ -263,7 +264,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param idxName Index name.
      */
     protected static void assertNoIndex(IgniteEx node, String cacheName, String tblName, String idxName) {
-        assertNoIndexDescriptor(node, cacheName, tblName, idxName);
+        assertNoIndexDescriptor(node, cacheName, idxName);
 
         if (affinityNode(node, cacheName)) {
             QueryTypeDescriptorImpl typeDesc = typeExisting(node, cacheName, tblName);
@@ -277,10 +278,9 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      *
      * @param node Node.
      * @param cacheName Cache name.
-     * @param tblName Table name.
      * @param idxName Index name.
      */
-    protected static void assertNoIndexDescriptor(IgniteEx node, String cacheName, String tblName, String idxName) {
+    protected static void assertNoIndexDescriptor(IgniteEx node, String cacheName, String idxName) {
         awaitCompletion();
 
         DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);

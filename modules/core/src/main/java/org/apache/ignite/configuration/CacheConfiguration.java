@@ -2145,7 +2145,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
 
-                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
+                    processAnnotation(key, sqlAnn, txtAnn, cls, c, field.getType(), prop, type);
                 }
             }
 
@@ -2171,7 +2171,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
 
-                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
+                    processAnnotation(key, sqlAnn, txtAnn, cls, c, mtd.getReturnType(), prop, type);
                 }
             }
         }
@@ -2183,20 +2183,25 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param key If given class relates to key.
      * @param sqlAnn SQL annotation, can be {@code null}.
      * @param txtAnn H2 text annotation, can be {@code null}.
-     * @param cls Class of field or return type for method.
+     * @param cls Entity class.
+     * @param curCls Current entity class.
+     * @param fldCls Class of field or return type for method.
      * @param prop Current property.
      * @param desc Class description.
      */
     private static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
-        Class<?> cls, ClassProperty prop, TypeDescriptor desc) {
+        Class<?> cls, Class<?> curCls, Class<?> fldCls, ClassProperty prop, TypeDescriptor desc) {
         if (sqlAnn != null) {
-            processAnnotationsInClass(key, cls, desc, prop);
+            processAnnotationsInClass(key, fldCls, desc, prop);
 
             if (!sqlAnn.name().isEmpty())
                 prop.alias(sqlAnn.name());
 
             if (sqlAnn.index()) {
-                String idxName = prop.alias() + "_idx";
+                String idxName = curCls.getSimpleName() + "_" + prop.alias() + "_idx";
+
+                if (cls != curCls)
+                    idxName = cls.getSimpleName() + "_" + idxName;
 
                 desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);

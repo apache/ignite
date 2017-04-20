@@ -210,13 +210,11 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
     public void testSum() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        double initVal = 1;
-
         MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
-        double sum = 0;
+        double sum;
 
         initMatrix(cacheMatrix);
         sum = cacheMatrix.sum();

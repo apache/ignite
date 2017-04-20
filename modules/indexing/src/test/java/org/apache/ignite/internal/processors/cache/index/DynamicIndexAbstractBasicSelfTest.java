@@ -22,14 +22,21 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
+import javax.cache.CacheException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -182,20 +189,18 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     private void checkCreate(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
         initialize(mode, atomicityMode, near);
 
-        final IgniteEx node = node();
-
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
             }
-        }, SchemaOperationException.CODE_INDEX_EXISTS);
+        }, IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
 
-        queryProcessor(node).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
+        dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true);
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
@@ -270,7 +275,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
 
-        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
 
         assertCompositeIndexOperations(SQL_COMPOSITE);
@@ -345,13 +350,21 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        assertSchemaException(new RunnableX() {
-            @Override public void run() throws Exception {
-                queryProcessor(node()).dynamicIndexCreate(randomString(), TBL_NAME, idx, false).get();
-            }
-        }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
+        try {
+            queryProcessor(node()).dynamicIndexCreate(randomString(), TBL_NAME, idx, false).get();
+        }
+        catch (SchemaOperationException e) {
+            assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+            assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+
+            return;
+        }
+        catch (Exception e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        fail(SchemaOperationException.class.getSimpleName() +  " is not thrown.");
     }
 
     /**
@@ -423,9 +436,9 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, randomString(), idx, false).get();
+                dynamicIndexCreate(CACHE_NAME, randomString(), idx, false);
             }
-        }, SchemaOperationException.CODE_TABLE_NOT_FOUND);
+        }, IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
@@ -499,9 +512,9 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
             }
-        }, SchemaOperationException.CODE_COLUMN_NOT_FOUND);
+        }, IgniteQueryErrorCode.COLUMN_NOT_FOUND);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
@@ -576,15 +589,15 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             @Override public void run() throws Exception {
                 QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_2));
 
-                queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
             }
-        }, SchemaOperationException.CODE_COLUMN_NOT_FOUND);
+        }, IgniteQueryErrorCode.COLUMN_NOT_FOUND);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
         QueryIndex idx = index(IDX_NAME_1, field(alias(FIELD_NAME_2)));
 
-        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(alias(FIELD_NAME_2)));
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_2);
@@ -659,7 +672,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
 
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
@@ -668,7 +681,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         loadInitialData();
 
-        queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false).get();
+        dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false);
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
@@ -743,11 +756,11 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false).get();
+                dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false);
             }
-        }, SchemaOperationException.CODE_INDEX_NOT_FOUND);
+        }, IgniteQueryErrorCode.INDEX_NOT_FOUND);
 
-        queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true).get();
+        dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true);
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
     }
 
@@ -818,13 +831,21 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     private void checkDropNoCache(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
         initialize(mode, atomicityMode, near);
 
-        assertSchemaException(new RunnableX() {
-            @Override public void run() throws Exception {
-                queryProcessor(node()).dynamicIndexDrop(randomString(), "my_idx", false).get();
-            }
-        }, SchemaOperationException.CODE_CACHE_NOT_FOUND);
+        try {
+            queryProcessor(node()).dynamicIndexDrop(randomString(), "my_idx", false).get();
+        }
+        catch (SchemaOperationException e) {
+            assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());
 
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+            assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+
+            return;
+        }
+        catch (Exception e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        fail(SchemaOperationException.class.getSimpleName() +  " is not thrown.");
     }
 
     /**
@@ -842,17 +863,17 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(node()).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
+                dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true);
             }
-        }, SchemaOperationException.CODE_GENERIC);
+        }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
         assertSchemaException(new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(node()).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true).get();
+                dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, true);
             }
-        }, SchemaOperationException.CODE_GENERIC);
+        }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -946,5 +967,100 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         for (Ignite node : Ignition.allGrids())
             assertSqlCompositeData(node, sql, 0);
+    }
+
+    /**
+     * Ensure that schema exception is thrown.
+     *
+     * @param r Runnable.
+     * @param expCode Error code.
+     */
+    protected static void assertSchemaException(RunnableX r, int expCode) {
+        try {
+            r.run();
+        }
+        catch (CacheException e) {
+            Throwable cause = e.getCause();
+
+            assertTrue(cause != null);
+            assertTrue("Unexpected cause: " + cause.getClass().getName(), cause instanceof IgniteSQLException);
+
+            IgniteSQLException cause0 = (IgniteSQLException)cause;
+
+            int code = cause0.statusCode();
+
+            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + code +
+                ", msg=" + cause.getMessage() + ']', expCode, code);
+
+            return;
+        }
+        catch (Exception e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
+    }
+
+    /**
+     * Synchronously create index.
+     *
+     * @param space Space.
+     * @param tblName Table name.
+     * @param idx Index.
+     * @param ifNotExists When set to true operation will fail if index already exists.
+     * @throws Exception If failed.
+     */
+    private void dynamicIndexCreate(String space, String tblName, QueryIndex idx, boolean ifNotExists)
+        throws Exception {
+        GridStringBuilder sql = new SB("CREATE INDEX ")
+            .a(ifNotExists ? "IF NOT EXISTS " : "")
+            .a("\"" + idx.getName() + "\"")
+            .a(" ON ")
+            .a(tblName)
+            .a(" (");
+
+        boolean first = true;
+
+        for (Map.Entry<String, Boolean> fieldEntry : idx.getFields().entrySet()) {
+            if (first)
+                first = false;
+            else
+                sql.a(", ");
+
+            String name = fieldEntry.getKey();
+            boolean asc = fieldEntry.getValue();
+
+            sql.a("\"" + name + "\"").a(" ").a(asc ? "ASC" : "DESC");
+        }
+
+        sql.a(')');
+
+        executeSql(space, sql.toString());
+    }
+
+    /**
+     * Synchronously drop index.
+     *
+     * @param space Space.
+     * @param idxName Index name.
+     * @param ifExists When set to true operation fill fail if index doesn't exists.
+     * @throws Exception if failed.
+     */
+    private void dynamicIndexDrop(String space, String idxName, boolean ifExists) throws Exception {
+        String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + "\"" + idxName + "\"";
+
+        executeSql(space, sql);
+    }
+
+    /**
+     * Execute SQL.
+     *
+     * @param space Space.
+     * @param sql SQL.
+     */
+    private void executeSql(String space, String sql) {
+        log.info("Executing DDL: " + sql);
+
+        node().cache(space).query(new SqlFieldsQuery(sql)).getAll();
     }
 }

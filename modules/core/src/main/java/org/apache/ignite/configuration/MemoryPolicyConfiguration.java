@@ -17,7 +17,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.mem.OutOfMemoryException;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 
 /**
  * This class allows defining custom memory policies' configurations with various parameters for Apache Ignite
@@ -78,16 +78,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      */
     private double evictionThreshold = 0.9;
 
-    /**
-     * TODO: not clear description.
-     *
-     * When {@link #evictionThreshold} is reached, allocation of new data pages is prevented by maintaining this
-     * amount of evicted data pages in the pool. If any thread needs free page to store cache entry,
-     * it will take empty page from the pool instead of allocating a new one.
-     * Increase this parameter if cache can contain very big entries (total size of pages in the pool should be enough
-     * to contain largest cache entry).
-     * Increase this parameter if {@link OutOfMemoryException} occurred with enabled page eviction.
-     */
+    /** Minimum number of empty pages in reuse lists. */
     private int emptyPagesPoolSize = 100;
 
     /**
@@ -121,8 +112,8 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * Sets maximum memory region size defined by this memory policy. The total size can not be less than 1 MB (TODO: double check)
-     * due to internal requirements.
+     * Sets maximum memory region size defined by this memory policy. The total size should not be less than 10 MB
+     * due to the internal data structures overhead.
      */
     public MemoryPolicyConfiguration setSize(long size) {
         this.size = size;
@@ -196,15 +187,26 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * TODO: document clearly
-     * Gets empty pages pool size.
+     * Specifies the minimal number of empty pages to be present in reuse lists for this memory policy.
+     * This parameter ensures that Ignite will be able to successfully evict old data entries when the size of
+     * (key, value) pair is slightly larger than page size / 2.
+     * Increase this parameter if cache can contain very big entries (total size of pages in this pool should be enough
+     * to contain largest cache entry).
+     * Increase this parameter if {@link IgniteOutOfMemoryException} occurred with enabled page eviction.
+     *
+     * @return Minimum number of empty pages in reuse list.
      */
     public int getEmptyPagesPoolSize() {
         return emptyPagesPoolSize;
     }
 
     /**
-     * Sets empty pages pool size.
+     * Specifies the minimal number of empty pages to be present in reuse lists for this memory policy.
+     * This parameter ensures that Ignite will be able to successfully evict old data entries when the size of
+     * (key, value) pair is slightly larger than page size / 2.
+     * Increase this parameter if cache can contain very big entries (total size of pages in this pool should be enough
+     * to contain largest cache entry).
+     * Increase this parameter if {@link IgniteOutOfMemoryException} occurred with enabled page eviction.
      *
      * @param emptyPagesPoolSize Empty pages pool size.
      */

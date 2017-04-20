@@ -111,20 +111,17 @@ public class IgniteTxHandler {
     /**
      * @param nearNodeId Node ID.
      * @param req Request.
-     * @return Prepare future.
      */
-    private IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId, GridNearTxPrepareRequest req) {
+    private void processNearTxPrepareRequest(final UUID nearNodeId, GridNearTxPrepareRequest req) {
         if (txPrepareMsgLog.isDebugEnabled()) {
             txPrepareMsgLog.debug("Received near prepare request [txId=" + req.version() +
                 ", node=" + nearNodeId + ']');
         }
 
-        IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareTx(nearNodeId, null, req);
+        IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareNearTx(nearNodeId, req, false);
 
         assert req.txState() != null || fut == null || fut.error() != null ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
-
-        return fut;
     }
 
     /**
@@ -209,41 +206,13 @@ public class IgniteTxHandler {
     }
 
     /**
-     * @param nearNodeId Near node ID that initiated transaction.
-     * @param locTx Optional local transaction.
-     * @param req Near prepare request.
-     * @return Future for transaction.
-     */
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareTx(
-        UUID nearNodeId,
-        @Nullable GridNearTxLocal locTx,
-        GridNearTxPrepareRequest req
-    ) {
-        assert nearNodeId != null;
-        assert req != null;
-
-        if (locTx != null) {
-            if (req.near()) {
-                // Make sure not to provide Near entries to DHT cache.
-                req.cloneEntries();
-
-                return prepareNearTx(nearNodeId, req);
-            }
-            else
-                return prepareColocatedTx(locTx, req);
-        }
-        else
-            return prepareNearTx(nearNodeId, req);
-    }
-
-    /**
      * Prepares local colocated tx.
      *
      * @param locTx Local transaction.
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private IgniteInternalFuture<GridNearTxPrepareResponse> prepareColocatedTx(
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareColocatedTx(
         final GridNearTxLocal locTx,
         final GridNearTxPrepareRequest req
     ) {
@@ -308,16 +277,20 @@ public class IgniteTxHandler {
     }
 
     /**
-     * Prepares near transaction.
-     *
      * @param nearNodeId Near node ID that initiated transaction.
      * @param req Near prepare request.
+     * @param locReq Local request flag.
      * @return Prepare future.
      */
-    private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
         final UUID nearNodeId,
-        final GridNearTxPrepareRequest req
+        final GridNearTxPrepareRequest req,
+        boolean locReq
     ) {
+        // Make sure not to provide Near entries to DHT cache.
+        if (locReq)
+            req.cloneEntries();
+
         ClusterNode nearNode = ctx.node(nearNodeId);
 
         if (nearNode == null) {
