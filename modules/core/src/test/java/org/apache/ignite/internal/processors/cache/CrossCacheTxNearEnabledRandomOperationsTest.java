@@ -15,8 +15,14 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.cache;
+
 /**
- * <!-- Package description. -->
- * Ignite Hadoop Accelerator API.
+ *
  */
-package org.apache.ignite.hadoop;
+public class CrossCacheTxNearEnabledRandomOperationsTest extends CrossCacheTxRandomOperationsTest {
+    /** {@inheritDoc} */
+    @Override protected boolean nearCacheEnabled() {
+        return true;
+    }
+}

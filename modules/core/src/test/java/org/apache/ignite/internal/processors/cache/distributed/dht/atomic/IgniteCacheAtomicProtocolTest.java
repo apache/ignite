@@ -763,21 +763,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      * @param expData Expected cache data.
      */
     private void checkData(Map<Integer, Integer> expData) {
-        assert !expData.isEmpty();
-
-        List<Ignite> nodes = G.allGrids();
-
-        assertFalse(nodes.isEmpty());
-
-        for (Ignite node : nodes) {
-            IgniteCache<Integer, Integer> cache = node.cache(TEST_CACHE);
-
-            for (Map.Entry<Integer, Integer> e : expData.entrySet()) {
-                assertEquals("Invalid value [key=" + e.getKey() + ", node=" + node.name() + ']',
-                    e.getValue(),
-                    cache.get(e.getKey()));
-            }
-        }
+        checkCacheData(expData, TEST_CACHE);
     }
 
     /**

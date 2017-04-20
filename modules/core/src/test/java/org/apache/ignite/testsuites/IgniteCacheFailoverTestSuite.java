@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtClientRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheTxNodeFailureSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridNearCacheTxNodeFailureSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteAtomicLongChangingTopologySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.AtomicPutAllChangingTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicClientInvalidPartitionHandlingSelfTest;
@@ -88,7 +87,6 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(IgniteAtomicLongChangingTopologySelfTest.class);
 
         suite.addTestSuite(GridCacheTxNodeFailureSelfTest.class);
-        suite.addTestSuite(GridNearCacheTxNodeFailureSelfTest.class);
 
         suite.addTestSuite(AtomicPutAllChangingTopologyTest.class);
 

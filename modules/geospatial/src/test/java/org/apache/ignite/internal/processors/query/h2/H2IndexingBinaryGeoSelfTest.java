@@ -17,21 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-
 /**
- * Test for segmented geo index.
+ * Geo-indexing test for binary mode.
  */
-public class GridH2IndexingSegmentedGeoSelfTest extends GridH2IndexingGeoSelfTest {
-    /** */
-    private static int QRY_PARALLELISM_LVL = 7;
-
-    /** {@inheritDoc} */
-    @Override
-    protected <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned,
-        Class<?>... idxTypes) throws Exception {
-        final CacheConfiguration<K, V> ccfg = super.cacheConfig(name, partitioned, idxTypes);
-
-        return ccfg.setQueryParallelism(partitioned ? QRY_PARALLELISM_LVL : 1);
+public class H2IndexingBinaryGeoSelfTest extends H2IndexingAbstractGeoSelfTest {
+    /**
+     * Constructor.
+     */
+    public H2IndexingBinaryGeoSelfTest() {
+        super(true, false);
     }
 }

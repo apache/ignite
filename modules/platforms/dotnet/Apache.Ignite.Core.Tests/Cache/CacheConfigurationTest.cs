@@ -64,7 +64,18 @@ namespace Apache.Ignite.Core.Tests.Cache
                     GetCustomCacheConfiguration2()
                 },
                 IgniteInstanceName = CacheName,
-                BinaryConfiguration = new BinaryConfiguration(typeof (Entity))
+                BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
+                MemoryConfiguration = new MemoryConfiguration
+                {
+                    MemoryPolicies = new[]
+                    {
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "myMemPolicy",
+                            Size = 99 * 1024 * 1024
+                        }
+                    }
+                }
             };
 
             _ignite = Ignition.Start(cfg);
@@ -233,6 +244,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
+            Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
 
             if (x.ExpiryPolicyFactory != null)
                 Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
@@ -546,6 +558,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 ExpiryPolicyFactory = new ExpiryFactory(),
                 EnableStatistics = true,
+                MemoryPolicyName = "myMemPolicy",
                 PluginConfigurations = new[] { new MyPluginConfiguration() }
             };
         }

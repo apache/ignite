@@ -214,7 +214,7 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
+    @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException {
         throwUnsupported();
     }
 

@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
-
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
+package org.apache.ignite.internal.processors.query.h2;
 
 /**
- *
+ * Geo-indexing test.
  */
-public class GridNearCacheTxNodeFailureSelfTest extends GridCacheTxNodeFailureSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) {
-        return super.cacheConfiguration(igniteInstanceName).setNearConfiguration(new NearCacheConfiguration());
+public class H2IndexingGeoSelfTest extends H2IndexingAbstractGeoSelfTest {
+    /**
+     * Constructor.
+     */
+    public H2IndexingGeoSelfTest() {
+        super(false, false);
     }
 }
