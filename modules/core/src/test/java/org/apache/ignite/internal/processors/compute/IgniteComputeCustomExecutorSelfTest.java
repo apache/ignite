@@ -53,9 +53,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int GRID_CNT = 2;
 
     /** */
@@ -73,12 +70,6 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setExecutorConfiguration(createExecConfiguration(EXEC_NAME0), createExecConfiguration(EXEC_NAME1));
         cfg.setPublicThreadPoolSize(1);
