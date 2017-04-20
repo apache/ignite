@@ -881,31 +881,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Method executes any Callable out of scope of transaction.
-     * If transaction started by this thread {@code cmd} will be executed in another thread.
-     *
-     * @param cmd Callable.
-     * @param ctx Cache context.
-     * @return T Callable result.
-     * @throws IgniteCheckedException If execution failed.
-     */
-    public static <T> T outTx(Callable<T> cmd, GridCacheContext ctx) throws IgniteCheckedException {
-        if (ctx.tm().inUserTx())
-            return ctx.closures().callLocalSafe(cmd, false).get();
-        else {
-            try {
-                return cmd.call();
-            }
-            catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
-            }
-        }
-    }
-
-    /**
      * @param val Value.
      * @param skip Skip value flag.
      * @return Value.
@@ -1604,56 +1579,58 @@ public class GridCacheUtils {
 
     /**
      * @param c Closure to retry.
-     * @param <S> Closure type.
-     * @return Wrapped closure.
+     * @throws IgniteCheckedException If failed.
+     * @return Closure result.
      */
-    public static <S> Callable<S> retryTopologySafe(final Callable<S> c ) {
-        return new Callable<S>() {
-            @Override public S call() throws Exception {
-                IgniteCheckedException err = null;
+    public static <S> S retryTopologySafe(final Callable<S> c) throws IgniteCheckedException {
+        IgniteCheckedException err = null;
 
-                for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
-                    try {
-                        return c.call();
-                    }
-                    catch (ClusterGroupEmptyCheckedException | ClusterTopologyServerNotFoundException e) {
-                        throw e;
-                    }
-                    catch (TransactionRollbackException e) {
-                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
-                            throw e;
-
-                        U.sleep(1);
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
-                            throw e;
-
-                        if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
-                            ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
-
-                            if (topErr instanceof ClusterGroupEmptyCheckedException || topErr instanceof
-                                ClusterTopologyServerNotFoundException)
-                                throw e;
-
-                            // IGNITE-1948: remove this check when the issue is fixed
-                            if (topErr.retryReadyFuture() != null)
-                                topErr.retryReadyFuture().get();
-                            else
-                                U.sleep(1);
-                        }
-                        else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
-                            CachePartialUpdateCheckedException.class))
-                            U.sleep(1);
-                        else
-                            throw e;
-                    }
-                }
-
-                // Should never happen.
-                throw err;
+        for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
+            try {
+                return c.call();
             }
-        };
+            catch (ClusterGroupEmptyCheckedException | ClusterTopologyServerNotFoundException e) {
+                throw e;
+            }
+            catch (TransactionRollbackException e) {
+                if (i + 1 == GridCacheAdapter.MAX_RETRIES)
+                    throw e;
+
+                U.sleep(1);
+            }
+            catch (IgniteCheckedException e) {
+                if (i + 1 == GridCacheAdapter.MAX_RETRIES)
+                    throw e;
+
+                if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                    ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
+
+                    if (topErr instanceof ClusterGroupEmptyCheckedException || topErr instanceof
+                        ClusterTopologyServerNotFoundException)
+                        throw e;
+
+                    // IGNITE-1948: remove this check when the issue is fixed
+                    if (topErr.retryReadyFuture() != null)
+                        topErr.retryReadyFuture().get();
+                    else
+                        U.sleep(1);
+                }
+                else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
+                    CachePartialUpdateCheckedException.class))
+                    U.sleep(1);
+                else
+                    throw e;
+            }
+            catch (RuntimeException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
+
+        // Should never happen.
+        throw err;
     }
 
     /**
