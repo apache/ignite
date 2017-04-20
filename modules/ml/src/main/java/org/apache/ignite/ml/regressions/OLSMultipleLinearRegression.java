@@ -97,9 +97,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
     @Override
     public void newSampleData(double[] data, int nobs, int nvars, Matrix like) {
         super.newSampleData(data, nobs, nvars, like);
-        // TODO: maybe we should introduce threshhold.
-        qr = new QRDecomposition(getX());
-//        qr = new QRDecomposition(getX(), threshold);
+        qr = new QRDecomposition(getX(), threshold);
     }
 
     /**

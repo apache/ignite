@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.decompositions;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.functions.Functions;
 
 /**
@@ -41,6 +42,9 @@ public class QRDecomposition extends DecompositionSupport {
     private final int rows;
     /** */
     private final int cols;
+    /** */
+    private double threshold;
+
 
     /**
      * @param v Value to be checked for being an ordinary double.
@@ -52,10 +56,21 @@ public class QRDecomposition extends DecompositionSupport {
 
     /**
      * Constructs a new QR decomposition object computed by Householder reflections.
+     * Threshold for singularity check used in this case is 0.
      *
      * @param mtx A rectangular matrix.
      */
     public QRDecomposition(Matrix mtx) {
+        this(mtx, 0.0);
+    }
+
+    /**
+     * Constructs a new QR decomposition object computed by Householder reflections.
+     *
+     * @param mtx A rectangular matrix.
+     * @param threshold Value used for detecting singularity of {@code R} matrix in decomposition.
+     */
+    public QRDecomposition(Matrix mtx, double threshold) {
         assert mtx != null;
 
         rows = mtx.rowSize();
@@ -71,6 +86,7 @@ public class QRDecomposition extends DecompositionSupport {
         boolean fullRank = true;
 
         r = like(mtx, min, cols);
+        this.threshold = threshold;
 
         for (int i = 0; i < min; i++) {
             Vector qi = qTmp.viewColumn(i);
@@ -155,13 +171,14 @@ public class QRDecomposition extends DecompositionSupport {
             throw new IllegalArgumentException("Matrix row dimensions must agree.");
 
         int cols = mtx.columnSize();
-
+        Matrix r = getR();
+        checkSingular(r, threshold, true);
         Matrix x = like(mType, this.cols, cols);
 
         Matrix qt = getQ().transpose();
         Matrix y = qt.times(mtx);
 
-        Matrix r = getR();
+
 
         for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {
             // X[k,] = Y[k,] / R[k,k], note that X[k,] starts with 0 so += is same as =
@@ -197,5 +214,37 @@ public class QRDecomposition extends DecompositionSupport {
      */
     @Override public String toString() {
         return String.format("QR(%d x %d, fullRank=%s)", rows, cols, hasFullRank());
+    }
+
+    /**
+     * Check singularity.
+     *
+     * @param r R matrix.
+     * @param min Singularity threshold.
+     * @param raise Whether to raise a {@link SingularMatrixException}
+     * if any element of the diagonal fails the check.
+     * @return {@code true} if any element of the diagonal is smaller
+     * or equal to {@code min}.
+     * @throws SingularMatrixException if the matrix is singular and
+     * {@code raise} is {@code true}.
+     */
+    private static boolean checkSingular(Matrix r,
+                                         double min,
+                                         boolean raise) {
+        // TODO: Not a very fast approach for distributed matrices. would be nice if we could independently check
+        // parts on different nodes for singularity and do fold with 'or'.
+
+        final int len = r.columnSize();
+        for (int i = 0; i < len; i++) {
+            final double d = r.getX(i, i);
+            if (Math.abs(d) <= min)
+                if (raise)
+                    throw new SingularMatrixException("Number is too small (%f, while " +
+                            "threshold is %f). Index of diagonal element is (%d, %d)", d, min, i, i);
+                else
+                    return true;
+
+        }
+        return false;
     }
 }
