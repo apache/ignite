@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -35,9 +36,9 @@ public class GridCacheRecreateLockTest extends GridCommonAbstractTest {
      */
     public void test() throws Exception {
         try {
-            final Ignite ignite = startNodeAndLock("node1");
+            final Ignite ignite = startNodeAndLock("GridCacheRecreateLockTest.node1");
 
-            new Thread(new Runnable() {
+            GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
                     try {
                         Thread.sleep(2000);
@@ -48,9 +49,9 @@ public class GridCacheRecreateLockTest extends GridCommonAbstractTest {
 
                     ignite.close();
                 }
-            }).start();
+            });
 
-            startNodeAndLock("node2");
+            startNodeAndLock("GridCacheRecreateLockTest.node2");
         }
         finally {
             stopAllGrids();
