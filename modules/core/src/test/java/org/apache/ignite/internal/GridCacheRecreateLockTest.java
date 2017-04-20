@@ -34,24 +34,33 @@ public class GridCacheRecreateLockTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void test() throws Exception {
-        final Ignite ignite = startNodeAndLock("node1");
+        try {
+            final Ignite ignite = startNodeAndLock("node1");
 
-        new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    Thread.sleep(2000);
+            new Thread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        Thread.sleep(2000);
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    ignite.close();
                 }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            }).start();
 
-                ignite.close();
-            }
-        }).start();
-
-        startNodeAndLock("node2");
+            startNodeAndLock("node2");
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
+    /**
+     * @param name Ignite node name.
+     * @return Ignite instance.
+     */
     private Ignite startNodeAndLock(String name) {
         try {
             IgniteConfiguration cfg = new IgniteConfiguration();
