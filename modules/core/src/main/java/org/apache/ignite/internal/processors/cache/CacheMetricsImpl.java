@@ -742,6 +742,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     public int getTotalPartitionsCount() {
         int res = 0;
 
+        if (cctx.isLocal())
+            return res;
+
         for (Map.Entry<Integer, GridDhtPartitionState> e : cctx.topology().localPartitionMap().entrySet()) {
             if (e.getValue() == GridDhtPartitionState.OWNING || e.getValue() == GridDhtPartitionState.MOVING)
                 res++;
@@ -753,6 +756,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     public int getRebalancingPartitionsCount() {
         int res = 0;
+
+        if (cctx.isLocal())
+            return res;
 
         for (Map.Entry<Integer, GridDhtPartitionState> e : cctx.topology().localPartitionMap().entrySet()) {
             if (e.getValue() == GridDhtPartitionState.MOVING)
