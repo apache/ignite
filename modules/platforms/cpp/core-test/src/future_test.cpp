@@ -117,6 +117,29 @@ BOOST_AUTO_TEST_CASE(SharedStateStringValue)
     BOOST_CHECK_EXCEPTION(sharedState.SetValue(MakeAuto(std::string("Hello world"))), IgniteError, IsFutureError);
 }
 
+BOOST_AUTO_TEST_CASE(SharedStateVoidValue)
+{
+    SharedState<void> sharedState;
+
+    bool ready = sharedState.WaitFor(100);
+    BOOST_CHECK(!ready);
+
+    sharedState.SetValue();
+
+    ready = sharedState.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = sharedState.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    sharedState.Wait();
+    sharedState.GetValue();
+    sharedState.GetValue();
+
+    BOOST_CHECK_EXCEPTION(sharedState.SetError(IgniteError()), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(sharedState.SetValue(), IgniteError, IsFutureError);
+}
+
 BOOST_AUTO_TEST_CASE(SharedStateIntError)
 {
     SharedState<int> sharedState;
@@ -138,6 +161,28 @@ BOOST_AUTO_TEST_CASE(SharedStateIntError)
 
     BOOST_CHECK_EXCEPTION(sharedState.SetValue(MakeAuto(42)), IgniteError, IsFutureError);
     BOOST_CHECK_EXCEPTION(sharedState.SetError(IgniteError()), IgniteError, IsFutureError);
+}
+
+BOOST_AUTO_TEST_CASE(SharedStateVoidError)
+{
+    SharedState<void> sharedState;
+
+    bool ready = sharedState.WaitFor(100);
+    BOOST_CHECK(!ready);
+
+    sharedState.SetError(IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "Test"));
+
+    ready = sharedState.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = sharedState.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    sharedState.Wait();
+
+    BOOST_CHECK_EXCEPTION(sharedState.GetValue(), IgniteError, IsUnknownError);
+    BOOST_CHECK_EXCEPTION(sharedState.SetError(IgniteError()), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(sharedState.SetValue(), IgniteError, IsFutureError);
 }
 
 BOOST_AUTO_TEST_CASE(FutureIntValue)
@@ -244,6 +289,46 @@ BOOST_AUTO_TEST_CASE(FutureStringValue)
     BOOST_CHECK_EXCEPTION(promise.SetError(IgniteError()), IgniteError, IsFutureError);
 }
 
+BOOST_AUTO_TEST_CASE(FutureVoidValue)
+{
+    Promise<void> promise;
+
+    Future<void> future1 = promise.GetFuture();
+    Future<void> future2 = promise.GetFuture();
+
+    bool ready = future1.WaitFor(100);
+    BOOST_CHECK(!ready);
+
+    ready = future2.WaitFor(100);
+    BOOST_CHECK(!ready);
+
+    promise.SetValue();
+
+    ready = future1.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = future1.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = future2.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = future2.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    future2.Wait();
+    future1.Wait();
+
+    future1.GetValue();
+    future1.GetValue();
+    future2.GetValue();
+    future2.GetValue();
+
+    BOOST_CHECK_EXCEPTION(promise.SetValue(), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(promise.SetValue(), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(promise.SetError(IgniteError()), IgniteError, IsFutureError);
+}
+
 BOOST_AUTO_TEST_CASE(FutureIntError)
 {
     Promise<int> promise;
@@ -281,12 +366,83 @@ BOOST_AUTO_TEST_CASE(FutureIntError)
     BOOST_CHECK_EXCEPTION(promise.SetError(IgniteError()), IgniteError, IsFutureError);
 }
 
+BOOST_AUTO_TEST_CASE(FutureVoidError)
+{
+    Promise<void> promise;
+
+    Future<void> future1 = promise.GetFuture();
+    Future<void> future2 = promise.GetFuture();
+
+    bool ready = future1.WaitFor(100);
+    BOOST_CHECK(!ready);
+
+    ready = future2.WaitFor(100);
+    BOOST_CHECK(!ready);
+
+    promise.SetError(IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "Test"));
+
+    ready = future1.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = future1.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = future2.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = future2.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    future2.Wait();
+    future1.Wait();
+
+    BOOST_CHECK_EXCEPTION(future1.GetValue(), IgniteError, IsUnknownError);
+    BOOST_CHECK_EXCEPTION(future2.GetValue(), IgniteError, IsUnknownError);
+
+    BOOST_CHECK_EXCEPTION(promise.SetValue(), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(promise.SetError(IgniteError()), IgniteError, IsFutureError);
+}
+
 BOOST_AUTO_TEST_CASE(FutureIntBroken)
 {
     Promise<int>* promise = new Promise<int>();
 
     Future<int> future1 = promise->GetFuture();
     Future<int> future2 = promise->GetFuture();
+
+    bool ready = future1.WaitFor(100);
+    BOOST_CHECK(!ready);
+
+    ready = future2.WaitFor(100);
+    BOOST_CHECK(!ready);
+
+    delete promise;
+
+    ready = future1.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = future1.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = future2.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    ready = future2.WaitFor(100);
+    BOOST_REQUIRE(ready);
+
+    future2.Wait();
+    future1.Wait();
+
+    BOOST_CHECK_EXCEPTION(future1.GetValue(), IgniteError, IsFutureError);
+    BOOST_CHECK_EXCEPTION(future2.GetValue(), IgniteError, IsFutureError);
+}
+
+BOOST_AUTO_TEST_CASE(FutureVoidBroken)
+{
+    Promise<void>* promise = new Promise<void>();
+
+    Future<void> future1 = promise->GetFuture();
+    Future<void> future2 = promise->GetFuture();
 
     bool ready = future1.WaitFor(100);
     BOOST_CHECK(!ready);
