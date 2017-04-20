@@ -233,6 +233,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
             EnableStatistics = reader.ReadBoolean();
+            MemoryPolicyName = reader.ReadString();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
@@ -288,6 +289,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
             writer.WriteBoolean(EnableStatistics);
+            writer.WriteString(MemoryPolicyName);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -623,5 +625,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<ICachePluginConfiguration> PluginConfigurations { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the <see cref="MemoryPolicyConfiguration"/> for this cache.
+        /// See <see cref="IgniteConfiguration.MemoryConfiguration"/>.
+        /// </summary>
+        public string MemoryPolicyName { get; set; }
     }
 }

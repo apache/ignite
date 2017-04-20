@@ -18,16 +18,16 @@
 package org.apache.ignite.configuration;
 
 /**
- * The enumeration defines an algorithm to be used for memory pages eviction. A mode is set for a specific
+ * Defines memory page eviction algorithm. A mode is set for a specific
  * {@link MemoryPolicyConfiguration}. Only data pages, that store key-value entries, are eligible for eviction. The
- * other types of pages like index or system pages are evictable.
+ * other types of pages, like index or system pages, are not evictable.
  */
 public enum DataPageEvictionMode {
     /** Eviction is disabled. */
     DISABLED,
 
     /**
-     * Activates Random-LRU algorithm that works the way below:
+     * Random-LRU algorithm.
      * <ul>
      * <li>Once a memory region defined by a memory policy is configured, an off-heap array is allocated to track
      * last usage timestamp for every individual data page. The size of the array is calculated this way - size =
@@ -36,13 +36,13 @@ public enum DataPageEvictionMode {
      * tracking array is calculated this way - index = (pageAddress / {@link MemoryPolicyConfiguration#getSize()}</li>
      * <li>When it's required to evict some pages, the algorithm randomly chooses 5 indexes from the tracking array and
      * evicts a page with the latest timestamp. If some of the indexes point to non-data pages (index or system pages)
-     * then the algorithm peaks another ones.</li>
+     * then the algorithm picks other pages.</li>
      * </ul>
      */
     RANDOM_LRU,
 
     /**
-     * Activates Random-2-LRU algorithm which is a scan resistant version of Random-LRU.
+     * Random-2-LRU algorithm: scan-resistant version of Random-LRU.
      * <p>
      * This algorithm differs from Random-LRU only in a way that two latest access timestamps are stored for every
      * data page. At the eviction time, a minimum between two latest timestamps is taken for further comparison with
