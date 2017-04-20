@@ -151,7 +151,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
 
-        if (store instanceof CacheJdbcPojoStore)
+        if (cfgStore instanceof CacheJdbcPojoStore)
             alwaysKeepBinary = true;
     }
 

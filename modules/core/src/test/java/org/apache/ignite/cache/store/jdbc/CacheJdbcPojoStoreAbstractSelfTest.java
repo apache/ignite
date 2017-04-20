@@ -221,6 +221,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         cc.setCacheMode(PARTITIONED);
         cc.setAtomicityMode(transactional ? TRANSACTIONAL : ATOMIC);
         cc.setWriteBehindEnabled(false);
+        cc.setStoreKeepBinary(storeKeepBinary());
 
         CacheJdbcPojoStoreFactory<Object, Object> storeFactory = new CacheJdbcPojoStoreFactory<>();
         storeFactory.setDialect(new H2Dialect());
@@ -235,6 +236,13 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         cc.setLoadPreviousValue(true);
 
         return cc;
+    }
+
+    /**
+     * @return Flag indicate keep value in binary format or not.
+     */
+    protected boolean storeKeepBinary(){
+        return false;
     }
 
     /**
