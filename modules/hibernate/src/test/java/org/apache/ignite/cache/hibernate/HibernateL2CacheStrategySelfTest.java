@@ -391,7 +391,7 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
             System.out.println("\t\tMisses: " + statistics.getMissCount());
         }
 
-        System.out.println("========================================");
+        System.out.println("====================================");
     }
 
     /**
