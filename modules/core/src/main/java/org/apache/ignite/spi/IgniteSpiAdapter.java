@@ -646,16 +646,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
      */
     protected void initFailureDetectionTimeout() {
         if (failureDetectionTimeoutEnabled) {
-            clientFailureDetectionTimeout = ignite.configuration().getClientFailureDetectionTimeout();
-
-            if (clientFailureDetectionTimeout <= 0)
-                throw new IgniteSpiException("Invalid client failure detection timeout value: " +
-                    clientFailureDetectionTimeout);
-            else if (clientFailureDetectionTimeout <= 10)
-                // Because U.currentTimeInMillis() is updated once in 10 milliseconds.
-                log.warning("Client failure detection timeout is too low, it may lead to unpredictable behaviour " +
-                    "[clientFailureDetectionTimeout=" + clientFailureDetectionTimeout + ']');
-
             failureDetectionTimeout = ignite.configuration().getFailureDetectionTimeout();
 
             if (failureDetectionTimeout <= 0)
@@ -664,11 +654,24 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                 // Because U.currentTimeInMillis() is updated once in 10 milliseconds.
                 log.warning("Failure detection timeout is too low, it may lead to unpredictable behaviour " +
                     "[failureDetectionTimeout=" + failureDetectionTimeout + ']');
+            else if (failureDetectionTimeout <= ignite.configuration().getMetricsUpdateFrequency())
+                log.warning("'IgniteConfiguration.failureDetectionTimeout' should be greater then " +
+                    "'IgniteConfiguration.metricsUpdateFrequency' to prevent unnecessary status checking.");
         }
         // Intentionally compare references using '!=' below
         else if (ignite.configuration().getFailureDetectionTimeout() !=
                 IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT)
             log.warning("Failure detection timeout will be ignored (one of SPI parameters has been set explicitly)");
+
+        clientFailureDetectionTimeout = ignite.configuration().getClientFailureDetectionTimeout();
+
+        if (clientFailureDetectionTimeout <= 0)
+            throw new IgniteSpiException("Invalid client failure detection timeout value: " +
+                clientFailureDetectionTimeout);
+        else if (clientFailureDetectionTimeout <= 10)
+            // Because U.currentTimeInMillis() is updated once in 10 milliseconds.
+            log.warning("Client failure detection timeout is too low, it may lead to unpredictable behaviour " +
+                "[clientFailureDetectionTimeout=" + clientFailureDetectionTimeout + ']');
 
         if (clientFailureDetectionTimeout < ignite.configuration().getMetricsUpdateFrequency())
             throw new IgniteSpiException("Inconsistent configuration " +
