@@ -101,7 +101,7 @@ public abstract class Query<R> implements Serializable {
      *
      * @param parts Partitions.
      */
-    protected static int[] prepare(int[] parts) {
+    protected int[] prepare(int[] parts) {
         if (parts == null)
             return null;
 
@@ -115,7 +115,7 @@ public abstract class Query<R> implements Serializable {
                 if (parts[i] > parts[i + 1])
                     sorted = false;
                 else if (sorted)
-                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+                    validateDups(parts[i], parts[i + 1]);
 
             A.ensure(0 <= parts[i] && parts[i] < CacheConfiguration.MAX_PARTITIONS_COUNT, "Illegal partition");
         }
@@ -126,11 +126,19 @@ public abstract class Query<R> implements Serializable {
 
             for (int i = 0; i < parts.length; i++) {
                 if (i < parts.length - 1)
-                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+                    validateDups(parts[i], parts[i + 1]);
             }
         }
 
         return parts;
+    }
+
+    /**
+     * @param p1 Part 1.
+     * @param p2 Part 2.
+     */
+    private void validateDups(int p1, int p2) {
+        A.ensure(p1 != p2, "Partition duplicates are not allowed: " + p1);
     }
 
     /** {@inheritDoc} */
