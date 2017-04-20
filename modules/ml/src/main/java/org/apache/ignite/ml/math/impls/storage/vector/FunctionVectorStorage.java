@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -29,9 +30,12 @@ import org.apache.ignite.ml.math.functions.IntDoubleToVoidFunction;
  * Read-only or read-write function-based vector storage.
  */
 public class FunctionVectorStorage implements VectorStorage {
-    /** */ private IgniteFunction<Integer, Double> getFunc;
-    /** */ private IntDoubleToVoidFunction setFunc;
-    /** */ private int size;
+    /** */
+    private IgniteFunction<Integer, Double> getFunc;
+    /** */
+    private IntDoubleToVoidFunction setFunc;
+    /** */
+    private int size;
 
     /**
      *
@@ -43,7 +47,7 @@ public class FunctionVectorStorage implements VectorStorage {
     /**
      * Creates read-only or read-write storage.
      *
-     * @param size Cardinality of this vector storage.
+     * @param size    Cardinality of this vector storage.
      * @param getFunc Get function.
      * @param setFunc Optional set function ({@code null} for read-only storage).
      */
@@ -57,16 +61,14 @@ public class FunctionVectorStorage implements VectorStorage {
     }
 
     /**
-     *
-     *
+     * @return Getter function.
      */
     public IgniteFunction<Integer, Double> getFunction() {
         return getFunc;
     }
 
     /**
-     *
-     *
+     * @return Setter function.
      */
     public IntDoubleToVoidFunction setFunction() {
         return setFunc;
@@ -75,7 +77,7 @@ public class FunctionVectorStorage implements VectorStorage {
     /**
      * Creates read-only storage.
      *
-     * @param size Cardinality of this vector storage.
+     * @param size    Cardinality of this vector storage.
      * @param getFunc Get function.
      */
     public FunctionVectorStorage(int size, IgniteFunction<Integer, Double> getFunc) {
@@ -108,9 +110,10 @@ public class FunctionVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        setFunc = (IntDoubleToVoidFunction)in.readObject();
-        getFunc = (IgniteFunction<Integer, Double>)in.readObject();
+        setFunc = (IntDoubleToVoidFunction) in.readObject();
+        getFunc = (IgniteFunction<Integer, Double>) in.readObject();
         size = in.readInt();
     }
 

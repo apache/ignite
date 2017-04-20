@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.exceptions.IndexException;
@@ -28,15 +29,21 @@ import org.apache.ignite.ml.math.exceptions.IndexException;
  * Row, column or diagonal vector-based view of the matrix
  */
 public class MatrixVectorStorage implements VectorStorage {
-    /** */ private Matrix parent;
+    /** */
+    private Matrix parent;
 
-    /** */ private int row;
-    /** */ private int col;
+    /** */
+    private int row;
+    /** */
+    private int col;
 
-    /** */ private int rowStride;
-    /** */  private int colStride;
+    /** */
+    private int rowStride;
+    /** */
+    private int colStride;
 
-    /** */ private int size;
+    /** */
+    private int size;
 
     /**
      *
@@ -46,9 +53,9 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /**
-     * @param parent Parent matrix.
-     * @param row Starting row in the view.
-     * @param col Starting column in the view.
+     * @param parent    Parent matrix.
+     * @param row       Starting row in the view.
+     * @param col       Starting column in the view.
      * @param rowStride Rows stride in the view.
      * @param colStride Columns stride in the view.
      */
@@ -167,7 +174,7 @@ public class MatrixVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        parent = (Matrix)in.readObject();
+        parent = (Matrix) in.readObject();
         row = in.readInt();
         col = in.readInt();
         rowStride = in.readInt();

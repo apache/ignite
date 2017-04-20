@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
@@ -30,11 +31,12 @@ import org.apache.ignite.ml.math.impls.storage.vector.PivotedVectorStorage;
  * Pivoted (index mapped) view over another vector.
  */
 public class PivotedVectorView extends AbstractVector {
-    /** */ private Vector vec;
+    /** */
+    private Vector vec;
 
     /**
-     * @param vec Parent vector.
-     * @param pivot Mapping from external index to internal.
+     * @param vec     Parent vector.
+     * @param pivot   Mapping from external index to internal.
      * @param unpivot Mapping from internal index to external.
      */
     public PivotedVectorView(Vector vec, int[] pivot, int[] unpivot) {
@@ -47,7 +49,7 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     * @param vec  Parent vector.
+     * @param vec   Parent vector.
      * @param pivot Mapping from external index to internal.
      */
     public PivotedVectorView(Vector vec, int[] pivot) {
@@ -60,7 +62,7 @@ public class PivotedVectorView extends AbstractVector {
 
     /** */
     private PivotedVectorStorage storage() {
-        return (PivotedVectorStorage)getStorage();
+        return (PivotedVectorStorage) getStorage();
     }
 
     /**
@@ -79,7 +81,7 @@ public class PivotedVectorView extends AbstractVector {
 
     /**
      * @param i Index to pivot.
-     * @return  Mapping from external index to internal for given index.
+     * @return Mapping from external index to internal for given index.
      */
     public int pivot(int i) {
         return storage().pivot()[i];
@@ -104,17 +106,17 @@ public class PivotedVectorView extends AbstractVector {
         int exIdx = storage().pivot()[idx];
 
         return new Vector.Element() {
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public double get() {
                 return storageGet(idx);
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public int index() {
                 return exIdx;
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public void set(double val) {
                 storageSet(idx, val);
             }
@@ -157,6 +159,6 @@ public class PivotedVectorView extends AbstractVector {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        vec = (Vector)in.readObject();
+        vec = (Vector) in.readObject();
     }
 }

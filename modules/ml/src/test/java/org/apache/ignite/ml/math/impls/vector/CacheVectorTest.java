@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.stream.IntStream;
+
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -48,6 +49,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "test-cache";
     /** Cache size. */
     private static final int size = MathTestConstants.STORAGE_SIZE;
+
     /** Grid instance. */
     private Ignite ignite;
     /** Default key mapper. */
@@ -395,7 +397,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         ByteArrayInputStream byteArrInputStream = new ByteArrayInputStream(byteArrOutputStream.toByteArray());
         ObjectInputStream objInputStream = new ObjectInputStream(byteArrInputStream);
 
-        CacheVector objRestored = (CacheVector)objInputStream.readObject();
+        CacheVector objRestored = (CacheVector) objInputStream.readObject();
 
         assertTrue(MathTestConstants.VAL_NOT_EQUALS, cacheVector.equals(objRestored));
         assertEquals(MathTestConstants.VAL_NOT_EQUALS, objRestored.get(1), 1.0, 0.0);
@@ -420,7 +422,8 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         return cache;
     }
 
-    /** */ private static class TestKeyMapper implements VectorKeyMapper<Integer> {
+    /** */
+    private static class TestKeyMapper implements VectorKeyMapper<Integer> {
         /** {@inheritDoc} */
         @Override public Integer apply(int i) {
             return i;

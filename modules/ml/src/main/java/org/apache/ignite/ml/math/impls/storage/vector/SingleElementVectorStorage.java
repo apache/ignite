@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 
@@ -27,9 +28,12 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
  * Vector storage holding a single non-zero value at some index.
  */
 public class SingleElementVectorStorage implements VectorStorage {
-    /** */ private int idx;
-    /** */ private double val;
-    /** */ private int size;
+    /** */
+    private int idx;
+    /** */
+    private double val;
+    /** */
+    private int size;
 
     /**
      *
@@ -40,8 +44,8 @@ public class SingleElementVectorStorage implements VectorStorage {
 
     /**
      * @param size Parent vector size.
-     * @param idx Element index in the parent vector.
-     * @param val Value of the element.
+     * @param idx  Element index in the parent vector.
+     * @param val  Value of the element.
      */
     public SingleElementVectorStorage(int size, int idx, double val) {
         assert size > 0;
@@ -53,7 +57,6 @@ public class SingleElementVectorStorage implements VectorStorage {
     }
 
     /**
-     *
      * @return Index of the element in the parent vector.
      */
     public int index() {
@@ -125,7 +128,7 @@ public class SingleElementVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SingleElementVectorStorage that = (SingleElementVectorStorage)o;
+        SingleElementVectorStorage that = (SingleElementVectorStorage) o;
 
         return idx == that.idx && Double.compare(that.val, val) == 0 && size == that.size;
     }
@@ -135,7 +138,7 @@ public class SingleElementVectorStorage implements VectorStorage {
         int res = idx;
         long temp = Double.doubleToLongBits(val);
 
-        res = 31 * res + (int)(temp ^ (temp >>> 32));
+        res = 31 * res + (int) (temp ^ (temp >>> 32));
         res = 31 * res + size;
 
         return res;

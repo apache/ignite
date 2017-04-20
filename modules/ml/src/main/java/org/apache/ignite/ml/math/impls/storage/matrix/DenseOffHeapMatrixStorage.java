@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.storage.matrix;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.ml.math.MatrixStorage;
 
@@ -27,11 +28,15 @@ import org.apache.ignite.ml.math.MatrixStorage;
  * Local, dense off-heap matrix storage.
  */
 public class DenseOffHeapMatrixStorage implements MatrixStorage {
-    /** */ private int rows;
-    /** */ private int cols;
-    /** */ private transient long ptr;
+    /** */
+    private int rows;
+    /** */
+    private int cols;
+    /** */
+    private transient long ptr;
     //TODO: temp solution.
-    /** */ private int ptrInitHash;
+    /** */
+    private int ptrInitHash;
 
     /** */
     public DenseOffHeapMatrixStorage() {
@@ -152,7 +157,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
         GridUnsafe.freeMemory(ptr);
     }
 
-    /** {@inheritDoc} */
+    /** */
     private long pointerOffset(int x, int y) {
         return ptr + x * cols * Double.BYTES + y * Double.BYTES;
     }
@@ -161,9 +166,9 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     @Override public boolean equals(Object obj) {
         return obj != null &&
             getClass().equals(obj.getClass()) &&
-            (rows == ((DenseOffHeapMatrixStorage)obj).rows) &&
-            (cols == ((DenseOffHeapMatrixStorage)obj).cols) &&
-            (rows == 0 || cols == 0 || ptr == ((DenseOffHeapMatrixStorage)obj).ptr || isMemoryEquals((DenseOffHeapMatrixStorage)obj));
+            (rows == ((DenseOffHeapMatrixStorage) obj).rows) &&
+            (cols == ((DenseOffHeapMatrixStorage) obj).cols) &&
+            (rows == 0 || cols == 0 || ptr == ((DenseOffHeapMatrixStorage) obj).ptr || isMemoryEquals((DenseOffHeapMatrixStorage) obj));
     }
 
     /** {@inheritDoc} */

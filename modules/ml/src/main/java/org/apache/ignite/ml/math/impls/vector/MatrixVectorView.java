@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.IndexException;
@@ -29,13 +30,18 @@ import org.apache.ignite.ml.math.impls.storage.vector.MatrixVectorStorage;
  * Row or column vector view off the matrix.
  */
 public class MatrixVectorView extends AbstractVector {
-    /** */ private Matrix parent;
+    /** */
+    private Matrix parent;
 
-    /** */ private int row;
-    /** */ private int col;
+    /** */
+    private int row;
+    /** */
+    private int col;
 
-    /** */ private int rowStride;
-    /** */ private int colStride;
+    /** */
+    private int rowStride;
+    /** */
+    private int colStride;
 
     /**
      *
@@ -45,9 +51,9 @@ public class MatrixVectorView extends AbstractVector {
     }
 
     /**
-     * @param parent Parent matrix.
-     * @param row Starting row in the view.
-     * @param col Starting column in the view.
+     * @param parent    Parent matrix.
+     * @param row       Starting row in the view.
+     * @param col       Starting column in the view.
      * @param rowStride Rows stride in the view.
      * @param colStride Columns stride in the view.
      */
@@ -100,7 +106,7 @@ public class MatrixVectorView extends AbstractVector {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        parent = (Matrix)in.readObject();
+        parent = (Matrix) in.readObject();
         row = in.readInt();
         col = in.readInt();
         rowStride = in.readInt();
@@ -128,7 +134,7 @@ public class MatrixVectorView extends AbstractVector {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        MatrixVectorView that = (MatrixVectorView)o;
+        MatrixVectorView that = (MatrixVectorView) o;
 
         return (parent != null ? parent.equals(that.parent) : that.parent == null) &&
             row == that.row &&

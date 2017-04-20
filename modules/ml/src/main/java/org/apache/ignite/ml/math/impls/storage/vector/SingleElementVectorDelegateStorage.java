@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
@@ -28,8 +29,10 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
  * Single value view storage over another vector.
  */
 public class SingleElementVectorDelegateStorage implements VectorStorage {
-    /** */ private int idx;
-    /** */ private Vector vec;
+    /** */
+    private int idx;
+    /** */
+    private Vector vec;
 
     /**
      *
@@ -51,16 +54,14 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
     }
 
     /**
-     *
-     *
+     * @return Index of the element in the parent vector.
      */
     public int index() {
         return idx;
     }
 
     /**
-     *
-     *
+     * @return Parent vector.
      */
     public Vector delegate() {
         return vec;
@@ -92,7 +93,7 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        vec = (Vector)in.readObject();
+        vec = (Vector) in.readObject();
         idx = in.readInt();
     }
 
@@ -129,7 +130,7 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SingleElementVectorDelegateStorage that = (SingleElementVectorDelegateStorage)o;
+        SingleElementVectorDelegateStorage that = (SingleElementVectorDelegateStorage) o;
 
         return idx == that.idx && (vec != null ? vec.equals(that.vec) : that.vec == null);
     }
