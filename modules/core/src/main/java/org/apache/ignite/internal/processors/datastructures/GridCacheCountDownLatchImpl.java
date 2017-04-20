@@ -152,7 +152,9 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     /** {@inheritDoc} */
     @Override public int count() {
         try {
-            return CU.outTx(new GetCountCallable(), ctx);
+            GridCacheCountDownLatchValue latchVal = latchView.get(key);
+
+            return latchVal == null ? 0 : latchVal.get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -208,7 +210,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         A.ensure(val > 0, "val should be positive");
 
         try {
-            return CU.outTx(retryTopologySafe(new CountDownCallable(val)), ctx);
+            return retryTopologySafe(new CountDownCallable(val));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -218,7 +220,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     /** {@inheritDoc}*/
     @Override public void countDownAll() {
         try {
-            CU.outTx(retryTopologySafe(new CountDownCallable(0)), ctx);
+            retryTopologySafe(new CountDownCallable(0));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -255,23 +257,22 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
             int state = initGuard.get();
 
             if (state != READY_LATCH_STATE) {
-                /** Internal latch is not fully initialized yet. Remember latest latch value. */
+                /* Internal latch is not fully initialized yet. Remember latest latch value. */
                 lastLatchVal = cnt;
 
                 return;
             }
 
-            /** 'synchronized' statement guarantees visibility of internalLatch. No need to make it volatile. */
+            /* 'synchronized' statement guarantees visibility of internalLatch. No need to make it volatile. */
             latch0 = internalLatch;
         }
 
-        /** Internal latch is fully initialized and ready for the usage. */
+        /* Internal latch is fully initialized and ready for the usage. */
 
         assert latch0 != null;
 
         while (latch0.getCount() > cnt)
             latch0.countDown();
-
     }
 
     /**
@@ -280,27 +281,24 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     private void initializeLatch() throws IgniteCheckedException {
         if (initGuard.compareAndSet(UNINITIALIZED_LATCH_STATE, CREATING_LATCH_STATE)) {
             try {
-                internalLatch = CU.outTx(
-                    retryTopologySafe(new Callable<CountDownLatch>() {
-                        @Override public CountDownLatch call() throws Exception {
-                            try (GridNearTxLocal tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheCountDownLatchValue val = latchView.get(key);
+                internalLatch = retryTopologySafe(new Callable<CountDownLatch>() {
+                    @Override public CountDownLatch call() throws Exception {
+                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
+                            GridCacheCountDownLatchValue val = latchView.get(key);
 
-                                if (val == null) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to find count down latch with given name: " + name);
+                            if (val == null) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to find count down latch with given name: " + name);
 
-                                    return new CountDownLatch(0);
-                                }
-
-                                tx.commit();
-
-                                return new CountDownLatch(val.get());
+                                return new CountDownLatch(0);
                             }
+
+                            tx.commit();
+
+                            return new CountDownLatch(val.get());
                         }
-                    }),
-                    ctx
-                );
+                    }
+                });
 
                 synchronized (initGuard) {
                     if (lastLatchVal != null) {
@@ -387,18 +385,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheCountDownLatchImpl.class, this);
-    }
-
-    /**
-     *
-     */
-    private class GetCountCallable implements Callable<Integer> {
-        /** {@inheritDoc} */
-        @Override public Integer call() throws Exception {
-            GridCacheCountDownLatchValue latchVal = latchView.get(key);
-
-            return latchVal == null ? 0 : latchVal.get();
-        }
     }
 
     /**

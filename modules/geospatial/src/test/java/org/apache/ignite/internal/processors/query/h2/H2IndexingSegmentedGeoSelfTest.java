@@ -17,19 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-
 /**
- * Geo-indexing test for binary mode.
+ * Test for segmented geo index.
  */
-public class GridBinaryH2IndexingGeoSelfTest extends GridH2IndexingGeoSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
+public class H2IndexingSegmentedGeoSelfTest extends H2IndexingAbstractGeoSelfTest {
+    /**
+     * Constructor.
+     */
+    public H2IndexingSegmentedGeoSelfTest() {
+        super(false, true);
     }
 }

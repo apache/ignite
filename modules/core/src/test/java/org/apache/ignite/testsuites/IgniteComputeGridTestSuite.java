@@ -22,7 +22,6 @@ import org.apache.ignite.internal.ClusterNodeMetricsSelfTest;
 import org.apache.ignite.internal.GridAffinityNoCacheSelfTest;
 import org.apache.ignite.internal.GridAffinitySelfTest;
 import org.apache.ignite.internal.GridAlwaysFailoverSpiFailSelfTest;
-import org.apache.ignite.internal.GridCacheRecreateLockTest;
 import org.apache.ignite.internal.GridCancelOnGridStopSelfTest;
 import org.apache.ignite.internal.GridCancelUnusedJobSelfTest;
 import org.apache.ignite.internal.GridCancelledJobsMetricsSelfTest;
@@ -158,7 +157,6 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(IgniteRoundRobinErrorAfterClientReconnectTest.class);
         suite.addTestSuite(PublicThreadpoolStarvationTest.class);
         suite.addTestSuite(StripedExecutorTest.class);
-        suite.addTestSuite(GridCacheRecreateLockTest.class);
 
         return suite;
     }

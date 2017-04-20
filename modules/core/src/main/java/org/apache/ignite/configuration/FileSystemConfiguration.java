@@ -202,12 +202,11 @@ public class FileSystemConfiguration {
     }
 
     /**
-     * Gets IGFS instance name. If {@code null}, then instance with default
-     * name will be used.
+     * Gets IGFS instance name.
      *
      * @return IGFS instance name.
      */
-    @Nullable public String getName() {
+    public String getName() {
         return name;
     }
 
@@ -218,6 +217,9 @@ public class FileSystemConfiguration {
      * @return {@code this} for chaining.
      */
     public FileSystemConfiguration setName(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
         this.name = name;
 
         return this;

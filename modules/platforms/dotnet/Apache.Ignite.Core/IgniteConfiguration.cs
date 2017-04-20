@@ -350,6 +350,16 @@ namespace Apache.Ignite.Core
                 memEventStorage.Write(writer);
             }
 
+            if (MemoryConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                MemoryConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
             // Plugins (should be last)
             if (PluginConfigurations != null)
             {
@@ -481,6 +491,11 @@ namespace Apache.Ignite.Core
                 case 2:
                     EventStorageSpi = MemoryEventStorageSpi.Read(r);
                     break;
+            }
+
+            if (r.ReadBoolean())
+            {
+                MemoryConfiguration = new MemoryConfiguration(r);
             }
         }
 
@@ -937,5 +952,11 @@ namespace Apache.Ignite.Core
         /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
         /// </summary>
         public IEventStorageSpi EventStorageSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the page memory configuration.
+        /// <see cref="MemoryConfiguration"/> for more details.
+        /// </summary>
+        public MemoryConfiguration MemoryConfiguration { get; set; }
     }
 }

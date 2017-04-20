@@ -391,7 +391,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String name() {
+    @Override public String name() {
         return cfg.getName();
     }
 
@@ -1186,7 +1186,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(final IgfsPath path, final long accessTime, final long modificationTime) {
+    @Override public void setTimes(final IgfsPath path, final long modificationTime, final long accessTime) {
         A.notNull(path, "path");
 
         if (accessTime == -1 && modificationTime == -1)
@@ -1204,9 +1204,9 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = resolveMode(path);
 
                 if (mode == PROXY)
-                    secondaryFs.setTimes(path, accessTime, modificationTime);
+                    secondaryFs.setTimes(path, modificationTime, accessTime);
                 else {
-                    meta.updateTimes(path, accessTime, modificationTime,
+                    meta.updateTimes(path, modificationTime, accessTime,
                         IgfsUtils.isDualMode(mode) ? secondaryFs : null);
                 }
 
