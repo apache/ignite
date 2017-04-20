@@ -102,10 +102,10 @@
                 <module>modules/geospatial</module>
                 <module>modules/hibernate5</module>
                 <module>modules/hibernate</module>
-                <module>modules/ml</module>
+            <!--    <module>modules/ml</module>  -->
                 <module>modules/schedule</module>
-                <module>modules/web-console/web-agent</module>
-                <module>modules/web-console</module>
+            <!--    <module>modules/web-console/web-agent</module>
+                <module>modules/web-console</module> -->mvn
                 <module>modules/yardstick</module>
             </modules>
         </profile>
