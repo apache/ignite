@@ -150,6 +150,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         failureThreshold = 5000;
         clientFailureThreshold = 10000;
         useTestSpi = true;
+
         try {
             long detectTime = measureFailureDetectedTime(2,0);
 
@@ -157,7 +158,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 detectTime > failureThreshold - 100);
             assertTrue("Server node failure detected too slow:  " + detectTime + "ms",
                 detectTime < clientFailureThreshold);
-        } finally {
+        }
+        finally {
             failureThreshold = FAILURE_THRESHOLD;
             clientFailureThreshold = CLIENT_FAILURE_THRESHOLD;
             useTestSpi = false;
@@ -172,6 +174,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     public void testFailureTimeoutServerClient() throws Exception {
         failureThreshold = 1000;
         clientFailureThreshold = 2000;
+
         try {
             long detectTime = measureFailureDetectedTime(1,1);
 
@@ -179,7 +182,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 detectTime > clientFailureThreshold - 100);
             assertTrue("Client node failure detected too slow:  " + detectTime + "ms",
                 detectTime < clientFailureThreshold + 5000);
-        } finally {
+        }
+        finally {
             failureThreshold = FAILURE_THRESHOLD;
             clientFailureThreshold = CLIENT_FAILURE_THRESHOLD;
         }
@@ -216,14 +220,14 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         final CountDownLatch latch = new CountDownLatch(1);
 
         Ignite aliveNode;
-        TcpDiscoverySpi aliveSpi, failureSpi;
+
+        final TcpDiscoverySpi aliveSpi, failureSpi;
+
         if (clientCnt == 0) {
             //firstSpi.simulateNodeFailure();
-            TestTcpDiscoverySpi2 testFSpi = (TestTcpDiscoverySpi2)firstSpi;
-            testFSpi.writeToSocketDelay = 7000;
+            ((TestTcpDiscoverySpi2)firstSpi).writeToSocketDelay = 7000;
 
-            TestTcpDiscoverySpi2 testSSpi = (TestTcpDiscoverySpi2)secondSpi;
-            testSSpi.pingResponseReadFail = true;
+            ((TestTcpDiscoverySpi2)secondSpi).pingResponseReadFail = true;
 
             aliveNode = secondNode;
             aliveSpi = secondSpi;
@@ -236,14 +240,22 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             failureSpi = secondSpi;
         }
 
-        Thread pinger = new Thread(() -> aliveSpi.pingNode(failureSpi.getLocalNodeId()));
+        Thread pinger = new Thread(new Runnable() {
+            @Override public void run() {
+                aliveSpi.pingNode(failureSpi.getLocalNodeId());
+            }
+        });
+
         pinger.start();
 
         aliveNode.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 DiscoveryEvent disoEvt = (DiscoveryEvent)evt;
+
                 failureDetectTime[0] = U.currentTimeMillis();
+
                 latch.countDown();
+
                 return true;
             }
         }, EVT_NODE_FAILED);
@@ -252,7 +264,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
         assertTrue("Can't get node failure event", latch.await(15000, TimeUnit.MILLISECONDS));
 
-        return failureDetectTime[0]-failureTime;
+        return failureDetectTime[0] - failureTime;
     }
 
 
@@ -456,11 +468,10 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 }
             }
 
-            if (sock.getSoTimeout() >= writeToSocketDelay) {
+            if (sock.getSoTimeout() >= writeToSocketDelay)
                 super.writeToSocket(sock, out, msg, timeout);
-            } else {
+            else
                 throw new IOException("Write to socket delay timeout exception.");
-            }
         }
 
 
