@@ -743,8 +743,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean template = cfg.getName() != null && cfg.getName().endsWith("*");
 
+        CacheConfiguration startCfg = template ? null : cloneUncheckSerializable(cfg);
+
         DynamicCacheDescriptor desc = new DynamicCacheDescriptor(ctx,
             cfg,
+            startCfg,
             cacheType,
             template,
             IgniteUuid.randomUuid(),
@@ -782,6 +785,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getName() == null) { // Use cache configuration with null name as template.
             DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
                 cfg,
+                null,
                 cacheType,
                 true,
                 IgniteUuid.randomUuid(),
@@ -1230,8 +1234,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.continuous().onCacheStart(cacheCtx);
 
-        if (sharedCtx.pageStore() != null)
-            sharedCtx.pageStore().initializeForCache(cacheCtx.config());
+        if (sharedCtx.pageStore() != null) {
+            DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cache.name()));
+
+            assert desc != null: "Cache with name " + cache.name() + " have not registered or already destroyed.";
+
+            sharedCtx.pageStore().initializeForCache(desc.startCacheConfiguration());
+        }
 
         CacheConfiguration cfg = cacheCtx.config();
 
@@ -2184,7 +2193,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(null, desc.cacheConfiguration().getName(),
                 null);
 
-            req.startCacheConfiguration(desc.cacheConfiguration());
+            req.startCacheConfiguration(desc.startCacheConfiguration());
             req.cacheType(desc.cacheType());
             req.deploymentId(desc.deploymentId());
             req.receivedFrom(desc.receivedFrom());
@@ -2227,7 +2236,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(null, cache.name(), null);
 
-            req.startCacheConfiguration(desc.cacheConfiguration());
+            req.startCacheConfiguration(desc.startCacheConfiguration());
             req.cacheType(desc.cacheType());
             req.deploymentId(desc.deploymentId());
             req.receivedFrom(desc.receivedFrom());
@@ -2304,12 +2313,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (existing == null) {
                         DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
-                                ctx,
-                                ccfg,
-                                req.cacheType(),
-                                true,
-                                req.deploymentId(),
-                                req.schema());
+                            ctx,
+                            ccfg,
+                            null,
+                            req.cacheType(),
+                            true,
+                            req.deploymentId(),
+                            req.schema());
 
                         registeredTemplates.put(maskNull(req.cacheName()), desc);
                     }
@@ -2345,13 +2355,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     else {
                         assert req.cacheType() != null : req;
 
+                        CacheConfiguration startCfg = cloneUncheckSerializable(ccfg);
+
                         DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
-                                ctx,
-                                ccfg,
-                                req.cacheType(),
-                                false,
-                                req.deploymentId(),
-                                req.schema());
+                            ctx,
+                            ccfg,
+                            startCfg,
+                            req.cacheType(),
+                            false,
+                            req.deploymentId(),
+                            req.schema());
 
                         // Received statically configured cache.
                         if (req.initiatingNodeId() == null)
@@ -3026,7 +3039,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 DynamicCacheDescriptor desc = registeredTemplates.get(maskNull(req.cacheName()));
 
                 if (desc == null) {
-                    DynamicCacheDescriptor templateDesc = new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), true,
+                    DynamicCacheDescriptor templateDesc = new DynamicCacheDescriptor(ctx, ccfg, null, req.cacheType(), true,
                         req.deploymentId(), req.schema());
 
                     DynamicCacheDescriptor old = registeredTemplates.put(maskNull(ccfg.getName()), templateDesc);
@@ -3070,7 +3083,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         assert req.cacheType() != null : req;
                         assert F.eq(ccfg.getName(), req.cacheName()) : req;
 
-                        DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false,
+                        CacheConfiguration startCfg = cloneUncheckSerializable(ccfg);
+
+                        DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx, ccfg, startCfg, req.cacheType(), false,
                             req.deploymentId(), req.schema());
 
                         if (newTopVer == null) {
@@ -3962,6 +3977,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void checkEmptyTransactions() throws IgniteException {
         if (transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
             throw new IgniteException("Cannot start/stop cache within lock or transaction.");
+    }
+
+    /**
+     * @param val CacheConfiguration to check.
+     */
+    private CacheConfiguration cloneUncheckSerializable(final CacheConfiguration val) {
+        try {
+            return cloneCheckSerializable(val);
+        } catch (IgniteCheckedException e) {
+            if (log.isDebugEnabled())
+                log.error("Configuration for cache with name " + val.getName() + " does not cloned ", e);
+
+            throw U.convertException(e);
+        }
     }
 
     /**

@@ -44,6 +44,10 @@ public class DynamicCacheDescriptor {
     @GridToStringExclude
     private CacheConfiguration cacheCfg;
 
+    /** Start cache configuration. */
+    @GridToStringExclude
+    private CacheConfiguration startCacheCfg;
+
     /** Locally configured flag. */
     private boolean locCfg;
 
@@ -102,6 +106,7 @@ public class DynamicCacheDescriptor {
     @SuppressWarnings("unchecked")
     public DynamicCacheDescriptor(GridKernalContext ctx,
         CacheConfiguration cacheCfg,
+        CacheConfiguration startCacheCfg,
         CacheType cacheType,
         boolean template,
         IgniteUuid deploymentId,
@@ -110,6 +115,7 @@ public class DynamicCacheDescriptor {
         assert schema != null;
 
         this.cacheCfg = cacheCfg;
+        this.startCacheCfg = startCacheCfg;
         this.cacheType = cacheType;
         this.template = template;
         this.deploymentId = deploymentId;
@@ -225,6 +231,13 @@ public class DynamicCacheDescriptor {
      */
     public CacheConfiguration cacheConfiguration() {
         return cacheCfg;
+    }
+
+    /**
+     * @return Cache configuration at start.
+     */
+    public CacheConfiguration startCacheConfiguration() {
+        return startCacheCfg;
     }
 
     /**

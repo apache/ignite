@@ -344,6 +344,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             else if (req.start() && !req.clientStartOnly()) {
                 DynamicCacheDescriptor desc = new DynamicCacheDescriptor(cctx.kernalContext(),
                     req.startCacheConfiguration(),
+                    null,
                     req.cacheType(),
                     false,
                     req.deploymentId(),
