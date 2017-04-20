@@ -297,9 +297,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             disconnected = false;
 
-            for (DynamicCacheDescriptor desc : ctx.cache().cacheDescriptors())
-                initializeCache(ctx.cache().context().cacheContext(desc.cacheId()), desc.schema());
-
             onCacheKernalStart();
         }
     }
@@ -655,113 +652,130 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Create type descriptors from schema and initialize indexing for given cache.<p>
+     * Use with {@link #busyLock} where appropriate.
      * @param cctx Cache context.
      * @param schema Initial schema.
+     * @param reconnect Whether initialization is done due to reconnect.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"deprecation", "ThrowableResultOfMethodCallIgnored"})
-    private void initializeCache(GridCacheContext<?, ?> cctx, QuerySchema schema) throws IgniteCheckedException {
-        String space = cctx.name();
+    public void initializeCache(GridCacheContext<?, ?> cctx, QuerySchema schema, boolean reconnect)
+        throws IgniteCheckedException {
+        if (!reconnect && !busyLock.enterBusy())
+            return;
 
-        // Prepare candidates.
-        List<Class<?>> mustDeserializeClss = new ArrayList<>();
+        cctx.shared().database().checkpointReadLock();
 
-        Collection<QueryTypeCandidate> cands = new ArrayList<>();
+        try {
+            String space = cctx.name();
 
-        Collection<QueryEntity> qryEntities = schema.entities();
+            // Prepare candidates.
+            List<Class<?>> mustDeserializeClss = new ArrayList<>();
 
-        if (!F.isEmpty(qryEntities)) {
-            for (QueryEntity qryEntity : qryEntities) {
-                QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(space, cctx, qryEntity, mustDeserializeClss);
+            Collection<QueryTypeCandidate> cands = new ArrayList<>();
 
-                cands.add(cand);
-            }
-        }
+            Collection<QueryEntity> qryEntities = schema.entities();
 
-        // Ensure that candidates has unique index names. Otherwise we will not be able to apply pending operations.
-        Map<String, QueryTypeDescriptorImpl> tblTypMap = new HashMap<>();
-        Map<String, QueryTypeDescriptorImpl> idxTypMap = new HashMap<>();
+            if (!F.isEmpty(qryEntities)) {
+                for (QueryEntity qryEntity : qryEntities) {
+                    QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(space, cctx, qryEntity, mustDeserializeClss);
 
-        for (QueryTypeCandidate cand : cands) {
-            QueryTypeDescriptorImpl desc = cand.descriptor();
-
-            QueryTypeDescriptorImpl oldDesc = tblTypMap.put(desc.tableName(), desc);
-
-            if (oldDesc != null)
-                throw new IgniteException("Duplicate table name [cache=" + space +
-                    ", tblName=" + desc.tableName() + ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
-
-            for (String idxName : desc.indexes().keySet()) {
-                oldDesc = idxTypMap.put(idxName, desc);
-
-                if (oldDesc != null)
-                    throw new IgniteException("Duplicate index name [cache=" + space +
-                        ", idxName=" + idxName + ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
-            }
-        }
-
-        // Apply pending operation which could have been completed as no-op at this point. There could be only one
-        // in-flight operation for a cache.
-        synchronized (stateMux) {
-            if (disconnected)
-                return;
-
-            for (SchemaOperation op : schemaOps.values()) {
-                if (F.eq(op.proposeMessage().deploymentId(), cctx.dynamicDeploymentId())) {
-                    if (op.started()) {
-                        SchemaOperationWorker worker = op.manager().worker();
-
-                        assert !worker.cacheRegistered();
-
-                        if (!worker.nop()) {
-                            IgniteInternalFuture fut = worker.future();
-
-                            assert fut.isDone();
-
-                            if (fut.error() == null) {
-                                SchemaAbstractOperation op0 = op.proposeMessage().operation();
-
-                                if (op0 instanceof SchemaIndexCreateOperation) {
-                                    SchemaIndexCreateOperation opCreate = (SchemaIndexCreateOperation)op0;
-
-                                    QueryTypeDescriptorImpl typeDesc = tblTypMap.get(opCreate.tableName());
-
-                                    assert typeDesc != null;
-
-                                    QueryUtils.processDynamicIndexChange(opCreate.indexName(), opCreate.index(),
-                                        typeDesc);
-                                }
-                                else if (op0 instanceof SchemaIndexDropOperation) {
-                                    SchemaIndexDropOperation opDrop = (SchemaIndexDropOperation)op0;
-
-                                    QueryTypeDescriptorImpl typeDesc = idxTypMap.get(opDrop.indexName());
-
-                                    assert typeDesc != null;
-
-                                    QueryUtils.processDynamicIndexChange(opDrop.indexName(), null, typeDesc);
-                                }
-                                else
-                                    assert false;
-                            }
-                        }
-                    }
-
-                    break;
+                    cands.add(cand);
                 }
             }
+
+            // Ensure that candidates has unique index names. Otherwise we will not be able to apply pending operations.
+            Map<String, QueryTypeDescriptorImpl> tblTypMap = new HashMap<>();
+            Map<String, QueryTypeDescriptorImpl> idxTypMap = new HashMap<>();
+
+            for (QueryTypeCandidate cand : cands) {
+                QueryTypeDescriptorImpl desc = cand.descriptor();
+
+                QueryTypeDescriptorImpl oldDesc = tblTypMap.put(desc.tableName(), desc);
+
+                if (oldDesc != null)
+                    throw new IgniteException("Duplicate table name [cache=" + space +
+                        ", tblName=" + desc.tableName() + ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
+
+                for (String idxName : desc.indexes().keySet()) {
+                    oldDesc = idxTypMap.put(idxName, desc);
+
+                    if (oldDesc != null)
+                        throw new IgniteException("Duplicate index name [cache=" + space +
+                            ", idxName=" + idxName + ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
+                }
+            }
+
+            // Apply pending operation which could have been completed as no-op at this point. There could be only one
+            // in-flight operation for a cache.
+            synchronized (stateMux) {
+                if (disconnected && !reconnect)
+                    return;
+
+                for (SchemaOperation op : schemaOps.values()) {
+                    if (F.eq(op.proposeMessage().deploymentId(), cctx.dynamicDeploymentId())) {
+                        if (op.started()) {
+                            SchemaOperationWorker worker = op.manager().worker();
+
+                            assert !worker.cacheRegistered();
+
+                            if (!worker.nop()) {
+                                IgniteInternalFuture fut = worker.future();
+
+                                assert fut.isDone();
+
+                                if (fut.error() == null) {
+                                    SchemaAbstractOperation op0 = op.proposeMessage().operation();
+
+                                    if (op0 instanceof SchemaIndexCreateOperation) {
+                                        SchemaIndexCreateOperation opCreate = (SchemaIndexCreateOperation) op0;
+
+                                        QueryTypeDescriptorImpl typeDesc = tblTypMap.get(opCreate.tableName());
+
+                                        assert typeDesc != null;
+
+                                        QueryUtils.processDynamicIndexChange(opCreate.indexName(), opCreate.index(),
+                                            typeDesc);
+                                    }
+                                    else if (op0 instanceof SchemaIndexDropOperation) {
+                                        SchemaIndexDropOperation opDrop = (SchemaIndexDropOperation) op0;
+
+                                        QueryTypeDescriptorImpl typeDesc = idxTypMap.get(opDrop.indexName());
+
+                                        assert typeDesc != null;
+
+                                        QueryUtils.processDynamicIndexChange(opDrop.indexName(), null, typeDesc);
+                                    }
+                                    else
+                                        assert false;
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            // Ready to register at this point.
+            registerCache0(space, cctx, cands);
+
+            // Warn about possible implicit deserialization.
+            if (!mustDeserializeClss.isEmpty()) {
+                U.warn(log, "Some classes in query configuration cannot be written in binary format " +
+                    "because they either implement Externalizable interface or have writeObject/readObject methods. " +
+                    "Instances of these classes will be deserialized in order to build indexes. Please ensure that " +
+                    "all nodes have these classes in classpath. To enable binary serialization either implement " +
+                    Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
+                    "BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
+            }
         }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
 
-        // Ready to register at this point.
-        registerCache0(space, cctx, cands);
-
-        // Warn about possible implicit deserialization.
-        if (!mustDeserializeClss.isEmpty()) {
-            U.warn(log, "Some classes in query configuration cannot be written in binary format " +
-                "because they either implement Externalizable interface or have writeObject/readObject methods. " +
-                "Instances of these classes will be deserialized in order to build indexes. Please ensure that " +
-                "all nodes have these classes in classpath. To enable binary serialization either implement " +
-                Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
-                "BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
+            if (!reconnect)
+                busyLock.leaveBusy();
         }
     }
 
@@ -783,16 +797,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             schemaOps.clear();
         }
 
-        // Complete client futures outside of synchonized block because they may have listeners/chains.
+        // Complete client futures outside of synchronized block because they may have listeners/chains.
         for (SchemaOperationClientFuture fut : futs)
             fut.onDone(new SchemaOperationException("Client node is disconnected (operation result is unknown)."));
 
-        if (idx != null) {
+        if (idx != null)
             idx.onDisconnected(reconnectFut);
-
-            for (String space : spaces)
-                unregisterCache0(space);
-        }
     }
 
     /**
@@ -808,19 +818,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (idx == null)
             return;
 
-        if (!busyLock.enterBusy())
-            return;
-
-        cctx.shared().database().checkpointReadLock();
-
-        try {
-            initializeCache(cctx, schema);
-        }
-        finally {
-            cctx.shared().database().checkpointReadUnlock();
-
-            busyLock.leaveBusy();
-        }
+        initializeCache(cctx, schema, false);
     }
 
     /**
@@ -834,7 +832,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            unregisterCache0(cctx.name());
+            unregisterCache(cctx.name());
         }
         finally {
             busyLock.leaveBusy();
@@ -1309,7 +1307,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 spaces.add(CU.mask(space));
             }
             catch (IgniteCheckedException | RuntimeException e) {
-                unregisterCache0(space);
+                unregisterCache(space);
 
                 throw e;
             }
@@ -1317,12 +1315,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Unregister cache.
+     * Unregister cache.<p>
+     * Use with {@link #busyLock} where appropriate.
      *
      * @param space Space.
      */
-    private void unregisterCache0(String space) {
-        assert idx != null;
+    public void unregisterCache(String space) {
+        if (idx == null)
+            return;
 
         synchronized (stateMux) {
             // Clear types.

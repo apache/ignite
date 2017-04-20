@@ -1186,7 +1186,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 reconnected.add(cache);
 
-                // TODO: Validate that this fix is correct.
                 if (!sysCache) {
                     GridCacheContext cctx = cache.context();
 
@@ -1194,8 +1193,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     assert desc != null;
 
-                    ctx.query().onCacheStop(cctx);
-                    ctx.query().onCacheStart(cctx, desc.schema());
+                    ctx.query().unregisterCache(cctx.name());
+                    ctx.query().initializeCache(cctx, desc.schema(), true);
                 }
             }
         }
