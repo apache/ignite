@@ -166,11 +166,11 @@ public class PlatformConfigurationUtils {
         ccfg.setSqlOnheapRowCacheSize(in.readInt());
         ccfg.setStartSize(in.readInt());
         ccfg.setWriteBehindBatchSize(in.readInt());
-        ccfg.setWriteBehindCoalescing(in.readBoolean());
         ccfg.setWriteBehindEnabled(in.readBoolean());
         ccfg.setWriteBehindFlushFrequency(in.readLong());
         ccfg.setWriteBehindFlushSize(in.readInt());
         ccfg.setWriteBehindFlushThreadCount(in.readInt());
+        ccfg.setWriteBehindCoalescing(in.readBoolean());
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
         ccfg.setReadThrough(in.readBoolean());
         ccfg.setWriteThrough(in.readBoolean());
@@ -792,11 +792,11 @@ public class PlatformConfigurationUtils {
         writer.writeInt(ccfg.getSqlOnheapRowCacheSize());
         writer.writeInt(ccfg.getStartSize());
         writer.writeInt(ccfg.getWriteBehindBatchSize());
-        writer.writeBoolean(ccfg.getWriteBehindCoalescing());
         writer.writeBoolean(ccfg.isWriteBehindEnabled());
         writer.writeLong(ccfg.getWriteBehindFlushFrequency());
         writer.writeInt(ccfg.getWriteBehindFlushSize());
         writer.writeInt(ccfg.getWriteBehindFlushThreadCount());
+        writer.writeBoolean(ccfg.getWriteBehindCoalescing());
         writeEnumInt(writer, ccfg.getWriteSynchronizationMode());
         writer.writeBoolean(ccfg.isReadThrough());
         writer.writeBoolean(ccfg.isWriteThrough());
