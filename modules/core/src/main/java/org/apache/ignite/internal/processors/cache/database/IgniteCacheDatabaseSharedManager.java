@@ -209,7 +209,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             else {
                 //reserve additional place for system memory policy only
                 memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
-                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 1);;
+                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 1);
             }
 
             for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
