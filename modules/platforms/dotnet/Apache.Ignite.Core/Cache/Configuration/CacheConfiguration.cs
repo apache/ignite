@@ -126,6 +126,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for write-through behavior. </summary>
         public const bool DefaultWriteThrough = false;
 
+        /// <summary> Default value for <see cref="WriteBehindCoalescing"/>. </summary>
+        public const bool DefaultWriteBehindCoalescing = true;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -169,6 +172,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
             WriteBehindFlushSize = DefaultWriteBehindFlushSize;
             WriteBehindFlushThreadCount= DefaultWriteBehindFlushThreadCount;
+            WriteBehindCoalescing = DefaultWriteBehindCoalescing;
         }
 
         /// <summary>
@@ -229,6 +233,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushFrequency = reader.ReadLongAsTimespan();
             WriteBehindFlushSize = reader.ReadInt();
             WriteBehindFlushThreadCount = reader.ReadInt();
+            WriteBehindCoalescing = reader.ReadBoolean();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
@@ -285,6 +290,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteLong((long) WriteBehindFlushFrequency.TotalMilliseconds);
             writer.WriteInt(WriteBehindFlushSize);
             writer.WriteInt(WriteBehindFlushThreadCount);
+            writer.WriteBoolean(WriteBehindCoalescing);
             writer.WriteInt((int) WriteSynchronizationMode);
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
@@ -631,5 +637,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// See <see cref="IgniteConfiguration.MemoryConfiguration"/>.
         /// </summary>
         public string MemoryPolicyName { get; set; }
+
+        /// <summary>
+        /// Gets or sets write coalescing flag for write-behind cache store operations.
+        /// Store operations (get or remove) with the same key are combined or coalesced to single,
+        /// resulting operation to reduce pressure to underlying cache store.
+        /// </summary>
+        [DefaultValue(DefaultWriteBehindCoalescing)]
+        public bool WriteBehindCoalescing { get; set; }
     }
 }
