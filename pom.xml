@@ -206,11 +206,6 @@
 
         <profile>
             <id>release</id>
-            <activation>
-                <property>
-                    <name>skipDefault</name>
-                </property>
-            </activation>
             <build>
                 <plugins>
                     <plugin><!-- skipping generation of dependencies licenses
