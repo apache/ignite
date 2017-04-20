@@ -221,24 +221,20 @@ public class HibernateRegionFactory implements RegionFactory {
     /**
      * Reuse same thread local for the same cache across different regions.
      *
-     * @return Thread local instance used to track updates done during one Hibernate transaction.
-     */
-    ThreadLocal threadLocalForCache() {
-        return threadLoc;
-    }
-
-    /**
-     * Reuse same thread local for the same cache across different regions.
-     *
+     * @param accessType Access type.
      * @param cacheName Cache name.
      * @return Thread local instance used to track updates done during one Hibernate transaction.
      */
-    ThreadLocal threadLocalForCache(String cacheName) {
-
-        if (threadLocalMap.get(cacheName)== null) {
-            threadLocalMap.put(cacheName, new ThreadLocal());
+    ThreadLocal threadLocalForCache(AccessType accessType, String cacheName) {
+        if (AccessType.NONSTRICT_READ_WRITE.equals(accessType)) {
+            if (threadLocalMap.get(cacheName)== null) {
+                threadLocalMap.put(cacheName, new ThreadLocal());
+            }
+            return threadLocalMap.get(cacheName);
         }
-        return threadLocalMap.get(cacheName);
+        else {
+            return threadLoc;
+        }
     }
 
     /**

@@ -74,14 +74,14 @@ public class HibernateTransactionalDataRegion extends HibernateRegion implements
                 return new HibernateReadOnlyAccessStrategy(ignite, cache);
 
             case NONSTRICT_READ_WRITE:
-                return new HibernateNonStrictAccessStrategy(ignite, cache, factory.threadLocalForCache(cache.name()));
+                return new HibernateNonStrictAccessStrategy(ignite, cache, factory.threadLocalForCache(accessType, cache.name()));
 
             case READ_WRITE:
                 if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
                     throw new CacheException("Hibernate READ-WRITE access strategy must have Ignite cache with " +
                         "'TRANSACTIONAL' atomicity mode: " + cache.name());
 
-                return new HibernateReadWriteAccessStrategy(ignite, cache, factory.threadLocalForCache());
+                return new HibernateReadWriteAccessStrategy(ignite, cache, factory.threadLocalForCache(accessType, cache.name()));
 
             case TRANSACTIONAL:
                 if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
@@ -92,11 +92,11 @@ public class HibernateTransactionalDataRegion extends HibernateRegion implements
 
                 if (txCfg == null ||
                     (txCfg.getTxManagerFactory() == null
-                    && txCfg.getTxManagerLookupClassName() == null
-                    && cache.configuration().getTransactionManagerLookupClassName() == null)) {
+                        && txCfg.getTxManagerLookupClassName() == null
+                        && cache.configuration().getTransactionManagerLookupClassName() == null)) {
                     throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite with " +
-                                "Factory<TransactionManager> configured (see IgniteConfiguration." +
-                                "getTransactionConfiguration().setTxManagerFactory()): " + cache.name());
+                        "Factory<TransactionManager> configured (see IgniteConfiguration." +
+                        "getTransactionConfiguration().setTxManagerFactory()): " + cache.name());
                 }
 
                 return new HibernateTransactionalAccessStrategy(ignite, cache);
