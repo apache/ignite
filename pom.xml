@@ -208,7 +208,7 @@
             <id>release</id>
             <activation>
                 <property>
-                    <name>skipDefault</name><!--activeByDefault-->
+                    <name>skipDefault</name>
                 </property>
             </activation>
             <build>
