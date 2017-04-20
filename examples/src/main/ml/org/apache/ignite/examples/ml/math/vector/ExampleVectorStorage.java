@@ -25,7 +25,8 @@ import java.util.Arrays;
 import org.apache.ignite.ml.math.VectorStorage;
 
 /**
- * Example vector storage, modeled after {@link org.apache.ignite.ml.math.impls.storage.vector.ArrayVectorStorage}.
+ * Example implementation of custom vector storage,
+ * modeled after {@link org.apache.ignite.ml.math.impls.storage.vector.ArrayVectorStorage}.
  */
 class ExampleVectorStorage implements VectorStorage {
     /** */

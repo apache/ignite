@@ -21,13 +21,23 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.math.matrix.CacheMatrixExample;
 import org.apache.ignite.ml.math.IdentityValueMapper;
 import org.apache.ignite.ml.math.ValueMapper;
 import org.apache.ignite.ml.math.VectorKeyMapper;
 import org.apache.ignite.ml.math.impls.vector.CacheVector;
 
 /**
- * This example shows how to use {@link CacheVector} API.
+ *  This example shows how to use {@link CacheVector}.
+ *
+ *  Basically CacheVector is view over existing data in cache. So we have {@link VectorKeyMapper} and {@link ValueMapper}
+ *  for this purpose. A {@link VectorKeyMapper} allows us to map vector indices to cache keys. And a {@link ValueMapper}
+ *  allows us map cache object to vector elements - doubles.
+ *
+ *  In this example we use simple flat mapping for keys and {@link IdentityValueMapper} for cache objects
+ *  because they are Doubles.
+ *
+ *  @see CacheMatrixExample
  */
 public class CacheVectorExample {
     /** */ private static final String CACHE_NAME = CacheVectorExample.class.getSimpleName();
@@ -85,17 +95,12 @@ public class CacheVectorExample {
                 cacheVector1.assign(testValues1);
                 cacheVector2.assign(testValues2);
 
-                // Dot product for orthogonal vectors is 0.0.
-                assert cacheVector1.dot(cacheVector2) == 0.0;
+                System.out.println("Dot product for orthogonal vectors is " + cacheVector1.dot(cacheVector2));
 
                 System.out.println(">>>");
                 System.out.println(">>> Finished executing Ignite \"CacheVector\" example.");
                 System.out.println(">>> Dot product is 0.0 for orthogonal vectors.");
                 System.out.println(">>>");
-            }
-            finally {
-                // Distributed cache could be removed from cluster only by #destroyCache() call.
-                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

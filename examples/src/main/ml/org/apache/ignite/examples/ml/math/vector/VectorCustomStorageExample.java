@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.AbstractVector;
 
 /**
- * This example shows how to use {@link Vector} based on custom {@link VectorStorage}.
+ * This example shows how to create custom {@link Vector} based on custom {@link VectorStorage}.
  */
 public final class VectorCustomStorageExample {
     /**
