@@ -633,7 +633,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      * @param restart Whether cache needs to be recreated during client's absence.
      * @throws Exception If failed.
      */
-    private void doTestClientReconnect(boolean restart) throws Exception {
+    private void doTestClientReconnect(final boolean restart) throws Exception {
         // Start complex topology.
         Ignition.start(serverConfiguration(1));
         Ignition.start(serverConfiguration(2));
@@ -645,7 +645,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         put(cli, 0, KEY_AFTER);
 
-        doReconnect(CACHE_NAME, restart, new RunnableX() {
+        doReconnect(restart, new RunnableX() {
             @Override public void run() throws Exception {
                 final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
@@ -657,9 +657,11 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
 
-        doReconnect(CACHE_NAME, restart, new RunnableX() {
+        doReconnect(restart, new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(grid(1)).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false).get();
+                // No need for explicit drop if we've already destroyed cache at this point anyway
+                if (!restart)
+                    queryProcessor(grid(1)).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false).get();
             }
         });
 
@@ -675,9 +677,11 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_2);
 
-        doReconnect(CACHE_NAME, restart, new RunnableX() {
+        doReconnect(restart, new RunnableX() {
             @Override public void run() throws Exception {
-                queryProcessor(grid(1)).dynamicIndexDrop(CACHE_NAME, IDX_NAME_2, false).get();
+                // No need for explicit drop if we've already destroyed cache at this point anyway.
+                if (!restart)
+                    queryProcessor(grid(1)).dynamicIndexDrop(CACHE_NAME, IDX_NAME_2, false).get();
 
                 final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
 
@@ -693,24 +697,21 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
     /**
      * Reconnect the client and run specified actions while it's out.
      *
-     * @param cacheName Cache name.
      * @param restart Whether cache has to be recreated prior to executing required actions.
      * @param clo Closure to run
      * @throws Exception
      */
-    private void doReconnect(final String cacheName, final boolean restart, final RunnableX clo) throws Exception {
+    private void doReconnect(final boolean restart, final RunnableX clo) throws Exception {
         reconnectClientNode(log, grid(4), grid(1), new Runnable() {
             @Override public void run() {
                 assertTrue(grid(4).context().clientDisconnected());
 
                 IgniteEx srv = grid(1);
 
-                srv.cache(CACHE_NAME);
-
                 if (restart) {
-                    srv.destroyCache(cacheName);
+                    srv.destroyCache(CACHE_NAME);
 
-                    srv.createCache(cacheConfiguration().setName(cacheName));
+                    srv.getOrCreateCache(cacheConfiguration().setName(CACHE_NAME));
                 }
 
                 try {
@@ -721,6 +722,9 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                 }
             }
         });
+
+        if (restart)
+            grid(4).cache(CACHE_NAME);
     }
 
     /**
