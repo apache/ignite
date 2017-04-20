@@ -24,14 +24,12 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -189,7 +187,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             nodeId = "cc" + nodeId.substring(2);
 
             cfg.setNodeId(UUID.fromString(nodeId));
-        } else
+        }
+        else
             throw new IllegalArgumentException();
 
         if (useFailureDetectionTimeout()) {
@@ -315,16 +314,15 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientToClientPing() throws Exception {
-        Ignite s1 = startGrid("server-p1");
+        startGrid("server-p1");
         Ignite c1 = startGrid("client-p1");
 
-        Ignite s2 = startGrid("server-p2");
+        startGrid("server-p2");
         Ignite c2 = startGrid("client-p2");
 
-        U.sleep(5000);
         boolean res = ((IgniteEx)c1).context().discovery().pingNode(c2.cluster().localNode().id());
 
-        assertTrue("client-p1 can't ping client-p2", res);
+        assertTrue(res);
     }
 
     /**
@@ -617,7 +615,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectTopologyChange1() throws Exception {
-
         clientFailureDetectionTimeout = 100000;
 
         clientsPerSrv = 1;
@@ -832,35 +829,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     public void testClientNodeFailOneServer() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1776");
-        assertTrue("Client failure detectiom timeout must be at lest 50 ms longer than failure detection timeout.",
-            failureDetectionTimeout() + 50 <= clientFailureDetectionTimeout());
-        startServerNodes(1);
-        startClientNodes(1);
-
-        checkNodes(1, 1);
-
-        srvFailedLatch = new CountDownLatch(1);
-
-        attachListeners(1, 0);
-
-        failClient(0);
-
-        try {
-            await(srvFailedLatch);
-        } catch (AssertionFailedError e) {
-            // Nothink to do.
-        }
-
-        checkNodes(1, 1);
-    }
-
-    /**
-     * Test that server fire client failure event after client failure detection timeout.
-     *
-     * @throws Exception If failed.
-     */
-    public void testClientNodeClientFailOneServer() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1776");
 
         startServerNodes(1);
         startClientNodes(1);
@@ -873,7 +841,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         failClient(0);
 
-        awaitClient(srvFailedLatch);
+        await(srvFailedLatch);
 
         checkNodes(1, 0);
     }
@@ -2151,15 +2119,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     protected long awaitTime() {
         return 20_000;
-    }
-
-    /**
-     * Time to wait for client operation completion.
-     *
-     * @return Time in milliseconds.
-     */
-    protected long awaitClientTime() {
-        return 40_000;
     }
 
     /**

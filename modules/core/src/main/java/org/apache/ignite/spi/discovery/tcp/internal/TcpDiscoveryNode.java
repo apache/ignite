@@ -477,7 +477,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      * @return Alive check value.
      */
     public boolean testAliveTime() {
-        assert isClient();
+        assert isClient() : this;
 
         return (aliveCheckTime - U.currentTimeMillis()) >= 0;
     }
@@ -486,7 +486,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      * @param aliveTime Alive check time value.
      */
     public void aliveTime(long aliveTime) {
-        assert isClient();
+        assert isClient() : this;
 
         this.aliveCheckTime = U.currentTimeMillis() + aliveTime;
     }

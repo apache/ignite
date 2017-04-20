@@ -867,7 +867,8 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         @Override public void run() {
             if (!spi.getSpiContext().isStopping() && sockWriter.isOnline()) {
-                TcpDiscoveryClientMetricsUpdateMessage msg = new TcpDiscoveryClientMetricsUpdateMessage(getLocalNodeId(),
+                TcpDiscoveryClientMetricsUpdateMessage msg = new TcpDiscoveryClientMetricsUpdateMessage(
+                    getLocalNodeId(),
                     spi.metricsProvider.metrics());
 
                 msg.client(true);

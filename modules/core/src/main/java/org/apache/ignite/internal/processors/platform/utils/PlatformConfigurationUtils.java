@@ -914,20 +914,31 @@ public class PlatformConfigurationUtils {
         assert w != null;
         assert cfg != null;
 
-        w.writeBoolean(true); w.writeBoolean(cfg.isClientMode());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isClientMode());
         w.writeIntArray(cfg.getIncludeEventTypes());
-        w.writeBoolean(true); w.writeLong(cfg.getMetricsExpireTime());
-        w.writeBoolean(true); w.writeInt(cfg.getMetricsHistorySize());
-        w.writeBoolean(true); w.writeLong(cfg.getMetricsLogFrequency());
-        w.writeBoolean(true); w.writeLong(cfg.getMetricsUpdateFrequency());
-        w.writeBoolean(true); w.writeInt(cfg.getNetworkSendRetryCount());
-        w.writeBoolean(true); w.writeLong(cfg.getNetworkSendRetryDelay());
-        w.writeBoolean(true); w.writeLong(cfg.getNetworkTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getMetricsExpireTime());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getMetricsHistorySize());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getMetricsLogFrequency());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getMetricsUpdateFrequency());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getNetworkSendRetryCount());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getNetworkSendRetryDelay());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
-        w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
-        w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
-        w.writeBoolean(true); w.writeLong(cfg.getClientFailureDetectionTimeout());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isDaemon());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isLateAffinityAssignment());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getClientFailureDetectionTimeout());
         w.writeLong(cfg.getFailureDetectionTimeout());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
@@ -1023,11 +1034,11 @@ public class PlatformConfigurationUtils {
 
         EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
 
-        if (eventStorageSpi == null) {
+        if (eventStorageSpi == null)
             w.writeByte((byte) 0);
-        } else if (eventStorageSpi instanceof NoopEventStorageSpi) {
+        else if (eventStorageSpi instanceof NoopEventStorageSpi)
             w.writeByte((byte) 1);
-        } else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
+        else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
             w.writeByte((byte) 2);
 
             w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());

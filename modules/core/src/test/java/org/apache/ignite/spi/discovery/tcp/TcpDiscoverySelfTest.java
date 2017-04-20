@@ -360,26 +360,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    public void testServerPing() throws Exception {
-        try {
-            Ignite g1 = startGrid("testFailureDetectionOnNodePingCoordinator");
-            Ignite g2 = startGrid("testFailureDetectionOnNodePing2");
-            //Ignite g3 = startGrid("testFailureDetectionOnNodePing3");
-
-            TcpDiscoverySpi spi = discoMap.get(g1.name());
-
-            boolean res = spi.pingNode(g2.cluster().localNode().id());
-
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-
-    /**
-     * @throws Exception If any error occurs.
-     */
     public void testFailureDetectionOnNodePing1() throws Exception {
         try {
             Ignite g1 = startGrid("testFailureDetectionOnNodePingCoordinator");
