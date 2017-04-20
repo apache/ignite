@@ -104,8 +104,6 @@
                 <module>modules/hibernate</module>
                 <module>modules/schedule</module>
                 <module>modules/web-console/web-agent</module>
-                <module>modules/schedule</module>
-                <module>modules/web-console/web-agent</module>
                 <module>modules/yardstick</module>
             </modules>
         </profile>
