@@ -297,6 +297,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             disconnected = false;
 
+            for (DynamicCacheDescriptor desc : ctx.cache().cacheDescriptors())
+                initializeCache(ctx.cache().context().cacheContext(desc.cacheId()), desc.schema());
+
             onCacheKernalStart();
         }
     }
@@ -784,8 +787,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (SchemaOperationClientFuture fut : futs)
             fut.onDone(new SchemaOperationException("Client node is disconnected (operation result is unknown)."));
 
-        if (idx != null)
+        if (idx != null) {
             idx.onDisconnected(reconnectFut);
+
+            for (String space : spaces)
+                unregisterCache0(space);
+        }
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.index;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -35,7 +36,9 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -46,6 +49,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
+import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
 /**
  * Concurrency tests for dynamic index create/drop.
@@ -109,6 +115,11 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         CacheConfiguration<KeyClass, ValueClass> ccfg =  super.cacheConfiguration();
 
         return ccfg.setCacheMode(cacheMode).setAtomicityMode(atomicityMode);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+        return super.commonConfiguration(idx).setDiscoverySpi(new TestTcpDiscoverySpi());
     }
 
     /**
@@ -597,6 +608,49 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Make sure nothing hanged.
         idxFut.get();
         qryFut.get();
+    }
+
+    /**
+     * Make sure that client receives schema changes made while it was disconnected.
+     *
+     * @throws Exception If failed.
+     */
+    public void testClientReconnect() throws Exception {
+        // Start complex topology.
+        Ignition.start(serverConfiguration(1));
+        Ignition.start(serverConfiguration(2));
+        Ignition.start(serverConfiguration(3, true));
+
+        Ignite cli = Ignition.start(clientConfiguration(4));
+
+        cli.createCache(cacheConfiguration());
+
+        put(cli, 0, KEY_AFTER);
+
+        reconnectClientNode(log, grid(4), grid(1), new Runnable() {
+            @Override public void run() {
+                assertTrue(grid(4).context().clientDisconnected());
+
+                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+                try {
+                    queryProcessor(grid(1)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+
+                assertTrue(grid(4).context().clientDisconnected());
+            }
+        });
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !grid(4).context().clientDisconnected();
+            }
+        }, 10_000L));
+
+        assertIndex(grid(4), true, CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
     }
 
     /**
