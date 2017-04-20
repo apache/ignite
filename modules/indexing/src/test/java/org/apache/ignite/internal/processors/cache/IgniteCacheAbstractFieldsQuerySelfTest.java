@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
@@ -270,6 +271,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     assertNotNull("Indexes should be defined", indexes);
                     assertEquals(2, indexes.size());
 
+                    Set<String> idxFields = new HashSet<>();
+
                     Iterator<GridCacheSqlIndexMetadata> it = indexes.iterator();
 
                     Collection<String> indFlds = it.next().fields();
@@ -279,7 +282,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
                     Iterator<String> indFldIt = indFlds.iterator();
 
-                    assertEquals(indFldIt.next(), "AGE");
+                    idxFields.add(indFldIt.next());
 
                     indFlds = it.next().fields();
 
@@ -288,7 +291,10 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
                     indFldIt = indFlds.iterator();
 
-                    assertEquals(indFldIt.next(), "ORGID");
+                    idxFields.add(indFldIt.next());
+
+                    assertTrue(idxFields.contains("AGE"));
+                    assertTrue(idxFields.contains("ORGID"));
                 }
                 else if (orgCache.getName().equals(meta.cacheName())) {
                     assertEquals("Invalid types size", 1, types.size());

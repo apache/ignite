@@ -262,12 +262,12 @@ public class AbstractVectorTest {
 
         AbstractVector testVector1 = getAbstractVector(storage1);
 
-        String testVal = "";
+        StringBuilder testVal = new StringBuilder();
 
         for (int i = 0; i < data0.length; i++)
-            testVal += data0[i] + data1[i];
+            testVal.append(data0[i] + data1[i]);
 
-        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.foldMap(testVector1, (string, xi) -> string.concat(xi.toString()), Functions.PLUS, ""), testVal);
+        assertEquals(MathTestConstants.VAL_NOT_EQUALS, testVector.foldMap(testVector1, (string, xi) -> string.concat(xi.toString()), Functions.PLUS, ""), testVal.toString());
     }
 
     /** */

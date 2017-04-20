@@ -15,17 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.mem;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
+import java.io.IOException;
+import org.apache.ignite.IgniteException;
 
 /**
  *
  */
-public class GridNearCacheTxNodeFailureSelfTest extends GridCacheTxNodeFailureSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) {
-        return super.cacheConfiguration(igniteInstanceName).setNearConfiguration(new NearCacheConfiguration());
+public class IgniteOutOfMemoryException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     *
+     */
+    public IgniteOutOfMemoryException() {
+        // No-op.
+    }
+
+    /**
+     * @param msg Error message.
+     */
+    public IgniteOutOfMemoryException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * @param msg Error message.
+     * @param e Cause exception.
+     */
+    public IgniteOutOfMemoryException(String msg, IOException e) {
+        super(msg, e);
     }
 }

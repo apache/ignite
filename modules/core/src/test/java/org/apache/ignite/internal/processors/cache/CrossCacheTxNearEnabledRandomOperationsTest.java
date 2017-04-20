@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * Geo-indexing test for binary mode.
+ *
  */
-public class GridBinaryH2IndexingGeoSelfTest extends GridH2IndexingGeoSelfTest {
+public class CrossCacheTxNearEnabledRandomOperationsTest extends CrossCacheTxRandomOperationsTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
+    @Override protected boolean nearCacheEnabled() {
+        return true;
     }
 }
