@@ -36,9 +36,7 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -616,6 +614,26 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      * @throws Exception If failed.
      */
     public void testClientReconnect() throws Exception {
+        doTestClientReconnect(false);
+    }
+
+    /**
+     * Make sure that client receives schema changes made while it was disconnected, even with cache recreation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectWithCacheRestart() throws Exception {
+        doTestClientReconnect(true);
+    }
+
+    /**
+     * Make sure that client receives schema changes made while it was disconnected, optionally with cache restart
+     * in the interim.
+     *
+     * @param restart Whether cache needs to be recreated during client's absence.
+     * @throws Exception If failed.
+     */
+    private void doTestClientReconnect(boolean restart) throws Exception {
         // Start complex topology.
         Ignition.start(serverConfiguration(1));
         Ignition.start(serverConfiguration(2));
@@ -627,37 +645,82 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         put(cli, 0, KEY_AFTER);
 
+        doReconnect(CACHE_NAME, restart, new RunnableX() {
+            @Override public void run() throws Exception {
+                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+                queryProcessor(grid(1)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+            }
+        });
+
+        assertIndex(grid(4), true, CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+
+        doReconnect(CACHE_NAME, restart, new RunnableX() {
+            @Override public void run() throws Exception {
+                queryProcessor(grid(1)).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false).get();
+            }
+        });
+
+        assertNoIndex(grid(4), CACHE_NAME, TBL_NAME, IDX_NAME_1);
+
+        assertIndexNotUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+
+        // Now let's create an index that the client would be well aware of...
+        queryProcessor(grid(1)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, index(IDX_NAME_2, field(alias(FIELD_NAME_2))),
+            false).get();
+
+        assertIndex(grid(4), true, CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
+
+        assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_2);
+
+        doReconnect(CACHE_NAME, restart, new RunnableX() {
+            @Override public void run() throws Exception {
+                queryProcessor(grid(1)).dynamicIndexDrop(CACHE_NAME, IDX_NAME_2, false).get();
+
+                final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+
+                queryProcessor(grid(1)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
+            }
+        });
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+
+        assertIndexUsed(IDX_NAME_2, SQL_COMPOSITE, SQL_ARG_1, SQL_ARG_2);
+    }
+
+    /**
+     * Reconnect the client and run specified actions while it's out.
+     *
+     * @param cacheName Cache name.
+     * @param restart Whether cache has to be recreated prior to executing required actions.
+     * @param clo Closure to run
+     * @throws Exception
+     */
+    private void doReconnect(final String cacheName, final boolean restart, final RunnableX clo) throws Exception {
         reconnectClientNode(log, grid(4), grid(1), new Runnable() {
             @Override public void run() {
                 assertTrue(grid(4).context().clientDisconnected());
 
-                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+                IgniteEx srv = grid(1);
 
+                srv.cache(CACHE_NAME);
+
+                if (restart) {
+                    srv.destroyCache(cacheName);
+
+                    srv.createCache(cacheConfiguration().setName(cacheName));
+                }
 
                 try {
-                    queryProcessor(grid(1)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                    clo.run();
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     throw new IgniteException(e);
                 }
-
-                assertTrue(grid(4).context().clientDisconnected());
             }
         });
-
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return !grid(4).context().clientDisconnected();
-            }
-        }, 10_000L));
-
-        assertIndex(grid(4), true, CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
-
-        // TODO: field(alias(FIELD_NAME_2))
-
-        // 1. TODO: Check query execution from client
-        // 2. TODO: Check new index, drop existing, re-create, same cache
-        // 3. TODO: Check cache restart + various operations (create of new index, drop of existing, re-create of existing on other column
     }
 
     /**
