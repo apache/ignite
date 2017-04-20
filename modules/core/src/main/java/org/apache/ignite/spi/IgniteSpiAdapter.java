@@ -670,6 +670,10 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                 IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT)
             log.warning("Failure detection timeout will be ignored (one of SPI parameters has been set explicitly)");
 
+        if (clientFailureDetectionTimeout < ignite.configuration().getMetricsUpdateFrequency())
+            throw new IgniteSpiException("Inconsistent configuration " +
+                "('IgniteConfiguration.clientFailureDetectionTimeout' must be greater or equal to " +
+                "'IgniteConfiguration.metricsUpdateFrequency').");
     }
 
     /**
