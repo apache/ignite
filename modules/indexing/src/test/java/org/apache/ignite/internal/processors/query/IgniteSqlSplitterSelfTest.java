@@ -484,23 +484,23 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Person2> c = ignite(0).getOrCreateCache(ccfg);
 
         try {
-            String select = "select 1 from Person2 use index (\"ORGID_IDX\") where name = '' and orgId = 1";
+            String select = "select 1 from Person2 use index (\"PERSON2_ORGID_IDX\") where name = '' and orgId = 1";
 
             String plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
 
             X.println("Plan: \n" + plan);
 
-            assertTrue(plan.contains("USE INDEX (ORGID_IDX)"));
-            assertTrue(plan.contains("/* \"pers\".ORGID_IDX:"));
+            assertTrue(plan.contains("USE INDEX (PERSON2_ORGID_IDX)"));
+            assertTrue(plan.contains("/* \"pers\".PERSON2_ORGID_IDX:"));
 
-            select = "select 1 from Person2 use index (\"NAME_IDX\") where name = '' and orgId = 1";
+            select = "select 1 from Person2 use index (\"PERSON2_NAME_IDX\") where name = '' and orgId = 1";
 
             plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
 
             X.println("Plan: \n" + plan);
 
-            assertTrue(plan.contains("USE INDEX (NAME_IDX)"));
-            assertTrue(plan.contains("/* \"pers\".NAME_IDX:"));
+            assertTrue(plan.contains("USE INDEX (PERSON2_NAME_IDX)"));
+            assertTrue(plan.contains("/* \"pers\".PERSON2_NAME_IDX:"));
         }
         finally {
             c.destroy();

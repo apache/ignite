@@ -317,14 +317,14 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUseIndexHints() throws Exception {
-        checkQuery("select * from Person use index (\"NAME_IDX\")");
-        checkQuery("select * from Person use index (\"PARENTNAME_IDX\")");
-        checkQuery("select * from Person use index (\"NAME_IDX\", \"PARENTNAME_IDX\")");
+        checkQuery("select * from Person use index (\"PERSON_NAME_IDX\")");
+        checkQuery("select * from Person use index (\"PERSON_PARENTNAME_IDX\")");
+        checkQuery("select * from Person use index (\"PERSON_NAME_IDX\", \"PERSON_PARENTNAME_IDX\")");
         checkQuery("select * from Person use index ()");
 
-        checkQuery("select * from Person p use index (\"NAME_IDX\")");
-        checkQuery("select * from Person p use index (\"PARENTNAME_IDX\")");
-        checkQuery("select * from Person p use index (\"NAME_IDX\", \"PARENTNAME_IDX\")");
+        checkQuery("select * from Person p use index (\"PERSON_NAME_IDX\")");
+        checkQuery("select * from Person p use index (\"PERSON_PARENTNAME_IDX\")");
+        checkQuery("select * from Person p use index (\"PERSON_NAME_IDX\", \"PERSON_PARENTNAME_IDX\")");
         checkQuery("select * from Person p use index ()");
     }
 
