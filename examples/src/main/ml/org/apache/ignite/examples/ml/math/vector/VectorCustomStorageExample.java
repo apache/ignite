@@ -18,11 +18,11 @@
 package org.apache.ignite.examples.ml.math.vector;
 
 import java.util.Arrays;
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.VectorStorage;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.math.impls.vector.AbstractVector;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorStorage;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.vector.AbstractVector;
 
 /**
  * This example shows how to use {@link Vector} based on custom {@link VectorStorage}.
@@ -78,7 +78,7 @@ public final class VectorCustomStorageExample {
 
     /**
      * Example of vector with custom storage, modeled after
-     * {@link org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector}.
+     * {@link org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector}.
      */
     static class VectorCustomStorage extends AbstractVector {
         /**
@@ -118,7 +118,7 @@ public final class VectorCustomStorageExample {
 
         /** {@inheritDoc */
         @Override public Vector like(int crd) {
-            return new org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector(crd);
+            return new org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector(crd);
         }
     }
 }

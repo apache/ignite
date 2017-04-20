@@ -774,12 +774,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Handles prepare stage of 2PC.
+     * Handles prepare stage.
      *
      * @param tx Transaction to prepare.
+     * @param entries Entries to lock or {@code null} if use default {@link IgniteInternalTx#optimisticLockEntries()}.
      * @throws IgniteCheckedException If preparation failed.
      */
-    public void prepareTx(IgniteInternalTx tx) throws IgniteCheckedException {
+    public void prepareTx(IgniteInternalTx tx, @Nullable Collection<IgniteTxEntry> entries) throws IgniteCheckedException {
         if (tx.state() == MARKED_ROLLBACK) {
             if (tx.remainingTime() == -1)
                 throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
@@ -799,7 +800,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         // Optimistic.
         assert tx.optimistic() || !tx.local();
 
-        if (!lockMultiple(tx, tx.optimisticLockEntries())) {
+        if (!lockMultiple(tx, entries != null ? entries : tx.optimisticLockEntries())) {
             tx.setRollbackOnly();
 
             throw new IgniteTxOptimisticCheckedException("Failed to prepare transaction (lock conflict): " + tx);
