@@ -18,6 +18,11 @@
 package org.apache.ignite.internal.util.future;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
@@ -29,11 +34,40 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
 public class IgniteFutureImplTest extends GridCommonAbstractTest {
+    /** Context thread name. */
+    private static final String CTX_THREAD_NAME = "test-async";
+
+    /** Custom thread name. */
+    private static final String CUSTOM_THREAD_NAME = "test-custom-async";
+
+    /** Test executor. */
+    private ExecutorService ctxExec;
+
+    /** Custom executor. */
+    private ExecutorService customExec;
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    @Override protected void beforeTest() throws Exception {
+        ctxExec = createExecutor(CTX_THREAD_NAME);
+        customExec = createExecutor(CUSTOM_THREAD_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        U.shutdownNow(getClass(), ctxExec, log);
+        U.shutdownNow(getClass(), customExec, log);
+
+        ctxExec = null;
+        customExec = null;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -229,6 +263,109 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testAsyncListeners() throws Exception {
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+
+        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+
+        final CountDownLatch latch1 = new CountDownLatch(1);
+
+        IgniteInClosure<? super IgniteFuture<String>> lsnr1 = createAsyncListener(latch1, CUSTOM_THREAD_NAME, null);
+
+        assertFalse(fut.isDone());
+
+        fut.listenAsync(lsnr1, customExec);
+
+        U.sleep(100);
+
+        assertEquals(1, latch1.getCount());
+
+        fut0.onDone("test");
+
+        assert latch1.await(1, TimeUnit.SECONDS) : latch1.getCount();
+
+        final CountDownLatch latch2 = new CountDownLatch(1);
+
+        IgniteInClosure<? super IgniteFuture<String>> lsnr2 = createAsyncListener(latch2, CUSTOM_THREAD_NAME, null);
+
+        fut.listenAsync(lsnr2, customExec);
+
+        assert latch1.await(1, TimeUnit.SECONDS) : latch2.getCount();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAsyncListenersOnError() throws Exception {
+        checkAsyncListenerOnError(new IgniteException("Test exception"));
+        checkAsyncListenerOnError(new IgniteCheckedException("Test checked exception"));
+    }
+
+    /**
+     * @param err0 Test exception.
+     */
+    private void checkAsyncListenerOnError(Exception err0) throws InterruptedException {
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+
+        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+
+        final CountDownLatch latch1 = new CountDownLatch(1);
+
+        IgniteInClosure<? super IgniteFuture<String>> lsnr1 = createAsyncListener(latch1, CUSTOM_THREAD_NAME, err0);
+
+        fut.listenAsync(lsnr1, customExec);
+
+        assertEquals(1, latch1.getCount());
+
+        fut0.onDone(err0);
+
+        assert latch1.await(1, TimeUnit.SECONDS);
+
+        final CountDownLatch latch2 = new CountDownLatch(1);
+
+        IgniteInClosure<? super IgniteFuture<String>> lsnr2 = createAsyncListener(latch2, CUSTOM_THREAD_NAME, err0);
+
+        fut.listenAsync(lsnr2, customExec);
+
+        assert latch2.await(1, TimeUnit.SECONDS);
+    }
+
+    /**
+     * @param latch Latch.
+     */
+    @NotNull private CI1<IgniteFuture<String>> createAsyncListener(
+        final CountDownLatch latch,
+        final String threadName,
+        final Exception err
+    ) {
+        return new CI1<IgniteFuture<String>>() {
+            @Override public void apply(IgniteFuture<String> fut) {
+                try {
+                    String tname = Thread.currentThread().getName();
+
+                    assert tname.contains(threadName) : tname;
+
+                    assertEquals("test", fut.get());
+
+                    if (err != null)
+                        fail();
+                }
+                catch (IgniteException e) {
+                    if (err != null)
+                        assertExpectedException(e, err);
+                    else
+                        throw e;
+                }
+                finally {
+                    latch.countDown();
+                }
+            }
+        };
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testChain() throws Exception {
         GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
 
@@ -414,5 +551,162 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
                 assertEquals(err0, err.getCause());
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testChainAsync() throws Exception {
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+
+        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+
+        IgniteFuture<Integer> chained1 = fut.chainAsync(new C1<IgniteFuture<String>, Integer>() {
+            @Override public Integer apply(IgniteFuture<String> fut) {
+                assertEquals(CUSTOM_THREAD_NAME, Thread.currentThread().getName());
+
+                return Integer.valueOf(fut.get());
+            }
+        }, customExec);
+
+        assertFalse(chained1.isDone());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        chained1.listen(new CI1<IgniteFuture<Integer>>() {
+            @Override public void apply(IgniteFuture<Integer> fut) {
+                assertEquals(CUSTOM_THREAD_NAME, Thread.currentThread().getName());
+                assertEquals(10, (int)fut.get());
+
+                latch.countDown();
+            }
+        });
+
+        fut0.onDone("10");
+
+        // Chained future will be completed asynchronously.
+        chained1.get(100, TimeUnit.MILLISECONDS);
+
+        assertTrue(chained1.isDone());
+
+        assertEquals(10, (int)chained1.get());
+
+        assert latch.await(100, TimeUnit.MILLISECONDS);
+
+        assertTrue(fut.isDone());
+
+        assertEquals("10", fut.get());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testChainAsyncOnError() throws Exception {
+        checkChainedOnError(new IgniteException("Test exception"));
+        checkChainedOnError(new IgniteCheckedException("Test checked exception"));
+    }
+
+    /**
+     * @param err Exception.
+     * @throws Exception If failed.
+     */
+    private void checkChainedOnError(final Exception err) throws Exception {
+        GridFutureAdapter<String> fut0 = new GridFutureAdapter<>();
+
+        IgniteFutureImpl<String> fut = new IgniteFutureImpl<>(fut0);
+
+        // Chain callback will be invoked in specific executor.
+        IgniteFuture<Integer> chained1 = fut.chainAsync(new C1<IgniteFuture<String>, Integer>() {
+            @Override public Integer apply(IgniteFuture<String> fut) {
+                assertEquals(CUSTOM_THREAD_NAME, Thread.currentThread().getName());
+
+                try {
+                    fut.get();
+
+                    fail();
+                }
+                catch (IgniteException e) {
+                    assertExpectedException(e, err);
+
+                    throw e;
+                }
+
+                return -1;
+            }
+        }, customExec);
+
+        assertFalse(chained1.isDone());
+        assertFalse(fut.isDone());
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        chained1.listen(new CI1<IgniteFuture<Integer>>() {
+            @Override public void apply(IgniteFuture<Integer> fut) {
+                try {
+                    assertEquals(CUSTOM_THREAD_NAME, Thread.currentThread().getName());
+
+                    fut.get();
+
+                    fail();
+                }
+                catch (IgniteException e) {
+                    assertExpectedException(e, err);
+                }
+                finally {
+                    latch.countDown();
+                }
+            }
+        });
+
+        fut0.onDone(err);
+
+        assertExceptionThrown(err, chained1);
+        assertExceptionThrown(err, fut);
+
+        assertTrue(chained1.isDone());
+        assertTrue(fut.isDone());
+
+        assert latch.await(100, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * @param err Expected exception.
+     * @param fut Future.
+     */
+    private void assertExceptionThrown(Exception err, IgniteFuture<?> fut) {
+        try {
+            fut.get();
+
+            fail();
+        }
+        catch (IgniteException e) {
+            assertExpectedException(e, err);
+        }
+    }
+
+    /**
+     * @param e Actual exception.
+     * @param err Expected exception.
+     */
+    private void assertExpectedException(IgniteException e, Exception err) {
+        if (err instanceof IgniteException)
+            assertEquals(err, e);
+        else
+            assertEquals(err, e.getCause());
+    }
+
+    /**
+     * @param name Name.
+     */
+    @NotNull private ExecutorService createExecutor(final String name) {
+        return Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override public Thread newThread(@NotNull Runnable r) {
+                Thread t = new Thread(r);
+
+                t.setName(name);
+
+                return t;
+            }
+        });
     }
 }
