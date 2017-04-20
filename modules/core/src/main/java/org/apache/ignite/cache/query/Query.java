@@ -121,12 +121,13 @@ public abstract class Query<R> implements Serializable {
         }
 
         // Sort and validate again.
-        if (!sorted)
+        if (!sorted) {
             Arrays.sort(parts);
 
-        for (int i = 0; i < parts.length; i++) {
-            if (i < parts.length - 1)
-                A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+            for (int i = 0; i < parts.length; i++) {
+                if (i < parts.length - 1)
+                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+            }
         }
 
         return parts;
