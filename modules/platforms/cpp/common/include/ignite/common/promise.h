@@ -116,6 +116,85 @@ namespace ignite
 
             concurrent::SharedPointer< SharedState<ValueType> > state;
         };
+
+        /**
+         * Specialization for void.
+         */
+        template<>
+        class Promise<void>
+        {
+        public:
+            /** Template value type */
+            typedef void ValueType;
+
+            /**
+             * Constructor.
+             */
+            Promise() :
+                state(new SharedState<ValueType>())
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~Promise()
+            {
+                SharedState<ValueType>* state0 = state.Get();
+
+                assert(state0 != 0);
+
+                if (!state0->IsSet())
+                    state0->SetError(IgniteError(IgniteError::IGNITE_ERR_FUTURE_STATE,
+                        "Broken promise. Value will never be set due to internal error."));
+            }
+
+
+            /**
+             * Get future for this promise.
+             *
+             * @return New future instance.
+             */
+            Future<ValueType> GetFuture() const
+            {
+                return Future<ValueType>(state);
+            }
+
+            /**
+             * Mark as complete.
+             *
+             * @throw IgniteError with IgniteError::IGNITE_ERR_FUTURE_STATE if error or value has been set already.
+             */
+            void SetValue()
+            {
+                SharedState<ValueType>* state0 = state.Get();
+
+                assert(state0 != 0);
+
+                return state.Get()->SetValue();
+            }
+
+            /**
+             * Set error.
+             *
+             * @throw IgniteError with IgniteError::IGNITE_ERR_FUTURE_STATE if error or value has been set already.
+             * @param err Error to set.
+             */
+            void SetError(const IgniteError& err)
+            {
+                SharedState<ValueType>* state0 = state.Get();
+
+                assert(state0 != 0);
+
+                state.Get()->SetError(err);
+            }
+
+        private:
+            IGNITE_NO_COPY_ASSIGNMENT(Promise);
+
+            concurrent::SharedPointer< SharedState<ValueType> > state;
+        };
     }
 }
 

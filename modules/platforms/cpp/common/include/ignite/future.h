@@ -135,6 +135,102 @@ namespace ignite
         /** Shared state. */
         common::concurrent::SharedPointer< common::SharedState<ValueType> > state;
     };
+
+    /**
+     * Specialization for void type.
+     */
+    template<>
+    class Future<void>
+    {
+        friend class common::Promise<void>;
+
+    public:
+        /** Template value type */
+        typedef void ValueType;
+
+        /**
+         * Copy constructor.
+         *
+         * @param src Instance to copy.
+         */
+        Future(const Future<ValueType>& src) :
+            state(src.state)
+        {
+            // No-op.
+        }
+
+        /**
+         * Assignment operator.
+         *
+         * @param other Other instance.
+         * @return *this.
+         */
+        Future& operator=(const Future<ValueType>& other)
+        {
+            state = other.state;
+
+            return *this;
+        }
+
+        /**
+         * Wait for value to be set.
+         * Active thread will be blocked until value or error will be set.
+         */
+        void Wait() const
+        {
+            const common::SharedState<ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            state.Get()->Wait();
+        }
+
+        /**
+         * Wait for value to be set for specified time.
+         * Active thread will be blocked until value or error will be set or timeout will end.
+         *
+         * @param msTimeout Timeout in milliseconds.
+         * @return True if the object has been triggered and false in case of timeout.
+         */
+        bool WaitFor(int32_t msTimeout) const
+        {
+            const common::SharedState<ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            return state.Get()->WaitFor(msTimeout);
+        }
+
+        /**
+         * Wait for operation complition or error.
+         * Active thread will be blocked until value or error will be set.
+         *
+         * @throw IgniteError if error has been set.
+         */
+        void GetValue() const
+        {
+            const common::SharedState<ValueType>* state0 = state.Get();
+
+            assert(state0 != 0);
+
+            state.Get()->GetValue();
+        }
+
+    private:
+        /**
+         * Constructor.
+         *
+         * @param state0 Shared state instance.
+         */
+        Future(common::concurrent::SharedPointer< common::SharedState<ValueType> > state0) :
+            state(state0)
+        {
+            // No-op.
+        }
+
+        /** Shared state. */
+        common::concurrent::SharedPointer< common::SharedState<ValueType> > state;
+    };
 }
 
 #endif //_IGNITE_FUTURE
