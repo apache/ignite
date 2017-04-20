@@ -88,6 +88,7 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
      */
     private ExecutorConfiguration createExecConfiguration(String name) {
         ExecutorConfiguration exec = new ExecutorConfiguration();
+
         exec.setName(name);
         exec.setSize(execSize);
 
@@ -96,7 +97,7 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGridsMultiThreaded(GRID_CNT, true);
+        startGrids(GRID_CNT);
     }
 
     /** {@inheritDoc} */
