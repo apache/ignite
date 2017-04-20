@@ -24,7 +24,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -149,8 +148,8 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * Assert index state on all nodes.
      *
      * @param cacheName Cache name.
-     * @param checkNonAffinityNodes Whether existence of {@link GridQueryIndexDescriptor} must be checked on non affinity
-     * nodes as well.
+     * @param checkNonAffinityNodes Whether existence of {@link GridQueryIndexDescriptor} must be checked on non
+     *     affinity nodes as well.
      * @param tblName Table name.
      * @param idxName Index name.
      * @param fields Fields.
@@ -158,7 +157,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     protected static void assertIndex(String cacheName, boolean checkNonAffinityNodes, String tblName, String idxName,
         IgniteBiTuple<String, Boolean>... fields) {
         for (Ignite node : Ignition.allGrids())
-            assertIndex((IgniteEx)node, checkNonAffinityNodes, cacheName, tblName, idxName, fields);
+            assertIndex(node, checkNonAffinityNodes, cacheName, tblName, idxName, fields);
     }
 
     /**
@@ -172,12 +171,14 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param idxName Index name.
      * @param fields Fields.
      */
-    protected static void assertIndex(IgniteEx node, boolean checkNonAffinityNode, String cacheName, String tblName,
+    protected static void assertIndex(Ignite node, boolean checkNonAffinityNode, String cacheName, String tblName,
         String idxName, IgniteBiTuple<String, Boolean>... fields) {
-        assertIndexDescriptor(node, cacheName, tblName, idxName, fields);
+        IgniteEx node0 = (IgniteEx)node;
 
-        if (checkNonAffinityNode || affinityNode(node, cacheName)) {
-            QueryTypeDescriptorImpl typeDesc = typeExisting(node, cacheName, tblName);
+        assertIndexDescriptor(node0, cacheName, tblName, idxName, fields);
+
+        if (checkNonAffinityNode || affinityNode(node0, cacheName)) {
+            QueryTypeDescriptorImpl typeDesc = typeExisting(node0, cacheName, tblName);
 
             assertIndex(typeDesc, idxName, fields);
         }
@@ -282,11 +283,13 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param tblName Table name.
      * @param idxName Index name.
      */
-    protected static void assertNoIndex(IgniteEx node, String cacheName, String tblName, String idxName) {
-        assertNoIndexDescriptor(node, cacheName, idxName);
+    protected static void assertNoIndex(Ignite node, String cacheName, String tblName, String idxName) {
+        IgniteEx node0 = (IgniteEx)node;
 
-        if (affinityNode(node, cacheName)) {
-            QueryTypeDescriptorImpl typeDesc = typeExisting(node, cacheName, tblName);
+        assertNoIndexDescriptor(node0, cacheName, idxName);
+
+        if (affinityNode(node0, cacheName)) {
+            QueryTypeDescriptorImpl typeDesc = typeExisting(node0, cacheName, tblName);
 
             assertNoIndex(typeDesc, idxName);
         }
