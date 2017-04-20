@@ -153,11 +153,11 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     }
 
     /**
-     * @param s
-     * @return
+     * @param qry Query string.
+     * @return {@code true} if query is SQLFieldsQuery.
      */
-    private boolean isFieldQuery(String s) {
-        return s.matches("^SELECT.*") && !s.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
+    private boolean isFieldQuery(String qry) {
+        return qry.matches("^SELECT.*") && !qry.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
     }
 }
 
