@@ -102,10 +102,8 @@
                 <module>modules/geospatial</module>
                 <module>modules/hibernate5</module>
                 <module>modules/hibernate</module>
-                <module>modules/ml</module>
                 <module>modules/schedule</module>
                 <module>modules/web-console/web-agent</module>
-                <module>modules/web-console</module>
                 <module>modules/yardstick</module>
             </modules>
         </profile>
@@ -120,6 +118,14 @@
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
+            <modules> <!-- sorted alphabetically -->
+                <module>modules/ml</module> <!-- it uses Java8 and can't be compiled by Java7 used to compile Ignite -->
+                <module>modules/web-console</module>
             </modules>
         </profile>
 
