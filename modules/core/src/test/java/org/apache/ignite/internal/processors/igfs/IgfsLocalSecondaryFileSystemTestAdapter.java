@@ -127,7 +127,7 @@ public class IgfsLocalSecondaryFileSystemTestAdapter implements IgfsSecondaryFil
         BasicFileAttributes attrs = Files.getFileAttributeView(path(path), BasicFileAttributeView.class)
             .readAttributes();
 
-        return new T2<>(attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis());
+        return new T2<>(attrs.lastModifiedTime().toMillis(), attrs.lastAccessTime().toMillis());
     }
 
     /** {@inheritDoc} */
