@@ -23,6 +23,10 @@ import java.io.Serializable;
  * Setter function for matrices.
  */
 public interface IntIntDoubleToVoidFunction extends Serializable {
-    /** */
+    /**
+     * @param x Row index in the matrix.
+     * @param y Column index in the matrix.
+     * @param v Value to set at given row and column.
+     */
     public void apply(int x, int y, double v);
 }

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+
 /**
  *
  */
@@ -41,4 +44,11 @@ public interface IgniteTxLocalState extends IgniteTxState {
      *
      */
     public void seal();
+
+    /**
+     * @param ctx Context.
+     * @param topVer Topology version.
+     * @return {@code True} if tx has cache with created near cache.
+     */
+    public boolean hasNearCacheConfigured(GridCacheSharedContext ctx, AffinityTopologyVersion topVer);
 }

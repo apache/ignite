@@ -75,7 +75,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         return retVal;
                     }
                 }
-            }).call();
+            });
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -120,7 +120,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         }
                     }
                 }
-            }).call();
+            });
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -169,7 +169,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         return retVal;
                     }
                 }
-            }).call();
+            });
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -202,7 +202,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     return null;
                 }
-            }).call();
+            });
         }
         catch (RuntimeException e) {
             throw e;

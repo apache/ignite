@@ -15,21 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+namespace Apache.Ignite.Core.Tests.Cache
+{
+    using System;
+    using Apache.Ignite.Core.Binary;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+    /// <summary>
+    /// Non-serializable exception.
+    /// </summary>
+    public class NonSerializableException : Exception, IBinarizable
+    {
+        /** <inheritdoc /> */
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new Exception("ExpectedException");
+        }
 
-/**
- * Geo-indexing test for binary mode.
- */
-public class GridBinaryH2IndexingGeoSelfTest extends GridH2IndexingGeoSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        return cfg;
+        /** <inheritdoc /> */
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new Exception("ExpectedException");
+        }
     }
 }
