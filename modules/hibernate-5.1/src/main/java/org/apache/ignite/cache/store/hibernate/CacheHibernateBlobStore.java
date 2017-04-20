@@ -52,6 +52,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.SharedSessionContract;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.resource.transaction.spi.TransactionStatus;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -239,7 +240,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (tx == null) {
             org.hibernate.Transaction hTx = ses.getTransaction();
 
-            if (hTx != null && hTx.isActive())
+            if (hTx != null && hTx.getStatus().canRollback())
                 hTx.rollback();
         }
     }
@@ -256,7 +257,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (tx == null) {
             org.hibernate.Transaction hTx = ses.getTransaction();
 
-            if (hTx != null && hTx.isActive())
+            if (hTx != null && hTx.getStatus() == TransactionStatus.ACTIVE)
                 hTx.commit();
 
             ses.close();

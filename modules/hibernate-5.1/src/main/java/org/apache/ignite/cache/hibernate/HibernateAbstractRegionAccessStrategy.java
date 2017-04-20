@@ -20,7 +20,7 @@ package org.apache.ignite.cache.hibernate;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.RegionAccessStrategy;
 import org.hibernate.cache.spi.access.SoftLock;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,19 +38,19 @@ public abstract class HibernateAbstractRegionAccessStrategy implements RegionAcc
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object get(SharedSessionContractImplementor ses, Object key, long txTs) throws CacheException {
+    @Nullable @Override public Object get(SessionImplementor ses, Object key, long txTs) throws CacheException {
         return stgy.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putFromLoad(SharedSessionContractImplementor ses, Object key, Object val, long txTs, Object ver) throws CacheException {
+    @Override public boolean putFromLoad(SessionImplementor ses, Object key, Object val, long txTs, Object ver) throws CacheException {
         stgy.putFromLoad(key, val);
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putFromLoad(SharedSessionContractImplementor ses, Object key, Object val, long txTs, Object ver, boolean minimalPutOverride)
+    @Override public boolean putFromLoad(SessionImplementor ses, Object key, Object val, long txTs, Object ver, boolean minimalPutOverride)
         throws CacheException {
         stgy.putFromLoad(key, val, minimalPutOverride);
 
@@ -58,7 +58,7 @@ public abstract class HibernateAbstractRegionAccessStrategy implements RegionAcc
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public SoftLock lockItem(SharedSessionContractImplementor ses, Object key, Object ver) throws CacheException {
+    @Nullable @Override public SoftLock lockItem(SessionImplementor ses, Object key, Object ver) throws CacheException {
         stgy.lock(key);
 
         return null;
@@ -77,12 +77,12 @@ public abstract class HibernateAbstractRegionAccessStrategy implements RegionAcc
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockItem(SharedSessionContractImplementor ses, Object key, SoftLock lock) throws CacheException {
+    @Override public void unlockItem(SessionImplementor ses, Object key, SoftLock lock) throws CacheException {
         stgy.unlock(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(SharedSessionContractImplementor ses, Object key) throws CacheException {
+    @Override public void remove(SessionImplementor ses, Object key) throws CacheException {
         stgy.remove(key);
     }
 

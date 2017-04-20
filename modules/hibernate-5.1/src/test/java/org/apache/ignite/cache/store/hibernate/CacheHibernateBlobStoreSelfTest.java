@@ -24,6 +24,7 @@ import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTe
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.resource.transaction.spi.TransactionStatus;
 
 /**
  * Cache store test.
@@ -52,7 +53,7 @@ public class CacheHibernateBlobStoreSelfTest extends
 
             Transaction hTx = s.getTransaction();
 
-            if (hTx != null && hTx.isActive())
+            if (hTx != null && hTx.getStatus() == TransactionStatus.ACTIVE)
                 hTx.commit();
         }
         finally {

@@ -18,18 +18,11 @@
 package org.apache.ignite.cache.store.hibernate;
 
 import java.sql.Connection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.naming.NamingException;
 import javax.naming.Reference;
-import javax.persistence.EntityGraph;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceUnitUtil;
-import javax.persistence.Query;
-import javax.persistence.SynchronizationType;
-import javax.persistence.criteria.CriteriaBuilder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -39,7 +32,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hibernate.Cache;
 import org.hibernate.HibernateException;
-import org.hibernate.Metamodel;
 import org.hibernate.Session;
 import org.hibernate.SessionBuilder;
 import org.hibernate.SessionFactory;
@@ -255,71 +247,6 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Reference getReference() throws NamingException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public EntityManager createEntityManager() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public EntityManager createEntityManager(Map map) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public EntityManager createEntityManager(SynchronizationType synchronizationType) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public EntityManager createEntityManager(SynchronizationType synchronizationType, Map map) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public CriteriaBuilder getCriteriaBuilder() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isOpen() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Object> getProperties() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public PersistenceUnitUtil getPersistenceUnitUtil() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void addNamedQuery(String s, Query qry) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T unwrap(Class<T> aCls) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> void addNamedEntityGraph(String s, EntityGraph<T> entityGraph) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> List<EntityGraph<? super T>> findEntityGraphsByType(Class<T> entityCls) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Metamodel getMetamodel() {
             return null;
         }
     }

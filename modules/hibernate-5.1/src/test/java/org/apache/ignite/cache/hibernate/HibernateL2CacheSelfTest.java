@@ -29,7 +29,6 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
-import javax.persistence.PersistenceException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -44,6 +43,7 @@ import org.hibernate.ObjectNotFoundException;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.StaleStateException;
 import org.hibernate.Transaction;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
@@ -936,7 +936,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 fail("Commit must fail.");
             }
-            catch (PersistenceException e) {
+            catch (ConstraintViolationException e) {
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1077,7 +1077,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 fail("Commit must fail.");
             }
-            catch (PersistenceException e) {
+            catch (StaleStateException e) {
                 log.info("Expected exception: " + e);
             }
             finally {
@@ -1225,7 +1225,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 fail("Commit must fail.");
             }
-            catch (PersistenceException e) {
+            catch (ConstraintViolationException e) {
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1317,7 +1317,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 fail("Commit must fail.");
             }
-            catch (PersistenceException e) {
+            catch (ConstraintViolationException e) {
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1350,7 +1350,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 fail("Commit must fail.");
             }
-            catch (PersistenceException e) {
+            catch (ConstraintViolationException e) {
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1394,7 +1394,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 fail("Commit must fail.");
             }
-            catch (PersistenceException e) {
+            catch (ConstraintViolationException e) {
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1421,7 +1421,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
                 fail("Commit must fail.");
             }
-            catch (PersistenceException e) {
+            catch (ConstraintViolationException e) {
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
