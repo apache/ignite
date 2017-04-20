@@ -35,6 +35,7 @@ import org.apache.ignite.cache.store.jdbc.model.PersonKey;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -396,6 +397,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     private void checkPutRemove() throws Exception {
+        boolean binaryMarshaller = marshaller() instanceof BinaryMarshaller || marshaller() == null;
+
         IgniteCache<Object, Person> c1 = grid().cache(CACHE_NAME);
 
         Connection conn = getConnection();
@@ -428,7 +431,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertEquals(-2, rs.getInt(2));
             assertEquals(testDate, rs.getDate(3));
             assertEquals("Person-to-test-put-insert", rs.getString(4));
-            assertEquals(testGender.toString(), rs.getString(5));
+
+            assertEquals(testGender.toString(),
+                binaryMarshaller ? Gender.values()[rs.getInt(5)].toString(): rs.getString(5));
 
             assertFalse("Unexpected more data in result set", rs.next());
 
@@ -447,7 +452,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertEquals(-3, rs.getInt(2));
             assertEquals(testDate, rs.getDate(3));
             assertEquals("Person-to-test-put-update", rs.getString(4));
-            assertEquals(testGender.toString(), rs.getString(5));
+
+            assertEquals(testGender.toString(),
+                binaryMarshaller ? Gender.values()[rs.getInt(5)].toString(): rs.getString(5));
 
             assertFalse("Unexpected more data in result set", rs.next());
 
