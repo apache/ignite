@@ -58,6 +58,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.AttributeNodeFilter;
 import org.jsr166.ThreadLocalRandom8;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+
 /**
  * Abstract test for queries over explicit partitions.
  */
@@ -148,7 +152,9 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         /** Clients cache */
         CacheConfiguration<ClientKey, Client> clientCfg = new CacheConfiguration<>();
         clientCfg.setName("cl");
-        clientCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        clientCfg.setWriteSynchronizationMode(FULL_SYNC);
+        clientCfg.setAtomicityMode(TRANSACTIONAL);
+        clientCfg.setRebalanceMode(SYNC);
         clientCfg.setBackups(2);
         clientCfg.setAffinity(AFFINITY);
         clientCfg.setIndexedTypes(ClientKey.class, Client.class);
@@ -156,7 +162,9 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         /** Deposits cache */
         CacheConfiguration<DepositKey, Deposit> depoCfg = new CacheConfiguration<>();
         depoCfg.setName("de");
-        depoCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        depoCfg.setWriteSynchronizationMode(FULL_SYNC);
+        depoCfg.setAtomicityMode(TRANSACTIONAL);
+        depoCfg.setRebalanceMode(SYNC);
         depoCfg.setBackups(2);
         depoCfg.setAffinity(AFFINITY);
         depoCfg.setIndexedTypes(DepositKey.class, Deposit.class);
@@ -164,7 +172,9 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         /** Regions cache. Uses default affinity. */
         CacheConfiguration<Integer, Region> regionCfg = new CacheConfiguration<>();
         regionCfg.setName("re");
-        regionCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        regionCfg.setWriteSynchronizationMode(FULL_SYNC);
+        regionCfg.setAtomicityMode(TRANSACTIONAL);
+        regionCfg.setRebalanceMode(SYNC);
         regionCfg.setCacheMode(CacheMode.REPLICATED);
         regionCfg.setIndexedTypes(Integer.class, Region.class);
 
@@ -377,7 +387,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
     /**
      * @param orig Originator.
      */
-    private void doTestRegionQuery(Ignite orig) {
+    protected void doTestRegionQuery(Ignite orig) {
         IgniteCache<ClientKey, Client> cl = orig.cache("cl");
 
         for (int regionId = 1; regionId <= PARTS_PER_REGION.length; regionId++) {
@@ -432,6 +442,9 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         IgniteCache<ClientKey, Client> cl = orig.cache("cl");
 
         for (int regionId = 1; regionId <= PARTS_PER_REGION.length; regionId++) {
+            if (regionId != 3)
+                continue;
+
             log().info("Running test queries for region " + regionId);
 
             List<Integer> range = REGION_TO_PART_MAP.get(regionId);
@@ -440,7 +453,9 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
             int off = rnd.nextInt(parts.length);
 
-            int p1 = parts[off], p2 = parts[(off + (1 + rnd.nextInt(parts.length-1))) % parts.length];
+            //int p1 = parts[off], p2 = parts[(off + (1 + rnd.nextInt(parts.length-1))) % parts.length];
+
+            int p1 = 52, p2 = 36;
 
             log().info("Parts: " + p1 + " " + p2);
 

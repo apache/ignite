@@ -89,45 +89,4 @@ public class IgniteCacheDistributedPartitionQuerySelfTest extends IgniteCacheDis
         for (List<?> row : rows)
             assertEquals("Incorrect partition", parts[0], affinity.partition(row.get(0)));
     }
-
-    /**
-     * @param orig Originator.
-     */
-    private void doTestRegionQuery(Ignite orig) {
-        IgniteCache<ClientKey, Client> cl = orig.cache("cl");
-
-        for (int regionId = 1; regionId <= PARTS_PER_REGION.length; regionId++) {
-            SqlQuery<ClientKey, Client> qry1 = new SqlQuery<>(Client.class, "regionId=?");
-            qry1.setArgs(regionId);
-
-            List<Cache.Entry<ClientKey, Client>> clients1 = cl.query(qry1).getAll();
-
-            int expRegionCnt = regionId == 5 ? 0 : PARTS_PER_REGION[regionId - 1] * CLIENTS_PER_PARTITION;
-
-            assertEquals("Region " + regionId + " count", expRegionCnt, clients1.size());
-
-            validateClients(regionId, clients1);
-
-            // Repeat the same query with partition set condition.
-            List<Integer> range = REGION_TO_PART_MAP.get(regionId);
-
-            SqlQuery<ClientKey, Client> qry2 = new SqlQuery<>(Client.class, "1=1");
-            qry2.setPartitions(createRange(range.get(0), range.get(1)));
-
-            try {
-                List<Cache.Entry<ClientKey, Client>> clients2 = cl.query(qry2).getAll();
-
-                assertEquals("Region " + regionId + " count with partition set", expRegionCnt, clients2.size());
-
-                // Query must produce only results from single region.
-                validateClients(regionId, clients2);
-
-                if (regionId == UNMAPPED_REGION)
-                    fail();
-            } catch (CacheException ignored) {
-                if (regionId != UNMAPPED_REGION)
-                    fail();
-            }
-        }
-    }
 }
