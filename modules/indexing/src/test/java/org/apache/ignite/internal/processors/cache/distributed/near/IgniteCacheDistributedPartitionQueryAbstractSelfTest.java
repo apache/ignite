@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -463,7 +462,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
                 // Query must produce only results from two partitions.
                 for (Cache.Entry<ClientKey, Client> client : clients) {
-                    int p = AFFINITY.partition(client.getKey());
+                    int p = orig.affinity("cl").partition(client.getKey());
 
                     assertTrue("Incorrect partition for key", p == p1 || p == p2);
                 }
@@ -506,7 +505,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
                 for (List<?> row : rows) {
                     ClientKey key = (ClientKey)row.get(0);
 
-                    int p = AFFINITY.partition(key);
+                    int p = orig.affinity("cl").partition(key);
 
                     assertTrue(Arrays.binarySearch(pSet, p) >= 0);
                 }
@@ -612,7 +611,6 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
             DepositKey that = (DepositKey)o;
 
             return depositId == that.depositId;
-
         }
 
         /** {@inheritDoc} */

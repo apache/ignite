@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.util.Arrays;
 import java.util.List;
 import javax.cache.Cache;
-import javax.cache.CacheException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
