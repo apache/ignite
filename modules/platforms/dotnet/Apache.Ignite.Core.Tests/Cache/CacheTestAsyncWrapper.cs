@@ -439,12 +439,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public void LocalPromote(IEnumerable<TK> keys)
-        {
-            _cache.LocalPromote(keys);
-        }
-        
-        /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
             return _cache.Query(qry);

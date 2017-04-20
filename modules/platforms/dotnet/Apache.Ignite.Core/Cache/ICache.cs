@@ -693,12 +693,6 @@ namespace Apache.Ignite.Core.Cache
         Task<int> GetSizeAsync(params CachePeekMode[] modes);
 
         /// <summary>
-        /// This method unswaps cache entries by given keys, if any, from swap storage into memory.
-        /// </summary>
-        /// <param name="keys">Keys to promote entries for.</param>
-        void LocalPromote(IEnumerable<TK> keys);
-
-        /// <summary>
         /// Queries cache.
         /// </summary>
         /// <param name="qry">Query.</param>
