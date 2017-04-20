@@ -726,10 +726,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (modes.near && ctx.isNear())
                 its.add(ctx.near().nearEntries().iterator());
 
-            if (modes.primary || modes.backup) {
-                GridDhtCacheAdapter<K, V> cache = ctx.isNear() ? ctx.near().dht() : ctx.dht();
+            if (ctx.isLocal())
+                its.add(ctx.local().entrySet().iterator());
+            else {
+                if (modes.primary || modes.backup) {
+                    GridDhtCacheAdapter<K, V> cache = ctx.isNear() ? ctx.near().dht() : ctx.dht();
 
-                its.add(cache.localEntriesIterator(modes.primary, modes.backup, keepBinary));
+                    its.add(cache.localEntriesIterator(modes.primary, modes.backup, keepBinary));
+                }
             }
         }
 
