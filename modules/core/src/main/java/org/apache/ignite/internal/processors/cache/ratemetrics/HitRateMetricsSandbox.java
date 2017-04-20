@@ -33,6 +33,9 @@ import org.apache.ignite.internal.util.IgniteUtils;
  * Visualization of {@link HitRateMetrics}.
  */
 public class HitRateMetricsSandbox extends JFrame {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private final JLabel rateLb = new JLabel("0.0");
 
