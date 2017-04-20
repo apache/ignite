@@ -199,11 +199,11 @@ public interface IgfsSecondaryFileSystem {
      * Set times for the given path.
      *
      * @param path Path.
-     * @param accessTime Access time.
      * @param modificationTime Modification time.
+     * @param accessTime Access time.
      * @throws IgniteException If failed.
      */
-    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+    public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException;
 
      /**
      * Get affinity block locations for data blocks of the file. In case {@code maxLen} parameter is set and
