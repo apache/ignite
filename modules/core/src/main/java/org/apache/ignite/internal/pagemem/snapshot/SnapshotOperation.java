@@ -154,4 +154,14 @@ public class SnapshotOperation implements Serializable {
         result = 31 * result + (extraParam != null ? extraParam.hashCode() : 0);
         return result;
     }
+
+    @Override public String toString() {
+        return "SnapshotOperation{" +
+            "type=" + type +
+            ", snapshotId=" + snapshotId +
+            ", cacheNames=" + cacheNames +
+            ", msg='" + msg + '\'' +
+            ", extraParam=" + extraParam +
+            '}';
+    }
 }

@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -49,6 +50,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -69,6 +72,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -134,12 +138,12 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
 
-        if (gridName.startsWith("client"))
+        if (igniteInstanceName.startsWith("client"))
             c.setClientMode(true);
 
         return c;
@@ -161,6 +165,47 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cc.setLoadPreviousValue(true);
         cc.setRebalanceMode(SYNC);
         cc.setSqlFunctionClasses(SqlFunctions.class);
+
+        List<QueryEntity> entityList = new ArrayList<>();
+
+        QueryEntity qryEntity = new QueryEntity();
+
+        qryEntity.setKeyType(Integer.class.getName());
+        qryEntity.setValueType(Type1.class.getName());
+        qryEntity.addQueryField("id", Integer.class.getName(), null);
+        qryEntity.addQueryField("name", String.class.getName(), null);
+        qryEntity.setTableName("Type2");
+        qryEntity.setIndexes(Arrays.asList(new QueryIndex("id")));
+
+        entityList.add(qryEntity);
+
+        qryEntity = new QueryEntity();
+
+        qryEntity.setKeyType(Integer.class.getName());
+        qryEntity.setValueType(Type2.class.getName());
+        qryEntity.addQueryField("id", Integer.class.getName(), null);
+        qryEntity.addQueryField("name", String.class.getName(), null);
+        qryEntity.setTableName("Type1");
+        qryEntity.setIndexes(Arrays.asList(new QueryIndex("id")));
+
+        entityList.add(qryEntity);
+
+        qryEntity = new QueryEntity();
+
+        qryEntity.setKeyType(Integer.class.getName());
+        qryEntity.setValueType(ObjectValue2.class.getName());
+
+        qryEntity.addQueryField("strVal", String.class.getName(), null);
+
+        final QueryIndex strIdx = new QueryIndex(); // Default index type
+
+        strIdx.setFieldNames(Collections.singletonList("strVal"), true);
+
+        qryEntity.setIndexes(Arrays.asList(strIdx));
+
+        entityList.add(qryEntity);
+
+        cc.setQueryEntities(entityList);
 
         if (cacheMode() != CacheMode.LOCAL)
             cc.setAffinity(new RendezvousAffinityFunction());
@@ -214,6 +259,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+
         for(String cacheName : ignite().cacheNames())
             ignite().cache(cacheName).removeAll();
     }
@@ -251,7 +297,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
             fail();
         }
-        catch (CacheException e) {
+        catch (CacheException ignored) {
             // No-op.
         }
     }
@@ -316,6 +362,43 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     }
 
     /**
+     * Test table alias in SqlQuery.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testTableAliasInSqlQuery() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
+
+        int key = 898;
+
+        int val = 2;
+
+        cache.put(key, val);
+
+        SqlQuery<Integer, Integer> sqlQry = new SqlQuery<>(Integer.class, "t1._key = ? and t1._val > 1");
+
+        QueryCursor<Cache.Entry<Integer, Integer>> qry = cache.query(sqlQry.setAlias("t1").setArgs(key));
+
+        Cache.Entry<Integer, Integer> entry = F.first(qry.getAll());
+
+        assert entry != null;
+
+        assertEquals(key, entry.getKey().intValue());
+        assertEquals(val, entry.getValue().intValue());
+
+        sqlQry = new SqlQuery<>(Integer.class, "FROM Integer as t1 WHERE t1._key = ? and t1._val > 1");
+
+        qry = cache.query(sqlQry.setAlias("t1").setArgs(key));
+
+        entry = F.first(qry.getAll());
+
+        assert entry != null;
+
+        assertEquals(key, entry.getKey().intValue());
+        assertEquals(val, entry.getValue().intValue());
+    }
+
+    /**
      * Tests UDFs.
      *
      * @throws IgniteCheckedException If failed.
@@ -328,10 +411,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         Collection<List<?>> res = qry.getAll();
 
-        if (cacheMode() == REPLICATED)
-            assertEquals(1, res.size());
-        else
-            assertEquals(gridCount(), res.size());
+        assertEquals(1, res.size());
 
         List<?> row = res.iterator().next();
 
@@ -343,10 +423,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         res = qry.getAll();
 
-        if (cacheMode() == REPLICATED)
-            assertEquals(1, res.size());
-        else
-            assertEquals(gridCount(), res.size());
+        assertEquals(1, res.size());
 
         row = res.iterator().next();
 
@@ -546,6 +623,113 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      *
      * @throws Exception In case of error.
      */
+    public void testSimpleCustomTableName() throws Exception {
+        final IgniteCache<Integer, Object> cache = ignite().cache(null);
+
+        cache.put(10, new Type1(1, "Type1 record #1"));
+        cache.put(20, new Type1(2, "Type1 record #2"));
+
+        QueryCursor<Cache.Entry<Integer, Type1>> qry1 =
+            cache.query(new SqlQuery<Integer, Type1>(Type1.class, "FROM Type2"));
+
+        List<Cache.Entry<Integer, Type1>> all = qry1.getAll();
+
+        assertEquals(2, all.size());
+
+        QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("SELECT name FROM Type2"));
+
+        assertEquals(2, qry.getAll().size());
+
+        GridTestUtils.assertThrows(log, new GridPlainCallable<Void>() {
+            @Override public Void call() throws Exception {
+                QueryCursor<Cache.Entry<Integer, Type1>> qry =
+                    cache.query(new SqlQuery<Integer, Type1>(Type1.class, "FROM Type1"));
+
+                qry.getAll();
+
+                return null;
+            }
+        }, CacheException.class, null);
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testMixedCustomTableName() throws Exception {
+        final IgniteCache<Integer, Object> cache = jcache(Integer.class, Object.class);
+
+        cache.put(10, new Type1(1, "Type1 record #1"));
+        cache.put(20, new Type1(2, "Type1 record #2"));
+        cache.put(30, new Type2(1, "Type2 record #1"));
+        cache.put(40, new Type2(2, "Type2 record #2"));
+        cache.put(50, new Type2(3, "Type2 record #3"));
+
+        QueryCursor<Cache.Entry<Integer, Type1>> qry1 =
+            cache.query(new SqlQuery<Integer, Type1>(Type1.class, "FROM Type2"));
+
+        List<Cache.Entry<Integer, Type1>> all = qry1.getAll();
+
+        assertEquals(2, all.size());
+
+        QueryCursor<Cache.Entry<Integer, Type2>> qry2 =
+            cache.query(new SqlQuery<Integer, Type2>(Type2.class, "FROM Type1"));
+
+        assertEquals(3, qry2.getAll().size());
+
+        QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("SELECT name FROM Type1"));
+
+        assertEquals(3, qry.getAll().size());
+
+        qry = cache.query(new SqlFieldsQuery("SELECT name FROM Type2"));
+
+        assertEquals(2, qry.getAll().size());
+
+        GridTestUtils.assertThrows(log, new GridPlainCallable<Void>() {
+            @Override public Void call() throws Exception {
+                QueryCursor<Cache.Entry<Integer, Type1>> qry1 =
+                    cache.query(new SqlQuery<Integer, Type1>(Type1.class, "FROM Type1"));
+
+                qry1.getAll().size();
+
+                return null;
+            }
+        }, CacheException.class, null);
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testDistributedJoinCustomTableName() throws Exception {
+        IgniteCache<Integer, Object> cache = jcache(Integer.class, Object.class);
+
+        cache.put(10, new Type1(1, "Type1 record #1"));
+        cache.put(20, new Type1(2, "Type1 record #2"));
+        cache.put(30, new Type2(1, "Type2 record #1"));
+        cache.put(40, new Type2(2, "Type2 record #2"));
+        cache.put(50, new Type2(3, "Type2 record #3"));
+
+        QueryCursor<List<?>> query = cache.query(
+            new SqlFieldsQuery("SELECT t2.name, t1.name FROM Type2 as t2 LEFT JOIN Type1 as t1 ON t1.id = t2.id")
+                .setDistributedJoins(cacheMode() == PARTITIONED));
+
+        assertEquals(2, query.getAll().size());
+
+        query = cache.query(
+            new SqlFieldsQuery("SELECT t2.name, t1.name FROM Type2 as t2 RIGHT JOIN Type1 as t1 ON t1.id = t2.id")
+                .setDistributedJoins(cacheMode() == PARTITIONED));
+
+        assertEquals(3, query.getAll().size());
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception In case of error.
+     */
     public void testObjectQuery() throws Exception {
         IgniteCache<Integer, ObjectValue> cache = jcache(Integer.class, ObjectValue.class);
 
@@ -577,6 +761,40 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             assert iter.next() != null;
 
         assert !iter.hasNext();
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testObjectWithString() throws Exception {
+        IgniteCache<Integer, ObjectValue2> cache = jcache(Integer.class, ObjectValue2.class);
+
+        cache.put(1, new ObjectValue2("value 1"));
+        cache.put(2, new ObjectValue2("value 2"));
+        cache.put(3, new ObjectValue2("value 3"));
+
+        QueryCursor<Cache.Entry<Integer, ObjectValue2>> qry
+            = cache.query(new SqlQuery<Integer, ObjectValue2>(ObjectValue2.class, "strVal like ?").setArgs("value%"));
+
+        int expCnt = 3;
+
+        List<Cache.Entry<Integer, ObjectValue2>> results = qry.getAll();
+
+        assertEquals(expCnt, results.size());
+
+        qry = cache.query(new SqlQuery<Integer, ObjectValue2>(ObjectValue2.class, "strVal > ?").setArgs("value 1"));
+
+        results = qry.getAll();
+
+        assertEquals(expCnt - 1, results.size());
+
+        qry = cache.query(new TextQuery<Integer, ObjectValue2>(ObjectValue2.class, "value"));
+
+        results = qry.getAll();
+
+        assertEquals(0, results.size()); //Should fail for FULL_TEXT index, but SORTED
     }
 
     /**
@@ -1647,6 +1865,126 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     }
 
     /**
+     *
+     */
+    public static class Type1 implements Serializable {
+        /** */
+        private int id;
+
+        /** */
+        private String name;
+
+        /**
+         * @param id ID.
+         * @param name Name.
+         */
+        Type1(int id, String name) {
+            assert name != null;
+            assert id > 0;
+
+            this.name = name;
+            this.id = id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String name() {
+            return name;
+        }
+
+        /**
+         * @return ID.
+         */
+        public int id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return name.hashCode() + 31 * id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (obj == this)
+                return true;
+
+            if (!(obj instanceof Type1))
+                return false;
+
+            Type1 that = (Type1)obj;
+
+            return that.name.equals(name) && that.id == id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Type1.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    public static class Type2 implements Serializable {
+        /** */
+        private int id;
+
+        /** */
+        private String name;
+
+        /**
+         * @param id ID.
+         * @param name Name.
+         */
+        Type2(int id, String name) {
+            assert name != null;
+            assert id > 0;
+
+            this.name = name;
+            this.id = id;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String name() {
+            return name;
+        }
+
+        /**
+         * @return ID.
+         */
+        public int id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return name.hashCode() + 31 * id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (obj == this)
+                return true;
+
+            if (!(obj instanceof Type2))
+                return false;
+
+            Type2 that = (Type2)obj;
+
+            return that.name.equals(name) && that.id == id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Type2.class, this);
+        }
+    }
+
+    /**
      * Test value object.
      */
     @SuppressWarnings("PublicInnerClass")
@@ -1757,6 +2095,54 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ObjectValueOther.class, this);
+        }
+    }
+
+    /**
+     * Another test value object.
+     */
+    private static class ObjectValue2 {
+        /** Value. */
+        private String strVal;
+
+        /**
+         * @param strVal String value.
+         */
+        ObjectValue2(String strVal) {
+            this.strVal = strVal;
+        }
+
+        /**
+         * Gets value.
+         *
+         * @return Value.
+         */
+        public String value() {
+            return strVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ObjectValue2 other = (ObjectValue2)o;
+
+            return strVal == null ? other.strVal == null : strVal.equals(other.strVal);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return strVal != null ? strVal.hashCode() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ObjectValue2.class, this);
         }
     }
 

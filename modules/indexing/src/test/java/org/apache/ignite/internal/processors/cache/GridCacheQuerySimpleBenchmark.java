@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -53,8 +52,8 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -70,8 +69,6 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
         ccfg.setIndexedTypes(
             Long.class, Person.class
         );
-
-        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
 
         c.setCacheConfiguration(ccfg);
 

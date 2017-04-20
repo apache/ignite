@@ -113,7 +113,7 @@
 
     <!-- Default settings. -->
     <root>
-        <!-- Print out all debug by default. -->
+        <!-- Print at info by default. -->
         <level value="INFO"/>
 
         <!-- Append to file and console. -->

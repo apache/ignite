@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -43,8 +42,8 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
     private boolean clientMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(clientMode);
 
@@ -134,8 +133,6 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
 
         cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
-        cfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
-        cfg.setOffHeapMaxMemory(1024 * 1024 * 1024);
         return cfg;
     }
 }

@@ -170,11 +170,6 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     }
 
     /** {@inheritDoc} */
-    @Override public long globalTime() {
-        return ver.globalTime();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return ver;
     }
@@ -261,7 +256,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 103;
     }
 

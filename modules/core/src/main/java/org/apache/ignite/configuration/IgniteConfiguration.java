@@ -53,6 +53,7 @@ import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.plugin.segmentation.SegmentationResolver;
+import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
@@ -65,7 +66,7 @@ import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
-import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.FailoverSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.IndexingSpi;
@@ -119,12 +120,6 @@ public class IgniteConfiguration {
     /** Default message send retries count. */
     public static final int DFLT_SEND_RETRY_CNT = 3;
 
-    /** Default number of clock sync samples. */
-    public static final int DFLT_CLOCK_SYNC_SAMPLES = 8;
-
-    /** Default clock synchronization frequency. */
-    public static final int DFLT_CLOCK_SYNC_FREQUENCY = 120000;
-
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
@@ -149,35 +144,14 @@ public class IgniteConfiguration {
     /** Default size of data streamer thread pool. */
     public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
-    /** Default keep alive time for public thread pool. */
-    @Deprecated
-    public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
-
     /** Default limit of threads used for rebalance. */
     public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
-
-    /** Default max queue capacity of public thread pool. */
-    @Deprecated
-    public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default size of system thread pool. */
     public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
-    /** Default max size of system thread pool. */
-    @Deprecated
-    public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
-
-    /** Default keep alive time for system thread pool. */
-    @Deprecated
-    public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
-
-    /** Default keep alive time for utility thread pool. */
-    @Deprecated
-    public static final long DFLT_UTILITY_KEEP_ALIVE_TIME = 10_000;
-
-    /** Default max queue capacity of system thread pool. */
-    @Deprecated
-    public static final int DFLT_SYSTEM_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
+    /** Default size of query thread pool. */
+    public static final int DFLT_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default Ignite thread keep alive time. */
     public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
@@ -225,8 +199,8 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
-    /** Optional grid name. */
-    private String gridName;
+    /** Optional local Ignite instance name. */
+    private String igniteInstanceName;
 
     /** User attributes. */
     private Map<String, ?> userAttrs;
@@ -236,6 +210,9 @@ public class IgniteConfiguration {
 
     /** Public pool size. */
     private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
+
+    /** Service pool size. */
+    private Integer svcPoolSize;
 
     /** Async Callback pool size. */
     private int callbackPoolSize = DFLT_PUBLIC_THREAD_CNT;
@@ -264,14 +241,11 @@ public class IgniteConfiguration {
     /** Utility cache pool keep alive time. */
     private long utilityCacheKeepAliveTime = DFLT_THREAD_KEEP_ALIVE_TIME;
 
-    /** Marshaller pool size. */
-    private int marshCachePoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
-
-    /** Marshaller pool keep alive time. */
-    private long marshCacheKeepAliveTime = DFLT_THREAD_KEEP_ALIVE_TIME;
-
     /** P2P pool size. */
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
+
+    /** Query pool size. */
+    private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
 
     /** Ignite installation folder. */
     private String igniteHome;
@@ -311,12 +285,6 @@ public class IgniteConfiguration {
 
     /** Message send retries delay. */
     private int sndRetryCnt = DFLT_SEND_RETRY_CNT;
-
-    /** Number of samples for clock synchronization. */
-    private int clockSyncSamples = DFLT_CLOCK_SYNC_SAMPLES;
-
-    /** Clock synchronization frequency. */
-    private long clockSyncFreq = DFLT_CLOCK_SYNC_FREQUENCY;
 
     /** Metrics history time. */
     private int metricsHistSize = DFLT_METRICS_HISTORY_SIZE;
@@ -472,8 +440,8 @@ public class IgniteConfiguration {
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
-    /** Database configuration. */
-    private MemoryConfiguration dbCfg;
+    /** Page memory configuration. */
+    private MemoryConfiguration memCfg;
 
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -513,27 +481,25 @@ public class IgniteConfiguration {
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
-        daemon = cfg.isDaemon();
-        dbCfg = cfg.getMemoryConfiguration();
+        memCfg = cfg.getMemoryConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         callbackPoolSize = cfg.getAsyncCallbackPoolSize();
-        connectorCfg = cfg.getConnectorConfiguration();
         classLdr = cfg.getClassLoader();
         clientMode = cfg.isClientMode();
-        clockSyncFreq = cfg.getClockSyncFrequency();
-        clockSyncSamples = cfg.getClockSyncSamples();
+        connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
+        daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
-        gridName = cfg.getGridName();
         hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
         igniteHome = cfg.getIgniteHome();
+        igniteInstanceName = cfg.getIgniteInstanceName();
         igniteWorkDir = cfg.getWorkDirectory();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
@@ -544,11 +510,9 @@ public class IgniteConfiguration {
         lsnrs = cfg.getLocalEventListeners();
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
-        marshCacheKeepAliveTime = cfg.getMarshallerCacheKeepAliveTime();
-        marshCachePoolSize = cfg.getMarshallerCacheThreadPoolSize();
         mbeanSrv = cfg.getMBeanServer();
-        metricsHistSize = cfg.getMetricsHistorySize();
         metricsExpTime = cfg.getMetricsExpireTime();
+        metricsHistSize = cfg.getMetricsHistorySize();
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
@@ -562,6 +526,7 @@ public class IgniteConfiguration {
         platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
         pubPoolSize = cfg.getPublicThreadPoolSize();
+        qryPoolSize = cfg.getQueryThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
@@ -573,6 +538,7 @@ public class IgniteConfiguration {
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
         svcCfgs = cfg.getServiceConfiguration();
+        svcPoolSize = cfg.getServiceThreadPoolSize();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
@@ -587,12 +553,27 @@ public class IgniteConfiguration {
     /**
      * Gets optional grid name. Returns {@code null} if non-default grid name was not
      * provided.
+     * <p>The name only works locally and has no effect on topology</p>
      *
      * @return Optional grid name. Can be {@code null}, which is default grid name, if
      *      non-default grid name was not provided.
+     * @deprecated Use {@link #getIgniteInstanceName()} instead.
      */
+    @Deprecated
     public String getGridName() {
-        return gridName;
+        return getIgniteInstanceName();
+    }
+
+    /**
+     * Gets optional local instance name. Returns {@code null} if non-default local instance
+     * name was not provided.
+     * <p>The name only works locally and has no effect on topology</p>
+     *
+     * @return Optional local instance name. Can be {@code null}, which is default local
+     * instance name, if non-default local instance name was not provided.
+     */
+    public String getIgniteInstanceName() {
+        return igniteInstanceName;
     }
 
     /**
@@ -641,9 +622,22 @@ public class IgniteConfiguration {
      * @param gridName Grid name to set. Can be {@code null}, which is default
      *      grid name.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setIgniteInstanceName(String)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setGridName(String gridName) {
-        this.gridName = gridName;
+        return setIgniteInstanceName(gridName);
+    }
+
+    /**
+     * Sets of local instance name. Note that {@code null} is a default local instance name.
+     *
+     * @param instanceName Local instance name to set. Can be {@code null}. which is default
+     * local instance name.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setIgniteInstanceName(String instanceName) {
+        this.igniteInstanceName = instanceName;
 
         return this;
     }
@@ -786,6 +780,18 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Should return a thread pool size to be used in grid.
+     * This executor service will be in charge of processing {@link Service} proxy invocations.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
+     *
+     * @return Thread pool size to be used in grid to process service proxy invocations.
+     */
+    public int getServiceThreadPoolSize() {
+        return svcPoolSize != null ? svcPoolSize : getPublicThreadPoolSize();
+    }
+
+    /**
      * Size of thread pool that is in charge of processing internal system messages.
      * <p>
      * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
@@ -882,25 +888,14 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Default size of thread pool that is in charge of processing marshaller messages.
+     * Size of thread pool that is in charge of processing query messages.
      * <p>
-     * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
+     * If not provided, executor service will have size {@link #DFLT_QUERY_THREAD_POOL_SIZE}.
      *
-     * @return Default thread pool size to be used in grid for marshaller messages.
+     * @return Thread pool size to be used in grid for query messages.
      */
-    public int getMarshallerCacheThreadPoolSize() {
-        return marshCachePoolSize;
-    }
-
-    /**
-     * Keep alive time of thread pool that is in charge of processing marshaller messages.
-     * <p>
-     * If not provided, executor service will have keep alive time {@link #DFLT_THREAD_KEEP_ALIVE_TIME}.
-     *
-     * @return Thread pool keep alive time (in milliseconds) to be used in grid for marshaller messages.
-     */
-    public long getMarshallerCacheKeepAliveTime() {
-        return marshCacheKeepAliveTime;
+    public int getQueryThreadPoolSize() {
+        return qryPoolSize;
     }
 
     /**
@@ -912,6 +907,19 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setPublicThreadPoolSize(int poolSize) {
         pubPoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
+     * Sets thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getServiceThreadPoolSize()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setServiceThreadPoolSize(int poolSize) {
+        svcPoolSize = poolSize;
 
         return this;
     }
@@ -1010,6 +1018,19 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Sets query thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getQueryThreadPoolSize()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setQueryThreadPoolSize(int poolSize) {
+        qryPoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
      * Sets keep alive time of thread pool size that will be used to process utility cache messages.
      *
      * @param keepAliveTime Keep alive time of executor service to use for utility cache messages.
@@ -1019,48 +1040,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setUtilityCacheKeepAliveTime(long keepAliveTime) {
         utilityCacheKeepAliveTime = keepAliveTime;
-
-        return this;
-    }
-
-    /**
-     * Sets default thread pool size that will be used to process marshaller messages.
-     *
-     * @param poolSize Default executor service size to use for marshaller messages.
-     * @see IgniteConfiguration#getMarshallerCacheThreadPoolSize()
-     * @see IgniteConfiguration#getMarshallerCacheKeepAliveTime()
-     * @return {@code this} for chaining.
-     * @deprecated Use {@link #setMarshallerCacheThreadPoolSize(int)} instead.
-     */
-    @Deprecated
-    public IgniteConfiguration setMarshallerCachePoolSize(int poolSize) {
-        return setMarshallerCacheThreadPoolSize(poolSize);
-    }
-
-    /**
-     * Sets default thread pool size that will be used to process marshaller messages.
-     *
-     * @param poolSize Default executor service size to use for marshaller messages.
-     * @see IgniteConfiguration#getMarshallerCacheThreadPoolSize()
-     * @see IgniteConfiguration#getMarshallerCacheKeepAliveTime()
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setMarshallerCacheThreadPoolSize(int poolSize) {
-        marshCachePoolSize = poolSize;
-
-        return this;
-    }
-
-    /**
-     * Sets maximum thread pool size that will be used to process marshaller messages.
-     *
-     * @param keepAliveTime Keep alive time of executor service to use for marshaller messages.
-     * @see IgniteConfiguration#getMarshallerCacheThreadPoolSize()
-     * @see IgniteConfiguration#getMarshallerCacheKeepAliveTime()
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setMarshallerCacheKeepAliveTime(long keepAliveTime) {
-        marshCacheKeepAliveTime = keepAliveTime;
 
         return this;
     }
@@ -1456,52 +1435,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets number of samples used to synchronize clocks between different nodes.
-     * <p>
-     * Clock synchronization is used for cache version assignment in {@code CLOCK} order mode.
-     *
-     * @return Number of samples for one synchronization round.
-     */
-    public int getClockSyncSamples() {
-        return clockSyncSamples;
-    }
-
-    /**
-     * Sets number of samples used for clock synchronization.
-     *
-     * @param clockSyncSamples Number of samples.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setClockSyncSamples(int clockSyncSamples) {
-        this.clockSyncSamples = clockSyncSamples;
-
-        return this;
-    }
-
-    /**
-     * Gets frequency at which clock is synchronized between nodes, in milliseconds.
-     * <p>
-     * Clock synchronization is used for cache version assignment in {@code CLOCK} order mode.
-     *
-     * @return Clock synchronization frequency, in milliseconds.
-     */
-    public long getClockSyncFrequency() {
-        return clockSyncFreq;
-    }
-
-    /**
-     * Sets clock synchronization frequency in milliseconds.
-     *
-     * @param clockSyncFreq Clock synchronization frequency.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setClockSyncFrequency(long clockSyncFreq) {
-        this.clockSyncFreq = clockSyncFreq;
-
-        return this;
-    }
-
-    /**
      * Gets Max count of threads can be used at rebalancing.
      * Minimum is 1.
      * @return count.
@@ -1579,7 +1512,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured event SPI implementation. If not provided,
-     * {@link MemoryEventStorageSpi} will be used.
+     * {@link NoopEventStorageSpi} will be used.
      *
      * @return Grid event SPI implementation or {@code null} to use default implementation.
      */
@@ -2158,22 +2091,22 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets memory configuration.
+     * Gets page memory configuration.
      *
      * @return Memory configuration.
      */
     public MemoryConfiguration getMemoryConfiguration() {
-        return dbCfg;
+        return memCfg;
     }
 
     /**
-     * Sets memory configuration.
+     * Sets page memory configuration.
      *
-     * @param dbCfg Memory configuration.
+     * @param memCfg Memory configuration.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration dbCfg) {
-        this.dbCfg = dbCfg;
+    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
+        this.memCfg = memCfg;
 
         return this;
     }

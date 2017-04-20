@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,6 +33,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Adapter for cache metrics.
  */
 public class CacheMetricsImpl implements CacheMetrics {
+    /** Rebalance rate interval. */
+    private static final int REBALANCE_RATE_INTERVAL = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, 60000);
+
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
@@ -104,6 +112,21 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Number of swap misses. */
     private AtomicLong swapMisses = new AtomicLong();
 
+    /** Rebalanced keys count. */
+    private AtomicLong rebalancedKeys = new AtomicLong();
+
+    /** Total rebalanced bytes count. */
+    private AtomicLong totalRebalancedBytes = new AtomicLong();
+
+    /** Estimated rebalancing keys count. */
+    private AtomicLong estimatedRebalancingKeys = new AtomicLong();
+
+    /** Rebalancing rate in keys. */
+    private HitRateMetrics rebalancingKeysRate = new HitRateMetrics(REBALANCE_RATE_INTERVAL, 20);
+
+    /** Rebalancing rate in bytes. */
+    private HitRateMetrics rebalancingBytesRate = new HitRateMetrics(REBALANCE_RATE_INTERVAL, 20);
+
     /** Cache metrics. */
     @GridToStringExclude
     private transient CacheMetricsImpl delegate;
@@ -146,11 +169,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public String name() {
         return cctx.name();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOverflowSize() {
-        return 0;
     }
 
     /** {@inheritDoc} */
@@ -217,7 +235,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         try {
             return cctx.offheap().entriesCount(true, false, cctx.affinity().affinityTopologyVersion());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignored) {
             return 0;
         }
     }
@@ -227,7 +245,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         try {
             return cctx.offheap().entriesCount(false, true, cctx.affinity().affinityTopologyVersion());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignored) {
             return 0;
         }
     }
@@ -241,64 +259,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffHeapMaxSize() {
-        return cctx.config().getOffHeapMaxMemory();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapGets() {
-        return swapGets.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapPuts() {
-        return swapPuts.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapRemovals() {
-        return swapRemoves.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapHits() {
-        return swapHits.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapMisses() {
-        return swapMisses.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapEntriesCount() {
         return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapHitPercentage() {
-        long hits0 = swapHits.get();
-        long gets0 = swapGets.get();
-
-        if (hits0 == 0)
-            return 0;
-
-        return (float) hits0 / gets0 * 100.0f;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapMissPercentage() {
-        long misses0 = swapMisses.get();
-        long reads0 = swapGets.get();
-
-        if (misses0 == 0)
-            return 0;
-
-        return (float) misses0 / reads0 * 100.0f;
     }
 
     /** {@inheritDoc} */
@@ -322,14 +283,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getDhtEvictQueueCurrentSize() {
-        GridCacheContext<?, ?> ctx = cctx.isNear() ? dhtCtx : cctx;
-
-        if (ctx == null)
-            return -1;
-
-        CacheEvictionManager evictMgr = ctx.evicts();
-
-        return evictMgr != null ? evictMgr.evictQueueSize() : -1;
+        return -1;
     }
 
     /** {@inheritDoc} */
@@ -509,6 +463,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         swapRemoves.set(0);
         swapHits.set(0);
         swapMisses.set(0);
+
+        clearRebalanceCounters();
 
         if (delegate != null)
             delegate.clear();
@@ -782,6 +738,96 @@ public class CacheMetricsImpl implements CacheMetrics {
         return ccfg != null && ccfg.isManagementEnabled();
     }
 
+    /** {@inheritDoc} */
+    public int getTotalPartitionsCount() {
+        int res = 0;
+
+        for (Map.Entry<Integer, GridDhtPartitionState> e : cctx.topology().localPartitionMap().entrySet()) {
+            if (e.getValue() == GridDhtPartitionState.OWNING || e.getValue() == GridDhtPartitionState.MOVING)
+                res++;
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    public int getRebalancingPartitionsCount() {
+        int res = 0;
+
+        for (Map.Entry<Integer, GridDhtPartitionState> e : cctx.topology().localPartitionMap().entrySet()) {
+            if (e.getValue() == GridDhtPartitionState.MOVING)
+                res++;
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    public long getKeysToRebalanceLeft() {
+        return Math.max(0, estimatedRebalancingKeys.get() - rebalancedKeys.get());
+    }
+
+    /** {@inheritDoc} */
+    public long getRebalancingKeysRate() {
+        return rebalancingKeysRate.getRate();
+    }
+
+    /** {@inheritDoc} */
+    public long getRebalancingBytesRate() {
+        return rebalancingBytesRate.getRate();
+    }
+
+    /**
+     * Clear rebalance counters.
+     */
+    public void clearRebalanceCounters() {
+        estimatedRebalancingKeys.set(0);
+
+        rebalancedKeys.set(0);
+
+        totalRebalancedBytes.set(0);
+
+        rebalancingBytesRate.clear();
+
+        rebalancingKeysRate.clear();
+    }
+
+    /**
+     * First rebalance supply message callback.
+     * @param keysCnt Estimated number of keys.
+     */
+    public void onRebalancingKeysCountEstimateReceived(long keysCnt) {
+        estimatedRebalancingKeys.addAndGet(keysCnt);
+    }
+
+    /**
+     * Rebalance entry store callback.
+     */
+    public void onRebalanceKeyReceived() {
+        rebalancedKeys.incrementAndGet();
+
+        rebalancingKeysRate.onHit();
+    }
+
+    /**
+     * Rebalance supply message callback.
+     *
+     * @param batchSize Batch size in bytes.
+     */
+    public void onRebalanceBatchReceived(long batchSize) {
+        totalRebalancedBytes.addAndGet(batchSize);
+
+        rebalancingBytesRate.onHits(batchSize);
+    }
+
+    public long getTotalAllocatedPages() {
+        return 0;
+    }
+
+    public long getTotalEvictedPages() {
+        return 0;
+    }
+
     /**
      * Off-heap read callback.
      *
@@ -827,61 +873,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.onOffHeapEvict();
-    }
-
-    /**
-     * Swap read callback.
-     *
-     * @param hit Hit or miss flag.
-     */
-    public void onSwapRead(boolean hit) {
-        swapGets.incrementAndGet();
-
-        if (hit)
-            swapHits.incrementAndGet();
-        else
-            swapMisses.incrementAndGet();
-
-        if (delegate != null)
-            delegate.onSwapRead(hit);
-    }
-
-    /**
-     * Swap write callback.
-     */
-    public void onSwapWrite() {
-        onSwapWrite(1);
-    }
-
-    /**
-     * Swap write callback.
-     *
-     * @param cnt Amount of entries.
-     */
-    public void onSwapWrite(int cnt) {
-        swapPuts.addAndGet(cnt);
-
-        if (delegate != null)
-            delegate.onSwapWrite(cnt);
-    }
-
-    /**
-     * Swap remove callback.
-     */
-    public void onSwapRemove() {
-        onSwapRemove(1);
-    }
-
-    /**
-     * Swap remove callback.
-     *
-     * @param cnt Amount of entries.
-     */
-    public void onSwapRemove(int cnt) {
-        swapRemoves.addAndGet(cnt);
-
-        if (delegate != null)
-            delegate.onSwapRemove(cnt);
     }
 
     /** {@inheritDoc} */

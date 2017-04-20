@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 649
-#pragma warning disable 169
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -53,15 +51,21 @@ namespace Apache.Ignite.Core.Tests
             Assert.Greater(jars.Length, 3);
 
             foreach (var jar in jars)
-                // ReSharper disable once AssignNullToNotNullAttribute
-                File.Copy(jar, Path.Combine(folder, Path.GetFileName(jar)), true);
+            {
+                var fileName = Path.GetFileName(jar);
+                Assert.IsNotNull(fileName);
+                File.Copy(jar, Path.Combine(folder, fileName), true);
+            }
 
             // Build classpath
             var classpath = string.Join(";", Directory.GetFiles(folder).Select(Path.GetFileName));
 
             // Copy .NET binaries
-            foreach (var asm in new[] {typeof (IgniteRunner).Assembly, typeof (Ignition).Assembly, GetType().Assembly})
+            foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly, GetType().Assembly})
+            {
+                Assert.IsNotNull(asm.Location);
                 File.Copy(asm.Location, Path.Combine(folder, Path.GetFileName(asm.Location)));
+            }
 
             // Copy config
             var springPath = Path.GetFullPath("config\\compute\\compute-grid2.xml");
@@ -76,7 +80,6 @@ namespace Apache.Ignite.Core.Tests
                 "-springConfigUrl=" + springFile,
                 "-jvmClasspath=" + classpath,
                 "-J-ea",
-                "-J-Xcheck:jni",
                 "-J-Xms512m",
                 "-J-Xmx512m"
             });
@@ -108,15 +111,23 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void TestFixtureTearDown()
+        {
+            Ignition.StopAll(true);
+            IgniteProcess.KillAll();
+        }
+
+        /// <summary>
         /// Verifies that custom-deployed node has started.
         /// </summary>
         private static void VerifyNodeStarted(string exePath)
         {
-            using (var ignite = Ignition.Start(new IgniteConfiguration
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = "config\\compute\\compute-grid1.xml",
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
             }))
             {
                 Assert.IsTrue(ignite.WaitTopology(2));
@@ -157,6 +168,7 @@ namespace Apache.Ignite.Core.Tests
             throw new InvalidOperationException();
         }
 
+        #pragma warning disable 649
         /// <summary>
         /// Function that returns process path.
         /// </summary>

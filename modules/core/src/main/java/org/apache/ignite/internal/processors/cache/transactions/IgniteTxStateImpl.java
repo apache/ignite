@@ -56,7 +56,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     private GridLongList activeCacheIds = new GridLongList();
 
     /** Per-transaction read map. */
-    @GridToStringInclude
+    @GridToStringExclude
     protected Map<IgniteTxKey, IgniteTxEntry> txMap;
 
     /** Read view on transaction map. */
@@ -316,14 +316,14 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean storeUsed(GridCacheSharedContext cctx) {
+    @Override public boolean storeWriteThrough(GridCacheSharedContext cctx) {
         if (!activeCacheIds.isEmpty()) {
             for (int i = 0; i < activeCacheIds.size(); i++) {
                 int cacheId = (int)activeCacheIds.get(i);
 
                 CacheStoreManager store = cctx.cacheContext(cacheId).store();
 
-                if (store.configured())
+                if (store.configured() && store.isWriteThrough())
                     return true;
             }
         }
@@ -475,6 +475,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     public String toString() {
-        return S.toString(IgniteTxStateImpl.class, this);
+        return S.toString(IgniteTxStateImpl.class, this, "txMap", allEntriesCopy());
     }
 }

@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text.RegularExpressions;
@@ -106,6 +107,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             orgCache[1000] = new Organization {Id = 1000, Name = "Org_0"};
             orgCache[1001] = new Organization {Id = 1001, Name = "Org_1"};
+            orgCache[1002] = new Organization {Id = 1002, Name = null};
 
             var roleCache = GetRoleCache();
 
@@ -117,14 +119,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Gets the configuration.
         /// </summary>
-        private static IgniteConfiguration GetConfig(string gridName = null)
+        private IgniteConfiguration GetConfig(string gridName = null)
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(Person),
-                    typeof(Organization), typeof(Address), typeof(Role), typeof(RoleKey), typeof(Numerics)),
-                GridName = gridName
+                    typeof(Organization), typeof(Address), typeof(Role), typeof(RoleKey), typeof(Numerics))
+                {
+                    NameMapper = GetNameMapper()
+                },
+                IgniteInstanceName = gridName
             };
+        }
+
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>
@@ -274,12 +287,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             CheckFunc(x => x.Trim(), strings);
             CheckFunc(x => x.Trim('P'), strings);
+            var toTrim = new[] {'P'};
+            CheckFunc(x => x.Trim(toTrim), strings);
+            CheckFunc(x => x.Trim(new List<char> {'P'}.ToArray()), strings);
             CheckFunc(x => x.Trim('3'), strings);
             CheckFunc(x => x.TrimStart('P'), strings);
+            CheckFunc(x => x.TrimStart(toTrim), strings);
             CheckFunc(x => x.TrimStart('3'), strings);
             Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimStart('P', 'e'), strings));
             CheckFunc(x => x.TrimEnd('P'), strings);
+            CheckFunc(x => x.TrimEnd(toTrim), strings);
             CheckFunc(x => x.TrimEnd('3'), strings);
+            var toTrimFails = new[] {'P', 'c'};
+            Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.Trim(toTrimFails), strings));
+            Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimStart(toTrimFails), strings));
+            Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimEnd(toTrimFails), strings));
 
             CheckFunc(x => Regex.Replace(x, @"son.\d", "kele!"), strings);
             CheckFunc(x => x.Replace("son", ""), strings);
@@ -418,6 +440,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var roles = GetRoleCache().AsCacheQueryable();
 
             var res = persons.Join(roles, person => person.Key, role => role.Key.Foo, (person, role) => role)
+                .OrderBy(x => x.Key.Bar)
                 .ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
@@ -431,7 +454,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestCrossCacheJoinInline()
         {
             var res = GetPersonCache().AsCacheQueryable().Join(GetRoleCache().AsCacheQueryable(), 
-                person => person.Key, role => role.Key.Foo, (person, role) => role).ToArray();
+                person => person.Key, role => role.Key.Foo, (person, role) => role)
+                .OrderBy(x => x.Key.Bar).ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
             Assert.AreEqual(101, res[0].Key.Bar);
@@ -599,6 +623,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the SelectMany from field collection.
+        /// </summary>
+        [Test]
+        public void TestSelectManySameTable()
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<NotSupportedException>(() => persons.SelectMany(x => x.Value.Name).ToArray());
+
+            Assert.IsTrue(ex.Message.StartsWith("FROM clause must be IQueryable: from Char"));
+        }
+
+        /// <summary>
         /// Tests the group by.
         /// </summary>
         [Test]
@@ -722,7 +760,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ThenBy(x => x.Value.Age)
                 .ToArray();
 
-            Assert.AreEqual(Enumerable.Range(0, PersonCount).Reverse().ToArray(), persons.Select(x => x.Key).ToArray());
+            Assert.AreEqual(Enumerable.Range(0, PersonCount).Reverse().ToArray(), 
+                persons.Select(x => x.Key).ToArray());
 
             var personsByOrg = GetPersonCache().AsCacheQueryable()
                 .Join(GetOrgCache().AsCacheQueryable(), p => p.Value.OrganizationId, o => o.Value.Id,
@@ -744,6 +783,90 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var actualIds = personsByOrg.Select(x => x.PersonId).ToArray();
 
             Assert.AreEqual(expectedIds, actualIds);
+        }
+
+        /// <summary>
+        /// Tests IEnumerable.Contains.
+        /// </summary>
+        [Test]
+        public void TestContains()
+        {
+            var cache = GetPersonCache().AsCacheQueryable();
+            var orgCache = GetOrgCache().AsCacheQueryable();
+
+            var keys = new[] { 1, 2, 3 };
+            var emptyKeys = new int[0];
+
+            var bigNumberOfKeys = 10000;
+            var aLotOfKeys = Enumerable.Range(-bigNumberOfKeys + 10 - PersonCount, bigNumberOfKeys + PersonCount)
+                .ToArray();
+            var hashSetKeys = new HashSet<int>(keys);
+
+            CheckWhereFunc(cache, e => new[] { 1, 2, 3 }.Contains(e.Key));
+            CheckWhereFunc(cache, e => emptyKeys.Contains(e.Key));
+            CheckWhereFunc(cache, e => new int[0].Contains(e.Key));
+            CheckWhereFunc(cache, e => new int[0].Contains(e.Key));
+            CheckWhereFunc(cache, e => new List<int> { 1, 2, 3 }.Contains(e.Key));
+            CheckWhereFunc(cache, e => new List<int>(keys).Contains(e.Key));
+            CheckWhereFunc(cache, e => aLotOfKeys.Contains(e.Key));
+            CheckWhereFunc(cache, e => hashSetKeys.Contains(e.Key));
+            CheckWhereFunc(cache, e => !keys.Contains(e.Key));
+            CheckWhereFunc(orgCache, e => new[] { "Org_1", "NonExistentName", null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new[] { "Org_1", "NonExistentName", null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => new[] { "Org_1", null, null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new[] { "Org_1", null, null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => new string[] { null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new string[] { null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new string[] { null, null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => new string[] { null, null }.Contains(e.Value.Name));
+
+            //check passing a null object as collection
+            int[] nullKeys = null;
+            var nullKeysEntries = cache
+                .Where(e => nullKeys.Contains(e.Key))
+                .ToArray();
+            Assert.AreEqual(0, nullKeysEntries.Length, "Evaluating 'null.Contains' should return zero results");
+
+
+            Func<int[]> getKeysFunc = () => null;
+            var funcNullKeyEntries = cache
+                .Where(e => getKeysFunc().Contains(e.Key))
+                .ToArray();
+            Assert.AreEqual(0, funcNullKeyEntries.Length, "Evaluating 'null.Contains' should return zero results");
+
+
+            // Check subselect from other cache
+            var subSelectCount = cache
+                .Count(entry => orgCache
+                    .Where(orgEntry => orgEntry.Value.Name == "Org_1")
+                    .Select(orgEntry => orgEntry.Key)
+                    .Contains(entry.Value.OrganizationId));
+            var orgNumberOne = orgCache
+                .Where(orgEntry => orgEntry.Value.Name == "Org_1")
+                .Select(orgEntry => orgEntry.Key)
+                .First();
+            var subSelectCheckCount = cache.Count(entry => entry.Value.OrganizationId == orgNumberOne);
+            Assert.AreEqual(subSelectCheckCount, subSelectCount, "subselecting another CacheQueryable failed");
+
+            var ex = Assert.Throws<NotSupportedException>(() =>
+                CompiledQuery.Compile((int[] k) => cache.Where(x => k.Contains(x.Key))));
+            Assert.AreEqual("'Contains' clause coming from compiled query parameter is not supported.", ex.Message);
+
+            // check subquery from another cache put in separate variable
+            var orgIds = orgCache
+                .Where(o => o.Value.Name == "Org_1")
+                .Select(o => o.Key);
+
+            var subQueryFromVar = cache
+                .Where(x => orgIds.Contains(x.Value.OrganizationId))
+                .ToArray();
+
+            var subQueryInline = cache
+                .Where(x => orgCache.Where(o => o.Value.Name == "Org_1")
+                    .Select(o => o.Key).Contains(x.Value.OrganizationId))
+                .ToArray();
+
+            Assert.AreEqual(subQueryInline.Length, subQueryFromVar.Length);
         }
 
         /// <summary>
@@ -923,21 +1046,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var roles = GetRoleCache().AsCacheQueryable();
 
             // Embedded args
-            var qry0 = CompiledQuery2.Compile(() => persons.Where(x => x.Key < 3 && x.Value.Name.Contains("son")));
+            var qry0 = CompiledQuery.Compile(() => persons.Where(x => x.Key < 3 && x.Value.Name.Contains("son")));
             Assert.AreEqual(3, qry0().Count());
 
             // Lambda args
-            var qry1 = CompiledQuery2.Compile((int minKey, int take, int skip) => persons.Where(x => x.Key > minKey)
+            var qry1 = CompiledQuery.Compile((int minKey, int take, int skip) => persons.Where(x => x.Key > minKey)
                 .Take(take).Skip(skip));
             Assert.AreEqual(3, qry1(-1, 3, 1).GetAll().Count);
 
-            qry1 = CompiledQuery2.Compile((int skip, int take, int minKey) => persons.Where(x => x.Key > minKey)
+            qry1 = CompiledQuery.Compile((int skip, int take, int minKey) => persons.Where(x => x.Key > minKey)
                 .Take(take).Skip(skip));
 
             Assert.AreEqual(5, qry1(2, 5, 20).GetAll().Count);
 
             // Mixed args
-            var qry2 = CompiledQuery2.Compile((int maxKey, int minKey) =>
+            var qry2 = CompiledQuery.Compile((int maxKey, int minKey) =>
                 persons.Where(x => x.Key < maxKey
                                    && x.Value.Name.Contains("er")
                                    && x.Value.Age < maxKey
@@ -946,16 +1069,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(6, qry2(10, 1).Count());
 
             // Join
-            var qry3 = CompiledQuery2.Compile(() =>
+            var qry3 = CompiledQuery.Compile(() =>
                 roles.Join(persons, r => r.Key.Foo, p => p.Key, (r, p) => r.Value.Name));
 
             Assert.AreEqual(RoleCount, qry3().Count());
 
             // Join with subquery
-            var qry4 = CompiledQuery2.Compile(
+            var qry4 = CompiledQuery.Compile(
                 (int a, int b, string sep) =>
                     roles
                         .Where(x => x.Key.Bar > a)
+                        .OrderBy(x => x.Key.Bar)
                         .Join(persons.Where(x => x.Key < b && x.Key > 0),
                             r => r.Key.Foo,
                             p => p.Value.Address.Zip,
@@ -966,15 +1090,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(new[] { " Person_2  =Role_2|", " Person_3  =|"}, qry4(1, PersonCount, "=").ToArray());
 
             // Union
-            var qry5 = CompiledQuery2.Compile(() => roles.Select(x => -x.Key.Foo).Union(persons.Select(x => x.Key)));
+            var qry5 = CompiledQuery.Compile(() => roles.Select(x => -x.Key.Foo).Union(persons.Select(x => x.Key)));
 
             Assert.AreEqual(RoleCount + PersonCount, qry5().Count());
 
             // Projection
-            var qry6 = CompiledQuery2.Compile((int minAge) => persons
+            var qry6 = CompiledQuery.Compile((int minAge) => persons
                 .Select(x => x.Value)
                 .Where(x => x.Age >= minAge)
-                .Select(x => new {x.Name, x.Age})
+                .Select(x => new { x.Name, x.Age })
                 .OrderBy(x => x.Name));
 
             var res = qry6(PersonCount - 3).GetAll();
@@ -992,113 +1116,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetPersonCache().AsCacheQueryable();
 
             // const args are allowed
-            Assert.AreEqual(5, CompiledQuery2.Compile(() => cache.Where(x => x.Key < 5))().GetAll().Count);
-
-            // 0 arg
-            var qry0 = CompiledQuery2.Compile(() => cache.Select(x => x.Value.Name));
-            Assert.AreEqual(PersonCount, qry0().ToArray().Length);
-
-            // 1 arg
-            var qry1 = CompiledQuery2.Compile((int k) => cache.Where(x => x.Key < k));
-            Assert.AreEqual(3, qry1(3).ToArray().Length);
-
-            // 1 arg twice
-            var qry1T = CompiledQuery2.Compile((int k) => cache.Where(x => x.Key < k && x.Value.Age < k));
-            Assert.AreEqual(3, qry1T(3).ToArray().Length);
-
-            // 2 arg
-            var qry2 =
-                CompiledQuery2.Compile((int i, string s) => cache.Where(x => x.Key < i && x.Value.Name.StartsWith(s)));
-            Assert.AreEqual(5, qry2(5, " Pe").ToArray().Length);
-
-            // Changed param order
-            var qry2R =
-                CompiledQuery2.Compile((string s, int i) => cache.Where(x => x.Key < i && x.Value.Name.StartsWith(s)));
-            Assert.AreEqual(5, qry2R(" Pe", 5).ToArray().Length);
-
-            // 3 arg
-            var qry3 = CompiledQuery2.Compile((int i, string s, double d) =>
-                cache.Where(x => x.Value.Address.Zip > d && x.Key < i && x.Value.Name.Contains(s)));
-            Assert.AreEqual(5, qry3(5, "son", -10).ToArray().Length);
-
-            // 4 arg
-            var qry4 = CompiledQuery2.Compile((int a, int b, int c, int d) =>
-                cache.Select(x => x.Key).Where(k => k > a && k > b && k > c && k < d));
-            Assert.AreEqual(new[] {3, 4}, qry4(0, 1, 2, 5).ToArray());
-
-            // 5 arg
-            var qry5 = CompiledQuery2.Compile((int a, int b, int c, int d, int e) =>
-                cache.Select(x => x.Key).Where(k => k > a && k > b && k > c && k < d && k < e));
-            Assert.AreEqual(new[] {3, 4}, qry5(0, 1, 2, 5, 6).ToArray());
-
-            // 6 arg
-            var qry6 = CompiledQuery2.Compile((int a, int b, int c, int d, int e, int f) =>
-                cache.Select(x => x.Key).Where(k => k > a && k > b && k > c && k < d && k < e && k < f));
-            Assert.AreEqual(new[] {3, 4}, qry6(0, 1, 2, 5, 6, 7).ToArray());
-
-            // 7 arg
-            var qry7 = CompiledQuery2.Compile((int a, int b, int c, int d, int e, int f, int g) =>
-                cache.Select(x => x.Key).Where(k => k > a && k > b && k > c && k < d && k < e && k < f && k < g));
-            Assert.AreEqual(new[] {3, 4}, qry7(0, 1, 2, 5, 6, 7, 8).ToArray());
-
-            // 8 arg
-            var qry8 = CompiledQuery2.Compile((int a, int b, int c, int d, int e, int f, int g, int h) =>
-                cache.Select(x => x.Key).Where(k => k > a && k > b && k > c && k < d && k < e && k < f && k < g && k < h));
-            Assert.AreEqual(new[] {3, 4}, qry8(0, 1, 2, 5, 6, 7, 8, 9).ToArray());
-        }
-
-        /// <summary>
-        /// Tests the free-form compiled query, where user provides an array of arguments.
-        /// </summary>
-        [Test]
-        public void TestCompiledQueryFreeform()
-        {
-            var cache = GetPersonCache().AsCacheQueryable();
-
-            var qry = cache.Where(x => x.Key < 5);
-
-            // Simple
-            var compiled = CompiledQuery2.Compile(qry);
-
-            Assert.AreEqual(5, compiled(5).Count());
-            Assert.AreEqual(6, compiled(6).Count());
-
-            // Select
-            var compiledSelect = CompiledQuery2.Compile(qry.Select(x => x.Value.Name).OrderBy(x => x));
-
-            Assert.AreEqual(3, compiledSelect(3).Count());
-            Assert.AreEqual(" Person_0  ", compiledSelect(1).Single());
-
-            // Join
-            var compiledJoin = CompiledQuery2.Compile(qry.Join(
-                GetOrgCache().AsCacheQueryable().Where(x => x.Value.Name.StartsWith("Org")),
-                p => p.Value.OrganizationId, o => o.Value.Id, (p, o) => o.Key));
-
-            Assert.AreEqual(1000, compiledJoin("Org", 1).Single());
-
-            // Many parameters
-            var qry2 = cache.Where(x => x.Key < 3)
-                .Where(x => x.Key > 0)
-                .Where(x => x.Value.Name.Contains(""))
-                .Where(x => x.Value.Address.Zip > 0)
-                .Where(x => x.Value.Age == 7);
-
-            var compiled2 = CompiledQuery2.Compile(qry2);
-
-            Assert.AreEqual(17, compiled2(18, 16, "ers", 13, 17).Single().Key);
-        }
-
-#pragma warning disable 618  // obsolete class
-        /// <summary>
-        /// Tests the old, deprecated compiled query.
-        /// </summary>
-        [Test]
-        public void TestCompiledQueryOld()
-        {
-            var cache = GetPersonCache().AsCacheQueryable();
-
-            // const args are not allowed
-            Assert.Throws<InvalidOperationException>(() => CompiledQuery.Compile(() => cache.Where(x => x.Key < 5)));
+            Assert.AreEqual(5, CompiledQuery.Compile(() => cache.Where(x => x.Key < 5))().GetAll().Count);
 
             // 0 arg
             var qry0 = CompiledQuery.Compile(() => cache.Select(x => x.Value.Name));
@@ -1107,6 +1125,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // 1 arg
             var qry1 = CompiledQuery.Compile((int k) => cache.Where(x => x.Key < k));
             Assert.AreEqual(3, qry1(3).ToArray().Length);
+
+            // 1 arg twice
+            var qry1T = CompiledQuery.Compile((int k) => cache.Where(x => x.Key < k && x.Value.Age < k));
+            Assert.AreEqual(3, qry1T(3).ToArray().Length);
 
             // 2 arg
             var qry2 =
@@ -1124,32 +1146,72 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(5, qry3(5, "son", -10).ToArray().Length);
 
             // 4 arg
-            var keys = cache.Select(x => x.Key);
             var qry4 = CompiledQuery.Compile((int a, int b, int c, int d) =>
-                keys.Where(k => k > a && k > b && k > c && k < d));
-            Assert.AreEqual(new[] { 3, 4 }, qry4(0, 1, 2, 5).ToArray());
+                cache.Select(x => x.Key).Where(k => k > a && k > b && k > c && k < d));
+            Assert.AreEqual(new[] {3, 4}, qry4(0, 1, 2, 5).ToArray());
 
             // 5 arg
             var qry5 = CompiledQuery.Compile((int a, int b, int c, int d, int e) =>
-                keys.Where(k => k > a && k > b && k > c && k < d && k < e));
-            Assert.AreEqual(new[] { 3, 4 }, qry5(0, 1, 2, 5, 6).ToArray());
+                cache.Select(x => x.Key).Where(k => k > a && k > b && k > c && k < d && k < e));
+            Assert.AreEqual(new[] {3, 4}, qry5(0, 1, 2, 5, 6).ToArray());
 
             // 6 arg
             var qry6 = CompiledQuery.Compile((int a, int b, int c, int d, int e, int f) =>
-                keys.Where(k => k > a && k > b && k > c && k < d && k < e && k < f));
-            Assert.AreEqual(new[] { 3, 4 }, qry6(0, 1, 2, 5, 6, 7).ToArray());
+                cache.Select(x => x.Key).Where(k => k > a && k > b && k > c && k < d && k < e && k < f));
+            Assert.AreEqual(new[] {3, 4}, qry6(0, 1, 2, 5, 6, 7).ToArray());
 
             // 7 arg
             var qry7 = CompiledQuery.Compile((int a, int b, int c, int d, int e, int f, int g) =>
-                keys.Where(k => k > a && k > b && k > c && k < d && k < e && k < f && k < g));
-            Assert.AreEqual(new[] { 3, 4 }, qry7(0, 1, 2, 5, 6, 7, 8).ToArray());
+                cache.Select(x => x.Key).Where(k => k > a && k > b && k > c && k < d && k < e && k < f && k < g));
+            Assert.AreEqual(new[] {3, 4}, qry7(0, 1, 2, 5, 6, 7, 8).ToArray());
 
             // 8 arg
             var qry8 = CompiledQuery.Compile((int a, int b, int c, int d, int e, int f, int g, int h) =>
-                keys.Where(k => k > a && k > b && k > c && k < d && k < e && k < f && k < g && k < h));
-            Assert.AreEqual(new[] { 3, 4 }, qry8(0, 1, 2, 5, 6, 7, 8, 9).ToArray());
+                cache.Select(x => x.Key)
+                    .Where(k => k > a && k > b && k > c && k < d && k < e && k < f && k < g && k < h));
+            Assert.AreEqual(new[] {3, 4}, qry8(0, 1, 2, 5, 6, 7, 8, 9).ToArray());
         }
-#pragma warning restore 618
+
+        /// <summary>
+        /// Tests the free-form compiled query, where user provides an array of arguments.
+        /// </summary>
+        [Test]
+        public void TestCompiledQueryFreeform()
+        {
+            var cache = GetPersonCache().AsCacheQueryable();
+
+            var qry = cache.Where(x => x.Key < 5);
+
+            // Simple
+            var compiled = CompiledQuery.Compile(qry);
+
+            Assert.AreEqual(5, compiled(5).Count());
+            Assert.AreEqual(6, compiled(6).Count());
+
+            // Select
+            var compiledSelect = CompiledQuery.Compile(qry.Select(x => x.Value.Name).OrderBy(x => x));
+
+            Assert.AreEqual(3, compiledSelect(3).Count());
+            Assert.AreEqual(" Person_0  ", compiledSelect(1).Single());
+
+            // Join
+            var compiledJoin = CompiledQuery.Compile(qry.Join(
+                GetOrgCache().AsCacheQueryable().Where(x => x.Value.Name.StartsWith("Org")),
+                p => p.Value.OrganizationId, o => o.Value.Id, (p, o) => o.Key));
+
+            Assert.AreEqual(1000, compiledJoin("Org", 1).Single());
+
+            // Many parameters
+            var qry2 = cache.Where(x => x.Key < 3)
+                .Where(x => x.Key > 0)
+                .Where(x => x.Value.Name.Contains(""))
+                .Where(x => x.Value.Address.Zip > 0)
+                .Where(x => x.Value.Age == 7);
+
+            var compiled2 = CompiledQuery.Compile(qry2);
+
+            Assert.AreEqual(17, compiled2(18, 16, "ers", 13, 17).Single().Key);
+        }
 
         /// <summary>
         /// Tests the cache of primitive types.
@@ -1240,7 +1302,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             fq = fieldsQuery.GetFieldsQuery();
             Assert.AreEqual("select _T0.Name from \"\".Person as _T0", fq.Sql);
             Assert.IsFalse(fq.Local);
-            Assert.AreEqual(SqlFieldsQuery.DfltPageSize, fq.PageSize);
+            Assert.AreEqual(SqlFieldsQuery.DefaultPageSize, fq.PageSize);
             Assert.IsFalse(fq.EnableDistributedJoins);
             Assert.IsFalse(fq.EnforceJoinOrder);
 
@@ -1318,8 +1380,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = persons.Join(roles, person => person.Key - PersonCount, role => role.Key, (person, role) => role)
                 .ToArray();
 
-            Assert.Greater(res.Length, 0);
-            Assert.Less(res.Length, RoleCount);
+            Assert.AreEqual(res.Length, RoleCount);
 
             // Test distributed join: returns complete results
             persons = personCache.AsCacheQueryable(new QueryOptions {EnableDistributedJoins = true});
@@ -1383,8 +1444,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private static ICache<int, Person> GetSecondPersonCache()
         {
             return Ignition.GetIgnite()
-                .GetOrCreateCache<int, Person>(new CacheConfiguration(PersonSecondCacheName,
-                    new QueryEntity(typeof (int), typeof (Person))) {CacheMode = CacheMode.Replicated});
+                .GetOrCreateCache<int, Person>(
+                    new CacheConfiguration(PersonSecondCacheName,
+                        new QueryEntity(typeof(int), typeof(Person))
+                        {
+                            TableName = "CustomPersons"
+                        })
+                    {
+                        CacheMode = CacheMode.Replicated
+                    });
         }
 
         /// <summary>
@@ -1407,6 +1475,33 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Perform intermediate anonymous type conversion to check type projection
             actual = query.Select(exp).Select(x => new {Foo = x}).ToArray().Select(x => x.Foo)
                 .OrderBy(x => x).ToArray();
+
+            // Compare results
+            CollectionAssert.AreEqual(expected, actual, new NumericComparer());
+        }
+
+        /// <summary>
+        /// Checks that function used in Where Clause maps to SQL function properly
+        /// </summary>
+        private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query, 
+            Expression<Func<ICacheEntry<TKey, TEntry>,bool>> whereExpression)
+        {
+            // Calculate result locally, using real method invocation
+            var expected = query
+                .ToArray()
+                .AsQueryable()
+                .Where(whereExpression)
+                .Select(entry => entry.Key)
+                .OrderBy(x => x)
+                .ToArray();
+
+            // Perform SQL query
+            var actual = query
+                .Where(whereExpression)
+                .Select(entry => entry.Key)
+                .ToArray()
+                .OrderBy(x => x)
+                .ToArray();
 
             // Compare results
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());

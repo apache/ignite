@@ -49,6 +49,12 @@
     <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp">
       <Filter>Code\impl\cache\query\continuous</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\cluster\cluster_group_impl.cpp">
+      <Filter>Code\impl\cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_binding_impl.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -83,9 +89,6 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h">
       <Filter>Code\impl\cache\query</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\cache\query\query_argument.h">
-      <Filter>Code\cache\query</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\cache\query\query_cursor.h">
       <Filter>Code\cache\query</Filter>
@@ -165,6 +168,48 @@
     <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_impl.h">
       <Filter>Code\impl\cache\query\continuous</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\mutable_cache_entry.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\cache_entry_processor_holder.h">
+      <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\module_manager.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cluster\cluster_group_impl.h">
+      <Filter>Code\impl\cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\cache_entry_processor.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_binding.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\ignite_binding_impl.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_binding_context.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_argument.h">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_filter.h">
+      <Filter>Code\cache\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_base.h">
+      <Filter>Code\impl\cache\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_holder.h">
+      <Filter>Code\impl\cache\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\bindings.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\helpers.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
@@ -205,6 +250,12 @@
     </Filter>
     <Filter Include="Code\cache\event">
       <UniqueIdentifier>{e03c3690-ff22-4c78-83a0-b77cebb7f980}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cluster">
+      <UniqueIdentifier>{f5b54635-91a1-447e-923a-1b4608d7e5bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cache\event">
+      <UniqueIdentifier>{9c5e9732-755a-4553-8926-b4cf3b6abaf3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

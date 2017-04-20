@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
@@ -30,9 +29,6 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -68,7 +64,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
     /**
      * @param gridName Grid name.
-     * @param memoryMode Memory mode.
      * @param atomicityMode Atomicity mode.
      * @param cacheMode Cache mode.
      * @param cacheName Cache name.
@@ -76,7 +71,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     private CacheConfiguration cacheConfiguration(String gridName,
-        CacheMemoryMode memoryMode,
         CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
         String cacheName)
@@ -86,7 +80,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
         cfg.setCacheMode(cacheMode);
         cfg.setAtomicityMode(atomicityMode);
-        cfg.setMemoryMode(memoryMode);
         cfg.setName(cacheName);
 
         return cfg;
@@ -96,46 +89,33 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCacheMapEntry() throws Exception {
-        checkCacheMapEntry(ONHEAP_TIERED, ATOMIC, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, LOCAL, GridLocalCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_TIERED, ATOMIC, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_VALUES, ATOMIC, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, PARTITIONED, GridNearCacheEntry.class);
 
-        checkCacheMapEntry(ONHEAP_TIERED, TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_TIERED, TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, REPLICATED, GridDhtAtomicCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_VALUES, TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, ATOMIC, PARTITIONED, GridNearCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, ATOMIC, REPLICATED, GridDhtAtomicCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, TRANSACTIONAL, REPLICATED, GridDhtColocatedCacheEntry.class);
+        checkCacheMapEntry(TRANSACTIONAL, REPLICATED, GridDhtColocatedCacheEntry.class);
     }
 
     /**
-     * @param memoryMode Cache memory mode.
      * @param atomicityMode Cache atomicity mode.
      * @param cacheMode Cache mode.
      * @param entryCls Class of cache map entry.
      * @throws Exception If failed.
      */
-    private void checkCacheMapEntry(CacheMemoryMode memoryMode,
-        CacheAtomicityMode atomicityMode,
+    private void checkCacheMapEntry(CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
         Class<?> entryCls)
         throws Exception
     {
-        log.info("Test cache [memMode=" + memoryMode +
-            ", atomicityMode=" + atomicityMode +
-            ", cacheMode=" + cacheMode + ']');
+        log.info("Test cache [atomicityMode=" + atomicityMode + ", cacheMode=" + cacheMode + ']');
 
         CacheConfiguration cfg = cacheConfiguration(grid(0).name(),
-            memoryMode,
             atomicityMode,
             cacheMode,
             "Cache");

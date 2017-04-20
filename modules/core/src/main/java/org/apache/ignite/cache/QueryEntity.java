@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -53,11 +55,32 @@ public class QueryEntity implements Serializable {
     /** Collection of query indexes. */
     private Map<String, QueryIndex> idxs = new HashMap<>();
 
+    /** Table name. */
+    private String tableName;
+
     /**
      * Creates an empty query entity.
      */
     public QueryEntity() {
         // No-op constructor.
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param other Other entity.
+     */
+    public QueryEntity(QueryEntity other) {
+        keyType = other.keyType;
+        valType = other.valType;
+
+        fields = new LinkedHashMap<>(other.fields);
+        keyFields = other.keyFields != null ? new HashSet<>(other.keyFields) : null;
+
+        aliases = new HashMap<>(other.aliases);
+        idxs = new HashMap<>(other.idxs);
+
+        tableName = other.tableName;
     }
 
     /**
@@ -84,9 +107,12 @@ public class QueryEntity implements Serializable {
      * Sets key type for this query pair.
      *
      * @param keyType Key type.
+     * @return {@code this} for chaining.
      */
-    public void setKeyType(String keyType) {
+    public QueryEntity setKeyType(String keyType) {
         this.keyType = keyType;
+
+        return this;
     }
 
     /**
@@ -102,9 +128,12 @@ public class QueryEntity implements Serializable {
      * Sets value type for this query pair.
      *
      * @param valType Value type.
+     * @return {@code this} for chaining.
      */
-    public void setValueType(String valType) {
+    public QueryEntity setValueType(String valType) {
         this.valType = valType;
+
+        return this;
     }
 
     /**
@@ -122,9 +151,12 @@ public class QueryEntity implements Serializable {
      * order of columns returned by the 'select *' queries.
      *
      * @param fields Field-to-type map.
+     * @return {@code this} for chaining.
      */
-    public void setFields(LinkedHashMap<String, String> fields) {
+    public QueryEntity setFields(LinkedHashMap<String, String> fields) {
         this.fields = fields;
+
+        return this;
     }
 
     /**
@@ -144,9 +176,12 @@ public class QueryEntity implements Serializable {
      * Thus, setting this parameter in XML is not mandatory and should be based on particular use case.
      *
      * @param keyFields Set of names of key fields.
+     * @return {@code this} for chaining.
      */
-    public void setKeyFields(Set<String> keyFields) {
+    public QueryEntity setKeyFields(Set<String> keyFields) {
         this.keyFields = keyFields;
+
+        return this;
     }
 
     /**
@@ -172,21 +207,28 @@ public class QueryEntity implements Serializable {
      * Example: {"parent.name" -> "parentName"}.
      *
      * @param aliases Aliases map.
+     * @return {@code this} for chaining.
      */
-    public void setAliases(Map<String, String> aliases) {
+    public QueryEntity setAliases(Map<String, String> aliases) {
         this.aliases = aliases;
+
+        return this;
     }
 
     /**
      * Sets a collection of index entities.
      *
      * @param idxs Collection of index entities.
+     * @return {@code this} for chaining.
      */
-    public void setIndexes(Collection<QueryIndex> idxs) {
+    public QueryEntity setIndexes(Collection<QueryIndex> idxs) {
         for (QueryIndex idx : idxs) {
             if (!F.isEmpty(idx.getFields())) {
                 if (idx.getName() == null)
-                    idx.setName(defaultIndexName(idx));
+                    idx.setName(QueryUtils.indexName(this, idx));
+
+                if (idx.getIndexType() == null)
+                    throw new IllegalArgumentException("Index type is not set " + idx.getName());
 
                 if (!this.idxs.containsKey(idx.getName()))
                     this.idxs.put(idx.getName(), idx);
@@ -194,12 +236,42 @@ public class QueryEntity implements Serializable {
                     throw new IllegalArgumentException("Duplicate index name: " + idx.getName());
             }
         }
+
+        return this;
+    }
+
+    /**
+     * Clear indexes.
+     */
+    public void clearIndexes() {
+        this.idxs.clear();
+    }
+
+    /**
+     * Gets table name for this query entity.
+     *
+     * @return table name
+     */
+    public String getTableName() {
+        return tableName;
+    }
+
+    /**
+     * Sets table name for this query entity.
+     * @param tableName table name
+     */
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
 
     /**
      * Utility method for building query entities programmatically.
+     * @param fullName Full name of the field.
+     * @param type Type of the field.
+     * @param alias Field alias.
+     * @return {@code this} for chaining.
      */
-    public void addQueryField(String fullName, String type, String alias) {
+    public QueryEntity addQueryField(String fullName, String type, String alias) {
         A.notNull(fullName, "fullName");
         A.notNull(type, "type");
 
@@ -207,57 +279,7 @@ public class QueryEntity implements Serializable {
 
         if (alias != null)
             aliases.put(fullName, alias);
-    }
 
-    /**
-     * Ensures that index with the given name exists.
-     *
-     * @param idxName Index name.
-     * @param idxType Index type.
-     */
-    public void ensureIndex(String idxName, QueryIndexType idxType) {
-        QueryIndex idx = idxs.get(idxName);
-
-        if (idx == null) {
-            idx = new QueryIndex();
-
-            idx.setName(idxName);
-            idx.setIndexType(idxType);
-
-            idxs.put(idxName, idx);
-        }
-        else
-            throw new IllegalArgumentException("An index with the same name and of a different type already exists " +
-                "[idxName=" + idxName + ", existingIdxType=" + idx.getIndexType() + ", newIdxType=" + idxType + ']');
-    }
-
-    /**
-     * Generates default index name by concatenating all index field names.
-     *
-     * @param idx Index to build name for.
-     * @return Index name.
-     */
-    public static String defaultIndexName(QueryIndex idx) {
-        StringBuilder idxName = new StringBuilder();
-
-        for (Map.Entry<String, Boolean> field : idx.getFields().entrySet()) {
-            idxName.append(field.getKey());
-
-            idxName.append('_');
-            idxName.append(field.getValue() ? "asc_" : "desc_");
-        }
-
-        for (int i = 0; i < idxName.length(); i++) {
-            char ch = idxName.charAt(i);
-
-            if (Character.isWhitespace(ch))
-                idxName.setCharAt(i, '_');
-            else
-                idxName.setCharAt(i, Character.toLowerCase(ch));
-        }
-
-        idxName.append("idx");
-
-        return idxName.toString();
+        return this;
     }
 }

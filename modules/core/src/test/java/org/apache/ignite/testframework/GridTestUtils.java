@@ -66,11 +66,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -97,6 +93,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
@@ -112,6 +110,64 @@ public final class GridTestUtils {
 
     /** */
     static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
+
+    /**
+     * Hook object intervenes to discovery message handling
+     * and thus allows to make assertions or other actions like skipping certain discovery messages.
+     */
+    public static class DiscoveryHook {
+        /**
+         * @param msg Message.
+         */
+        public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+        }
+
+        /**
+         * @param ignite Ignite.
+         */
+        public void ignite(IgniteEx ignite) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Injects {@link DiscoveryHook} into handling logic.
+     */
+    public static final class DiscoverySpiListenerWrapper implements DiscoverySpiListener {
+        /** */
+        private final DiscoverySpiListener delegate;
+
+        /** */
+        private final DiscoveryHook hook;
+
+        /**
+         * @param delegate Delegate.
+         * @param hook Hook.
+         */
+        private DiscoverySpiListenerWrapper(DiscoverySpiListener delegate, DiscoveryHook hook) {
+            this.hook = hook;
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
+            hook.handleDiscoveryMessage(spiCustomMsg);
+            delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+            delegate.onLocalNodeInitialized(locNode);
+        }
+
+        /**
+         * @param delegate Delegate.
+         * @param discoveryHook Discovery hook.
+         */
+        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoveryHook) {
+            return new DiscoverySpiListenerWrapper(delegate, discoveryHook);
+        }
+    }
 
     /** */
     private static final Map<Class<?>, String> addrs = new HashMap<>();
@@ -1025,16 +1081,16 @@ public final class GridTestUtils {
      * Silent stop grid.
      * Method doesn't throw any exception.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param log Logger.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    public static void stopGrid(String gridName, IgniteLogger log) {
+    public static void stopGrid(String igniteInstanceName, IgniteLogger log) {
         try {
-            G.stop(gridName, false);
+            G.stop(igniteInstanceName, false);
         }
         catch (Throwable e) {
-            U.error(log, "Failed to stop grid: " + gridName, e);
+            U.error(log, "Failed to stop grid: " + igniteInstanceName, e);
         }
     }
 
@@ -1120,7 +1176,7 @@ public final class GridTestUtils {
                     Collection<ClusterNode> nodes = top.nodes(p, AffinityTopologyVersion.NONE);
 
                     if (nodes.size() > backups + 1) {
-                        LT.warn(log, "Partition map was not updated yet (will wait) [grid=" + g.name() +
+                        LT.warn(log, "Partition map was not updated yet (will wait) [igniteInstanceName=" + g.name() +
                             ", p=" + p + ", nodes=" + F.nodeIds(nodes) + ']');
 
                         wait = true;
@@ -1802,96 +1858,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Sets cache configuration parameters according to test memory mode.
-     *
-     * @param cfg Ignite configuration.
-     * @param ccfg Cache configuration.
-     * @param testMode Test memory mode.
-     * @param maxHeapCnt Maximum number of entries in heap (used if test mode involves eviction from heap).
-     * @param maxOffheapSize Maximum offheap memory size (used if test mode involves eviction from offheap to swap).
-     */
-    public static void setMemoryMode(IgniteConfiguration cfg, CacheConfiguration ccfg,
-        TestMemoryMode testMode,
-        int maxHeapCnt,
-        long maxOffheapSize) {
-        assert testMode != null;
-        assert ccfg != null;
-
-        CacheMemoryMode memMode;
-        boolean swap = false;
-        boolean evictionPlc = false;
-        long offheapMaxMem = -1L;
-
-        switch (testMode) {
-            case HEAP: {
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                swap = false;
-
-                break;
-            }
-
-            case SWAP: {
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                evictionPlc = true;
-                swap = true;
-
-                break;
-            }
-
-            case OFFHEAP_TIERED: {
-                memMode = CacheMemoryMode.OFFHEAP_TIERED;
-                offheapMaxMem = 0;
-
-                break;
-            }
-
-            case OFFHEAP_TIERED_SWAP: {
-                assert maxOffheapSize > 0 : maxOffheapSize;
-
-                memMode = CacheMemoryMode.OFFHEAP_TIERED;
-                offheapMaxMem = maxOffheapSize;
-                swap = true;
-
-                break;
-            }
-
-            case OFFHEAP_EVICT: {
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                evictionPlc = true;
-                offheapMaxMem = 0;
-
-                break;
-            }
-
-            case OFFHEAP_EVICT_SWAP: {
-                assert maxOffheapSize > 0 : maxOffheapSize;
-
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                swap = true;
-                evictionPlc = true;
-                offheapMaxMem = maxOffheapSize;
-
-                break;
-            }
-
-            default:
-                throw new IllegalArgumentException("Invalid mode: " + testMode);
-        }
-
-        ccfg.setMemoryMode(memMode);
-
-        if (evictionPlc) {
-            LruEvictionPolicy plc = new LruEvictionPolicy();
-
-            plc.setMaxSize(maxHeapCnt);
-
-            ccfg.setEvictionPolicy(plc);
-        }
-
-        ccfg.setOffHeapMaxMemory(offheapMaxMem);
-    }
-
-    /**
      * Generate random alphabetical string.
      *
      * @param rnd Random object.
@@ -1907,24 +1873,5 @@ public final class GridTestUtils {
             b.append(ALPHABETH.charAt(rnd.nextInt(ALPHABETH.length())));
 
         return b.toString();
-    }
-
-
-    /**
-     *
-     */
-    public enum TestMemoryMode {
-        /** Heap only. */
-        HEAP,
-        /** Evict from heap to swap with eviction policy. */
-        SWAP,
-        /** Always evict to offheap, no swap. */
-        OFFHEAP_TIERED,
-        /** Always evict to offheap + evict from offheap to swap when max offheap memory limit is reached. */
-        OFFHEAP_TIERED_SWAP,
-        /** Evict to offheap with eviction policy, no swap. */
-        OFFHEAP_EVICT,
-        /** Evict to offheap with eviction policy + evict from offheap to swap when max offheap memory limit is reached. */
-        OFFHEAP_EVICT_SWAP,
     }
 }

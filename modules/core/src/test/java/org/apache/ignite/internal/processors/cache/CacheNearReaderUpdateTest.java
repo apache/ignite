@@ -77,8 +77,8 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
     private static Map<Integer, Integer> storeMap = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -140,17 +140,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
      */
     public void testOneBackupStoreEnabled() throws Exception {
         testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, true, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOneBackupOffheap() throws Exception {
-        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false);
-
-        GridTestUtils.setMemoryMode(null, ccfg, GridTestUtils.TestMemoryMode.OFFHEAP_TIERED, 0, 0);
-
-        testGetUpdateMultithreaded(ccfg);
     }
 
     /**
@@ -327,7 +316,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
             ", near=" + (ccfg.getNearConfiguration() != null) +
             ", store=" + ccfg.isWriteThrough() +
             ", evictPlc=" + (ccfg.getEvictionPolicy() != null) +
-            ", maxOffheap=" + ccfg.getOffHeapMaxMemory()  +
             ']');
     }
 

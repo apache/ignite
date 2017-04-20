@@ -18,10 +18,13 @@
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Transactions;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -560,6 +563,343 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var deadlockEx = aex.InnerExceptions.OfType<TransactionDeadlockException>().First();
             Assert.IsTrue(deadlockEx.Message.Trim().StartsWith("Deadlock detected:"), deadlockEx.Message);
+        }
+
+        /// <summary>
+        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/>.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeSingleCache()
+        {
+            var cache = Cache();
+
+            cache[1] = 1;
+            cache[2] = 2;
+
+            // Commit.
+            using (var ts = new TransactionScope())
+            {
+                cache[1] = 10;
+                cache[2] = 20;
+
+                Assert.IsNotNull(cache.Ignite.GetTransactions().Tx);
+
+                ts.Complete();
+            }
+
+            Assert.AreEqual(10, cache[1]);
+            Assert.AreEqual(20, cache[2]);
+
+            // Rollback.
+            using (new TransactionScope())
+            {
+                cache[1] = 100;
+                cache[2] = 200;
+            }
+
+            Assert.AreEqual(10, cache[1]);
+            Assert.AreEqual(20, cache[2]);
+        }
+
+        /// <summary>
+        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/> 
+        /// with multiple participating caches.
+        /// </summary>
+        [Test]
+        [Ignore("IGNITE-1561")]
+        public void TestTransactionScopeMultiCache()
+        {
+            var cache1 = Cache();
+
+            var cache2 = GetIgnite(0).GetOrCreateCache<int, int>(new CacheConfiguration(cache1.Name + "_")
+            {
+                AtomicityMode = CacheAtomicityMode.Transactional
+            });
+
+            cache1[1] = 1;
+            cache2[1] = 2;
+
+            // Commit.
+            using (var ts = new TransactionScope())
+            {
+                cache1[1] = 10;
+                cache2[1] = 20;
+
+                ts.Complete();
+            }
+
+            Assert.AreEqual(10, cache1[1]);
+            Assert.AreEqual(20, cache2[1]);
+
+            // Rollback.
+            using (new TransactionScope())
+            {
+                cache1[1] = 100;
+                cache2[1] = 200;
+            }
+
+            Assert.AreEqual(10, cache1[1]);
+            Assert.AreEqual(20, cache2[1]);
+        }
+
+        /// <summary>
+        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/> 
+        /// when Ignite tx is started manually.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeWithManualIgniteTx()
+        {
+            var cache = Cache();
+            var transactions = cache.Ignite.GetTransactions();
+
+            cache[1] = 1;
+
+            // When Ignite tx is started manually, it won't be enlisted in TransactionScope.
+            using (var tx = transactions.TxStart())            
+            {
+                using (new TransactionScope())
+                {
+                    cache[1] = 2;
+                }  // Revert transaction scope.
+
+                tx.Commit();  // Commit manual tx.
+            }
+
+            Assert.AreEqual(2, cache[1]);
+        }
+
+        /// <summary>
+        /// Test Ignite transaction with <see cref="TransactionScopeOption.Suppress"/> option.
+        /// </summary>
+        [Test]
+        public void TestSuppressedTransactionScope()
+        {
+            var cache = Cache();
+
+            cache[1] = 1;
+
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            {
+                cache[1] = 2;
+            }
+
+            // Even though transaction is not completed, the value is updated, because tx is suppressed.
+            Assert.AreEqual(2, cache[1]);
+        }
+
+        /// <summary>
+        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/> with nested scopes.
+        /// </summary>
+        [Test]
+        public void TestNestedTransactionScope()
+        {
+            var cache = Cache();
+
+            cache[1] = 1;
+
+            foreach (var option in new[] {TransactionScopeOption.Required, TransactionScopeOption.RequiresNew})
+            {
+                // Commit.
+                using (var ts1 = new TransactionScope())
+                {
+                    using (var ts2 = new TransactionScope(option))
+                    {
+                        cache[1] = 2;
+                        ts2.Complete();
+                    }
+
+                    cache[1] = 3;
+                    ts1.Complete();
+                }
+
+                Assert.AreEqual(3, cache[1]);
+
+                // Rollback.
+                using (new TransactionScope())
+                {
+                    using (new TransactionScope(option))
+                        cache[1] = 4;
+
+                    cache[1] = 5;
+                }
+                
+                // In case with Required option there is a single tx
+                // that gets aborted, second put executes outside the tx.
+                Assert.AreEqual(option == TransactionScopeOption.Required ? 5 : 3, cache[1], option.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Test that ambient <see cref="TransactionScope"/> options propagate to Ignite transaction.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeOptions()
+        {
+            var cache = Cache();
+            var transactions = cache.Ignite.GetTransactions();
+
+            var modes = new[]
+            {
+                Tuple.Create(IsolationLevel.Serializable, TransactionIsolation.Serializable),
+                Tuple.Create(IsolationLevel.RepeatableRead, TransactionIsolation.RepeatableRead),
+                Tuple.Create(IsolationLevel.ReadCommitted, TransactionIsolation.ReadCommitted),
+                Tuple.Create(IsolationLevel.ReadUncommitted, TransactionIsolation.ReadCommitted),
+                Tuple.Create(IsolationLevel.Snapshot, TransactionIsolation.ReadCommitted),
+                Tuple.Create(IsolationLevel.Chaos, TransactionIsolation.ReadCommitted),
+            };
+
+            foreach (var mode in modes)
+            {
+                using (new TransactionScope(TransactionScopeOption.Required, new TransactionOptions
+                {
+                    IsolationLevel = mode.Item1
+                }))
+                {
+                    cache[1] = 1;
+
+                    var tx = transactions.Tx;
+                    Assert.AreEqual(mode.Item2, tx.Isolation);
+                    Assert.AreEqual(transactions.DefaultTransactionConcurrency, tx.Concurrency);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tests all transactional operations with <see cref="TransactionScope"/>.
+        /// </summary>
+        [Test]
+        public void TestTransactionScopeAllOperations()
+        {
+            for (var i = 0; i < 10; i++)
+            {
+                CheckTxOp((cache, key) => cache.Put(key, -5));
+                CheckTxOp((cache, key) => cache.PutAsync(key, -5).Wait());
+
+                CheckTxOp((cache, key) => cache.PutAll(new Dictionary<int, int> {{key, -7}}));
+                CheckTxOp((cache, key) => cache.PutAllAsync(new Dictionary<int, int> {{key, -7}}).Wait());
+
+                CheckTxOp((cache, key) =>
+                {
+                    cache.Remove(key);
+                    cache.PutIfAbsent(key, -10);
+                });
+                CheckTxOp((cache, key) =>
+                {
+                    cache.Remove(key);
+                    cache.PutIfAbsentAsync(key, -10).Wait();
+                });
+
+                CheckTxOp((cache, key) => cache.GetAndPut(key, -9));
+                CheckTxOp((cache, key) => cache.GetAndPutAsync(key, -9).Wait());
+
+                CheckTxOp((cache, key) =>
+                {
+                    cache.Remove(key);
+                    cache.GetAndPutIfAbsent(key, -10);
+                });
+                CheckTxOp((cache, key) =>
+                {
+                    cache.Remove(key);
+                    cache.GetAndPutIfAbsentAsync(key, -10).Wait();
+                });
+
+                CheckTxOp((cache, key) => cache.GetAndRemove(key));
+                CheckTxOp((cache, key) => cache.GetAndRemoveAsync(key).Wait());
+
+                CheckTxOp((cache, key) => cache.GetAndReplace(key, -11));
+                CheckTxOp((cache, key) => cache.GetAndReplaceAsync(key, -11).Wait());
+
+                CheckTxOp((cache, key) => cache.Invoke(key, new AddProcessor(), 1));
+                CheckTxOp((cache, key) => cache.InvokeAsync(key, new AddProcessor(), 1).Wait());
+
+                CheckTxOp((cache, key) => cache.InvokeAll(new[] {key}, new AddProcessor(), 1));
+                CheckTxOp((cache, key) => cache.InvokeAllAsync(new[] {key}, new AddProcessor(), 1).Wait());
+
+                CheckTxOp((cache, key) => cache.Remove(key));
+                CheckTxOp((cache, key) => cache.RemoveAsync(key).Wait());
+
+                CheckTxOp((cache, key) => cache.RemoveAll(new[] {key}));
+                CheckTxOp((cache, key) => cache.RemoveAllAsync(new[] {key}).Wait());
+
+                CheckTxOp((cache, key) => cache.Replace(key, 100));
+                CheckTxOp((cache, key) => cache.ReplaceAsync(key, 100).Wait());
+
+                CheckTxOp((cache, key) => cache.Replace(key, cache[key], 100));
+                CheckTxOp((cache, key) => cache.ReplaceAsync(key, cache[key], 100).Wait());
+            }
+        }
+
+        /// <summary>
+        /// Checks that cache operation behaves transactionally.
+        /// </summary>
+        private void CheckTxOp(Action<ICache<int, int>, int> act)
+        {
+            var isolationLevels = new[]
+            {
+                IsolationLevel.Serializable, IsolationLevel.RepeatableRead, IsolationLevel.ReadCommitted,
+                IsolationLevel.ReadUncommitted, IsolationLevel.Snapshot, IsolationLevel.Chaos
+            };
+
+            foreach (var isolationLevel in isolationLevels)
+            {
+                var txOpts = new TransactionOptions {IsolationLevel = isolationLevel};
+                const TransactionScopeOption scope = TransactionScopeOption.Required;
+
+                var cache = Cache();
+
+                cache[1] = 1;
+                cache[2] = 2;
+
+                // Rollback.
+                using (new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+
+                    Assert.IsNotNull(cache.Ignite.GetTransactions().Tx, "Transaction has not started.");
+                }
+
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                using (new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    act(cache, 2);
+                }
+
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                // Commit.
+                using (var ts = new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    ts.Complete();
+                }
+
+                Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
+                Assert.AreEqual(2, cache[2]);
+
+                using (var ts = new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    act(cache, 2);
+                    ts.Complete();
+                }
+
+                Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
+                Assert.IsTrue(!cache.ContainsKey(2) || cache[2] != 2);
+            }
+        }
+
+        [Serializable]
+        private class AddProcessor : ICacheEntryProcessor<int, int, int, int>
+        {
+            public int Process(IMutableCacheEntry<int, int> entry, int arg)
+            {
+                entry.Value += arg;
+                return arg;
+            }
         }
     }
 }

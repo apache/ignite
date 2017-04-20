@@ -21,12 +21,12 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -116,15 +116,7 @@ public class GridLuceneIndex implements AutoCloseable {
             throw new IgniteCheckedException(e);
         }
 
-        GridQueryIndexDescriptor idx = null;
-
-        for (GridQueryIndexDescriptor descriptor : type.indexes().values()) {
-            if (descriptor.type() == GridQueryIndexType.FULLTEXT) {
-                idx = descriptor;
-
-                break;
-            }
-        }
+        GridQueryIndexDescriptor idx = type.textIndex();
 
         if (idx != null) {
             Collection<String> fields = idx.fields();

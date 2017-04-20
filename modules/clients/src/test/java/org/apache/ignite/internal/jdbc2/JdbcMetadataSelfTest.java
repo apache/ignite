@@ -57,8 +57,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     private static final String BASE_URL = CFG_URL_PREFIX + "cache=pers@modules/clients/src/test/config/jdbc-config.xml";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(
             cacheConfiguration("pers", AffinityKey.class, Person.class),
@@ -296,7 +296,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     tbls.getObject(i + 1);
             }
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             fail();
         }
     }

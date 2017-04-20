@@ -24,19 +24,10 @@
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
+#include "ignite/test_utils.h"
 
 using namespace ignite;
 using namespace boost::unit_test;
-
-/* Nodes started during the test. */
-Ignite grid0 = Ignite();
-Ignite grid1 = Ignite();
-
-/** Cache accessor. */
-cache::Cache<int, int> Cache()
-{
-    return grid0.GetCache<int, int>("partitioned");
-}
 
 struct Person
 {
@@ -59,26 +50,23 @@ namespace ignite
     namespace binary
     {
         IGNITE_BINARY_TYPE_START(Person)
-        IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
-        IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
-        IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-        IGNITE_BINARY_GET_HASH_CODE_ZERO(Person)
-        IGNITE_BINARY_IS_NULL_FALSE(Person)
-        IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
-            
-        void Write(BinaryWriter& writer, Person obj)
-        {
-            writer.WriteString("name", obj.name);
-            writer.WriteInt32("age", obj.age);            
-        }
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(Person)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
 
-        Person Read(BinaryReader& reader)
-        {
-            std::string name = reader.ReadString("name");
-            int age = reader.ReadInt32("age");
-            
-            return Person(name, age);
-        }
+            static void Write(BinaryWriter& writer, const Person& obj)
+            {
+                writer.WriteString("name", obj.name);
+                writer.WriteInt32("age", obj.age);
+            }
+
+            static void Read(BinaryReader& reader, Person& dst)
+            {
+                dst.name = reader.ReadString("name");
+                dst.age = reader.ReadInt32("age");
+            }
 
         IGNITE_BINARY_TYPE_END
     }
@@ -87,50 +75,30 @@ namespace ignite
 /*
  * Test setup fixture.
  */
-struct CacheTestSuiteFixture {
+struct CacheTestSuiteFixture
+{
+    /* Nodes started during the test. */
+    Ignite grid0;
+    Ignite grid1;
+
+    /** Cache accessor. */
+    cache::Cache<int, int> Cache()
+    {
+        return grid0.GetCache<int, int>("partitioned");
+    }
+
     /*
      * Constructor.
      */
     CacheTestSuiteFixture()
     {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-
 #ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
+        grid0 = ignite_test::StartNode("cache-test-32.xml", "grid-0");
+        grid1 = ignite_test::StartNode("cache-test-32.xml", "grid-1");
 #else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
+        grid0 = ignite_test::StartNode("cache-test.xml", "grid-0");
+        grid1 = ignite_test::StartNode("cache-test.xml", "grid-1");
 #endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
-
-        cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
-        
-        for (int i = 0; i < 2; i++) 
-        {
-            std::stringstream stream;
-
-            stream << "grid-" << i;
-
-            IgniteError err;
-
-            Ignite grid = Ignition::Start(cfg, stream.str().c_str(), &err);
-                
-            if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-                BOOST_FAIL(err.GetText());
-
-            if (i == 0)
-                grid0 = grid;
-            else
-                grid1 = grid;
-        }
     }
 
     /*
@@ -138,11 +106,10 @@ struct CacheTestSuiteFixture {
      */
     ~CacheTestSuiteFixture()
     {
-        Ignition::Stop(grid0.GetName(), true);
-        Ignition::Stop(grid1.GetName(), true);
-
         grid0 = Ignite();
         grid1 = Ignite();
+
+        Ignition::StopAll(true);
     }
 };
 
@@ -156,15 +123,15 @@ BOOST_AUTO_TEST_CASE(TestRemoveAllKeys)
     cache.Put(2, 2);
     cache.Put(3, 3);
 
-    int size = cache.Size(cache::IGNITE_PEEK_MODE_PRIMARY);
+    int size = cache.Size(cache::CachePeekMode::PRIMARY);
 
-    BOOST_REQUIRE(3 == size);
+    BOOST_CHECK_EQUAL(3, size);
 
     cache.RemoveAll();
 
-    size = cache.Size(cache::IGNITE_PEEK_MODE_ALL);
+    size = cache.Size(cache::CachePeekMode::ALL);
 
-    BOOST_REQUIRE(0 == size);
+    BOOST_CHECK_EQUAL(0, size);
 
     cache.Put(1, 1);
     cache.Put(2, 2);
@@ -176,9 +143,53 @@ BOOST_AUTO_TEST_CASE(TestRemoveAllKeys)
 
     cache.RemoveAll(keySet);
 
-    size = cache.Size(cache::IGNITE_PEEK_MODE_PRIMARY);
+    size = cache.Size(cache::CachePeekMode::PRIMARY);
 
-    BOOST_REQUIRE(1 == size);
+    BOOST_CHECK_EQUAL(1, size);
+}
+
+BOOST_AUTO_TEST_CASE(TestRemoveAllKeysIterVector)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    int size = cache.Size(cache::CachePeekMode::ALL);
+
+    BOOST_CHECK_EQUAL(0, size);
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+    cache.Put(3, 3);
+
+    int keys[] = { 1, 2, 4, 5 };
+
+    std::vector<int> keySet(keys, keys + 4);
+
+    cache.RemoveAll(keySet.begin(), keySet.end());
+
+    size = cache.Size(cache::CachePeekMode::PRIMARY);
+
+    BOOST_CHECK_EQUAL(1, size);
+}
+
+BOOST_AUTO_TEST_CASE(TestRemoveAllKeysIterArray)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    int size = cache.Size(cache::CachePeekMode::ALL);
+
+    BOOST_CHECK_EQUAL(0, size);
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+    cache.Put(3, 3);
+
+    int keys[] = { 1, 2, 4, 5 };
+
+    cache.RemoveAll(keys, keys + 4);
+
+    size = cache.Size(cache::CachePeekMode::PRIMARY);
+
+    BOOST_CHECK_EQUAL(1, size);
 }
 
 BOOST_AUTO_TEST_CASE(TestPut)
@@ -200,6 +211,36 @@ BOOST_AUTO_TEST_CASE(TestPutAll)
     cache::Cache<int, int> cache = Cache();
 
     cache.PutAll(map);
+
+    for (int i = 0; i < 100; i++)
+        BOOST_REQUIRE(i + 1 == cache.Get(i));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutAllIterMap)
+{
+    std::map<int, int> map;
+
+    for (int i = 0; i < 100; i++)
+        map[i] = i + 1;
+
+    cache::Cache<int, int> cache = Cache();
+
+    cache.PutAll(map.begin(), map.end());
+
+    for (int i = 0; i < 100; i++)
+        BOOST_REQUIRE(i + 1 == cache.Get(i));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutAllIterVector)
+{
+    std::vector< cache::CacheEntry<int, int> > entries;
+
+    for (int i = 0; i < 100; i++)
+        entries.push_back(cache::CacheEntry<int, int>(i, i + 1));
+
+    cache::Cache<int, int> cache = Cache();
+
+    cache.PutAll(entries.begin(), entries.end());
 
     for (int i = 0; i < 100; i++)
         BOOST_REQUIRE(i + 1 == cache.Get(i));
@@ -241,6 +282,40 @@ BOOST_AUTO_TEST_CASE(TestGetAll)
 
     for (int i = 0; i < static_cast<int>(keySet.size()); i++)
         BOOST_REQUIRE(i + 1 == map[i + 1]);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetAllIterMap)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    int keys[] = { 1, 2, 3, 4, 5 };
+
+    for (int i = 0; i < 5; ++i)
+        cache.Put(keys[i], i + 1);
+
+    std::map<int, int> map;
+
+    cache.GetAll(keys, keys + 5, std::inserter(map, map.begin()));
+
+    for (int i = 0; i < 5; ++i)
+        BOOST_REQUIRE(i + 1 == map[keys[i]]);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetAllIterArray)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    int keys[] = { 1, 2, 3, 4, 5 };
+
+    cache::CacheEntry<int, int> res[5];
+
+    for (int i = 0; i < 5; ++i)
+        cache.Put(keys[i], i + 1);
+
+    cache.GetAll(keys, keys + 5, res);
+
+    for (int i = 0; i < 5; ++i)
+        BOOST_REQUIRE(res[i].GetKey() == res[i].GetValue());
 }
 
 BOOST_AUTO_TEST_CASE(TestGetAndPut)
@@ -319,6 +394,24 @@ BOOST_AUTO_TEST_CASE(TestContainsKeys)
     BOOST_REQUIRE(false == cache.ContainsKeys(keySet));
 }
 
+BOOST_AUTO_TEST_CASE(TestContainsKeysIter)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    int keys[] = { 1, 2 };
+
+    BOOST_REQUIRE(false == cache.ContainsKeys(keys, keys + 2));
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+
+    BOOST_REQUIRE(true == cache.ContainsKeys(keys, keys + 2));
+
+    cache.Remove(1);
+
+    BOOST_REQUIRE(false == cache.ContainsKeys(keys, keys + 2));
+}
+
 BOOST_AUTO_TEST_CASE(TestIsEmpty)
 {
     cache::Cache<int, int> cache = Cache();
@@ -366,11 +459,11 @@ BOOST_AUTO_TEST_CASE(TestLocalClear)
 
     cache.Put(0, 2);
 
-    BOOST_REQUIRE(2 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_PRIMARY));
+    BOOST_REQUIRE(2 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
 
     cache.LocalClear(0);
 
-    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_PRIMARY));
+    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
 }
 
 BOOST_AUTO_TEST_CASE(TestLocalClearAll)
@@ -384,13 +477,51 @@ BOOST_AUTO_TEST_CASE(TestLocalClearAll)
 
     std::set<int> keySet(keys, keys + 2);
 
-    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_PRIMARY));
-    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_PRIMARY));
+    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
 
     cache.LocalClearAll(keySet);
 
-    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::IGNITE_PEEK_MODE_PRIMARY));
-    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_PRIMARY));
+    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
+}
+
+BOOST_AUTO_TEST_CASE(TestLocalClearAllIterList)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    cache.Put(0, 3);
+    cache.Put(1, 3);
+
+    int keys[] = { 0, 1 };
+
+    std::list<int> keySet(keys, keys + 2);
+
+    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
+
+    cache.LocalClearAll(keySet.begin(), keySet.end());
+
+    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
+}
+
+BOOST_AUTO_TEST_CASE(TestLocalClearAllIterArray)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    cache.Put(0, 3);
+    cache.Put(1, 3);
+
+    int keys[] = { 0, 1 };
+
+    BOOST_REQUIRE(3 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(3 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
+
+    cache.LocalClearAll(keys, keys + 2);
+
+    BOOST_REQUIRE(0 == cache.LocalPeek(0, cache::CachePeekMode::ALL));
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::CachePeekMode::ALL));
 }
 
 BOOST_AUTO_TEST_CASE(TestSizes)
@@ -404,7 +535,7 @@ BOOST_AUTO_TEST_CASE(TestSizes)
 
     BOOST_REQUIRE(2 <= cache.Size());
 
-    BOOST_REQUIRE(1 <= cache.LocalSize(cache::IGNITE_PEEK_MODE_PRIMARY));
+    BOOST_REQUIRE(1 <= cache.LocalSize(cache::CachePeekMode::ALL));
 }
 
 BOOST_AUTO_TEST_CASE(TestLocalEvict)
@@ -413,7 +544,7 @@ BOOST_AUTO_TEST_CASE(TestLocalEvict)
 
     cache.Put(1, 5);
 
-    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
+    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::CachePeekMode::ONHEAP));
 
     int keys[] = { 0, 1 };
 
@@ -421,11 +552,51 @@ BOOST_AUTO_TEST_CASE(TestLocalEvict)
 
     cache.LocalEvict(keySet);
 
-    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::CachePeekMode::ONHEAP));
 
     BOOST_REQUIRE(5 == cache.Get(1));
 
-    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
+    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::CachePeekMode::ONHEAP));
+}
+
+BOOST_AUTO_TEST_CASE(TestLocalEvictIterSet)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    cache.Put(1, 5);
+
+    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::CachePeekMode::ONHEAP));
+
+    int keys[] = { 0, 1 };
+
+    std::set<int> keySet(keys, keys + 2);
+
+    cache.LocalEvict(keySet.begin(), keySet.end());
+
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::CachePeekMode::ONHEAP));
+
+    BOOST_REQUIRE(5 == cache.Get(1));
+
+    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::CachePeekMode::ONHEAP));
+}
+
+BOOST_AUTO_TEST_CASE(TestLocalEvictIterArray)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    cache.Put(1, 5);
+
+    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::CachePeekMode::ONHEAP));
+
+    int keys[] = { 0, 1 };
+
+    cache.LocalEvict(keys, keys + 2);
+
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::CachePeekMode::ONHEAP));
+
+    BOOST_REQUIRE(5 == cache.Get(1));
+
+    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::CachePeekMode::ONHEAP));
 }
 
 BOOST_AUTO_TEST_CASE(TestBinary)
@@ -454,7 +625,7 @@ BOOST_AUTO_TEST_CASE(TestCreateCache)
     // Attempt to create cache with existing name
     IgniteError err;
 
-    grid0.CreateCache<int, int>("dynamic_cache", &err);
+    grid0.CreateCache<int, int>("dynamic_cache", err);
 
     BOOST_REQUIRE(err.GetCode() != IgniteError::IGNITE_SUCCESS);
 }
@@ -482,6 +653,18 @@ BOOST_AUTO_TEST_CASE(TestPutGetDate)
     cache::Cache<int, Date> cache = grid0.GetOrCreateCache<int, Date>("partitioned");
 
     Date now = Date(time(NULL) * 1000);
+
+    cache.Put(5, now);
+
+    BOOST_REQUIRE(now == cache.Get(5));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutGetTime)
+{
+    // Get existing cache
+    cache::Cache<int, Time> cache = grid0.GetOrCreateCache<int, Time>("partitioned");
+
+    Time now = Time(time(NULL) * 1000);
 
     cache.Put(5, now);
 

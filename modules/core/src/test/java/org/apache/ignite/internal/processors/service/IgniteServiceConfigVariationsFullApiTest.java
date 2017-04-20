@@ -25,6 +25,8 @@ import java.io.Serializable;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
@@ -69,8 +71,8 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
             return super.expectedClient(testGridName);
 
         // Use two client nodes if grid index 5 or greater.
-        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName)
-            || getTestGridName(CLIENT_NODE_IDX_2).equals(testGridName);
+        return getTestIgniteInstanceName(CLIENT_NODE_IDX).equals(testGridName)
+            || getTestIgniteInstanceName(CLIENT_NODE_IDX_2).equals(testGridName);
     }
 
     /**
@@ -109,7 +111,12 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
             @Override public void run(IgniteServices services, String svcName, TestService svc) {
                 IgniteCache<Object, Object> cache = grid(testedNodeIdx).getOrCreateCache(CACHE_NAME);
 
-                services.deployKeyAffinitySingleton(svcName, (Service)svc, cache.getName(), "1");
+                try {
+                    services.deployKeyAffinitySingleton(svcName, (Service)svc, cache.getName(), primaryKey(cache));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
         }));
     }

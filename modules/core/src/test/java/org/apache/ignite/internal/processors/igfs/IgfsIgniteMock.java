@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -141,7 +142,7 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(String name) {
         return F.eq(name, igfs.name()) ? igfs : null;
     }
 
@@ -526,6 +527,13 @@ public class IgfsIgniteMock implements IgniteEx {
     /** {@inheritDoc} */
     @Override public void resetLostPartitions(Collection<String> cacheNames) {
         throwUnsupported();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        throwUnsupported();
+
+        return null;
     }
 
     /**

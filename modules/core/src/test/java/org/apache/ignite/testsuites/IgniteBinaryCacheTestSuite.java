@@ -23,10 +23,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.CacheKeepBinaryWithInterceptorTest;
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.binary.GridBinaryCacheEntryMemorySizeSelfTest;
@@ -37,14 +33,8 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCa
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryDataStreamerMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheAtomicPartitionedOnlyBinaryMultithreadedSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheMemoryModeBinarySelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheOffHeapTieredAtomicBinarySelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheOffHeapTieredEvictionAtomicBinarySelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheOffHeapTieredEvictionBinarySelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheOffHeapTieredBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesNearPartitionedByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest;
-import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalOffheapExpiryPolicyTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
@@ -65,13 +55,8 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
 
         // Tests below have a special version for Binary Marshaller
         ignoredTests.add(DataStreamProcessorSelfTest.class);
-        ignoredTests.add(GridCacheOffHeapTieredEvictionAtomicSelfTest.class);
-        ignoredTests.add(GridCacheOffHeapTieredEvictionSelfTest.class);
-        ignoredTests.add(GridCacheOffHeapTieredSelfTest.class);
-        ignoredTests.add(GridCacheOffHeapTieredAtomicSelfTest.class);
         ignoredTests.add(GridCacheAffinityRoutingSelfTest.class);
         ignoredTests.add(IgniteCacheAtomicLocalExpiryPolicyTest.class);
-        ignoredTests.add(IgniteCacheAtomicLocalOffheapExpiryPolicyTest.class);
         ignoredTests.add(GridCacheEntryMemorySizeSelfTest.class);
 
         // Tests that are not ready to be used with BinaryMarshaller
@@ -81,13 +66,9 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
 
         // TODO GG-11148
         // suite.addTestSuite(GridCacheMemoryModeBinarySelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicBinarySelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredEvictionBinarySelfTest.class);
 
         suite.addTestSuite(GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest.class);
         suite.addTestSuite(GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredBinarySelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredAtomicBinarySelfTest.class);
 
         suite.addTestSuite(GridDataStreamerImplSelfTest.class);
         suite.addTestSuite(DataStreamProcessorBinarySelfTest.class);

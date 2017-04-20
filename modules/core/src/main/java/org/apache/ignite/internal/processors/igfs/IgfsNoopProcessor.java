@@ -45,7 +45,7 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> IGFS processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> IGFS processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   igfsCacheSize: " + 0);
     }
 
@@ -55,12 +55,12 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfs(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfs(String name) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
+    @Override public Collection<IpcServerEndpoint> endpoints(String name) {
         return Collections.emptyList();
     }
 

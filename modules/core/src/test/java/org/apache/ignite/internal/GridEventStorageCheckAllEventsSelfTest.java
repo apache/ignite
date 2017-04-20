@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
@@ -99,7 +98,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        ignite = G.ignite(getTestGridName());
+        ignite = G.ignite(getTestIgniteInstanceName());
 
         long tstamp = startTimestamp();
 
@@ -163,7 +162,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
                     List<Event> evts = pullEvents(tstamp, 10);
                     return evts.get(evts.size() - 1).type() == EVT_JOB_FINISHED;
                 }
-                catch (Exception e) {
+                catch (Exception ignored) {
                     return false;
                 }
             }
@@ -361,14 +360,9 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private ComputeTaskFuture<?> generateEvents(@Nullable Long timeout, ComputeJob job) throws Exception {
-        IgniteCompute comp = ignite.compute().withAsync();
-
-        if (timeout == null)
-            comp.execute(GridAllEventsTestTask.class.getName(), job);
-        else
-            comp.withTimeout(timeout).execute(GridAllEventsTestTask.class.getName(), job);
-
-        return comp.future();
+        return timeout == null
+            ? ignite.compute().executeAsync(GridAllEventsTestTask.class.getName(), job)
+            : ignite.compute().withTimeout(timeout).executeAsync(GridAllEventsTestTask.class.getName(), job);
     }
 
     /**

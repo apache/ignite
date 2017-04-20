@@ -36,7 +36,7 @@ public class CacheVersionIO {
     private static final int NULL_SIZE = 1;
 
     /** Serialized size in bytes. */
-    private static final int SIZE_V1 = 25;
+    private static final int SIZE_V1 = 17;
 
     /**
      * @param ver Version.
@@ -72,7 +72,6 @@ public class CacheVersionIO {
             buf.put(protoVer);
             buf.putInt(ver.topologyVersion());
             buf.putInt(ver.nodeOrderAndDrIdRaw());
-            buf.putLong(ver.globalTime());
             buf.putLong(ver.order());
         }
     }
@@ -95,8 +94,7 @@ public class CacheVersionIO {
             PageUtils.putByte(addr, 0, protoVer);
             PageUtils.putInt(addr, 1, ver.topologyVersion());
             PageUtils.putInt(addr, 5, ver.nodeOrderAndDrIdRaw());
-            PageUtils.putLong(addr, 9, ver.globalTime());
-            PageUtils.putLong(addr, 17, ver.order());
+            PageUtils.putLong(addr, 9, ver.order());
         }
     }
 
@@ -158,10 +156,9 @@ public class CacheVersionIO {
 
         int topVer = buf.getInt();
         int nodeOrderDrId = buf.getInt();
-        long globalTime = buf.getLong();
         long order = buf.getLong();
 
-        return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+        return new GridCacheVersion(topVer, nodeOrderDrId, order);
     }
 
     /**
@@ -180,9 +177,8 @@ public class CacheVersionIO {
 
         int topVer = PageUtils.getInt(pageAddr, 1);
         int nodeOrderDrId = PageUtils.getInt(pageAddr, 5);
-        long globalTime = PageUtils.getLong(pageAddr, 9);
-        long order = PageUtils.getLong(pageAddr, 17);
+        long order = PageUtils.getLong(pageAddr, 9);
 
-        return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+        return new GridCacheVersion(topVer, nodeOrderDrId, order);
     }
 }

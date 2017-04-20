@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.database;
 
-import java.io.Serializable;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -32,179 +30,28 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
 /**
  *
  */
-public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
     /** */
     private static final int KEYS_COUNT = 20_000;
-
-    /**
-     * @return Node count.
-     */
-    protected abstract int gridCount();
-
-    /**
-     * @return {@code True} if indexing is enabled.
-     */
-    protected abstract boolean indexingEnabled();
-
-    /**
-     * @return {@code True} if cache operations should be called from client node with near cache.
-     */
-    protected boolean withClientNearCache() {
-        return false;
-    }
-
-    /** */
-    private boolean client = false;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
-
-        if (client)
-            cfg.setClientMode(true);
-
-        if (isLargePage()) {
-            dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-
-            dbCfg.setPageSize(16 * 1024);
-
-            dbCfg.setPageCacheSize(200 * 1024 * 1024);
-        }
-        else {
-            dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-
-            dbCfg.setPageSize(1024);
-
-            dbCfg.setPageCacheSize(200 * 1024 * 1024);
-        }
-
-        cfg.setMemoryConfiguration(dbCfg);
-
-        CacheConfiguration ccfg = new CacheConfiguration();
-
-        if (indexingEnabled())
-            ccfg.setIndexedTypes(Integer.class, DbValue.class);
-
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        CacheConfiguration ccfg2 = new CacheConfiguration("non-primitive");
-
-        if (indexingEnabled())
-            ccfg2.setIndexedTypes(DbKey.class, DbValue.class);
-
-        ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
-        ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        CacheConfiguration ccfg3 = new CacheConfiguration("large");
-
-        if (indexingEnabled())
-            ccfg3.setIndexedTypes(Integer.class, LargeDbValue.class);
-
-        ccfg3.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg3.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg3.setRebalanceMode(CacheRebalanceMode.SYNC);
-        ccfg3.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        CacheConfiguration ccfg4 = new CacheConfiguration("tiny");
-
-        ccfg4.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg4.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg4.setRebalanceMode(CacheRebalanceMode.SYNC);
-        ccfg4.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        final AffinityFunction aff = new RendezvousAffinityFunction(1, null);
-
-        ccfg4.setAffinity(aff);
-
-        if (!client)
-            cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-        cfg.setMarshaller(null);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-
-        long seed = System.currentTimeMillis();
-
-        info("Seed: " + seed + "L");
-
-        BPlusTree.rnd = new Random(seed);
-
-        startGrids(gridCount());
-
-        if (withClientNearCache()) {
-            client = true;
-
-            startGrid(gridCount());
-
-            client = false;
-        }
-
-        awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        BPlusTree.rnd = null;
-
-        stopAllGrids();
-
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-    }
 
     /**
      * @return Ignite instance for testing.
@@ -229,13 +76,6 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @return {@code True} if use large page.
-     */
-    protected boolean isLargePage() {
-        return false;
-    }
-
-    /**
      *
      */
     public void testGradualRandomPutAllRemoveAll() throws Exception {
@@ -243,9 +83,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         final int cnt = KEYS_COUNT;
 
-        Random rnd = BPlusTree.rnd;
-
-        assert rnd != null;
+        Random rnd = new Random();
 
         Map<Integer, DbValue> map = new HashMap<>();
 
@@ -1368,196 +1206,5 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         }, 5000);
 
         assertNull(internalCache.peekEx(key));
-    }
-
-    /**
-     *
-     */
-    private static class DbKey implements Serializable {
-        /** */
-        private int val;
-
-        /**
-         * @param val Value.
-         */
-        private DbKey(int val) {
-            this.val = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || !(o instanceof DbKey))
-                return false;
-
-            DbKey key = (DbKey)o;
-
-            return val == key.val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return val;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class LargeDbKey implements Serializable {
-        /** */
-        private int val;
-
-        /** */
-        private byte[] data;
-
-        /**
-         * @param val Value.
-         * @param size Key payload size.
-         */
-        private LargeDbKey(int val, int size) {
-            this.val = val;
-
-            data = new byte[size];
-
-            Arrays.fill(data, (byte)val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || !(o instanceof LargeDbKey))
-                return false;
-
-            LargeDbKey key = (LargeDbKey)o;
-
-            return val == key.val && Arrays.equals(data, key.data);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return val + Arrays.hashCode(data);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class DbValue implements Serializable {
-        /** */
-        @QuerySqlField(index = true)
-        private int iVal;
-
-        /** */
-        @QuerySqlField(index = true)
-        private String sVal;
-
-        /** */
-        @QuerySqlField
-        private long lVal;
-
-        /**
-         * @param iVal Integer value.
-         * @param sVal String value.
-         * @param lVal Long value.
-         */
-        public DbValue(int iVal, String sVal, long lVal) {
-            this.iVal = iVal;
-            this.sVal = sVal;
-            this.lVal = lVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            DbValue dbVal = (DbValue)o;
-
-            return iVal == dbVal.iVal && lVal == dbVal.lVal &&
-                !(sVal != null ? !sVal.equals(dbVal.sVal) : dbVal.sVal != null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = iVal;
-
-            res = 31 * res + (sVal != null ? sVal.hashCode() : 0);
-            res = 31 * res + (int)(lVal ^ (lVal >>> 32));
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(DbValue.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class LargeDbValue {
-        /** */
-        @QuerySqlField(index = true)
-        private String str1;
-
-        /** */
-        @QuerySqlField(index = true)
-        private String str2;
-
-        /** */
-        private int[] arr;
-
-        /**
-         * @param str1 String 1.
-         * @param str2 String 2.
-         * @param arr Big array.
-         */
-        public LargeDbValue(final String str1, final String str2, final int[] arr) {
-            this.str1 = str1;
-            this.str2 = str2;
-            this.arr = arr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(final Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            final LargeDbValue that = (LargeDbValue)o;
-
-            if (str1 != null ? !str1.equals(that.str1) : that.str1 != null)
-                return false;
-            if (str2 != null ? !str2.equals(that.str2) : that.str2 != null)
-                return false;
-
-            return Arrays.equals(arr, that.arr);
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = str1 != null ? str1.hashCode() : 0;
-
-            res = 31 * res + (str2 != null ? str2.hashCode() : 0);
-            res = 31 * res + Arrays.hashCode(arr);
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(LargeDbValue.class, this);
-        }
     }
 }

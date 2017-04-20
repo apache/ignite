@@ -85,6 +85,9 @@ public enum BinaryWriteMode {
     TIMESTAMP(GridBinaryMarshaller.TIMESTAMP),
 
     /** */
+    TIME(GridBinaryMarshaller.TIME),
+
+    /** */
     BYTE_ARR(GridBinaryMarshaller.BYTE_ARR),
 
     /** */
@@ -122,6 +125,9 @@ public enum BinaryWriteMode {
 
     /** */
     TIMESTAMP_ARR(GridBinaryMarshaller.TIMESTAMP_ARR),
+
+    /** */
+    TIME_ARR(GridBinaryMarshaller.TIME_ARR),
 
     /** */
     OBJECT_ARR(GridBinaryMarshaller.OBJ_ARR),

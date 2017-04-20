@@ -17,65 +17,82 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.internal.LessNamingBean;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for memory configuration.
  */
-public class VisorMemoryConfiguration implements Serializable, LessNamingBean {
+public class VisorMemoryConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Size of memory for system cache. */
+    private long sysCacheMemSize;
+
+    /** Page size. */
+    private int pageSize;
 
     /** Concurrency level. */
     private int concLvl;
 
-    /** File cache allocation path. */
-    private String fileCacheAllocationPath;
+    /** Name of MemoryPolicy to be used as default. */
+    private String dfltMemPlcName;
 
-    /** Amount of memory allocated for the page cache. */
-    private long pageCacheSize;
+    /** Memory policies. */
+    private List<VisorMemoryPolicyConfiguration> memPlcs;
 
-    /** Page size. */
-    private int pageSize;
+    /**
+     * Default constructor.
+     */
+    public VisorMemoryConfiguration() {
+        // No-op.
+    }
 
     /**
      * Create data transfer object.
      *
      * @param memCfg Memory configuration.
-     * @return Data transfer object.
      */
-    public static VisorMemoryConfiguration from(MemoryConfiguration memCfg) {
-        VisorMemoryConfiguration res = new VisorMemoryConfiguration();
+    public VisorMemoryConfiguration(MemoryConfiguration memCfg) {
+        assert memCfg != null;
 
-        res.concLvl = memCfg.getConcurrencyLevel();
-        res.fileCacheAllocationPath = memCfg.getFileCacheAllocationPath();
-        res.pageCacheSize = memCfg.getPageCacheSize();
-        res.pageSize = memCfg.getPageSize();
+        sysCacheMemSize = memCfg.getSystemCacheMemorySize();
+        pageSize = memCfg.getPageSize();
+        concLvl = memCfg.getConcurrencyLevel();
+        dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
 
-        return res;
+        MemoryPolicyConfiguration[] plcs = memCfg.getMemoryPolicies();
+
+        if (!F.isEmpty(plcs)) {
+            memPlcs = new ArrayList<>(plcs.length);
+
+            for (MemoryPolicyConfiguration plc : plcs)
+                memPlcs.add(new VisorMemoryPolicyConfiguration(plc));
+        }
     }
 
     /**
      * @return Concurrency level.
      */
-    public int concurrencyLevel() {
+    public int getConcurrencyLevel() {
         return concLvl;
     }
 
     /**
-     * @return File allocation path.
+     * @return Size of memory for system cache.
      */
-    public String fileCacheAllocationPath() {
-        return fileCacheAllocationPath;
-    }
-
-    /**
-     * @return Page cache size, in bytes.
-     */
-    public long pageCacheSize() {
-        return pageCacheSize;
+    public long getSystemCacheMemorySize() {
+        return sysCacheMemSize;
     }
 
     /**
@@ -83,5 +100,42 @@ public class VisorMemoryConfiguration implements Serializable, LessNamingBean {
      */
     public int getPageSize() {
         return pageSize;
+    }
+
+    /**
+     * @return Name of MemoryPolicy to be used as default.
+     */
+    public String getDefaultMemoryPolicyName() {
+        return dfltMemPlcName;
+    }
+
+    /**
+     * @return Collection of MemoryPolicyConfiguration objects.
+     */
+    public List<VisorMemoryPolicyConfiguration> getMemoryPolicies() {
+        return memPlcs;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(sysCacheMemSize);
+        out.writeInt(pageSize);
+        out.writeInt(concLvl);
+        U.writeString(out, dfltMemPlcName);
+        U.writeCollection(out, memPlcs);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        sysCacheMemSize = in.readLong();
+        pageSize = in.readInt();
+        concLvl = in.readInt();
+        dfltMemPlcName = U.readString(in);
+        memPlcs = U.readList(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorMemoryConfiguration.class, this);
     }
 }

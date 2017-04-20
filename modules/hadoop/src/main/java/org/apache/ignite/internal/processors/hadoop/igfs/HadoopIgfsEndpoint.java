@@ -123,6 +123,10 @@ public class HadoopIgfsEndpoint {
         else
             throw new IgniteCheckedException("Invalid connection string format: " + connStr);
 
+        if (igfsName == null)
+            throw new IgniteCheckedException("Invalid connection string format (IGFS name cannot be empty): "
+                + connStr);
+
         host = hostPort.get1();
 
         assert hostPort.get2() != null;
@@ -159,7 +163,7 @@ public class HadoopIgfsEndpoint {
                 if (port < 0 || port > 65535)
                     throw new IgniteCheckedException("Invalid port number: " + connStr);
             }
-            catch (NumberFormatException e) {
+            catch (NumberFormatException ignored) {
                 throw new IgniteCheckedException("Invalid port number: " + connStr);
             }
         }
@@ -172,7 +176,7 @@ public class HadoopIgfsEndpoint {
     /**
      * @return IGFS name.
      */
-    @Nullable public String igfs() {
+    public String igfs() {
         return igfsName;
     }
 

@@ -83,8 +83,8 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getConnectorConfiguration().setPort(restPort++);
 
@@ -97,7 +97,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     private void beforeJob() throws Exception {
         IgniteFileSystem igfs = grid(0).fileSystem(HadoopAbstractSelfTest.igfsName);
 
-        igfs.format();
+        igfs.clear();
 
         igfs.mkdirs(new IgfsPath(PATH_INPUT));
 
@@ -131,7 +131,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
 
             job.setNumReduceTasks(0);
 
-            FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
+            FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@" + PATH_INPUT));
 
             job.submit();
 
@@ -219,7 +219,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
         conf.set(MRConfig.FRAMEWORK_NAME, IgniteHadoopClientProtocolProvider.FRAMEWORK_NAME);
         conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + REST_PORT);
 
-        conf.set("fs.defaultFS", "igfs:///");
+        conf.set("fs.defaultFS", "igfs://" + igfsName + "@/");
 
         return conf;
     }
@@ -242,7 +242,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
 
         conf.set(MRConfig.MASTER_ADDRESS, F.concat(addrs, ","));
 
-        conf.set("fs.defaultFS", "igfs:///");
+        conf.set("fs.defaultFS", "igfs://" + igfsName + "@/");
 
         return conf;
     }
@@ -264,7 +264,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
 
         conf.set(MRConfig.MASTER_ADDRESS, F.concat(addrs, ","));
 
-        conf.set("fs.defaultFS", "igfs:///");
+        conf.set("fs.defaultFS", "igfs://" + igfsName + "@/");
 
         return conf;
     }

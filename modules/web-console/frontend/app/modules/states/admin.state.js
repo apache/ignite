@@ -17,6 +17,9 @@
 
 import angular from 'angular';
 
+import templateUrl from 'views/settings/admin.tpl.pug';
+import template from 'views/base2.pug';
+
 angular
 .module('ignite-console.states.admin', [
     'ui.router'
@@ -24,12 +27,20 @@ angular
 .config(['$stateProvider', 'AclRouteProvider', function($stateProvider, AclRoute) {
     // set up the states
     $stateProvider
-    .state('settings.admin', {
+    .state('base.settings.admin', {
         url: '/admin',
-        templateUrl: '/settings/admin.html',
+        views: {
+            '@': {
+                template
+            },
+            '@base.settings.admin': {
+                templateUrl
+            }
+        },
+        // templateUrl,
         onEnter: AclRoute.checkAccess('admin_page'),
         metaTags: {
-            title: 'List of registered users'
+            title: 'Admin panel'
         }
     });
 }]);

@@ -19,7 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -35,7 +35,7 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @param txSize Number of entries participating in transaction (may be approximate).
      * @return New transaction.
      */
-    public IgniteInternalTx txStartEx(GridCacheContext ctx,
+    public GridNearTxLocal txStartEx(GridCacheContext ctx,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
@@ -47,5 +47,7 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public IgniteInternalTx txStartEx(GridCacheContext ctx, TransactionConcurrency concurrency, TransactionIsolation isolation);
+    public GridNearTxLocal txStartEx(GridCacheContext ctx,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation);
 }

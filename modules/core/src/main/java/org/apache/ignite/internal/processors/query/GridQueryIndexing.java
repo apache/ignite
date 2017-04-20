@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -86,63 +89,96 @@ public interface GridQueryIndexing {
     /**
      * Queries individual fields (generally used by JDBC drivers).
      *
-     * @param spaceName Space name.
+     * @param cctx Cache context.
      * @param qry Query.
-     * @param params Query parameters.
      * @param filter Space name and key filter.
-     * @param enforceJoinOrder Enforce join order of tables in the query.
-     * @param timeout Query timeout in milliseconds.
      * @param cancel Query cancel.
-     * @return Query result.
-     * @throws IgniteCheckedException If failed.
+     * @return Cursor.
      */
-    public GridQueryFieldsResult queryLocalSqlFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filter, boolean enforceJoinOrder, int timeout,
-        GridQueryCancel cancel) throws IgniteCheckedException;
+    public <K, V> QueryCursor<List<?>> queryLocalSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
+        IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
-     * Executes regular query.
+     * Perform a MERGE statement using data streamer as receiver.
      *
      * @param spaceName Space name.
      * @param qry Query.
      * @param params Query parameters.
-     * @param type Query return type.
-     * @param filter Space name and key filter.
-     * @return Queried rows.
+     * @param streamer Data streamer to feed data to.
+     * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridQueryTypeDescriptor type, IndexingQueryFilter filter) throws IgniteCheckedException;
+    public long streamUpdateQuery(@Nullable final String spaceName, final String qry,
+         @Nullable final Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
+
+    /**
+     * Executes regular query.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param filter Space name and key filter.
+     * @param keepBinary Keep binary flag.
+     * @return Cursor.
+     */
+    public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(GridCacheContext<?, ?> cctx, SqlQuery qry,
+        IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Executes text query.
      *
      * @param spaceName Space name.
      * @param qry Text query.
-     * @param type Query return type.
+     * @param typeName Type name.
      * @param filter Space name and key filter.
      * @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(@Nullable String spaceName, String qry,
-        GridQueryTypeDescriptor type, IndexingQueryFilter filter) throws IgniteCheckedException;
+        String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
+
+    /**
+     * Create new index locally.
+     *
+     * @param spaceName Space name.
+     * @param tblName Table name.
+     * @param idxDesc Index descriptor.
+     * @param ifNotExists Ignore operation if index exists (instead of throwing an error).
+     * @param cacheVisitor Cache visitor
+     * @throws IgniteCheckedException if failed.
+     */
+    public void dynamicIndexCreate(@Nullable String spaceName, String tblName, QueryIndexDescriptorImpl idxDesc,
+        boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException;
+
+    /**
+     * Remove index from the space.
+     *
+     * @param spaceName Space name.
+     * @param idxName Index name.
+     * @param ifExists Ignore operation if index does not exist (instead of throwing an error).
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public void dynamicIndexDrop(@Nullable String spaceName, String idxName, boolean ifExists)
+        throws IgniteCheckedException;
 
     /**
      * Registers cache.
      *
+     * @param spaceName Space name.
      * @param cctx Cache context.
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
+    public void registerCache(String spaceName, GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg)
+        throws IgniteCheckedException;
 
     /**
      * Unregisters cache.
      *
-     * @param ccfg Cache configuration.
+     * @param spaceName Space name.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException;
+    public void unregisterCache(String spaceName) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
@@ -158,17 +194,17 @@ public interface GridQueryIndexing {
      * Unregisters type and removes all corresponding data.
      *
      * @param spaceName Space name.
-     * @param type Type descriptor.
+     * @param typeName Type name.
      * @throws IgniteCheckedException If failed.
      */
-    public void unregisterType(@Nullable String spaceName, GridQueryTypeDescriptor type) throws IgniteCheckedException;
+    public void unregisterType(@Nullable String spaceName, String typeName) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for space, so if space contains multiple indexes
      * the key should be removed from indexes other than one being updated.
      *
      * @param spaceName Space name.
-     * @param type Value type.
+     * @param typeName Type name.
      * @param key Key.
      * @param val Value.
      * @param ver Version.
@@ -176,7 +212,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void store(@Nullable String spaceName,
-        GridQueryTypeDescriptor type,
+        String typeName,
         KeyCacheObject key,
         int partId,
         CacheObject val,
@@ -219,14 +255,6 @@ public interface GridQueryIndexing {
     public void onUnswap(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException;
 
     /**
-     * Rebuilds all indexes of given type.
-     *
-     * @param spaceName Space name.
-     * @param type Type descriptor.
-     */
-    public void rebuildIndexes(@Nullable String spaceName, GridQueryTypeDescriptor type);
-
-    /**
      * Rebuilds all indexes of given type from hash index.
      *
      * @param spaceName Space name.
@@ -260,14 +288,50 @@ public interface GridQueryIndexing {
     /**
      * Prepare native statement to retrieve JDBC metadata from.
      *
-     * @param schema Schema.
+     * @param space Schema.
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
-    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException;
+    public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException;
+
+    /**
+     * Gets space name from database schema.
+     *
+     * @param schemaName Schema name. Could not be null. Could be empty.
+     * @return Space name. Could be null.
+     */
+    public String space(String schemaName);
+
+    /**
+     * Collect queries that already running more than specified duration.
+     *
+     * @param duration Duration to check.
+     * @return Collection of long running queries.
+     */
+    public Collection<GridRunningQueryInfo> runningQueries(long duration);
+
+    /**
+     * Cancel specified queries.
+     *
+     * @param queries Queries ID's to cancel.
+     */
+    public void cancelQueries(Collection<Long> queries);
 
     /**
      * Cancels all executing queries.
      */
     public void cancelAllQueries();
+
+    /**
+     * @param spaceName Space name.
+     * @param nativeStmt Native statement.
+     * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
+     * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
+     * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
+     * @param allowOverwrite Overwrite existing cache values on key duplication.
+     * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata;
+     * {@code null} if given statement is a query.
+     */
+    public IgniteDataStreamer<?,?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
+        int nodeBufSize, int nodeParOps, boolean allowOverwrite);
 }

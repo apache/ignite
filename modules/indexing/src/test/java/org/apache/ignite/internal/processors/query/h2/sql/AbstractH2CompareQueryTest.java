@@ -25,12 +25,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -39,9 +37,8 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -67,8 +64,8 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -289,15 +286,7 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
             setDistributedJoins(distrib).
             setEnforceJoinOrder(enforceJoinOrder)).getAll();
 
-        try {
-            assertRsEquals(h2Res, cacheRes, ordering);
-        }
-        catch (AssertionFailedError e) {
-            X.println("Sql query:\n" + sql + "\nargs=" + Arrays.toString(args));
-            X.println("[h2Res=" + h2Res + ", cacheRes=" + cacheRes + "]");
-
-            throw e;
-        }
+        assertRsEquals(h2Res, cacheRes, ordering);
 
         return h2Res;
     }
@@ -380,7 +369,9 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
                 Iterator<Map.Entry<String,Integer>> iter1 = rowsWithCnt1.entrySet().iterator();
                 Iterator<Map.Entry<String,Integer>> iter2 = rowsWithCnt2.entrySet().iterator();
 
-                for (;;) {
+                int uSize = rowsWithCnt1.size();
+
+                for (int i = 0;; i++) {
                     if (!iter1.hasNext()) {
                         assertFalse(iter2.hasNext());
 
@@ -392,8 +383,8 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
                     Map.Entry<String, Integer> e1 = iter1.next();
                     Map.Entry<String, Integer> e2 = iter2.next();
 
-                    assertEquals(e1.getKey(), e2.getKey());
-                    assertEquals(e1.getValue(), e2.getValue());
+                    assertEquals("Key " + i + " of " + uSize, e1.getKey(), e2.getKey());
+                    assertEquals("Count " + i + " of " + uSize, e1.getValue(), e2.getValue());
                 }
 
                 break;

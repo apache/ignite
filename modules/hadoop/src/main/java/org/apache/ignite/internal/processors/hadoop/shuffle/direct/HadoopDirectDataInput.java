@@ -50,7 +50,7 @@ public class HadoopDirectDataInput extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public int read() throws IOException {
-        return readByte();
+        return (int)readByte() & 0xFF;
     }
 
     /** {@inheritDoc} */

@@ -132,6 +132,7 @@ class GridDhtPartitionSupplier {
      *
      * @param topVer Topology version.
      */
+    @SuppressWarnings("ConstantConditions")
     public void onTopologyChanged(AffinityTopologyVersion topVer) {
         synchronized (scMap) {
             Iterator<T3<UUID, Integer, AffinityTopologyVersion>> it = scMap.keySet().iterator();
@@ -165,6 +166,7 @@ class GridDhtPartitionSupplier {
      * @param idx Index.
      * @param id Node uuid.
      */
+    @SuppressWarnings("unchecked")
     public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
         assert d != null;
         assert id != null;
@@ -194,7 +196,7 @@ class GridDhtPartitionSupplier {
             log.debug("Demand request accepted [current=" + cutTop + ", demanded=" + demTop +
                 ", from=" + id + ", idx=" + idx + "]");
 
-        GridDhtPartitionSupplyMessageV2 s = new GridDhtPartitionSupplyMessageV2(
+        GridDhtPartitionSupplyMessage s = new GridDhtPartitionSupplyMessage(
             d.updateSequence(), cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
 
         ClusterNode node = cctx.discovery().node(id);
@@ -239,6 +241,21 @@ class GridDhtPartitionSupplier {
             }
 
             Iterator<Integer> partIt = sctx != null ? sctx.partIt : d.partitions().iterator();
+
+            if (sctx == null) {
+                long keysCnt = 0;
+
+                for (Integer part : d.partitions()) {
+                    GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
+
+                    if (loc == null || loc.state() != OWNING)
+                        continue;
+
+                    keysCnt += cctx.offheap().entriesCount(part);
+                }
+
+                s.estimatedKeysCount(keysCnt);
+            }
 
             while ((sctx != null && newReq) || partIt.hasNext()) {
                 int part = sctx != null && newReq ? sctx.part : partIt.next();
@@ -338,7 +355,7 @@ class GridDhtPartitionSupplier {
                                     if (!reply(node, d, s, scId))
                                         return;
 
-                                    s = new GridDhtPartitionSupplyMessageV2(d.updateSequence(),
+                                    s = new GridDhtPartitionSupplyMessage(d.updateSequence(),
                                         cctx.cacheId(),
                                         d.topologyVersion(),
                                         cctx.deploymentEnabled());
@@ -428,7 +445,7 @@ class GridDhtPartitionSupplier {
      */
     private boolean reply(ClusterNode n,
         GridDhtPartitionDemandMessage d,
-        GridDhtPartitionSupplyMessageV2 s,
+        GridDhtPartitionSupplyMessage s,
         T3<UUID, Integer, AffinityTopologyVersion> scId)
         throws IgniteCheckedException {
 

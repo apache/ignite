@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -48,14 +49,11 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Worker ID. */
-    private int workerId = -1;
-
     /** Update sequence. */
     private long updateSeq;
 
-    /** Acknowledgement flag. */
-    private boolean ack;
+    /** Topology version. */
+    private AffinityTopologyVersion topVer;
 
     /** Partitions that have been fully sent. */
     @GridDirectCollection(int.class)
@@ -66,27 +64,34 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     @GridDirectCollection(int.class)
     private Collection<Integer> missed;
 
+    /** Partitions for which we were able to get historical iterator. */
+    @GridToStringInclude
+    @GridDirectCollection(int.class)
+    private Collection<Integer> clean;
+
     /** Entries. */
     @GridDirectMap(keyType = int.class, valueType = CacheEntryInfoCollection.class)
-    private Map<Integer, CacheEntryInfoCollection> infos = new HashMap<>();
+    private Map<Integer, CacheEntryInfoCollection> infos;
 
     /** Message size. */
-    @GridDirectTransient
     private int msgSize;
 
+    /** Estimated keys count. */
+    private long estimatedKeysCnt = -1;
+
     /**
-     * @param workerId Worker ID.
      * @param updateSeq Update sequence for this node.
      * @param cacheId Cache ID.
+     * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
      */
-    GridDhtPartitionSupplyMessage(int workerId, long updateSeq, int cacheId, boolean addDepInfo) {
-        assert workerId >= 0;
-        assert updateSeq > 0;
-
+    GridDhtPartitionSupplyMessage(long updateSeq,
+        int cacheId,
+        AffinityTopologyVersion topVer,
+        boolean addDepInfo) {
         this.cacheId = cacheId;
         this.updateSeq = updateSeq;
-        this.workerId = workerId;
+        this.topVer = topVer;
         this.addDepInfo = addDepInfo;
     }
 
@@ -103,13 +108,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     }
 
     /**
-     * @return Worker ID.
-     */
-    int workerId() {
-        return workerId;
-    }
-
-    /**
      * @return Update sequence.
      */
     long updateSequence() {
@@ -117,17 +115,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
     }
 
     /**
-     * Marks this message for acknowledgment.
+     * @return Topology version for which demand message is sent.
      */
-    void markAck() {
-        ack = true;
-    }
-
-    /**
-     * @return Acknowledgement flag.
-     */
-    boolean ack() {
-        return ack;
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /**
@@ -148,14 +139,33 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
             msgSize += 4;
 
             // If partition is empty, we need to add it.
-            if (!infos.containsKey(p)) {
+            if (!infos().containsKey(p)) {
                 CacheEntryInfoCollection infoCol = new CacheEntryInfoCollection();
 
                 infoCol.init();
 
-                infos.put(p, infoCol);
+                infos().put(p, infoCol);
             }
         }
+    }
+
+    /**
+     * @param p Partition to clean.
+     */
+    void clean(int p) {
+        if (clean == null)
+            clean = new HashSet<>();
+
+        if (clean.add(p))
+            msgSize += 4;
+    }
+
+    /**
+     * @param p Partition to check.
+     * @return Check result.
+     */
+    boolean isClean(int p) {
+        return clean != null && clean.contains(p);
     }
 
     /**
@@ -180,6 +190,9 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
      * @return Entries.
      */
     Map<Integer, CacheEntryInfoCollection> infos() {
+        if (infos == null)
+            infos = new HashMap<>();
+
         return infos;
     }
 
@@ -203,12 +216,12 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
 
         msgSize += info.marshalledSize(ctx);
 
-        CacheEntryInfoCollection infoCol = infos.get(p);
+        CacheEntryInfoCollection infoCol = infos().get(p);
 
         if (infoCol == null) {
             msgSize += 4;
 
-            infos.put(p, infoCol = new CacheEntryInfoCollection());
+            infos().put(p, infoCol = new CacheEntryInfoCollection());
 
             infoCol.init();
         }
@@ -232,12 +245,12 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
 
         msgSize += info.marshalledSize(ctx);
 
-        CacheEntryInfoCollection infoCol = infos.get(p);
+        CacheEntryInfoCollection infoCol = infos().get(p);
 
         if (infoCol == null) {
             msgSize += 4;
 
-            infos.put(p, infoCol = new CacheEntryInfoCollection());
+            infos().put(p, infoCol = new CacheEntryInfoCollection());
 
             infoCol.init();
         }
@@ -253,7 +266,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
         GridCacheContext cacheCtx = ctx.cacheContext(cacheId);
 
         for (CacheEntryInfoCollection col : infos().values()) {
-            List<GridCacheEntryInfo>  entries = col.infos();
+            List<GridCacheEntryInfo> entries = col.infos();
 
             for (int i = 0; i < entries.size(); i++)
                 entries.get(i).unmarshal(cacheCtx, ldr);
@@ -269,7 +282,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
      * @return Number of entries in message.
      */
     public int size() {
-        return infos.size();
+        return infos().size();
     }
 
     /** {@inheritDoc} */
@@ -288,7 +301,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeBoolean("ack", ack))
+                if (!writer.writeCollection("clean", clean, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -312,17 +325,28 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeLong("updateSeq", updateSeq))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeInt("workerId", workerId))
+                if (!writer.writeLong("updateSeq", updateSeq))
                     return false;
 
                 writer.incrementState();
 
+            case 9:
+                if (!writer.writeLong("estimatedKeysCnt", estimatedKeysCnt))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeInt("msgSize", msgSize))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -340,7 +364,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
 
         switch (reader.state()) {
             case 3:
-                ack = reader.readBoolean("ack");
+                clean = reader.readCollection("clean", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -372,7 +396,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
                 reader.incrementState();
 
             case 7:
-                updateSeq = reader.readLong("updateSeq");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -380,32 +404,62 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
                 reader.incrementState();
 
             case 8:
-                workerId = reader.readInt("workerId");
+                updateSeq = reader.readLong("updateSeq");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
+            case 9:
+                estimatedKeysCnt = reader.readLong("estimatedKeysCnt");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                msgSize = reader.readInt("msgSize");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtPartitionSupplyMessage.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
-        return 45;
+    @Override public short directType() {
+        return 114;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 11;
+    }
+
+    /**
+     * @return Estimated keys count.
+     */
+    public long estimatedKeysCount() {
+        return estimatedKeysCnt;
+    }
+
+    /**
+     * @param estimatedKeysCnt New estimated keys count.
+     */
+    public void estimatedKeysCount(long estimatedKeysCnt) {
+        this.estimatedKeysCnt = estimatedKeysCnt;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionSupplyMessage.class, this,
             "size", size(),
+            "parts", infos().keySet(),
             "super", super.toString());
     }
 }
