@@ -171,16 +171,19 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
-     * TODO: document
-     * @return Concurrency level.
+     * Returns the number of concurrent segments in Ignite internal page mapping tables. By default equals
+     * to the number of available CPUs multiplied by 4.
+     *
+     * @return Mapping table concurrency level.
      */
     public int getConcurrencyLevel() {
         return concLvl;
     }
 
     /**
-     * TODO: document
-     * @param concLvl Concurrency level.
+     * Sets the number of concurrent segments in Ignite internal page mapping tables.
+     *
+     * @param concLvl Mapping table oncurrency level.
      */
     public MemoryConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
@@ -191,7 +194,7 @@ public class MemoryConfiguration implements Serializable {
     /**
      * Gets a name of default memory policy.
      *
-     * @return A name of a custom memory policy configured with {@link MemoryConfiguration} or {@code null} of the
+     * @return A name of a custom memory policy configured with {@code MemoryConfiguration} or {@code null} of the
      *         default policy is used.
      */
     public String getDefaultMemoryPolicyName() {
@@ -202,7 +205,7 @@ public class MemoryConfiguration implements Serializable {
      * Sets the name for the default memory policy that will initialize the default memory region.
      * To set own default memory policy, create the policy first, pass it to
      * {@link MemoryConfiguration#setMemoryPolicies(MemoryPolicyConfiguration...)} method and change the name of the
-     * default memory policy with {@link MemoryConfiguration#setDefaultMemoryPolicyName(String)}.
+     * default memory policy with {@code MemoryConfiguration#setDefaultMemoryPolicyName(String)}.
      *
      * @param dfltMemPlcName Name of a memory policy to be used as default one.
      */

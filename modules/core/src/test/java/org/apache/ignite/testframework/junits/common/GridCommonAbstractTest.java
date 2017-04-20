@@ -80,7 +80,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -1576,5 +1578,82 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             .setDistributedJoins(qry.isDistributedJoins())
             .setEnforceJoinOrder(qry.isEnforceJoinOrder()))
             .getAll().get(0).get(0);
+    }
+
+    /**
+     * @param expData Expected cache data.
+     * @param cacheName Cache name.
+     */
+    protected final void checkCacheData(Map<?, ?> expData, String cacheName) {
+        assert !expData.isEmpty();
+
+        List<Ignite> nodes = G.allGrids();
+
+        assertFalse(nodes.isEmpty());
+
+        for (Ignite node : nodes) {
+            IgniteCache<Object, Object> cache = node.cache(cacheName);
+
+            for (Map.Entry<?, ?> e : expData.entrySet()) {
+                assertEquals("Invalid value [key=" + e.getKey() + ", node=" + node.name() + ']',
+                    e.getValue(),
+                    cache.get(e.getKey()));
+            }
+        }
+    }
+
+    /**
+     * @param nodesCnt Expected nodes number or {@code -1} to use all nodes.
+     * @throws Exception If failed.
+     */
+    protected final void checkOnePhaseCommitReturnValuesCleaned(final int nodesCnt) throws Exception {
+        final List<Ignite> nodes;
+
+        if (nodesCnt == -1) {
+            nodes = G.allGrids();
+
+            assertTrue(nodes.size() > 0);
+        }
+        else {
+            nodes = new ArrayList<>(nodesCnt);
+
+            for (int i = 0; i < nodesCnt; i++)
+                nodes.add(grid(i));
+        }
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (Ignite node : nodes) {
+                    Map completedVersHashMap = completedTxsMap(node);
+
+                    for (Object o : completedVersHashMap.values()) {
+                        if (!(o instanceof Boolean))
+                            return false;
+                    }
+                }
+
+                return true;
+            }
+        }, 5000);
+
+        for (Ignite node : nodes) {
+            Map completedVersHashMap = completedTxsMap(node);
+
+            for (Object o : completedVersHashMap.values()) {
+                assertTrue("completedVersHashMap contains " + o.getClass().getName() + " instead of boolean. " +
+                    "These values should be replaced by boolean after onePhaseCommit finished. " +
+                    "[node=" + node.name() + "]", o instanceof Boolean);
+            }
+        }
+    }
+
+    /**
+     * @param ignite Node.
+     * @return Completed txs map.
+     */
+    private Map completedTxsMap(Ignite ignite) {
+        IgniteTxManager tm = ((IgniteKernal)ignite).context().cache().context().tm();
+
+        return U.field(tm, "completedVersHashMap");
     }
 }
