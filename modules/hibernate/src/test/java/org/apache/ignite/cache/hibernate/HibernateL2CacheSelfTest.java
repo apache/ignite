@@ -1306,6 +1306,10 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @param changedEntities Changed Entities.
+     * @throws Exception If failed.
+     */
     private void reloadNaturalIdCache(String... changedEntities) {
         sesFactory2.getCache().evictNaturalIdRegion(ENTITY_NAME);
         sesFactory1.getCache().evictNaturalIdRegion(ENTITY_NAME);

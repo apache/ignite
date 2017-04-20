@@ -29,6 +29,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.NaturalIdCache;
 import org.hibernate.cache.spi.CacheKey;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Configuration;
@@ -65,7 +66,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Tests Hibernate L2 cache configuration.
  */
-public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
+public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     /** Entity names for stats output */
     private static final List<String> ENTITY_NAMES =
         Arrays.asList(Entity1.class.getName(), Entity2.class.getName());
@@ -82,7 +83,6 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String ENTITY4_NAME = Entity4.class.getName();
 
-
     /** */
     public static final String TIMESTAMP_CACHE = "org.hibernate.cache.spi.UpdateTimestampsCache";
 
@@ -91,6 +91,9 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static final String CONNECTION_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
+
+    /** */
+    private SessionFactory sesFactory1;
 
     /** If {@code true} then sets default cache in configuration. */
     private boolean dfltCache;
@@ -107,7 +110,7 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal) grid(0)).caches())
+        for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal)grid(0)).caches())
             cache.clear();
     }
 
@@ -129,6 +132,13 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Hibernate L2 cache access types to test.
+     */
+    protected AccessType[] accessTypes() {
+        return new AccessType[] {AccessType.READ_WRITE, AccessType.NONSTRICT_READ_WRITE};
+    }
+
+    /**
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
@@ -145,10 +155,11 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param accessType
      * @param igniteInstanceName Ignite instance name.
      * @return Hibernate configuration.
      */
-    protected Configuration hibernateConfiguration(String igniteInstanceName) {
+    protected Configuration hibernateConfiguration(AccessType accessType, String igniteInstanceName) {
         Configuration cfg = new Configuration();
 
         cfg.addAnnotatedClass(Entity1.class);
@@ -156,7 +167,12 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
         cfg.addAnnotatedClass(Entity3.class);
         cfg.addAnnotatedClass(Entity4.class);
 
-        cfg.setProperty(DFLT_ACCESS_TYPE_PROPERTY, AccessType.READ_WRITE.name());
+        cfg.setCacheConcurrencyStrategy(ENTITY1_NAME, accessType.getExternalName());
+        cfg.setCacheConcurrencyStrategy(ENTITY2_NAME, accessType.getExternalName());
+        cfg.setCacheConcurrencyStrategy(ENTITY3_NAME, accessType.getExternalName());
+        cfg.setCacheConcurrencyStrategy(ENTITY4_NAME, accessType.getExternalName());
+
+        cfg.setProperty(DFLT_ACCESS_TYPE_PROPERTY, accessType.name());
 
         cfg.setProperty(HBM2DDL_AUTO, "create");
 
@@ -189,12 +205,21 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEntityCacheReadWrite() throws Exception {
-        SessionFactory sessionFactory
-            = startHibernate(getTestIgniteInstanceName(0));
+
+        for (AccessType accessType : accessTypes()) {
+            testEntityCacheReadWrite(accessType);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEntityCacheReadWrite(AccessType accessType) throws Exception {
+        sesFactory1 = startHibernate(accessType, getTestIgniteInstanceName(0));
 
         try {
             // I Adding
-            Session session = sessionFactory.openSession();
+            Session session = sesFactory1.openSession();
 
             try {
                 Transaction tr = session.beginTransaction();
@@ -209,20 +234,20 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
                 session.close();
             }
 
-            printEntities(sessionFactory);
+            printEntities(sesFactory1);
 
             assertThat(grid(0).cache("cache1").size(), Is.is(1));
             assertThat(grid(0).cache("cache2").size(), Is.is(1));
-            assertThat(getEntityNameFromRegion(sessionFactory, "cache1", 1), Is.is("entity-1#name-1"));
-            assertThat(getEntityNameFromRegion(sessionFactory, "cache2", 1), Is.is("entity-2#name-1"));
+            assertThat(getEntityNameFromRegion(sesFactory1, "cache1", 1), Is.is("entity-1#name-1"));
+            assertThat(getEntityNameFromRegion(sesFactory1, "cache2", 1), Is.is("entity-2#name-1"));
 
             // II Updtaing and adding
-            session = sessionFactory.openSession();
+            session = sesFactory1.openSession();
 
             try {
                 Transaction tx = session.beginTransaction();
 
-                Entity1 e1 = (Entity1) session.load(Entity1.class, 1);
+                Entity1 e1 = (Entity1)session.load(Entity1.class, 1);
 
                 e1.setName("entity-1#name-1#UPDATED-1");
 
@@ -237,21 +262,21 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
                 session.close();
             }
 
-            printEntities(sessionFactory);
+            printEntities(sesFactory1);
 
             assertThat(grid(0).cache("cache1").size(), Is.is(1));
             assertThat(grid(0).cache("cache2").size(), Is.is(2));
-            assertThat(getEntityNameFromRegion(sessionFactory, "cache1", 1), Is.is("entity-1#name-1#UPDATED-1"));
-            assertThat(getEntityNameFromRegion(sessionFactory, "cache2", 1), Is.is("entity-2#name-1"));
-            assertThat(getEntityNameFromRegion(sessionFactory, "cache2", 2), Is.is("entity-2#name-2#ADDED"));
+            assertThat(getEntityNameFromRegion(sesFactory1, "cache1", 1), Is.is("entity-1#name-1#UPDATED-1"));
+            assertThat(getEntityNameFromRegion(sesFactory1, "cache2", 1), Is.is("entity-2#name-1"));
+            assertThat(getEntityNameFromRegion(sesFactory1, "cache2", 2), Is.is("entity-2#name-2#ADDED"));
 
             // III Updating, adding, updating
-            session = sessionFactory.openSession();
+            session = sesFactory1.openSession();
 
             try {
                 Transaction tx = session.beginTransaction();
 
-                Entity2 e2_1 = (Entity2) session.load(Entity2.class, 1);
+                Entity2 e2_1 = (Entity2)session.load(Entity2.class, 1);
 
                 e2_1.setName("entity-2#name-1#UPDATED-1");
 
@@ -259,7 +284,7 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
 
                 session.save(new Entity1(2, "entity-1#name-2#ADDED"));
 
-                Entity1 e1_1 = (Entity1) session.load(Entity1.class, 1);
+                Entity1 e1_1 = (Entity1)session.load(Entity1.class, 1);
 
                 e1_1.setName("entity-1#name-1#UPDATED-2");
 
@@ -272,25 +297,25 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
                 session.close();
             }
 
-            printEntities(sessionFactory);
+            printEntities(sesFactory1);
 
             assertThat(grid(0).cache("cache1").size(), Is.is(2));
             assertThat(grid(0).cache("cache2").size(), Is.is(2));
-            assertThat(getEntityNameFromRegion(sessionFactory, "cache2", 1), Is.is("entity-2#name-1#UPDATED-1"));
-            assertThat(getEntityNameFromRegion(sessionFactory, "cache1", 2), Is.is("entity-1#name-2#ADDED"));
-            assertThat(getEntityNameFromRegion(sessionFactory, "cache1", 1), Is.is("entity-1#name-1#UPDATED-2"));
+            assertThat(getEntityNameFromRegion(sesFactory1, "cache2", 1), Is.is("entity-2#name-1#UPDATED-1"));
+            assertThat(getEntityNameFromRegion(sesFactory1, "cache1", 2), Is.is("entity-1#name-2#ADDED"));
+            assertThat(getEntityNameFromRegion(sesFactory1, "cache1", 1), Is.is("entity-1#name-1#UPDATED-2"));
 
-            session = sessionFactory.openSession();
+            session = sesFactory1.openSession();
 
-            printStats(sessionFactory);
+            printStats(sesFactory1);
 
-            sessionFactory.getStatistics().logSummary();
+            sesFactory1.getStatistics().logSummary();
 
             session.close();
 
         }
         finally {
-            sessionFactory.close();
+            cleanup();
         }
     }
 
@@ -320,7 +345,10 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @param sesFactory Session Factory.
+     * @param regionName Region Name.
+     * @param id Id.
+     * @return Entity Name.
      */
     private String getEntityNameFromRegion(SessionFactory sesFactory, String regionName, int id) {
         String entityName = null;
@@ -332,8 +360,8 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
 
             while (iter.hasNext()) {
                 Cache.Entry<Object, Object> entry = iter.next();
-                if (((CacheKey) entry.getKey()).getKey().equals(id)) {
-                    entityName = (String) ((HashMap) entry.getValue()).get("name");
+                if (((CacheKey)entry.getKey()).getKey().equals(id)) {
+                    entityName = (String)((HashMap)entry.getValue()).get("name");
                     break;
                 }
             }
@@ -347,7 +375,7 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @param sessionFactory Session Factory.
      */
     private void printStats(SessionFactory sessionFactory) {
         System.out.println("===  Hibernate L2 cache statistics  ====");
@@ -379,11 +407,12 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param accessType
      * @param igniteInstanceName Name of the grid providing caches.
      * @return Session factory.
      */
-    private SessionFactory startHibernate(String igniteInstanceName) {
-        Configuration cfg = hibernateConfiguration(igniteInstanceName);
+    private SessionFactory startHibernate(AccessType accessType, String igniteInstanceName) {
+        Configuration cfg = hibernateConfiguration(accessType, igniteInstanceName);
 
         ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
 
@@ -399,7 +428,6 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     @javax.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     public static class Entity1 {
         /** */
         private int id;
@@ -454,7 +482,6 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     @javax.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     public static class Entity2 {
         /** */
         private int id;
@@ -509,7 +536,6 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     @javax.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     public static class Entity3 {
         /** */
         private int id;
@@ -564,7 +590,6 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
     @javax.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
-    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     public static class Entity4 {
         /** */
         private int id;
@@ -610,5 +635,20 @@ public class HibernateL2CacheReadWriteSelfTest extends GridCommonAbstractTest {
         public void setName(String name) {
             this.name = name;
         }
+    }
+
+    /**
+     * Closes session factories and clears data from caches.
+     *
+     * @throws Exception If failed.
+     */
+    private void cleanup() throws Exception {
+        if (sesFactory1 != null)
+            sesFactory1.close();
+
+        sesFactory1 = null;
+
+        for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal)grid(0)).caches())
+            cache.clear();
     }
 }
