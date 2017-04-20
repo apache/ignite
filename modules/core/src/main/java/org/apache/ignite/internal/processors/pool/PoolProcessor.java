@@ -28,7 +28,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -181,7 +180,9 @@ public class PoolProcessor extends GridProcessorAdapter {
      * @param name Executor name.
      * @return Executor service.
      */
-    @Nullable public Executor customExecutor(@NotNull String name) {
+    @Nullable public Executor customExecutor(String name) {
+        assert name != null;
+
         Executor exec = null;
 
         if (customExecs != null)
