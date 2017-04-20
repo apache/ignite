@@ -143,7 +143,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         log = cctx.logger(getClass());
 
         locParts = new AtomicReferenceArray<>(cctx.config().getAffinity().partitions());
-        part2node = (List<ClusterNode>[])new List[cctx.config().getAffinity().partitions()];
+        part2node = createPartitionMap(cctx.config().getAffinity().partitions());
     }
 
     /** {@inheritDoc} */
@@ -160,7 +160,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             node2part = null;
 
-            part2node = (List<ClusterNode>[])new List[cctx.config().getAffinity().partitions()];
+            part2node = createPartitionMap(cctx.config().getAffinity().partitions());
 
             lastExchangeId = null;
 
@@ -478,7 +478,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     updateSeq = updateLocal(p, locPart.state(), updateSeq);
                 }
             }
-            // If this node's map is empty, we pre-create local partitions,
+            // If this node's map is empty, we pre-createPartitionMap local partitions,
             // so local map will be sent correctly during exchange.
             else if (localNode(p, aff))
                 createPartition(p);
@@ -629,7 +629,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     // which obviously has not happened at this point.
                     if (locPart == null) {
                         if (log.isDebugEnabled())
-                            log.debug("Skipping local partition afterExchange (will not create): " + p);
+                            log.debug("Skipping local partition afterExchange (will not createPartitionMap): " + p);
 
                         continue;
                     }
@@ -1164,7 +1164,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 for (Integer p : e.getValue().keySet()) {
                     List<ClusterNode> partNodes = p2n[p];
 
-                    ClusterNode node = node(e.getKey());
+                    ClusterNode node = cctx.discovery().node(e.getKey());
 
                     if (node != null && !F.contains(partNodes, node)) {
                         if (partNodes == null) {
@@ -1315,7 +1315,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             node2part.put(parts.nodeId(), parts);
 
-            ClusterNode clusterNode = node(parts.nodeId());
+            ClusterNode clusterNode = cctx.discovery().node(parts.nodeId());
 
             List<ClusterNode>[] part2node0 = part2nodeCopy();
 
@@ -1326,6 +1326,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (clusterNode != null && !F.contains(partNodes, clusterNode)) {
                     if (partNodes == null) {
                         partNodes = new ArrayList<>();
+
                         part2node0[p] = partNodes;
                     }
 
@@ -2088,23 +2089,28 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
-    /** */
-    private ClusterNode node(UUID id) {
-        return cctx.discovery().node(id);
-    }
-
     /**
      * @return Copy of part2node array for copy-on-write operations.
      */
     private List<ClusterNode>[] part2nodeCopy() {
-        List<ClusterNode>[] part2node0 = (List<ClusterNode>[])new List[part2node.length];
+        List<ClusterNode>[] part2node0 = part2node;
 
-        for (int i = 0; i < part2node.length; i++) {
-            if (part2node[i] != null)
-                part2node0[i] = new ArrayList<>(part2node[i]);
+        List<ClusterNode>[] part2node1 = createPartitionMap(part2node0.length);
+
+        for (int i = 0; i < part2node0.length; i++) {
+            if (part2node0[i] != null)
+                part2node1[i] = new ArrayList<>(part2node0[i]);
         }
 
-        return part2node0;
+        return part2node1;
+    }
+
+    /**
+     * @param size Size.
+     * @return Partition map.
+     */
+    private List<ClusterNode>[] createPartitionMap(int size) {
+        return (List<ClusterNode>[])new List[size];
     }
 
     /**
