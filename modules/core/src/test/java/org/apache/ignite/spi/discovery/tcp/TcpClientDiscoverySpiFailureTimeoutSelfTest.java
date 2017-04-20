@@ -43,7 +43,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 
 /**
@@ -248,10 +247,6 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
             pinger.start();
 
-            System.out.println("0: " + spi0.getLocalNodeId() + " " + spi0.getCoordinator());
-            System.out.println("1: " + spi1.getLocalNodeId() + " " + spi1.getCoordinator());
-            System.out.println("2: " + spi2.getLocalNodeId() + " " + spi2.getCoordinator());
-
             srv1.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
                     failureDetectTime[0] = U.currentTimeMillis();
@@ -264,19 +259,9 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
             assertTrue("Can't get node failure event", latch.await(15000, TimeUnit.MILLISECONDS));
 
-            System.out.println("0: " + spi0.getLocalNodeId() + " " + spi0.getCoordinator());
-            System.out.println("1: " + spi1.getLocalNodeId() + " " + spi1.getCoordinator());
-            System.out.println("2: " + spi2.getLocalNodeId() + " " + spi2.getCoordinator());
-
             U.sleep(7000);
 
-            System.out.println("+0: " + spi0.getLocalNodeId() + " " + spi0.getCoordinator());
-            System.out.println("+1: " + spi1.getLocalNodeId() + " " + spi1.getCoordinator());
-            System.out.println("2: " + spi2.getLocalNodeId() + " " + spi2.getCoordinator());
-
             long detectTime = failureDetectTime[0] - failureTime;
-
-            System.out.println("detectTime=" + detectTime);
 
             assertTrue("Server node failure detected too fast: " + detectTime + "ms",
                 detectTime > failureThreshold - 100);
@@ -465,14 +450,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         /** */
         private Exception err;
 
-        /**
-         * @param sock Socket.
-         * @param msg Message.
-         * @param data Raw data to write.
-         * @param timeout Socket write timeout.
-         * @throws IOException
-         */
-        protected void writeToSocket(
+        /**  */
+        @Override protected void writeToSocket(
             Socket sock,
             TcpDiscoveryAbstractMessage msg,
             byte[] data,
@@ -492,14 +471,12 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
             if (sock.getSoTimeout() >= writeToSocketDelay)
                 super.writeToSocket(sock, msg, data, timeout);
-            else {
-                System.out.println("Drop " + data.length + " bytes with sock timeout=" + sock.getSoTimeout());
-
+            else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
-            }
         }
 
-        protected void writeToSocket(Socket sock,
+        /**  */
+        @Override protected void writeToSocket(Socket sock,
                                      OutputStream out,
                                      TcpDiscoveryAbstractMessage msg,
                                      long timeout) throws IOException, IgniteCheckedException {
@@ -516,12 +493,11 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
             if (sock.getSoTimeout() >= writeToSocketDelay)
                 super.writeToSocket(sock, out, msg, timeout);
-            else {
-                System.out.println("Drop msg" + msg + " with sock timeout=" + sock.getSoTimeout());
+            else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
-            }
         }
 
+        /**  */
         @Override protected void writeToSocket(
             Socket sock,
             TcpDiscoveryAbstractMessage msg,
@@ -540,12 +516,11 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
             if (sock.getSoTimeout() >= writeToSocketDelay)
                 super.writeToSocket(sock, msg, timeout);
-            else {
-                System.out.println("Drop msg" + msg + " with sock timeout=" + sock.getSoTimeout());
+            else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
-            }
         }
 
+        /**  */
         @Override protected void writeToSocket(
             TcpDiscoveryAbstractMessage msg,
             Socket sock,
@@ -565,9 +540,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
             if (sock.getSoTimeout() >= writeToSocketDelay)
                 super.writeToSocket(msg, sock, res, timeout);
-            else {
+            else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
-            }
         }
 
         /** {@inheritDoc} */
