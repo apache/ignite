@@ -633,6 +633,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
                 final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
+
                 try {
                     queryProcessor(grid(1)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
                 }
@@ -651,6 +652,12 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         }, 10_000L));
 
         assertIndex(grid(4), true, CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+
+        // TODO: field(alias(FIELD_NAME_2))
+
+        // 1. TODO: Check query execution from client
+        // 2. TODO: Check new index, drop existing, re-create, same cache
+        // 3. TODO: Check cache restart + various operations (create of new index, drop of existing, re-create of existing on other column
     }
 
     /**
