@@ -605,7 +605,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         int cnt = 0;
 
         for (List<?> row : res) {
-            assertEquals(10, row.size());
+            assertEquals(9, row.size());
 
             if (cnt == 0) {
                 assert new AffinityKey<>("p1", "o1").equals(row.get(0));
