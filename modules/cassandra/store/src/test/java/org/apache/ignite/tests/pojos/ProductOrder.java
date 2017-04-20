@@ -34,18 +34,23 @@ public class ProductOrder {
     private static final DateFormat FULL_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss:S");
 
     /** */
+    @QuerySqlField(index = true)
     private long id;
 
     /** */
+    @QuerySqlField(index = true)
     private long productId;
 
     /** */
+    @QuerySqlField
     private Date date;
 
     /** */
+    @QuerySqlField
     private int amount;
 
     /** */
+    @QuerySqlField
     private float price;
 
     /** */
@@ -91,7 +96,6 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField(index = true)
     public long getId() {
         return id;
     }
@@ -102,7 +106,6 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField(index = true)
     public long getProductId() {
         return productId;
     }
@@ -113,7 +116,6 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField
     public Date getDate() {
         return date;
     }
@@ -124,7 +126,6 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField
     public int getAmount() {
         return amount;
     }
@@ -135,7 +136,6 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField
     public float getPrice() {
         return price;
     }
