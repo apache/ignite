@@ -1185,6 +1185,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cache.onReconnected();
 
                 reconnected.add(cache);
+
+                // TODO: Validate that this fix is correct.
+                if (!sysCache) {
+                    GridCacheContext cctx = cache.context();
+
+                    DynamicCacheDescriptor desc = cacheDescriptor(name);
+
+                    assert desc != null;
+
+                    ctx.query().onCacheStop(cctx);
+                    ctx.query().onCacheStart(cctx, desc.schema());
+                }
             }
         }
 
