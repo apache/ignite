@@ -920,6 +920,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (res.hasOwnedValue(ver.getKey()))
                 continue;
 
+            assert txEntry != null : ver;
+
             GridCacheContext cacheCtx = txEntry.context();
 
             while (true) {

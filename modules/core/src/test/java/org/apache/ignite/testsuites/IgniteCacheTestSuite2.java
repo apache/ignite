@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.CacheEnumOperationsSingleNode
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsTest;
 import org.apache.ignite.internal.processors.cache.CacheExchangeMessageDuplicatedStateTest;
 import org.apache.ignite.internal.processors.cache.CacheMemoryPolicyConfigurationTest;
+import org.apache.ignite.internal.processors.cache.CrossCacheTxNearEnabledRandomOperationsTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheTxRandomOperationsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicMessageCountSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFinishPartitionsSelfTest;
@@ -242,6 +243,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(IgniteAtomicCacheEntryProcessorNodeJoinTest.class));
         suite.addTest(new TestSuite(GridCacheNearTxForceKeyTest.class));
         suite.addTest(new TestSuite(CrossCacheTxRandomOperationsTest.class));
+        suite.addTest(new TestSuite(CrossCacheTxNearEnabledRandomOperationsTest.class));
         suite.addTest(new TestSuite(IgniteDynamicCacheAndNodeStop.class));
         suite.addTest(new TestSuite(CacheLockReleaseNodeLeaveTest.class));
         suite.addTest(new TestSuite(NearCacheSyncUpdateTest.class));

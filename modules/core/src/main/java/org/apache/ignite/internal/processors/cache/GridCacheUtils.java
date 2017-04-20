@@ -211,14 +211,6 @@ public class GridCacheUtils {
     /** Default transaction config. */
     private static final TransactionConfiguration DEFAULT_TX_CFG = new TransactionConfiguration();
 
-    /** Partition to state transformer. */
-    private static final IgniteClosure PART2STATE =
-        new C1<GridDhtLocalPartition, GridDhtPartitionState>() {
-            @Override public GridDhtPartitionState apply(GridDhtLocalPartition p) {
-                return p.state();
-            }
-        };
-
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY_FILTER = new IgnitePredicate[0];
 
@@ -247,24 +239,79 @@ public class GridCacheUtils {
     private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {ALWAYS_FALSE0};
 
     /** Read filter. */
-    private static final IgnitePredicate READ_FILTER = new P1<Object>() {
-        @Override public boolean apply(Object e) {
-            return ((IgniteTxEntry)e).op() == READ;
+    public static final IgnitePredicate READ_FILTER = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() == READ;
         }
 
         @Override public String toString() {
-            return "Cache transaction read filter";
+            return "READ_FILTER";
+        }
+    };
+
+    /** Read filter. */
+    public static final IgnitePredicate READ_FILTER_NEAR = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() == READ && e.context().isNear();
+        }
+
+        @Override public String toString() {
+            return "READ_FILTER_NEAR";
+        }
+    };
+
+    /** Read filter. */
+    public static final IgnitePredicate READ_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() == READ && !e.context().isNear();
+        }
+
+        @Override public String toString() {
+            return "READ_FILTER_COLOCATED";
         }
     };
 
     /** Write filter. */
-    private static final IgnitePredicate WRITE_FILTER = new P1<Object>() {
-        @Override public boolean apply(Object e) {
-            return ((IgniteTxEntry)e).op() != READ;
+    public static final IgnitePredicate WRITE_FILTER = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() != READ;
         }
 
         @Override public String toString() {
-            return "Cache transaction write filter";
+            return "WRITE_FILTER";
+        }
+    };
+
+    /** Write filter. */
+    public static final IgnitePredicate WRITE_FILTER_NEAR = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() != READ && e.context().isNear();
+        }
+
+        @Override public String toString() {
+            return "WRITE_FILTER_NEAR";
+        }
+    };
+
+    /** Write filter. */
+    public static final IgnitePredicate WRITE_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() != READ && !e.context().isNear();
+        }
+
+        @Override public String toString() {
+            return "WRITE_FILTER_COLOCATED";
+        }
+    };
+
+    /** Write filter. */
+    public static final IgnitePredicate FILTER_NEAR_CACHE_ENTRY = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.context().isNear();
+        }
+
+        @Override public String toString() {
+            return "FILTER_NEAR_CACHE_ENTRY";
         }
     };
 
@@ -613,7 +660,7 @@ public class GridCacheUtils {
      * @return Filter for transaction reads.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<IgniteTxEntry> reads() {
+    public static IgnitePredicate<IgniteTxEntry> reads() {
         return READ_FILTER;
     }
 
@@ -621,7 +668,7 @@ public class GridCacheUtils {
      * @return Filter for transaction writes.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<IgniteTxEntry> writes() {
+    public static IgnitePredicate<IgniteTxEntry> writes() {
         return WRITE_FILTER;
     }
 
