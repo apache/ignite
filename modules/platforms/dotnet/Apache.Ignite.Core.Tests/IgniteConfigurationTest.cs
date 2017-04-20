@@ -79,6 +79,8 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new AtomicConfiguration());
             CheckDefaultValueAttributes(new TransactionConfiguration());
             CheckDefaultValueAttributes(new MemoryEventStorageSpi());
+            CheckDefaultValueAttributes(new MemoryConfiguration());
+            CheckDefaultValueAttributes(new MemoryPolicyConfiguration());
         }
 
         /// <summary>
@@ -190,6 +192,32 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsNotNull(resEventCfg);
                 Assert.AreEqual(eventCfg.ExpirationTimeout, resEventCfg.ExpirationTimeout);
                 Assert.AreEqual(eventCfg.MaxEventCount, resEventCfg.MaxEventCount);
+
+                var memCfg = cfg.MemoryConfiguration;
+                var resMemCfg = resCfg.MemoryConfiguration;
+                Assert.IsNotNull(memCfg);
+                Assert.IsNotNull(resMemCfg);
+                Assert.AreEqual(memCfg.PageSize, resMemCfg.PageSize);
+                Assert.AreEqual(memCfg.ConcurrencyLevel, resMemCfg.ConcurrencyLevel);
+                Assert.AreEqual(memCfg.DefaultMemoryPolicyName, resMemCfg.DefaultMemoryPolicyName);
+                Assert.AreEqual(memCfg.SystemCacheMemorySize, resMemCfg.SystemCacheMemorySize);
+                Assert.IsNotNull(memCfg.MemoryPolicies);
+                Assert.IsNotNull(resMemCfg.MemoryPolicies);
+                Assert.AreEqual(2, memCfg.MemoryPolicies.Count);
+                Assert.AreEqual(2, resMemCfg.MemoryPolicies.Count);
+
+                for (var i = 0; i < memCfg.MemoryPolicies.Count; i++)
+                {
+                    var plc = memCfg.MemoryPolicies.Skip(i).First();
+                    var resPlc = resMemCfg.MemoryPolicies.Skip(i).First();
+
+                    Assert.AreEqual(plc.PageEvictionMode, resPlc.PageEvictionMode);
+                    Assert.AreEqual(plc.Size, resPlc.Size);
+                    Assert.AreEqual(plc.EmptyPagesPoolSize, resPlc.EmptyPagesPoolSize);
+                    Assert.AreEqual(plc.EvictionThreshold, resPlc.EvictionThreshold);
+                    Assert.AreEqual(plc.Name, resPlc.Name);
+                    Assert.AreEqual(plc.SwapFilePath, resPlc.SwapFilePath);
+                }
             }
         }
 
@@ -534,6 +562,34 @@ namespace Apache.Ignite.Core.Tests
                 {
                     ExpirationTimeout = TimeSpan.FromSeconds(5),
                     MaxEventCount = 10
+                },
+                MemoryConfiguration = new MemoryConfiguration
+                {
+                    ConcurrencyLevel = 3,
+                    DefaultMemoryPolicyName = "myDefaultPlc",
+                    PageSize = 2048,
+                    SystemCacheMemorySize = 13 * 1024 * 1024,
+                    MemoryPolicies = new[]
+                    {
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "myDefaultPlc",
+                            PageEvictionMode = DataPageEvictionMode.Random2Lru,
+                            Size = 345 * 1024 * 1024,
+                            EvictionThreshold = 0.88,
+                            EmptyPagesPoolSize = 77,
+                            SwapFilePath = "myPath1"
+                        },
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "customPlc",
+                            PageEvictionMode = DataPageEvictionMode.RandomLru,
+                            Size = 456 * 1024 * 1024,
+                            EvictionThreshold = 0.77,
+                            EmptyPagesPoolSize = 66,
+                            SwapFilePath = "somePath2"
+                        } 
+                    }
                 }
             };
         }
