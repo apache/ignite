@@ -136,8 +136,10 @@ public class InlineIndexHelperTest extends TestCase {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
-            new UnsafeMemoryProvider(sizes),
+        JavaLogger log = new JavaLogger();
+
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+            new UnsafeMemoryProvider(log),
             null,
             PAGE_SIZE,
             null,
@@ -183,8 +185,10 @@ public class InlineIndexHelperTest extends TestCase {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
-            new UnsafeMemoryProvider(sizes),
+        JavaLogger log = new JavaLogger();
+
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+            new UnsafeMemoryProvider(log),
             null,
             PAGE_SIZE,
             null,
@@ -306,8 +310,10 @@ public class InlineIndexHelperTest extends TestCase {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
-            new UnsafeMemoryProvider(sizes),
+        JavaLogger log = new JavaLogger();
+
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+            new UnsafeMemoryProvider(log),
             null,
             PAGE_SIZE,
             null,

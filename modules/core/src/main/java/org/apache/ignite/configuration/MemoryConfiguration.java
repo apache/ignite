@@ -62,8 +62,11 @@ public class MemoryConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default memory policy start size (256 MB). */
+    public static final long DFLT_MEMORY_POLICY_INITIAL_SIZE = 256 * 1024 * 1024;
+
     /** Default memory policy's size (1 GB). */
-    public static final long DFLT_MEMORY_POLICY_SIZE = 1024 * 1024 * 1024;
+    public static final long DFLT_MEMORY_POLICY_MAX_SIZE = 1024 * 1024 * 1024;
 
     /** Default size of a memory chunk for the system cache (100 MB). */
     public static final long DFLT_SYS_CACHE_MEM_SIZE = 100 * 1024 * 1024;
@@ -165,7 +168,7 @@ public class MemoryConfiguration implements Serializable {
         MemoryPolicyConfiguration memPlc = new MemoryPolicyConfiguration();
 
         memPlc.setName(null);
-        memPlc.setSize(DFLT_MEMORY_POLICY_SIZE);
+        memPlc.setMaxSize(DFLT_MEMORY_POLICY_MAX_SIZE);
 
         return memPlc;
     }

@@ -145,7 +145,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param pageSize Page size.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     protected void checkInsertDeleteMultiThreaded(final int pageSize) throws Exception {
         final FreeList list = createFreeList(pageSize);
@@ -320,7 +320,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
             sizes[i] = 1024 * MB / CPUS;
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
-            new UnsafeMemoryProvider(sizes),
+            new UnsafeMemoryProvider(log),
             null,
             pageSize,
             null,

@@ -159,7 +159,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * 1024;
 
-        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean, sizes);
+        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
         return new PageMemoryNoStoreImpl(log, provider, null, PAGE_SIZE, null, new MemoryMetricsImpl(null), true);
     }

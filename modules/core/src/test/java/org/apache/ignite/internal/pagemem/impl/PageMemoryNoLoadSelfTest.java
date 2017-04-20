@@ -284,8 +284,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * 1024;
 
-        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir, true,
-            sizes);
+        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir);
 
         return new PageMemoryNoStoreImpl(log(), provider, null, PAGE_SIZE, null, new MemoryMetricsImpl(null), true);
     }

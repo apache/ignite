@@ -85,7 +85,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         int pageSize = memCfg.getPageSize();
 
-        long segSize = plcCfg.getSize() / concurrencyLevel;
+        long segSize = plcCfg.getMaxSize() / concurrencyLevel;
 
         if (segSize < 1024 * 1024)
             segSize = 1024 * 1024;

@@ -79,7 +79,7 @@ public class MemoryMetricsImpl implements MemoryMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public int getSize() {
-        return (int) (memPlcCfg.getSize() / (1024 * 1024));
+        return (int) (memPlcCfg.getMaxSize() / (1024 * 1024));
     }
 
     /** {@inheritDoc} */

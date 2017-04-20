@@ -138,7 +138,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
 
         plc.setName(name);
-        plc.setSize(size);
+        plc.setMaxSize(size);
 
         return plc;
     }

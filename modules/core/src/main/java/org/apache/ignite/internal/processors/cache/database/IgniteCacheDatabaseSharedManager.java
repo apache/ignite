@@ -209,7 +209,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             else {
                 //reserve additional place for system memory policy only
                 memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
-                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 1);;
+                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 1);
             }
 
             for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
@@ -238,7 +238,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param memMetrics Mem metrics.
      */
-    private void registerMetricsMBean(MemoryMetricsImpl memMetrics) {
+    private void registerMetricsMBean(MemoryMetricsMXBean memMetrics) {
         IgniteConfiguration cfg = cctx.gridConfig();
 
         try {
@@ -251,7 +251,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     MemoryMetricsMXBean.class);
         }
         catch (JMException e) {
-            log.warning("Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'");
+            U.error(log, "Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'", e);
         }
     }
 
@@ -271,7 +271,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         MemoryPolicyConfiguration res = new MemoryPolicyConfiguration();
 
         res.setName(SYSTEM_MEMORY_POLICY_NAME);
-        res.setSize(sysCacheMemSize);
+        res.setInitialSize(sysCacheMemSize);
+        res.setMaxSize(sysCacheMemSize);
 
         return res;
     }
@@ -304,12 +305,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param plcNames All MemoryPolicy names.
      * @throws IgniteCheckedException In case of validation violation.
      */
-    private static void checkDefaultPolicyConfiguration(String dfltPlcName, Set<String> plcNames) throws IgniteCheckedException {
+    private static void checkDefaultPolicyConfiguration(String dfltPlcName, Collection<String> plcNames)
+        throws IgniteCheckedException {
         if (dfltPlcName != null) {
             if (dfltPlcName.isEmpty())
                 throw new IgniteCheckedException("User-defined default MemoryPolicy name must be non-empty");
             if (!plcNames.contains(dfltPlcName))
-                throw new IgniteCheckedException("User-defined default MemoryPolicy name must be presented among configured MemoryPolices: " + dfltPlcName);
+                throw new IgniteCheckedException("User-defined default MemoryPolicy name must be presented " +
+                    "among configured MemoryPolices: " + dfltPlcName);
         }
     }
 
@@ -318,8 +321,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If config is invalid.
      */
     private static void checkPolicySize(MemoryPolicyConfiguration plcCfg) throws IgniteCheckedException {
-        if (plcCfg.getSize() < MIN_PAGE_MEMORY_SIZE)
+        if (plcCfg.getMaxSize() < MIN_PAGE_MEMORY_SIZE)
             throw new IgniteCheckedException("MemoryPolicy must have size more than 1MB: " + plcCfg.getName());
+
+        if (plcCfg.getMaxSize() > plcCfg.getInitialSize())
+            throw new IgniteCheckedException("MemoryPolicy maxSize must not be smaller than " +
+                "initialSize: " + plcCfg.getName());
     }
 
     /**
@@ -340,7 +347,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (plcCfg.getEmptyPagesPoolSize() <= 10)
             throw new IgniteCheckedException("Evicted pages pool size should be greater than 10: " + plcCfg.getName());
 
-        long maxPoolSize = plcCfg.getSize() / dbCfg.getPageSize() / 10;
+        long maxPoolSize = plcCfg.getMaxSize() / dbCfg.getPageSize() / 10;
 
         if (plcCfg.getEmptyPagesPoolSize() >= maxPoolSize) {
             throw new IgniteCheckedException("Evicted pages pool size should be lesser than " + maxPoolSize +
@@ -353,9 +360,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param observedNames Names of MemoryPolicies observed before.
      * @throws IgniteCheckedException If config is invalid.
      */
-    private static void checkPolicyName(String plcName, Set<String> observedNames) throws IgniteCheckedException {
+    private static void checkPolicyName(String plcName, Collection<String> observedNames)
+        throws IgniteCheckedException {
         if (plcName == null || plcName.isEmpty())
-            throw new IgniteCheckedException("User-defined MemoryPolicyConfiguration must have non-null and non-empty name.");
+            throw new IgniteCheckedException("User-defined MemoryPolicyConfiguration must have non-null and " +
+                "non-empty name.");
 
         if (observedNames.contains(plcName))
             throw new IgniteCheckedException("Two MemoryPolicies have the same name: " + plcName);
@@ -564,7 +573,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
             return;
 
-        long memorySize = plcCfg.getSize();
+        long memorySize = plcCfg.getMaxSize();
 
         PageMemory pageMem = memPlc.pageMemory();
 
@@ -588,29 +597,23 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param dbCfg memory configuration with common parameters.
-     * @param plc memory policy with PageMemory specific parameters.
+     * @param memCfg memory configuration with common parameters.
+     * @param plcCfg memory policy with PageMemory specific parameters.
      * @param memMetrics {@link MemoryMetrics} object to collect memory usage metrics.
      * @return Memory policy instance.
      */
-    private MemoryPolicy initMemory(MemoryConfiguration dbCfg, MemoryPolicyConfiguration plc, MemoryMetricsImpl memMetrics) {
-        long[] sizes = calculateFragmentSizes(
-                dbCfg.getConcurrencyLevel(),
-                plc.getSize());
-
-        File allocPath = buildAllocPath(plc);
+    private MemoryPolicy initMemory(MemoryConfiguration memCfg, MemoryPolicyConfiguration plcCfg, MemoryMetricsImpl memMetrics) {
+        File allocPath = buildAllocPath(plcCfg);
 
         DirectMemoryProvider memProvider = allocPath == null ?
-            new UnsafeMemoryProvider(sizes) :
+            new UnsafeMemoryProvider(log) :
             new MappedFileMemoryProvider(
                 log,
-                allocPath,
-                true,
-                sizes);
+                allocPath);
 
-        PageMemory pageMem = createPageMemory(memProvider, dbCfg.getPageSize(), plc, memMetrics);
+        PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics);
 
-        return new MemoryPolicy(pageMem, plc, memMetrics, createPageEvictionTracker(plc, pageMem));
+        return new MemoryPolicy(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
 
     /**
@@ -629,28 +632,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             default:
                 return new NoOpPageEvictionTracker();
         }
-    }
-
-    /**
-     * Calculate fragment sizes for a cache with given size and concurrency level.
-     * @param concLvl Concurrency level.
-     * @param cacheSize Cache size.
-     */
-    protected long[] calculateFragmentSizes(int concLvl, long cacheSize) {
-        if (concLvl < 1)
-            concLvl = Runtime.getRuntime().availableProcessors();
-
-        long fragmentSize = cacheSize / concLvl;
-
-        if (fragmentSize < 1024 * 1024)
-            fragmentSize = 1024 * 1024;
-
-        long[] sizes = new long[concLvl];
-
-        for (int i = 0; i < concLvl; i++)
-            sizes[i] = fragmentSize;
-
-        return sizes;
     }
 
     /**
@@ -675,18 +656,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * Creates PageMemory with given size and memory provider.
      *
      * @param memProvider Memory provider.
-     * @param pageSize Page size.
+     * @param memCfg Memory configuartion.
      * @param memPlcCfg Memory policy configuration.
      * @param memMetrics MemoryMetrics to collect memory usage metrics.
      * @return PageMemory instance.
      */
     protected PageMemory createPageMemory(
         DirectMemoryProvider memProvider,
-        int pageSize,
+        MemoryConfiguration memCfg,
         MemoryPolicyConfiguration memPlcCfg,
         MemoryMetricsImpl memMetrics
     ) {
-        return new PageMemoryNoStoreImpl(log, memProvider, cctx, pageSize, memPlcCfg, memMetrics, false);
+        return new PageMemoryNoStoreImpl(log, memProvider, cctx, memCfg.getPageSize(), memPlcCfg, memMetrics, false);
     }
 
     /**

@@ -1272,7 +1272,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                             tree.invoke(x, null, new IgniteTree.InvokeClosure<Long>() {
                                 IgniteTree.OperationType opType;
 
-                                @Override public void call(@Nullable Long row) throws IgniteCheckedException {
+                                @Override public void call(@Nullable Long row) {
                                     opType = PUT;
 
                                     if (row != null)
@@ -1294,7 +1294,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                             tree.invoke(x, null, new IgniteTree.InvokeClosure<Long>() {
                                 IgniteTree.OperationType opType;
 
-                                @Override public void call(@Nullable Long row) throws IgniteCheckedException {
+                                @Override public void call(@Nullable Long row) {
                                     if (row != null) {
                                         assertEquals(x, row);
                                         opType = REMOVE;
@@ -1685,8 +1685,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
-            throws IgniteCheckedException {
+        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
             Long row = PageUtils.getLong(pageAddr, offset(idx));
 
             checkNotRemoved(row);
@@ -1705,7 +1704,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             sizes[i] = 1024 * MB / CPUS;
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
-            new UnsafeMemoryProvider(sizes),
+            new UnsafeMemoryProvider(log),
             null,
             PAGE_SIZE,
             null,
@@ -1754,8 +1753,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
-            throws IgniteCheckedException {
+        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }
