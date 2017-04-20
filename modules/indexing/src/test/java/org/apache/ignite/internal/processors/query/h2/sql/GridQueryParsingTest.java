@@ -317,14 +317,14 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUseIndexHints() throws Exception {
-        checkQuery("select * from Person use index (\"name_idx\")");
-        checkQuery("select * from Person use index (\"parentName_idx\")");
-        checkQuery("select * from Person use index (\"name_idx\", \"parentName_idx\")");
+        checkQuery("select * from Person use index (\"NAME_IDX\")");
+        checkQuery("select * from Person use index (\"PARENTNAME_IDX\")");
+        checkQuery("select * from Person use index (\"NAME_IDX\", \"PARENTNAME_IDX\")");
         checkQuery("select * from Person use index ()");
 
-        checkQuery("select * from Person p use index (\"name_idx\")");
-        checkQuery("select * from Person p use index (\"parentName_idx\")");
-        checkQuery("select * from Person p use index (\"name_idx\", \"parentName_idx\")");
+        checkQuery("select * from Person p use index (\"NAME_IDX\")");
+        checkQuery("select * from Person p use index (\"PARENTNAME_IDX\")");
+        checkQuery("select * from Person p use index (\"NAME_IDX\", \"PARENTNAME_IDX\")");
         checkQuery("select * from Person p use index ()");
     }
 
@@ -506,7 +506,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         // Schemas for index and table must match
         assertParseThrows("create index if not exists sch2.idx on sch1.Person (name)",
-            DbException.class, "Schema name must match [90080-191]");
+            DbException.class, "Schema name must match [90080-194]");
 
         assertParseThrows("create hash index if not exists idx on Person (name)",
             IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
