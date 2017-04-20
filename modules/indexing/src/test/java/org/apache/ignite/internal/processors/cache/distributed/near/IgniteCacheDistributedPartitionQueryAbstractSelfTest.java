@@ -442,9 +442,6 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         IgniteCache<ClientKey, Client> cl = orig.cache("cl");
 
         for (int regionId = 1; regionId <= PARTS_PER_REGION.length; regionId++) {
-            if (regionId != 3)
-                continue;
-
             log().info("Running test queries for region " + regionId);
 
             List<Integer> range = REGION_TO_PART_MAP.get(regionId);
@@ -453,9 +450,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
             int off = rnd.nextInt(parts.length);
 
-            //int p1 = parts[off], p2 = parts[(off + (1 + rnd.nextInt(parts.length-1))) % parts.length];
-
-            int p1 = 52, p2 = 36;
+            int p1 = parts[off], p2 = parts[(off + (1 + rnd.nextInt(parts.length-1))) % parts.length];
 
             log().info("Parts: " + p1 + " " + p2);
 
