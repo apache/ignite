@@ -685,15 +685,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             QueryTypeDescriptorImpl oldDesc = tblTypMap.put(desc.tableName(), desc);
 
             if (oldDesc != null)
-                throw new IgniteException("Duplicate table name [tblName=" + desc.tableName() +
-                    ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
+                throw new IgniteException("Duplicate table name [cache=" + space +
+                    ", tblName=" + desc.tableName() + ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
 
             for (String idxName : desc.indexes().keySet()) {
                 oldDesc = idxTypMap.put(idxName, desc);
 
                 if (oldDesc != null)
-                    throw new IgniteException("Duplicate index name [idxName=" + idxName +
-                        ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
+                    throw new IgniteException("Duplicate index name [cache=" + space +
+                        ", idxName=" + idxName + ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
             }
         }
 
@@ -1290,7 +1290,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         QueryIndexDescriptorImpl oldIdx = idxs.putIfAbsent(idxKey, idx);
 
                         if (oldIdx != null) {
-                            throw new IgniteException("Duplicate index name [space=" + space +
+                            throw new IgniteException("Duplicate index name [cache=" + space +
                                 ", idxName=" + idx.name() + ", existingTable=" + oldIdx.typeDescriptor().tableName() +
                                 ", table=" + desc.tableName() + ']');
                         }

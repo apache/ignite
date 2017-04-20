@@ -30,13 +30,30 @@ package org.apache.ignite.ml.math;
  * Math constants. Lifted from Apache Mahout.
  */
 public class Constants {
-    /** */ public static final double MACHEP = 1.11022302462515654042E-16;
-    /** */ public static final double MAXLOG = 7.09782712893383996732E2;
-    /** */ public static final double MINLOG = -7.451332191019412076235E2;
-    /** */ public static final double MAXGAM = 171.624376956302725;
-    /** */ public static final double SQTPI = 2.50662827463100050242E0;
-    /** */ public static final double SQRTH = 7.07106781186547524401E-1;
-    /** */ public static final double LOGPI = 1.14472988584940017414;
-    /** */ public static final double BIG = 4.503599627370496e15;
-    /** */ public static final double BIGINV = 2.22044604925031308085e-16;
+    /** Constant for {@code 2**-53}. */
+    public static final double MACHEP = 1.11022302462515654042E-16;
+
+    /** Constant for {@code log(2**1024)}. */
+    public static final double MAXLOG = 7.09782712893383996732E2;
+
+    /** Constant for {@code log(2**-1022)}. */
+    public static final double MINLOG = -7.451332191019412076235E2;
+
+    /** Constant for gamma function. */
+    public static final double MAXGAM = 171.624376956302725;
+
+    /** Constant for {@code 1/(sqrt(2*pi))}. */
+    public static final double SQTPI = 2.50662827463100050242E0;
+
+    /** Constant for {@code sqrt(2)/2}. */
+    public static final double SQRTH = 7.07106781186547524401E-1;
+
+    /** Constant for {@code log(Pi)}. */
+    public static final double LOGPI = 1.14472988584940017414;
+
+    /** Constant for big value. */
+    public static final double BIG = 4.503599627370496e15;
+
+    /** Constant for inverse of big value. */
+    public static final double BIGINV = 2.22044604925031308085e-16;
 }

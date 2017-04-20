@@ -15,37 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.mem;
-
-import java.io.IOException;
-import org.apache.ignite.IgniteException;
+package org.apache.ignite.internal.processors.query.h2;
 
 /**
- *
+ * Geo-indexing test.
  */
-public class OutOfMemoryException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class H2IndexingGeoSelfTest extends H2IndexingAbstractGeoSelfTest {
     /**
-     *
+     * Constructor.
      */
-    public OutOfMemoryException() {
-        // No-op.
-    }
-
-    /**
-     * @param msg Error message.
-     */
-    public OutOfMemoryException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * @param msg Error message.
-     * @param e Cause exception.
-     */
-    public OutOfMemoryException(String msg, IOException e) {
-        super(msg, e);
+    public H2IndexingGeoSelfTest() {
+        super(false, false);
     }
 }

@@ -74,7 +74,7 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
     /**
      * Gets IGFS name.
      *
-     * @return IGFS name, or {@code null} for default file system.
+     * @return IGFS name.
      */
     public String name();
 

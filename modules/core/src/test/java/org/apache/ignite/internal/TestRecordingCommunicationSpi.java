@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -59,6 +60,14 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
 
     /** */
     private IgnitePredicate<GridIoMessage> blockP;
+
+    /**
+     * @param node Node.
+     * @return Test SPI.
+     */
+    public static TestRecordingCommunicationSpi spi(Ignite node) {
+        return (TestRecordingCommunicationSpi)node.configuration().getCommunicationSpi();
+    }
 
     /** {@inheritDoc} */
     @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)

@@ -37,7 +37,7 @@
         <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spark.version>2.1.0</spark.version>
-        <spring.version>4.1.0.RELEASE</spring.version>
+        <spring.version>4.3.7.RELEASE</spring.version>
         <spring.data.version>1.2.1.RELEASE</spring.data.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
