@@ -429,7 +429,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                 IgfsOutputStream osErr = igfs(0).append(path, false);
 
                 try {
-                    for (int i = 0; i < maxSize / writeChunkSize * 2; ++i)
+                    for (int i = 0; i < maxSize / writeChunkSize * GRID_CNT; ++i)
                         osErr.write(chunk(writeChunkSize));
 
                     osErr.close();
