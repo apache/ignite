@@ -67,7 +67,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         disco.setIpFinder(ipFinder);
 
-        c.setFailureDetectionTimeout(Long.MAX_VALUE);
+        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
 

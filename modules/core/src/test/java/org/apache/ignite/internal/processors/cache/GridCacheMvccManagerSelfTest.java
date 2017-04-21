@@ -55,7 +55,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setFailureDetectionTimeout(Long.MAX_VALUE);
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
         cfg.setCacheConfiguration(cacheConfiguration());
 
         return cfg;
