@@ -91,7 +91,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private boolean nearEnabled;
 
     /** Mem policy setter. */
-    IgniteInClosure<IgniteConfiguration> memIgfsdDataPlcSetter;
+    private IgniteInClosure<IgniteConfiguration> memIgfsdDataPlcSetter;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
