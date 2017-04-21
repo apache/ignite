@@ -1272,7 +1272,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void registerCache0(String space, GridCacheContext<?, ?> cctx, Collection<QueryTypeCandidate> cands)
         throws IgniteCheckedException {
         synchronized (stateMux) {
-            idx.registerCache(space, cctx, cctx.config());
+            if (idx != null)
+                idx.registerCache(space, cctx, cctx.config());
 
             try {
                 for (QueryTypeCandidate cand : cands) {
@@ -1301,7 +1302,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         }
                     }
 
-                    idx.registerType(space, desc);
+                    if (idx != null)
+                        idx.registerType(space, desc);
                 }
 
                 spaces.add(CU.mask(space));
