@@ -20,7 +20,7 @@ package org.apache.ignite.configuration;
 /**
  * Defines memory page eviction algorithm. A mode is set for a specific
  * {@link MemoryPolicyConfiguration}. Only data pages, that store key-value entries, are eligible for eviction. The
- * other types of pages, like index or system pages, are not evictable.
+ * other types of pages, like index or meta pages, are not evictable.
  */
 public enum DataPageEvictionMode {
     /** Eviction is disabled. */

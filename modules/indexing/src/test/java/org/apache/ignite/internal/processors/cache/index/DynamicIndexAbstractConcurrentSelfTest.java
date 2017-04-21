@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.index;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -28,6 +29,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -46,6 +48,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
 /**
  * Concurrency tests for dynamic index create/drop.
@@ -109,6 +113,11 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         CacheConfiguration<KeyClass, ValueClass> ccfg =  super.cacheConfiguration();
 
         return ccfg.setCacheMode(cacheMode).setAtomicityMode(atomicityMode);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+        return super.commonConfiguration(idx).setDiscoverySpi(new TestTcpDiscoverySpi());
     }
 
     /**
@@ -597,6 +606,119 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         // Make sure nothing hanged.
         idxFut.get();
         qryFut.get();
+    }
+
+    /**
+     * Make sure that client receives schema changes made while it was disconnected.
+     *
+     * @throws Exception If failed.
+     */
+    public void testClientReconnect() throws Exception {
+        checkClientReconnect(false);
+    }
+
+    /**
+     * Make sure that client receives schema changes made while it was disconnected, even with cache recreation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectWithCacheRestart() throws Exception {
+        checkClientReconnect(true);
+    }
+
+    /**
+     * Make sure that client receives schema changes made while it was disconnected, optionally with cache restart
+     * in the interim.
+     *
+     * @param restartCache Whether cache needs to be recreated during client's absence.
+     * @throws Exception If failed.
+     */
+    private void checkClientReconnect(final boolean restartCache) throws Exception {
+        // Start complex topology.
+        final Ignite srv = Ignition.start(serverConfiguration(1));
+        Ignition.start(serverConfiguration(2));
+        Ignition.start(serverConfiguration(3, true));
+
+        final Ignite cli = Ignition.start(clientConfiguration(4));
+
+        cli.createCache(cacheConfiguration());
+
+        // Check index create.
+        reconnectClientNode(srv, cli, restartCache, new RunnableX() {
+            @Override public void run() throws Exception {
+                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+                queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+            }
+        });
+
+        assertIndex(cli, true, CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+        assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+
+        // Check index drop.
+        reconnectClientNode(srv, cli, restartCache, new RunnableX() {
+            @Override public void run() throws Exception {
+                if (!restartCache)
+                    queryProcessor(srv).dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false).get();
+            }
+        });
+
+        assertNoIndex(cli, CACHE_NAME, TBL_NAME, IDX_NAME_1);
+        assertIndexNotUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+
+        // Update existing index.
+        QueryIndex idx = index(IDX_NAME_2, field(alias(FIELD_NAME_2)));
+
+        queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+
+        assertIndex(cli, true, CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
+        assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_2);
+
+        reconnectClientNode(srv, cli, restartCache, new RunnableX() {
+            @Override public void run() throws Exception {
+                if (!restartCache)
+                    queryProcessor(srv).dynamicIndexDrop(CACHE_NAME, IDX_NAME_2, false).get();
+
+                final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+
+                queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
+            }
+        });
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(FIELD_NAME_1), field(alias(FIELD_NAME_2)));
+        assertIndexUsed(IDX_NAME_2, SQL_COMPOSITE, SQL_ARG_1, SQL_ARG_2);
+    }
+
+    /**
+     * Reconnect the client and run specified actions while it's out.
+     *
+     * @param srvNode Server node.
+     * @param cliNode Client node.
+     * @param restart Whether cache has to be recreated prior to executing required actions.
+     * @param clo Closure to run
+     * @throws Exception If failed.
+     */
+    private void reconnectClientNode(final Ignite srvNode, final Ignite cliNode, final boolean restart,
+        final RunnableX clo) throws Exception {
+        IgniteClientReconnectAbstractTest.reconnectClientNode(log, cliNode, srvNode, new Runnable() {
+            @Override public void run() {
+                if (restart) {
+                    srvNode.destroyCache(CACHE_NAME);
+
+                    srvNode.getOrCreateCache(cacheConfiguration().setName(CACHE_NAME));
+                }
+
+                try {
+                    clo.run();
+                }
+                catch (Exception e) {
+                    throw new IgniteException("Test reconnect runnable failed.", e);
+                }
+            }
+        });
+
+        if (restart)
+            cliNode.cache(CACHE_NAME);
     }
 
     /**
