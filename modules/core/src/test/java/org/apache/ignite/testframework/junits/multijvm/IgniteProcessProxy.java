@@ -387,7 +387,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(String name) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

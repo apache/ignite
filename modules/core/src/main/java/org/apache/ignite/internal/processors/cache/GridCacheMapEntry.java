@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -3374,6 +3375,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
+        GridCacheEntryRemovedException {
+        synchronized (this) {
+            if (isInternal())
+                return;
+
+            checkObsolete();
+
+            unswap(false);
+
+            if (val != null)
+                clo.apply(key, partition(), val, ver, expireTimeUnlocked(), link);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> EvictableEntry<K, V> wrapEviction() {
         return new CacheEvictableEntryImpl<>(this);
     }
@@ -4750,7 +4767,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
             else
                 assert entry.isStartVersion() || ATOMIC_VER_COMPARATOR.compare(entry.ver, newVer) <= 0 :
-                    "Invalid version for inner update [isNew=" + entry.isStartVersion() + ", entry=" + this + ", newVer=" + newVer + ']';
+                    "Invalid version for inner update [isNew=" + entry.isStartVersion() + ", entry=" + entry + ", newVer=" + newVer + ']';
         }
 
         /**

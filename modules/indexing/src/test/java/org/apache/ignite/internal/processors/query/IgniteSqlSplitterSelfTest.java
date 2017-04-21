@@ -413,7 +413,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             info("Plan: " + plan);
 
-            assertTrue(plan.contains("grpIdx"));
+            assertTrue("_explain: " + plan, plan.toLowerCase().contains("grpidx"));
 
             // Sorted list
             List<GroupIndexTestValue> list = F.asList(
@@ -469,6 +469,38 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals(2, columnQuery(c, qry + "where a < 2 and b >= 3").size());
             assertEquals(3, columnQuery(c, qry + "where a <= 1 and b > 0").size());
             assertEquals(2, columnQuery(c, qry + "where a <= 1 and b >= 3").size());
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
+     */
+    public void testUseIndexHints() {
+        CacheConfiguration ccfg = cacheConfig("pers", true,
+            Integer.class, Person2.class);
+
+        IgniteCache<Integer, Person2> c = ignite(0).getOrCreateCache(ccfg);
+
+        try {
+            String select = "select 1 from Person2 use index (\"PERSON2_ORGID_IDX\") where name = '' and orgId = 1";
+
+            String plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
+
+            X.println("Plan: \n" + plan);
+
+            assertTrue(plan.contains("USE INDEX (PERSON2_ORGID_IDX)"));
+            assertTrue(plan.contains("/* \"pers\".PERSON2_ORGID_IDX:"));
+
+            select = "select 1 from Person2 use index (\"PERSON2_NAME_IDX\") where name = '' and orgId = 1";
+
+            plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
+
+            X.println("Plan: \n" + plan);
+
+            assertTrue(plan.contains("USE INDEX (PERSON2_NAME_IDX)"));
+            assertTrue(plan.contains("/* \"pers\".PERSON2_NAME_IDX:"));
         }
         finally {
             c.destroy();
@@ -1917,7 +1949,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         int orgId;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         String name;
 
         /**

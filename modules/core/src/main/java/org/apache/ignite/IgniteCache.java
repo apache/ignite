@@ -429,17 +429,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public V localPeek(K key, CachePeekMode... peekModes);
 
     /**
-     * This method unswaps cache entries by given keys, if any, from swap storage
-     * into memory.
-     * <h2 class="header">Transactions</h2>
-     * This method is not transactional.
-     *
-     * @param keys Keys to promote entries for.
-     * @throws CacheException If promote failed.
-     */
-    public void localPromote(Set<? extends K> keys) throws CacheException;
-
-    /**
      * Gets the number of all entries cached across all nodes. By default, if {@code peekModes} value isn't defined,
      * only size of primary copies across all nodes will be returned. This behavior is identical to calling
      * this method with {@link CachePeekMode#PRIMARY} peek mode.

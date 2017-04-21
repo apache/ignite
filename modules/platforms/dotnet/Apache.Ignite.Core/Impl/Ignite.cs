@@ -484,7 +484,7 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         public ICache<TK, TV> Cache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
         {
-            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false);
+            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false, false);
         }
 
         /** <inheritdoc /> */
@@ -701,6 +701,20 @@ namespace Apache.Ignite.Core.Impl
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
             return PluginProcessor.GetProvider(name).GetPlugin<T>();
+        }
+
+        /** <inheritdoc /> */
+        public void ResetLostPartitions(IEnumerable<string> cacheNames)
+        {
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+
+            _prj.ResetLostPartitions(cacheNames);
+        }
+
+        /** <inheritdoc /> */
+        public void ResetLostPartitions(params string[] cacheNames)
+        {
+            ResetLostPartitions((IEnumerable<string>) cacheNames);
         }
 
         /// <summary>

@@ -37,7 +37,7 @@ public class RandomVector extends AbstractReadOnlyVector {
 
     /**
      * @param size Vector cardinality.
-     * @param fastHash
+     * @param fastHash Whether or not to use fast hashing or Murmur hashing.
      */
     private VectorStorage mkStorage(int size, boolean fastHash) {
         this.fastHash = fastHash;
@@ -46,22 +46,22 @@ public class RandomVector extends AbstractReadOnlyVector {
     }
 
     /**
-     * @param size
-     * @param fastHash
+     * @param size Vector cardinality.
+     * @param fastHash Whether or not to use fast hashing or Murmur hashing.
      */
     public RandomVector(int size, boolean fastHash) {
         setStorage(mkStorage(size, fastHash));
     }
 
     /**
-     * @param size
+     * @param size Vector cardinality.
      */
     public RandomVector(int size) {
         this(size, true);
     }
 
     /**
-     * @param args
+     * @param args Parameters to create new vector instance.
      */
     public RandomVector(Map<String, Object> args) {
         assert args != null;
