@@ -864,7 +864,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 for (UUID nodeId : nodeIds) {
                     HashSet<UUID> affIds = affAssignment.getIds(p);
 
-                    if (!affIds.contains(nodeId) && hasState(p, nodeId, OWNING, MOVING, RENTING)) {
+                    if (!affIds.contains(nodeId) && hasState(p, nodeId, OWNING, MOVING)) {
                         ClusterNode n = cctx.discovery().node(nodeId);
 
                         if (n != null && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion())) {

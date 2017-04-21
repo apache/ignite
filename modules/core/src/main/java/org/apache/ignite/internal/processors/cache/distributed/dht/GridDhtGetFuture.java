@@ -291,9 +291,16 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @return {@code True} if mapped.
      */
     private boolean map(KeyCacheObject key) {
-        GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
-            cache().topology().localPartition(cctx.affinity().partition(key), topVer, true) :
-            cache().topology().localPartition(key, false);
+        GridDhtLocalPartition part;
+
+        try {
+            part = topVer.topologyVersion() > 0 ?
+                cache().topology().localPartition(cctx.affinity().partition(key), topVer, true) :
+                cache().topology().localPartition(key, false);
+        }
+        catch (GridDhtInvalidPartitionException e) {
+            return false;
+        }
 
         if (part == null)
             return false;
