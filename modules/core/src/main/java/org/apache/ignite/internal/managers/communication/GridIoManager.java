@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -839,12 +841,27 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         try {
+            String execName = msg.executorName();
+
+            if (execName != null) {
+                Executor exec = pools.customExecutor(execName);
+
+                if (exec != null) {
+                    exec.execute(c);
+
+                    return;
+                }
+                else {
+                    LT.warn(log, "Custom executor doesn't exist (message will be processed in default " +
+                        "thread pool): " + execName);
+                }
+            }
+
             pools.poolForPolicy(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
-            U.error(log, "Failed to process regular message due to execution rejection. Increase the upper bound " +
-                "on 'ExecutorService' provided by 'IgniteConfiguration.getPublicThreadPoolSize()'. " +
-                "Will attempt to process message in the listener thread instead.", e);
+            U.error(log, "Failed to process regular message due to execution rejection. Will attempt to process " +
+                "message in the listener thread instead.", e);
 
             c.run();
         }

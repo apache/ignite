@@ -78,6 +78,14 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="dataPageEvictionMode" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="RandomLru" />
+            <xs:enumeration value="Random2Lru" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -613,6 +621,13 @@
                                             </xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="writeBehindCoalescing" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>
+                                                Coalescing flag for write-behind cache store operations. Store operations (get or remove) with the same key are combined or coalesced to single, resulting operation to reduce pressure to underlying cache store.
+                                            </xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                     <xs:attribute name="writeBehindBatchSize" type="xs:int">
                                         <xs:annotation>
                                             <xs:documentation>
@@ -695,6 +710,11 @@
                                     <xs:attribute name="enableStatistics" type="xs:boolean">
                                         <xs:annotation>
                                             <xs:documentation>Value indicating whether statistics gathering is enabled on a cache. These statistics can be retrieved via ICache.GetMetrics().</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="memoryPolicyName" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation>Name of the MemoryPolicyConfiguration for this cache.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                 </xs:complexType>
@@ -1116,6 +1136,78 @@
                         <xs:attribute name="maxEventCount" type="xs:long">
                             <xs:annotation>
                                 <xs:documentation>Maximum event count to store.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="memoryConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Page memory configuration.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="memoryPolicies" minOccurs="0" maxOccurs="1">
+                                <xs:annotation>
+                                    <xs:documentation>Memory policies.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="memoryPolicyConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:attribute name="emptyPagesPoolSize" type="xs:int">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Minimal number of empty pages to be present in reuse lists for this memory policy.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="evictionThreshold" type="xs:double">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the page memory will start the eviction only after 90% of the memory region (defined by this policy) is occupied.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="name" type="xs:string" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Memory policy name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="pageEvictionMode" type="dataPageEvictionMode">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Page eviction mode.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="size" type="xs:int" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Maximum memory region size defined by this memory policy.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="swapFilePath" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Path to the memory-mapped file the memory region defined by this memory policy will be mapped to.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="concurrencyLevel" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of concurrent segments in Ignite internal page mapping tables.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="defaultMemoryPolicyName" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Name of the default memory policy in MemoryPolicies.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="pageSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the memory page.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="systemCacheMemorySize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of a memory chunk reserved for system cache needs.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>

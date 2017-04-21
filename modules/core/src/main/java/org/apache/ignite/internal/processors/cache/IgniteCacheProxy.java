@@ -1014,12 +1014,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void localPromote(Set<? extends K> keys) throws CacheException {
-        // TODO GG-11148.
-        throw new UnsupportedOperationException("localPromote will be removed");
-    }
-
-    /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
         GridCacheGateway<K, V> gate = this.gate;
 

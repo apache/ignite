@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTest;
 import org.h2.jdbcx.JdbcConnectionPool;
 
@@ -331,8 +332,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
                             && Person.class.getName().equals(valType))
                             prnComplexKeys.add(key);
                     }
-                }
-                else {
+                }else {
                     if (k instanceof OrganizationKey && v instanceof Organization)
                         orgKeys.add(k);
                     else if (k instanceof PersonKey && v instanceof Person)

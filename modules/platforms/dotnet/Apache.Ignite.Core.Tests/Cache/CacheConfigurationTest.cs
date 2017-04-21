@@ -64,7 +64,18 @@ namespace Apache.Ignite.Core.Tests.Cache
                     GetCustomCacheConfiguration2()
                 },
                 IgniteInstanceName = CacheName,
-                BinaryConfiguration = new BinaryConfiguration(typeof (Entity))
+                BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
+                MemoryConfiguration = new MemoryConfiguration
+                {
+                    MemoryPolicies = new[]
+                    {
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "myMemPolicy",
+                            Size = 99 * 1024 * 1024
+                        }
+                    }
+                }
             };
 
             _ignite = Ignition.Start(cfg);
@@ -202,6 +213,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindEnabled, cfg.WriteBehindEnabled);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushFrequency, cfg.WriteBehindFlushFrequency);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushSize, cfg.WriteBehindFlushSize);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushThreadCount, cfg.WriteBehindFlushThreadCount);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteBehindCoalescing, cfg.WriteBehindCoalescing);
         }
 
         /// <summary>
@@ -233,6 +246,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
+            Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
 
             if (x.ExpiryPolicyFactory != null)
                 Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
@@ -499,6 +513,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CacheStoreFactory = new CacheStoreFactoryTest(),
                 ReadThrough = true,
                 WriteThrough = true,
+                WriteBehindCoalescing = false,
                 QueryEntities = new[]
                 {
                     new QueryEntity
@@ -546,6 +561,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 ExpiryPolicyFactory = new ExpiryFactory(),
                 EnableStatistics = true,
+                MemoryPolicyName = "myMemPolicy",
                 PluginConfigurations = new[] { new MyPluginConfiguration() }
             };
         }

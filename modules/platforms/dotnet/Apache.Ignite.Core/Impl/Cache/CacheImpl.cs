@@ -818,14 +818,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             return (int) DoOutInOp((int) op, modes0);
         }
 
-        /** <inheritDoc /> */
-        public void LocalPromote(IEnumerable<TK> keys)
-        {
-            IgniteArgumentCheck.NotNull(keys, "keys");
-
-            DoOutOp(CacheOp.LocPromote, writer => WriteEnumerable(writer, keys));
-        }
-
         /** <inheritdoc /> */
         public TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {

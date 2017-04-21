@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests
                                 <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
                             </lifecycleHandlers>
                             <cacheConfiguration>
-                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true'>
+                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false'>
                                     <queryEntities>    
                                         <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>    
                                             <fields>
@@ -134,6 +134,11 @@ namespace Apache.Ignite.Core.Tests
                                 <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
                             </pluginConfigurations>
                             <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
+                            <memoryConfiguration concurrencyLevel='3' defaultMemoryPolicyName='dfPlc' pageSize='45' systemCacheMemorySize='67'>
+                                <memoryPolicies>
+                                    <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' size='89' swapFilePath='abc' />
+                                </memoryPolicies>
+                            </memoryConfiguration>
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -169,6 +174,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cacheCfg.WriteThrough);
             Assert.IsInstanceOf<MyPolicyFactory>(cacheCfg.ExpiryPolicyFactory);
             Assert.IsTrue(cacheCfg.EnableStatistics);
+            Assert.IsFalse(cacheCfg.WriteBehindCoalescing);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
@@ -248,6 +254,21 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(eventStorage);
             Assert.AreEqual(23.45, eventStorage.ExpirationTimeout.TotalSeconds);
             Assert.AreEqual(129, eventStorage.MaxEventCount);
+
+            var memCfg = cfg.MemoryConfiguration;
+            Assert.IsNotNull(memCfg);
+            Assert.AreEqual(3, memCfg.ConcurrencyLevel);
+            Assert.AreEqual("dfPlc", memCfg.DefaultMemoryPolicyName);
+            Assert.AreEqual(45, memCfg.PageSize);
+            Assert.AreEqual(67, memCfg.SystemCacheMemorySize);
+
+            var memPlc = memCfg.MemoryPolicies.Single();
+            Assert.AreEqual(1, memPlc.EmptyPagesPoolSize);
+            Assert.AreEqual(0.2, memPlc.EvictionThreshold);
+            Assert.AreEqual("dfPlc", memPlc.Name);
+            Assert.AreEqual(DataPageEvictionMode.RandomLru, memPlc.PageEvictionMode);
+            Assert.AreEqual("abc", memPlc.SwapFilePath);
+            Assert.AreEqual(89, memPlc.Size);
         }
 
         /// <summary>
@@ -655,6 +676,7 @@ namespace Apache.Ignite.Core.Tests
                         WriteBehindFlushFrequency = TimeSpan.FromSeconds(55),
                         WriteBehindFlushSize = 66,
                         WriteBehindFlushThreadCount = 2,
+                        WriteBehindCoalescing = false,
                         WriteSynchronizationMode = CacheWriteSynchronizationMode.FullAsync,
                         NearConfiguration = new NearCacheConfiguration
                         {
@@ -774,6 +796,34 @@ namespace Apache.Ignite.Core.Tests
                 {
                     ExpirationTimeout = TimeSpan.FromMilliseconds(12345),
                     MaxEventCount = 257
+                },
+                MemoryConfiguration = new MemoryConfiguration
+                {
+                    ConcurrencyLevel = 3,
+                    DefaultMemoryPolicyName = "somePolicy",
+                    PageSize = 4,
+                    SystemCacheMemorySize = 5,
+                    MemoryPolicies = new[]
+                    {
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "myDefaultPlc",
+                            PageEvictionMode = DataPageEvictionMode.Random2Lru,
+                            Size = 345 * 1024 * 1024,
+                            EvictionThreshold = 0.88,
+                            EmptyPagesPoolSize = 77,
+                            SwapFilePath = "myPath1"
+                        },
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "customPlc",
+                            PageEvictionMode = DataPageEvictionMode.RandomLru,
+                            Size = 456 * 1024 * 1024,
+                            EvictionThreshold = 0.77,
+                            EmptyPagesPoolSize = 66,
+                            SwapFilePath = "somePath2"
+                        }
+                    }
                 }
             };
         }
