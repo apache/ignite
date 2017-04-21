@@ -52,6 +52,8 @@ public class IgniteFramework {
      */
     public static void main(String[] args) throws Exception {
 
+        IgniteFramework igniteFramework = new IgniteFramework();
+
         ClusterProperties clusterProps = ClusterProperties.from(args.length >= 1 ? args[0] : null);
 
         String baseUrl = String.format("http://%s:%d", clusterProps.httpServerHost(), clusterProps.httpServerPort());
@@ -95,12 +97,12 @@ public class IgniteFramework {
                 .setSecret(ByteString.copyFrom(System.getenv("DEFAULT_SECRET").getBytes()))
                 .build();
 
-            driver = new MesosSchedulerDriver(scheduler, getFrameworkInfo(), clusterProps.masterUrl(),
+            driver = new MesosSchedulerDriver(scheduler, igniteFramework.getFrameworkInfo(), clusterProps.masterUrl(),
                 cred);
         }
         else {
 
-            driver = new MesosSchedulerDriver(scheduler, getFrameworkInfo(), clusterProps.masterUrl());
+            driver = new MesosSchedulerDriver(scheduler, igniteFramework.getFrameworkInfo(), clusterProps.masterUrl());
         }
 
         int status = driver.run() == Protos.Status.DRIVER_STOPPED ? 0 : 1;
@@ -113,14 +115,22 @@ public class IgniteFramework {
         System.exit(status);
     }
 
-    public static Protos.FrameworkInfo getFrameworkInfo(){
+    /**
+     * @return Mesos Protos FrameworkInfo.
+     */
+    public static Protos.FrameworkInfo getFrameworkInfo() throws Exception{
         final int frameworkFailoverTimeout = 0;
+
+        String stt = IgniteFramework.getRole();
+
+
+        System.out.println("Second !!!!!!!!!!!!!!!!!!!____________" + stt);
 
         // Have Mesos fill in the current user.
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
             .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser(getUser())
-            .setRole(getRole())
+            .setUser("Test")
+            .setRole(stt)
             .setFailoverTimeout(frameworkFailoverTimeout);
 
         if (System.getenv("MESOS_CHECKPOINT") != null) {
@@ -135,7 +145,42 @@ public class IgniteFramework {
             frameworkBuilder.setPrincipal("ignite-framework-java");
         }
 
-        return frameworkBuilder.build();
+        Protos.FrameworkInfo frameworkInfo = frameworkBuilder.build();
+
+
+
+        return frameworkInfo;
+
+    }
+
+    /**
+     * @return Mesos Protos FrameworkInfo.
+     */
+    public String getFrameworkInfo2() throws Exception{
+        final int frameworkFailoverTimeout = 0;
+
+        // Have Mesos fill in the current user.
+        Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
+            .setName(IGNITE_FRAMEWORK_NAME)
+            .setUser(IgniteFramework.getUser())
+            .setRole(IgniteFramework.getRole())
+            .setFailoverTimeout(frameworkFailoverTimeout);
+
+        if (System.getenv("MESOS_CHECKPOINT") != null) {
+            log.info("Enabling checkpoint for the framework");
+
+            frameworkBuilder.setCheckpoint(true);
+        }
+
+        if (System.getenv("MESOS_AUTHENTICATE") != null) {
+            frameworkBuilder.setPrincipal(System.getenv("DEFAULT_PRINCIPAL"));
+        } else {
+            frameworkBuilder.setPrincipal("ignite-framework-java");
+        }
+
+        Protos.FrameworkInfo frameworkInfo = frameworkBuilder.build();
+
+        return frameworkInfo.getRole();
 
     }
 
