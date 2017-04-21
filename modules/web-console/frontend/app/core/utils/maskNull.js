@@ -15,27 +15,7 @@
  * limitations under the License.
  */
 
-.btn.btn--stroke {
-  min-width: 36px;
-  height: 36px;
-
-  line-height: 36px;
-  text-align: center;
-
-  color: #ee2b27;
-  border: 1px solid #ee2b27;
-  background: initial;
-
-  &:hover, &:focus {
-    color: #a8110f;
-    border-color: #a8110f;
-  }
-
-  &:focus {
-    outline: none;
-  }
-
-  i {
-    margin: 0;
-  }
+// Filter that will check value and return `null` if needed.
+export default function(val) {
+    return _.isNil(val) ? 'null' : val;
 }

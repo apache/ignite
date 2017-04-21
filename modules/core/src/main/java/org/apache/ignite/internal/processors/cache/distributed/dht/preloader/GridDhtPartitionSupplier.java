@@ -242,20 +242,20 @@ class GridDhtPartitionSupplier {
 
             Iterator<Integer> partIt = sctx != null ? sctx.partIt : d.partitions().iterator();
 
-//            if (sctx == null) {
-//                long keysCnt = 0;
-//
-//                for (Integer part : d.partitions()) {
-//                    GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
-//
-//                    if (loc == null || loc.state() != OWNING || !loc.reserve())
-//                        continue;
-//
-//                    keysCnt += cctx.offheap().entriesCount(part);
-//                }
-//
-//                s.estimatedKeysCount(keysCnt);
-//            }
+            if (sctx == null) {
+                long keysCnt = 0;
+
+                for (Integer part : d.partitions()) {
+                    GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
+
+                    if (loc == null || loc.state() != OWNING)
+                        continue;
+
+                    keysCnt += cctx.offheap().entriesCount(part);
+                }
+
+                s.estimatedKeysCount(keysCnt);
+            }
 
             while ((sctx != null && newReq) || partIt.hasNext()) {
                 int part = sctx != null && newReq ? sctx.part : partIt.next();

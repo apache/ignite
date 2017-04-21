@@ -598,6 +598,13 @@ public final class IgniteSystemProperties {
     };
 
     /**
+     * Ignite cluster name.
+     * <p>
+     * Defaults to utility cache deployment ID..
+     */
+    public static final String IGNITE_CLUSTER_NAME = "IGNITE_CLUSTER_NAME";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
