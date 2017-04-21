@@ -15,19 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Provides ability to listen to swap events in cache which is necessary for preloading.
+ * Message with specified custom executor must be processed in the appropriate thread pool.
  */
-public interface GridCacheSwapListener {
+public interface ExecutorAwareMessage extends Message {
     /**
-     * @param part Partition.
-     * @param key Cache key.
-     * @param e Entry.
-     * @throws IgniteCheckedException If failed.
+     * @return Custom executor name. {@code null} In case the custom executor is not provided.
      */
-    public void onEntryUnswapped(int part, KeyCacheObject key, GridCacheSwapEntry e) throws IgniteCheckedException;
+    @Nullable public String executorName();
 }

@@ -40,7 +40,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         LoadCache = 15,
         LocEvict = 16,
         LocLoadCache = 17,
-        LocPromote = 18,
         LocalClear = 20,
         LocalClearAll = 21,
         Lock = 22,

@@ -19,40 +19,26 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 import static org.apache.ignite.cache.CachePeekMode.NEAR;
-import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_SWAPPED;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNSWAPPED;
 
 /**
  * Multi-node tests for partitioned cache.
@@ -407,51 +393,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         if (cacheMode() == PARTITIONED) {
             assertFalse(affinity(cache).isBackup(other, key));
             assertFalse(affinity(cache).isPrimaryOrBackup(other, key));
-        }
-    }
-
-    /**
-     *
-     */
-    private static class SwapUnswapLocalListener implements IgnitePredicate<Event> {
-        /** Logger. */
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** Ignite. */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(Event evt) {
-            log.info("Received event: " + evt);
-
-            switch (evt.type()) {
-                case EVT_CACHE_OBJECT_SWAPPED:
-                    // Run from another thread to avoid deadlock with striped pool.
-                    GridTestUtils.runAsync(new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            ignite.atomicLong("swapEvts", 0, false).incrementAndGet();
-
-                            return null;
-                        }
-                    });
-
-                    break;
-                case EVT_CACHE_OBJECT_UNSWAPPED:
-                    // Run from another thread to avoid deadlock with striped pool.
-                    GridTestUtils.runAsync(new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            ignite.atomicLong("unswapEvts", 0, false).incrementAndGet();
-
-                            return null;
-                        }
-                    });
-
-                    break;
-            }
-
-            return true;
         }
     }
 

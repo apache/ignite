@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,26 +25,20 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.resources.LoggerResource;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_SWAPPED;
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNSWAPPED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -309,47 +302,5 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         assert c.localPeek(key, CachePeekMode.ONHEAP) == null;
 
         assert c.localSize() == 0 : "Cache is not empty.";
-    }
-
-    /**
-     *
-     */
-    private static class LocalListener implements IgnitePredicate<Event> {
-        /** Logger. */
-        @LoggerResource
-        private IgniteLogger log;
-
-        /** Swap events. */
-        private final AtomicInteger swapEvts;
-
-        /** Unswap events. */
-        private final AtomicInteger unswapEvts;
-
-        /**
-         * @param swapEvts Swap events.
-         * @param unswapEvts Unswap events.
-         */
-        public LocalListener(AtomicInteger swapEvts, AtomicInteger unswapEvts) {
-            this.swapEvts = swapEvts;
-            this.unswapEvts = unswapEvts;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(Event evt) {
-            log.info("Received event: " + evt);
-
-            switch (evt.type()) {
-                case EVT_CACHE_OBJECT_SWAPPED:
-                    swapEvts.incrementAndGet();
-
-                    break;
-                case EVT_CACHE_OBJECT_UNSWAPPED:
-                    unswapEvts.incrementAndGet();
-
-                    break;
-            }
-
-            return true;
-        }
     }
 }
