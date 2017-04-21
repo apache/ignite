@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.math.impls.vector;
 
 import java.util.Map;
+
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
@@ -36,8 +37,8 @@ public class SingleElementVector extends AbstractVector {
 
     /**
      * @param size Parent vector size.
-     * @param idx Index of the parent vector element.
-     * @param val Value of the vector element.
+     * @param idx  Index of the parent vector element.
+     * @param val  Value of the vector element.
      */
     public SingleElementVector(int size, int idx, double val) {
         super(new SingleElementVectorStorage(size, idx, val));
@@ -50,9 +51,9 @@ public class SingleElementVector extends AbstractVector {
         assert args != null;
 
         if (args.containsKey("size") && args.containsKey("index") && args.containsKey("value")) {
-            int size = (int)args.get("size");
-            int idx = (int)args.get("index");
-            double val = (double)args.get("value");
+            int size = (int) args.get("size");
+            int idx = (int) args.get("index");
+            double val = (double) args.get("value");
 
             setStorage(new SingleElementVectorStorage(size, idx, val));
         }
@@ -65,7 +66,7 @@ public class SingleElementVector extends AbstractVector {
      *
      */
     private SingleElementVectorStorage storage() {
-        return (SingleElementVectorStorage)getStorage();
+        return (SingleElementVectorStorage) getStorage();
     }
 
     /** {@inheritDoc} */

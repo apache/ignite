@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.ml.math.VectorStorage;
 
 /**
@@ -145,7 +146,7 @@ public class DelegateVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        DelegateVectorStorage that = (DelegateVectorStorage)o;
+        DelegateVectorStorage that = (DelegateVectorStorage) o;
 
         return len == that.len && off == that.off && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }

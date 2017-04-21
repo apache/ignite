@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.function.IntToDoubleFunction;
+
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
@@ -384,7 +385,7 @@ public class DelegatingVector implements Vector {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        DelegatingVector that = (DelegatingVector)o;
+        DelegatingVector that = (DelegatingVector) o;
 
         return meta.equals(that.meta) && dlg.equals(that.dlg);
     }

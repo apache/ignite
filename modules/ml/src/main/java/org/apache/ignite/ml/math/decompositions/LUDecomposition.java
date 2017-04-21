@@ -25,8 +25,8 @@ import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 /**
  * Calculates the LU-decomposition of a square matrix.
  * <p>
- * This class is inspired by class from Apache Common Math with similar name.
- * </p>
+ * This class is inspired by class from Apache Common Math with similar name.</p>
+ *
  * @see <a href="http://mathworld.wolfram.com/LUDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/LU_decomposition">Wikipedia</a>
  */
@@ -36,18 +36,22 @@ public class LUDecomposition extends DecompositionSupport {
 
     /** Pivot permutation associated with LU decomposition. */
     private final Vector pivot;
+
     /** Parity of the permutation associated with the LU decomposition. */
     private boolean even;
     /** Singularity indicator. */
     private boolean singular;
+
     /** Cached value of L. */
     private Matrix cachedL;
     /** Cached value of U. */
     private Matrix cachedU;
     /** Cached value of P. */
     private Matrix cachedP;
+
     /** Original matrix. */
     private Matrix matrix;
+
     /** Entries of LU decomposition. */
     private Matrix lu;
 
@@ -66,7 +70,7 @@ public class LUDecomposition extends DecompositionSupport {
     /**
      * Calculates the LUP-decomposition of the given matrix.
      *
-     * @param matrix Matrix to decompose.
+     * @param matrix               Matrix to decompose.
      * @param singularityThreshold threshold (based on partial row norm).
      * @throws CardinalityException if matrix is not square.
      */
@@ -147,7 +151,7 @@ public class LUDecomposition extends DecompositionSupport {
                     luCol.setX(i, tmp);
                 }
 
-                int temp = (int)pivot.getX(max);
+                int temp = (int) pivot.getX(max);
                 pivot.setX(max, pivot.getX(col));
                 pivot.setX(col, temp);
 
@@ -240,7 +244,7 @@ public class LUDecomposition extends DecompositionSupport {
             cachedP.assign(0.0);
 
             for (int i = 0; i < m; ++i)
-                cachedP.setX(i, (int)pivot.get(i), 1.0);
+                cachedP.setX(i, (int) pivot.get(i), 1.0);
         }
 
         return cachedP;
@@ -291,7 +295,7 @@ public class LUDecomposition extends DecompositionSupport {
 
         // Apply permutations to b
         for (int row = 0; row < m; row++)
-            bp[row] = b.get((int)pivot.get(row));
+            bp[row] = b.get((int) pivot.get(row));
 
         // Solve LY = b
         for (int col = 0; col < m; col++) {
@@ -332,7 +336,7 @@ public class LUDecomposition extends DecompositionSupport {
         final double[][] bp = new double[m][nColB];
         for (int row = 0; row < m; row++) {
             final double[] bpRow = bp[row];
-            final int pRow = (int)pivot.get(row);
+            final int pRow = (int) pivot.get(row);
 
             for (int col = 0; col < nColB; col++)
                 bpRow[col] = b.get(pRow, col);

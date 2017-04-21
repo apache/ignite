@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
+
 import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
 import org.apache.ignite.internal.util.offheap.GridOffHeapMapFactory;
 import org.apache.ignite.ml.math.VectorStorage;
@@ -33,8 +34,10 @@ import org.apache.ignite.ml.math.impls.vector.SparseLocalOffHeapVector;
 public class SparseLocalOffHeapVectorStorage implements VectorStorage {
     /** Assume 10% density. */
     private static final int INIT_DENSITY = 10;
+
     /** Storage capacity. */
     private int size;
+
     /** Local off heap map. */
     private GridOffHeapMap gridOffHeapMap;
 
@@ -127,25 +130,25 @@ public class SparseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** */
     private byte[] intToByteArray(int val) {
-        return new byte[] {
-            (byte)(val >>> 24),
-            (byte)(val >>> 16),
-            (byte)(val >>> 8),
-            (byte)val};
+        return new byte[]{
+            (byte) (val >>> 24),
+            (byte) (val >>> 16),
+            (byte) (val >>> 8),
+            (byte) val};
     }
 
     /** */
     private byte[] doubleToByteArray(double val) {
         long l = Double.doubleToRawLongBits(val);
-        return new byte[] {
-            (byte)((l >> 56) & 0xff),
-            (byte)((l >> 48) & 0xff),
-            (byte)((l >> 40) & 0xff),
-            (byte)((l >> 32) & 0xff),
-            (byte)((l >> 24) & 0xff),
-            (byte)((l >> 16) & 0xff),
-            (byte)((l >> 8) & 0xff),
-            (byte)((l) & 0xff),
+        return new byte[]{
+            (byte) ((l >> 56) & 0xff),
+            (byte) ((l >> 48) & 0xff),
+            (byte) ((l >> 40) & 0xff),
+            (byte) ((l >> 32) & 0xff),
+            (byte) ((l >> 24) & 0xff),
+            (byte) ((l >> 16) & 0xff),
+            (byte) ((l >> 8) & 0xff),
+            (byte) ((l) & 0xff),
         };
     }
 }
