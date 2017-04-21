@@ -34,6 +34,9 @@ public class IgfsMetricsAdapter implements IgfsMetrics, Externalizable {
     /** Used space on local node. */
     private long locSpaceSize;
 
+    /** Maximum space. */
+    private long maxSpaceSize;
+
     /** Secondary file system used space. */
     private long secondarySpaceSize;
 
@@ -82,6 +85,7 @@ public class IgfsMetricsAdapter implements IgfsMetrics, Externalizable {
 
     /**
      * @param locSpaceSize Used space on local node.
+     * @param maxSpaceSize Maximum space size.
      * @param secondarySpaceSize Secondary space size.
      * @param dirsCnt Number of directories.
      * @param filesCnt Number of files.
@@ -96,11 +100,12 @@ public class IgfsMetricsAdapter implements IgfsMetrics, Externalizable {
      * @param bytesWritten Total bytes written.
      * @param bytesWriteTime Total bytes write time.
      */
-    public IgfsMetricsAdapter(long locSpaceSize, long secondarySpaceSize, int dirsCnt,
+    public IgfsMetricsAdapter(long locSpaceSize, long maxSpaceSize, long secondarySpaceSize, int dirsCnt,
         int filesCnt, int filesOpenedForRead, int filesOpenedForWrite, long blocksReadTotal, long blocksReadRmt,
         long blocksWrittenTotal, long blocksWrittenRmt, long bytesRead, long bytesReadTime, long bytesWritten,
         long bytesWriteTime) {
         this.locSpaceSize = locSpaceSize;
+        this.maxSpaceSize = maxSpaceSize;
         this.secondarySpaceSize = secondarySpaceSize;
         this.dirsCnt = dirsCnt;
         this.filesCnt = filesCnt;
@@ -119,6 +124,11 @@ public class IgfsMetricsAdapter implements IgfsMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public long localSpaceSize() {
         return locSpaceSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long maxSpaceSize() {
+        return maxSpaceSize;
     }
 
     /** {@inheritDoc} */
@@ -189,6 +199,7 @@ public class IgfsMetricsAdapter implements IgfsMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(locSpaceSize);
+        out.writeLong(maxSpaceSize);
         out.writeLong(secondarySpaceSize);
         out.writeInt(dirsCnt);
         out.writeInt(filesCnt);
@@ -207,6 +218,7 @@ public class IgfsMetricsAdapter implements IgfsMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         locSpaceSize = in.readLong();
+        maxSpaceSize = in.readLong();
         secondarySpaceSize = in.readLong();
         dirsCnt = in.readInt();
         filesCnt = in.readInt();

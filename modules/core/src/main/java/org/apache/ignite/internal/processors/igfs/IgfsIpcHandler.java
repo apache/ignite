@@ -297,11 +297,11 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @throws IgniteCheckedException If failed.
      */
     private IgfsMessage processStatusRequest() throws IgniteCheckedException {
-        long space = igfs.globalSpace();
+        IgfsStatus status = igfs.globalSpace();
 
         IgfsControlResponse res = new IgfsControlResponse();
 
-        res.status(new IgfsStatus(space));
+        res.status(status);
 
         return res;
     }

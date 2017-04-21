@@ -412,13 +412,13 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public long globalSpace() {
-        return safeOp(new Callable<Long>() {
-            @Override public Long call() throws Exception {
-                Long space = igfsCtx.kernalContext().grid().compute().execute(
+    @Override public IgfsStatus globalSpace() {
+        return safeOp(new Callable<IgfsStatus>() {
+            @Override public IgfsStatus call() throws Exception {
+                IgniteBiTuple<Long, Long> space = igfsCtx.kernalContext().grid().compute().execute(
                     new IgfsGlobalSpaceTask(name()), null);
 
-                return space;
+                return new IgfsStatus(space.get1(), space.get2());
             }
         });
     }
@@ -1287,6 +1287,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 return new IgfsMetricsAdapter(
                     igfsCtx.data().spaceSize(),
+                    igfsCtx.data().maxSpaceSize(),
                     secondarySpaceSize,
                     sum.directoriesCount(),
                     sum.filesCount(),
@@ -1645,7 +1646,7 @@ public final class IgfsImpl implements IgfsEx {
      * Space calculation task.
      */
     @GridInternal
-    private static class IgfsGlobalSpaceTask extends ComputeTaskSplitAdapter<Object, Long> {
+    private static class IgfsGlobalSpaceTask extends ComputeTaskSplitAdapter<Object, IgniteBiTuple<Long, Long>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1669,17 +1670,17 @@ public final class IgfsImpl implements IgfsEx {
                     @IgniteInstanceResource
                     private Ignite g;
 
-                    @Nullable @Override public Long execute() {
+                    @Nullable @Override public IgniteBiTuple<Long, Long> execute() {
                         IgniteFileSystem igfs = ((IgniteKernal)g).context().igfs().igfs(igfsName);
 
                         if (igfs == null)
-                            return 0L;
+                            return F.t(0L, 0L);
 
                         IgfsMetrics metrics = igfs.metrics();
 
                         long loc = metrics.localSpaceSize();
 
-                        return loc;
+                        return F.t(loc, metrics.maxSpaceSize());
                     }
                 });
             }
@@ -1688,17 +1689,20 @@ public final class IgfsImpl implements IgfsEx {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Long reduce(List<ComputeJobResult> results) {
+        @Nullable @Override public IgniteBiTuple<Long, Long> reduce(List<ComputeJobResult> results) {
             long used = 0;
+            long max = 0;
 
             for (ComputeJobResult res : results) {
                 IgniteBiTuple<Long, Long> data = res.getData();
 
-                if (data != null)
+                if (data != null) {
                     used += data.get1();
+                    max += data.get2();
+                }
             }
 
-            return used;
+            return F.t(used, max);
         }
 
         /** {@inheritDoc} */

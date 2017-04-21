@@ -239,6 +239,15 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
+     * @return Maximum number of bytes for IGFS data cache.
+     */
+    public long maxSpaceSize() {
+        long size = dataCachePrj.context().memoryPolicy().config().getSize();
+
+        return (size <= 0) ? 0 : size ;
+    }
+
+    /**
      * Generates next affinity key for local node based on current topology. If previous affinity key maps
      * on local node, return previous affinity key to prevent unnecessary file map growth.
      *

@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsMetrics;
+import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
@@ -31,6 +32,9 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 public class VisorIgfsMetrics extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Maximum amount of data that can be stored on local node. */
+    private long totalSpaceSz;
 
     /** Local used space in bytes on local node. */
     private long usedSpaceSz;
@@ -88,6 +92,7 @@ public class VisorIgfsMetrics extends VisorDataTransferObject {
 
         IgfsMetrics m = igfs.metrics();
 
+        totalSpaceSz = ((IgfsEx)igfs).context().data().maxSpaceSize();
         usedSpaceSz = m.localSpaceSize();
         foldersCnt = m.directoriesCount();
         filesCnt = m.filesCount();
@@ -112,6 +117,7 @@ public class VisorIgfsMetrics extends VisorDataTransferObject {
     public VisorIgfsMetrics add(VisorIgfsMetrics m) {
         assert m != null;
 
+        totalSpaceSz += m.totalSpaceSz;
         usedSpaceSz += m.usedSpaceSz;
         foldersCnt += m.foldersCnt;
         filesCnt += m.filesCnt;
@@ -145,10 +151,24 @@ public class VisorIgfsMetrics extends VisorDataTransferObject {
     }
 
     /**
+     * @return Maximum amount of data that can be stored on local node.
+     */
+    public long getTotalSpaceSize() {
+        return totalSpaceSz;
+    }
+
+    /**
      * @return Local used space in bytes on local node.
      */
     public long getUsedSpaceSize() {
         return usedSpaceSz;
+    }
+
+    /**
+     * @return Local free space in bytes on local node.
+     */
+    public long getFreeSpaceSize() {
+        return totalSpaceSz - usedSpaceSz;
     }
 
     /**
@@ -237,6 +257,7 @@ public class VisorIgfsMetrics extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(totalSpaceSz);
         out.writeLong(usedSpaceSz);
         out.writeInt(foldersCnt);
         out.writeInt(filesCnt);
@@ -254,6 +275,7 @@ public class VisorIgfsMetrics extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        totalSpaceSz = in.readLong();
         usedSpaceSz = in.readLong();
         foldersCnt = in.readInt();
         filesCnt = in.readInt();

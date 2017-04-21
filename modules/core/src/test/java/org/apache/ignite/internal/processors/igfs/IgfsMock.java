@@ -91,10 +91,10 @@ public class IgfsMock implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long globalSpace() throws IgniteCheckedException {
+    @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
         throwUnsupported();
 
-        return 0;
+        return null;
     }
 
     /** {@inheritDoc} */

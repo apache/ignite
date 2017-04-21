@@ -29,6 +29,9 @@ public class IgfsStatus implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Total space size. */
+    private long spaceTotal;
+
     /** Used space in IGFS. */
     private long spaceUsed;
 
@@ -41,9 +44,18 @@ public class IgfsStatus implements Externalizable {
 
     /**
      * @param spaceUsed Used space in IGFS.
+     * @param spaceTotal Total space available in IGFS.
      */
-    public IgfsStatus(long spaceUsed) {
+    public IgfsStatus(long spaceUsed, long spaceTotal) {
         this.spaceUsed = spaceUsed;
+        this.spaceTotal = spaceTotal;
+    }
+
+    /**
+     * @return Total space available in IGFS.
+     */
+    public long spaceTotal() {
+        return spaceTotal;
     }
 
     /**
@@ -56,10 +68,12 @@ public class IgfsStatus implements Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(spaceUsed);
+        out.writeLong(spaceTotal);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         spaceUsed = in.readLong();
+        spaceTotal = in.readLong();
     }
 }

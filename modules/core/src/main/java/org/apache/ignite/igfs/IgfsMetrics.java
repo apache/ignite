@@ -32,6 +32,14 @@ public interface IgfsMetrics {
     public long localSpaceSize();
 
     /**
+     * Gets maximum amount of data that can be stored on local node. This metrics is related to
+     * to the {@link org.apache.ignite.configuration.MemoryPolicyConfiguration#getSize()} of the IGFS data cache.
+     *
+     * @return Maximum IGFS local space size.
+     */
+    public long maxSpaceSize();
+
+    /**
     * Get used space in bytes used in the secondary file system.
     * <p>
     * This is a global metric.

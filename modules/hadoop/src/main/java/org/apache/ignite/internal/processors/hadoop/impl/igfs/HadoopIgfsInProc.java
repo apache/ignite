@@ -356,7 +356,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         try {
             return IgfsUserContext.doAs(user, new Callable<IgfsStatus>() {
                 @Override public IgfsStatus call() throws IgniteCheckedException {
-                    return new IgfsStatus(igfs.globalSpace());
+                    return igfs.globalSpace();
                 }
             });
         }
