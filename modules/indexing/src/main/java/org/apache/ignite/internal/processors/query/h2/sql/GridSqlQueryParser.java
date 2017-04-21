@@ -32,10 +32,14 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
+import org.h2.command.ddl.CreateTable;
+import org.h2.command.ddl.CreateTableData;
+import org.h2.command.ddl.DefineCommand;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.SchemaCommand;
 import org.h2.command.dml.Delete;
@@ -351,6 +355,61 @@ public class GridSqlQueryParser {
 
     /** */
     private static final Getter<SchemaCommand, Schema> SCHEMA_COMMAND_SCHEMA = getter(SchemaCommand.class, "schema");
+
+    /** */
+    private static final Getter<CreateTable, CreateTableData> CREATE_TABLE_DATA = getter(CreateTable.class, "data");
+
+    /** */
+    private static final Getter<CreateTable, ArrayList<DefineCommand>> CREATE_TABLE_CONSTRAINTS =
+        getter(CreateTable.class, "constraintCommands");
+
+    /** */
+    private static final Getter<CreateTable, IndexColumn[]> CREATE_TABLE_PK = getter(CreateTable.class,
+        "pkColumns");
+
+    /** */
+    private static final Getter<CreateTable, Boolean> CREATE_TABLE_IF_NOT_EXISTS = getter(CreateTable.class,
+        "ifNotExists");
+
+    /** */
+    private static final Getter<CreateTable, Query> CREATE_TABLE_QUERY = getter(CreateTable.class, "asQuery");
+
+    /** */
+    private static final Getter<CreateTable, Boolean> CREATE_TABLE_ON_COMMIT_DROP = getter(CreateTable.class,
+        "onCommitDrop");
+
+    /** */
+    private static final Getter<CreateTable, Boolean> CREATE_TABLE_ON_COMMIT_TRUNCATE = getter(CreateTable.class,
+        "onCommitTruncate");
+
+    /** */
+    private static final Getter<CreateTable, Boolean> CREATE_TABLE_SORTED_INSERT = getter(CreateTable.class,
+        "sortedInsertMode");
+
+    /** */
+    private static final Getter<CreateTable, String> CREATE_TABLE_COMMENT = getter(CreateTable.class,
+        "comment");
+
+    /** */
+    private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
+
+    /** */
+    private static final String PARAM_TPL_CACHE = "tplCache";
+
+    /** */
+    private static final String PARAM_NEW_SCHEMA = "newSchemaName";
+
+    /** */
+    private static final String PARAM_NEW_CACHE = "newCacheName";
+
+    /** */
+    private static final String PARAM_AFF_COL = "affColumn";
+
+    /** */
+    private static final String PARAM_KEY_CLS = "keyCls";
+
+    /** */
+    private static final String PARAM_VAL_CLS = "valCls";
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -777,6 +836,91 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Parse {@code CREATE TABLE} statement.
+     *
+     * @param createTbl {@code CREATE TABLE} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#create_table">H2 {@code CREATE TABLE} spec.</a>
+     */
+    private GridSqlCreateTable parseCreateTable(CreateTable createTbl) {
+        GridSqlCreateTable res = new GridSqlCreateTable();
+
+        CreateTableData data = CREATE_TABLE_DATA.get(createTbl);
+
+        String schemaName = data.schema.getName();
+
+        LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
+
+        for (Column col : data.columns)
+            cols.put(col.getName(), new GridSqlColumn(col, null, col.getName()));
+
+        res.columns(cols);
+
+        res.schemaName(schemaName);
+
+        res.tableName(data.tableName);
+
+        List<String> extraParams = data.tableEngineParams;
+
+        for (String p : extraParams) {
+            String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
+
+            if (parts.length > 2)
+                throw new IgniteSQLException("");
+
+            String name = parts[0];
+
+            String val = parts.length > 1 ? parts[1] : null;
+
+            if (F.isEmpty(name))
+                throw new IgniteSQLException("");
+
+            processExtraParam(name, val, res);
+        }
+
+        return res;
+    }
+
+    /**
+     * @param name Param name.
+     * @param val Param value.
+     * @param res Table params to update.
+     */
+    private static void processExtraParam(String name, String val, GridSqlCreateTable res) {
+        assert !F.isEmpty(name);
+
+        switch (name) {
+            case PARAM_TPL_CACHE:
+                ensureParamValueNotEmpty(PARAM_TPL_CACHE, val);
+
+                res.templateCacheName(val);
+
+                break;
+
+            case PARAM_AFF_COL:
+                ensureParamValueNotEmpty(PARAM_AFF_COL, val);
+
+                res.affinityColumnName(val);
+
+                break;
+
+            default:
+                throw new IgniteSQLException("Unknown CREATE TABLE param [paramName=" + name + ']',
+                    IgniteQueryErrorCode.UNKNOWN_PARAM);
+        }
+    }
+
+    /**
+     * Check that param with mandatory value has it specified.
+     * @param name Param name.
+     * @param val Param value to check.
+     */
+    private static void ensureParamValueNotEmpty(String name, String val) {
+        if (F.isEmpty(val))
+            throw new IgniteSQLException("No value has been given for a CREATE TABLE param [paramName=" + name + ']',
+                IgniteQueryErrorCode.EMPTY_PARAM_VALUE);
+    }
+
+    /**
      * @param sortOrder Sort order.
      * @param qry Query.
      */
@@ -844,6 +988,9 @@ public class GridSqlQueryParser {
 
         if (stmt instanceof DropIndex)
             return parseDropIndex((DropIndex)stmt);
+
+        if (stmt instanceof CreateTable)
+            return parseCreateTable((CreateTable)stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
     }

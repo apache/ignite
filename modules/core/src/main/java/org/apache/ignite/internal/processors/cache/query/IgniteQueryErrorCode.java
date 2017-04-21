@@ -36,6 +36,12 @@ public final class IgniteQueryErrorCode {
     /** Requested operation is not supported. */
     public final static int UNSUPPORTED_OPERATION = 1002;
 
+    /** Command param requires value but none is given. */
+    public final static int EMPTY_PARAM_VALUE = 1003;
+
+    /** Unknown param specified. */
+    public final static int UNKNOWN_PARAM = 1004;
+
     /* 2xxx - analysis errors */
 
     /** Code encountered SQL statement of some type that it did not expect in current analysis context. */
