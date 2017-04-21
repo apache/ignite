@@ -27,22 +27,35 @@ import junit.framework.TestCase;
 import org.apache.ignite.mesos.resource.ResourceProvider;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.apache.ignite.mesos.IgniteFramework.MESOS_ROLE;
+
 import static org.apache.ignite.mesos.IgniteFramework.MESOS_USER_NAME;
+import static org.apache.ignite.mesos.IgniteFramework.MESOS_ROLE;
+import static org.easymock.EasyMock.expect;
+import static org.junit.Assert.assertEquals;
+import static org.powermock.api.easymock.PowerMock.mockStatic;
+import static org.powermock.api.easymock.PowerMock.replay;
+import static org.powermock.api.easymock.PowerMock.verify;
+
 
 /**
  * Scheduler tests.
  */
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(IgniteFramework.class)
 public class IgniteSchedulerSelfTest extends TestCase {
     /** */
     private IgniteScheduler scheduler;
 
     /** */
-    private String mesosUserValue = "userAAAAA";
+    private String mesosUserValue;
 
     /** */
-    private String mesosRoleValue = "role1";
+    private String mesosRoleValue;
 
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -121,6 +134,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         assertEquals(offer.getId(), declinedOffer);
     }
+
 
     /**
      * @throws Exception If failed.
@@ -315,86 +329,124 @@ public class IgniteSchedulerSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testIgniteFramework() throws Exception {
+
         mesosUserValue = "userAAAAA";
         mesosRoleValue = "role1";
+
+        mockStatic(IgniteFramework.class);
+
+        expect(IgniteFramework.getRole()).andReturn(mesosRoleValue);
+
+        replay(IgniteFramework.class);
+
+        IgniteFramework igniteFramework = new IgniteFramework();
+
+        String actualRoleValue = igniteFramework.getFrameworkInfo().getRole();
+
+        verify(IgniteFramework.class);
+
+        assertEquals(mesosRoleValue, actualRoleValue);
+
+//        setEnv(MESOS_USER_NAME, mesosUserValue);
+//        setEnv(MESOS_ROLE, mesosRoleValue);
+//
+//        IgniteFrameworkThread igniteFWThread = new IgniteFrameworkThread();
+//
+//        IgniteFramework igniteFramework = new IgniteFramework();
+//
+//        igniteFWThread.start();
+//
+//        igniteFWThread.sleep(500);
+//        String actualRoleValue = igniteFramework.getFrameworkInfo().getRole();
+//
+//        assertEquals(mesosUserValue, igniteFramework.getFrameworkInfo().getUser());
+//        assertEquals(mesosRoleValue, actualRoleValue);
+    }
+
+    public void testIgniteFrameworkFailedRole() throws Exception {
+
+        mesosUserValue = "userAAAAA";
+        mesosRoleValue = ".";
 
         setEnv(MESOS_USER_NAME, mesosUserValue);
         setEnv(MESOS_ROLE, mesosRoleValue);
 
         IgniteFrameworkThread igniteFWThread = new IgniteFrameworkThread();
+
         igniteFWThread.start();
 
         igniteFWThread.sleep(500);
 
-        assertEquals(mesosUserValue, igniteFWThread.getIgniteFramework().getUser());
-        assertEquals(mesosRoleValue, igniteFWThread.getIgniteFramework().getRole());
-
-        mesosRoleValue = "-role1";
-
-        setEnv(MESOS_ROLE, mesosRoleValue);
-
-        igniteFWThread.sleep(500);
-        assertEquals("*", igniteFWThread.getIgniteFramework().getRole());
-
-        mesosRoleValue = "mesosRol/le";
-
-        setEnv(MESOS_ROLE, mesosRoleValue);
-
-        igniteFWThread.sleep(500);
-        assertEquals("*", igniteFWThread.getIgniteFramework().getRole());
-
-        mesosRoleValue = "..";
-
-        setEnv(MESOS_ROLE, mesosRoleValue);
-
-        igniteFWThread.sleep(500);
-        assertEquals("*", igniteFWThread.getIgniteFramework().getRole());
+        assertEquals(mesosUserValue, igniteFWThread.getIgniteFramework().getFrameworkInfo().getUser());
+        assertEquals("*", igniteFWThread.getIgniteFramework().getFrameworkInfo().getRole());
     }
 
     /**
      * @param varName MESOS system environment name.
-     * @param varValue MESOS system environment value. The method {@link #setEnv(String, String)} } sets environment
-     * variables from  Java. Given from <a href="https://gist.github.com/zhaopengme/53719298b6edf1a99a41">https://gist.github.com/zhaopengme/53719298b6edf1a99a41</a>
+     * @param varValue MESOS system environment value.
+     * The method {@link #setEnv(String, String)} } sets environment variables from  Java.
+     * Given from <a href="https://gist.github.com/zhaopengme/53719298b6edf1a99a41">https://gist.github.com/zhaopengme/53719298b6edf1a99a41</a>
      */
-    protected static void setEnv(String varName, String varValue) {
+    protected static void setEnv(String varName,String varValue)
+    {
         Map<String, String> newenv = System.getenv();
 
-        try {
+        try
+        {
             Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
             Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
             theEnvironmentField.setAccessible(true);
-            Map<String, String> env = (Map<String, String>)theEnvironmentField.get(null);
+            Map<String, String> env = (Map<String, String>) theEnvironmentField.get(null);
             env.putAll(newenv);
             Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
             theCaseInsensitiveEnvironmentField.setAccessible(true);
-            Map<String, String> cienv = (Map<String, String>)theCaseInsensitiveEnvironmentField.get(null);
+            Map<String, String> cienv = (Map<String, String>)     theCaseInsensitiveEnvironmentField.get(null);
             cienv.putAll(newenv);
-            cienv.put(varName, varValue);
+            cienv.put(varName,varValue);
         }
-        catch (NoSuchFieldException e) {
+        catch (NoSuchFieldException e)
+        {
             try {
                 Class[] classes = Collections.class.getDeclaredClasses();
                 Map<String, String> env = System.getenv();
-                for (Class cl : classes) {
-                    if ("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
+                for(Class cl : classes) {
+                    if("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
                         Field field = cl.getDeclaredField("m");
                         field.setAccessible(true);
                         Object obj = field.get(env);
-                        Map<String, String> map = (Map<String, String>)obj;
+                        Map<String, String> map = (Map<String, String>) obj;
                         map.clear();
                         map.putAll(newenv);
-                        map.put(varName, varValue);
+                        map.put(varName,varValue);
                     }
                 }
-            }
-            catch (Exception e2) {
+            } catch (Exception e2) {
                 e2.printStackTrace();
             }
-        }
-        catch (Exception e1) {
+        } catch (Exception e1) {
             e1.printStackTrace();
         }
     }
+
+
+
+    public class IgniteFrameworkThread extends Thread {
+
+        private IgniteFramework igniteFramework;
+
+
+        @Override
+        public void run() {
+            igniteFramework = new IgniteFramework();
+        }
+
+        public IgniteFramework  getIgniteFramework(){
+            return igniteFramework;
+        }
+
+    }
+
+
 
     /**
      * @param resourceType Resource type.
@@ -432,22 +484,6 @@ public class IgniteSchedulerSelfTest extends TestCase {
                 .setScalar(Protos.Value.Scalar.newBuilder().setValue(mem).build())
                 .build())
             .build();
-    }
-
-    /**
-     * No-op implementation.
-     */
-    public class IgniteFrameworkThread extends Thread {
-        private IgniteFramework igniteFramework;
-
-        @Override
-        public void run() {
-            igniteFramework = new IgniteFramework();
-        }
-
-        public IgniteFramework getIgniteFramework() {
-            return igniteFramework;
-        }
     }
 
     /**
