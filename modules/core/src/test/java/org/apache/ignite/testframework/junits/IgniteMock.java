@@ -55,6 +55,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -327,6 +328,9 @@ public class IgniteMock implements Ignite {
                     return typeName.hashCode();
                 }
             };
+
+            if (marshaller instanceof BinaryMarshaller)
+                ctx.configure((BinaryMarshaller)marshaller, configuration());
         }
 
         binaryMock = new NoOpBinary() {
