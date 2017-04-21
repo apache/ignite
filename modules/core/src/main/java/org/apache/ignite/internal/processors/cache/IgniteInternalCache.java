@@ -1887,17 +1887,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public V getTopologySafe(K key) throws IgniteCheckedException;
 
     /**
-     * Tries to get and put value in cache. Will fail with {@link GridCacheTryPutFailedException}
-     * if topology exchange is in progress.
-     *
-     * @param key Key.
-     * @param val value.
-     * @return Old value.
-     * @throws IgniteCheckedException In case of error.
-     */
-    @Nullable public V tryGetAndPut(K key, V val) throws IgniteCheckedException;
-
-    /**
      * @param topVer Locked topology version.
      * @param key Key.
      * @param entryProcessor Entry processor.

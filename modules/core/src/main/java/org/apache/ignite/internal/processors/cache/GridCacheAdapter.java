@@ -2708,12 +2708,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
-        // Supported only in ATOMIC cache.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public final V getAndPutIfAbsent(final K key, final V val) throws IgniteCheckedException {
         return getAndPut(key, val, ctx.noVal());
     }
