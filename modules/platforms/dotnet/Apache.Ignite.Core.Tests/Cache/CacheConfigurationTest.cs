@@ -215,6 +215,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushSize, cfg.WriteBehindFlushSize);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushThreadCount, cfg.WriteBehindFlushThreadCount);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindCoalescing, cfg.WriteBehindCoalescing);
+            Assert.AreEqual(CacheConfiguration.DefaultPartitionLossPolicy, cfg.PartitionLossPolicy);
         }
 
         /// <summary>
@@ -247,6 +248,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
             Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
+            Assert.AreEqual(x.PartitionLossPolicy, y.PartitionLossPolicy);
 
             if (x.ExpiryPolicyFactory != null)
                 Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
@@ -562,6 +564,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 ExpiryPolicyFactory = new ExpiryFactory(),
                 EnableStatistics = true,
                 MemoryPolicyName = "myMemPolicy",
+                PartitionLossPolicy = PartitionLossPolicy.ReadOnlySafe,
                 PluginConfigurations = new[] { new MyPluginConfiguration() }
             };
         }
