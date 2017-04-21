@@ -70,7 +70,7 @@ public class LUDecomposition extends DecompositionSupport {
     /**
      * Calculates the LUP-decomposition of the given matrix.
      *
-     * @param matrix               Matrix to decompose.
+     * @param matrix Matrix to decompose.
      * @param singularityThreshold threshold (based on partial row norm).
      * @throws CardinalityException if matrix is not square.
      */
@@ -151,7 +151,7 @@ public class LUDecomposition extends DecompositionSupport {
                     luCol.setX(i, tmp);
                 }
 
-                int temp = (int) pivot.getX(max);
+                int temp = (int)pivot.getX(max);
                 pivot.setX(max, pivot.getX(col));
                 pivot.setX(col, temp);
 
@@ -244,7 +244,7 @@ public class LUDecomposition extends DecompositionSupport {
             cachedP.assign(0.0);
 
             for (int i = 0; i < m; ++i)
-                cachedP.setX(i, (int) pivot.get(i), 1.0);
+                cachedP.setX(i, (int)pivot.get(i), 1.0);
         }
 
         return cachedP;
@@ -295,7 +295,7 @@ public class LUDecomposition extends DecompositionSupport {
 
         // Apply permutations to b
         for (int row = 0; row < m; row++)
-            bp[row] = b.get((int) pivot.get(row));
+            bp[row] = b.get((int)pivot.get(row));
 
         // Solve LY = b
         for (int col = 0; col < m; col++) {
@@ -336,7 +336,7 @@ public class LUDecomposition extends DecompositionSupport {
         final double[][] bp = new double[m][nColB];
         for (int row = 0; row < m; row++) {
             final double[] bpRow = bp[row];
-            final int pRow = (int) pivot.get(row);
+            final int pRow = (int)pivot.get(row);
 
             for (int col = 0; col < nColB; col++)
                 bpRow[col] = b.get(pRow, col);

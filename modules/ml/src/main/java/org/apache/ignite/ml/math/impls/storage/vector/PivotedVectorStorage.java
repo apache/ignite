@@ -63,8 +63,8 @@ public class PivotedVectorStorage implements VectorStorage {
     }
 
     /**
-     * @param sto     Backing vector storage.
-     * @param pivot   Mapping from external index to internal.
+     * @param sto Backing vector storage.
+     * @param pivot Mapping from external index to internal.
      * @param unpivot Mapping from internal index to external.
      */
     public PivotedVectorStorage(VectorStorage sto, int[] pivot, int[] unpivot) {
@@ -78,7 +78,7 @@ public class PivotedVectorStorage implements VectorStorage {
     }
 
     /**
-     * @param sto   Backing vector storage.
+     * @param sto Backing vector storage.
      * @param pivot Mapping from external index to internal.
      */
     public PivotedVectorStorage(VectorStorage sto, int[] pivot) {
@@ -116,9 +116,9 @@ public class PivotedVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        sto = (VectorStorage) in.readObject();
-        pivot = (int[]) in.readObject();
-        unpivot = (int[]) in.readObject();
+        sto = (VectorStorage)in.readObject();
+        pivot = (int[])in.readObject();
+        unpivot = (int[])in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -159,7 +159,7 @@ public class PivotedVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        PivotedVectorStorage that = (PivotedVectorStorage) o;
+        PivotedVectorStorage that = (PivotedVectorStorage)o;
 
         return (sto != null ? sto.equals(that.sto) : that.sto == null) && Arrays.equals(pivot, that.pivot)
             && Arrays.equals(unpivot, that.unpivot);

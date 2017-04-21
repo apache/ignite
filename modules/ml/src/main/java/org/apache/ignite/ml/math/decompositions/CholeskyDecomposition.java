@@ -73,11 +73,11 @@ public class CholeskyDecomposition extends DecompositionSupport {
     /**
      * Calculates the Cholesky decomposition of the given matrix.
      *
-     * @param mtx                    the matrix to decompose.
-     * @param relSymmetryThreshold   threshold above which off-diagonal elements are considered too different and matrix
-     *                               not symmetric
+     * @param mtx the matrix to decompose.
+     * @param relSymmetryThreshold threshold above which off-diagonal elements are considered too different and matrix
+     * not symmetric
      * @param absPositivityThreshold threshold below which diagonal elements are considered null and matrix not positive
-     *                               definite
+     * definite
      * @see #CholeskyDecomposition(Matrix)
      * @see #DFLT_REL_SYMMETRY_THRESHOLD
      * @see #DFLT_ABS_POSITIVITY_THRESHOLD

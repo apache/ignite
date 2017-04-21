@@ -50,9 +50,9 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
     }
 
     /**
-     * @param rows      Amount of rows in matrix.
-     * @param cols      Amount of columns in matrix.
-     * @param cache     Ignite cache.
+     * @param rows Amount of rows in matrix.
+     * @param cols Amount of columns in matrix.
+     * @param cache Ignite cache.
      * @param keyMapper {@link MatrixKeyMapper} to validate cache key.
      * @param valMapper {@link ValueMapper} to obtain value for given cache key.
      */
@@ -127,8 +127,8 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
         rows = in.readInt();
         cols = in.readInt();
         cache = Ignition.localIgnite().getOrCreateCache(in.readUTF());
-        keyMapper = (MatrixKeyMapper<K>) in.readObject();
-        valMapper = (ValueMapper<V>) in.readObject();
+        keyMapper = (MatrixKeyMapper<K>)in.readObject();
+        valMapper = (ValueMapper<V>)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -177,7 +177,7 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        CacheMatrixStorage that = (CacheMatrixStorage) o;
+        CacheMatrixStorage that = (CacheMatrixStorage)o;
 
         return (cache != null ? cache.equals(that.cache) : that.cache == null) &&
             (keyMapper != null ? keyMapper.equals(that.keyMapper) : that.keyMapper == null) &&

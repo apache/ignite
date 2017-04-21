@@ -51,9 +51,9 @@ public class MatrixVectorView extends AbstractVector {
     }
 
     /**
-     * @param parent    Parent matrix.
-     * @param row       Starting row in the view.
-     * @param col       Starting column in the view.
+     * @param parent Parent matrix.
+     * @param row Starting row in the view.
+     * @param col Starting column in the view.
      * @param rowStride Rows stride in the view.
      * @param colStride Columns stride in the view.
      */
@@ -106,7 +106,7 @@ public class MatrixVectorView extends AbstractVector {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        parent = (Matrix) in.readObject();
+        parent = (Matrix)in.readObject();
         row = in.readInt();
         col = in.readInt();
         rowStride = in.readInt();
@@ -134,7 +134,7 @@ public class MatrixVectorView extends AbstractVector {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        MatrixVectorView that = (MatrixVectorView) o;
+        MatrixVectorView that = (MatrixVectorView)o;
 
         return (parent != null ? parent.equals(that.parent) : that.parent == null) &&
             row == that.row &&

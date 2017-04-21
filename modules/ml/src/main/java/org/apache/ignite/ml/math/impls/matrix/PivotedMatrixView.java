@@ -44,7 +44,7 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     * @param mtx      Parent matrix.
+     * @param mtx Parent matrix.
      * @param rowPivot Pivot array for rows.
      * @param colPivot Pivot array for columns.
      */
@@ -64,7 +64,7 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     * @param mtx   Parent matrix.
+     * @param mtx Parent matrix.
      * @param pivot Pivot array for rows and columns.
      */
     public PivotedMatrixView(Matrix mtx, int[] pivot) {
@@ -192,12 +192,12 @@ public class PivotedMatrixView extends AbstractMatrix {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        mtx = (Matrix) in.readObject();
+        mtx = (Matrix)in.readObject();
     }
 
     /** */
     private PivotedMatrixStorage storage() {
-        return (PivotedMatrixStorage) getStorage();
+        return (PivotedMatrixStorage)getStorage();
     }
 
     /** {@inheritDoc} */
@@ -233,7 +233,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        PivotedMatrixView that = (PivotedMatrixView) o;
+        PivotedMatrixView that = (PivotedMatrixView)o;
 
         MatrixStorage sto = storage();
 

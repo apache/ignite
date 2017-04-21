@@ -35,8 +35,8 @@ public class PivotedVectorView extends AbstractVector {
     private Vector vec;
 
     /**
-     * @param vec     Parent vector.
-     * @param pivot   Mapping from external index to internal.
+     * @param vec Parent vector.
+     * @param pivot Mapping from external index to internal.
      * @param unpivot Mapping from internal index to external.
      */
     public PivotedVectorView(Vector vec, int[] pivot, int[] unpivot) {
@@ -49,7 +49,7 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     * @param vec   Parent vector.
+     * @param vec Parent vector.
      * @param pivot Mapping from external index to internal.
      */
     public PivotedVectorView(Vector vec, int[] pivot) {
@@ -62,7 +62,7 @@ public class PivotedVectorView extends AbstractVector {
 
     /** */
     private PivotedVectorStorage storage() {
-        return (PivotedVectorStorage) getStorage();
+        return (PivotedVectorStorage)getStorage();
     }
 
     /**
@@ -159,6 +159,6 @@ public class PivotedVectorView extends AbstractVector {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        vec = (Vector) in.readObject();
+        vec = (Vector)in.readObject();
     }
 }

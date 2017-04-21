@@ -48,7 +48,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
     }
 
     /**
-     * @param size    Vector size.
+     * @param size Vector size.
      * @param acsMode Access mode.
      */
     public SparseLocalOnHeapVectorStorage(int size, int acsMode) {
@@ -102,7 +102,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         acsMode = in.readInt();
-        sto = (Map<Integer, Double>) in.readObject();
+        sto = (Map<Integer, Double>)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -138,7 +138,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SparseLocalOnHeapVectorStorage that = (SparseLocalOnHeapVectorStorage) o;
+        SparseLocalOnHeapVectorStorage that = (SparseLocalOnHeapVectorStorage)o;
 
         return size == that.size && acsMode == that.acsMode && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }

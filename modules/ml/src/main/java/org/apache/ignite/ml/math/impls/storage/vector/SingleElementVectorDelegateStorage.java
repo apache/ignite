@@ -93,7 +93,7 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        vec = (Vector) in.readObject();
+        vec = (Vector)in.readObject();
         idx = in.readInt();
     }
 
@@ -130,7 +130,7 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SingleElementVectorDelegateStorage that = (SingleElementVectorDelegateStorage) o;
+        SingleElementVectorDelegateStorage that = (SingleElementVectorDelegateStorage)o;
 
         return idx == that.idx && (vec != null ? vec.equals(that.vec) : that.vec == null);
     }

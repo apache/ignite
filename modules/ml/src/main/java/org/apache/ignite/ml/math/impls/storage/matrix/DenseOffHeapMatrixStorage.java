@@ -166,9 +166,9 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     @Override public boolean equals(Object obj) {
         return obj != null &&
             getClass().equals(obj.getClass()) &&
-            (rows == ((DenseOffHeapMatrixStorage) obj).rows) &&
-            (cols == ((DenseOffHeapMatrixStorage) obj).cols) &&
-            (rows == 0 || cols == 0 || ptr == ((DenseOffHeapMatrixStorage) obj).ptr || isMemoryEquals((DenseOffHeapMatrixStorage) obj));
+            (rows == ((DenseOffHeapMatrixStorage)obj).rows) &&
+            (cols == ((DenseOffHeapMatrixStorage)obj).cols) &&
+            (rows == 0 || cols == 0 || ptr == ((DenseOffHeapMatrixStorage)obj).ptr || isMemoryEquals((DenseOffHeapMatrixStorage)obj));
     }
 
     /** {@inheritDoc} */

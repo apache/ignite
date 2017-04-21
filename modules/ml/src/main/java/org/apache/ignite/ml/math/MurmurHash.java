@@ -42,8 +42,8 @@ public class MurmurHash {
      * See also http://github.com/yonik/java_util for future updates to this method.</p>
      *
      * @param data Data to hash.
-     * @param off  Where to start munging.
-     * @param len  How many bytes to process.
+     * @param off Where to start munging.
+     * @param len How many bytes to process.
      * @param seed The seed to start with.
      * @return 32 bit hash platform compatible with C++ MurmurHash3 implementation on x86.
      */
@@ -105,11 +105,11 @@ public class MurmurHash {
      * @return The 32 bit hash of the bytes in question.
      */
     public static int hash(int data, int seed) {
-        byte[] arr = new byte[]{
-            (byte) (data >>> 24),
-            (byte) (data >>> 16),
-            (byte) (data >>> 8),
-            (byte) data
+        byte[] arr = new byte[] {
+            (byte)(data >>> 24),
+            (byte)(data >>> 16),
+            (byte)(data >>> 8),
+            (byte)data
         };
 
         return hash(ByteBuffer.wrap(arr), seed);
@@ -130,8 +130,8 @@ public class MurmurHash {
      * Hashes bytes in part of an array.
      *
      * @param data The data to hash.
-     * @param off  Where to start munging.
-     * @param len  How many bytes to process.
+     * @param off Where to start munging.
+     * @param len How many bytes to process.
      * @param seed The seed to start with.
      * @return The 32-bit hash of the data in question.
      */
@@ -142,7 +142,7 @@ public class MurmurHash {
     /**
      * Hashes the bytes in a buffer from the current position to the limit.
      *
-     * @param buf  The bytes to hash.
+     * @param buf The bytes to hash.
      * @param seed The seed to start with.
      * @return The 32 bit murmur hash of the bytes in the buffer.
      */
@@ -195,8 +195,8 @@ public class MurmurHash {
 
     /**
      * @param data The data to hash.
-     * @param off  Where to start munging.
-     * @param len  How many bytes to process.
+     * @param off Where to start munging.
+     * @param len How many bytes to process.
      * @param seed The seed to start with.
      */
     public static long hash64A(byte[] data, int off, int len, int seed) {
@@ -204,7 +204,7 @@ public class MurmurHash {
     }
 
     /**
-     * @param buf  The data to hash.
+     * @param buf The data to hash.
      * @param seed The seed to start with.
      */
     public static long hash64A(ByteBuffer buf, int seed) {

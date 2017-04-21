@@ -146,7 +146,7 @@ public class DelegateVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        DelegateVectorStorage that = (DelegateVectorStorage) o;
+        DelegateVectorStorage that = (DelegateVectorStorage)o;
 
         return len == that.len && off == that.off && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }

@@ -87,7 +87,7 @@ public abstract class AbstractVector implements Vector {
 
     /**
      * @param readOnly Is read only.
-     * @param sto      Storage.
+     * @param sto Storage.
      */
     public AbstractVector(boolean readOnly, VectorStorage sto) {
         assert sto != null;
@@ -792,7 +792,7 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     * @param power   Power.
+     * @param power Power.
      * @param normLen Normalized length.
      * @return logNormalized value.
      */
@@ -901,7 +901,7 @@ public abstract class AbstractVector implements Vector {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        AbstractVector that = (AbstractVector) obj;
+        AbstractVector that = (AbstractVector)obj;
 
         return (sto != null ? sto.equals(that.sto) : that.sto == null);
     }

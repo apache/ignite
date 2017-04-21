@@ -175,7 +175,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         cols = in.readInt();
         acsMode = in.readInt();
         stoMode = in.readInt();
-        sto = (Map<Integer, Map<Integer, Double>>) in.readObject();
+        sto = (Map<Integer, Map<Integer, Double>>)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -222,7 +222,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SparseLocalOnHeapMatrixStorage that = (SparseLocalOnHeapMatrixStorage) o;
+        SparseLocalOnHeapMatrixStorage that = (SparseLocalOnHeapMatrixStorage)o;
 
         return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
             && (sto != null ? sto.equals(that.sto) : that.sto == null);

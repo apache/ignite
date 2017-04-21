@@ -47,7 +47,7 @@ public class EigenDecomposition extends DecompositionSupport {
     }
 
     /**
-     * @param matrix      Matrix to decompose.
+     * @param matrix Matrix to decompose.
      * @param isSymmetric {@code true} if matrix passes symmetry check, {@code false otherwise}.
      */
     public EigenDecomposition(Matrix matrix, boolean isSymmetric) {

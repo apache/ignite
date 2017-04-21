@@ -42,7 +42,7 @@ public class ConstantVectorStorage implements VectorStorage {
 
     /**
      * @param size Vector size.
-     * @param val  Value to set for vector elements.
+     * @param val Value to set for vector elements.
      */
     public ConstantVectorStorage(int size, double val) {
         assert size > 0;
@@ -128,7 +128,7 @@ public class ConstantVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ConstantVectorStorage that = (ConstantVectorStorage) o;
+        ConstantVectorStorage that = (ConstantVectorStorage)o;
 
         return size == that.size && val == that.val;
     }

@@ -227,9 +227,9 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * Folds this matrix into a single value.
      *
      * @param foldFun Folding function that takes two parameters: accumulator and the current value.
-     * @param mapFun  Mapping function that is called on each matrix cell before its passed to the accumulator (as its
-     *                second parameter).
-     * @param <T>     Type of the folded value.
+     * @param mapFun Mapping function that is called on each matrix cell before its passed to the accumulator (as its
+     * second parameter).
+     * @param <T> Type of the folded value.
      * @param zeroVal Zero value for fold function.
      * @return Folded value of this matrix.
      */
@@ -383,10 +383,10 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Sets values for given row.
      *
-     * @param row  Row index.
+     * @param row Row index.
      * @param data Row data to set.
      * @return This matrix.
-     * @throws IndexException       Thrown in case of index is out of bound.
+     * @throws IndexException Thrown in case of index is out of bound.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     public Matrix setRow(int row, double[] data);
@@ -394,10 +394,10 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Sets values for given column.
      *
-     * @param col  Column index.
+     * @param col Column index.
      * @param data Column data to set.
      * @return This matrix.
-     * @throws IndexException       Thrown in case of index is out of bound.
+     * @throws IndexException Thrown in case of index is out of bound.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     public Matrix setColumn(int col, double[] data);
@@ -464,11 +464,11 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Creates new view into this matrix. Changes to the view will be propagated to this matrix.
      *
-     * @param off  View offset as {@code int[x,y]}.
+     * @param off View offset as {@code int[x,y]}.
      * @param size View size as {@code int[rows, cols]}.
      * @return New view.
      * @throws CardinalityException Thrown if cardinalities mismatch.
-     * @throws IndexException       Thrown in case of offset is out of bound.
+     * @throws IndexException Thrown in case of offset is out of bound.
      */
     public Matrix viewPart(int[] off, int[] size);
 
@@ -476,12 +476,12 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * Creates new view into this matrix. Changes to the view will be propagated to this matrix.
      *
      * @param rowOff View offset in rows.
-     * @param rows   Amount of rows in the view.
+     * @param rows Amount of rows in the view.
      * @param colOff View offset in columns.
-     * @param cols   Amount of columns in the view.
+     * @param cols Amount of columns in the view.
      * @return New view.
      * @throws CardinalityException Thrown if cardinalities mismatch.
-     * @throws IndexException       Thrown in case of offset is out of bound.
+     * @throws IndexException Thrown in case of offset is out of bound.
      */
     public Matrix viewPart(int rowOff, int rows, int colOff, int cols);
 

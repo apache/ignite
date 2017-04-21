@@ -385,7 +385,7 @@ public class DelegatingVector implements Vector {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        DelegatingVector that = (DelegatingVector) o;
+        DelegatingVector that = (DelegatingVector)o;
 
         return meta.equals(that.meta) && dlg.equals(that.dlg);
     }

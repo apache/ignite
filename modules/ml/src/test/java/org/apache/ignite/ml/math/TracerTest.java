@@ -134,9 +134,9 @@ public class TracerTest {
 
         Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
 
-        double MAX = (double) (mtx2.rowSize() * mtx2.columnSize());
+        double MAX = (double)(mtx2.rowSize() * mtx2.columnSize());
 
-        mtx2.assign((x, y) -> (double) (x * y) / MAX);
+        mtx2.assign((x, y) -> (double)(x * y) / MAX);
 
         Tracer.showHtml(mtx2);
     }

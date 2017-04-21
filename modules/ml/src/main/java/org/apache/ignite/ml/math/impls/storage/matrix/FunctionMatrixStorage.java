@@ -48,8 +48,8 @@ public class FunctionMatrixStorage implements MatrixStorage {
     }
 
     /**
-     * @param rows    Amount of rows in the matrix.
-     * @param cols    Amount of columns in the matrix.
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
      * @param getFunc Function that returns value corresponding to given row and column index.
      * @param setFunc Set function. If {@code null} - this will be a read-only matrix.
      */
@@ -66,8 +66,8 @@ public class FunctionMatrixStorage implements MatrixStorage {
     }
 
     /**
-     * @param rows    Amount of rows in the matrix.
-     * @param cols    Amount of columns in the matrix.
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
      * @param getFunc Function that returns value corresponding to given row and column index.
      */
     public FunctionMatrixStorage(int rows, int cols, IntIntToDoubleFunction getFunc) {
@@ -121,8 +121,8 @@ public class FunctionMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        setFunc = (IntIntDoubleToVoidFunction) in.readObject();
-        getFunc = (IntIntToDoubleFunction) in.readObject();
+        setFunc = (IntIntDoubleToVoidFunction)in.readObject();
+        getFunc = (IntIntToDoubleFunction)in.readObject();
         rows = in.readInt();
         cols = in.readInt();
     }
@@ -160,7 +160,7 @@ public class FunctionMatrixStorage implements MatrixStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        FunctionMatrixStorage that = (FunctionMatrixStorage) o;
+        FunctionMatrixStorage that = (FunctionMatrixStorage)o;
 
         return rows == that.rows && cols == that.cols
             && (getFunc != null ? getFunc.equals(that.getFunc) : that.getFunc == null)

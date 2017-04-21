@@ -50,8 +50,8 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
     }
 
     /**
-     * @param size      Vector size.
-     * @param cache     Ignite cache.
+     * @param size Vector size.
+     * @param cache Ignite cache.
      * @param keyMapper {@link VectorKeyMapper} to validate cache key.
      * @param valMapper {@link ValueMapper} to obtain value for given cache key.
      */
@@ -116,8 +116,8 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
-        keyMapper = (VectorKeyMapper<K>) in.readObject();
-        valMapper = (ValueMapper<V>) in.readObject();
+        keyMapper = (VectorKeyMapper<K>)in.readObject();
+        valMapper = (ValueMapper<V>)in.readObject();
         cache = Ignition.localIgnite().getOrCreateCache(in.readUTF());
     }
 
@@ -166,7 +166,7 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        CacheVectorStorage that = (CacheVectorStorage) obj;
+        CacheVectorStorage that = (CacheVectorStorage)obj;
 
         return size == that.size
             && (keyMapper != null ? keyMapper.getClass().equals(that.keyMapper.getClass()) : that.keyMapper == null)

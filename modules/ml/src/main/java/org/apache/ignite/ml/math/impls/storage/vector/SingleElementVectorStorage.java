@@ -44,8 +44,8 @@ public class SingleElementVectorStorage implements VectorStorage {
 
     /**
      * @param size Parent vector size.
-     * @param idx  Element index in the parent vector.
-     * @param val  Value of the element.
+     * @param idx Element index in the parent vector.
+     * @param val Value of the element.
      */
     public SingleElementVectorStorage(int size, int idx, double val) {
         assert size > 0;
@@ -128,7 +128,7 @@ public class SingleElementVectorStorage implements VectorStorage {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SingleElementVectorStorage that = (SingleElementVectorStorage) o;
+        SingleElementVectorStorage that = (SingleElementVectorStorage)o;
 
         return idx == that.idx && Double.compare(that.val, val) == 0 && size == that.size;
     }
@@ -138,7 +138,7 @@ public class SingleElementVectorStorage implements VectorStorage {
         int res = idx;
         long temp = Double.doubleToLongBits(val);
 
-        res = 31 * res + (int) (temp ^ (temp >>> 32));
+        res = 31 * res + (int)(temp ^ (temp >>> 32));
         res = 31 * res + size;
 
         return res;

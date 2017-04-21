@@ -303,9 +303,9 @@ public class Algebra extends Constants {
             int max = LONG_FACTORIALS.length + DOUBLE_FACTORIALS.length;
 
             if (n < max) {
-                double nFac = factorial((int) n);
-                double kFac = factorial((int) k);
-                double nMinusKFac = factorial((int) (n - k));
+                double nFac = factorial((int)n);
+                double kFac = factorial((int)k);
+                double nMinusKFac = factorial((int)(n - k));
                 double nk = nMinusKFac * kFac;
 
                 if (nk != Double.POSITIVE_INFINITY) // No numeric overflow?
@@ -322,7 +322,7 @@ public class Algebra extends Constants {
         double binomial = 1;
 
         for (long i = k; i-- > 0; )
-            binomial *= (double) a++ / (b++);
+            binomial *= (double)a++ / (b++);
 
         return binomial;
     }
@@ -365,9 +365,9 @@ public class Algebra extends Constants {
      * polynomials, the routine requires one more addition per loop than evaluating a nested polynomial of the same
      * degree.
      *
-     * @param x    Argument to the polynomial.
+     * @param x Argument to the polynomial.
      * @param coef Coefficients of the polynomial.
-     * @param N    Number of coefficients.
+     * @param N Number of coefficients.
      */
     public static double chbevl(double x, double[] coef, int N) {
         int p = 0;
@@ -522,9 +522,9 @@ public class Algebra extends Constants {
      * <p>
      * In the interest of speed, there are no checks for out of bounds arithmetic.
      *
-     * @param x    Argument to the polynomial.
+     * @param x Argument to the polynomial.
      * @param coef Coefficients of the polynomial.
-     * @param n    Degree of the polynomial.
+     * @param n Degree of the polynomial.
      */
     public static double evalPoly1(double x, double[] coef, int n) {
         double res = x + coef[0];
@@ -551,9 +551,9 @@ public class Algebra extends Constants {
      * <p>
      * In the interest of speed, there are no checks for out of bounds arithmetic.</p>
      *
-     * @param x    Argument to the polynomial.
+     * @param x Argument to the polynomial.
      * @param coef Coefficients of the polynomial.
-     * @param n    Degree of the polynomial.
+     * @param n Degree of the polynomial.
      */
     public static double evalPoly(double x, double[] coef, int n) {
         double res = coef[0];

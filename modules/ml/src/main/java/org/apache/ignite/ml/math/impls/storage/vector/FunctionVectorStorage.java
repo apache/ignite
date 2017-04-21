@@ -47,7 +47,7 @@ public class FunctionVectorStorage implements VectorStorage {
     /**
      * Creates read-only or read-write storage.
      *
-     * @param size    Cardinality of this vector storage.
+     * @param size Cardinality of this vector storage.
      * @param getFunc Get function.
      * @param setFunc Optional set function ({@code null} for read-only storage).
      */
@@ -77,7 +77,7 @@ public class FunctionVectorStorage implements VectorStorage {
     /**
      * Creates read-only storage.
      *
-     * @param size    Cardinality of this vector storage.
+     * @param size Cardinality of this vector storage.
      * @param getFunc Get function.
      */
     public FunctionVectorStorage(int size, IgniteFunction<Integer, Double> getFunc) {
@@ -112,8 +112,8 @@ public class FunctionVectorStorage implements VectorStorage {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        setFunc = (IntDoubleToVoidFunction) in.readObject();
-        getFunc = (IgniteFunction<Integer, Double>) in.readObject();
+        setFunc = (IntDoubleToVoidFunction)in.readObject();
+        getFunc = (IgniteFunction<Integer, Double>)in.readObject();
         size = in.readInt();
     }
 

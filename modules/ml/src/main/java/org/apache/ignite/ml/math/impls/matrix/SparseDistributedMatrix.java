@@ -55,8 +55,8 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     }
 
     /**
-     * @param rows    Amount of rows in the matrix.
-     * @param cols    Amount of columns in the matrix.
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
      * @param stoMode Matrix storage mode.
      * @param acsMode Matrix elements access mode.
      */
@@ -74,7 +74,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
      *
      */
     private SparseDistributedMatrixStorage storage() {
-        return (SparseDistributedMatrixStorage) getStorage();
+        return (SparseDistributedMatrixStorage)getStorage();
     }
 
     /**
