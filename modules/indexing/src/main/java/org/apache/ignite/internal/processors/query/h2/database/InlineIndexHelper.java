@@ -41,7 +41,6 @@ import org.h2.value.ValueStringFixed;
 import org.h2.value.ValueStringIgnoreCase;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
-import org.h2.value.ValueTimestampUtc;
 import org.h2.value.ValueUuid;
 
 /**
@@ -66,7 +65,6 @@ public class InlineIndexHelper {
         Value.DATE,
         Value.TIME,
         Value.TIMESTAMP,
-        Value.TIMESTAMP_UTC,
         Value.UUID,
         Value.STRING,
         Value.STRING_FIXED,
@@ -132,10 +130,6 @@ public class InlineIndexHelper {
 
             case Value.TIMESTAMP:
                 this.size = 16;
-                break;
-
-            case Value.TIMESTAMP_UTC:
-                this.size = 8;
                 break;
 
             case Value.UUID:
@@ -275,9 +269,6 @@ public class InlineIndexHelper {
 
             case Value.TIMESTAMP:
                 return ValueTimestamp.fromDateValueAndNanos(PageUtils.getLong(pageAddr, off + 1), PageUtils.getLong(pageAddr, off + 9));
-
-            case Value.TIMESTAMP_UTC:
-                return ValueTimestampUtc.fromNanos(PageUtils.getLong(pageAddr, off + 1));
 
             case Value.UUID:
                 return ValueUuid.get(PageUtils.getLong(pageAddr, off + 1), PageUtils.getLong(pageAddr, off + 9));
@@ -432,11 +423,6 @@ public class InlineIndexHelper {
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, ((ValueTimestamp)val).getDateValue());
                 PageUtils.putLong(pageAddr, off + 9, ((ValueTimestamp)val).getTimeNanos());
-                return size + 1;
-
-            case Value.TIMESTAMP_UTC:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
-                PageUtils.putLong(pageAddr, off + 1, ((ValueTimestampUtc)val).getUtcDateTimeNanos());
                 return size + 1;
 
             case Value.UUID:
