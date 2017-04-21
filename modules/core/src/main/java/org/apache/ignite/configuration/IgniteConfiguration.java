@@ -1297,7 +1297,7 @@ public class IgniteConfiguration {
      * <p>
      * If not provided, then default value {@link #DFLT_METRICS_UPDATE_FREQ} is used.
      *
-     * @return Job metrics update frequency in milliseconds.
+     * @return Metrics update frequency in milliseconds.
      * @see #DFLT_METRICS_UPDATE_FREQ
      */
     public long getMetricsUpdateFrequency() {
@@ -1311,7 +1311,7 @@ public class IgniteConfiguration {
      * If not provided, then default value
      * {@link #DFLT_METRICS_UPDATE_FREQ} is used.
      *
-     * @param metricsUpdateFreq Ignite metrics update frequency in milliseconds.
+     * @param metricsUpdateFreq Metrics update frequency in milliseconds.
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setMetricsUpdateFrequency(long metricsUpdateFreq) {

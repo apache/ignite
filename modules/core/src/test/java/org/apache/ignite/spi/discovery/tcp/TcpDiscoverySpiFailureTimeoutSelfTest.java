@@ -24,7 +24,6 @@ import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.AbstractDiscoverySelfTest;
@@ -118,14 +117,14 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         try {
             ClusterNode node = secondSpi().getLocalNode();
 
-            firstSpi().openSocketTimeout = true;
+            firstSpi().openSockTimeout = true;
 
             assertFalse(firstSpi().pingNode(node.id()));
             assertTrue(firstSpi().validTimeout);
             assertTrue(firstSpi().err.getMessage().equals("Timeout: openSocketTimeout"));
 
-            firstSpi().openSocketTimeout = false;
-            firstSpi().openSocketTimeoutWait = true;
+            firstSpi().openSockTimeout = false;
+            firstSpi().openSockTimeoutWait = true;
 
             assertFalse(firstSpi().pingNode(node.id()));
             assertTrue(firstSpi().validTimeout);
@@ -144,12 +143,12 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         try {
             ClusterNode node = secondSpi().getLocalNode();
 
-            firstSpi().writeToSocketTimeoutWait = true;
+            firstSpi().writeToSockTimeoutWait = true;
 
             assertFalse(firstSpi().pingNode(node.id()));
             assertTrue(firstSpi().validTimeout);
 
-            firstSpi().writeToSocketTimeoutWait = false;
+            firstSpi().writeToSockTimeoutWait = false;
 
             assertTrue(firstSpi().pingNode(node.id()));
             assertTrue(firstSpi().validTimeout);
@@ -184,13 +183,13 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
 
             assert nextSpi.connCheckStatusMsgCntReceived == 0;
 
-            firstSpi().countConnCheckMsg = true;
-            nextSpi.countConnCheckMsg = true;
+            firstSpi().cntConnCheckMsg = true;
+            nextSpi.cntConnCheckMsg = true;
 
             Thread.sleep(firstSpi().failureDetectionTimeout());
 
-            firstSpi().countConnCheckMsg = false;
-            nextSpi.countConnCheckMsg = false;
+            firstSpi().cntConnCheckMsg = false;
+            nextSpi.cntConnCheckMsg = false;
 
             int sent = firstSpi().connCheckStatusMsgCntSent;
             int received = nextSpi.connCheckStatusMsgCntReceived;
@@ -230,16 +229,16 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
      */
     private static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** */
-        private volatile boolean openSocketTimeout;
+        private volatile boolean openSockTimeout;
 
         /** */
-        private volatile boolean openSocketTimeoutWait;
+        private volatile boolean openSockTimeoutWait;
 
         /** */
-        private volatile boolean writeToSocketTimeoutWait;
+        private volatile boolean writeToSockTimeoutWait;
 
         /** */
-        private volatile boolean countConnCheckMsg;
+        private volatile boolean cntConnCheckMsg;
 
         /** */
         private volatile int connCheckStatusMsgCntSent;
@@ -259,11 +258,11 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
             IgniteSpiOperationTimeoutHelper timeoutHelper)
             throws IOException, IgniteSpiOperationTimeoutException {
 
-            if (openSocketTimeout) {
+            if (openSockTimeout) {
                 err = new IgniteSpiOperationTimeoutException("Timeout: openSocketTimeout");
                 throw err;
             }
-            else if (openSocketTimeoutWait) {
+            else if (openSockTimeoutWait) {
                 long timeout = timeoutHelper.nextTimeoutChunk(0);
 
                 try {
@@ -297,7 +296,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
             if (!(msg instanceof TcpDiscoveryPingRequest)) {
-                if (countConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
+                if (cntConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                     connCheckStatusMsgCntSent++;
 
                 super.writeToSocket(sock, out, msg, timeout);
@@ -311,7 +310,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 throw new IgniteCheckedException("Invalid timeout: " + timeout);
             }
 
-            if (writeToSocketTimeoutWait) {
+            if (writeToSockTimeoutWait) {
                 try {
                     Thread.sleep(timeout);
                 }
@@ -326,7 +325,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         /** {@inheritDoc} */
         protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
             throws IOException {
-            if (countConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
+            if (cntConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                 connCheckStatusMsgCntReceived++;
 
             super.writeToSocket(msg, sock, res, timeout);
@@ -336,14 +335,14 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
          *
          */
         private void resetState() {
-            openSocketTimeout = false;
-            openSocketTimeoutWait = false;
-            writeToSocketTimeoutWait = false;
+            openSockTimeout = false;
+            openSockTimeoutWait = false;
+            writeToSockTimeoutWait = false;
             err = null;
             validTimeout = true;
             connCheckStatusMsgCntSent = 0;
             connCheckStatusMsgCntReceived = 0;
-            countConnCheckMsg = false;
+            cntConnCheckMsg = false;
         }
     }
 }

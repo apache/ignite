@@ -162,6 +162,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setClientFailureDetectionTimeout(100000);
+
         CacheConfiguration[] ccfg;
 
         if (cacheC != null)

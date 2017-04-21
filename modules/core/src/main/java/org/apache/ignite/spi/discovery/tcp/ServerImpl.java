@@ -4980,7 +4980,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         U.warn(log, "Failing client node due to not receiving metrics updates " +
                                             "from client node within " +
                                             "'IgniteConfiguration.clientFailureDetectionTimeout' " +
-                                            "(consider increasing configuration property): " + clientNode);
+                                            "(consider increasing configuration property) " +
+                                            "[timeout=" + spi.clientFailureDetectionTimeout() + ", node=" + clientNode + ']');
 
                                         TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(
                                             locNodeId, clientNode.id(), clientNode.internalOrder());
@@ -5366,7 +5367,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Check the last time a metrics update message received. If the time is bigger than {@code metricsCheckFreq}
+         * Checks the last time a metrics update message received. If the time is bigger than {@code metricsCheckFreq}
          * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
          */
         private void checkMetricsReceiving() {
@@ -5558,7 +5559,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ClientMessageWorker clientMsgWrk = null;
 
-            boolean srvrSock;
+            boolean srvSock;
 
             try {
                 InputStream in;
@@ -5650,7 +5651,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // Handshake.
                     TcpDiscoveryHandshakeRequest req = (TcpDiscoveryHandshakeRequest)msg;
 
-                    srvrSock = !req.client();
+                    srvSock = !req.client();
 
                     UUID nodeId = req.creatorNodeId();
 
@@ -5662,7 +5663,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (req.client())
                         res.clientAck(true);
 
-                    spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvrSock));
+                    spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
@@ -5777,7 +5778,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                long sockTimeout = spi.getEffectiveSocketTimeout(srvrSock);
+                long sockTimeout = spi.getEffectiveSocketTimeout(srvSock);
 
                 while (!isInterrupted()) {
                     try {

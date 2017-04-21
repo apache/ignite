@@ -98,12 +98,12 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         if (isDebug())
             disco.setAckTimeout(Integer.MAX_VALUE);
 
-        MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
-        eventSpi.setExpireCount(100);
+        MemoryEventStorageSpi evtSpi = new MemoryEventStorageSpi();
+        evtSpi.setExpireCount(100);
 
         cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
-        cfg.setEventStorageSpi(eventSpi);
+        cfg.setEventStorageSpi(evtSpi);
 
         cfg.setDiscoverySpi(disco);
 

@@ -516,19 +516,35 @@ public class PlatformConfigurationUtils {
      * @param cfg Configuration.
      */
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
-        if (in.readBoolean()) cfg.setClientMode(in.readBoolean());
-        int[] eventTypes = in.readIntArray(); if (eventTypes != null) cfg.setIncludeEventTypes(eventTypes);
-        if (in.readBoolean()) cfg.setMetricsExpireTime(in.readLong());
-        if (in.readBoolean()) cfg.setMetricsHistorySize(in.readInt());
-        if (in.readBoolean()) cfg.setMetricsLogFrequency(in.readLong());
-        if (in.readBoolean()) cfg.setMetricsUpdateFrequency(in.readLong());
-        if (in.readBoolean()) cfg.setNetworkSendRetryCount(in.readInt());
-        if (in.readBoolean()) cfg.setNetworkSendRetryDelay(in.readLong());
-        if (in.readBoolean()) cfg.setNetworkTimeout(in.readLong());
-        String workDir = in.readString(); if (workDir != null) cfg.setWorkDirectory(workDir);
-        String localHost = in.readString(); if (localHost != null) cfg.setLocalHost(localHost);
-        if (in.readBoolean()) cfg.setDaemon(in.readBoolean());
-        if (in.readBoolean()) cfg.setLateAffinityAssignment(in.readBoolean());
+        if (in.readBoolean())
+            cfg.setClientMode(in.readBoolean());
+        int[] eventTypes = in.readIntArray();
+        if (eventTypes != null)
+            cfg.setIncludeEventTypes(eventTypes);
+        if (in.readBoolean())
+            cfg.setMetricsExpireTime(in.readLong());
+        if (in.readBoolean())
+            cfg.setMetricsHistorySize(in.readInt());
+        if (in.readBoolean())
+            cfg.setMetricsLogFrequency(in.readLong());
+        if (in.readBoolean())
+            cfg.setMetricsUpdateFrequency(in.readLong());
+        if (in.readBoolean())
+            cfg.setNetworkSendRetryCount(in.readInt());
+        if (in.readBoolean())
+            cfg.setNetworkSendRetryDelay(in.readLong());
+        if (in.readBoolean())
+            cfg.setNetworkTimeout(in.readLong());
+        String workDir = in.readString();
+        if (workDir != null)
+            cfg.setWorkDirectory(workDir);
+        String localHost = in.readString();
+        if (localHost != null)
+            cfg.setLocalHost(localHost);
+        if (in.readBoolean())
+            cfg.setDaemon(in.readBoolean());
+        if (in.readBoolean())
+            cfg.setLateAffinityAssignment(in.readBoolean());
         if (in.readBoolean()) {
             cfg.setClientFailureDetectionTimeout(in.readLong());
             cfg.setFailureDetectionTimeout(in.readLong());
@@ -1032,17 +1048,17 @@ public class PlatformConfigurationUtils {
         else
             w.writeBoolean(false);
 
-        EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
+        EventStorageSpi evtStorageSpi = cfg.getEventStorageSpi();
 
-        if (eventStorageSpi == null)
+        if (evtStorageSpi == null)
             w.writeByte((byte) 0);
-        else if (eventStorageSpi instanceof NoopEventStorageSpi)
+        else if (evtStorageSpi instanceof NoopEventStorageSpi)
             w.writeByte((byte) 1);
-        else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
+        else if (evtStorageSpi instanceof MemoryEventStorageSpi) {
             w.writeByte((byte) 2);
 
-            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
-            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireAgeMs());
+            w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireCount());
+            w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireAgeMs());
         }
 
         w.writeString(cfg.getIgniteHome());
@@ -1102,9 +1118,8 @@ public class PlatformConfigurationUtils {
                     w.writeInt(ttl);
             }
         }
-        else {
+        else
             w.writeBoolean(false);
-        }
 
         w.writeLong(tcp.getSocketTimeout());
         w.writeLong(tcp.getAckTimeout());
