@@ -23,8 +23,8 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean id="cassandraAdminCredentials" class="org.apache.ignite.tests.utils.CassandraAdminCredentials"/>
-    <bean id="cassandraRegularCredentials" class="org.apache.ignite.tests.utils.CassandraRegularCredentials"/>
+    <bean id="cassandraAdminCredentials" class="org.apache.ignite.cassandra.utils.CassandraAdminCredentials"/>
+    <bean id="cassandraRegularCredentials" class="org.apache.ignite.cassandra.utils.CassandraRegularCredentials"/>
 
     <bean id="loadBalancingPolicy" class="com.datastax.driver.core.policies.TokenAwarePolicy">
         <constructor-arg type="com.datastax.driver.core.policies.LoadBalancingPolicy">
@@ -32,7 +32,7 @@
         </constructor-arg>
     </bean>
 
-    <bean id="contactPoints" class="org.apache.ignite.tests.utils.CassandraHelper" factory-method="getContactPointsArray"/>
+    <bean id="contactPoints" class="org.apache.ignite.cassandra.utils.CassandraHelper" factory-method="getContactPointsArray"/>
 
     <bean id="cassandraAdminDataSource" class="org.apache.ignite.cache.store.cassandra.datasource.DataSource">
         <property name="credentials" ref="cassandraAdminCredentials"/>

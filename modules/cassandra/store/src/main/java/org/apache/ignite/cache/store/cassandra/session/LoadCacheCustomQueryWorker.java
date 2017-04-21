@@ -37,7 +37,7 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
     private final CassandraSession ses;
 
     /** User query. */
-    private final String qry;
+    private final Statement stmt;
 
     /** Persistence controller */
     private final PersistenceController ctrl;
@@ -51,10 +51,10 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
     /**
      * @param clo Closure for loaded values.
      */
-    public LoadCacheCustomQueryWorker(CassandraSession ses, String qry, PersistenceController ctrl,
+    public LoadCacheCustomQueryWorker(CassandraSession ses, Statement stmt, PersistenceController ctrl,
         IgniteLogger log, IgniteBiInClosure<K, V> clo) {
         this.ses = ses;
-        this.qry = qry.trim().endsWith(";") ? qry : qry + ";";
+        this.stmt=stmt;
         this.ctrl = ctrl;
         this.log = log;
         this.clo = clo;
@@ -70,7 +70,7 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
 
             /** {@inheritDoc} */
             @Override public Statement getStatement() {
-                return new SimpleStatement(qry);
+                return stmt;
             }
 
             /** {@inheritDoc} */

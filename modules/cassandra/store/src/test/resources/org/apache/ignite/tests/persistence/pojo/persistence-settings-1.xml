@@ -17,5 +17,5 @@
 
 <persistence keyspace="test1" table="pojo_test1">
     <keyPersistence class="java.lang.Long" strategy="PRIMITIVE"/>
-    <valuePersistence class="org.apache.ignite.tests.pojos.Person" strategy="POJO"/>
+    <valuePersistence class="org.apache.ignite.cassandra.pojos.Person" strategy="POJO"/>
 </persistence>

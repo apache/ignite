@@ -705,15 +705,25 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                         throw new CacheLoaderException("Provided key type is not found in store or cache configuration " +
                             "[cache=" + U.maskName(cacheName) + ", key=" + keyType + "]");
 
-                    String qry = args[i + 1].toString();
-
                     EntryMapping em = entryMapping(cacheName, typeIdForTypeName(kindForName(keyType), keyType));
 
-                    if (log.isInfoEnabled())
-                        log.info("Started load cache using custom query [cache=" + U.maskName(cacheName) +
-                            ", keyType=" + keyType + ", query=" + qry + "]");
+                    Object arg = args[i + 1];
+                    if (arg instanceof PreparedStatement) {
+                        PreparedStatement stmt = (PreparedStatement)arg;
+                        if (log.isInfoEnabled())
+                            log.info("Started load cache using custom statement [cache=" + U.maskName(cacheName) +
+                                    ", keyType=" + keyType + "]");
 
-                    futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(em, qry, clo)));
+                        futs.add(pool.submit(new LoadCacheCustomStatementWorker<>(em, stmt, clo)));
+                    } else {
+                        String qry = arg.toString();
+
+                        if (log.isInfoEnabled())
+                            log.info("Started load cache using custom query [cache=" + U.maskName(cacheName) +
+                                    ", keyType=" + keyType + ", query=" + qry + "]");
+
+                        futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(em, qry, clo)));
+                    }
                 }
             }
             else {
@@ -1891,6 +1901,62 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
          */
         protected String fullTableName() {
             return fullTblName;
+        }
+    }
+
+    /**
+     * Worker for load cache using custom user statement.
+     *
+     * @param <K1> Key type.
+     * @param <V1> Value type.
+     */
+    private class LoadCacheCustomStatementWorker<K1, V1> implements Callable<Void> {
+        /** Entry mapping description. */
+        private final EntryMapping em;
+
+        /** User statement. */
+        private final PreparedStatement stmt;
+
+        /** Closure for loaded values. */
+        private final IgniteBiInClosure<K1, V1> clo;
+
+        /**
+         * @param em Entry mapping description.
+         * @param qry User query.
+         * @param clo Closure for loaded values.
+         */
+        private LoadCacheCustomStatementWorker(EntryMapping em, PreparedStatement stmt, IgniteBiInClosure<K1, V1> clo) {
+            this.em = em;
+            this.stmt = stmt;
+            this.clo = clo;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws Exception {
+            try {
+                stmt.setFetchSize(dialect.getFetchSize());
+
+                ResultSet rs = stmt.executeQuery();
+
+                ResultSetMetaData meta = rs.getMetaData();
+
+                Map<String, Integer> colIdxs = U.newHashMap(meta.getColumnCount());
+
+                for (int i = 1; i <= meta.getColumnCount(); i++)
+                    colIdxs.put(meta.getColumnLabel(i).toUpperCase(), i);
+
+                while (rs.next()) {
+                    K1 key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), colIdxs, rs);
+                    V1 val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), colIdxs, rs);
+
+                    clo.apply(key, val);
+                }
+
+                return null;
+            }
+            catch (SQLException e) {
+                throw new CacheLoaderException("Failed to execute custom query for load cache", e);
+            }
         }
     }
 

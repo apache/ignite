@@ -22,7 +22,7 @@
                     column="key"/>
 
     <!-- Kryo serialization specified to be used -->
-    <valuePersistence class="org.apache.ignite.tests.pojos.Person"
+    <valuePersistence class="org.apache.ignite.cassandra.pojos.Person"
                       strategy="BLOB"
                       serializer="org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer"
                       column="value"/>

@@ -23,7 +23,7 @@ set TESTS_CLASSPATH="%~dp0\lib*;%~dp0settings"
 
 call %~dp0jvm-opts.bat %*
 
-call java %JVM_OPTS% -cp "%TESTS_CLASSPATH%" "org.apache.ignite.tests.LoadTestsCassandraArtifactsCreator"
+call java %JVM_OPTS% -cp "%TESTS_CLASSPATH%" "org.apache.ignite.cassandra.LoadTestsCassandraArtifactsCreator"
 
 if %errorLevel% NEQ 0 (
     echo.

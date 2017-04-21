@@ -23,7 +23,7 @@ set TESTS_CLASSPATH="%~dp0lib\*;%~dp0settings"
 
 call %~dp0jvm-opts.bat %*
 
-call java %JVM_OPTS% -cp "%TESTS_CLASSPATH%" "org.apache.ignite.tests.CassandraDirectPersistenceLoadTest"
+call java %JVM_OPTS% -cp "%TESTS_CLASSPATH%" "org.apache.ignite.cassandra.CassandraDirectPersistenceLoadTest"
 
 if %errorLevel% NEQ 0 (
     echo.

@@ -21,7 +21,7 @@ TESTS_CLASSPATH="$TESTS_ROOT/lib/*:$TESTS_ROOT/settings"
 
 . $TESTS_ROOT/jvm-opt.sh $@
 
-java $JVM_OPTS -cp "$TESTS_CLASSPATH" "org.apache.ignite.tests.CassandraDirectPersistenceLoadTest"
+java $JVM_OPTS -cp "$TESTS_CLASSPATH" "org.apache.ignite.cassandra.CassandraDirectPersistenceLoadTest"
 
 if [ $? -ne 0 ]; then
     echo

@@ -72,7 +72,7 @@ Attributes:
       4) column     [optional] - specifies column name for PRIMITIVE and BLOB strategies where to store key value.
         If not specified column having 'key' name will be used. Shouldn't be used for POJO strategy.
     -->
-    <keyPersistence class="org.apache.ignite.tests.pojos.PersonId" strategy="POJO">
+    <keyPersistence class="org.apache.ignite.cassandra.pojos.PersonId" strategy="POJO">
         <!--
         Partition key fields if POJO strategy used.
 
@@ -144,7 +144,7 @@ Attributes:
       4) column     [optional] - specifies column name for PRIMITIVE and BLOB strategies where to store value.
         If not specified column having 'value' name will be used. Shouldn't be used for POJO strategy.
     -->
-    <valuePersistence class="org.apache.ignite.tests.pojos.Person"
+    <valuePersistence class="org.apache.ignite.cassandra.pojos.Person"
                       strategy="POJO"
                       serializer="org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer">
         <!--
