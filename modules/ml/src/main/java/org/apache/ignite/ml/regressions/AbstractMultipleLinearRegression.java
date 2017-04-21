@@ -325,7 +325,13 @@ public abstract class AbstractMultipleLinearRegression implements
      * @return Y variance
      */
     protected double calculateYVariance() {
-        return Math.sqrt(yVector.foldMap(Functions.PLUS, Functions.SQUARE, 0.0));
+        // Compute initial estimate using definitional formula
+        int vSize = yVector.size();
+        double xbar = yVector.sum() / vSize;
+        // Compute correction factor in second pass
+        final double corr = yVector.foldMap((val, acc) -> acc + val - xbar, Functions.IDENTITY, 0.0);
+        final double mean = xbar - corr;
+        return yVector.foldMap(Functions.PLUS, val -> (val - mean) * (val - mean), 0.0) / (vSize - 1);
     }
 
     /**

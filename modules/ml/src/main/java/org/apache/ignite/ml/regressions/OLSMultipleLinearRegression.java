@@ -48,7 +48,6 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * R b = Q<sup>T</sup> y </code></pre></p>
  *
  * <p>Given <code>Q</code> and <code>R</code>, the last equation is solved by back-substitution.</p>
- *
  */
 public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegression {
 
@@ -79,10 +78,10 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      * Loads model x and y sample data, overriding any previous sample.
      *
      * Computes and caches QR decomposition of the X matrix.
+     *
      * @param y the [n,1] array representing the y sample
      * @param x the [n,k] array representing the x sample
-     * @throws MathIllegalArgumentException if the x and y array data are not
-     *             compatible for the regression
+     * @throws MathIllegalArgumentException if the x and y array data are not compatible for the regression
      */
     public void newSampleData(Vector y, Matrix x) throws MathIllegalArgumentException {
         validateSampleData(x, y);
@@ -104,7 +103,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      * <p>Compute the "hat" matrix.
      * </p>
      * <p>The hat matrix is defined in terms of the design matrix X
-     *  by X(X<sup>T</sup>X)<sup>-1</sup>X<sup>T</sup>
+     * by X(X<sup>T</sup>X)<sup>-1</sup>X<sup>T</sup>
      * </p>
      * <p>The implementation here uses the QR decomposition to compute the
      * hat matrix as Q I<sub>p</sub>Q<sup>T</sup> where I<sub>p</sub> is the
@@ -118,8 +117,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      * a {@code NullPointerException} will be thrown.</p>
      *
      * @return the hat matrix
-     * @throws NullPointerException unless method {@code newSampleData} has been
-     * called beforehand.
+     * @throws NullPointerException unless method {@code newSampleData} has been called beforehand.
      */
     public Matrix calculateHat() {
         // Create augmented identity matrix
