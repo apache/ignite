@@ -24,6 +24,8 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSpis;
+import org.apache.ignite.configuration.ExecutorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
@@ -751,4 +753,16 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     /** {@inheritDoc} */
     @Deprecated
     @Override public IgniteCompute withAsync();
+
+    /**
+     * Gets instance of the compute API associated with custom executor. All tasks and closures submitted to returned
+     * instance will be processed by this executor on both remote and local nodes. If executor with the given name
+     * doesn't exist, task will be processed in default ("public") pool.
+     * <p>
+     * Executor should be defined in {@link IgniteConfiguration#setExecutorConfiguration(ExecutorConfiguration...)}.
+     *
+     * @param name Custom executor name.
+     * @return Instance of compute API associated with custom executor.
+     */
+    public IgniteCompute withExecutor(@NotNull String name);
 }
