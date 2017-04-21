@@ -132,9 +132,6 @@ public class PlatformCache extends PlatformAbstractTarget {
     public static final int OP_LOC_LOAD_CACHE = 17;
 
     /** */
-    public static final int OP_LOC_PROMOTE = 18;
-
-    /** */
     public static final int OP_LOCAL_CLEAR = 20;
 
     /** */
@@ -432,12 +429,6 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_CONTAINS_KEYS:
                     return cache.containsKeys(PlatformUtils.readSet(reader)) ? TRUE : FALSE;
-
-                case OP_LOC_PROMOTE: {
-                    cache.localPromote(PlatformUtils.readSet(reader));
-
-                    return TRUE;
-                }
 
                 case OP_REPLACE_3:
                     return cache.replace(reader.readObjectDetached(), reader.readObjectDetached(),
