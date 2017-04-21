@@ -94,6 +94,7 @@
     <Compile Include="Binary\BinaryBasicNameMapper.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Cache\Configuration\MemoryPolicyConfiguration.cs" />
+    <Compile Include="Cache\Configuration\PartitionLossPolicy.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Events\IEventStorageSpi.cs" />
     <Compile Include="Events\MemoryEventStorageSpi.cs" />

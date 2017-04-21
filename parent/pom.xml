@@ -37,8 +37,8 @@
         <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spark.version>2.1.0</spark.version>
-        <spring.version>4.3.7.RELEASE</spring.version>
-        <spring.data.version>1.2.1.RELEASE</spring.data.version>
+        <spring.version>4.3.7.RELEASE</spring.version> <!-- don't forget to update spring-data version -->
+        <spring.data.version>1.13.1.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
@@ -71,7 +71,7 @@
         <guava.version>18.0</guava.version>
         <guava14.version>14.0.1</guava14.version>
         <guava16.version>16.0.1</guava16.version>
-        <h2.version>1.4.191</h2.version>
+        <h2.version>1.4.194</h2.version>
         <httpclient.version>4.5.1</httpclient.version>
         <httpcore.version>4.4.3</httpcore.version>
         <jackson.version>1.9.13</jackson.version>

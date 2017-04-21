@@ -129,6 +129,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="WriteBehindCoalescing"/>. </summary>
         public const bool DefaultWriteBehindCoalescing = true;
 
+        /// <summary> Default value for <see cref="PartitionLossPolicy"/>. </summary>
+        public const PartitionLossPolicy DefaultPartitionLossPolicy = PartitionLossPolicy.Ignore;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -173,6 +176,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushSize = DefaultWriteBehindFlushSize;
             WriteBehindFlushThreadCount= DefaultWriteBehindFlushThreadCount;
             WriteBehindCoalescing = DefaultWriteBehindCoalescing;
+            PartitionLossPolicy = DefaultPartitionLossPolicy;
         }
 
         /// <summary>
@@ -239,6 +243,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteThrough = reader.ReadBoolean();
             EnableStatistics = reader.ReadBoolean();
             MemoryPolicyName = reader.ReadString();
+            PartitionLossPolicy = (PartitionLossPolicy) reader.ReadInt();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
@@ -296,6 +301,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(WriteThrough);
             writer.WriteBoolean(EnableStatistics);
             writer.WriteString(MemoryPolicyName);
+            writer.WriteInt((int) PartitionLossPolicy);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -645,5 +651,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultWriteBehindCoalescing)]
         public bool WriteBehindCoalescing { get; set; }
+
+        /// <summary>
+        /// Gets or sets the partition loss policy. This policy defines how Ignite will react to
+        /// a situation when all nodes for some partition leave the cluster.
+        /// </summary>
+        [DefaultValue(DefaultPartitionLossPolicy)]
+        public PartitionLossPolicy PartitionLossPolicy { get; set; }
     }
 }

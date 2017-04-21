@@ -406,6 +406,10 @@ public class GridSqlQueryParser {
         if (res == null) {
             res = parseTable(filter.getTable());
 
+            // Setup index hints.
+            if (res instanceof GridSqlTable && filter.getIndexHints() != null)
+                ((GridSqlTable)res).useIndexes(new ArrayList<>(filter.getIndexHints().getAllowedIndexes()));
+
             String alias = ALIAS.get(filter);
 
             if (alias != null)
