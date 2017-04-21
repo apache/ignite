@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -33,6 +36,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 
 import java.util.Collections;
 import java.util.Map;
+
+import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
+import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
 
 /**
  * Tests for schema exchange between nodes.
@@ -396,11 +402,11 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test client reconnect.
+     * Test client reconnect after server restart accompanied by schema change.
      *
      * @throws Exception If failed.
      */
-    public void testClientReconnect() throws Exception {
+    public void testServerRestartWithNewTypes() throws Exception {
         IgniteEx node1 = start(1, KeyClass.class, ValueClass.class);
         assertTypes(node1, ValueClass.class);
 
@@ -412,11 +418,11 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         stopGrid(1);
 
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return grid(2).context().clientDisconnected();
             }
-        }, 10_000L);
+        }, 10_000L));
 
         IgniteFuture reconnFut = null;
 
@@ -441,6 +447,40 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test client reconnect.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testClientReconnect() throws Exception {
+        final IgniteEx node1 = start(1, KeyClass.class, ValueClass.class);
+        assertTypes(node1, ValueClass.class);
+
+        final IgniteEx node2 = startClientNoCache(2);
+        assertTypes(node2);
+
+        node2.cache(CACHE_NAME);
+        assertTypes(node2, ValueClass.class);
+
+        reconnectClientNode(log, node2, node1, new Runnable() {
+            @Override public void run() {
+                assertTrue(node2.context().clientDisconnected());
+
+                final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+
+                try {
+                    queryProcessor(node1).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        });
+
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
+    }
+
+    /**
      * Ensure that only provided types exists for the given cache.
      *
      * @param node Node.
@@ -449,15 +489,15 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
     private static void assertTypes(IgniteEx node, Class... clss) {
         Map<String, QueryTypeDescriptorImpl> types = types(node, CACHE_NAME);
 
-        if (clss == null || clss.length == 0)
-            assert types.isEmpty();
+        if (F.isEmpty(clss))
+            assertTrue(types.isEmpty());
         else {
             assertEquals(clss.length, types.size());
 
             for (Class cls : clss) {
                 String tblName = tableName(cls);
 
-                assert types.containsKey(tblName);
+                assertTrue(types.containsKey(tblName));
             }
         }
     }
@@ -498,6 +538,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
         cfg.setCacheConfiguration(cacheConfiguration(clss));
+        cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
 
         if (filterNodeName != null && F.eq(name, filterNodeName))
             cfg.setUserAttributes(Collections.singletonMap("AFF_NODE", true));
@@ -542,6 +583,8 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         cfg.setClientMode(client);
         cfg.setLocalHost("127.0.0.1");
+
+        cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
 
         return (IgniteEx)Ignition.start(cfg);
     }
