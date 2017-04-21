@@ -33,16 +33,17 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -195,14 +196,12 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
                     TestRecordingCommunicationSpi spi =
                         (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
-                    spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-                        @Override public boolean apply(GridIoMessage ioMsg) {
-                            if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessage.class))
+                    spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                        @Override public boolean apply(ClusterNode node, Message msg) {
+                            if (!msg.getClass().equals(GridDhtPartitionSupplyMessage.class))
                                 return false;
 
-                            GridDhtPartitionSupplyMessage msg = (GridDhtPartitionSupplyMessage)ioMsg.message();
-
-                            return msg.cacheId() == CU.cacheId(ccfg.getName());
+                            return ((GridDhtPartitionSupplyMessage)msg).cacheId() == CU.cacheId(ccfg.getName());
                         }
                     });
                 }

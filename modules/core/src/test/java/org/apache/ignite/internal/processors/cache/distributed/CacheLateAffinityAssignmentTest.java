@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -1082,12 +1083,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             TestRecordingCommunicationSpi spi =
                     (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
 
-            spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-                @Override public boolean apply(GridIoMessage msg) {
-                    Message msg0 = msg.message();
-
-                    return msg0.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                        msg0.getClass().equals(GridDhtPartitionsFullMessage.class);
+            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
+                        msg.getClass().equals(GridDhtPartitionsFullMessage.class);
                 }
             });
         }
@@ -1710,14 +1709,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             @Override public TestRecordingCommunicationSpi apply(String s) {
                 TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
 
-                spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-                    @Override public boolean apply(GridIoMessage msg) {
-                        Message msg0 = msg.message();
-
-                        if (msg0 instanceof GridDhtForceKeysRequest || msg0 instanceof GridDhtForceKeysResponse) {
+                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                    @Override public boolean apply(ClusterNode node, Message msg) {
+                        if (msg instanceof GridDhtForceKeysRequest || msg instanceof GridDhtForceKeysResponse) {
                             fail.set(true);
 
-                            U.dumpStack(log, "Unexpected message: " + msg0);
+                            U.dumpStack(log, "Unexpected message: " + msg);
                         }
 
                         return false;
@@ -2011,14 +2008,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      */
     private void blockSupplySend(TestRecordingCommunicationSpi spi, final String cacheName) {
-        spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage ioMsg) {
-                if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessage.class))
+        spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                if (!msg.getClass().equals(GridDhtPartitionSupplyMessage.class))
                     return false;
 
-                GridDhtPartitionSupplyMessage msg = (GridDhtPartitionSupplyMessage)ioMsg.message();
-
-                return msg.cacheId() == CU.cacheId(cacheName);
+                return ((GridDhtPartitionSupplyMessage)msg).cacheId() == CU.cacheId(cacheName);
             }
         });
     }
