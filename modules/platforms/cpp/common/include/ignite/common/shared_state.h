@@ -38,6 +38,10 @@ namespace ignite
             /** Template value type */
             typedef T ValueType;
 
+            /**
+             * Default constructor.
+             * Constructs non-set SharedState instance.
+             */
             SharedState() :
                 value(),
                 error()
@@ -176,6 +180,10 @@ namespace ignite
             /** Template value type */
             typedef void ValueType;
 
+            /**
+             * Default constructor.
+             * Constructs non-set SharedState instance.
+             */
             SharedState() :
                 done(false),
                 error()
