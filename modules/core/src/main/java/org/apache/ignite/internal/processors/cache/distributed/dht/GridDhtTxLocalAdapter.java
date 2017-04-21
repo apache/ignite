@@ -520,9 +520,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             return addReader(msgId, dhtCache.entryExx(existing.key()), existing, topologyVersion());
         }
         catch (GridDhtInvalidPartitionException ex) {
-            addInvalidPartition(cacheCtx, ex.partition());
-
-            return new GridFinishedFuture<>(true);
+            throw new IgniteCheckedException(ex);
         }
     }
 
