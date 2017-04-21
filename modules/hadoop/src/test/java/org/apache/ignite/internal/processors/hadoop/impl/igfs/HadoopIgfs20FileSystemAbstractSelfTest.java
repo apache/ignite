@@ -400,9 +400,11 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
             IgfsMetrics metrics = igfs.metrics();
 
             used += metrics.localSpaceSize();
+            max += metrics.maxSpaceSize();
         }
 
         assertEquals(used, status.getUsed());
+        assertEquals(max, status.getCapacity());
     }
 
     /** @throws Exception If failed. */
