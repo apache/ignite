@@ -385,8 +385,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             if (log.isDebugEnabled())
                 log.debug("Stopping write-behind store for cache '" + cacheName + '\'');
 
-            for (Flusher f : flushThreads) {
-                if (!f.isEmpty())
+            if (writeCoalescing)
+                wakeUp();
+            else {
+                for (Flusher f : flushThreads)
                     f.wakeUp();
             }
 
@@ -897,7 +899,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             IgniteLogger log) {
             super(gridName, name, log);
 
-            flusherCacheCriticalSize = cacheCriticalSize/flushThreadCnt;
+            flusherCacheCriticalSize = cacheCriticalSize / flushThreadCnt;
 
             assert flusherCacheCriticalSize > batchSize;
 
@@ -930,7 +932,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             throws IgniteInterruptedCheckedException {
             assert !writeCoalescing : "Unexpected write coalescing.";
 
-            if (queue.sizex() > flusherCacheCriticalSize) {
+            int qSize = queue.sizex();
+
+            if (qSize > flusherCacheCriticalSize) {
                 while (queue.sizex() > flusherCacheCriticalSize) {
                     wakeUp();
 
@@ -960,6 +964,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
                 cacheTotalOverflowCntr.incrementAndGet();
             }
+            else if (qSize > batchSize)
+                wakeUp();
 
             queue.add(F.t(key, newVal));
 
@@ -1055,6 +1061,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     if (queue.sizex() >= batchSize)
                         return;
 
+                    if (stopping.get())
+                        return;
+
                     if (cacheFlushFreq > 0)
                         LockSupport.parkNanos(cacheFlushFreqNanos);
                     else
@@ -1065,9 +1074,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
                     if (Thread.interrupted())
                         throw new InterruptedException();
-
-                    if (stopping.get())
-                        return;
                 }
             }
             finally {

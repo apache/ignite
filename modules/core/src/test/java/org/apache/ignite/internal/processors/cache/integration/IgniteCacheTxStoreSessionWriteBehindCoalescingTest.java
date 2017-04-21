@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.integration;
 
-import org.apache.ignite.IgniteCache;
+import java.util.Collection;
+import javax.cache.Cache;
+import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Integration test write behind cache store with {@link CacheConfiguration#getWriteBehindCoalescing()}={@code False}
@@ -33,15 +35,55 @@ public class IgniteCacheTxStoreSessionWriteBehindCoalescingTest extends IgniteCa
         return TRANSACTIONAL;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration result = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg = result.getCacheConfiguration()[0];
+    /**
+     * @param igniteInstanceName Ignite instance name.
+     * @return Cache configuration.
+     * @throws Exception In case of error.
+     */
+    @SuppressWarnings("unchecked")
+    protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setWriteBehindCoalescing(false);
 
-        return result;
+        ccfg.setCacheStoreFactory(singletonFactory(new TestNonCoalescingStore()));
+
+        return ccfg;
+    }
+
+    /**
+     *
+     */
+    private class TestNonCoalescingStore extends TestStore {
+
+        /** {@inheritDoc} */
+        @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) throws CacheWriterException {
+            log.info("writeAll: " + entries);
+
+            assertTrue("Unexpected entries: " + entries, entries.size() <= 10);
+
+            checkSession("writeAll");
+
+            for (int i = 0; i < entries.size(); i++)
+                entLatch.countDown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            fail();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
+            log.info("deleteAll: " + keys);
+
+            assertTrue("Unexpected keys: " + keys, keys.size() <= 10);
+
+            checkSession("deleteAll");
+
+            for (int i = 0; i < keys.size(); i++)
+                entLatch.countDown();
+        }
     }
 }
