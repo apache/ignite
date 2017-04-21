@@ -1467,7 +1467,7 @@ public abstract class GridAbstractTest extends TestCase {
         TcpDiscoverySpi discoSpi = new TestTcpDiscoverySpi();
 
         if (isDebug()) {
-            cfg.setFailureDetectionTimeout(Long.MAX_VALUE);
+            cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
             cfg.setNetworkTimeout(Long.MAX_VALUE / 3);
         }
         else {
