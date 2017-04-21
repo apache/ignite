@@ -350,7 +350,7 @@ public class DataSource implements Externalizable {
      * @param plc Load balancing policy.
      */
     public void setLoadBalancingPolicy(LoadBalancingPolicy plc) {
-        loadBalancingPlc = plc;
+        this.loadBalancingPlc = plc;
 
         invalidate();
     }
@@ -362,7 +362,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setReconnectionPolicy(ReconnectionPolicy plc) {
-        reconnectionPlc = plc;
+        this.reconnectionPlc = plc;
 
         invalidate();
     }
@@ -374,7 +374,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setRetryPolicy(RetryPolicy plc) {
-        retryPlc = plc;
+        this.retryPlc = plc;
 
         invalidate();
     }
@@ -386,7 +386,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setAddressTranslator(AddressTranslator translator) {
-        addrTranslator = translator;
+        this.addrTranslator = translator;
 
         invalidate();
     }
@@ -398,7 +398,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setSpeculativeExecutionPolicy(SpeculativeExecutionPolicy plc) {
-        speculativeExecutionPlc = plc;
+        this.speculativeExecutionPlc = plc;
 
         invalidate();
     }
@@ -410,7 +410,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setAuthProvider(AuthProvider provider) {
-        authProvider = provider;
+        this.authProvider = provider;
 
         invalidate();
     }
@@ -422,7 +422,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setSslOptions(SSLOptions options) {
-        sslOptions = options;
+        this.sslOptions = options;
 
         invalidate();
     }
@@ -434,7 +434,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setPoolingOptions(PoolingOptions options) {
-        poolingOptions = options;
+        this.poolingOptions = options;
 
         invalidate();
     }
@@ -446,7 +446,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setSocketOptions(SocketOptions options) {
-        sockOptions = options;
+        this.sockOptions = options;
 
         invalidate();
     }
@@ -458,7 +458,7 @@ public class DataSource implements Externalizable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public void setNettyOptions(NettyOptions options) {
-        nettyOptions = options;
+        this.nettyOptions = options;
 
         invalidate();
     }
