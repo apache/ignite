@@ -80,11 +80,9 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         commSpi.record(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                Message msg0 = ((GridIoMessage) msg).message();
-
-                return (msg0.getClass() == GridDhtPartitionsSingleMessage.class ||
-                    msg0.getClass() == GridDhtPartitionsFullMessage.class) &&
-                    ((GridDhtPartitionsAbstractMessage) msg0).exchangeId() != null;
+                return (msg.getClass() == GridDhtPartitionsSingleMessage.class ||
+                    msg.getClass() == GridDhtPartitionsFullMessage.class) &&
+                    ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null;
 
             }
         });
