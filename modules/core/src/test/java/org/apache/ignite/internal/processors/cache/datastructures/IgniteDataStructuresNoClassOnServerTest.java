@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed;
+package org.apache.ignite.internal.processors.cache.datastructures;
+
+import org.apache.ignite.internal.processors.cache.distributed.IgniteNoClassOnServerAbstractTest;
 
 /**
  *
  */
-public class CacheNoValueClassOnServerNodeTest extends IgniteNoClassOnServerAbstractTest {
+public class IgniteDataStructuresNoClassOnServerTest extends IgniteNoClassOnServerAbstractTest {
     /** {@inheritDoc} */
     @Override protected String clientClassName() {
-        return "org.apache.ignite.tests.p2p.cache.CacheNoValueClassOnServerTestClient";
+        return "org.apache.ignite.tests.p2p.datastructures.DataStructuresNoClassOnServerTestClient";
     }
 }
