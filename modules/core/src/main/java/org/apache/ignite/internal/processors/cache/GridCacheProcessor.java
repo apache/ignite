@@ -1463,6 +1463,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
 
+        QueryUtils.prepareCacheConfiguration(cfg);
+
         validate(ctx.config(), cfg, cacheType, cfgStore);
 
         if (pluginMgr == null)

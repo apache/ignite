@@ -2230,8 +2230,6 @@ public class IgnitionEx {
                             "Cache name cannot start with \""+ IgfsUtils.IGFS_CACHE_PREFIX
                                 + "\" because it is reserved for IGFS internal purposes.");
 
-                    QueryUtils.prepareCacheConfiguration(ccfg);
-
                     cacheCfgs.add(ccfg);
                 }
             }
