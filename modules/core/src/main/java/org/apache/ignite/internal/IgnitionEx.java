@@ -67,6 +67,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -2228,6 +2229,8 @@ public class IgnitionEx {
                         throw new IgniteCheckedException(
                             "Cache name cannot start with \""+ IgfsUtils.IGFS_CACHE_PREFIX
                                 + "\" because it is reserved for IGFS internal purposes.");
+
+                    QueryUtils.prepareCacheConfiguration(ccfg);
 
                     cacheCfgs.add(ccfg);
                 }

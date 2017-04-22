@@ -111,7 +111,6 @@ public class QuerySchema implements Serializable {
 
                             idxs.add(op0.index());
 
-                            entity.clearIndexes();
                             entity.setIndexes(idxs);
                         }
 
@@ -142,7 +141,6 @@ public class QuerySchema implements Serializable {
 
                         newIdxs.remove(victim);
 
-                        entity.clearIndexes();
                         entity.setIndexes(idxs);
 
                         break;
