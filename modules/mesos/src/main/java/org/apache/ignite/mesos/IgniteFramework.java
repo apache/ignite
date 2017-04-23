@@ -121,16 +121,11 @@ public class IgniteFramework {
     public static Protos.FrameworkInfo getFrameworkInfo() throws Exception{
         final int frameworkFailoverTimeout = 0;
 
-        String stt = IgniteFramework.getRole();
-
-
-        System.out.println("Second !!!!!!!!!!!!!!!!!!!____________" + stt);
-
         // Have Mesos fill in the current user.
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
             .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser("Test")
-            .setRole(stt)
+            .setUser(getUser())
+            .setRole(getRole())
             .setFailoverTimeout(frameworkFailoverTimeout);
 
         if (System.getenv("MESOS_CHECKPOINT") != null) {
@@ -145,43 +140,7 @@ public class IgniteFramework {
             frameworkBuilder.setPrincipal("ignite-framework-java");
         }
 
-        Protos.FrameworkInfo frameworkInfo = frameworkBuilder.build();
-
-
-
-        return frameworkInfo;
-
-    }
-
-    /**
-     * @return Mesos Protos FrameworkInfo.
-     */
-    public String getFrameworkInfo2() throws Exception{
-        final int frameworkFailoverTimeout = 0;
-
-        // Have Mesos fill in the current user.
-        Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
-            .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser(IgniteFramework.getUser())
-            .setRole(IgniteFramework.getRole())
-            .setFailoverTimeout(frameworkFailoverTimeout);
-
-        if (System.getenv("MESOS_CHECKPOINT") != null) {
-            log.info("Enabling checkpoint for the framework");
-
-            frameworkBuilder.setCheckpoint(true);
-        }
-
-        if (System.getenv("MESOS_AUTHENTICATE") != null) {
-            frameworkBuilder.setPrincipal(System.getenv("DEFAULT_PRINCIPAL"));
-        } else {
-            frameworkBuilder.setPrincipal("ignite-framework-java");
-        }
-
-        Protos.FrameworkInfo frameworkInfo = frameworkBuilder.build();
-
-        return frameworkInfo.getRole();
-
+        return frameworkBuilder.build();
     }
 
     /**
@@ -205,18 +164,15 @@ public class IgniteFramework {
     /**
      * @return Result of Mesos role validation.
      */
-    private static boolean isRoleValid(String mRole) {
+    public static boolean isRoleValid(String mRole) {
 
         if (
-            mRole.equals("")|| mRole == null ||
+            mRole == null|| mRole.equals("") ||
             mRole.equals(".") || mRole.equals("..")||
             mRole.startsWith("-") || mRole.contains("/") ||
             mRole.contains("\\")|| mRole.contains(" "))
         {
-            log.severe("Provided mesos role" + mRole + "is not valid and have replaced by '*'. " +
-                "A role name must be a valid directory name, so it cannot be an empty string\n" +
-                "•Be . or ..\n" + "•Start with -\n" + "•Contain any slash, backspace, or whitespace character\n");
-
+            log.severe("Provided mesos role" + mRole + "is not valid and have replaced by '*'. A role name must be a valid directory name, so it cannot be an empty string. Be . or ..\n" + "•Start with -\n" + "•Contain any slash, backspace, or whitespace character");
             return false;
         }
 

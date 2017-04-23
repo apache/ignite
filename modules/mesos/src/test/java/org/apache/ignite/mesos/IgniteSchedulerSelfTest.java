@@ -18,6 +18,7 @@
 package org.apache.ignite.mesos;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -28,8 +29,11 @@ import junit.framework.TestCase;
 import org.apache.ignite.mesos.resource.ResourceProvider;
 import org.apache.mesos.Protos;
 import org.apache.mesos.SchedulerDriver;
+import org.hamcrest.core.Is;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
@@ -38,10 +42,10 @@ import static org.apache.ignite.mesos.IgniteFramework.MESOS_USER_NAME;
 import static org.apache.ignite.mesos.IgniteFramework.MESOS_ROLE;
 import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.powermock.api.easymock.PowerMock.mockStatic;
 import static org.powermock.api.easymock.PowerMock.replay;
 import static org.powermock.api.easymock.PowerMock.verify;
-
 
 /**
  * Scheduler tests.
@@ -57,6 +61,15 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
     /** */
     private String mesosRoleValue;
+
+    /** */
+    private String actualUserValue;
+
+    /** */
+    private String actualRoleValue;
+
+    /** */
+    private List<String> failedRoleValues;
 
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
@@ -135,7 +148,6 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         assertEquals(offer.getId(), declinedOffer);
     }
-
 
     /**
      * @throws Exception If failed.
@@ -330,134 +342,34 @@ public class IgniteSchedulerSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testIgniteFramework() throws Exception {
-
         mesosUserValue = "userAAAAA";
         mesosRoleValue = "role1";
-        String mesosRoleValue2 = "role2";
-        final int frameworkFailoverTimeout = 0;
 
-
-        setEnv(MESOS_USER_NAME, mesosUserValue);
-        setEnv(MESOS_ROLE, mesosRoleValue2);
-
-        String mesosRole = System.getenv(MESOS_ROLE);
-        String st = IgniteFramework.getRole();
-        String actualRoleValue;
         IgniteFramework igniteFramework = new IgniteFramework();
-        final Logger log = Logger.getLogger(IgniteFramework.class.getSimpleName());
 
+        PowerMockito.spy(IgniteFramework.class);
 
-        mockStatic(IgniteFramework.class);
+        Mockito.when(IgniteFramework.getUser()).thenReturn(mesosUserValue);
+        Mockito.when(IgniteFramework.getRole()).thenReturn(mesosRoleValue);
 
-        expect(IgniteFramework.getUser()).andReturn(mesosUserValue);
-        expect(IgniteFramework.getRole()).andReturn(mesosRoleValue);
+        actualUserValue = igniteFramework.getFrameworkInfo().getUser();
+        actualRoleValue = igniteFramework.getFrameworkInfo().getRole();
 
-        replay(IgniteFramework.class);
-
-        actualRoleValue = igniteFramework.getFrameworkInfo2();
-
-        verify(IgniteFramework.class);
-
-        assertEquals(mesosRoleValue, actualRoleValue);
-
-//
-//        IgniteFrameworkThread igniteFWThread = new IgniteFrameworkThread();
-//
-//        IgniteFramework igniteFramework = new IgniteFramework();
-//
-//        igniteFWThread.start();
-//
-//        igniteFWThread.sleep(500);
-//        String actualRoleValue = igniteFramework.getFrameworkInfo().getRole();
-//
-//        assertEquals(mesosUserValue, igniteFramework.getFrameworkInfo().getUser());
-//        assertEquals(mesosRoleValue, actualRoleValue);
+        assertThat(actualUserValue, Is.is(mesosUserValue));
+        assertThat(actualRoleValue, Is.is(mesosRoleValue));
     }
-
-//    public void testIgniteFrameworkFailedRole() throws Exception {
-//
-//        mesosUserValue = "userAAAAA";
-//        mesosRoleValue = ".";
-//
-//        setEnv(MESOS_USER_NAME, mesosUserValue);
-//        setEnv(MESOS_ROLE, mesosRoleValue);
-//
-//        IgniteFrameworkThread igniteFWThread = new IgniteFrameworkThread();
-//
-//        igniteFWThread.start();
-//
-//        igniteFWThread.sleep(500);
-//
-//        assertEquals(mesosUserValue, igniteFWThread.getIgniteFramework().getFrameworkInfo().getUser());
-//        assertEquals("*", igniteFWThread.getIgniteFramework().getFrameworkInfo().getRole());
-//    }
 
     /**
-     * @param varName MESOS system environment name.
-     * @param varValue MESOS system environment value.
-     * The method {@link #setEnv(String, String)} } sets environment variables from  Java.
-     * Given from <a href="https://gist.github.com/zhaopengme/53719298b6edf1a99a41">https://gist.github.com/zhaopengme/53719298b6edf1a99a41</a>
+     * @throws Exception If failed.
      */
-    protected static void setEnv(String varName,String varValue)
-    {
-        Map<String, String> newenv = System.getenv();
+    public void testMesosRoleValidation() throws Exception {
+        failedRoleValues = Arrays.asList("", ".", "..", "-testRole",
+            "test/Role", "test\\Role", "test Role", null);
 
-        try
-        {
-            Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
-            Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
-            theEnvironmentField.setAccessible(true);
-            Map<String, String> env = (Map<String, String>) theEnvironmentField.get(null);
-            env.putAll(newenv);
-            Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
-            theCaseInsensitiveEnvironmentField.setAccessible(true);
-            Map<String, String> cienv = (Map<String, String>)     theCaseInsensitiveEnvironmentField.get(null);
-            cienv.putAll(newenv);
-            cienv.put(varName,varValue);
-        }
-        catch (NoSuchFieldException e)
-        {
-            try {
-                Class[] classes = Collections.class.getDeclaredClasses();
-                Map<String, String> env = System.getenv();
-                for(Class cl : classes) {
-                    if("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
-                        Field field = cl.getDeclaredField("m");
-                        field.setAccessible(true);
-                        Object obj = field.get(env);
-                        Map<String, String> map = (Map<String, String>) obj;
-                        map.clear();
-                        map.putAll(newenv);
-                        map.put(varName,varValue);
-                    }
-                }
-            } catch (Exception e2) {
-                e2.printStackTrace();
-            }
-        } catch (Exception e1) {
-            e1.printStackTrace();
+        for (String failedRoleValue : failedRoleValues ) {
+            assertFalse(IgniteFramework.isRoleValid(failedRoleValue));
         }
     }
-
-
-
-    public class IgniteFrameworkThread extends Thread {
-
-        private IgniteFramework igniteFramework;
-
-
-        @Override
-        public void run() {
-            igniteFramework = new IgniteFramework();
-        }
-
-        public IgniteFramework  getIgniteFramework(){
-            return igniteFramework;
-        }
-
-    }
-
-
 
     /**
      * @param resourceType Resource type.
