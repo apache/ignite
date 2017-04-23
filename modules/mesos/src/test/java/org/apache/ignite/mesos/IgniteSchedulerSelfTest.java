@@ -357,6 +357,12 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         assertThat(actualUserValue, Is.is(mesosUserValue));
         assertThat(actualRoleValue, Is.is(mesosRoleValue));
+
+        Mockito.when(IgniteFramework.getRole()).thenReturn("*");
+
+        actualRoleValue = igniteFramework.getFrameworkInfo().getRole();
+
+        assertThat("*", Is.is(mesosRoleValue));
     }
 
     /**
