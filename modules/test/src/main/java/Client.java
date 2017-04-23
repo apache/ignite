@@ -49,8 +49,8 @@ public class Client {
 
             try (IgniteDataStreamer<String, Pair<Integer, Integer>> streamer = ignite.dataStreamer("test")) {
                 streamer.allowOverwrite(true);
-//                streamer.receiver(StreamTransformer.from(new StreamingCacheEntryProcessor()));
-                streamer.receiver(new StreamTransformerCacheEntryProcessor());
+                streamer.receiver(StreamTransformer.from(new StreamingCacheEntryProcessor()));
+//                streamer.receiver(new StreamTransformerCacheEntryProcessor());
                 streamer.addData("nine", new Pair<>(5, 4));
             }
         }

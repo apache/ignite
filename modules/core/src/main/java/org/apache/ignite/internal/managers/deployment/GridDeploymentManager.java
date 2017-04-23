@@ -433,7 +433,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         if (isPerVersionMode(meta.deploymentMode())) {
             meta.record(true);
 
-            boolean reuse = true;
+            boolean reuse = false;
 
             // Check local exclusions.
             if (!sndNodeId.equals(ctx.localNodeId())) {
