@@ -120,7 +120,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(String cacheName) {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName(cacheName);
 

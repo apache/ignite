@@ -315,7 +315,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.cache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -356,7 +356,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.cache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -389,7 +389,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.cache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -429,7 +429,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.cache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -466,7 +466,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.cache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(DEFAULT_CACHE_NAME);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 

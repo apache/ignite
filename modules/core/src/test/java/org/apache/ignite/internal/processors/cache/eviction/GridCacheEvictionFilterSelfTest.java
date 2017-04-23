@@ -143,7 +143,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = grid(0);
 
-            IgniteCache<Object, Object> c = g.cache(null);
+            IgniteCache<Object, Object> c = g.cache(DEFAULT_CACHE_NAME);
 
             int cnt = 1;
 
@@ -198,7 +198,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        IgniteCache<Object, Object> cache = g.cache(null);
+        IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
         try {
             int id = 1;

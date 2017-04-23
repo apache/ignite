@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 
 import javax.cache.Cache;
 import java.io.Serializable;
@@ -212,7 +213,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      * @param valCls Value class.
      * @return Cache configuration.
      */
-    private <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned, Class<?> keyCls,
+    private <K, V> CacheConfiguration<K, V> cacheConfig(@NotNull String name, boolean partitioned, Class<?> keyCls,
         Class<?> valCls) throws Exception {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<K, V>(name)
             .setName(name)

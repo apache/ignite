@@ -54,6 +54,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.igfs.IgfsNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -576,36 +577,46 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forCacheNodes(@Nullable String cacheName) {
+    @Override public final ClusterGroup forCacheNodes(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, true, true, true));
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forDataNodes(@Nullable String cacheName) {
+    @Override public final ClusterGroup forDataNodes(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, true, false, false));
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forClientNodes(@Nullable String cacheName) {
+    @Override public final ClusterGroup forClientNodes(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, false, true, true));
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, boolean affNodes, boolean nearNodes,
+    @Override public ClusterGroup forCacheNodes(String cacheName, boolean affNodes, boolean nearNodes,
         boolean clientNodes) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, affNodes, nearNodes, clientNodes));
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forIgfsMetadataDataNodes(@Nullable String igfsName, @Nullable String metaCacheName) {
+    @Override public ClusterGroup forIgfsMetadataDataNodes(@Nullable String igfsName, String metaCacheName) {
+        CU.validateCacheName(metaCacheName);
+
         return forPredicate(new IgfsNodePredicate(igfsName)).forDataNodes(metaCacheName);
     }
 

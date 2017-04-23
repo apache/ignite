@@ -51,6 +51,7 @@ import org.h2.command.Prepared;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.message.DbException;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -77,7 +78,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         c.setDiscoverySpi(disco);
 
         c.setCacheConfiguration(
-            cacheConfiguration(null, "SCH1", String.class, Person.class),
+            cacheConfiguration(DEFAULT_CACHE_NAME, "SCH1", String.class, Person.class),
             cacheConfiguration("addr", "SCH2", String.class, Address.class));
 
         return c;
@@ -89,7 +90,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @param clsV Value class.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String name, String sqlSchema, Class<?> clsK, Class<?> clsV) {
+    private CacheConfiguration cacheConfiguration(@NotNull String name, String sqlSchema, Class<?> clsK, Class<?> clsV) {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(name);
@@ -685,7 +686,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         IgniteH2Indexing idx = U.field(qryProcessor, "idx");
 
-        return (JdbcConnection)idx.connectionForSpace(null);
+        return (JdbcConnection)idx.connectionForSpace(DEFAULT_CACHE_NAME);
     }
 
     /**

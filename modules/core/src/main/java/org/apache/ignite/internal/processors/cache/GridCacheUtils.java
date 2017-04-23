@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -1690,5 +1692,33 @@ public class GridCacheUtils {
         return sysCacheCtx != null && sysCacheCtx.systemTx()
             ? DEFAULT_TX_CFG
             : cfg.getTransactionConfiguration();
+    }
+
+    /**
+     * @param name Cache name.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateCacheName(String name) throws IllegalArgumentException {
+        A.ensure(name != null && !name.isEmpty(), "Cache name must not be null or empty.");
+    }
+
+    /**
+     * @param cacheNames Cache names to validate.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateCacheNames(Collection<String> cacheNames) throws IllegalArgumentException {
+        for (String name : cacheNames) {
+            validateCacheName(name);
+        }
+    }
+
+    /**
+     * @param ccfgs Configurations to validate.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateCfgCacheNames(Collection<CacheConfiguration> ccfgs) throws IllegalArgumentException {
+        for (CacheConfiguration ccfg : ccfgs) {
+            validateCacheName(ccfg.getName());
+        }
     }
 }

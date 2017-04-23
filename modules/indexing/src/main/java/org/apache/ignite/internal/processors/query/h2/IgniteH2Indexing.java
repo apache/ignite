@@ -139,6 +139,7 @@ import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -427,7 +428,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param space Space.
      * @return Connection.
      */
-    public Connection connectionForSpace(@Nullable String space) {
+    public Connection connectionForSpace(String space) {
+        validateSpaceName(space);
+
         try {
             return connectionForThread(schema(space));
         }
@@ -480,6 +483,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
+        validateSpaceName(space);
+
         return prepareStatement(connectionForSpace(space), sql, true);
     }
 
@@ -487,6 +492,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
         long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
+        validateSpaceName(spaceName);
+
         Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
 
         if (!(prep instanceof Insert))
@@ -635,7 +642,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(@Nullable String spaceName,
+    @Override public void store(String spaceName,
         String typeName,
         KeyCacheObject k,
         int partId,
@@ -643,6 +650,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheVersion ver,
         long expirationTime,
         long link) throws IgniteCheckedException {
+        validateSpaceName(spaceName);
+
         TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
         if (tbl == null)
@@ -691,12 +700,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName,
+    @Override public void remove(String spaceName,
         GridQueryTypeDescriptor type,
         KeyCacheObject key,
         int partId,
         CacheObject val,
         GridCacheVersion ver) throws IgniteCheckedException {
+        validateSpaceName(spaceName);
+
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
 
@@ -784,9 +795,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void dynamicIndexCreate(@Nullable final String spaceName, final String tblName,
+    @Override public void dynamicIndexCreate(final String spaceName, final String tblName,
         final QueryIndexDescriptorImpl idxDesc, boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor)
         throws IgniteCheckedException {
+        validateSpaceName(spaceName);
+
         // Locate table.
         String schemaName = schema(spaceName);
 
@@ -841,8 +854,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    @Override public void dynamicIndexDrop(@Nullable final String spaceName, String idxName, boolean ifExists)
+    @Override public void dynamicIndexDrop(final String spaceName, String idxName, boolean ifExists)
         throws IgniteCheckedException{
+        validateSpaceName(spaceName);
+
         String schemaName = schema(spaceName);
 
         Schema schema = schemas.get(schemaName);
@@ -979,7 +994,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(
-        @Nullable String spaceName, String qry, String typeName,
+        String spaceName, String qry, String typeName,
         IndexingQueryFilter filters) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
@@ -1001,8 +1016,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterType(@Nullable String spaceName, String typeName)
+    @Override public void unregisterType(String spaceName, String typeName)
         throws IgniteCheckedException {
+        validateSpaceName(spaceName);
+
         TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
         if (tbl != null)
@@ -1023,10 +1040,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
+    public GridQueryFieldsResult queryLocalSqlFields(final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel)
         throws IgniteCheckedException {
+        validateSpaceName(spaceName);
+
         final Connection conn = connectionForSpace(spaceName);
 
         setupConnection(conn, false, enforceJoinOrder);
@@ -1088,8 +1107,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public long streamUpdateQuery(@Nullable String spaceName, String qry,
+    @Override public long streamUpdateQuery(String spaceName, String qry,
         @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
+        validateSpaceName(spaceName);
+
         final Connection conn = connectionForSpace(spaceName);
 
         final PreparedStatement stmt;
@@ -1246,6 +1267,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean useStmtCache,
         int timeoutMillis,
         @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+        validateSpaceName(space);
+
         return executeSqlQueryWithTimer(space, preparedStatementWithParams(conn, sql, params, useStmtCache),
             conn, sql, params, timeoutMillis, cancel);
     }
@@ -1431,9 +1454,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName,
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(String spaceName,
         final String qry, String alias, @Nullable final Collection<Object> params, String type,
         final IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
+        validateSpaceName(spaceName);
+
         final TableDescriptor tbl = tableDescriptor(type, spaceName);
 
         if (tbl == null)
@@ -1835,8 +1860,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param type Type description.
      * @throws IgniteCheckedException In case of error.
      */
-    @Override public boolean registerType(@Nullable String spaceName, GridQueryTypeDescriptor type)
+    @Override public boolean registerType(String spaceName, GridQueryTypeDescriptor type)
         throws IgniteCheckedException {
+        validateSpaceName(spaceName);
         validateTypeDescriptor(type);
 
         String schemaName = schema(spaceName);
@@ -2028,7 +2054,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param space Space name.
      * @return Table descriptor.
      */
-    @Nullable private TableDescriptor tableDescriptor(String type, @Nullable String space) {
+    @Nullable private TableDescriptor tableDescriptor(String type, String space) {
         Schema s = schemas.get(schema(space));
 
         if (s == null)
@@ -2058,7 +2084,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param space Space name. {@code null} would be converted to an empty string.
      * @return Schema name. Should not be null since we should not fail for an invalid space name.
      */
-    private String schema(@Nullable String space) {
+    private String schema(String space) {
         return emptyIfNull(space2schema.get(emptyIfNull(space)));
     }
 
@@ -2102,8 +2128,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param type Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void rebuildIndexesFromHash(@Nullable String spaceName,
+    @Override public void rebuildIndexesFromHash(String spaceName,
         GridQueryTypeDescriptor type) throws IgniteCheckedException {
+        validateSpaceName(spaceName);
+
         TableDescriptor tbl = tableDescriptor(type.name(), spaceName);
 
         if (tbl == null)
@@ -2161,7 +2189,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void markForRebuildFromHash(@Nullable String spaceName, GridQueryTypeDescriptor type) {
+    @Override public void markForRebuildFromHash(String spaceName, GridQueryTypeDescriptor type) {
+        validateSpaceName(spaceName);
+
         TableDescriptor tbl = tableDescriptor(type.name(), spaceName);
 
         if (tbl == null)
@@ -2180,7 +2210,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Size.
      * @throws IgniteCheckedException If failed or {@code -1} if the type is unknown.
      */
-    long size(@Nullable String spaceName, String typeName) throws IgniteCheckedException {
+    long size(String spaceName, String typeName) throws IgniteCheckedException {
+        validateSpaceName(spaceName);
+
         TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
         if (tbl == null)
@@ -2493,6 +2525,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void registerCache(String spaceName, GridCacheContext<?, ?> cctx, CacheConfiguration<?, ?> ccfg)
         throws IgniteCheckedException {
+        validateSpaceName(spaceName);
+        CU.validateCacheName(ccfg.getName());
+
         String schema = schemaNameFromCacheConf(ccfg);
 
         if (schemas.putIfAbsent(schema, new Schema(spaceName, schema, cctx, ccfg)) != null)
@@ -2507,6 +2542,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void unregisterCache(String spaceName) {
+        validateSpaceName(spaceName);
+
         String schema = schema(spaceName);
         Schema rmv = schemas.remove(schema);
 
@@ -2546,6 +2583,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         return new IndexingQueryFilter() {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
+                validateSpaceName(spaceName);
+
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
                 if (cache.context().isReplicated())
@@ -2621,6 +2660,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         rdcQryExec.onDisconnected(reconnectFut);
+    }
+
+    /**
+     * @param name Space name.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateSpaceName(String name) throws IllegalArgumentException {
+        A.ensure(name != null && !name.isEmpty(), "Space name must not be null or empty.");
     }
 
     /**

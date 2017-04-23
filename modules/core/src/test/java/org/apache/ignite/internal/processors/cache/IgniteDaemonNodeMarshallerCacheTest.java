@@ -121,7 +121,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
 
         Ignite ignite2 = startGrid(nodeIdx);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setRebalanceMode(SYNC);
         ccfg.setCacheMode(REPLICATED);

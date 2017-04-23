@@ -102,7 +102,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         startGridsMultiThreaded(gridCount(), true);
 
         try {
-            IgniteCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             // Find test key.
             int key = testKey();

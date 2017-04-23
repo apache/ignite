@@ -73,7 +73,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME);
         ccfg.setAtomicityMode(TRANSACTIONAL);

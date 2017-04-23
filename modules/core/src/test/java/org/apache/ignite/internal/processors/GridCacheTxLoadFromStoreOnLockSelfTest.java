@@ -88,7 +88,7 @@ public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void checkLoadedValue(int backups) throws Exception {
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
