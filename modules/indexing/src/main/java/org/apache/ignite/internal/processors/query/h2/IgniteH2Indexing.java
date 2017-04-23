@@ -462,7 +462,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             PreparedStatement stmt = cache.get(sql);
 
-            if (stmt != null && !stmt.isClosed() && !((JdbcStatement)stmt).wasCancelled()) {
+            if (stmt != null && !stmt.isClosed() && !((JdbcStatement)stmt).isCancelled()) {
                 assert stmt.getConnection() == c;
 
                 return stmt;
@@ -666,17 +666,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return false;
 
         return ctx.cacheObjects().isBinaryObject(o);
-    }
-
-    /**
-     * @param coctx Cache object context.
-     * @param o Object.
-     * @return Object class.
-     */
-    private Class<?> getClass(CacheObjectContext coctx, CacheObject o) {
-        return isBinary(o) ?
-            Object.class :
-            o.value(coctx, false).getClass();
     }
 
     /**
