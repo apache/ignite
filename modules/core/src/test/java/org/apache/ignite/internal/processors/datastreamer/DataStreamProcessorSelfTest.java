@@ -943,7 +943,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             try(IgniteDataStreamer<String, Object> streamer = clientNode.dataStreamer("test")) {
                 streamer.allowOverwrite(true);
 //                streamer.receiver(new StreamTransformerCacheEntryProcessor());
-                streamer.receiver((StreamTransformer) StreamTransformer.from(new StreamingCacheEntryProcessor(alienPair)));
+                streamer.receiver((StreamTransformer) StreamTransformer.from(new StreamingCacheEntryProcessor()));
                 future = streamer.addData("one", alienPair);
             }
             future.get(1000L);
@@ -953,12 +953,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     public static class StreamingCacheEntryProcessor implements CacheEntryProcessor<String, Pair<Integer, Integer>, Object> {
-
-        private final Object externalObject;
-
-        public StreamingCacheEntryProcessor(Object externalObject) {
-            this.externalObject = externalObject;
-        }
 
         @Override
         public Object process(MutableEntry<String, Pair<Integer, Integer>> entry, Object... arguments) throws EntryProcessorException {
@@ -985,20 +979,18 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public static void main(String[] args) throws FileNotFoundException {
-        Ignition.setClientMode(true);
-        URL resource = DataStreamProcessorSelfTest.class.getResource("example-ignite.xml");
-        try (Ignite ignite = Ignition.start(resource)) {
-            assertTrue(ignite.configuration().isClientMode());
-            IgniteCache<String, Pair<Integer, Integer>> cache = ignite.getOrCreateCache("test");
-            cache.put("zero", new Pair<>(0, 0));
-            assertEquals(new Pair<>(0, 0), cache.get("zero"));
-
-            try (IgniteDataStreamer<String, Pair<Integer, Integer>> streamer = ignite.dataStreamer("test")) {
-                streamer.allowOverwrite(true);
-                streamer.receiver(StreamTransformer.from(new StreamingCacheEntryProcessor(null)));
-//                streamer.receiver(new StreamTransformerCacheEntryProcessor());
-                streamer.addData("nine", new Pair<>(5, 4));
+    public static class Server {
+        public static void main(String[] args) throws Exception {
+            Ignition.setClientMode(false);
+            URL resource = DataStreamProcessorSelfTest.class.getResource("example-ignite.xml");
+            try (Ignite ignite = Ignition.start(resource)) {
+                assertFalse(ignite.configuration().isClientMode());
+//                ignite.configuration().setPeerClassLoadingLocalClassPathExclude(StreamTransformer.class.getPackage().getName()+"*");
+                IgniteCache<String, Pair<Integer, Integer>> cache = ignite.getOrCreateCache("test");
+                cache.put("zero", new Pair<>(0, 0));
+                assertEquals(new Pair<>(0, 0), cache.get("zero"));
+                while(true)
+                    Thread.sleep(10000L);
             }
         }
     }
