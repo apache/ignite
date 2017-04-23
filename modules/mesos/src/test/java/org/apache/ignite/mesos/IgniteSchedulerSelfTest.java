@@ -366,7 +366,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
         failedRoleValues = Arrays.asList("", ".", "..", "-testRole",
             "test/Role", "test\\Role", "test Role", null);
 
-        for (String failedRoleValue : failedRoleValues ) {
+        for (String failedRoleValue : failedRoleValues) {
             assertFalse(IgniteFramework.isRoleValid(failedRoleValue));
         }
     }

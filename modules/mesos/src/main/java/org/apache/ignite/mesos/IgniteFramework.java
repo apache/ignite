@@ -118,7 +118,7 @@ public class IgniteFramework {
     /**
      * @return Mesos Protos FrameworkInfo.
      */
-    public static Protos.FrameworkInfo getFrameworkInfo() throws Exception{
+    public static Protos.FrameworkInfo getFrameworkInfo() throws Exception {
         final int frameworkFailoverTimeout = 0;
 
         // Have Mesos fill in the current user.
@@ -136,7 +136,8 @@ public class IgniteFramework {
 
         if (System.getenv("MESOS_AUTHENTICATE") != null) {
             frameworkBuilder.setPrincipal(System.getenv("DEFAULT_PRINCIPAL"));
-        } else {
+        }
+        else {
             frameworkBuilder.setPrincipal("ignite-framework-java");
         }
 
@@ -167,15 +168,14 @@ public class IgniteFramework {
     public static boolean isRoleValid(String mRole) {
 
         if (
-            mRole == null|| mRole.equals("") ||
-            mRole.equals(".") || mRole.equals("..")||
-            mRole.startsWith("-") || mRole.contains("/") ||
-            mRole.contains("\\")|| mRole.contains(" "))
-        {
+            mRole == null || mRole.equals("") ||
+                mRole.equals(".") || mRole.equals("..") ||
+                mRole.startsWith("-") || mRole.contains("/") ||
+                mRole.contains("\\") || mRole.contains(" ")) {
             log.severe("Provided mesos role" + mRole + "is not valid and have replaced by '*'. A role name must be a valid directory name, so it cannot be an empty string. Be . or ..\n" + "•Start with -\n" + "•Contain any slash, backspace, or whitespace character");
+
             return false;
         }
-
         return true;
     }
 }
