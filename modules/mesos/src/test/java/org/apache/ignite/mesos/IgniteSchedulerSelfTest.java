@@ -71,6 +71,9 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /** */
     private List<String> failedRoleValues;
 
+    /** */
+    private IgniteFramework igniteFramework;
+
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
         super.setUp();
@@ -345,7 +348,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
         mesosUserValue = "userAAAAA";
         mesosRoleValue = "role1";
 
-        IgniteFramework igniteFramework = new IgniteFramework();
+        igniteFramework = new IgniteFramework();
 
         PowerMockito.spy(IgniteFramework.class);
 
@@ -358,11 +361,6 @@ public class IgniteSchedulerSelfTest extends TestCase {
         assertThat(actualUserValue, Is.is(mesosUserValue));
         assertThat(actualRoleValue, Is.is(mesosRoleValue));
 
-        Mockito.when(IgniteFramework.getRole()).thenReturn("*");
-
-        actualRoleValue = igniteFramework.getFrameworkInfo().getRole();
-
-        assertThat("*", Is.is(mesosRoleValue));
     }
 
     /**
@@ -372,8 +370,16 @@ public class IgniteSchedulerSelfTest extends TestCase {
         failedRoleValues = Arrays.asList("", ".", "..", "-testRole",
             "test/Role", "test\\Role", "test Role", null);
 
+        igniteFramework = new IgniteFramework();
+
         for (String failedRoleValue : failedRoleValues) {
             assertFalse(IgniteFramework.isRoleValid(failedRoleValue));
+
+            Mockito.when(IgniteFramework.isRoleValid(failedRoleValue)).thenReturn(false);
+
+            actualRoleValue = igniteFramework.getFrameworkInfo().getRole();
+
+            assertThat("*", Is.is(mesosRoleValue));
         }
     }
 
