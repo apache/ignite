@@ -221,16 +221,6 @@ public interface GridCacheEntryEx {
         boolean evictOffheap) throws IgniteCheckedException;
 
     /**
-     * Evicts entry when batch evict is performed. When called, does not write entry data to swap, but instead
-     * returns batch swap entry if entry was marked obsolete.
-     *
-     * @param obsoleteVer Version to mark obsolete with.
-     * @return Swap entry if this entry was marked obsolete, {@code null} if entry was not evicted.
-     * @throws IgniteCheckedException If failed.
-     */
-    public GridCacheBatchSwapEntry evictInBatchInternal(GridCacheVersion obsoleteVer) throws IgniteCheckedException;
-
-    /**
      * This method should be called each time entry is marked obsolete
      * other than by calling {@link #markObsolete(GridCacheVersion)}.
      */
@@ -693,19 +683,6 @@ public interface GridCacheEntryEx {
         AffinityTopologyVersion topVer,
         GridDrType drType,
         boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException;
-
-    /**
-     * Sets new value if current version is <tt>0</tt> using swap entry data.
-     * Note that this method does not update cache index.
-     *
-     * @param key Key.
-     * @param unswapped Swap entry to set entry state from.
-     * @return {@code True} if  initial value was set.
-     * @throws IgniteCheckedException In case of error.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public boolean initialValue(KeyCacheObject key, GridCacheSwapEntry unswapped)
-        throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Create versioned entry for this cache entry.
