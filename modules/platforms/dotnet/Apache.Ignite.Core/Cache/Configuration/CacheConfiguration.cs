@@ -720,18 +720,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool EnableStatistics { get; set; }
 
         /// <summary>
-        /// Gets or sets the plugin configurations.
-        /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<ICachePluginConfiguration> PluginConfigurations { get; set; }
-
-        /// <summary>
-        /// Gets or sets the name of the <see cref="MemoryPolicyConfiguration"/> for this cache.
-        /// See <see cref="IgniteConfiguration.MemoryConfiguration"/>.
-        /// </summary>
-        public string MemoryPolicyName { get; set; }
-
-        /// <summary>
         /// Gets or sets write coalescing flag for write-behind cache store operations.
         /// Store operations (get or remove) with the same key are combined or coalesced to single,
         /// resulting operation to reduce pressure to underlying cache store.
