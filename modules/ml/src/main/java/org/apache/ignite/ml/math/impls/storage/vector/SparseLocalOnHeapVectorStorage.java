@@ -19,12 +19,10 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
-
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.VectorStorage;
 

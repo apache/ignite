@@ -20,7 +20,6 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteFunction;

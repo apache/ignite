@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.function.IntToDoubleFunction;
-
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;

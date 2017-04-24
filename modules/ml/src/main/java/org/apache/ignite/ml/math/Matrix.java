@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.math;
 
 import java.io.Externalizable;
-
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.IndexException;

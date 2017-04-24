@@ -21,13 +21,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
-
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.ml.math.impls.storage.vector.RandomVectorStorage;
-import org.apache.ignite.ml.math.Vector;
 
 /**
  * Random vector. Each value is taken from {-1,0,1} with roughly equal probability. Note

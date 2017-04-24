@@ -19,7 +19,6 @@ package org.apache.ignite.ml.math.impls.vector;
 
 import java.util.Arrays;
 import java.util.stream.StreamSupport;
-
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorStorage;
