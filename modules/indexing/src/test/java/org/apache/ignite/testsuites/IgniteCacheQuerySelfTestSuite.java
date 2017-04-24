@@ -131,7 +131,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
         // Misc tests.
-        suite.addTest(new TestSuite(QueryEntityValidationSelfTest.class));
+        // TODO: Enable when IGNITE-1094 is fixed.
+        // suite.addTest(new TestSuite(QueryEntityValidationSelfTest.class));
         suite.addTest(new TestSuite(DuplicateKeyValueClassesSelfTest.class));
 
         // Dynamic index create/drop tests.
