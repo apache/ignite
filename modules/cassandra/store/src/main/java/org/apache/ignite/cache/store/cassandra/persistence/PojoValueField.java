@@ -82,9 +82,10 @@ public class PojoValueField extends PojoField {
      * Constructs Ignite cache value field descriptor.
      *
      * @param desc field property descriptor.
+     * @param sqlField annotation object.
      */
-    public PojoValueField(PropertyDescriptor desc) {
-        super(desc);
+    public PojoValueField(PropertyDescriptor desc, QuerySqlField sqlField) {
+        super(desc, sqlField);
     }
 
     /** {@inheritDoc} */

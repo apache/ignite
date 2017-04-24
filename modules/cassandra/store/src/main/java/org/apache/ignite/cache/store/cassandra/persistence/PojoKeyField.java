@@ -65,9 +65,10 @@ public class PojoKeyField extends PojoField {
      * Constructs Ignite cache key POJO object descriptor.
      *
      * @param desc property descriptor.
+     * @param sqlField annotation object.
      */
-    public PojoKeyField(PropertyDescriptor desc) {
-        super(desc);
+    public PojoKeyField(PropertyDescriptor desc, QuerySqlField sqlField) {
+        super(desc, sqlField);
     }
 
     /**

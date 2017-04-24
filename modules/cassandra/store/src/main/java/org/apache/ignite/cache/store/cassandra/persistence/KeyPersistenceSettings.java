@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.store.cassandra.persistence;
 
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Field;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -214,13 +215,20 @@ public class KeyPersistenceSettings extends PersistenceSettings {
 
         if (el == null) {
             for (PropertyDescriptor desc : descriptors) {
-                boolean valid = desc.getWriteMethod() != null ||
-                        desc.getReadMethod().getAnnotation(QuerySqlField.class) != null ||
-                        desc.getReadMethod().getAnnotation(AffinityKeyMapped.class) != null;
+                try {
+                    Field f = getJavaClass().getField(desc.getName());
 
-                // Skip POJO field if it's read-only and is not annotated with @QuerySqlField or @AffinityKeyMapped.
-                if (valid)
-                    list.add(new PojoKeyField(desc));
+                    QuerySqlField sqlField =  f.getAnnotation(QuerySqlField.class);
+
+                    boolean valid = desc.getWriteMethod() != null || sqlField != null;
+
+                    // Skip POJO field if it's read-only and is not annotated with @QuerySqlField or @AffinityKeyMapped.
+                    if (valid)
+                        list.add(new PojoKeyField(desc, sqlField));
+                }
+                catch (NoSuchFieldException e) {
+                    // No-op.
+                }
             }
 
             return list;

@@ -82,17 +82,14 @@ public abstract class PojoField implements Serializable {
      * Creates instance of {@link PojoField}  from its property descriptor.
      *
      * @param desc Field property descriptor.
+     * @param sqlField annotation object.
      */
-    public PojoField(PropertyDescriptor desc) {
+    public PojoField(PropertyDescriptor desc, QuerySqlField sqlField) {
         this.name = desc.getName();
 
         Method rdMthd = desc.getReadMethod();
 
-        QuerySqlField sqlField = rdMthd != null && rdMthd.getAnnotation(QuerySqlField.class) != null
-            ? rdMthd.getAnnotation(QuerySqlField.class)
-            : desc.getWriteMethod() == null ? null : desc.getWriteMethod().getAnnotation(QuerySqlField.class);
-
-        col = sqlField != null && sqlField.name() != null &&
+        col = sqlField.name() != null &&
             !sqlField.name().trim().isEmpty() ? sqlField.name() : name.toLowerCase();
 
         init(desc);

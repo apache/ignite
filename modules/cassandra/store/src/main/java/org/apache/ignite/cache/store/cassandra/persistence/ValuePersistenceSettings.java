@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.store.cassandra.persistence;
 
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -86,13 +87,21 @@ public class ValuePersistenceSettings extends PersistenceSettings {
 
         if (fieldNodes == null || fieldNodes.getLength() == 0) {
             List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
-            for (PropertyDescriptor desc : primitivePropDescriptors) {
-                boolean valid = desc.getWriteMethod() != null ||
-                        desc.getReadMethod().getAnnotation(QuerySqlField.class) != null;
 
-                // Skip POJO field if it's read-only and is not annotated with @QuerySqlField.
-                if (valid)
-                    list.add(new PojoValueField(desc));
+            for (PropertyDescriptor desc : primitivePropDescriptors) {
+
+                try {
+                    Field f = getJavaClass().getField(desc.getName());
+
+                    QuerySqlField sqlField =  f.getAnnotation(QuerySqlField.class);
+
+                    // Skip POJO field if it's read-only and is not annotated with @QuerySqlField.
+                    if (desc.getWriteMethod() != null || sqlField != null)
+                        list.add(new PojoValueField(desc, sqlField));
+                }
+                catch (NoSuchFieldException e) {
+                    // No-op.
+                }
             }
 
             return list;
