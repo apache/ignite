@@ -435,9 +435,7 @@ namespace ignite
                  */
                 void Wait(CriticalSection& cs)
                 {
-                    BOOL notified = SleepConditionVariableCS(&cond, &cs.hnd, INFINITE);
-
-                    assert(notified);
+                    SleepConditionVariableCS(&cond, &cs.hnd, INFINITE);
                 }
 
                 /**
@@ -445,7 +443,7 @@ namespace ignite
                  *
                  * @param cs Critical section in which to wait.
                  * @param msTimeout Timeout in milliseconds.
-                 * @return True if the object has been triggered and false in case of timeout.
+                 * @return True if the object has been notified and false in case of timeout.
                  */
                 bool WaitFor(CriticalSection& cs, int32_t msTimeout)
                 {

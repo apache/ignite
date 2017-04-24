@@ -61,7 +61,7 @@ namespace ignite
              * Checks if the value or error set for the state.
              * @return True if the value or error set for the state.
              */
-            bool IsSet()
+            bool IsSet() const
             {
                 return value.get() || error.GetCode() != IgniteError::IGNITE_SUCCESS;
             }
@@ -74,7 +74,7 @@ namespace ignite
              */
             void SetValue(std::auto_ptr<ValueType> val)
             {
-                concurrent::CsLockGuard guard(writeLock);
+                concurrent::CsLockGuard guard(mutex);
 
                 if (IsSet())
                 {
@@ -87,7 +87,7 @@ namespace ignite
 
                 value = val;
 
-                evt.Set();
+                cond.NotifyAll();
             }
 
             /**
@@ -98,7 +98,7 @@ namespace ignite
              */
             void SetError(const IgniteError& err)
             {
-                concurrent::CsLockGuard guard(writeLock);
+                concurrent::CsLockGuard guard(mutex);
 
                 if (IsSet())
                 {
@@ -111,7 +111,7 @@ namespace ignite
 
                 error = err;
 
-                evt.Set();
+                cond.NotifyAll();
             }
 
             /**
@@ -120,7 +120,10 @@ namespace ignite
              */
             void Wait() const
             {
-                evt.Wait();
+                concurrent::CsLockGuard guard(mutex);
+
+                while (!IsSet())
+                    cond.Wait(mutex);
             }
 
             /**
@@ -132,7 +135,12 @@ namespace ignite
              */
             bool WaitFor(int32_t msTimeout) const
             {
-                return evt.WaitFor(msTimeout);
+                concurrent::CsLockGuard guard(mutex);
+
+                if (IsSet())
+                    return true;
+
+                return cond.WaitFor(mutex, msTimeout);
             }
 
             /**
@@ -163,11 +171,11 @@ namespace ignite
             /** Error. */
             IgniteError error;
 
-            /** Event which serves to signal that value is set. */
-            mutable concurrent::ManualEvent evt;
+            /** Condition variable which serves to signal that value is set. */
+            mutable concurrent::ConditionVariable cond;
 
             /** Lock that used to prevent double-set of the value. */
-            mutable concurrent::CriticalSection writeLock;
+            mutable concurrent::CriticalSection mutex;
         };
 
         /**
@@ -203,19 +211,20 @@ namespace ignite
              * Checks if the value or error set for the state.
              * @return True if the value or error set for the state.
              */
-            bool IsSet()
+            bool IsSet() const
             {
                 return done || error.GetCode() != IgniteError::IGNITE_SUCCESS;
             }
 
             /**
-             * Mark as complete.
+             * Set value.
              *
              * @throw IgniteError with IgniteError::IGNITE_ERR_FUTURE_STATE if error or value has been set already.
+             * @param val Value to set.
              */
-            void SetValue()
+            void SetValue(std::auto_ptr<ValueType> val)
             {
-                concurrent::CsLockGuard guard(writeLock);
+                concurrent::CsLockGuard guard(mutex);
 
                 if (IsSet())
                 {
@@ -228,7 +237,7 @@ namespace ignite
 
                 done = true;
 
-                evt.Set();
+                cond.NotifyAll();
             }
 
             /**
@@ -239,7 +248,7 @@ namespace ignite
              */
             void SetError(const IgniteError& err)
             {
-                concurrent::CsLockGuard guard(writeLock);
+                concurrent::CsLockGuard guard(mutex);
 
                 if (IsSet())
                 {
@@ -252,7 +261,7 @@ namespace ignite
 
                 error = err;
 
-                evt.Set();
+                cond.NotifyAll();
             }
 
             /**
@@ -261,7 +270,10 @@ namespace ignite
              */
             void Wait() const
             {
-                evt.Wait();
+                concurrent::CsLockGuard guard(mutex);
+
+                while (!IsSet())
+                    cond.Wait(mutex);
             }
 
             /**
@@ -273,11 +285,16 @@ namespace ignite
              */
             bool WaitFor(int32_t msTimeout) const
             {
-                return evt.WaitFor(msTimeout);
+                concurrent::CsLockGuard guard(mutex);
+
+                if (IsSet())
+                    return true;
+
+                return cond.WaitFor(mutex, msTimeout);
             }
 
             /**
-             * Wait for operation complition or error.
+             * Get the set value.
              * Active thread will be blocked until value or error will be set.
              *
              * @throw IgniteError if error has been set.
@@ -297,17 +314,17 @@ namespace ignite
         private:
             IGNITE_NO_COPY_ASSIGNMENT(SharedState);
 
-            /** Completion flag. */
+            /** Marker. */
             bool done;
 
             /** Error. */
             IgniteError error;
 
-            /** Event which serves to signal that value is set. */
-            mutable concurrent::ManualEvent evt;
+            /** Condition variable which serves to signal that value is set. */
+            mutable concurrent::ConditionVariable cond;
 
             /** Lock that used to prevent double-set of the value. */
-            mutable concurrent::CriticalSection writeLock;
+            mutable concurrent::CriticalSection mutex;
         };
     }
 }
