@@ -141,7 +141,6 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField
     public String getDayMillisecond() {
         return FORMAT.format(date);
     }
