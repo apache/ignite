@@ -5669,7 +5669,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 throw new IgniteSpiException("Failed to perform SSL handshake.");
                         }
                         catch (SSLException | IgniteCheckedException e) {
-                            log.warning("Failed to perform SSL handshake. [socket=" + sock + "]", e);
+                            U.warn(log, "Failed to perform SSL handshake [sock=" + sock + "]", e);
 
                             U.closeQuiet(sock);
                             U.closeQuiet(ch);
@@ -6161,7 +6161,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         msgProc.processMessage(wrkr, msg);
                     }
                     catch (IgniteCheckedException e) {
-                        log.error("Failure processing message, closing connection. [ses=" + ses + ']', e);
+                        U.error(log, "Failure processing message, closing connection [ses=" + ses + ']', e);
 
                         wrkr.nonblockingStop();
                     }
@@ -6441,8 +6441,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
-                    boolean asyncMode = req.client();
-
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
                     if (locNodeId.equals(nodeId)) {
@@ -6455,9 +6453,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (req.client()) {
-                        ClientMessageProcessor clientProc = asyncMode
-                            ? new ClientNioMessageWorker(nodeId, sock)
-                            : new ClientMessageWorker(sock, nodeId);
+                        ClientMessageProcessor clientProc = new ClientNioMessageWorker(nodeId, sock);
 
                         while (true) {
                             ClientMessageProcessor old = clientMsgWorkers.putIfAbsent(nodeId, clientProc);
@@ -7354,9 +7350,6 @@ class ServerImpl extends TcpDiscoveryImpl {
      *
      */
     private static class GridPingFutureAdapter<R> extends GridFutureAdapter<R> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Socket. */
         private volatile Socket sock;
 
@@ -7720,7 +7713,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                 }
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 throw new IOException(e.getMessage(), e);
             }
         }
