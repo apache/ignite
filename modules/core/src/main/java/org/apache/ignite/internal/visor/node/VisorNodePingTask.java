@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -32,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Ping other node.
  */
 @GridInternal
-public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean, Long, Long>> {
+public class VisorNodePingTask extends VisorOneNodeTask<UUID, VisorNodePingTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,19 +41,19 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected GridTuple3<Boolean, Long, Long> reduce0(List<ComputeJobResult> results) {
+    @Nullable @Override protected VisorNodePingTaskResult reduce0(List<ComputeJobResult> results) {
         try {
             return super.reduce0(results);
         }
         catch (ClusterTopologyException ignored) {
-            return new GridTuple3<>(false, -1L, -1L);
+            return new VisorNodePingTaskResult(false, -1L, -1L);
         }
     }
 
     /**
      * Job that ping node.
      */
-    private static class VisorNodePingJob extends VisorJob<UUID, GridTuple3<Boolean, Long, Long>> {
+    private static class VisorNodePingJob extends VisorJob<UUID, VisorNodePingTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -67,10 +66,10 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
         }
 
         /** {@inheritDoc} */
-        @Override protected GridTuple3<Boolean, Long, Long> run(UUID nodeToPing) {
+        @Override protected VisorNodePingTaskResult run(UUID nodeToPing) {
             long start = System.currentTimeMillis();
 
-            return new GridTuple3<>(ignite.cluster().pingNode(nodeToPing), start, System.currentTimeMillis());
+            return new VisorNodePingTaskResult(ignite.cluster().pingNode(nodeToPing), start, System.currentTimeMillis());
         }
 
         /** {@inheritDoc} */

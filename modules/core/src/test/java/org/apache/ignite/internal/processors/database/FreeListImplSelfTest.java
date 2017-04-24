@@ -319,7 +319,13 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = 1024 * MB / CPUS;
 
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, pageSize, new MemoryMetricsImpl(null), true);
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+            new UnsafeMemoryProvider(sizes),
+            null,
+            pageSize,
+            null,
+            new MemoryMetricsImpl(null),
+            true);
 
         pageMem.start();
 
@@ -366,7 +372,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         private TestDataRow(int keySize, int valSize) {
             key = new TestCacheObject(keySize);
             val = new TestCacheObject(valSize);
-            ver = new GridCacheVersion(keySize, valSize, 0L, 1);
+            ver = new GridCacheVersion(keySize, valSize, 1);
         }
 
         /** {@inheritDoc} */

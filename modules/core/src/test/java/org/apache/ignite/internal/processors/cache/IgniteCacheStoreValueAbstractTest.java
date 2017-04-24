@@ -176,8 +176,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
             cache.remove(key);
 
-            atomicClockModeDelay(cache);
-
             try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
                 streamer.allowOverwrite(true);
 
@@ -190,8 +188,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
                 cache.localEvict(Collections.singleton(key));
 
                 assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
-
-                cache.localPromote(Collections.singleton(key));
 
                 assertNotNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
@@ -345,8 +341,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
             cache.remove(key);
 
-            atomicClockModeDelay(cache);
-
             try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
                 streamer.allowOverwrite(true);
 
@@ -359,8 +353,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
                 cache.localEvict(Collections.singleton(key));
 
                 assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
-
-                cache.localPromote(Collections.singleton(key));
 
                 assertNotNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 

@@ -17,70 +17,59 @@
 
 package org.apache.ignite.tests.p2p.cache;
 
-import java.util.Arrays;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.tests.p2p.NoValueClassOnServerAbstractClient;
+
+import static junit.framework.TestCase.assertEquals;
 
 /**
  *
  */
-public class CacheNoValueClassOnServerTestClient {
+public class CacheNoValueClassOnServerTestClient extends NoValueClassOnServerAbstractClient {
+    /**
+     * @param args Arguments.
+     * @throws Exception If failed.
+     */
+    private CacheNoValueClassOnServerTestClient(String[] args) throws Exception {
+        super(args);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void runTest() throws Exception {
+        IgniteCache<Integer, Person> cache = ignite.cache(null);
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, new Person("name-" + i));
+
+        for (int i = 0; i < 100; i++) {
+            Person p = cache.get(i);
+
+            if (p == null)
+                throw new Exception("Null result key: " + i);
+
+            String expName = "name-" + i;
+
+            assertEquals(expName, p.getName());
+
+            if (i % 10 == 0)
+                System.out.println("Get expected value: " + p.name());
+        }
+    }
+
     /**
      * @param args Arguments.
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        System.out.println("Starting test client node.");
+        try (CacheNoValueClassOnServerTestClient client = new CacheNoValueClassOnServerTestClient(args)) {
+            client.runTest();
+        }
+        catch (Throwable e) {
+            System.out.println("Unexpected error: " + e);
 
-        IgniteConfiguration cfg = new IgniteConfiguration();
+            e.printStackTrace(System.out);
 
-        cfg.setPeerClassLoadingEnabled(false);
-
-        cfg.setClientMode(true);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        try (Ignite ignite = Ignition.start(cfg)) {
-            System.out.println("Test external node started");
-
-            int nodes = ignite.cluster().nodes().size();
-
-            if (nodes != 2)
-                throw new Exception("Unexpected nodes number: " + nodes);
-
-            IgniteCache<Integer, Person> cache = ignite.cache(null);
-
-            for (int i = 0; i < 100; i++)
-                cache.put(i, new Person("name-" + i));
-
-            for (int i = 0; i < 100; i++) {
-                Person p = cache.get(i);
-
-                if (p == null)
-                    throw new Exception("Null result key: " + i);
-
-                String expName = "name-" + i;
-
-                if (!expName.equals(p.name()))
-                    throw new Exception("Unexpected data: " + p.name());
-
-                if (i % 10 == 0)
-                    System.out.println("Get expected value: " + p.name());
-            }
+            System.exit(1);
         }
     }
 }

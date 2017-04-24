@@ -32,12 +32,13 @@ namespace Apache.Ignite.Core.Tests
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for executable.
+    /// Tests for Apache.Ignite.exe.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ExecutableTest
     {
         /** Spring configuration path. */
-        private static readonly string SpringCfgPath = "config\\compute\\compute-standalone.xml";
+        private const string SpringCfgPath = "config\\compute\\compute-standalone.xml";
 
         /** Min memory Java task. */
         private const string MinMemTask = "org.apache.ignite.platform.PlatformMinMemoryTask";
@@ -56,7 +57,18 @@ namespace Apache.Ignite.Core.Tests
         {
             TestUtils.KillProcesses();
 
-            _grid = Ignition.Start(Configuration(SpringCfgPath));
+            _grid = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
+                    {
+                        new BinaryTypeConfiguration(typeof(RemoteConfiguration)),
+                        new BinaryTypeConfiguration(typeof(RemoteConfigurationClosure))
+                    }
+                },
+                SpringConfigUrl = SpringCfgPath
+            });
 
             Assert.IsTrue(_grid.WaitTopology(1));
 
@@ -353,48 +365,6 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Configuration for node.
-        /// </summary>
-        /// <param name="path">Path to Java XML configuration.</param>
-        /// <returns>Node configuration.</returns>
-        private static IgniteConfiguration Configuration(string path)
-        {
-            var cfg = new IgniteConfiguration();
-
-
-            var portCfg = new BinaryConfiguration();
-
-            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
-
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof (RemoteConfiguration)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof (RemoteConfigurationClosure)));
-
-            portCfg.TypeConfigurations = portTypeCfgs;
-
-            cfg.BinaryConfiguration = portCfg;
-
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-
-            cfg.JvmOptions = new List<string>
-            {
-                "-ea",
-                "-Xcheck:jni",
-                "-Xms4g",
-                "-Xmx4g",
-                "-DIGNITE_QUIET=false",
-                "-Xnoagent",
-                "-Djava.compiler=NONE",
-                "-Xdebug",
-                "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005",
-                "-XX:+HeapDumpOnOutOfMemoryError"
-            };
-
-            cfg.SpringConfigUrl = path;
-
-            return cfg;
-        }
-
-        /// <summary>
         /// 
         /// </summary>
         /// <param name="outputPath"></param>
@@ -440,7 +410,7 @@ namespace Apache.Ignite.Core.Tests
 
             public RemoteConfiguration Invoke()
             {
-                var grid0 = ((IgniteProxy) _grid).Target;
+                var grid0 = (Ignite) _grid;
 
                 var cfg = grid0.Configuration;
 

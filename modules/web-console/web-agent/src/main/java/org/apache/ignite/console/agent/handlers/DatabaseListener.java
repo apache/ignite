@@ -38,6 +38,7 @@ import org.apache.ignite.console.agent.db.DbMetadataReader;
 import org.apache.ignite.console.agent.db.DbTable;
 import org.apache.log4j.Logger;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
 
 /**
@@ -84,7 +85,6 @@ public class DatabaseListener {
 
     /** */
     private final AbstractListener metadataLsnr = new AbstractListener() {
-        @SuppressWarnings("unchecked")
         @Override public Object execute(Map<String, Object> args) throws Exception {
             String driverPath = null;
 
@@ -155,7 +155,7 @@ public class DatabaseListener {
                     URL url = new URL("jar", null,
                         "file:" + (win ? "/" : "") + file.getPath() + "!/META-INF/services/java.sql.Driver");
 
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), UTF_8))) {
                         String jdbcDriverCls = reader.readLine();
 
                         res.add(new JdbcDriver(file.getName(), jdbcDriverCls));
@@ -209,7 +209,7 @@ public class DatabaseListener {
      * @param jdbcUrl JDBC URL.
      * @param jdbcInfo Properties to connect to database.
      * @return Collection of schema names.
-     * @throws SQLException If failed to load schemas.
+     * @throws SQLException If failed to collect schemas.
      */
     protected Collection<String> schemas(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo) throws SQLException {

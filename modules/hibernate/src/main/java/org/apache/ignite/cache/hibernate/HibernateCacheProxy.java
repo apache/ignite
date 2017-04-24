@@ -627,11 +627,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        return delegate.igfsDataSpaceMax();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isMongoDataCache() {
         return delegate.isMongoDataCache();
     }
@@ -680,11 +675,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /** {@inheritDoc} */
     @Override public Object getTopologySafe(Object key) throws IgniteCheckedException {
         return delegate.getTopologySafe(keyTransformer.transform(key));
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object tryGetAndPut(Object key, Object val) throws IgniteCheckedException {
-        return delegate.tryGetAndPut(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */

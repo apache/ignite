@@ -774,13 +774,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     opCtxCall != null && opCtxCall.isKeepBinary());
 
             if (qry instanceof SqlQuery) {
-                if (isReplicatedDataNode() && ((SqlQuery)qry).isDistributedJoins())
-                    throw new CacheException("Queries using distributed JOINs have to be run on partitioned cache, " +
-                        "not on replicated.");
-
                 final SqlQuery p = (SqlQuery)qry;
 
-                if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
+                if ((p.isReplicatedOnly() && isReplicatedDataNode()) || ctx.isLocal() || qry.isLocal())
                      return (QueryCursor<R>)ctx.kernalContext().query().queryLocal(ctx, p,
                                 opCtxCall != null && opCtxCall.isKeepBinary());
 
@@ -788,13 +784,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             }
 
             if (qry instanceof SqlFieldsQuery) {
-                if (isReplicatedDataNode() && ((SqlFieldsQuery)qry).isDistributedJoins())
-                    throw new CacheException("Queries using distributed JOINs have to be run on partitioned cache, " +
-                        "not on replicated.");
-
                 SqlFieldsQuery p = (SqlFieldsQuery)qry;
 
-                if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
+                if ((p.isReplicatedOnly() && isReplicatedDataNode()) || ctx.isLocal() || qry.isLocal())
                     return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);
 
                 return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
@@ -1011,12 +1003,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         finally {
             onLeave(gate, prev);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void localPromote(Set<? extends K> keys) throws CacheException {
-        // TODO GG-11148.
-        throw new UnsupportedOperationException("localPromote will be removed");
     }
 
     /** {@inheritDoc} */

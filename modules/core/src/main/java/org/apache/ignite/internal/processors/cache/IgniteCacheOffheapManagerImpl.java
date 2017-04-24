@@ -431,11 +431,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         return 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException {
-        // No-op.
-    }
-
     /**
      * @param primary {@code True} if need return primary entries.
      * @param backup {@code True} if need return backup entries.

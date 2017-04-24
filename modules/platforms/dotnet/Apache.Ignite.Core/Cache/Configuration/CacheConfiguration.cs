@@ -126,6 +126,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for write-through behavior. </summary>
         public const bool DefaultWriteThrough = false;
 
+        /// <summary> Default value for <see cref="WriteBehindCoalescing"/>. </summary>
+        public const bool DefaultWriteBehindCoalescing = true;
+
+        /// <summary> Default value for <see cref="PartitionLossPolicy"/>. </summary>
+        public const PartitionLossPolicy DefaultPartitionLossPolicy = PartitionLossPolicy.Ignore;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -169,6 +175,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
             WriteBehindFlushSize = DefaultWriteBehindFlushSize;
             WriteBehindFlushThreadCount= DefaultWriteBehindFlushThreadCount;
+            WriteBehindCoalescing = DefaultWriteBehindCoalescing;
+            PartitionLossPolicy = DefaultPartitionLossPolicy;
         }
 
         /// <summary>
@@ -205,7 +213,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             Debug.Assert(((BinaryReader) reader).Marshaller == BinaryUtils.Marshaller);
 
             AtomicityMode = (CacheAtomicityMode) reader.ReadInt();
-            AtomicWriteOrderMode = (CacheAtomicWriteOrderMode) reader.ReadInt();
             Backups = reader.ReadInt();
             CacheMode = (CacheMode) reader.ReadInt();
             CopyOnRead = reader.ReadBoolean();
@@ -230,10 +237,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushFrequency = reader.ReadLongAsTimespan();
             WriteBehindFlushSize = reader.ReadInt();
             WriteBehindFlushThreadCount = reader.ReadInt();
+            WriteBehindCoalescing = reader.ReadBoolean();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
             EnableStatistics = reader.ReadBoolean();
+            MemoryPolicyName = reader.ReadString();
+            PartitionLossPolicy = (PartitionLossPolicy) reader.ReadInt();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
@@ -261,7 +271,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             Debug.Assert(((BinaryWriter) writer).Marshaller == BinaryUtils.Marshaller);
 
             writer.WriteInt((int) AtomicityMode);
-            writer.WriteInt((int) AtomicWriteOrderMode);
             writer.WriteInt(Backups);
             writer.WriteInt((int) CacheMode);
             writer.WriteBoolean(CopyOnRead);
@@ -286,10 +295,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteLong((long) WriteBehindFlushFrequency.TotalMilliseconds);
             writer.WriteInt(WriteBehindFlushSize);
             writer.WriteInt(WriteBehindFlushThreadCount);
+            writer.WriteBoolean(WriteBehindCoalescing);
             writer.WriteInt((int) WriteSynchronizationMode);
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
             writer.WriteBoolean(EnableStatistics);
+            writer.WriteString(MemoryPolicyName);
+            writer.WriteInt((int) PartitionLossPolicy);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -337,12 +349,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     }
                     else
                     {
-                        if (!cachePlugin.GetType().IsSerializable)
-                        {
-                            throw new InvalidOperationException("Invalid cache configuration: " +
-                                                                "ICachePluginConfiguration should be Serializable.");
-                        }
-
                         writer.WriteBoolean(false);
                         writer.WriteObject(cachePlugin);
                     }
@@ -422,11 +428,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultAtomicityMode)]
         public CacheAtomicityMode AtomicityMode { get; set; }
-
-        /// <summary>
-        /// Gets or sets cache write ordering mode.
-        /// </summary>
-        public CacheAtomicWriteOrderMode AtomicWriteOrderMode { get; set; }
 
         /// <summary>
         /// Gets or sets number of nodes used to back up single partition for 
@@ -636,5 +637,26 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<ICachePluginConfiguration> PluginConfigurations { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the <see cref="MemoryPolicyConfiguration"/> for this cache.
+        /// See <see cref="IgniteConfiguration.MemoryConfiguration"/>.
+        /// </summary>
+        public string MemoryPolicyName { get; set; }
+
+        /// <summary>
+        /// Gets or sets write coalescing flag for write-behind cache store operations.
+        /// Store operations (get or remove) with the same key are combined or coalesced to single,
+        /// resulting operation to reduce pressure to underlying cache store.
+        /// </summary>
+        [DefaultValue(DefaultWriteBehindCoalescing)]
+        public bool WriteBehindCoalescing { get; set; }
+
+        /// <summary>
+        /// Gets or sets the partition loss policy. This policy defines how Ignite will react to
+        /// a situation when all nodes for some partition leave the cluster.
+        /// </summary>
+        [DefaultValue(DefaultPartitionLossPolicy)]
+        public PartitionLossPolicy PartitionLossPolicy { get; set; }
     }
 }

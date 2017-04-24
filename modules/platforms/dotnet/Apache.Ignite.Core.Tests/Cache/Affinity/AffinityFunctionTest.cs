@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -91,18 +90,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
-            // Check that affinity handles are present
-            TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count - 3, 0);
-            TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count - 3, 0);
+            try
+            {
+                // Check that affinity handles are present:
+                // TestDynamicCachePredefined and TestSimpleInheritance do not produce extra handles, so "-2" here.
+                TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count - 2, 0);
+                TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count - 2, 0);
 
-            // Destroy all caches
-            _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
-            Assert.AreEqual(0, _ignite.GetCacheNames().Count);
+                // Destroy all caches
+                _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
+                Assert.AreEqual(0, _ignite.GetCacheNames().Count);
 
-            // Check that all affinity functions got released
-            TestUtils.AssertHandleRegistryIsEmpty(1000, _ignite, _ignite2);
-
-            Ignition.StopAll(true);
+                // Check that all affinity functions got released
+                TestUtils.AssertHandleRegistryIsEmpty(1000, _ignite, _ignite2);
+            }
+            finally 
+            {
+                Ignition.StopAll(true);
+            }
         }
 
         /// <summary>
@@ -215,7 +220,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
 
             // Called on both nodes
-            TestUtils.WaitForCondition(() => RemovedNodes.Count > 0, 3000);
+            TestUtils.WaitForCondition(() => RemovedNodes.Count == 6, 3000);
             Assert.GreaterOrEqual(RemovedNodes.Count, 6);
             Assert.AreEqual(expectedNodeId, RemovedNodes.Distinct().Single());
         }

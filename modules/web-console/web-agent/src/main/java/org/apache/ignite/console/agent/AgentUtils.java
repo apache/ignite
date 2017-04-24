@@ -59,7 +59,7 @@ public class AgentUtils {
 
         mapper.registerModule(module);
     }
-    
+
     /**
      * Default constructor.
      */
@@ -153,7 +153,7 @@ public class AgentUtils {
 
     /**
      * Remove callback from handler arguments.
-     * 
+     *
      * @param args Arguments.
      * @return Arguments without callback.
      */
@@ -165,7 +165,7 @@ public class AgentUtils {
 
     /**
      * Map java object to JSON object.
-     * 
+     *
      * @param obj Java object.
      * @return {@link JSONObject} or {@link JSONArray}.
      * @throws IllegalArgumentException If conversion fails due to incompatible type.

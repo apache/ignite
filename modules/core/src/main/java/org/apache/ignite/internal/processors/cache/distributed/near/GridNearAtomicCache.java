@@ -328,13 +328,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             break;
                         }
 
-                        if (req.hasKey(key)) { // Reader became backup.
-                            if (entry.markObsolete(ver))
-                                removeEntry(entry);
-
-                            break;
-                        }
-
                         CacheObject val = req.nearValue(i);
                         EntryProcessor<Object, Object, Object> entryProcessor = req.nearEntryProcessor(i);
 
@@ -388,6 +381,15 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             catch (IgniteCheckedException e) {
                 res.addFailedKey(key, new IgniteCheckedException("Failed to update near cache key: " + key, e));
             }
+        }
+
+        for (int i = 0; i < req.obsoleteNearKeysSize(); i++) {
+            KeyCacheObject key = req.obsoleteNearKey(i);
+
+            GridCacheEntryEx entry = peekEx(key);
+
+            if (entry != null && entry.markObsolete(ver))
+                removeEntry(entry);
         }
 
         return nearEvicted;
@@ -452,11 +454,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> putAsync0(K key, V val, @Nullable CacheEntryPredicate filter) {
         return dht.putAsync0(key, val, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
-        return dht.tryGetAndPut(key, val);
     }
 
     /** {@inheritDoc} */

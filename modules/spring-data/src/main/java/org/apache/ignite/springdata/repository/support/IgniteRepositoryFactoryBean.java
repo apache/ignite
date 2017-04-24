@@ -49,6 +49,13 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
     /** Application context. */
     private ApplicationContext ctx;
 
+    /**
+     * @param repositoryInterface Repository interface.
+     */
+    protected IgniteRepositoryFactoryBean(Class<? extends T> repositoryInterface) {
+        super(repositoryInterface);
+    }
+
     /** {@inheritDoc} */
     @Override public void setApplicationContext(ApplicationContext context) throws BeansException {
         this.ctx = context;

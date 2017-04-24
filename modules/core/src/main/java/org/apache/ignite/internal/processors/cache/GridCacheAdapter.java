@@ -278,9 +278,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Current IGFS data cache size. */
     private LongAdder8 igfsDataCacheSize;
 
-    /** Max space for IGFS. */
-    private long igfsDataSpaceMax;
-
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
 
@@ -338,12 +335,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     if (!ctx.isNear()) {
                         igfsDataCache = true;
                         igfsDataCacheSize = new LongAdder8();
-
-                        igfsDataSpaceMax = igfsCfg.getMaxSpaceSize();
-
-                        // Do we have limits?
-                        if (igfsDataSpaceMax <= 0)
-                            igfsDataSpaceMax = Long.MAX_VALUE;
                     }
 
                     break;
@@ -2214,7 +2205,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         recovery,
                         needVer);
                 }
-            }, ctx.operationContextPerCall());
+            }, ctx.operationContextPerCall(), /*retry*/false);
         }
     }
 
@@ -2451,7 +2442,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKey(key);
 
         return syncOp(new SyncOp<EntryProcessorResult<T>>(true) {
-            @Nullable @Override public EntryProcessorResult<T> op(GridNearTxLocal tx)
+            @Override public EntryProcessorResult<T> op(GridNearTxLocal tx)
                 throws IgniteCheckedException {
                 assert topVer == null || tx.implicit();
 
@@ -2489,7 +2480,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKeys(keys);
 
         return syncOp(new SyncOp<Map<K, EntryProcessorResult<T>>>(keys.size() == 1) {
-            @Nullable @Override public Map<K, EntryProcessorResult<T>> op(GridNearTxLocal tx)
+            @Override public Map<K, EntryProcessorResult<T>> op(GridNearTxLocal tx)
                 throws IgniteCheckedException {
                 Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys,
                     new C1<K, EntryProcessor<K, V, Object>>() {
@@ -2705,12 +2696,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     "filter", filter, false);
             }
         });
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
-        // Supported only in ATOMIC cache.
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -3971,14 +3956,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         }
                     });
 
-                saveFuture(holder, f);
+                saveFuture(holder, f, /*retry*/false);
 
                 return f;
             }
 
             IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
 
-            saveFuture(holder, f);
+            saveFuture(holder, f, /*retry*/false);
 
             ctx.tm().resetContext();
 
@@ -4139,18 +4124,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     !skipStore,
                     0);
 
-                return asyncOp(tx, op, opCtx);
+                return asyncOp(tx, op, opCtx, /*retry*/false);
             }
             else {
                 AsyncOpRetryFuture<T> fut = new AsyncOpRetryFuture<>(op, retries, opCtx);
 
-                fut.execute();
+                fut.execute(/*retry*/false);
 
                 return fut;
             }
         }
         else
-            return asyncOp(tx, op, opCtx);
+            return asyncOp(tx, op, opCtx, /*retry*/false);
     }
 
     /**
@@ -4164,9 +4149,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     protected <T> IgniteInternalFuture<T> asyncOp(
         GridNearTxLocal tx,
         final AsyncOp<T> op,
-        final CacheOperationContext opCtx
+        final CacheOperationContext opCtx,
+        final boolean retry
     ) {
-        IgniteInternalFuture<T> fail = asyncOpAcquire();
+        IgniteInternalFuture<T> fail = asyncOpAcquire(retry);
 
         if (fail != null)
             return fail;
@@ -4209,7 +4195,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         }
                     });
 
-                saveFuture(holder, f);
+                saveFuture(holder, f, retry);
 
                 return f;
             }
@@ -4233,7 +4219,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 }
             });
 
-            saveFuture(holder, f);
+            saveFuture(holder, f, retry);
 
             if (tx.implicit())
                 ctx.tm().resetContext();
@@ -4252,7 +4238,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param holder Future holder.
      * @param fut Future to save.
      */
-    protected void saveFuture(final FutureHolder holder, IgniteInternalFuture<?> fut) {
+    protected void saveFuture(final FutureHolder holder, IgniteInternalFuture<?> fut, final boolean retry) {
         assert holder != null;
         assert fut != null;
         assert holder.holdsLock();
@@ -4262,12 +4248,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (fut.isDone()) {
             holder.future(null);
 
-            asyncOpRelease();
+            asyncOpRelease(retry);
         }
         else {
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
-                    asyncOpRelease();
+                    asyncOpRelease(retry);
 
                     if (!holder.tryLock())
                         return;
@@ -4287,11 +4273,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Tries to acquire asynchronous operations permit, if limited.
      *
+     * @param retry Retry flag.
      * @return Failed future if waiting was interrupted.
      */
-    @Nullable protected <T> IgniteInternalFuture<T> asyncOpAcquire() {
+    @Nullable protected <T> IgniteInternalFuture<T> asyncOpAcquire(boolean retry) {
         try {
-            if (asyncOpsSem != null)
+            if (!retry && asyncOpsSem != null)
                 asyncOpsSem.acquire();
 
             return null;
@@ -4306,9 +4293,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * Releases asynchronous operations permit, if limited.
+     *
+     * @param retry Retry flag.
      */
-    private void asyncOpRelease() {
-        if (asyncOpsSem != null)
+    protected final void asyncOpRelease(boolean retry) {
+        if (!retry && asyncOpsSem != null)
             asyncOpsSem.release();
     }
 
@@ -4362,11 +4351,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         assert igfsDataCache;
 
         return igfsDataCacheSize.longValue();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        return igfsDataSpaceMax;
     }
 
     /** {@inheritDoc} */
@@ -4775,7 +4759,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /**
          *
          */
-        public void execute() {
+        public void execute(boolean retry) {
             tx = ctx.tm().newTx(
                 true,
                 op.single(),
@@ -4786,7 +4770,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 opCtx == null || !opCtx.skipStore(),
                 0);
 
-            IgniteInternalFuture<T> fut = asyncOp(tx, op, opCtx);
+            IgniteInternalFuture<T> fut = asyncOp(tx, op, opCtx, retry);
 
             fut.listen(new IgniteInClosure<IgniteInternalFuture<T>>() {
                 @Override public void apply(IgniteInternalFuture<T> fut) {
@@ -4816,7 +4800,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         try {
                                             topFut.get();
 
-                                            execute();
+                                            execute(/*retry*/true);
                                         }
                                         catch (IgniteCheckedException e) {
                                             onDone(e);

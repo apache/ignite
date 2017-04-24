@@ -56,6 +56,9 @@ include /app/helpers/jade/mixins
                     +number('History size:', `${model}.queryDetailMetricsSize`, '"queryDetailMetricsSize"', 'true', '0', '0',
                         'Size of queries detail metrics that will be stored in memory for monitoring purposes')
                 .settings-row
+                    +number('Parallelism:', `${model}.queryParallelism`, '"queryParallelism"', 'true', '1', '1',
+                        'Defines a hint to query execution engine on desired degree of parallelism within a single node.')
+                .settings-row
                     -var form = 'querySqlFunctionClasses';
                     -var sqlFunctionClasses = `${model}.sqlFunctionClasses`;
 

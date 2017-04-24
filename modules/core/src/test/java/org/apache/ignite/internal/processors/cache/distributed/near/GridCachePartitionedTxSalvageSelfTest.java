@@ -234,7 +234,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void stopNodeAndSleep(long timeout) throws Exception {
-        stopGrid(0);
+        stopGrid(getTestIgniteInstanceName(0), false, false);
 
         info("Stopped grid.");
 

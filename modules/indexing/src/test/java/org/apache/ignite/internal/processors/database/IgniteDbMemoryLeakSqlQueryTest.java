@@ -32,7 +32,7 @@ public class IgniteDbMemoryLeakSqlQueryTest extends IgniteDbMemoryLeakTest {
 
     /** {@inheritDoc} */
     @Override protected long pagesMax() {
-        return 24_000;
+        return 26_000;
     }
 
     /** {@inheritDoc} */
