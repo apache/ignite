@@ -86,6 +86,16 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="partitionLossPolicy" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ReadOnlySafe" />
+            <xs:enumeration value="ReadOnlyAll" />
+            <xs:enumeration value="ReadWriteSafe" />
+            <xs:enumeration value="ReadWriteAll" />
+            <xs:enumeration value="Ignore" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -715,6 +725,11 @@
                                     <xs:attribute name="memoryPolicyName" type="xs:string">
                                         <xs:annotation>
                                             <xs:documentation>Name of the MemoryPolicyConfiguration for this cache.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="partitionLossPolicy" type="partitionLossPolicy">
+                                        <xs:annotation>
+                                            <xs:documentation>Partition loss policy defines how Ignite will react to a situation when all nodes for some partition leave the cluster.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                 </xs:complexType>

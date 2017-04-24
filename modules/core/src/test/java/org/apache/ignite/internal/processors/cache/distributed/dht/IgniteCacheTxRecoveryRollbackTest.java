@@ -32,13 +32,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -46,7 +46,8 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -189,7 +190,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         assertFalse(fut.isDone());
 
-        testSpi(client2).waitForMessage(GridNearTxFinishRequest.class, srv0.name());
+        testSpi(client2).waitForBlocked(GridNearTxFinishRequest.class, srv0.name());
 
         stopGrid(client2.name());
 
@@ -264,9 +265,9 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         testSpi(client2).blockMessages(GridNearTxFinishRequest.class, srv0.name());
 
-        testSpi(srv0).blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage msg) {
-                return msg.message() instanceof GridDhtTxFinishRequest;
+        testSpi(srv0).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return msg instanceof GridDhtTxFinishRequest;
             }
         });
 
@@ -292,7 +293,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         assertFalse(fut.isDone());
 
-        testSpi(client2).waitForMessage(GridNearTxFinishRequest.class, srv0.name());
+        testSpi(client2).waitForBlocked(GridNearTxFinishRequest.class, srv0.name());
 
         stopGrid(client2.name());
         stopGrid(srv0.name());
@@ -397,7 +398,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         assertFalse(fut.isDone());
 
-        testSpi(srv0).waitForMessage(GridNearTxPrepareResponse.class, client.name());
+        testSpi(srv0).waitForBlocked(GridNearTxPrepareResponse.class, client.name());
 
         stopGrid(client.name());
 

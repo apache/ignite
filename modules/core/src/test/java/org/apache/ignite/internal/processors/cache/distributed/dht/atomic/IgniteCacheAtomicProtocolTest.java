@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
@@ -32,18 +29,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityFunctionContext;
-import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -51,15 +41,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -112,12 +101,10 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      */
     private void blockRebalance() {
         for (Ignite node : G.allGrids()) {
-            testSpi(node).blockMessages(new IgnitePredicate<GridIoMessage>() {
-                @Override public boolean apply(GridIoMessage msg) {
-                    Object msg0 = msg.message();
-
-                    return (msg0 instanceof GridDhtPartitionSupplyMessage)
-                        && ((GridCacheMessage)msg0).cacheId() == CU.cacheId(TEST_CACHE);
+            testSpi(node).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return (msg instanceof GridDhtPartitionSupplyMessage)
+                        && ((GridCacheMessage)msg).cacheId() == CU.cacheId(TEST_CACHE);
                 }
             });
         }
@@ -368,7 +355,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, FULL_ASYNC));
 
-        List<Integer> keys = getKeysMoved(srv0, TEST_CACHE, putAll ? 3 : 1);
+        List<Integer> keys = movingKeysAfterJoin(srv0, TEST_CACHE, putAll ? 10 : 1);
 
         testSpi(clientNode).blockMessages(GridNearAtomicSingleUpdateRequest.class, srv0.name());
         testSpi(clientNode).blockMessages(GridNearAtomicFullUpdateRequest.class, srv0.name());
@@ -663,9 +650,9 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
 
-        testSpi(ignite(0)).blockMessages(new IgnitePredicate<GridIoMessage>() {
-            @Override public boolean apply(GridIoMessage msg) {
-                return msg.message() instanceof GridDhtAtomicAbstractUpdateRequest;
+        testSpi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return msg instanceof GridDhtAtomicAbstractUpdateRequest;
             }
         });
 
@@ -719,16 +706,16 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
 
         if (fail0) {
-            testSpi(ignite(0)).blockMessages(new IgnitePredicate<GridIoMessage>() {
-                @Override public boolean apply(GridIoMessage msg) {
-                    return msg.message() instanceof GridDhtAtomicAbstractUpdateRequest;
+            testSpi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg instanceof GridDhtAtomicAbstractUpdateRequest;
                 }
             });
         }
         if (fail1) {
-            testSpi(ignite(2)).blockMessages(new IgnitePredicate<GridIoMessage>() {
-                @Override public boolean apply(GridIoMessage msg) {
-                    return msg.message() instanceof GridDhtAtomicAbstractUpdateRequest;
+            testSpi(ignite(2)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return msg instanceof GridDhtAtomicAbstractUpdateRequest;
                 }
             });
         }
@@ -825,68 +812,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Return list of keys that are primary for given node on given topology,
-     * but will not be primary after add one new node.
-     *
-     * @param ign Ignite.
-     * @param cacheName Cache name.
-     * @param size Number of keys.
-     * @return List of keys.
-     */
-    private List<Integer> getKeysMoved(Ignite ign, String cacheName, int size) {
-        GridCacheContext<Object, Object> cctx = ((IgniteKernal)ign).context().cache().internalCache(cacheName).context();
-
-        ArrayList<ClusterNode> nodes = new ArrayList<>(ign.cluster().nodes());
-
-        AffinityFunction func = cctx.config().getAffinity();
-
-        AffinityFunctionContext ctx = new GridAffinityFunctionContextImpl(
-            nodes,
-            null,
-            null,
-            new AffinityTopologyVersion(1, 0),
-            cctx.config().getBackups());
-
-        List<List<ClusterNode>> calcAff = func.assignPartitions(ctx);
-
-        String name = getTestIgniteInstanceName(nodes.size());
-
-        nodes.add(new FakeNode(name));
-
-        ctx = new GridAffinityFunctionContextImpl(
-            nodes,
-            null,
-            null,
-            new AffinityTopologyVersion(1, 0),
-            cctx.config().getBackups());
-
-        List<List<ClusterNode>> calcAff2 = func.assignPartitions(ctx);
-
-        Set<Integer> movedParts = new HashSet<>();
-
-        UUID localId = ign.cluster().localNode().id();
-
-        for (int i = 0; i < calcAff.size(); i++) {
-            if (calcAff.get(i).get(0).id().equals(localId) && !calcAff2.get(i).get(0).id().equals(localId))
-                movedParts.add(i);
-        }
-
-        List<Integer> keys = new ArrayList<>();
-
-        for (int i = 0; i < 10000; i++) {
-            int keyPart = func.partition(ign.affinity(cacheName).affinityKey(i));
-
-            if (movedParts.contains(keyPart))
-                keys.add(i);
-
-            if (keys.size() == size)
-                break;
-        }
-
-        return keys;
-    }
-
-    /**
      *
      */
     public static class SetValueEntryProcessor implements CacheEntryProcessor<Integer, Integer, Object> {
@@ -906,82 +831,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
                 entry.setValue(val);
 
             return null;
-        }
-    }
-
-    /**
-     *
-     */
-    public static class FakeNode implements ClusterNode {
-        /** */
-        private final String consistendId;
-        /** */
-        private final UUID uuid;
-
-        /** */
-        public FakeNode(String consistendId) {
-            this.consistendId = consistendId;
-            uuid = UUID.randomUUID();
-        }
-
-        /** {@inheritDoc} */
-        @Override public UUID id() {
-            return uuid;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object consistentId() {
-            return consistendId;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <T> T attribute(String name) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterMetrics metrics() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Object> attributes() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<String> addresses() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<String> hostNames() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long order() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteProductVersion version() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isLocal() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isDaemon() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isClient() {
-            return false;
         }
     }
 }
