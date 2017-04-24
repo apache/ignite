@@ -151,7 +151,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
 
             Collection<QueryIndex> idxs = new ArrayList<>(entity.getIndexes());
 
-            entity.clearIndexes();
+            entity.setIndexes(null);
 
             IgniteCache<K, V> cache = grid(0).getOrCreateCache(ccfg);
 
