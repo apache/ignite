@@ -682,6 +682,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         @Override public int typeId() {
             return 0;
         }
+
+        /** {@inheritDoc} */
+        @Override public String keyFieldName() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String valueFieldName() {
+            return null;
+        }
     }
 
     /**

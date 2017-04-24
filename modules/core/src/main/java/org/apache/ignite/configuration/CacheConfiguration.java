@@ -1757,7 +1757,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean dup = false;
 
             for (QueryEntity entity : qryEntities) {
-                if (F.eq(entity.getValueType(), converted.getValueType())) {
+                if (F.eq(entity.findValueType(), converted.findValueType())) {
                     dup = true;
 
                     break;
@@ -1839,7 +1839,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean found = false;
 
             for (QueryEntity existing : this.qryEntities) {
-                if (F.eq(entity.getValueType(), existing.getValueType())) {
+                if (F.eq(entity.findValueType(), existing.findValueType())) {
                     found = true;
 
                     break;

@@ -44,6 +44,9 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     /** SQL SELECT query for verification. */
     static final String SQL_SELECT = "select _key, id, firstName, lastName, age from Person";
 
+    /** Alias for _key */
+    private static final String KEY_ALIAS = "key";
+
     /** Connection. */
     protected Connection conn;
 
@@ -97,6 +100,9 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         e.setKeyType(String.class.getName());
         e.setValueType("Person");
 
+        e.setKeyFieldName(KEY_ALIAS);
+
+        e.addQueryField(KEY_ALIAS, e.getKeyType(), null);
         e.addQueryField("id", Integer.class.getName(), null);
         e.addQueryField("age", Integer.class.getName(), null);
         e.addQueryField("firstName", String.class.getName(), null);
