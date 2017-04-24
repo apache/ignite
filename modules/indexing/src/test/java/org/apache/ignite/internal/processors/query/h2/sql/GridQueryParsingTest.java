@@ -506,7 +506,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         // Schemas for index and table must match
         assertParseThrows("create index if not exists sch2.idx on sch1.Person (name)",
-            DbException.class, "Schema name must match [90080-194]");
+            DbException.class, "Schema name must match [90080-195]");
 
         assertParseThrows("create hash index if not exists idx on Person (name)",
             IgniteSQLException.class, "Only SPATIAL modifier is supported for CREATE INDEX");
