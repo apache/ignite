@@ -89,19 +89,20 @@ public class ValuePersistenceSettings extends PersistenceSettings {
             List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
 
             for (PropertyDescriptor desc : primitivePropDescriptors) {
+                QuerySqlField sqlField = null;
 
                 try {
-                    Field f = getJavaClass().getField(desc.getName());
+                    Field f = getJavaClass().getDeclaredField(desc.getName());
 
-                    QuerySqlField sqlField =  f.getAnnotation(QuerySqlField.class);
-
-                    // Skip POJO field if it's read-only and is not annotated with @QuerySqlField.
-                    if (desc.getWriteMethod() != null || sqlField != null)
-                        list.add(new PojoValueField(desc, sqlField));
+                    sqlField = f.getAnnotation(QuerySqlField.class);
                 }
                 catch (NoSuchFieldException e) {
                     // No-op.
                 }
+
+                // Skip POJO field if it's read-only and is not annotated with @QuerySqlField.
+                if (desc.getWriteMethod() != null || sqlField != null)
+                    list.add(new PojoValueField(desc, sqlField));
             }
 
             return list;

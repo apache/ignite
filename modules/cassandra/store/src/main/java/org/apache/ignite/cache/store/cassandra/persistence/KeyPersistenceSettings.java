@@ -215,20 +215,20 @@ public class KeyPersistenceSettings extends PersistenceSettings {
 
         if (el == null) {
             for (PropertyDescriptor desc : descriptors) {
+                QuerySqlField sqlField = null;
+
                 try {
-                    Field f = getJavaClass().getField(desc.getName());
+                    Field f = getJavaClass().getDeclaredField(desc.getName());
 
-                    QuerySqlField sqlField =  f.getAnnotation(QuerySqlField.class);
-
-                    boolean valid = desc.getWriteMethod() != null || sqlField != null;
-
-                    // Skip POJO field if it's read-only and is not annotated with @QuerySqlField or @AffinityKeyMapped.
-                    if (valid)
-                        list.add(new PojoKeyField(desc, sqlField));
+                    sqlField = f.getAnnotation(QuerySqlField.class);
                 }
                 catch (NoSuchFieldException e) {
                     // No-op.
                 }
+
+                // Skip POJO field if it's read-only and is not annotated with @QuerySqlField or @AffinityKeyMapped.
+                if (desc.getWriteMethod() != null || sqlField != null)
+                    list.add(new PojoKeyField(desc, sqlField));
             }
 
             return list;
@@ -289,6 +289,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     }
 
     /**
+     * @param partKeyFields List of fields.
      * @return POJO field descriptors for cluster key.
      */
     private List<PropertyDescriptor> getClusterKeyDescriptors(List<PojoField> partKeyFields) {
