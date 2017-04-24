@@ -660,10 +660,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         ", rmtNodeId=" + rmtNodeId + ']');
 
                 return new JoinResult(new SocketStream(sock),
-                    spi.readReceipt(sock,
-                    timeoutHelper.nextTimeoutChunk(ackTimeout0)),
-                    res.clientAck(),
-                    true);
+                    spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0)));
             }
             catch (IOException | IgniteCheckedException e) {
                 U.closeQuiet(sock);
@@ -1077,9 +1074,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         private Socket sock;
 
         /** */
-        private boolean clientAck;
-
-        /** */
         private final Queue<TcpDiscoveryAbstractMessage> queue = new ArrayDeque<>();
 
         /** */
@@ -1087,9 +1081,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         /** */
         private TcpDiscoveryAbstractMessage unackedMsg;
-
-        /** */
-        private boolean writeLen;
 
         /** */
         private volatile long lastMsgReceived;
@@ -1143,16 +1134,10 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         /**
          * @param sock Socket.
-         * @param clientAck {@code True} is server supports client message acknowlede.
-         * @param writeLen Add message length if {@code true}.
          */
-        private void setSocket(Socket sock, boolean clientAck, boolean writeLen) {
+        private void setSocket(Socket sock) {
             synchronized (mux) {
                 this.sock = sock;
-
-                this.clientAck = clientAck;
-
-                this.writeLen = writeLen;
 
                 unackedMsg = null;
 
@@ -1248,7 +1233,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sndMsgLsnrs)
                     msgLsnr.apply(msg);
 
-                boolean ack = clientAck && !(msg instanceof TcpDiscoveryPingResponse);
+                boolean ack = !(msg instanceof TcpDiscoveryPingResponse);
 
                 try {
                     if (ack) {
@@ -1259,10 +1244,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    if (!writeLen)
-                        spi.writeToSocket(sock, msg, sockTimeout);
-                    else
-                        writeToSocketWithLength(msg, sock, sockTimeout);
+                    writeToSocketWithLength(msg, sock, sockTimeout);
 
                     msg = null;
 
@@ -1350,9 +1332,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         private volatile SocketStream sockStream;
 
         /** */
-        private boolean clientAck;
-
-        /** */
         private boolean join;
 
         /**
@@ -1407,7 +1386,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
 
                     sockStream = joinRes.sockStream;
-                    clientAck = joinRes.clientAck;
 
                     Socket sock = sockStream.socket();
 
@@ -1847,7 +1825,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             currSock = joinRes.sockStream;
 
-            sockWriter.setSocket(joinRes.sockStream.socket(), joinRes.clientAck, joinRes.asyncMode);
+            sockWriter.setSocket(joinRes.sockStream.socket());
 
             if (spi.joinTimeout > 0) {
                 final int joinCnt0 = joinCnt;
@@ -2247,7 +2225,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     currSock = reconnector.sockStream;
 
-                    sockWriter.setSocket(currSock.socket(), reconnector.clientAck, true);
+                    sockWriter.setSocket(currSock.socket());
                     sockReader.setSocket(currSock, locNode.clientRouterNodeId());
 
                     reconnector = null;
@@ -2501,25 +2479,13 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private final int receipt;
 
-        /** */
-        private final boolean clientAck;
-
-        /** Marks if client must add length to each message. */
-        private final boolean asyncMode;
-
         /**
          * @param sockStream Socket stream.
          * @param receipt Receipt.
-         * @param clientAck Client acknowledge.
-         * @param asyncMode Clietn async mode.
          */
-        private JoinResult(final SocketStream sockStream, final int receipt,
-            final boolean clientAck,
-            final boolean asyncMode) {
+        private JoinResult(final SocketStream sockStream, final int receipt) {
             this.sockStream = sockStream;
             this.receipt = receipt;
-            this.clientAck = clientAck;
-            this.asyncMode = asyncMode;
         }
 
         /** {@inheritDoc} */
