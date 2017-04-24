@@ -411,6 +411,10 @@ public class GridSqlQueryParser {
     /** */
     private static final String PARAM_VAL_CLS = "valCls";
 
+    private static final String[] MANDATORY_CREATE_TABLE_PARAMS = {
+        PARAM_TPL_CACHE
+    };
+
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
@@ -859,23 +863,35 @@ public class GridSqlQueryParser {
 
         res.tableName(data.tableName);
 
-        List<String> extraParams = data.tableEngineParams;
+        List<String> extraParamsStr = data.tableEngineParams;
 
-        for (String p : extraParams) {
+        Map<String, String> params = new HashMap<>();
+
+        for (String p : extraParamsStr) {
             String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
 
             if (parts.length > 2)
-                throw new IgniteSQLException("");
+                throw new IgniteSQLException("Invalid param syntax: key[=value] expected [paramStr=" + p + ']',
+                    IgniteQueryErrorCode.INVALID_PARAM_SYNTAX);
 
             String name = parts[0];
 
             String val = parts.length > 1 ? parts[1] : null;
 
             if (F.isEmpty(name))
-                throw new IgniteSQLException("");
+                throw new IgniteSQLException("Invalid param syntax: no name given [paramStr=" + p + ']',
+                    IgniteQueryErrorCode.INVALID_PARAM_SYNTAX);
 
-            processExtraParam(name, val, res);
+            params.put(name, val);
         }
+
+        for (String mandParamName : MANDATORY_CREATE_TABLE_PARAMS) {
+            if (!params.containsKey(mandParamName))
+                throw new IgniteSQLException("Mandatory param is missing [paramName=" + mandParamName + ']');
+        }
+
+        for (Map.Entry<String, String> e : params.entrySet())
+            processExtraParam(e.getKey(), e.getValue(), res);
 
         return res;
     }
@@ -903,9 +919,37 @@ public class GridSqlQueryParser {
 
                 break;
 
+            case PARAM_KEY_CLS:
+                ensureParamValueNotEmpty(PARAM_KEY_CLS, val);
+
+                res.keyClass(val);
+
+                break;
+
+            case PARAM_VAL_CLS:
+                ensureParamValueNotEmpty(PARAM_VAL_CLS, val);
+
+                res.valueClass(val);
+
+                break;
+
+            case PARAM_NEW_CACHE:
+                ensureParamValueNotEmpty(PARAM_NEW_CACHE, val);
+
+                res.newCacheName(val);
+
+                break;
+
+            case PARAM_NEW_SCHEMA:
+                ensureParamValueNotEmpty(PARAM_NEW_SCHEMA, val);
+
+                res.newSchemaName(val);
+
+                break;
+
             default:
                 throw new IgniteSQLException("Unknown CREATE TABLE param [paramName=" + name + ']',
-                    IgniteQueryErrorCode.UNKNOWN_PARAM);
+                    IgniteQueryErrorCode.UNKNOWN_PARAM_NAME);
         }
     }
 

@@ -40,7 +40,10 @@ public final class IgniteQueryErrorCode {
     public final static int EMPTY_PARAM_VALUE = 1003;
 
     /** Unknown param specified. */
-    public final static int UNKNOWN_PARAM = 1004;
+    public final static int UNKNOWN_PARAM_NAME = 1004;
+
+    /** Invalid syntax of param key-value pair. */
+    public final static int INVALID_PARAM_SYNTAX = 1004;
 
     /* 2xxx - analysis errors */
 
