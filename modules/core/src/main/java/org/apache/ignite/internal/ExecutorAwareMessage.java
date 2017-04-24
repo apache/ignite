@@ -15,27 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.GridBinaryDuplicateIndexObjectsAbstractSelfTest;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Test PARTITIONED and TRANSACTIONAL.
+ * Message with specified custom executor must be processed in the appropriate thread pool.
  */
-public class GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest extends
-    GridBinaryDuplicateIndexObjectsAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override public CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMode cacheMode() {
-        return PARTITIONED;
-    }
+public interface ExecutorAwareMessage extends Message {
+    /**
+     * @return Custom executor name. {@code null} In case the custom executor is not provided.
+     */
+    @Nullable public String executorName();
 }

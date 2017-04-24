@@ -683,11 +683,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object tryGetAndPut(Object key, Object val) throws IgniteCheckedException {
-        return delegate.tryGetAndPut(keyTransformer.transform(key), val);
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
         return delegate.lostPartitions();
     }

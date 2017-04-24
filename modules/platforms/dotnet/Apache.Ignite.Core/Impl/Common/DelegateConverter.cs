@@ -504,6 +504,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="type">The type.</param>
         /// <param name="types">The argument types.</param>
         /// <returns>Constructor info.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static ConstructorInfo GetConstructorExact(Type type, Type[] types)
         {
             Debug.Assert(type != null);

@@ -67,6 +67,7 @@ import javax.cache.Cache;
 import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -130,9 +131,6 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_LOC_LOAD_CACHE = 17;
-
-    /** */
-    public static final int OP_LOC_PROMOTE = 18;
 
     /** */
     public static final int OP_LOCAL_CLEAR = 20;
@@ -201,7 +199,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     public static final int OP_CLEAR_CACHE = 41;
 
     /** */
-    public static final int OP_WITH_ASYNC = 42;
+    public static final int OP_WITH_PARTITION_RECOVER = 42;
 
     /** */
     public static final int OP_REMOVE_ALL2 = 43;
@@ -326,6 +324,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_GLOBAL_METRICS = 83;
 
+    /** */
+    public static final int OP_GET_LOST_PARTITIONS = 84;
+
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
 
@@ -432,12 +433,6 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_CONTAINS_KEYS:
                     return cache.containsKeys(PlatformUtils.readSet(reader)) ? TRUE : FALSE;
-
-                case OP_LOC_PROMOTE: {
-                    cache.localPromote(PlatformUtils.readSet(reader));
-
-                    return TRUE;
-                }
 
                 case OP_REPLACE_3:
                     return cache.replace(reader.readObjectDetached(), reader.readObjectDetached(),
@@ -983,6 +978,17 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 break;
 
+            case OP_GET_LOST_PARTITIONS:
+                Collection<Integer> parts = cache.lostPartitions();
+
+                writer.writeInt(parts.size());
+
+                for (int p : parts) {
+                    writer.writeInt(p);
+                }
+
+                break;
+
             default:
                 super.processOutStream(type, writer);
         }
@@ -991,11 +997,8 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         switch (type) {
-            case OP_WITH_ASYNC: {
-                if (cache.isAsync())
-                    return this;
-
-                return copy(rawCache.withAsync(), keepBinary);
+            case OP_WITH_PARTITION_RECOVER: {
+                return copy(rawCache.withPartitionRecover(), keepBinary);
             }
 
             case OP_WITH_KEEP_BINARY: {

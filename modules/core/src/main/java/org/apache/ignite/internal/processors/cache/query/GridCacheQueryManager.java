@@ -355,70 +355,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Entry for given key unswapped.
-     *
-     * @param key Key.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onSwap(KeyCacheObject key, int partId) throws IgniteCheckedException {
-        if(!enabled)
-            return;
-        if (!enterBusy())
-            return; // Ignore index update when node is stopping.
-
-        try {
-            if (isIndexingSpiEnabled()) {
-                Object key0 = unwrapIfNeeded(key, cctx.cacheObjectContext());
-
-                cctx.kernalContext().indexing().onSwap(space, key0);
-            }
-
-            if(qryProcEnabled)
-                qryProc.onSwap(space, key, partId);
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
      * Checks if IndexinSPI is enabled.
      * @return IndexingSPI enabled flag.
      */
     private boolean isIndexingSpiEnabled() {
         return cctx.kernalContext().indexing().enabled();
-    }
-
-    /**
-     * Entry for given key unswapped.
-     *
-     * @param key Key.
-     * @param val Value
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onUnswap(KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException {
-        if(!enabled)
-            return;
-        if (!enterBusy())
-            return; // Ignore index update when node is stopping.
-
-        try {
-            if (isIndexingSpiEnabled()) {
-                CacheObjectContext coctx = cctx.cacheObjectContext();
-
-                Object key0 = unwrapIfNeeded(key, coctx);
-
-                Object val0 = unwrapIfNeeded(val, coctx);
-
-                cctx.kernalContext().indexing().onUnswap(space, key0, val0);
-            }
-
-            if(qryProcEnabled)
-                qryProc.onUnswap(space, key, partId, val);
-        }
-        finally {
-            leaveBusy();
-        }
     }
 
     /**

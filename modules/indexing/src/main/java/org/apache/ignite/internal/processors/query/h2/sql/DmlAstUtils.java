@@ -46,7 +46,6 @@ import org.h2.value.ValueInt;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
-import org.h2.value.ValueTimestampUtc;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -397,8 +396,6 @@ public final class DmlAstUtils {
             dfltVal = ValueInt.get(0).convertTo(type);
         else if (dt.type == Value.TIMESTAMP)
             dfltVal = ValueTimestamp.fromMillis(U.currentTimeMillis());
-        else if (dt.type == Value.TIMESTAMP_UTC)
-            dfltVal = ValueTimestampUtc.fromMillis(U.currentTimeMillis());
         else if (dt.type == Value.TIME)
             dfltVal = ValueTime.fromNanos(0);
         else if (dt.type == Value.DATE)

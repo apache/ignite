@@ -1313,64 +1313,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        [Ignore("IGNITE-4535")]
-        public void TestPromote()
-        {
-            var cache = Cache();
-
-            int key = GetPrimaryKeyForCache(cache);
-
-            cache.Put(key, 1);
-
-            Assert.AreEqual(1, PeekInt(cache, key));
-
-            cache.LocalEvict(new[] {key});
-
-            Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
-
-            Assert.AreEqual(0, PeekInt(cache, key));
-
-            cache.LocalPromote(new[] { key });
-
-            Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Onheap));
-
-            Assert.AreEqual(1, PeekInt(cache, key));
-        }
-
-        [Test]
-        [Ignore("IGNITE-4535")]
-        public void TestPromoteAll()
-        {
-            var cache = Cache();
-
-            List<int> keys = GetPrimaryKeysForCache(cache, 3);
-
-            cache.Put(keys[0], 1);
-            cache.Put(keys[1], 2);
-            cache.Put(keys[2], 3);
-
-            Assert.AreEqual(1, PeekInt(cache, keys[0]));
-            Assert.AreEqual(2, PeekInt(cache, keys[1]));
-            Assert.AreEqual(3, PeekInt(cache, keys[2]));
-
-            cache.LocalEvict(new List<int> { -1, keys[0], keys[1] });
-
-            Assert.AreEqual(1, cache.GetLocalSize(CachePeekMode.Onheap));
-
-            Assert.AreEqual(0, PeekInt(cache, keys[0]));
-            Assert.AreEqual(0, PeekInt(cache, keys[1]));
-            Assert.AreEqual(3, PeekInt(cache, keys[2]));
-
-            cache.LocalPromote(new[] {keys[0], keys[1]});
-
-            Assert.AreEqual(3, cache.GetLocalSize(CachePeekMode.Onheap));
-
-            Assert.AreEqual(1, PeekInt(cache, keys[0]));
-            Assert.AreEqual(2, PeekInt(cache, keys[1]));
-            Assert.AreEqual(3, PeekInt(cache, keys[2]));
-        }
-
-        [Test]
         public void TestPutGetBinary()
         {
             var cache = Cache<int, BinarizablePerson>();
