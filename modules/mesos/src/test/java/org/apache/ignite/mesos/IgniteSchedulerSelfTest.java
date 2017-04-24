@@ -374,12 +374,6 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         for (String failedRoleValue : failedRoleValues) {
             assertFalse(IgniteFramework.isRoleValid(failedRoleValue));
-
-            Mockito.when(IgniteFramework.isRoleValid(failedRoleValue)).thenReturn(false);
-
-            actualRoleValue = igniteFramework.getFrameworkInfo().getRole();
-
-            assertThat("*", Is.is(mesosRoleValue));
         }
     }
 
