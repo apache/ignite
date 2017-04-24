@@ -478,7 +478,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     updateSeq = updateLocal(p, locPart.state(), updateSeq);
                 }
             }
-            // If this node's map is empty, we pre-createPartitionMap local partitions,
+            // If this node's map is empty, we pre-create local partitions,
             // so local map will be sent correctly during exchange.
             else if (localNode(p, aff))
                 createPartition(p);
@@ -629,7 +629,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     // which obviously has not happened at this point.
                     if (locPart == null) {
                         if (log.isDebugEnabled())
-                            log.debug("Skipping local partition afterExchange (will not createPartitionMap): " + p);
+                            log.debug("Skipping local partition afterExchange (will not create): " + p);
 
                         continue;
                     }
@@ -1158,7 +1158,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             node2part = partMap;
 
-            List<ClusterNode>[] p2n = (List<ClusterNode>[])new List[cctx.config().getAffinity().partitions()];
+            List<ClusterNode>[] p2n = createPartitionMap(cctx.config().getAffinity().partitions());
 
             for (Map.Entry<UUID, GridDhtPartitionMap> e : partMap.entrySet()) {
                 for (Integer p : e.getValue().keySet()) {
