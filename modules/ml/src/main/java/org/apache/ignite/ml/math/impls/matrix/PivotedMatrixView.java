@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.matrix;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.Vector;
@@ -63,7 +64,7 @@ public class PivotedMatrixView extends AbstractMatrix {
     }
 
     /**
-     * @param mtx  Parent matrix.
+     * @param mtx Parent matrix.
      * @param pivot Pivot array for rows and columns.
      */
     public PivotedMatrixView(Matrix mtx, int[] pivot) {

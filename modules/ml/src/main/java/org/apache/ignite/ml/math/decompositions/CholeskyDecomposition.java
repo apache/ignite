@@ -25,8 +25,8 @@ import org.apache.ignite.ml.math.exceptions.NonSymmetricMatrixException;
 
 /**
  * Calculates the Cholesky decomposition of a matrix.
- *
- * This class inspired by class from Apache Common Math with similar name.
+ * <p>
+ * This class inspired by class from Apache Common Math with similar name.</p>
  *
  * @see <a href="http://mathworld.wolfram.com/CholeskyDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/Cholesky_decomposition">Wikipedia</a>
@@ -55,10 +55,10 @@ public class CholeskyDecomposition extends DecompositionSupport {
 
     /**
      * Calculates the Cholesky decomposition of the given matrix.
-     *
+     * <p>
      * Calling this constructor is equivalent to call {@link #CholeskyDecomposition(Matrix, double, double)} with the
      * thresholds set to the default values {@link #DFLT_REL_SYMMETRY_THRESHOLD} and
-     * {@link #DFLT_ABS_POSITIVITY_THRESHOLD}.
+     * {@link #DFLT_ABS_POSITIVITY_THRESHOLD}.</p>
      *
      * @param mtx the matrix to decompose.
      * @throws CardinalityException if matrix is not square.

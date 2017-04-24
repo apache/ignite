@@ -20,31 +20,36 @@ import org.apache.ignite.ml.math.MatrixKeyMapper;
 
 /** */
 public class MatrixKeyMapperForTests implements MatrixKeyMapper<Integer> {
-    /** */ private int rows;
-    /** */ private int cols;
+    /** */
+    private int rows;
+    /** */
+    private int cols;
 
     /** */
     public MatrixKeyMapperForTests() {
         // No-op.
     }
 
-    /** */
+    /**
+     * @param rows Amount of rows in matrix.
+     * @param cols Amount of columns in matrix.
+     */
     public MatrixKeyMapperForTests(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public Integer apply(int x, int y) {
         return x * cols + y;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean isValid(Integer integer) {
         return (rows * cols) > integer;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int hash = 1;
 
@@ -54,7 +59,7 @@ public class MatrixKeyMapperForTests implements MatrixKeyMapper<Integer> {
         return hash;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;

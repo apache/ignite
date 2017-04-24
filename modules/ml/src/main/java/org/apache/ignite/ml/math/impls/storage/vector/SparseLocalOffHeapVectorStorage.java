@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
+
 import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
 import org.apache.ignite.internal.util.offheap.GridOffHeapMapFactory;
 import org.apache.ignite.ml.math.VectorStorage;
@@ -33,8 +34,10 @@ import org.apache.ignite.ml.math.impls.vector.SparseLocalOffHeapVector;
 public class SparseLocalOffHeapVectorStorage implements VectorStorage {
     /** Assume 10% density. */
     private static final int INIT_DENSITY = 10;
+
     /** Storage capacity. */
     private int size;
+
     /** Local off heap map. */
     private GridOffHeapMap gridOffHeapMap;
 

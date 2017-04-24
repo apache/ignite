@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.storage.matrix;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.MatrixKeyMapper;
@@ -30,11 +31,16 @@ import org.apache.ignite.ml.math.ValueMapper;
  * Matrix storage based on arbitrary cache and key and value mapping functions.
  */
 public class CacheMatrixStorage<K, V> implements MatrixStorage {
-    /** */ private int rows;
-    /** */  private int cols;
-    /** */ private IgniteCache<K, V> cache;
-    /** */ private MatrixKeyMapper<K> keyMapper;
-    /** */ private ValueMapper<V> valMapper;
+    /** */
+    private int rows;
+    /** */
+    private int cols;
+    /** */
+    private IgniteCache<K, V> cache;
+    /** */
+    private MatrixKeyMapper<K> keyMapper;
+    /** */
+    private ValueMapper<V> valMapper;
 
     /**
      *

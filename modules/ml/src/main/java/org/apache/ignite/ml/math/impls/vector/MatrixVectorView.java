@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.IndexException;
@@ -29,13 +30,18 @@ import org.apache.ignite.ml.math.impls.storage.vector.MatrixVectorStorage;
  * Row or column vector view off the matrix.
  */
 public class MatrixVectorView extends AbstractVector {
-    /** */ private Matrix parent;
+    /** */
+    private Matrix parent;
 
-    /** */ private int row;
-    /** */ private int col;
+    /** */
+    private int row;
+    /** */
+    private int col;
 
-    /** */ private int rowStride;
-    /** */ private int colStride;
+    /** */
+    private int rowStride;
+    /** */
+    private int colStride;
 
     /**
      *

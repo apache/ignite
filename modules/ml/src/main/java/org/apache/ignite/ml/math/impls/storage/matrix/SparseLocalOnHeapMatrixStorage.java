@@ -19,11 +19,13 @@ package org.apache.ignite.ml.math.impls.storage.matrix;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 
@@ -34,11 +36,15 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
     /** Default zero value. */
     private static final double DEFAULT_VALUE = 0.0;
 
-    /** */ private int rows;
-    /** */ private int cols;
+    /** */
+    private int rows;
+    /** */
+    private int cols;
 
-    /** */ private int acsMode;
-    /** */ private int stoMode;
+    /** */
+    private int acsMode;
+    /** */
+    private int stoMode;
 
     /** Actual map storage. */
     private Map<Integer, Map<Integer, Double>> sto;
@@ -64,16 +70,14 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
     }
 
     /**
-     *
-     *
+     * @return Matrix elements storage mode.
      */
     public int getStorageMode() {
         return stoMode;
     }
 
     /**
-     *
-     *
+     * @return Matrix elements access mode.
      */
     public int getAccessMode() {
         return acsMode;

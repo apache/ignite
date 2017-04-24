@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
+
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
@@ -33,7 +34,8 @@ import org.apache.ignite.ml.math.Vector;
  * that by default, the value is determined by a relatively simple hash of the index.
  */
 public class RandomVector extends AbstractReadOnlyVector {
-    /** */ private boolean fastHash;
+    /** */
+    private boolean fastHash;
 
     /**
      * @param size Vector cardinality.

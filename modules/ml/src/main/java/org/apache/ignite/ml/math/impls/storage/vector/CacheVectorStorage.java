@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.ValueMapper;
@@ -32,10 +33,12 @@ import org.apache.ignite.ml.math.VectorStorage;
 public class CacheVectorStorage<K, V> implements VectorStorage {
     /** Storage size. */
     private int size;
+
     /** Key mapper. */
     private VectorKeyMapper<K> keyMapper;
     /** Value mapper. */
     private ValueMapper<V> valMapper;
+
     /** Underlying ignite cache. */
     private IgniteCache<K, V> cache;
 
@@ -66,24 +69,21 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
     }
 
     /**
-     *
-     *
+     * @return Ignite cache.
      */
     public IgniteCache<K, V> cache() {
         return cache;
     }
 
     /**
-     *
-     *
+     * @return Key mapper to validate cache keys.
      */
     public VectorKeyMapper<K> keyMapper() {
         return keyMapper;
     }
 
     /**
-     *
-     *
+     * @return Value mapper to obtain vector element values.
      */
     public ValueMapper<V> valueMapper() {
         return valMapper;
@@ -113,6 +113,7 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         keyMapper = (VectorKeyMapper<K>)in.readObject();

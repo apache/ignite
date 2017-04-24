@@ -19,10 +19,12 @@ package org.apache.ignite.ml.math.impls.storage.vector;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
+
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.VectorStorage;
 
@@ -30,8 +32,10 @@ import org.apache.ignite.ml.math.VectorStorage;
  * Sparse, local, on-heap vector storage.
  */
 public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageConstants {
-    /** */ private int size;
-    /** */ private int acsMode;
+    /** */
+    private int size;
+    /** */
+    private int acsMode;
 
     /** Actual map storage. */
     private Map<Integer, Double> sto;
@@ -61,8 +65,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
     }
 
     /**
-     *
-     *
+     * @return Vector elements access mode.
      */
     public int getAccessMode() {
         return acsMode;
