@@ -106,7 +106,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         for (int i = 2; i < spis.size(); i++) {
             assertFalse(((TcpDiscoverySpi)spis.get(i)).failureDetectionTimeoutEnabled());
             assertEquals(0, ((TcpDiscoverySpi)spis.get(i)).failureDetectionTimeout());
-            assertEquals(0, ((TcpDiscoverySpi)spis.get(i)).clientFailureDetectionTimeout());
+            assertFalse(0 == ((TcpDiscoverySpi)spis.get(i)).clientFailureDetectionTimeout());
         }
     }
 
