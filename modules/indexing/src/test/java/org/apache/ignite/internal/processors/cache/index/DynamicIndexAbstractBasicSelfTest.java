@@ -670,23 +670,35 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     public void checkDrop(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
         initialize(mode, atomicityMode, near);
 
-        QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
+        // Create target index.
+        QueryIndex idx1 = index(IDX_NAME_1, field(FIELD_NAME_1));
 
-        dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
+        dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx1, false);
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1));
 
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
+        // Create another index which must stay intact afterwards.
+        QueryIndex idx2 = index(IDX_NAME_2, field(alias(FIELD_NAME_2)));
+
+        dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx2, false);
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
+
+        // Load some data.
         loadInitialData();
 
+        // Drop index.
         dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false);
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
 
         assertSimpleIndexOperations(SQL_SIMPLE_FIELD_1);
 
         assertIndexNotUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
+
+        // Make sure the second index is still there.
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_2, field(alias(FIELD_NAME_2)));
     }
 
     /**
