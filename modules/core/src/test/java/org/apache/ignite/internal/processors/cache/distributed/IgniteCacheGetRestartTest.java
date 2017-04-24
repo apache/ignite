@@ -219,7 +219,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
                         IgniteInternalFuture<?> syncFut = ((IgniteCacheProxy)cache).context().preloader().syncFuture();
 
-                        while (!syncFut.isDone())
+                        while (!syncFut.isDone() && U.currentTimeMillis() < stopTime)
                             checkGet(cache);
 
                         checkGet(cache);
