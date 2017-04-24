@@ -143,9 +143,12 @@ echo "MSBuild detected at '$msbuildExe'."
 # Detect NuGet
 $ng = "nuget"
 if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
-    echo "Downloading NuGet..."
-    (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
     $ng = ".\nuget.exe"
+
+    if (-not (Test-Path $ng)) {
+        echo "Downloading NuGet..."
+        (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
+    }
 }
 
 # Restore NuGet packages
@@ -153,10 +156,11 @@ echo "Restoring NuGet..."
 & $ng restore
 
 # Build
-echo "Starting MsBuild..."
 $targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 $codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
-& $msbuildExe Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false
+$msBuildCommand = "`"$msBuildExe`" Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
+echo "Starting MsBuild: '$msBuildCommand'"
+cmd /c $msBuildCommand
 
 # Check result
 if ($LastExitCode -ne 0) {

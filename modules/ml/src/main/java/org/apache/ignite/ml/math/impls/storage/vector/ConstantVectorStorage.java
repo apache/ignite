@@ -27,8 +27,10 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
  * Constant read-only vector storage.
  */
 public class ConstantVectorStorage implements VectorStorage {
-    /** */ private int size;
-    /** */ private double val;
+    /** */
+    private int size;
+    /** */
+    private double val;
 
     /**
      *
@@ -49,8 +51,7 @@ public class ConstantVectorStorage implements VectorStorage {
     }
 
     /**
-     *
-     *
+     * @return Constant stored in Vector elements.
      */
     public double constant() {
         return val;

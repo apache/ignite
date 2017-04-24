@@ -101,6 +101,7 @@
     <Compile Include="Cache\Query\CacheDmlQueriesTestSimpleName.cs" />
     <Compile Include="Cache\Query\CacheLinqTestSimpleName.cs" />
     <Compile Include="Cache\Query\CacheQueriesTestSimpleName.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryTest.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
     <Compile Include="Cache\Store\NamedNodeCacheStoreTest.cs" />
     <Compile Include="Cache\TestReferenceObject.cs" />
