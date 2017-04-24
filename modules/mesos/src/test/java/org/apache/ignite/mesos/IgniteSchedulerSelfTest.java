@@ -360,7 +360,6 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         assertThat(actualUserValue, Is.is(mesosUserValue));
         assertThat(actualRoleValue, Is.is(mesosRoleValue));
-
     }
 
     /**
