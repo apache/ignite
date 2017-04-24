@@ -17,11 +17,15 @@
 
 package org.apache.ignite.ml.math.decompositions;
 
+import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NonPositiveDefiniteMatrixException;
 import org.apache.ignite.ml.math.exceptions.NonSymmetricMatrixException;
+
+import static org.apache.ignite.ml.math.util.MatrixUtil.like;
+import static org.apache.ignite.ml.math.util.MatrixUtil.likeVector;
 
 /**
  * Calculates the Cholesky decomposition of a matrix.
@@ -31,7 +35,7 @@ import org.apache.ignite.ml.math.exceptions.NonSymmetricMatrixException;
  * @see <a href="http://mathworld.wolfram.com/CholeskyDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/Cholesky_decomposition">Wikipedia</a>
  */
-public class CholeskyDecomposition extends DecompositionSupport {
+public class CholeskyDecomposition implements Destroyable {
     /**
      * Default threshold above which off-diagonal elements are considered too different
      * and matrix not symmetric.

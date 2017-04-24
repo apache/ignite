@@ -28,40 +28,48 @@ import org.junit.Test;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
- * Abstract base class for implementations of MultipleLinearRegression.
+ * Abstract base class for implementations of {@link MultipleLinearRegression}.
  */
 public abstract class AbstractMultipleLinearRegressionTest {
     protected AbstractMultipleLinearRegression regression;
 
+    /** */
     @Before
     public void setUp(){
         regression = createRegression();
     }
 
+    /** */
     protected abstract AbstractMultipleLinearRegression createRegression();
 
+    /** */
     protected abstract int getNumberOfRegressors();
 
+    /** */
     protected abstract int getSampleSize();
 
+    /** */
     @Test
     public void canEstimateRegressionParameters(){
         double[] beta = regression.estimateRegressionParameters();
         Assert.assertEquals(getNumberOfRegressors(), beta.length);
     }
 
+    /** */
     @Test
     public void canEstimateResiduals(){
         double[] e = regression.estimateResiduals();
         Assert.assertEquals(getSampleSize(), e.length);
     }
 
+    /** */
     @Test
     public void canEstimateRegressionParametersVariance(){
         Matrix var = regression.estimateRegressionParametersVariance();
         Assert.assertEquals(getNumberOfRegressors(), var.rowSize());
     }
 
+    /** */
     @Test
     public void canEstimateRegressandVariance(){
         if (getSampleSize() > getNumberOfRegressors()) {
@@ -109,29 +117,34 @@ public abstract class AbstractMultipleLinearRegressionTest {
         Assert.assertEquals(flatY, regression.getY());
     }
 
+    /** */
     @Test(expected=NullArgumentException.class)
     public void testNewSampleNullData() {
         double[] data = null;
         createRegression().newSampleData(data, 2, 3, new DenseLocalOnHeapMatrix());
     }
 
+    /** */
     @Test(expected=MathIllegalArgumentException.class)
     public void testNewSampleInvalidData() {
         double[] data = new double[] {1, 2, 3, 4};
         createRegression().newSampleData(data, 2, 3, new DenseLocalOnHeapMatrix());
     }
 
+    /** */
     @Test(expected=MathIllegalArgumentException.class)
     public void testNewSampleInsufficientData() {
         double[] data = new double[] {1, 2, 3, 4};
         createRegression().newSampleData(data, 1, 3, new DenseLocalOnHeapMatrix());
     }
 
+    /** */
     @Test(expected=NullArgumentException.class)
     public void testXSampleDataNull() {
         createRegression().newXSampleData(null);
     }
 
+    /** */
     @Test(expected=NullArgumentException.class)
     public void testYSampleDataNull() {
         createRegression().newYSampleData(null);

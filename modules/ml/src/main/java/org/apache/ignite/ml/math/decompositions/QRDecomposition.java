@@ -17,17 +17,21 @@
 
 package org.apache.ignite.ml.math.decompositions;
 
+import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.functions.Functions;
+
+import static org.apache.ignite.ml.math.util.MatrixUtil.copy;
+import static org.apache.ignite.ml.math.util.MatrixUtil.like;
 
 /**
  * For an {@code m x n} matrix {@code A} with {@code m >= n}, the QR decomposition
  * is an {@code m x n} orthogonal matrix {@code Q} and an {@code n x n} upper
  * triangular matrix {@code R} so that {@code A = Q*R}.
  */
-public class QRDecomposition extends DecompositionSupport {
+public class QRDecomposition implements Destroyable {
     /** */
     private final Matrix q;
     /** */
