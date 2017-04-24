@@ -59,6 +59,7 @@ import org.apache.ignite.ml.math.impls.vector.VectorIterableTest;
 import org.apache.ignite.ml.math.impls.vector.VectorNormTest;
 import org.apache.ignite.ml.math.impls.vector.VectorToMatrixTest;
 import org.apache.ignite.ml.math.impls.vector.VectorViewTest;
+import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -111,12 +112,14 @@ import org.junit.runners.Suite;
     DiagonalMatrixTest.class,
     MatrixAttributeTest.class,
     TransposedMatrixViewTest.class,
-    // Decomposes
+    // Decompositions.
     LUDecompositionTest.class,
     EigenDecompositionTest.class,
     CholeskyDecompositionTest.class,
     QRDecompositionTest.class,
-    SingularValueDecompositionTest.class
+    SingularValueDecompositionTest.class,
+    // Regressions.
+    OLSMultipleLinearRegressionTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.
