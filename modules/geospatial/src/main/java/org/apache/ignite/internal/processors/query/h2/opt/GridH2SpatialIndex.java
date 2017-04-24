@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,13 +28,14 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.query.h2.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.H2Cursor;
+import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
+import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
+import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
 import org.h2.index.SpatialIndex;
@@ -130,6 +130,18 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             segments[i] = store.openMap("spatialIndex-" + i, new MVRTreeMap.Builder<Long>());
 
         ctx = tbl.rowDescriptor().context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
+        if (getTable().isPartitioned()) {
+            assert filter > 0; // Lookup batch will not be created for the first table filter.
+
+            throw DbException.throwInternalError(
+                "Table with a spatial index must be the first in the query: " + getTable());
+        }
+
+        return null; // Support must be explicitly added.
     }
 
     /**
