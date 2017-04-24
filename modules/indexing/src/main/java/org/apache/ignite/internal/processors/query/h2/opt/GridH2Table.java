@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -44,8 +45,10 @@ import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
+import org.h2.table.TableType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -184,79 +187,6 @@ public class GridH2Table extends TableBase {
      */
     public GridH2RowDescriptor rowDescriptor() {
         return desc;
-    }
-
-    /**
-     * Should be called when entry is swapped.
-     *
-     * @param key Entry key.
-     * @return {@code true} If row was found.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean onSwap(KeyCacheObject key, int partId) throws IgniteCheckedException {
-        return onSwapUnswap(key, partId, null);
-    }
-
-    /**
-     * Should be called when entry is unswapped.
-     *
-     * @param key Key.
-     * @param val Value.
-     * @return {@code true} If row was found.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean onUnswap(KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException {
-        assert val != null : "Key=" + key;
-
-        return onSwapUnswap(key, partId, val);
-    }
-
-    /**
-     * Swaps or unswaps row.
-     *
-     * @param key Key.
-     * @param val Value for promote or {@code null} if we have to swap.
-     * @return {@code true} if row was found and swapped/unswapped.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean onSwapUnswap(KeyCacheObject key, int partId, @Nullable CacheObject val) throws IgniteCheckedException {
-        assert key != null;
-
-        GridH2IndexBase pk = pk();
-
-        assert desc != null;
-
-        GridH2Row searchRow = desc.createRow(key, partId, null, null, 0);
-
-        GridUnsafeMemory mem = desc.memory();
-
-        lock(false);
-
-        if (mem != null)
-            desc.guard().begin();
-
-        try {
-            ensureNotDestroyed();
-
-            GridH2AbstractKeyValueRow row = (GridH2AbstractKeyValueRow)pk.findOne(searchRow);
-
-            if (row == null)
-                return false;
-
-            if (val == null)
-                row.onSwap();
-            else
-                row.onUnswap(val, false);
-
-            return true;
-        }
-        finally {
-            unlock(false);
-
-            if (mem != null)
-                desc.guard().end();
-        }
     }
 
     /**
@@ -621,12 +551,7 @@ public class GridH2Table extends TableBase {
 
                 GridH2Row old = pk.put(row); // Put to PK.
 
-                if (old instanceof GridH2AbstractKeyValueRow) { // Unswap value on replace.
-                    GridH2AbstractKeyValueRow kvOld = (GridH2AbstractKeyValueRow)old;
-
-                    kvOld.onUnswap(kvOld.getValue(VAL_COL), true);
-                }
-                else if (old == null)
+                if (old == null)
                     size.increment();
 
                 int len = idxs.size();
@@ -647,13 +572,6 @@ public class GridH2Table extends TableBase {
             else {
                 //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
                 GridH2Row old = pk.remove(row);
-
-                if (row.getColumnCount() != 1 && old instanceof GridH2AbstractKeyValueRow) { // Unswap value.
-                    Value v = row.getValue(VAL_COL);
-
-                    if (v != null)
-                        ((GridH2AbstractKeyValueRow)old).onUnswap(v.getObject(), true);
-                }
 
                 if (old != null) {
                     // Remove row from all indexes.
@@ -888,8 +806,8 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTableType() {
-        return EXTERNAL_TABLE_ENGINE;
+    @Override public TableType getTableType() {
+        return TableType.EXTERNAL_TABLE_ENGINE;
     }
 
     /** {@inheritDoc} */

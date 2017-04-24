@@ -63,9 +63,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object> implements GridCacheFuture<Object>,
     CacheGetFuture {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 

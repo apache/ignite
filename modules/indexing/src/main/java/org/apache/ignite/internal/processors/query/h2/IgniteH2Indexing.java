@@ -462,7 +462,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             PreparedStatement stmt = cache.get(sql);
 
-            if (stmt != null && !stmt.isClosed() && !((JdbcStatement)stmt).wasCancelled()) {
+            if (stmt != null && !stmt.isClosed() && !((JdbcStatement)stmt).isCancelled()) {
                 assert stmt.getConnection() == c;
 
                 return stmt;
@@ -669,17 +669,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param coctx Cache object context.
-     * @param o Object.
-     * @return Object class.
-     */
-    private Class<?> getClass(CacheObjectContext coctx, CacheObject o) {
-        return isBinary(o) ?
-            Object.class :
-            o.value(coctx, false).getClass();
-    }
-
-    /**
      * @param space Space.
      * @return Cache object context.
      */
@@ -719,53 +708,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl.tbl.update(key, partId, val, ver, 0, true, 0)) {
             if (tbl.luceneIdx != null)
                 tbl.luceneIdx.remove(key);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onSwap(@Nullable String spaceName, KeyCacheObject key,
-        int partId) throws IgniteCheckedException {
-        Schema schema = schemas.get(schema(spaceName));
-
-        if (schema == null)
-            return;
-
-        Class<?> keyCls = getClass(objectContext(spaceName), key);
-
-        for (TableDescriptor tbl : schema.tbls.values()) {
-            if (tbl.type().keyClass().isAssignableFrom(keyCls)) {
-                try {
-                    if (tbl.tbl.onSwap(key, partId))
-                        return;
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteCheckedException(e);
-                }
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onUnswap(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val)
-        throws IgniteCheckedException {
-        assert val != null;
-
-        CacheObjectContext coctx = objectContext(spaceName);
-
-        Class<?> keyCls = getClass(coctx, key);
-        Class<?> valCls = getClass(coctx, val);
-
-        for (TableDescriptor tbl : tables(schema(spaceName))) {
-            if (tbl.type().keyClass().isAssignableFrom(keyCls)
-                && tbl.type().valueClass().isAssignableFrom(valCls)) {
-                try {
-                    if (tbl.tbl.onUnswap(key, partId, val))
-                        return;
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteCheckedException(e);
-                }
-            }
         }
     }
 
@@ -3532,9 +3474,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final GridUnsafeGuard guard;
 
         /** */
-        private final boolean preferSwapVal;
-
-        /** */
         private final boolean snapshotableIdx;
 
         /** */
@@ -3578,10 +3517,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 props[i] = p;
             }
-
-            // TODO GG-10884.
-//            preferSwapVal = schema.ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED;
-            preferSwapVal = true;
 
             // Index is not snapshotable in db-x.
             snapshotableIdx = false;
@@ -3733,14 +3668,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
-            assert false : "'readFromSwap' to be removed";
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public int valueType() {
             return valType;
         }
@@ -3796,11 +3723,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @Override public GridH2Row cachedRow(long link) {
             return schema.rowCache.get(link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean preferSwapValue() {
-            return preferSwapVal;
         }
 
         /** {@inheritDoc} */

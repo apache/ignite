@@ -46,10 +46,10 @@ import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -64,7 +64,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -91,6 +93,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -1114,6 +1117,77 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
         return findKeys(cache, cnt, startFrom, 2);
+    }
+
+    /**
+     * Return list of keys that are primary for given node on current topology,
+     * but primary node will change after new node will be added.
+     *
+     * @param ign Ignite.
+     * @param cacheName Cache name.
+     * @param size Number of keys.
+     * @return List of keys.
+     */
+    protected final List<Integer> movingKeysAfterJoin(Ignite ign, String cacheName, int size) {
+        assertEquals("Expected consistentId is set to node name", ign.name(), ign.cluster().localNode().consistentId());
+
+        GridCacheContext<Object, Object> cctx = ((IgniteKernal)ign).context().cache().internalCache(cacheName).context();
+
+        ArrayList<ClusterNode> nodes = new ArrayList<>(ign.cluster().nodes());
+
+        AffinityFunction func = cctx.config().getAffinity();
+
+        AffinityFunctionContext ctx = new GridAffinityFunctionContextImpl(
+            nodes,
+            null,
+            null,
+            AffinityTopologyVersion.NONE,
+            cctx.config().getBackups());
+
+        List<List<ClusterNode>> calcAff = func.assignPartitions(ctx);
+
+        GridTestNode fakeNode = new GridTestNode(UUID.randomUUID(), null);
+
+        fakeNode.consistentId(getTestIgniteInstanceName(nodes.size()));
+
+        nodes.add(fakeNode);
+
+        ctx = new GridAffinityFunctionContextImpl(
+            nodes,
+            null,
+            null,
+            AffinityTopologyVersion.NONE,
+            cctx.config().getBackups());
+
+        List<List<ClusterNode>> calcAff2 = func.assignPartitions(ctx);
+
+        Set<Integer> movedParts = new HashSet<>();
+
+        UUID locId = ign.cluster().localNode().id();
+
+        for (int i = 0; i < calcAff.size(); i++) {
+            if (calcAff.get(i).get(0).id().equals(locId) && !calcAff2.get(i).get(0).id().equals(locId))
+                movedParts.add(i);
+        }
+
+        List<Integer> keys = new ArrayList<>();
+
+        Affinity<Integer> aff = ign.affinity(cacheName);
+
+        for (int i = 0; i < 10_000; i++) {
+            int keyPart = aff.partition(i);
+
+            if (movedParts.contains(keyPart)) {
+                keys.add(i);
+
+                if (keys.size() == size)
+                    break;
+            }
+        }
+
+        assertEquals("Failed to find moving keys [movedPats=" + movedParts + ", keys=" + keys + ']', size, keys.size());
+
+        return keys;
     }
 
     /**

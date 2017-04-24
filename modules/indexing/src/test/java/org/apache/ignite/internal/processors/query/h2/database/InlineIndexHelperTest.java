@@ -46,7 +46,6 @@ import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
-import org.h2.value.ValueTimestampUtc;
 import org.h2.value.ValueUuid;
 
 /**
@@ -283,13 +282,6 @@ public class InlineIndexHelperTest extends TestCase {
         testPutGet(ValueTimestamp.get(Timestamp.valueOf("2017-02-20 10:01:01")),
             ValueTimestamp.get(Timestamp.valueOf("2017-02-20 10:01:01")),
             ValueTimestamp.get(Timestamp.valueOf("2017-02-20 10:01:01")));
-    }
-
-    /** */
-    public void testTimestampUTC() throws Exception {
-        testPutGet(ValueTimestampUtc.fromMillis(System.currentTimeMillis()),
-            ValueTimestampUtc.fromMillis(System.currentTimeMillis() + 100),
-            ValueTimestampUtc.fromMillis(System.currentTimeMillis() + 200));
     }
 
     /** */

@@ -288,61 +288,61 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
         boolean compareAndSetGlobalState(final int expVal, final int newVal, final boolean draining) {
             try {
                 return retryTopologySafe(new Callable<Boolean>() {
-                        @Override public Boolean call() throws Exception {
-                            try (GridNearTxLocal tx = CU.txStartInternal(ctx,
-                                semView,
-                                PESSIMISTIC, REPEATABLE_READ)
-                            ) {
-                                GridCacheSemaphoreState val = semView.get(key);
+                    @Override public Boolean call() throws Exception {
+                        try (GridNearTxLocal tx = CU.txStartInternal(ctx,
+                            semView,
+                            PESSIMISTIC, REPEATABLE_READ)
+                        ) {
+                            GridCacheSemaphoreState val = semView.get(key);
 
-                                if (val == null)
-                                    throw new IgniteCheckedException("Failed to find semaphore with given name: " +
-                                        name);
+                            if (val == null)
+                                throw new IgniteCheckedException("Failed to find semaphore with given name: " +
+                                    name);
 
-                                // Abort if state is already broken.
-                                if (val.isBroken()) {
-                                    tx.rollback();
+                            // Abort if state is already broken.
+                            if (val.isBroken()) {
+                                tx.rollback();
 
-                                    return true;
+                                return true;
+                            }
+
+                            boolean retVal = val.getCount() == expVal;
+
+                            if (retVal) {
+                                // If this is not a call to drain permits,
+                                // Modify global permission count for the calling node.
+                                if (!draining) {
+                                    UUID nodeID = ctx.localNodeId();
+
+                                    Map<UUID, Integer> map = val.getWaiters();
+
+                                    int waitingCnt = expVal - newVal;
+
+                                    if (map.containsKey(nodeID))
+                                        waitingCnt += map.get(nodeID);
+
+                                    map.put(nodeID, waitingCnt);
+
+                                    val.setWaiters(map);
                                 }
 
-                                boolean retVal = val.getCount() == expVal;
+                                val.setCount(newVal);
 
-                                if (retVal) {
-                                    // If this is not a call to drain permits,
-                                    // Modify global permission count for the calling node.
-                                    if (!draining) {
-                                        UUID nodeID = ctx.localNodeId();
+                                semView.put(key, val);
 
-                                        Map<UUID, Integer> map = val.getWaiters();
-
-                                        int waitingCnt = expVal - newVal;
-
-                                        if (map.containsKey(nodeID))
-                                            waitingCnt += map.get(nodeID);
-
-                                        map.put(nodeID, waitingCnt);
-
-                                        val.setWaiters(map);
-                                    }
-
-                                    val.setCount(newVal);
-
-                                    semView.put(key, val);
-
-                                    tx.commit();
-                                }
-
-                                return retVal;
+                                tx.commit();
                             }
-                            catch (Error | Exception e) {
-                                if (!ctx.kernalContext().isStopping())
-                                    U.error(log, "Failed to compare and set: " + this, e);
 
-                                throw e;
-                            }
+                            return retVal;
                         }
-                    });
+                        catch (Error | Exception e) {
+                            if (!ctx.kernalContext().isStopping())
+                                U.error(log, "Failed to compare and set: " + this, e);
+
+                            throw e;
+                        }
+                    }
+                });
             }
             catch (IgniteCheckedException e) {
                 if (ctx.kernalContext().isStopping()) {
@@ -367,70 +367,70 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
         boolean releaseFailedNode(final UUID nodeId, final boolean broken) {
             try {
                 return retryTopologySafe(new Callable<Boolean>() {
-                        @Override public Boolean call() throws Exception {
-                            try (
-                                GridNearTxLocal tx = CU.txStartInternal(ctx,
-                                    semView,
-                                    PESSIMISTIC, REPEATABLE_READ)
-                            ) {
-                                GridCacheSemaphoreState val = semView.get(key);
+                    @Override public Boolean call() throws Exception {
+                        try (
+                            GridNearTxLocal tx = CU.txStartInternal(ctx,
+                                semView,
+                                PESSIMISTIC, REPEATABLE_READ)
+                        ) {
+                            GridCacheSemaphoreState val = semView.get(key);
 
-                                if (val == null)
-                                    throw new IgniteCheckedException("Failed to find semaphore with given name: " +
-                                        name);
+                            if (val == null)
+                                throw new IgniteCheckedException("Failed to find semaphore with given name: " +
+                                    name);
 
-                                // Quit early if semaphore is already broken.
-                                if( val.isBroken()) {
-                                    tx.rollback();
+                            // Quit early if semaphore is already broken.
+                            if( val.isBroken()) {
+                                tx.rollback();
 
-                                    return false;
-                                }
+                                return false;
+                            }
 
-                                // Mark semaphore as broken. No permits are released,
-                                // since semaphore is useless from now on.
-                                if (broken) {
-                                    val.setBroken(true);
-
-                                    semView.put(key, val);
-
-                                    tx.commit();
-
-                                    return true;
-                                }
-
-                                Map<UUID, Integer> map = val.getWaiters();
-
-                                if (!map.containsKey(nodeId)) {
-                                    tx.rollback();
-
-                                    return false;
-                                }
-
-                                int numPermits = map.get(nodeId);
-
-                                if (numPermits > 0)
-                                    val.setCount(val.getCount() + numPermits);
-
-                                map.remove(nodeId);
-
-                                val.setWaiters(map);
+                            // Mark semaphore as broken. No permits are released,
+                            // since semaphore is useless from now on.
+                            if (broken) {
+                                val.setBroken(true);
 
                                 semView.put(key, val);
-
-                                sync.nodeMap = map;
 
                                 tx.commit();
 
                                 return true;
                             }
-                            catch (Error | Exception e) {
-                                if (!ctx.kernalContext().isStopping())
-                                    U.error(log, "Failed to compare and set: " + this, e);
 
-                                throw e;
+                            Map<UUID, Integer> map = val.getWaiters();
+
+                            if (!map.containsKey(nodeId)) {
+                                tx.rollback();
+
+                                return false;
                             }
+
+                            int numPermits = map.get(nodeId);
+
+                            if (numPermits > 0)
+                                val.setCount(val.getCount() + numPermits);
+
+                            map.remove(nodeId);
+
+                            val.setWaiters(map);
+
+                            semView.put(key, val);
+
+                            sync.nodeMap = map;
+
+                            tx.commit();
+
+                            return true;
                         }
-                    });
+                        catch (Error | Exception e) {
+                            if (!ctx.kernalContext().isStopping())
+                                U.error(log, "Failed to compare and set: " + this, e);
+
+                            throw e;
+                        }
+                    }
+                });
             }
             catch (IgniteCheckedException e) {
                 if (ctx.kernalContext().isStopping()) {
@@ -479,34 +479,34 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
         if (!initGuard.get() && initGuard.compareAndSet(false, true)) {
             try {
                 sync = retryTopologySafe(new Callable<Sync>() {
-                        @Override public Sync call() throws Exception {
-                            try (GridNearTxLocal tx = CU.txStartInternal(ctx,
-                                semView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheSemaphoreState val = semView.get(key);
+                    @Override public Sync call() throws Exception {
+                        try (GridNearTxLocal tx = CU.txStartInternal(ctx,
+                            semView, PESSIMISTIC, REPEATABLE_READ)) {
+                            GridCacheSemaphoreState val = semView.get(key);
 
-                                if (val == null) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to find semaphore with given name: " + name);
+                            if (val == null) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to find semaphore with given name: " + name);
 
-                                    return null;
-                                }
-
-                                final int cnt = val.getCount();
-
-                                Map<UUID, Integer> waiters = val.getWaiters();
-
-                                final boolean failoverSafe = val.isFailoverSafe();
-
-                                tx.commit();
-
-                                Sync sync = new Sync(cnt, waiters, failoverSafe);
-
-                                sync.setBroken(val.isBroken());
-
-                                return sync;
+                                return null;
                             }
+
+                            final int cnt = val.getCount();
+
+                            Map<UUID, Integer> waiters = val.getWaiters();
+
+                            final boolean failoverSafe = val.isFailoverSafe();
+
+                            tx.commit();
+
+                            Sync sync = new Sync(cnt, waiters, failoverSafe);
+
+                            sync.setBroken(val.isBroken());
+
+                            return sync;
                         }
-                    });
+                    }
+                });
 
                 if (log.isDebugEnabled())
                     log.debug("Initialized internal sync structure: " + sync);
@@ -722,24 +722,24 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
             initializeSemaphore();
 
             ret = retryTopologySafe(new Callable<Integer>() {
-                    @Override public Integer call() throws Exception {
-                        try (
-                            GridNearTxLocal tx = CU.txStartInternal(ctx,
-                                semView, PESSIMISTIC, REPEATABLE_READ)
-                        ) {
-                            GridCacheSemaphoreState val = semView.get(key);
+                @Override public Integer call() throws Exception {
+                    try (
+                        GridNearTxLocal tx = CU.txStartInternal(ctx,
+                            semView, PESSIMISTIC, REPEATABLE_READ)
+                    ) {
+                        GridCacheSemaphoreState val = semView.get(key);
 
-                            if (val == null)
-                                throw new IgniteException("Failed to find semaphore with given name: " + name);
+                        if (val == null)
+                            throw new IgniteException("Failed to find semaphore with given name: " + name);
 
-                            int cnt = val.getCount();
+                        int cnt = val.getCount();
 
-                            tx.rollback();
+                        tx.rollback();
 
-                            return cnt;
-                        }
+                        return cnt;
                     }
-                });
+                }
+            });
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -875,7 +875,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
         try {
             initializeSemaphore();
 
-            boolean result = sync.tryAcquireSharedNanos(permits, unit.toNanos(timeout));
+            boolean res = sync.tryAcquireSharedNanos(permits, unit.toNanos(timeout));
 
             if (isBroken()) {
                 Thread.interrupted();
@@ -883,7 +883,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                 throw new InterruptedException();
             }
 
-            return result;
+            return res;
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -972,7 +972,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */

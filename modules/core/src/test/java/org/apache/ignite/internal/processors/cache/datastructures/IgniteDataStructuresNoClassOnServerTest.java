@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteNoClassOnServerAbstractTest;
 
 /**
- * Provides ability to listen to swap events in cache which is necessary for preloading.
+ *
  */
-public interface GridCacheSwapListener {
-    /**
-     * @param part Partition.
-     * @param key Cache key.
-     * @param e Entry.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onEntryUnswapped(int part, KeyCacheObject key, GridCacheSwapEntry e) throws IgniteCheckedException;
+public class IgniteDataStructuresNoClassOnServerTest extends IgniteNoClassOnServerAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected String clientClassName() {
+        return "org.apache.ignite.tests.p2p.datastructures.DataStructuresNoClassOnServerTestClient";
+    }
 }

@@ -189,8 +189,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
                 assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
-                cache.localPromote(Collections.singleton(key));
-
                 assertNotNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
                 checkNoValue(aff, key);
@@ -355,8 +353,6 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
                 cache.localEvict(Collections.singleton(key));
 
                 assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
-
-                cache.localPromote(Collections.singleton(key));
 
                 assertNotNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 

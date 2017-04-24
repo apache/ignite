@@ -238,25 +238,6 @@ public interface GridQueryIndexing {
         GridCacheVersion ver) throws IgniteCheckedException;
 
     /**
-     * Will be called when entry with given key is swapped.
-     *
-     * @param spaceName Space name.
-     * @param key Key.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onSwap(@Nullable String spaceName, KeyCacheObject key, int partId) throws IgniteCheckedException;
-
-    /**
-     * Will be called when entry with given key is unswapped.
-     *
-     * @param spaceName Space name.
-     * @param key Key.
-     * @param val Value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onUnswap(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException;
-
-    /**
      * Rebuilds all indexes of given type from hash index.
      *
      * @param spaceName Space name.

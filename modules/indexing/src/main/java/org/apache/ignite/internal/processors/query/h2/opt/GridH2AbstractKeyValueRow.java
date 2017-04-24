@@ -111,33 +111,6 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     }
 
     /**
-     * Should be called to remove reference on value.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public synchronized void onSwap() throws IgniteCheckedException {
-        setValue(VAL_COL, null);
-    }
-
-    /**
-     * Should be called when entry getting unswapped.
-     *
-     * @param val Value.
-     * @param beforeRmv If this is unswap before remove.
-     * @throws IgniteCheckedException If failed.
-     */
-    public synchronized void onUnswap(Object val, boolean beforeRmv) throws IgniteCheckedException {
-        Value val0 = peekValue(VAL_COL);
-
-        if (val0 != null && !(val0 instanceof WeakValue))
-            return;
-
-        setValue(VAL_COL, desc.wrap(val, desc.valueType()));
-
-        notifyAll();
-    }
-
-    /**
      * Atomically updates weak value.
      *
      * @param valObj New value.
@@ -209,68 +182,8 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
         if (col < DEFAULT_COLUMNS_COUNT) {
             Value v;
 
-            if (col == VAL_COL) {
+            if (col == VAL_COL)
                 v = peekValue(VAL_COL);
-
-                long start = 0;
-                int attempt = 0;
-
-                while ((v = WeakValue.unwrap(v)) == null) {
-                    if (!desc.preferSwapValue()) {
-                        v = getOffheapValue(VAL_COL);
-
-                        if (v != null) {
-                            setValue(VAL_COL, v);
-
-                            if (peekValue(KEY_COL) == null)
-                                cache();
-
-                            return v;
-                        }
-                    }
-
-                    Object k = getValue(KEY_COL).getObject();
-
-                    try {
-                        Object valObj = desc.readFromSwap(k);
-
-                        if (valObj != null) {
-                            // Even if we've found valObj in swap, it is may be some new value,
-                            // while the needed value was already unswapped, so we have to recheck it.
-                            if ((v = getOffheapValue(VAL_COL)) == null)
-                                return updateWeakValue(valObj);
-                        }
-                        else {
-                            // If nothing found in swap then we should be already unswapped.
-                            if (desc.preferSwapValue()) {
-                                v = getOffheapValue(VAL_COL);
-
-                                if (v != null) {
-                                    setValue(VAL_COL, v);
-
-                                    if (peekValue(KEY_COL) == null)
-                                        cache();
-
-                                    return v;
-                                }
-                            }
-
-                            v = syncValue(attempt);
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-
-                    attempt++;
-
-                    if (start == 0)
-                        start = U.currentTimeMillis();
-                    else if (U.currentTimeMillis() - start > 60_000) // Loop for at most 60 seconds.
-                        throw new IgniteException("Failed to get value for key: " + k +
-                            ". This can happen due to a long GC pause.");
-                }
-            }
             else {
                 assert col == KEY_COL : col;
 
