@@ -29,8 +29,19 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal static class MethodVisitor
     {
-        /// <summary> The string length method. </summary>
-        public static readonly MemberInfo StringLength = typeof (string).GetProperty("Length");
+        /// <summary> Property visitors. </summary>
+        private static readonly Dictionary<MemberInfo, string> Properties = new Dictionary<MemberInfo, string>
+        {
+            {typeof(string).GetProperty("Length"), "length"},
+            {typeof(DateTime).GetProperty("Year"), "year"},
+            {typeof(DateTime).GetProperty("Month"), "month"},
+            {typeof(DateTime).GetProperty("Day"), "day_of_month"},
+            {typeof(DateTime).GetProperty("DayOfYear"), "day_of_year"},
+            {typeof(DateTime).GetProperty("DayOfWeek"), "-1 + day_of_week"},
+            {typeof(DateTime).GetProperty("Hour"), "hour"},
+            {typeof(DateTime).GetProperty("Minute"), "minute"},
+            {typeof(DateTime).GetProperty("Second"), "second"}
+        };
 
         /// <summary> Method visit delegate. </summary>
         private delegate void VisitMethodDelegate(MethodCallExpression expression, CacheQueryExpressionVisitor visitor);
@@ -51,9 +62,9 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("Substring", new[] {typeof (int)}, GetFunc("substring", 0, 1)),
             GetStringMethod("Substring", new[] {typeof (int), typeof (int)}, GetFunc("substring", 0, 1)),
             GetStringMethod("Trim", "trim"),
-            GetStringMethod("Trim", "trim", typeof(char[])),
-            GetStringMethod("TrimStart", "ltrim", typeof(char[])),
-            GetStringMethod("TrimEnd", "rtrim", typeof(char[])),
+            GetParameterizedTrimMethod("Trim", "trim"),
+            GetParameterizedTrimMethod("TrimStart", "ltrim"),
+            GetParameterizedTrimMethod("TrimEnd", "rtrim"),
             GetStringMethod("Replace", "replace", typeof(string), typeof(string)),
 
             GetMethod(typeof (Regex), "Replace", new[] {typeof (string), typeof (string), typeof (string)}, 
@@ -103,6 +114,25 @@ namespace Apache.Ignite.Linq.Impl
         }.ToDictionary(x => x.Key, x => x.Value);
 
         /// <summary>
+        /// Visits the property call expression.
+        /// </summary>
+        public static bool VisitPropertyCall(MemberExpression expression, CacheQueryExpressionVisitor visitor)
+        {
+            string funcName;
+
+            if (!Properties.TryGetValue(expression.Member, out funcName))
+                return false;
+
+            visitor.ResultBuilder.Append(funcName).Append('(');
+
+            visitor.Visit(expression.Expression);
+
+            visitor.ResultBuilder.Append(')');
+
+            return true;
+        }
+
+        /// <summary>
         /// Visits the method call expression.
         /// </summary>
         public static void VisitMethodCall(MethodCallExpression expression, CacheQueryExpressionVisitor visitor)
@@ -146,18 +176,7 @@ namespace Apache.Ignite.Linq.Impl
                 if (isInstanceMethod || (i > 0))
                     visitor.ResultBuilder.Append(", ");
 
-                if (arg.NodeType == ExpressionType.NewArrayInit)
-                {
-                    // Only trim methods use params[], only one param is supported
-                    var args = ((NewArrayExpression) arg).Expressions;
-
-                    if (args.Count != 1)
-                        throw new NotSupportedException("Method call only supports a single parameter: "+ expression);
-
-                    visitor.Visit(args[0]);
-                }
-                else
-                    visitor.Visit(arg);
+                visitor.Visit(arg);
 
                 AppendAdjustment(visitor, adjust, i + 1);
             }
@@ -165,6 +184,51 @@ namespace Apache.Ignite.Linq.Impl
             visitor.ResultBuilder.Append(suffix).Append(")");
 
             AppendAdjustment(visitor, adjust, 0);
+        }
+
+        /// <summary>
+        /// Visits the instance function for Trim specific handling.
+        /// </summary>
+        private static void VisitParameterizedTrimFunc(MethodCallExpression expression,
+            CacheQueryExpressionVisitor visitor, string func)
+        {
+            visitor.ResultBuilder.Append(func).Append("(");
+
+            visitor.Visit(expression.Object);
+
+            var arg = expression.Arguments[0];
+
+            if (arg != null)
+            {
+                visitor.ResultBuilder.Append(", ");
+
+                if (arg.NodeType == ExpressionType.Constant)
+                {
+                    var constant = (ConstantExpression) arg;
+                    var args = constant.Value as IEnumerable<char>;
+
+                    if (args == null)
+                    {
+                        throw new NotSupportedException("String.Trim function only supports IEnumerable<char>");
+                    }
+
+                    var enumeratedArgs = args.ToArray();
+
+                    if (enumeratedArgs.Length != 1)
+                    {
+                        throw new NotSupportedException("String.Trim function only supports a single argument: " +
+                                                        expression);
+                    }
+
+                    visitor.AppendParameter(enumeratedArgs[0]);
+                }
+                else
+                {
+                    visitor.Visit(arg);
+                }
+            }
+
+            visitor.ResultBuilder.Append(")");
         }
 
         /// <summary>
@@ -228,6 +292,16 @@ namespace Apache.Ignite.Linq.Impl
             params Type[] argTypes)
         {
             return GetMethod(typeof(string), name, argTypes, GetFunc(sqlName));
+        }
+
+        /// <summary>
+        /// Gets string parameterized Trim(TrimStart, TrimEnd) method.
+        /// </summary>
+        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetParameterizedTrimMethod(string name,
+            string sqlName)
+        {
+            return GetMethod(typeof(string), name, new[] {typeof(char[])}, 
+                (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
         }
 
         /// <summary>

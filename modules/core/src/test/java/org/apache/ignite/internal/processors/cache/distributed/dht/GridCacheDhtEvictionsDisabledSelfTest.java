@@ -45,8 +45,8 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -117,7 +117,8 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
             assertNotNull(v1);
             assertNotNull(v2);
 
-            if (affinity(cache).mapKeyToNode(key).isLocal())
+            // TODO GG-11148: can do assertSame if on-heap storage is implemented.
+            if (false && affinity(cache).mapKeyToNode(key).isLocal())
                 assertSame(v1, v2);
             else
                 assertEquals(v1, v2);

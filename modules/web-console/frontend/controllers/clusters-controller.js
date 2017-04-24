@@ -17,8 +17,8 @@
 
 // Controller for Clusters screen.
 export default ['clustersController', [
-    '$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'igniteEventGroups', 'DemoInfo', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
-    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable, Resource, ErrorPopover, FormUtils) {
+    '$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteEventGroups', 'DemoInfo', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
+    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Input, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable, Resource, ErrorPopover, FormUtils) {
         UnsavedChangesGuard.install($scope);
 
         const emptyCluster = {empty: true};
@@ -31,6 +31,12 @@ export default ['clustersController', [
             cacheKeyConfiguration: [],
             communication: {},
             connector: {},
+            deploymentSpi: {
+                URI: {
+                    uriList: [],
+                    scanners: []
+                }
+            },
             discovery: {
                 Cloud: {
                     regions: [],
@@ -38,10 +44,10 @@ export default ['clustersController', [
                 }
             },
             marshaller: {},
+            peerClassLoadingLocalClassPathExclude: [],
             sslContextFactory: {
                 trustManagers: []
             },
-            swapSpaceSpi: {},
             transactionConfiguration: {},
             collision: {}
         };
@@ -221,12 +227,8 @@ export default ['clustersController', [
             {value: 'GoogleStorage', label: 'Google cloud storage'},
             {value: 'Jdbc', label: 'JDBC'},
             {value: 'SharedFs', label: 'Shared filesystem'},
-            {value: 'ZooKeeper', label: 'Apache ZooKeeper'}
-        ];
-
-        $scope.swapSpaceSpis = [
-            {value: 'FileSwapSpaceSpi', label: 'File-based swap'},
-            {value: null, label: 'Not set'}
+            {value: 'ZooKeeper', label: 'Apache ZooKeeper'},
+            {value: 'Kubernetes', label: 'Kubernetes'}
         ];
 
         $scope.eventGroups = igniteEventGroups;
@@ -274,8 +276,15 @@ export default ['clustersController', [
                     if (!cluster.logger)
                         cluster.logger = {Log4j: { mode: 'Default'}};
 
-                    if (!cluster.eventStorage)
-                        cluster.eventStorage = { kind: 'Memory' };
+                    if (!cluster.peerClassLoadingLocalClassPathExclude)
+                        cluster.peerClassLoadingLocalClassPathExclude = [];
+
+                    if (!cluster.deploymentSpi) {
+                        cluster.deploymentSpi = {URI: {
+                            uriList: [],
+                            scanners: []
+                        }};
+                    }
                 });
 
                 if ($state.params.linkId)
@@ -393,7 +402,6 @@ export default ['clustersController', [
                 communication: {tcpNoDelay: true},
                 connector: {noDelay: true},
                 collision: {kind: 'Noop', JobStealing: {stealingEnabled: true}, PriorityQueue: {starvationPreventionEnabled: true}},
-                eventStorage: {kind: 'Memory'},
                 failoverSpi: [],
                 logger: {Log4j: { mode: 'Default'}},
                 caches: linkId && _.find($scope.caches, {value: linkId}) ? [linkId] : [],
@@ -601,26 +609,6 @@ export default ['clustersController', [
             return true;
         }
 
-        function checkSwapConfiguration(item) {
-            const swapKind = item.swapSpaceSpi && item.swapSpaceSpi.kind;
-
-            if (swapKind && item.swapSpaceSpi[swapKind]) {
-                const swap = item.swapSpaceSpi[swapKind];
-
-                const sparsity = swap.maximumSparsity;
-
-                if (LegacyUtils.isDefined(sparsity) && (sparsity < 0 || sparsity >= 1))
-                    return ErrorPopover.show('maximumSparsityInput', 'Maximum sparsity should be more or equal 0 and less than 1!', $scope.ui, 'swap');
-
-                const readStripesNumber = swap.readStripesNumber;
-
-                if (readStripesNumber && !(readStripesNumber === -1 || (readStripesNumber & (readStripesNumber - 1)) === 0))
-                    return ErrorPopover.show('readStripesNumberInput', 'Read stripe size must be positive and power of two!', $scope.ui, 'swap');
-            }
-
-            return true;
-        }
-
         function checkSslConfiguration(item) {
             const r = item.connector;
 
@@ -684,9 +672,6 @@ export default ['clustersController', [
             if (!checkODBC(item))
                 return false;
 
-            if (!checkSwapConfiguration(item))
-                return false;
-
             if (!checkSslConfiguration(item))
                 return false;
 
@@ -699,17 +684,20 @@ export default ['clustersController', [
         // Save cluster in database.
         function save(item) {
             $http.post('/api/v1/configuration/clusters/save', item)
-                .success(function(_id) {
+                .then(({data}) => {
+                    const _id = data;
+
                     item.label = _clusterLbl(item);
 
                     $scope.ui.inputForm.$setPristine();
 
-                    const idx = _.findIndex($scope.clusters, (cluster) => cluster._id === _id);
+                    const idx = _.findIndex($scope.clusters, {_id});
 
                     if (idx >= 0)
                         _.assign($scope.clusters[idx], item);
                     else {
                         item._id = _id;
+
                         $scope.clusters.push(item);
                     }
 
@@ -717,31 +705,26 @@ export default ['clustersController', [
                         if (_.includes(item.caches, cache.value))
                             cache.cache.clusters = _.union(cache.cache.clusters, [_id]);
                         else
-                            _.remove(cache.cache.clusters, (id) => id === _id);
+                            _.pull(cache.cache.clusters, _id);
                     });
 
                     _.forEach($scope.igfss, (igfs) => {
                         if (_.includes(item.igfss, igfs.value))
                             igfs.igfs.clusters = _.union(igfs.igfs.clusters, [_id]);
                         else
-                            _.remove(igfs.igfs.clusters, (id) => id === _id);
+                            _.pull(igfs.igfs.clusters, _id);
                     });
 
                     $scope.selectItem(item);
 
-                    Messages.showInfo('Cluster "' + item.name + '" saved.');
+                    Messages.showInfo(`Cluster "${item.name}" saved.`);
                 })
-                .error(Messages.showError);
+                .catch(Messages.showError);
         }
 
         // Save cluster.
         $scope.saveItem = function() {
             const item = $scope.backupItem;
-
-            const swapConfigured = item.swapSpaceSpi && item.swapSpaceSpi.kind;
-
-            if (!swapConfigured && _.find(clusterCaches(item), (cache) => cache.swapEnabled))
-                _.merge(item, {swapSpaceSpi: {kind: 'FileSwapSpaceSpi'}});
 
             if (validate(item))
                 save(item);
@@ -754,7 +737,7 @@ export default ['clustersController', [
         // Clone cluster with new name.
         $scope.cloneItem = function() {
             if (validate($scope.backupItem)) {
-                Clone.confirm($scope.backupItem.name, _clusterNames()).then(function(newName) {
+                Input.clone($scope.backupItem.name, _clusterNames()).then((newName) => {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;
@@ -774,7 +757,7 @@ export default ['clustersController', [
                     const _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/clusters/remove', {_id})
-                        .success(function() {
+                        .then(() => {
                             Messages.showInfo('Cluster has been removed: ' + selectedItem.name);
 
                             const clusters = $scope.clusters;
@@ -795,7 +778,7 @@ export default ['clustersController', [
                                 _.forEach($scope.igfss, (igfs) => _.remove(igfs.igfs.clusters, (id) => id === _id));
                             }
                         })
-                        .error(Messages.showError);
+                        .catch(Messages.showError);
                 });
         };
 
@@ -804,7 +787,7 @@ export default ['clustersController', [
             Confirm.confirm('Are you sure you want to remove all clusters?')
                 .then(function() {
                     $http.post('/api/v1/configuration/clusters/remove/all')
-                        .success(() => {
+                        .then(() => {
                             Messages.showInfo('All clusters have been removed');
 
                             $scope.clusters = [];
@@ -816,7 +799,7 @@ export default ['clustersController', [
                             $scope.ui.inputForm.$error = {};
                             $scope.ui.inputForm.$setPristine();
                         })
-                        .error(Messages.showError);
+                        .catch(Messages.showError);
                 });
         };
 

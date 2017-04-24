@@ -29,17 +29,18 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +52,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache sequence implementation.
  */
-public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenceEx, Externalizable {
+public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenceEx, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -85,6 +86,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private volatile GridCacheContext ctx;
 
     /** Local value of sequence. */
+    @GridToStringInclude(sensitive = true)
     private long locVal;
 
     /**  Upper bound of local counter. */
@@ -251,8 +253,15 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         while (true) {
             if (updateGuard.compareAndSet(false, true)) {
                 try {
-                    // This call must be outside lock.
-                    return CU.outTx(updateCall, ctx);
+                    try {
+                        return retryTopologySafe(updateCall);
+                    }
+                    catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
+                        throw e;
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
                 }
                 finally {
                     lock.lock();
@@ -283,86 +292,6 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                         locVal += l;
 
                         return updated ? locVal : curVal;
-                    }
-                }
-                finally {
-                    lock.unlock();
-                }
-            }
-        }
-    }
-
-    /**
-     * Asynchronous sequence update operation. Will add given amount to the sequence value.
-     *
-     * @param l Increment amount.
-     * @param updateCall Cache call that will update sequence reservation count in accordance with l.
-     * @param updated If {@code true}, will return sequence value after update, otherwise will return sequence value
-     *      prior to update.
-     * @return Future indicating sequence value.
-     * @throws IgniteCheckedException If update failed.
-     */
-    @SuppressWarnings("SignalWithoutCorrespondingAwait")
-    private IgniteInternalFuture<Long> internalUpdateAsync(long l, @Nullable Callable<Long> updateCall, boolean updated)
-        throws IgniteCheckedException {
-        checkRemoved();
-
-        A.ensure(l > 0, " Parameter mustn't be less then 1: " + l);
-
-        lock.lock();
-
-        try {
-            // If reserved range isn't exhausted.
-            if (locVal + l <= upBound) {
-                long curVal = locVal;
-
-                locVal += l;
-
-                return new GridFinishedFuture<>(updated ? locVal : curVal);
-            }
-        }
-        finally {
-            lock.unlock();
-        }
-
-        if (updateCall == null)
-            updateCall = internalUpdate(l, updated);
-
-        while (true) {
-            if (updateGuard.compareAndSet(false, true)) {
-                try {
-                    // This call must be outside lock.
-                    return ctx.closures().callLocalSafe(updateCall, true);
-                }
-                finally {
-                    lock.lock();
-
-                    try {
-                        updateGuard.set(false);
-
-                        cond.signalAll();
-                    }
-                    finally {
-                        lock.unlock();
-                    }
-                }
-            }
-            else {
-                lock.lock();
-
-                try {
-                    while (locVal >= upBound && updateGuard.get())
-                        U.await(cond, 500, MILLISECONDS);
-
-                    checkRemoved();
-
-                    // If reserved range isn't exhausted.
-                    if (locVal + l <= upBound) {
-                        long curVal = locVal;
-
-                        locVal += l;
-
-                        return new GridFinishedFuture<>(updated ? locVal : curVal);
                     }
                 }
                 finally {
@@ -474,9 +403,9 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      */
     @SuppressWarnings("TooBroadScope")
     private Callable<Long> internalUpdate(final long l, final boolean updated) {
-        return retryTopologySafe(new Callable<Long>() {
+        return new Callable<Long>() {
             @Override public Long call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ)) {
+                try (GridNearTxLocal tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicSequenceValue seq = seqView.get(key);
 
                     checkRemoved();
@@ -545,7 +474,18 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                     throw e;
                 }
             }
-        });
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        this.seqView = kctx.cache().atomicsCache();
+        this.ctx = seqView.context();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
     }
 
     /** {@inheritDoc} */

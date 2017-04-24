@@ -78,6 +78,9 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
+            out.writeLong(ptr);
+            out.writeBoolean(keepBinary);
+
             BinaryRawWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);

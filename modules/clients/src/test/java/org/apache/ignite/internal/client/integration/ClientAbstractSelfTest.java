@@ -69,7 +69,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -219,8 +218,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost(HOST);
 
@@ -266,9 +265,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        // Specify swap SPI, otherwise test fails on windows.
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
         return cfg;
     }
 
@@ -302,8 +298,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setWriteThrough(true);
         cfg.setReadThrough(true);
         cfg.setLoadPreviousValue(true);
-
-        cfg.setSwapEnabled(true);
 
         if (cfg.getCacheMode() == PARTITIONED)
             cfg.setBackups(1);

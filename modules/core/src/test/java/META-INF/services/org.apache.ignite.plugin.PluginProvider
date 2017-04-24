@@ -1,0 +1,2 @@
+org.apache.ignite.platform.plugin.PlatformTestPluginProvider
+org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider

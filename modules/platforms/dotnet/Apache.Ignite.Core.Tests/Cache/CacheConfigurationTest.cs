@@ -22,14 +22,13 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Plugin.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -64,8 +63,19 @@ namespace Apache.Ignite.Core.Tests.Cache
                     GetCustomCacheConfiguration(),
                     GetCustomCacheConfiguration2()
                 },
-                GridName = CacheName,
-                BinaryConfiguration = new BinaryConfiguration(typeof (Entity))
+                IgniteInstanceName = CacheName,
+                BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
+                MemoryConfiguration = new MemoryConfiguration
+                {
+                    MemoryPolicies = new[]
+                    {
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "myMemPolicy",
+                            Size = 99 * 1024 * 1024
+                        }
+                    }
+                }
             };
 
             _ignite = Ignition.Start(cfg);
@@ -186,32 +196,26 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
             Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
             Assert.AreEqual(CacheConfiguration.DefaultEagerTtl, cfg.EagerTtl);
-            Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronizedKeyBufferSize, cfg.EvictSynchronizedKeyBufferSize);
-            Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronized, cfg.EvictSynchronized);
-            Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronizedConcurrencyLevel, cfg.EvictSynchronizedConcurrencyLevel);
-            Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronizedTimeout, cfg.EvictSynchronizedTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultInvalidate, cfg.Invalidate);
             Assert.AreEqual(CacheConfiguration.DefaultKeepVinaryInStore, cfg.KeepBinaryInStore);
             Assert.AreEqual(CacheConfiguration.DefaultLoadPreviousValue, cfg.LoadPreviousValue);
             Assert.AreEqual(CacheConfiguration.DefaultLockTimeout, cfg.LockTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultMaxConcurrentAsyncOperations, cfg.MaxConcurrentAsyncOperations);
-            Assert.AreEqual(CacheConfiguration.DefaultMaxEvictionOverflowRatio, cfg.MaxEvictionOverflowRatio);
-            Assert.AreEqual(CacheConfiguration.DefaultMemoryMode, cfg.MemoryMode);
-            Assert.AreEqual(CacheConfiguration.DefaultOffHeapMaxMemory, cfg.OffHeapMaxMemory);
             Assert.AreEqual(CacheConfiguration.DefaultReadFromBackup, cfg.ReadFromBackup);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchSize, cfg.RebalanceBatchSize);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceMode, cfg.RebalanceMode);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceThrottle, cfg.RebalanceThrottle);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceTimeout, cfg.RebalanceTimeout);
-            Assert.AreEqual(CacheConfiguration.DefaultSqlOnheapRowCacheSize, cfg.SqlOnheapRowCacheSize);
             Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
             Assert.AreEqual(CacheConfiguration.DefaultStartSize, cfg.StartSize);
-            Assert.AreEqual(CacheConfiguration.DefaultEnableSwap, cfg.EnableSwap);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindBatchSize, cfg.WriteBehindBatchSize);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindEnabled, cfg.WriteBehindEnabled);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushFrequency, cfg.WriteBehindFlushFrequency);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushSize, cfg.WriteBehindFlushSize);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushThreadCount, cfg.WriteBehindFlushThreadCount);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteBehindCoalescing, cfg.WriteBehindCoalescing);
+            Assert.AreEqual(CacheConfiguration.DefaultPartitionLossPolicy, cfg.PartitionLossPolicy);
         }
 
         /// <summary>
@@ -225,33 +229,26 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.CopyOnRead, y.CopyOnRead);
             Assert.AreEqual(x.StartSize, y.StartSize);
             Assert.AreEqual(x.EagerTtl, y.EagerTtl);
-            Assert.AreEqual(x.EvictSynchronizedKeyBufferSize, y.EvictSynchronizedKeyBufferSize);
-            Assert.AreEqual(x.EvictSynchronized, y.EvictSynchronized);
-            Assert.AreEqual(x.EvictSynchronizedConcurrencyLevel, y.EvictSynchronizedConcurrencyLevel);
-            Assert.AreEqual(x.EvictSynchronizedTimeout, y.EvictSynchronizedTimeout);
             Assert.AreEqual(x.Invalidate, y.Invalidate);
             Assert.AreEqual(x.KeepBinaryInStore, y.KeepBinaryInStore);
             Assert.AreEqual(x.LoadPreviousValue, y.LoadPreviousValue);
             Assert.AreEqual(x.LockTimeout, y.LockTimeout);
             Assert.AreEqual(x.LongQueryWarningTimeout, y.LongQueryWarningTimeout);
             Assert.AreEqual(x.MaxConcurrentAsyncOperations, y.MaxConcurrentAsyncOperations);
-            Assert.AreEqual(x.MaxEvictionOverflowRatio, y.MaxEvictionOverflowRatio);
-            Assert.AreEqual(x.MemoryMode, y.MemoryMode);
-            Assert.AreEqual(x.OffHeapMaxMemory, y.OffHeapMaxMemory);
             Assert.AreEqual(x.ReadFromBackup, y.ReadFromBackup);
             Assert.AreEqual(x.RebalanceBatchSize, y.RebalanceBatchSize);
             Assert.AreEqual(x.RebalanceMode, y.RebalanceMode);
             Assert.AreEqual(x.RebalanceThrottle, y.RebalanceThrottle);
             Assert.AreEqual(x.RebalanceTimeout, y.RebalanceTimeout);
-            Assert.AreEqual(x.SqlOnheapRowCacheSize, y.SqlOnheapRowCacheSize);
             Assert.AreEqual(x.StartSize, y.StartSize);
             Assert.AreEqual(x.StartSize, y.StartSize);
-            Assert.AreEqual(x.EnableSwap, y.EnableSwap);
             Assert.AreEqual(x.WriteBehindBatchSize, y.WriteBehindBatchSize);
             Assert.AreEqual(x.WriteBehindEnabled, y.WriteBehindEnabled);
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
+            Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
+            Assert.AreEqual(x.PartitionLossPolicy, y.PartitionLossPolicy);
 
             if (x.ExpiryPolicyFactory != null)
                 Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
@@ -263,6 +260,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertConfigsAreEqual(x.NearConfiguration, y.NearConfiguration);
             AssertConfigsAreEqual(x.EvictionPolicy, y.EvictionPolicy);
             AssertConfigsAreEqual(x.AffinityFunction, y.AffinityFunction);
+
+            if (x.PluginConfigurations != null)
+            {
+                Assert.IsNotNull(y.PluginConfigurations);
+                Assert.AreEqual(x.PluginConfigurations.Select(p => p.GetType()),
+                    y.PluginConfigurations.Select(p => p.GetType()));
+            }
         }
 
         /// <summary>
@@ -348,6 +352,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.KeyTypeName, y.KeyTypeName);
             Assert.AreEqual(x.ValueTypeName, y.ValueTypeName);
+            Assert.AreEqual(x.TableName, y.TableName);
 
             AssertConfigsAreEqual(x.Fields, y.Fields);
             AssertConfigsAreEqual(x.Aliases, y.Aliases);
@@ -447,6 +452,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.Name, y.Name);
             Assert.AreEqual(x.FieldTypeName, y.FieldTypeName);
+            Assert.AreEqual(x.IsKeyField, y.IsKeyField);
         }
 
         /// <summary>
@@ -481,30 +487,21 @@ namespace Apache.Ignite.Core.Tests.Cache
             return new CacheConfiguration
             {
                 Name = name ?? CacheName,
-                OffHeapMaxMemory = 1,
                 StartSize = 2,
                 MaxConcurrentAsyncOperations = 3,
                 WriteBehindFlushThreadCount = 4,
                 LongQueryWarningTimeout = TimeSpan.FromSeconds(5),
                 LoadPreviousValue = true,
-                EvictSynchronizedKeyBufferSize = 6,
                 CopyOnRead = true,
                 WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
                 WriteBehindFlushSize = 7,
-                EvictSynchronized = true,
-                AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
                 AtomicityMode = CacheAtomicityMode.Atomic,
                 Backups = 8,
                 CacheMode = CacheMode.Partitioned,
                 EagerTtl = true,
-                EnableSwap = true,
-                EvictSynchronizedConcurrencyLevel = 9,
-                EvictSynchronizedTimeout = TimeSpan.FromSeconds(10),
                 Invalidate = true,
                 KeepBinaryInStore = true,
                 LockTimeout = TimeSpan.FromSeconds(11),
-                MaxEvictionOverflowRatio = 0.5f,
-                MemoryMode = CacheMemoryMode.OnheapTiered,
                 ReadFromBackup = true,
                 RebalanceBatchSize = 12,
                 RebalanceDelay = TimeSpan.FromSeconds(13),
@@ -512,13 +509,13 @@ namespace Apache.Ignite.Core.Tests.Cache
                 RebalanceThrottle = TimeSpan.FromSeconds(15),
                 RebalanceTimeout = TimeSpan.FromSeconds(16),
                 SqlEscapeAll = true,
-                SqlOnheapRowCacheSize = 17,
                 WriteBehindBatchSize = 18,
                 WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
                 CacheStoreFactory = new CacheStoreFactoryTest(),
                 ReadThrough = true,
                 WriteThrough = true,
+                WriteBehindCoalescing = false,
                 QueryEntities = new[]
                 {
                     new QueryEntity
@@ -528,7 +525,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)), 
-                            new QueryField("name", typeof(string)), 
+                            new QueryField("name", typeof(string)) {IsKeyField = true},
                             new QueryField("location", typeof(string)),
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
@@ -565,7 +562,10 @@ namespace Apache.Ignite.Core.Tests.Cache
                     ExcludeNeighbors = true
                 },
                 ExpiryPolicyFactory = new ExpiryFactory(),
-                EnableStatistics = true
+                EnableStatistics = true,
+                MemoryPolicyName = "myMemPolicy",
+                PartitionLossPolicy = PartitionLossPolicy.ReadOnlySafe,
+                PluginConfigurations = new[] { new MyPluginConfiguration() }
             };
         }
         /// <summary>
@@ -576,30 +576,21 @@ namespace Apache.Ignite.Core.Tests.Cache
             return new CacheConfiguration
             {
                 Name = name ?? CacheName2,
-                OffHeapMaxMemory = 1,
                 StartSize = 2,
                 MaxConcurrentAsyncOperations = 3,
                 WriteBehindFlushThreadCount = 4,
                 LongQueryWarningTimeout = TimeSpan.FromSeconds(5),
                 LoadPreviousValue = true,
-                EvictSynchronizedKeyBufferSize = 6,
                 CopyOnRead = true,
                 WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
                 WriteBehindFlushSize = 7,
-                EvictSynchronized = true,
-                AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Clock,
                 AtomicityMode = CacheAtomicityMode.Transactional,
                 Backups = 8,
                 CacheMode = CacheMode.Partitioned,
                 EagerTtl = true,
-                EnableSwap = true,
-                EvictSynchronizedConcurrencyLevel = 9,
-                EvictSynchronizedTimeout = TimeSpan.FromSeconds(10),
                 Invalidate = true,
                 KeepBinaryInStore = true,
                 LockTimeout = TimeSpan.FromSeconds(11),
-                MaxEvictionOverflowRatio = 0.5f,
-                MemoryMode = CacheMemoryMode.OnheapTiered,
                 ReadFromBackup = true,
                 RebalanceBatchSize = 12,
                 RebalanceDelay = TimeSpan.FromSeconds(13),
@@ -607,7 +598,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 RebalanceThrottle = TimeSpan.FromSeconds(15),
                 RebalanceTimeout = TimeSpan.FromSeconds(16),
                 SqlEscapeAll = true,
-                SqlOnheapRowCacheSize = 17,
                 WriteBehindBatchSize = 18,
                 WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
@@ -620,11 +610,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                     {
                         KeyTypeName = "Integer",
                         ValueTypeName = "java.lang.String",
+                        TableName = "MyTable",
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)), 
                             new QueryField("name", typeof(string)), 
-                            new QueryField("location", typeof(string)),
+                            new QueryField("location", typeof(string)) {IsKeyField = true}
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
                         Indexes = new[]
@@ -654,7 +645,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     MaxMemorySize = 2501,
                     BatchSize = 33
                 },
-                AffinityFunction = new FairAffinityFunction
+                AffinityFunction = new RendezvousAffinityFunction
                 {
                     Partitions = 113,
                     ExcludeNeighbors = false
@@ -693,7 +684,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test store.
         /// </summary>
-        private class CacheStoreTest : CacheStoreAdapter
+        private class CacheStoreTest : CacheStoreAdapter<object, object>
         {
             /** <inheritdoc /> */
             public override object Load(object key)
@@ -735,6 +726,16 @@ namespace Apache.Ignite.Core.Tests.Cache
             public IExpiryPolicy CreateInstance()
             {
                 return new ExpiryPolicy(null, null, null);
+            }
+        }
+
+        private class MyPluginConfiguration : ICachePluginConfiguration
+        {
+            public int? CachePluginConfigurationClosureFactoryId { get { return null; } }
+
+            public void WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
             }
         }
     }

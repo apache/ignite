@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.net.InetAddress;
+import java.nio.ByteOrder;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
@@ -35,11 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-
-import java.net.InetAddress;
-import java.nio.ByteOrder;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * ODBC processor.
@@ -71,7 +70,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         IgniteConfiguration cfg = ctx.config();
 
         OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
@@ -104,7 +103,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
                 odbcExecSvc = new IgniteThreadPoolExecutor(
                     "odbc",
-                    cfg.getGridName(),
+                    cfg.getIgniteInstanceName(),
                     odbcCfg.getThreadPoolSize(),
                     odbcCfg.getThreadPoolSize(),
                     0,
@@ -124,7 +123,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                 for (int port = hostPort.portFrom(); port <= hostPort.portTo(); port++) {
                     try {
                         GridNioFilter[] filters = new GridNioFilter[] {
-                            new GridNioAsyncNotifyFilter(ctx.gridName(), odbcExecSvc, log) {
+                            new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), odbcExecSvc, log) {
                                 @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
                                     proceedSessionOpened(ses);
                                 }
@@ -138,7 +137,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                             .listener(new OdbcNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
-                            .gridName(ctx.gridName())
+                            .igniteInstanceName(ctx.igniteInstanceName())
                             .serverName("odbc")
                             .tcpNoDelay(DFLT_TCP_NODELAY)
                             .directBuffer(DFLT_TCP_DIRECT_BUF)

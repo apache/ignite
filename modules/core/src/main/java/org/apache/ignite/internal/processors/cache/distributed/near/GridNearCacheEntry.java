@@ -28,7 +28,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -112,7 +114,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 return false;
             }
 
-            if (cctx.affinity().backup(cctx.localNode(), part, topVer)) {
+            if (cctx.affinity().backupByPartition(cctx.localNode(), part, topVer)) {
                 this.topVer = AffinityTopologyVersion.NONE;
 
                 return false;
@@ -144,6 +146,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 GridCacheVersion enqueueVer = null;
 
                 try {
+                    ClusterNode primaryNode = cctx.affinity().primaryByKey(key, topVer);
+
                     synchronized (this) {
                         checkObsolete();
 
@@ -161,8 +165,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                                         enqueueVer = e.version();
                                 }
                             }
-
-                            ClusterNode primaryNode = cctx.affinity().primary(key, topVer);
 
                             if (primaryNode == null)
                                 this.topVer = AffinityTopologyVersion.NONE;
@@ -284,7 +286,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         if (dhtVer == null)
             return null;
         else {
-            CacheObject val0 = valueBytesUnlocked();
+            CacheObject val0 = val;
 
             return F.t(dhtVer, val0);
         }
@@ -328,6 +330,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             subjId,
             taskName,
             true,
+            /*recovery should have already been checked*/
+            false,
             null,
             false,
             /*skip store*/false,
@@ -427,14 +431,24 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateIndex(CacheObject val, long expireTime,
-        GridCacheVersion ver, CacheObject old) throws IgniteCheckedException {
+    @Override protected void storeValue(CacheObject val, long expireTime, GridCacheVersion ver, CacheDataRow oldRow) {
         // No-op: queries are disabled for near cache.
     }
 
     /** {@inheritDoc} */
-    @Override protected void clearIndex(CacheObject val) {
+    @Override protected void removeValue() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion ver, long expireTime, long updCntr)
+        throws IgniteCheckedException {
+        // No-op: queries are disabled for near cache.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheDataRow unswap(boolean needVal, boolean checkExpire) {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -686,7 +700,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         ClusterNode primary = null;
 
         try {
-            primary = cctx.affinity().primary(part, topVer);
+            primary = cctx.affinity().primaryByPartition(part, topVer);
         }
         catch (IllegalStateException ignore) {
             // Do not have affinity history.

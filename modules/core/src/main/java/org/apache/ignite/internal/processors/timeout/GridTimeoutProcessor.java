@@ -62,12 +62,12 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     public GridTimeoutProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        timeoutWorker = new IgniteThread(ctx.config().getGridName(), "grid-timeout-worker",
+        timeoutWorker = new IgniteThread(ctx.config().getIgniteInstanceName(), "grid-timeout-worker",
             new TimeoutWorker());
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void start(boolean activeOnStart) {
         timeoutWorker.start();
 
         if (log.isDebugEnabled())
@@ -138,7 +138,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(ctx.config().getGridName(), "grid-timeout-worker", GridTimeoutProcessor.this.log);
+            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker", GridTimeoutProcessor.this.log);
         }
 
         /** {@inheritDoc} */
@@ -196,7 +196,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Timeout processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Timeout processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   timeoutObjsSize: " + timeoutObjs.size());
     }
 

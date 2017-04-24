@@ -250,7 +250,7 @@ public class PlatformFutureUtils {
                                 break;
 
                             case TYP_FLOAT:
-                                gate.futureFloatResult(futPtr, (float) res);
+                                gate.futureFloatResult(futPtr, Float.floatToIntBits((float) res));
 
                                 break;
 
@@ -260,7 +260,7 @@ public class PlatformFutureUtils {
                                 break;
 
                             case TYP_DOUBLE:
-                                gate.futureDoubleResult(futPtr, (double) res);
+                                gate.futureDoubleResult(futPtr, Double.doubleToLongBits((double)res));
 
                                 break;
 

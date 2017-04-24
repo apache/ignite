@@ -71,7 +71,6 @@ public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
             assertEquals("Local size: " + locCache.localSize() + "\n" +
                 "On heap: " + locCache.localSize(CachePeekMode.ONHEAP) + "\n" +
                 "Off heap: " + locCache.localSize(CachePeekMode.OFFHEAP) + "\n" +
-                "Swap: " + locCache.localSize(CachePeekMode.SWAP) + "\n" +
                 "Primary: " + locCache.localSize(CachePeekMode.PRIMARY) + "\n" +
                 "Backup: " + locCache.localSize(CachePeekMode.BACKUP),
                 0, locCache.localSize());

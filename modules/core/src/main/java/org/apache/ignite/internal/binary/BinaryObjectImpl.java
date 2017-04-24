@@ -17,6 +17,17 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -25,6 +36,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -33,18 +45,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.UUID;
-
-import static java.nio.charset.StandardCharsets.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Binary object implementation.
@@ -73,7 +74,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private boolean detachAllowed;
 
     /** */
-    @GridDirectTransient
     private int part = -1;
 
     /**
@@ -156,6 +156,26 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         U.arrayCopy(arr, start, arr0, 0, len);
 
         return arr0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(length()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int putValue(long addr) throws IgniteCheckedException {
+        return CacheObjectAdapter.putValue(addr, cacheObjectType(), arr, start);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, arr, start);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        return CacheObjectAdapter.objectPutSize(length());
     }
 
     /** {@inheritDoc} */
@@ -430,6 +450,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
             }
 
+            case GridBinaryMarshaller.TIME: {
+                long time = BinaryPrimitives.readLong(arr, fieldPos + 1);
+
+                val = new Time(time);
+
+                break;
+            }
+
             case GridBinaryMarshaller.UUID: {
                 long most = BinaryPrimitives.readLong(arr, fieldPos + 1);
                 long least = BinaryPrimitives.readLong(arr, fieldPos + 1 + 8);
@@ -470,6 +498,122 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         }
 
         return (F)val;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("IfMayBeConditional")
+    @Override public boolean writeFieldByOrder(int order, ByteBuffer buf) {
+        // Calculate field position.
+        int schemaOffset = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+
+        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
+
+        int fieldPos;
+
+        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
+            fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
+        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
+            fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
+        else
+            fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
+
+        // Read header and try performing fast lookup for well-known types (the most common types go first).
+        byte hdr = BinaryPrimitives.readByte(arr, fieldPos);
+
+        int totalLen;
+
+        switch (hdr) {
+            case GridBinaryMarshaller.NULL:
+                totalLen = 1;
+
+                break;
+
+            case GridBinaryMarshaller.INT:
+            case GridBinaryMarshaller.FLOAT:
+                totalLen = 5;
+
+                break;
+
+            case GridBinaryMarshaller.LONG:
+            case GridBinaryMarshaller.DOUBLE:
+            case GridBinaryMarshaller.DATE:
+                totalLen = 9;
+
+                break;
+
+            case GridBinaryMarshaller.BOOLEAN:
+                totalLen = 2;
+
+                break;
+
+            case GridBinaryMarshaller.SHORT:
+                totalLen = 3;
+
+                break;
+
+            case GridBinaryMarshaller.BYTE:
+                totalLen = 2;
+
+                break;
+
+            case GridBinaryMarshaller.CHAR:
+                totalLen = 3;
+
+                break;
+
+            case GridBinaryMarshaller.STRING: {
+                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+
+                totalLen = dataLen + 5;
+
+                break;
+            }
+
+            case GridBinaryMarshaller.TIMESTAMP:
+                totalLen = 13;
+
+                break;
+
+            case GridBinaryMarshaller.UUID:
+                totalLen = 17;
+
+                break;
+
+            case GridBinaryMarshaller.DECIMAL: {
+                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 5);
+
+                totalLen = dataLen + 9;
+
+                break;
+            }
+
+            case GridBinaryMarshaller.OBJ:
+                totalLen = BinaryPrimitives.readInt(arr, fieldPos + GridBinaryMarshaller.TOTAL_LEN_POS);
+
+                break;
+
+            case GridBinaryMarshaller.OPTM_MARSH:
+                totalLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+
+                break;
+
+            default:
+                throw new UnsupportedOperationException("Failed to write field of the given type " +
+                    "(field type is not supported): " + hdr);
+
+        }
+
+        if (buf.remaining() < totalLen)
+            return false;
+
+        buf.put(arr, fieldPos, totalLen);
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -552,7 +696,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         start = in.readInt();
     }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -575,6 +718,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 writer.incrementState();
 
             case 1:
+                if (!writer.writeInt("part", part))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
                 if (!writer.writeInt("start", detachAllowed ? 0 : start))
                     return false;
 
@@ -602,6 +751,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 reader.incrementState();
 
             case 1:
+                part = reader.readInt("part");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
                 start = reader.readInt("start");
 
                 if (!reader.isLastRead())
@@ -611,11 +768,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         }
 
-        return true;
+        return reader.afterMessageRead(BinaryObjectImpl.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 113;
     }
 

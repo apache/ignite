@@ -62,8 +62,8 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     private static final ConcurrentLinkedQueue<CacheEntryEvent<?, ?>> events = new ConcurrentLinkedQueue<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration();
         ccfg.setCacheMode(PARTITIONED);
@@ -132,7 +132,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
             1,
             EventType.UPDATED,
-            new KeyCacheObjectImpl(1, new byte[] {0, 0, 0, 1}),
+            new KeyCacheObjectImpl(1, new byte[] {0, 0, 0, 1}, 1),
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 2}),
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 3}),
             true,

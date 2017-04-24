@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.spring;
 
 import java.io.Serializable;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
@@ -82,13 +83,18 @@ class SpringCache implements Cache {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T get(Object key, Callable<T> valLdr) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public ValueWrapper putIfAbsent(Object key, Object val) {
         Object old;
 
         if (val == null)
-            old = cache.withSkipStore().putIfAbsent(key, NULL);
+            old = cache.withSkipStore().getAndPutIfAbsent(key, NULL);
         else
-            old = cache.putIfAbsent(key, val);
+            old = cache.getAndPutIfAbsent(key, val);
 
         return old != null ? fromValue(old) : null;
     }

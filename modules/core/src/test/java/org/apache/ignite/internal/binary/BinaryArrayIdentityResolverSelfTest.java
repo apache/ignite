@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -68,8 +67,8 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -80,9 +79,6 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
 
         binTypCfg1.setTypeName(InnerClass.class.getName());
         binTypCfg2.setTypeName(InnerClassBinarylizable.class.getName());
-
-        binTypCfg1.setIdentityResolver(BinaryArrayIdentityResolver.instance());
-        binTypCfg2.setIdentityResolver(BinaryArrayIdentityResolver.instance());
 
         List<BinaryTypeConfiguration> binTypCfgs = new ArrayList<>();
 

@@ -85,7 +85,7 @@ public class IgniteSink extends AbstractSink implements Configurable {
     }
 
     /**
-     * Starts a grid and initializes na event transformer.
+     * Starts a grid and initializes an event transformer.
      */
     @SuppressWarnings("unchecked")
     @Override synchronized public void start() {
@@ -109,8 +109,12 @@ public class IgniteSink extends AbstractSink implements Configurable {
         catch (Exception e) {
             log.error("Failed to start grid", e);
 
+            sinkCounter.incrementConnectionFailedCount();
+
             throw new FlumeException("Failed to start grid", e);
         }
+
+        sinkCounter.incrementConnectionCreatedCount();
 
         super.start();
     }
@@ -122,6 +126,7 @@ public class IgniteSink extends AbstractSink implements Configurable {
         if (ignite != null)
             ignite.close();
 
+        sinkCounter.incrementConnectionClosedCount();
         sinkCounter.stop();
 
         super.stop();

@@ -93,7 +93,12 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
         locPart = ctx.topology().localPartition(p, topVer, true);
 
-        assert locPart != null;
+        assert locPart != null : p;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long nextPartCounter() {
+        return locPart.nextUpdateCounter();
     }
 
     /** {@inheritDoc} */
@@ -110,6 +115,17 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /** {@inheritDoc} */
     @Override public int partition() {
         return locPart.id();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridDhtLocalPartition localPartition() {
+        return locPart;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onUpdateFinished(long cntr) {
+        if (cctx.shared().database().persistenceEnabled())
+            locPart.onUpdateReceived(cntr);
     }
 
     /** {@inheritDoc} */
@@ -340,7 +356,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         if (isNew() || !valid(AffinityTopologyVersion.NONE) || deletedUnlocked())
             return null;
         else {
-            CacheObject val0 = valueBytesUnlocked();
+            CacheObject val0 = this.val;
 
             return F.t(ver, val0);
         }
@@ -402,7 +418,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         }
 
         // If remote node is (primary?) or back up, don't add it as a reader.
-        if (cctx.affinity().belongs(node, partition(), topVer)) {
+        if (cctx.affinity().partitionBelongs(node, partition(), topVer)) {
             if (log.isDebugEnabled())
                 log.debug("Ignoring near reader because remote node is affinity node [locNodeId=" + cctx.localNodeId()
                     + ", rmtNodeId=" + nodeId + ", key=" + key + ']');
@@ -552,21 +568,17 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * from swap storage.
      *
      * @param ver Obsolete version.
-     * @param swap If {@code true} then remove from swap.
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      * @throws IgniteCheckedException If failed to remove from swap.
      */
     public boolean clearInternal(
         GridCacheVersion ver,
-        boolean swap,
         GridCacheObsoleteEntryExtras extras
     ) throws IgniteCheckedException {
         boolean rmv = false;
 
         try {
             synchronized (this) {
-                CacheObject prev = saveValueForIndexUnlocked();
-
                 // Call markObsolete0 to avoid recursive calls to clear if
                 // we are clearing dht local partition (onMarkedObsolete should not be called).
                 if (!markObsolete0(ver, false, extras)) {
@@ -584,22 +596,13 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 if (log.isTraceEnabled()) {
                     log.trace("clearInternal [key=" + key +
                         ", entry=" + System.identityHashCode(this) +
-                        ", prev=" + prev +
-                        ", ptr=" + offHeapPointer() +
                         ']');
                 }
 
-                clearIndex(prev);
+                removeValue();
 
                 // Give to GC.
                 update(null, 0L, 0L, ver, true);
-
-                if (swap) {
-                    releaseSwap();
-
-                    if (log.isDebugEnabled())
-                        log.debug("Entry has been cleared from swap storage: " + this);
-                }
 
                 if (cctx.store().isLocal())
                     cctx.store().remove(null, key);

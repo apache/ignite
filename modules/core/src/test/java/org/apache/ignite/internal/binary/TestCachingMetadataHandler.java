@@ -42,4 +42,9 @@ public class TestCachingMetadataHandler implements BinaryMetadataHandler {
     @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
         return metas.get(typeId);
     }
+
+    /** {@inheritDoc} */
+    @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
+        return null;
+    }
 }

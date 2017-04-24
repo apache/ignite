@@ -26,13 +26,10 @@ namespace Apache.Ignite.ExamplesDll.Services
     /// <summary>
     /// Service implementation.
     /// </summary>
-    [Serializable]
     public class MapService<TK, TV> : IService
     {
         /** Injected Ignite instance. */
-#pragma warning disable 649
         [InstanceResource] private readonly IIgnite _ignite;
-#pragma warning restore 649
 
         /** Cache. */
         private ICache<TK, TV> _cache;

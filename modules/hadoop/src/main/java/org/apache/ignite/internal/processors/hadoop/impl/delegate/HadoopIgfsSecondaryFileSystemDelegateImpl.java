@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
@@ -28,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -42,6 +47,7 @@ import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFac
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopIgfsSecondaryFileSystemDelegate;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsProperties;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -104,19 +110,23 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
         final FileSystem fileSys = fileSystemForUser();
 
+        Path hadoopPath = convert(path);
+
         try {
+            if (!fileSys.exists(hadoopPath))
+                return null;
+
             if (props0.userName() != null || props0.groupName() != null)
-                fileSys.setOwner(convert(path), props0.userName(), props0.groupName());
+                fileSys.setOwner(hadoopPath, props0.userName(), props0.groupName());
 
             if (props0.permission() != null)
-                fileSys.setPermission(convert(path), props0.permission());
+                fileSys.setPermission(hadoopPath, props0.permission());
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to update file properties [path=" + path + "]");
         }
 
-        //Result is not used in case of secondary FS.
-        return null;
+        return info(path);
     }
 
     /** {@inheritDoc} */
@@ -266,7 +276,14 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     @Override public OutputStream append(IgfsPath path, int bufSize, boolean create,
         @Nullable Map<String, String> props) {
         try {
-            return fileSystemForUser().append(convert(path), bufSize);
+            Path hadoopPath = convert(path);
+
+            FileSystem fs = fileSystemForUser();
+
+            if (create && !fs.exists(hadoopPath))
+                return fs.create(hadoopPath, false, bufSize);
+            else
+                return fs.append(convert(path), bufSize);
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to append file [path=" + path + ", bufSize=" + bufSize + "]");
@@ -283,7 +300,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
 
             final Map<String, String> props = properties(status);
 
-            return new IgfsFile() {
+            return new IgfsFileImpl(new IgfsFile() {
                 @Override public IgfsPath path() {
                     return path;
                 }
@@ -336,7 +353,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
                 @Override public Map<String, String> properties() {
                     return props;
                 }
-            };
+            }, 0);
         }
         catch (FileNotFoundException ignore) {
             return null;
@@ -359,7 +376,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
+    @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException {
         try {
             // We don't use FileSystem#getUsed() since it counts only the files
             // in the filesystem root, not all the files recursively.
@@ -367,6 +384,27 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed set times for path: " + path);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
+        long maxLen) throws IgniteException {
+        try {
+            BlockLocation[] hadoopBlocks = fileSystemForUser().getFileBlockLocations(convert(path), start, len);
+
+            List<IgfsBlockLocation> blks = new ArrayList<>(hadoopBlocks.length);
+
+            for (int i = 0; i < hadoopBlocks.length; ++i)
+                blks.add(convertBlockLocation(hadoopBlocks[i]));
+
+            return blks;
+        }
+        catch (FileNotFoundException ignored) {
+            return Collections.emptyList();
+        }
+        catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed affinity for path: " + path);
         }
     }
 
@@ -393,6 +431,25 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     }
 
     /**
+     * Convert IGFS affinity block location into Hadoop affinity block location.
+     *
+     * @param block IGFS affinity block location.
+     * @return Hadoop affinity block location.
+     */
+    private IgfsBlockLocation convertBlockLocation(BlockLocation block) {
+        try {
+            String[] names = block.getNames();
+            String[] hosts = block.getHosts();
+
+            return new IgfsBlockLocationImpl(
+                block.getOffset(), block.getLength(),
+                Arrays.asList(names), Arrays.asList(hosts));
+        } catch (IOException e) {
+            throw handleSecondaryFsError(e, "Failed convert block location: " + block);
+        }
+    }
+
+    /**
      * Heuristically checks if exception was caused by invalid HDFS version and returns appropriate exception.
      *
      * @param e Exception to check.
@@ -406,6 +463,7 @@ public class HadoopIgfsSecondaryFileSystemDelegateImpl implements HadoopIgfsSeco
     /**
      * Cast IO exception to IGFS exception.
      *
+     * @param msg Error message.
      * @param e IO exception.
      * @return IGFS exception.
      */

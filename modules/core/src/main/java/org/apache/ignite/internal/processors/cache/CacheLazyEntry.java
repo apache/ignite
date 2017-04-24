@@ -36,11 +36,11 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
     protected CacheObject valObj;
 
     /** Key. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     protected K key;
 
     /** Value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     protected V val;
 
     /** Keep binary flag. */
@@ -182,7 +182,7 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
      *
      * @param updateCntr Update counter.
      */
-    public void updateCounter(Long updateCntr) {
+    public void updateCounter(long updateCntr) {
         this.updateCntr = updateCntr;
     }
 

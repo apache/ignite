@@ -74,6 +74,8 @@ public interface FifoEvictionPolicyMBean {
 
     /**
      * Sets maximum allowed cache size in bytes.
+     *
+     * @param maxMemSize Maximum memory size.
      */
     @MXBeanDescription("Set maximum allowed cache size in bytes.")
     public void setMaxMemorySize(long maxMemSize);

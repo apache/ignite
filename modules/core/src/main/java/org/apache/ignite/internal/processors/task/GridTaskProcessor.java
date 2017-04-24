@@ -140,7 +140,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void start(boolean activeOnStart) {
         ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(TOPIC_JOB_SIBLINGS, new JobSiblingsMessageListener());
@@ -152,7 +152,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
         tasksMetaCache = ctx.security().enabled() && !ctx.isDaemon() ?
             ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
 
@@ -359,6 +359,19 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
+        return execute(taskCls, arg, null);
+    }
+
+    /**
+     * @param taskCls Task class.
+     * @param arg Optional execution argument.
+     * @param execName Name of the custom executor.
+     * @return Task future.
+     * @param <T> Task argument type.
+     * @param <R> Task return value type.
+     */
+    public <T, R> ComputeTaskInternalFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg,
+        @Nullable String execName) {
         assert taskCls != null;
 
         lock.readLock();
@@ -367,7 +380,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskCls);
 
-            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false);
+            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg,
+                false, execName);
         }
         finally {
             lock.readUnlock();
@@ -382,7 +396,19 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
-        return execute(task, arg, false);
+        return execute(task, arg, false, null);
+    }
+
+    /**
+     * @param task Actual task.
+     * @param arg Optional task argument.
+     * @param execName Name of the custom executor.
+     * @return Task future.
+     * @param <T> Task argument type.
+     * @param <R> Task return value type.
+     */
+    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, String execName) {
+        return execute(task, arg, false, execName);
     }
 
     /**
@@ -394,13 +420,28 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
+        return execute(task, arg, sys, null);
+    }
+
+    /**
+     * @param task Actual task.
+     * @param arg Optional task argument.
+     * @param sys If {@code true}, then system pool will be used.
+     * @param execName Name of the custom executor.
+     * @return Task future.
+     * @param <T> Task argument type.
+     * @param <R> Task return value type.
+     */
+    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys,
+        @Nullable String execName) {
         lock.readLock();
 
         try {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + task);
 
-            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg, sys);
+            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg,
+                sys, execName);
         }
         finally {
             lock.readUnlock();
@@ -421,7 +462,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         try {
             return taskMetaCache().localPeek(
-                new GridTaskNameHashKey(taskNameHash), CachePeekModes.ONHEAP_ONLY, null);
+                new GridTaskNameHashKey(taskNameHash), null, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -436,6 +477,18 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(String taskName, @Nullable T arg) {
+        return execute(taskName, arg, null);
+    }
+
+    /**
+     * @param taskName Task name.
+     * @param arg Optional execution argument.
+     * @param execName Name of the custom executor.
+     * @return Task future.
+     * @param <T> Task argument type.
+     * @param <R> Task return value type.
+     */
+    public <T, R> ComputeTaskInternalFuture<R> execute(String taskName, @Nullable T arg, @Nullable String execName) {
         assert taskName != null;
 
         lock.readLock();
@@ -444,7 +497,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskName);
 
-            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false);
+            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg,
+                false, execName);
         }
         finally {
             lock.readUnlock();
@@ -458,6 +512,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param sesId Task session ID.
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
+     * @param execName Name of the custom executor.
      * @return Task future.
      */
     @SuppressWarnings("unchecked")
@@ -467,7 +522,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         @Nullable ComputeTask<T, R> task,
         IgniteUuid sesId,
         @Nullable T arg,
-        boolean sys) {
+        boolean sys,
+        @Nullable String execName) {
         assert sesId != null;
 
         String taskClsName;
@@ -608,6 +664,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         if (subjId == null)
             subjId = ctx.localNodeId();
 
+        boolean internal = false;
+
+        if (dep == null || taskCls == null)
+            assert deployEx != null;
+        else
+            internal = dep.internalTask(task, taskCls);
+
         // Creates task session with task name and task version.
         GridTaskSessionImpl ses = ctx.session().createTaskSession(
             sesId,
@@ -621,8 +684,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             Collections.<ComputeJobSibling>emptyList(),
             Collections.emptyMap(),
             fullSup,
-            dep != null && dep.internalTask(task, taskCls),
-            subjId);
+            internal,
+            subjId,
+            execName);
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
 
@@ -1097,7 +1161,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Task processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Task processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  tasksSize: " + tasks.size());
     }
 
@@ -1311,7 +1375,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
 
-                    ctx.io().send(nodeId, topic,
+                    ctx.io().sendToCustomTopic(nodeId, topic,
                         new GridJobSiblingsResponse(
                             loc ? siblings : null,
                             loc ? null : U.marshal(marsh, siblings)),

@@ -43,8 +43,8 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     private ServiceConfiguration srvcCfg;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -176,7 +176,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-                catch (IgniteException e) {
+                catch (IgniteException ignored) {
                     return false;
                 }
             }

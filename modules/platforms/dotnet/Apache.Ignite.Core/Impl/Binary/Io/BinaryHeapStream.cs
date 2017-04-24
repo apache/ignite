@@ -420,6 +420,18 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public override T Apply<TArg, T>(IBinaryStreamProcessor<TArg, T> proc, TArg arg)
+        {
+            Debug.Assert(proc != null);
+
+            fixed (byte* data0 = _data)
+            {
+                return proc.Invoke(data0, arg);
+            }
+        }
+
+        /** <inheritdoc /> */
         protected override void Dispose(bool disposing)
         {
             // No-op.

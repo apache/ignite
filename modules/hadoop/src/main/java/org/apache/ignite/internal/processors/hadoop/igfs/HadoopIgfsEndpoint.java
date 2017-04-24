@@ -20,6 +20,10 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
@@ -32,14 +36,17 @@ import org.jetbrains.annotations.Nullable;
  * IGFS endpoint abstraction.
  */
 public class HadoopIgfsEndpoint {
+    /** Guard ensuring that warning about grid name is printed only once. */
+    private static final AtomicBoolean LOG_WARN_GUARD = new AtomicBoolean();
+
+    /** Logger. */
+    private static final Log LOG = LogFactory.getLog(HadoopIgfsEndpoint.class);
+
     /** Localhost. */
     public static final String LOCALHOST = "127.0.0.1";
 
     /** IGFS name. */
     private final String igfsName;
-
-    /** Grid name. */
-    private final String gridName;
 
     /** Host. */
     private final String host;
@@ -66,9 +73,6 @@ public class HadoopIgfsEndpoint {
             if (endpoint.igfs() != null)
                 sb.append(endpoint.igfs());
 
-            if (endpoint.grid() != null)
-                sb.append(":").append(endpoint.grid());
-
             return new URI(uri.getScheme(), sb.length() != 0 ? sb.toString() : null, endpoint.host(), endpoint.port(),
                 uri.getPath(), uri.getQuery(), uri.getFragment());
         }
@@ -93,27 +97,24 @@ public class HadoopIgfsEndpoint {
 
         if (tokens.length == 1) {
             igfsName = null;
-            gridName = null;
 
             hostPort = hostPort(connStr, connStr);
         }
         else if (tokens.length == 2) {
             String authStr = tokens[0];
 
-            if (authStr.isEmpty()) {
-                gridName = null;
+            if (authStr.isEmpty())
                 igfsName = null;
-            }
             else {
                 String[] authTokens = authStr.split(":", -1);
 
                 igfsName = F.isEmpty(authTokens[0]) ? null : authTokens[0];
 
-                if (authTokens.length == 1)
-                    gridName = null;
-                else if (authTokens.length == 2)
-                    gridName = F.isEmpty(authTokens[1]) ? null : authTokens[1];
-                else
+                if (authTokens.length == 2) {
+                    if (!LOG_WARN_GUARD.get() && LOG_WARN_GUARD.compareAndSet(false, true))
+                        LOG.warn("Grid name in IGFS connection string is deprecated and will be ignored: " + connStr);
+                }
+                else if (authTokens.length > 2)
                     throw new IgniteCheckedException("Invalid connection string format: " + connStr);
             }
 
@@ -121,6 +122,10 @@ public class HadoopIgfsEndpoint {
         }
         else
             throw new IgniteCheckedException("Invalid connection string format: " + connStr);
+
+        if (igfsName == null)
+            throw new IgniteCheckedException("Invalid connection string format (IGFS name cannot be empty): "
+                + connStr);
 
         host = hostPort.get1();
 
@@ -158,7 +163,7 @@ public class HadoopIgfsEndpoint {
                 if (port < 0 || port > 65535)
                     throw new IgniteCheckedException("Invalid port number: " + connStr);
             }
-            catch (NumberFormatException e) {
+            catch (NumberFormatException ignored) {
                 throw new IgniteCheckedException("Invalid port number: " + connStr);
             }
         }
@@ -171,15 +176,8 @@ public class HadoopIgfsEndpoint {
     /**
      * @return IGFS name.
      */
-    @Nullable public String igfs() {
+    public String igfs() {
         return igfsName;
-    }
-
-    /**
-     * @return Grid name.
-     */
-    @Nullable public String grid() {
-        return gridName;
     }
 
     /**

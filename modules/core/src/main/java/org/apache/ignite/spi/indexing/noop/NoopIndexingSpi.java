@@ -50,22 +50,19 @@ public class NoopIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public NoopIndexingSpi setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 }

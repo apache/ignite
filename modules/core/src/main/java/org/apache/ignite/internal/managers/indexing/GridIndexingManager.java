@@ -48,7 +48,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     /**
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         startSpi();
 
         if (log.isDebugEnabled())
@@ -172,50 +172,6 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
                     throw new UnsupportedOperationException();
                 }
             };
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * Will be called when entry for key will be swapped.
-     *
-     * @param spaceName Space name.
-     * @param key key.
-     * @throws IgniteSpiException If failed.
-     */
-    public void onSwap(String spaceName, Object key) throws IgniteSpiException {
-        assert enabled();
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to process swap event (grid is stopping).");
-
-        try {
-            getSpi().onSwap(spaceName, key);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * Will be called when entry for key will be unswapped.
-     *
-     * @param spaceName Space name.
-     * @param key Key.
-     * @param val Value.
-     * @throws IgniteSpiException If failed.
-     */
-    public void onUnswap(String spaceName, Object key, Object val)
-        throws IgniteSpiException {
-        assert enabled();
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to process swap event (grid is stopping).");
-
-        try {
-            getSpi().onUnswap(spaceName, key, val);
         }
         finally {
             busyLock.leaveBusy();

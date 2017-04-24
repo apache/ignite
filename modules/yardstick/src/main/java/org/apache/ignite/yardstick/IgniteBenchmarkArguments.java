@@ -18,8 +18,8 @@
 package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.Parameter;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -65,24 +65,12 @@ public class IgniteBenchmarkArguments {
     private int nearCacheSize;
 
     /** */
-    @Parameter(names = {"-wom", "--writeOrderMode"}, description = "Write ordering mode")
-    private CacheAtomicWriteOrderMode orderMode;
-
-    /** */
     @Parameter(names = {"-txc", "--txConcurrency"}, description = "Transaction concurrency")
     private TransactionConcurrency txConcurrency = TransactionConcurrency.PESSIMISTIC;
 
     /** */
     @Parameter(names = {"-txi", "--txIsolation"}, description = "Transaction isolation")
     private TransactionIsolation txIsolation = TransactionIsolation.REPEATABLE_READ;
-
-    /** */
-    @Parameter(names = {"-ot", "--offheapTiered"}, description = "Tiered offheap")
-    private boolean offheapTiered;
-
-    /** */
-    @Parameter(names = {"-ov", "--offheapValuesOnly"}, description = "Offheap values only")
-    private boolean offheapVals;
 
     /** */
     @Parameter(names = {"-rtp", "--restPort"}, description = "REST TCP port")
@@ -99,6 +87,10 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-pa", "--preloadAmount"}, description = "Data pre-loading amount for load tests")
     public int preloadAmount = 500_000;
+
+    /** */
+    @Parameter(names = {"-plfreq", "--preloadLogFrequency"}, description = "Interval between printing logs")
+    public long preloadLogsInterval = 30_000;
 
     /** */
     @Parameter(names = {"-j", "--jobs"}, description = "Number of jobs for compute benchmarks")
@@ -121,8 +113,26 @@ public class IgniteBenchmarkArguments {
     private boolean collocated;
 
     /** */
+    @Parameter(names = {"-stripe", "--singleStripe"}, description = "Generate keys belonging to single stripe per node")
+    private boolean singleStripe;
+
+    /** */
     @Parameter(names = {"-jdbc", "--jdbcUrl"}, description = "JDBC url")
     private String jdbcUrl;
+
+    /** */
+    @Parameter(names = {"-sch", "--schema"}, description = "File with SQL schema definition")
+    private String schemaDefinition = null;
+
+    /** */
+    @Parameter(names = {"-jdbcDrv", "--jdbcDriver"}, description = "FQN of driver class for JDBC native benchmarks " +
+        "(must be on classpath)")
+    private String jdbcDriver = null;
+
+    /** */
+    @Parameter(names = {"-tempDb", "--temporaryDatabase"}, description = "Whether it's needed to create and drop " +
+        "temporary database for JDBC benchmarks dummy data")
+    private boolean createTempDatabase = false;
 
     /** */
     @Parameter(names = {"-rd", "--restartdelay"}, description = "Restart delay in seconds")
@@ -149,12 +159,24 @@ public class IgniteBenchmarkArguments {
     private boolean keysPerThread;
 
     /** */
+    @Parameter(names = {"-ac", "--additionalCachesNumber"}, description = "Number of additional caches")
+    private int additionalCachesNum;
+
+    /** */
+    @Parameter(names = {"-acn", "--additionalCachesName"}, description = "Template cache name for additional caches")
+    private String additionalCachesName;
+
+    /** */
     @Parameter(names = {"-pp", "--printPartitionStats"}, description = "Print partition statistics")
     private boolean printPartStats;
 
     /** */
     @Parameter(names = {"-ltops", "--allowedLoadTestOperations"}, variableArity = true, description = "List of enabled load test operations")
     private List<String> allowedLoadTestOps = new ArrayList<>();
+
+    /** */
+    @Parameter(names = {"-ps", "--pageSize"}, description = "Page size")
+    private int pageSize = MemoryConfiguration.DFLT_PAGE_SIZE;
 
     /**
      * @return List of enabled load test operations.
@@ -175,6 +197,18 @@ public class IgniteBenchmarkArguments {
      */
     public String jdbcUrl() {
         return jdbcUrl;
+    }
+
+    public String jdbcDriver() {
+        return jdbcDriver;
+    }
+
+    public String schemaDefinition() {
+        return schemaDefinition;
+    }
+
+    public boolean createTempDatabase() {
+        return createTempDatabase;
     }
 
     /**
@@ -234,38 +268,10 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
-     * @return Cache write ordering mode.
-     */
-    public CacheAtomicWriteOrderMode orderMode() {
-        return orderMode;
-    }
-
-    /**
      * @return Backups.
      */
     public int backups() {
         return backups;
-    }
-
-    /**
-     * @return Offheap tiered.
-     */
-    public boolean isOffheapTiered() {
-        return offheapTiered;
-    }
-
-    /**
-     * @return Offheap values.
-     */
-    public boolean isOffheapValues() {
-        return offheapVals;
-    }
-
-    /**
-     * @return {@code True} if any offheap is enabled.
-     */
-    public boolean isOffHeap() {
-        return offheapTiered || offheapVals;
     }
 
     /**
@@ -287,6 +293,13 @@ public class IgniteBenchmarkArguments {
      */
     public int preloadAmount() {
         return preloadAmount;
+    }
+
+    /**
+     * @return Preload log printing interval in seconds.
+     */
+    public long preloadLogsInterval() {
+        return preloadLogsInterval;
     }
 
     /**
@@ -339,6 +352,13 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Generate keys for single stripe per node.
+     */
+    public boolean singleStripe() {
+        return singleStripe;
+    }
+
+    /**
      * @return Delay in second which used in nodes restart algorithm.
      */
     public int restartDelay() {
@@ -381,12 +401,32 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Page size in bytes.
+     */
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    /**
+     * @return Number of additional caches.
+     */
+    public int additionalCachesNumber() {
+        return additionalCachesNum;
+    }
+
+    /**
+     * @return Name of cache which will be taken as base for additional caches.
+     */
+    public String additionalCachesName() {
+        return additionalCachesName;
+    }
+
+    /**
      * @return Description.
      */
     public String description() {
         return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
-            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency + "-rd=" + restartDelay +
-            "-rs=" + restartSleep;
+            "-txc=" + txConcurrency + "-rd=" + restartDelay + "-rs=" + restartSleep;
     }
 
     /** {@inheritDoc} */

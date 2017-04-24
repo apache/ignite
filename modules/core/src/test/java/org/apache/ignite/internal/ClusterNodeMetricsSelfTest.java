@@ -23,7 +23,8 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -62,11 +63,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /** Amount of cache entries. */
     private static final int MAX_VALS_AMOUNT = 400;
 
-    /** With OFFHEAP_VALUES policy. */
-    private final String OFF_HEAP_VALUE_NAME = "offHeapValuesCfg";
-
-    /** With ONHEAP_TIERED policy. */
-    private final String ON_HEAP_TIERED_NAME = "onHeapTieredCfg";
+    /** Cache name. */
+    private final String CACHE_NAME = "cache1";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -79,8 +77,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -91,61 +89,54 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration();
         cfg.setMetricsUpdateFrequency(0);
 
-        CacheConfiguration<Integer, Object> offHeapValuesCfg = defaultCacheConfiguration();
-        offHeapValuesCfg.setName(OFF_HEAP_VALUE_NAME);
-        offHeapValuesCfg.setStatisticsEnabled(true);
-        offHeapValuesCfg.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
-        offHeapValuesCfg.setOffHeapMaxMemory(MAX_VALS_AMOUNT * VAL_SIZE);
-
-        CacheConfiguration<Integer, Object> onHeapTieredCfg = defaultCacheConfiguration();
-        onHeapTieredCfg.setName(ON_HEAP_TIERED_NAME);
-        onHeapTieredCfg.setStatisticsEnabled(true);
-        onHeapTieredCfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
-        onHeapTieredCfg.setOffHeapMaxMemory(MAX_VALS_AMOUNT * VAL_SIZE);
+        CacheConfiguration<Integer, Object> ccfg = defaultCacheConfiguration();
+        ccfg.setName(CACHE_NAME);
+        ccfg.setStatisticsEnabled(true);
 
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxMemorySize(MAX_VALS_AMOUNT * VAL_SIZE);
         plc.setMaxSize(0);
 
-        onHeapTieredCfg.setEvictionPolicy(plc);
+        ccfg.setEvictionPolicy(plc);
+        ccfg.setOnheapCacheEnabled(true);
 
-        return cfg.setCacheConfiguration(offHeapValuesCfg, onHeapTieredCfg);
+        return cfg.setCacheConfiguration(ccfg);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAllocatedMemory() throws Exception {
-        Ignite ignite = grid();
+        IgniteEx ignite = grid();
 
-        final IgniteCache onHeapCache = ignite.getOrCreateCache(ON_HEAP_TIERED_NAME);
-        final IgniteCache offHeapCache = ignite.getOrCreateCache(OFF_HEAP_VALUE_NAME);
+        final IgniteCache cache = ignite.getOrCreateCache(CACHE_NAME);
 
-        long prevTieredOffHeapSize = onHeapCache.metrics().getOffHeapAllocatedSize();
-        long prevValuesOffHeapSize = offHeapCache.metrics().getOffHeapAllocatedSize();
+        MemoryMetrics memMetrics = getDefaultMemoryPolicyMetrics(ignite);
 
-        assertEquals(0, prevTieredOffHeapSize);
-        assertEquals(0, prevValuesOffHeapSize);
+        memMetrics.enableMetrics();
 
-        long prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
+        int pageSize = getPageSize(ignite);
 
-        fillCache(onHeapCache);
+        assertEquals(0, memMetrics.getTotalAllocatedPages());
 
-        assertTrue(onHeapCache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5)
-            * VAL_SIZE + prevTieredOffHeapSize);
-        assertEquals(0, offHeapCache.metrics().getOffHeapAllocatedSize());
+        fillCache(cache);
 
-        assertTrue(prevClusterNonHeapMemoryUsed < ignite.cluster().metrics().getNonHeapMemoryUsed());
+        assertTrue(memMetrics.getTotalAllocatedPages() * pageSize > MAX_VALS_AMOUNT
+            * VAL_SIZE);
+    }
 
-        prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
-        prevTieredOffHeapSize = onHeapCache.metrics().getOffHeapAllocatedSize();
+    /**
+     * @param ignite Ignite instance.
+     */
+    private MemoryMetrics getDefaultMemoryPolicyMetrics(IgniteEx ignite) throws IgniteCheckedException {
+        return ignite.context().cache().context().database().memoryPolicy(null).memoryMetrics();
+    }
 
-        fillCache(offHeapCache);
-
-        assertTrue(offHeapCache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5) * VAL_SIZE);
-        assertEquals(prevTieredOffHeapSize, onHeapCache.metrics().getOffHeapAllocatedSize());
-        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevClusterNonHeapMemoryUsed <
-            ignite.cluster().metrics().getNonHeapMemoryUsed());
+    /**
+     * @param ignite Ignite instance.
+     */
+    private int getPageSize(IgniteEx ignite) {
+        return ignite.context().cache().context().database().pageSize();
     }
 
     /**

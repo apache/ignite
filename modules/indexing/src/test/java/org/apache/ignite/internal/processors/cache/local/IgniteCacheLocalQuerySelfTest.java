@@ -47,7 +47,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
      * @throws Exception If test failed.
      */
     public void testQueryLocal() throws Exception {
-        IgniteCache<Integer, String> cache = ignite().cache(null);
+        IgniteCache<Integer, String> cache = jcache(Integer.class, String.class);
 
         cache.put(1, "value1");
         cache.put(2, "value2");
@@ -85,6 +85,6 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
         List<List<?>> res = cache.query(new SqlFieldsQuery(
             "explain select _key from String where _val > 'value1'").setLocal(true)).getAll();
 
-        assertTrue("__ explain: \n" + res, ((String)res.get(0).get(0)).contains("_val_idx"));
+        assertTrue("__ explain: \n" + res, ((String)res.get(0).get(0)).toLowerCase().contains("_val_idx"));
     }
 }

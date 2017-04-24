@@ -17,6 +17,8 @@
 
 #include <Windowsx.h>
 
+#include "ignite/odbc/log.h"
+
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
 
 namespace ignite
@@ -102,37 +104,37 @@ namespace ignite
                     int sectionBegin = margin;
 
                     const char* val = config.GetDsn().c_str();
-                    nameLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "DSN name:", ID_NAME_LABEL);
-                    nameEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_NAME_EDIT);
+                    nameLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "DSN name:", ChildId::NAME_LABEL);
+                    nameEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::NAME_EDIT);
 
                     rowPos += interval + rowSize;
 
                     val = config.GetAddress().c_str();
-                    addressLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Address:", ID_ADDRESS_LABEL);
-                    addressEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_ADDRESS_EDIT);
+                    addressLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Address:", ChildId::ADDRESS_LABEL);
+                    addressEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::ADDRESS_EDIT);
 
                     rowPos += interval + rowSize;
 
                     val = config.GetCache().c_str();
-                    cacheLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Cache name:", ID_CACHE_LABEL);
-                    cacheEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ID_CACHE_EDIT);
+                    cacheLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Cache name:", ChildId::CACHE_LABEL);
+                    cacheEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::CACHE_EDIT);
 
                     rowPos += interval + rowSize;
 
                     std::string tmp = common::LexicalCast<std::string>(config.GetPageSize());
                     val = tmp.c_str();
                     pageSizeLabel = CreateLabel(labelPosX, rowPos, labelSizeX,
-                        rowSize, "Page size:", ID_PAGE_SIZE_LABEL);
+                        rowSize, "Page size:", ChildId::PAGE_SIZE_LABEL);
 
                     pageSizeEdit = CreateEdit(editPosX, rowPos, editSizeX, 
-                        rowSize, val, ID_PAGE_SIZE_EDIT, ES_NUMBER);
+                        rowSize, val, ChildId::PAGE_SIZE_EDIT, ES_NUMBER);
 
                     rowPos += interval + rowSize;
 
                     protocolVersionLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize,
-                        "Protocol version:", ID_PROTOCOL_VERSION_LABEL);
+                        "Protocol version:", ChildId::PROTOCOL_VERSION_LABEL);
                     protocolVersionComboBox = CreateComboBox(editPosX, rowPos, editSizeX, rowSize,
-                        "Protocol version", ID_PROTOCOL_VERSION_COMBO_BOX);
+                        "Protocol version", ChildId::PROTOCOL_VERSION_COMBO_BOX);
 
                     int id = 0;
 
@@ -152,10 +154,10 @@ namespace ignite
                     rowPos += interval + rowSize;
 
                     distributedJoinsCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
-                        "Distributed Joins", ID_DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
+                        "Distributed Joins", ChildId::DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
 
                     enforceJoinOrderCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
-                        rowSize, "Enforce Join Order", ID_ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
+                        rowSize, "Enforce Join Order", ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
 
                     if (!config.GetProtocolVersion().IsDistributedJoinsSupported())
                     {
@@ -166,7 +168,7 @@ namespace ignite
                     rowPos += interval * 2 + rowSize;
 
                     connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
-                        rowPos - interval - sectionBegin, "Connection settings", ID_CONNECTION_SETTINGS_GROUP_BOX);
+                        rowPos - interval - sectionBegin, "Connection settings", ChildId::CONNECTION_SETTINGS_GROUP_BOX);
 
                     int buttonSizeX = 80;
                     int cancelPosX = width - margin - buttonSizeX;
@@ -174,8 +176,8 @@ namespace ignite
 
                     rowSize = 25;
 
-                    okButton = CreateButton(okPosX, rowPos, buttonSizeX, rowSize, "Ok", ID_OK_BUTTON);
-                    cancelButton = CreateButton(cancelPosX, rowPos, buttonSizeX, rowSize, "Cancel", ID_CANCEL_BUTTON);
+                    okButton = CreateButton(okPosX, rowPos, buttonSizeX, rowSize, "Ok", ChildId::OK_BUTTON);
+                    cancelButton = CreateButton(cancelPosX, rowPos, buttonSizeX, rowSize, "Cancel", ChildId::CANCEL_BUTTON);
                 }
 
                 bool DsnConfigurationWindow::OnMessage(UINT msg, WPARAM wParam, LPARAM lParam)
@@ -186,7 +188,7 @@ namespace ignite
                         {
                             switch (LOWORD(wParam))
                             {
-                                case ID_OK_BUTTON:
+                                case ChildId::OK_BUTTON:
                                 {
                                     try
                                     {
@@ -204,7 +206,7 @@ namespace ignite
                                     break;
                                 }
 
-                                case ID_PROTOCOL_VERSION_COMBO_BOX:
+                                case ChildId::PROTOCOL_VERSION_COMBO_BOX:
                                 {
                                     if (HIWORD(wParam) == CBN_SELCHANGE)
                                     {
@@ -230,21 +232,21 @@ namespace ignite
                                 }
 
                                 case IDCANCEL:
-                                case ID_CANCEL_BUTTON:
+                                case ChildId::CANCEL_BUTTON:
                                 {
                                     PostMessage(GetHandle(), WM_CLOSE, 0, 0);
 
                                     break;
                                 }
 
-                                case ID_DISTRIBUTED_JOINS_CHECK_BOX:
+                                case ChildId::DISTRIBUTED_JOINS_CHECK_BOX:
                                 {
                                     distributedJoinsCheckBox->SetChecked(!distributedJoinsCheckBox->IsChecked());
 
                                     break;
                                 }
 
-                                case ID_ENFORCE_JOIN_ORDER_CHECK_BOX:
+                                case ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX:
                                 {
                                     enforceJoinOrderCheckBox->SetChecked(!enforceJoinOrderCheckBox->IsChecked());
 
@@ -260,7 +262,7 @@ namespace ignite
 
                         case WM_DESTROY:
                         {
-                            PostQuitMessage(accepted ? RESULT_OK : RESULT_CANCEL);
+                            PostQuitMessage(accepted ? Result::OK : Result::CANCEL);
 
                             break;
                         }
@@ -300,14 +302,14 @@ namespace ignite
                     distributedJoins = distributedJoinsCheckBox->IsEnabled() && distributedJoinsCheckBox->IsChecked();
                     enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
 
-                    LOG_MSG("Retriving arguments:\n");
-                    LOG_MSG("DSN:                %s\n", dsn.c_str());
-                    LOG_MSG("Address:            %s\n", address.c_str());
-                    LOG_MSG("Cache:              %s\n", cache.c_str());
-                    LOG_MSG("Page size:          %d\n", pageSize);
-                    LOG_MSG("Protocol version:   %s\n", version.c_str());
-                    LOG_MSG("Distributed Joins:  %s\n", distributedJoins ? "true" : "false");
-                    LOG_MSG("Enforce Join Order: %s\n", enforceJoinOrder ? "true" : "false");
+                    LOG_MSG("Retriving arguments:");
+                    LOG_MSG("DSN:                " << dsn);
+                    LOG_MSG("Address:            " << address);
+                    LOG_MSG("Cache:              " << cache);
+                    LOG_MSG("Page size:          " << pageSize);
+                    LOG_MSG("Protocol version:   " << version);
+                    LOG_MSG("Distributed Joins:  " << (distributedJoins ? "true" : "false"));
+                    LOG_MSG("Enforce Join Order: " << (enforceJoinOrder ? "true" : "false"));
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");

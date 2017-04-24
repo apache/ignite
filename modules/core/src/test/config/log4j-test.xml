@@ -103,13 +103,7 @@
     -->
 
     <!--
-    <category name="org.apache.ignite.spi.discovery">
-        <level value="DEBUG"/>
-    </category>
-    -->
-
-    <!--
-    <category name="org.apache.ignite.internal.processors.cache">
+    <category name="org.apache.ignite.continuous.query">
         <level value="DEBUG"/>
     </category>
     -->

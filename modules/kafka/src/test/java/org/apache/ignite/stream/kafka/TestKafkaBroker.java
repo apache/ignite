@@ -56,7 +56,7 @@ public class TestKafkaBroker {
     private static final String BROKER_HOST = "localhost";
 
     /** Broker port. */
-    private static final int BROKER_PORT = 9092;
+    private static final int BROKER_PORT = 11092;
 
     /** Kafka config. */
     private KafkaConfig kafkaCfg;
@@ -133,7 +133,7 @@ public class TestKafkaBroker {
             try {
                 zkServer.stop();
             }
-            catch (IOException e) {
+            catch (IOException ignored) {
                 // No-op.
             }
         }

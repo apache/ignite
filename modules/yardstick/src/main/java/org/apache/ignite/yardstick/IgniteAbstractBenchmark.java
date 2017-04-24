@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.events.Event;
@@ -38,6 +39,9 @@ import static org.yardstickframework.BenchmarkUtils.println;
 public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
     /** Arguments. */
     protected final IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
+
+    /** Logger */
+    private PreloadLogger lgr;
 
     /** Node. */
     private IgniteNode node;
@@ -58,6 +62,38 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
             node = new IgniteNode(args.isClientOnly() && !args.isNearCache(), Ignition.ignite());
 
         waitForNodes();
+
+        IgniteLogger log = ignite().log();
+
+        if (log.isInfoEnabled())
+            log.info("Benchmark arguments: " + args);
+    }
+
+    /**
+     * Prints non-system caches sizes during preload.
+     *
+     * @param logInterval time interval between printing preload log. Required to be positive.
+     */
+    protected void startPreloadLogging(long logInterval) {
+        try {
+            if (node != null && cfg != null && logInterval >= 0)
+                lgr = IgniteBenchmarkUtils.startPreloadLogger(node, cfg, logInterval);
+            else
+                BenchmarkUtils.println("Failed to start preload logger [node=" + node + ", cfg = " + cfg +
+                    ", logInterval = " + logInterval + "]");
+        }
+        catch (Exception e) {
+            BenchmarkUtils.error("Failed to start preload logger [node=" + node + ", cfg = " + cfg +
+                ", logInterval = " + logInterval + "]", e);
+        }
+    }
+
+    /**
+     * Terminates printing preload log.
+     */
+    protected void stopPreloadLogging() {
+        if (lgr != null)
+            lgr.stopAndPrintStatistics();
     }
 
     /** {@inheritDoc} */
@@ -119,7 +155,7 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
      * @param max Key range.
      * @return Next key.
      */
-    protected int nextRandom(int max) {
+    public static int nextRandom(int max) {
         return ThreadLocalRandom.current().nextInt(max);
     }
 

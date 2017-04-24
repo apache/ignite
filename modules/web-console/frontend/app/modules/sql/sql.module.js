@@ -19,9 +19,10 @@ import angular from 'angular';
 
 import NotebookData from './Notebook.data';
 import Notebook from './Notebook.service';
-import ScanFilterInput from './scan-filter-input.service';
 import notebook from './notebook.controller';
-import sql from './sql.controller';
+import controller from './sql.controller';
+
+import sqlTplUrl from 'app/../views/sql/sql.tpl.pug';
 
 angular.module('ignite-console.sql', [
     'ui.router'
@@ -31,30 +32,32 @@ angular.module('ignite-console.sql', [
             // set up the states
             $stateProvider
                 .state('base.sql', {
-                    url: '/sql',
+                    url: '/queries',
                     abstract: true,
                     template: '<ui-view></ui-view>'
                 })
                 .state('base.sql.notebook', {
                     url: '/notebook/{noteId}',
-                    templateUrl: '/sql/sql.html',
+                    templateUrl: sqlTplUrl,
                     onEnter: AclRoute.checkAccess('query'),
                     metaTags: {
                         title: 'Query notebook'
-                    }
+                    },
+                    controller,
+                    controllerAs: '$ctrl'
                 })
                 .state('base.sql.demo', {
                     url: '/demo',
-                    templateUrl: '/sql/sql.html',
+                    templateUrl: sqlTplUrl,
                     onEnter: AclRoute.checkAccess('query'),
                     metaTags: {
                         title: 'SQL demo'
-                    }
+                    },
+                    controller,
+                    controllerAs: '$ctrl'
                 });
         }]
     )
     .service('IgniteNotebookData', NotebookData)
     .service('IgniteNotebook', Notebook)
-    .service('IgniteScanFilterInput', ScanFilterInput)
-    .controller('notebookController', notebook)
-    .controller('sqlController', sql);
+    .controller('notebookController', notebook);

@@ -37,7 +37,7 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
     /** Marker object denoting the job execution result is stored in native platform. */
     static final Object LOC_JOB_RES = new Object();
 
-    /** Grid name. */
+    /** Ignite instance. */
     @IgniteInstanceResource
     protected transient Ignite ignite;
 
@@ -131,7 +131,7 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
         // Local job, must execute it with respect to possible concurrent task completion.
         if (task.onJobLock()) {
             try {
-                ctx.gateway().computeJobExecute(ptr, cancel ? 1 : 0, 0);
+                ctx.gateway().computeJobExecuteLocal(ptr, cancel ? 1 : 0);
 
                 return LOC_JOB_RES;
             }

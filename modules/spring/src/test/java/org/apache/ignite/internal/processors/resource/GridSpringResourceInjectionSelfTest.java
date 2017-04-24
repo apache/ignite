@@ -88,7 +88,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
      */
     public void testClosureFieldByResourceClassWithMultipleBeans() throws Exception {
         IgniteConfiguration anotherCfg = new IgniteConfiguration();
-        anotherCfg.setGridName("anotherGrid");
+        anotherCfg.setIgniteInstanceName("anotherGrid");
 
         Ignite anotherGrid = IgniteSpring.start(anotherCfg, new ClassPathXmlApplicationContext(
             "/org/apache/ignite/internal/processors/resource/spring-resource-with-duplicate-beans.xml"));
@@ -105,8 +105,8 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
         }, anotherGrid, null);
 
         assertTrue("Unexpected message: " + err.getMessage(), err.getMessage().startsWith("No qualifying bean of type " +
-            "[org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DummyResourceBean]" +
-            " is defined: expected single matching bean but found 2:"));
+            "'org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DummyResourceBean'" +
+            " available: expected single matching bean but found 2:"));
 
         G.stop("anotherGrid", false);
     }
@@ -124,7 +124,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "No bean named 'nonExistentResource' is defined");
+        }, "No bean named 'nonExistentResource' available");
     }
 
     /**
@@ -140,8 +140,8 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "No qualifying bean of type [org.apache.ignite.internal.processors.resource." +
-            "GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean] is defined");
+        }, "No qualifying bean of type 'org.apache.ignite.internal.processors.resource." +
+            "GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean' available");
     }
 
     /**
@@ -226,7 +226,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testClosureMethodWithResourceClassWithMultipleBeans() throws Exception {
         IgniteConfiguration anotherCfg = new IgniteConfiguration();
-        anotherCfg.setGridName("anotherGrid");
+        anotherCfg.setIgniteInstanceName("anotherGrid");
 
         Ignite anotherGrid = IgniteSpring.start(anotherCfg, new ClassPathXmlApplicationContext(
             "/org/apache/ignite/internal/processors/resource/spring-resource-with-duplicate-beans.xml"));
@@ -250,8 +250,8 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
             }, anotherGrid, null);
 
             assertTrue("Unexpected message: " + err.getMessage(), err.getMessage().startsWith("No qualifying bean of type " +
-                "[org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DummyResourceBean]" +
-                " is defined: expected single matching bean but found 2:"));
+                "'org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest$DummyResourceBean'" +
+                " available: expected single matching bean but found 2:"));
         }
         finally {
             G.stop("anotherGrid", false);
@@ -275,7 +275,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "No bean named 'nonExistentResource' is defined");
+        }, "No bean named 'nonExistentResource' available");
     }
 
     /**
@@ -295,8 +295,8 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
                 return null;
             }
-        }, "No qualifying bean of type [org.apache.ignite.internal.processors.resource" +
-                ".GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean] is defined");
+        }, "No qualifying bean of type 'org.apache.ignite.internal.processors.resource" +
+            ".GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean' available");
     }
 
     /**

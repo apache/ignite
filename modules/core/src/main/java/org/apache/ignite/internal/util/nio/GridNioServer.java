@@ -74,7 +74,6 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import sun.nio.ch.DirectBuffer;
 
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.ACK_CLOSURE;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
 
@@ -227,12 +226,15 @@ public class GridNioServer<T> {
     /** */
     private final IgniteRunnable balancer;
 
+    /** */
+    private final boolean readWriteSelectorsAssign;
+
     /**
      * @param addr Address.
      * @param port Port.
      * @param log Log.
      * @param selectorCnt Count of selectors and selecting threads.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param srvName Logical server name for threads identification.
      * @param selectorSpins Defines how many non-blocking {@code selector.selectNow()} should be made before
      *      falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
@@ -250,7 +252,7 @@ public class GridNioServer<T> {
      * @param writerFactory Writer factory.
      * @param skipRecoveryPred Skip recovery predicate.
      * @param msgQueueLsnr Message queue size listener.
-     * @param balancing NIO sessions balancing flag.
+     * @param readWriteSelectorsAssign If {@code true} then in/out connections are assigned to even/odd workers.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -259,7 +261,7 @@ public class GridNioServer<T> {
         int port,
         IgniteLogger log,
         int selectorCnt,
-        @Nullable String gridName,
+        @Nullable String igniteInstanceName,
         @Nullable String srvName,
         long selectorSpins,
         boolean tcpNoDelay,
@@ -275,7 +277,7 @@ public class GridNioServer<T> {
         GridNioMessageWriterFactory writerFactory,
         IgnitePredicate<Message> skipRecoveryPred,
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
-        boolean balancing,
+        boolean readWriteSelectorsAssign,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         if (port != -1)
@@ -300,6 +302,7 @@ public class GridNioServer<T> {
         this.sndQueueLimit = sndQueueLimit;
         this.msgQueueLsnr = msgQueueLsnr;
         this.selectorSpins = selectorSpins;
+        this.readWriteSelectorsAssign = readWriteSelectorsAssign;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -320,7 +323,7 @@ public class GridNioServer<T> {
             // This method will throw exception if address already in use.
             Selector acceptSelector = createSelector(locAddr);
 
-            acceptThread = new IgniteThread(new GridNioAcceptWorker(gridName, "nio-acceptor", log, acceptSelector));
+            acceptThread = new IgniteThread(new GridNioAcceptWorker(igniteInstanceName, "nio-acceptor", log, acceptSelector));
         }
         else {
             locAddr = null;
@@ -339,8 +342,8 @@ public class GridNioServer<T> {
                 threadName = "grid-nio-worker-" + srvName + "-" + i;
 
             AbstractNioClientWorker worker = directMode ?
-                new DirectNioClientWorker(i, gridName, threadName, log) :
-                new ByteBufferNioClientWorker(i, gridName, threadName, log);
+                new DirectNioClientWorker(i, igniteInstanceName, threadName, log) :
+                new ByteBufferNioClientWorker(i, igniteInstanceName, threadName, log);
 
             clientWorkers.add(worker);
 
@@ -359,10 +362,16 @@ public class GridNioServer<T> {
 
         IgniteRunnable balancer0 = null;
 
-        if (balancing && balancePeriod > 0) {
+        if (balancePeriod > 0) {
             boolean rndBalance = IgniteSystemProperties.getBoolean(IGNITE_IO_BALANCE_RANDOM_BALANCE, false);
 
-            balancer0 = rndBalance ? new RandomBalancer() : new SizeBasedBalancer(balancePeriod);
+            if (rndBalance)
+                balancer0 = new RandomBalancer();
+            else {
+                balancer0 = readWriteSelectorsAssign ?
+                    new ReadWriteSizeBasedBalancer(balancePeriod) :
+                    new SizeBasedBalancer(balancePeriod);
+            }
         }
 
         this.balancer = balancer0;
@@ -471,22 +480,26 @@ public class GridNioServer<T> {
      * @param ses Session.
      * @param msg Message.
      * @param createFut {@code True} if future should be created.
+     * @param ackC Closure invoked when message ACK is received.
      * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses, ByteBuffer msg, boolean createFut) throws IgniteCheckedException {
+    GridNioFuture<?> send(GridNioSession ses,
+        ByteBuffer msg,
+        boolean createFut,
+        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert ses instanceof GridSelectorNioSessionImpl : ses;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (createFut) {
-            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg);
+            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg, ackC);
 
             send0(impl, fut, false);
 
             return fut;
         }
         else {
-            SessionWriteRequest req = new WriteRequestImpl(ses, msg, true);
+            SessionWriteRequest req = new WriteRequestImpl(ses, msg, true, ackC);
 
             send0(impl, req, false);
 
@@ -498,23 +511,27 @@ public class GridNioServer<T> {
      * @param ses Session.
      * @param msg Message.
      * @param createFut {@code True} if future should be created.
+     * @param ackC Closure invoked when message ACK is received.
      * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses, Message msg, boolean createFut) throws IgniteCheckedException {
+    GridNioFuture<?> send(GridNioSession ses,
+        Message msg,
+        boolean createFut,
+        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (createFut) {
             NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg,
-                skipRecoveryPred.apply(msg));
+                skipRecoveryPred.apply(msg), ackC);
 
             send0(impl, fut, false);
 
             return fut;
         }
         else {
-            SessionWriteRequest req = new WriteRequestImpl(ses, msg, skipRecoveryPred.apply(msg));
+            SessionWriteRequest req = new WriteRequestImpl(ses, msg, skipRecoveryPred.apply(msg), ackC);
 
             send0(impl, req, false);
 
@@ -533,11 +550,6 @@ public class GridNioServer<T> {
         assert req != null;
 
         int msgCnt = sys ? ses.offerSystemFuture(req) : ses.offerFuture(req);
-
-        IgniteInClosure<IgniteException> ackC;
-
-        if (!sys && (ackC = ses.removeMeta(ACK_CLOSURE.ordinal())) != null)
-            req.ackClosure(ackC);
 
         if (ses.closed()) {
             if (ses.removeFuture(req)) {
@@ -587,8 +599,11 @@ public class GridNioServer<T> {
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (lsnr != null) {
-            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg,
-                skipRecoveryPred.apply(msg));
+            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl,
+                NioOperation.REQUIRE_WRITE,
+                msg,
+                skipRecoveryPred.apply(msg),
+                null);
 
             fut.listen(lsnr);
 
@@ -823,21 +838,31 @@ public class GridNioServer<T> {
         int balanceIdx;
 
         if (workers > 1) {
-            if (req.accepted()) {
+            if (readWriteSelectorsAssign) {
+                if (req.accepted()) {
+                    balanceIdx = readBalanceIdx;
+
+                    readBalanceIdx += 2;
+
+                    if (readBalanceIdx >= workers)
+                        readBalanceIdx = 0;
+                }
+                else {
+                    balanceIdx = writeBalanceIdx;
+
+                    writeBalanceIdx += 2;
+
+                    if (writeBalanceIdx >= workers)
+                        writeBalanceIdx = 1;
+                }
+            }
+            else {
                 balanceIdx = readBalanceIdx;
 
-                readBalanceIdx += 2;
+                readBalanceIdx++;
 
                 if (readBalanceIdx >= workers)
                     readBalanceIdx = 0;
-            }
-            else {
-                balanceIdx = writeBalanceIdx;
-
-                writeBalanceIdx += 2;
-
-                if (writeBalanceIdx >= workers)
-                    writeBalanceIdx = 1;
             }
         }
         else
@@ -860,14 +885,14 @@ public class GridNioServer<T> {
 
         /**
          * @param idx Index of this worker in server's array.
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Worker name.
          * @param log Logger.
          * @throws IgniteCheckedException If selector could not be created.
          */
-        protected ByteBufferNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
+        protected ByteBufferNioClientWorker(int idx, @Nullable String igniteInstanceName, String name, IgniteLogger log)
             throws IgniteCheckedException {
-            super(idx, gridName, name, log);
+            super(idx, igniteInstanceName, name, log);
 
             readBuf = directBuf ? ByteBuffer.allocateDirect(8 << 10) : ByteBuffer.allocate(8 << 10);
 
@@ -1030,14 +1055,14 @@ public class GridNioServer<T> {
     private class DirectNioClientWorker extends AbstractNioClientWorker {
         /**
          * @param idx Index of this worker in server's array.
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Worker name.
          * @param log Logger.
          * @throws IgniteCheckedException If selector could not be created.
          */
-        protected DirectNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
+        protected DirectNioClientWorker(int idx, @Nullable String igniteInstanceName, String name, IgniteLogger log)
             throws IgniteCheckedException {
-            super(idx, gridName, name, log);
+            super(idx, igniteInstanceName, name, log);
         }
 
         /**
@@ -1521,14 +1546,14 @@ public class GridNioServer<T> {
 
         /**
          * @param idx Index of this worker in server's array.
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Worker name.
          * @param log Logger.
          * @throws IgniteCheckedException If selector could not be created.
          */
-        protected AbstractNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
+        protected AbstractNioClientWorker(int idx, @Nullable String igniteInstanceName, String name, IgniteLogger log)
             throws IgniteCheckedException {
-            super(gridName, name, log);
+            super(igniteInstanceName, name, log);
 
             createSelector();
 
@@ -2366,13 +2391,15 @@ public class GridNioServer<T> {
         private Selector selector;
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Thread name.
          * @param log Log.
          * @param selector Which will accept incoming connections.
          */
-        protected GridNioAcceptWorker(@Nullable String gridName, String name, IgniteLogger log, Selector selector) {
-            super(gridName, name, log);
+        protected GridNioAcceptWorker(
+            @Nullable String igniteInstanceName, String name, IgniteLogger log, Selector selector
+        ) {
+            super(igniteInstanceName, name, log);
 
             this.selector = selector;
         }
@@ -2575,11 +2602,6 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void ackClosure(IgniteInClosure<IgniteException> c) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
         @Override public void onAckReceived() {
             throw new UnsupportedOperationException();
         }
@@ -2642,17 +2664,22 @@ public class GridNioServer<T> {
         private final boolean skipRecovery;
 
         /** */
-        private IgniteInClosure<IgniteException> ackC;
+        private final IgniteInClosure<IgniteException> ackC;
 
         /**
          * @param ses Session.
          * @param msg Message.
          * @param skipRecovery Skip recovery flag.
+         * @param ackC Closure invoked when message ACK is received.
          */
-        WriteRequestImpl(GridNioSession ses, Object msg, boolean skipRecovery) {
+        WriteRequestImpl(GridNioSession ses,
+            Object msg,
+            boolean skipRecovery,
+            IgniteInClosure<IgniteException> ackC) {
             this.ses = ses;
             this.msg = msg;
             this.skipRecovery = skipRecovery;
+            this.ackC = ackC;
         }
 
         /** {@inheritDoc} */
@@ -2668,11 +2695,6 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public boolean skipRecovery() {
             return skipRecovery;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void ackClosure(IgniteInClosure<IgniteException> c) {
-            ackC = c;
         }
 
         /** {@inheritDoc} */
@@ -2776,6 +2798,8 @@ public class GridNioServer<T> {
             boolean accepted,
             @Nullable Map<Integer, ?> meta
         ) {
+            super(null);
+
             op = NioOperation.REGISTER;
 
             this.sockCh = sockCh;
@@ -2790,6 +2814,8 @@ public class GridNioServer<T> {
          * @param op Requested operation.
          */
         NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op) {
+            super(null);
+
             assert ses != null || op == NioOperation.DUMP_STATS : "Invalid params [ses=" + ses + ", op=" + op + ']';
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -2804,8 +2830,14 @@ public class GridNioServer<T> {
          * @param ses Session to change.
          * @param op Requested operation.
          * @param msg Message.
+         * @param ackC Closure invoked when message ACK is received.
          */
-        NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op, Object msg) {
+        NioOperationFuture(GridSelectorNioSessionImpl ses,
+            NioOperation op,
+            Object msg,
+            IgniteInClosure<IgniteException> ackC) {
+            super(ackC);
+
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -2823,9 +2855,15 @@ public class GridNioServer<T> {
          * @param op Requested operation.
          * @param commMsg Direct message.
          * @param skipRecovery Skip recovery flag.
+         * @param ackC Closure invoked when message ACK is received.
          */
-        NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op,
-            Message commMsg, boolean skipRecovery) {
+        NioOperationFuture(GridSelectorNioSessionImpl ses,
+            NioOperation op,
+            Message commMsg,
+            boolean skipRecovery,
+            IgniteInClosure<IgniteException> ackC) {
+            super(ackC);
+
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -2991,7 +3029,10 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) throws IgniteCheckedException {
+        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses,
+            Object msg,
+            boolean fut,
+            IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
             if (directMode) {
                 boolean sslSys = sslFilter != null && msg instanceof ByteBuffer;
 
@@ -3010,10 +3051,10 @@ public class GridNioServer<T> {
                     return null;
                 }
                 else
-                    return send(ses, (Message)msg, fut);
+                    return send(ses, (Message)msg, fut, ackC);
             }
             else
-                return send(ses, (ByteBuffer)msg, fut);
+                return send(ses, (ByteBuffer)msg, fut, ackC);
         }
 
         /** {@inheritDoc} */
@@ -3067,8 +3108,8 @@ public class GridNioServer<T> {
         /** Selector count. */
         private int selectorCnt;
 
-        /** Grid name. */
-        private String gridName;
+        /** Ignite instance name. */
+        private String igniteInstanceName;
 
         /** TCP_NO_DELAY flag. */
         private boolean tcpNoDelay;
@@ -3124,8 +3165,8 @@ public class GridNioServer<T> {
         /** */
         private long selectorSpins;
 
-        /** NIO sessions balancing flag. */
-        private boolean balancing;
+        /** */
+        private boolean readWriteSelectorsAssign;
 
         /**
          * Finishes building the instance.
@@ -3139,7 +3180,7 @@ public class GridNioServer<T> {
                 port,
                 log,
                 selectorCnt,
-                gridName,
+                igniteInstanceName,
                 srvName,
                 selectorSpins,
                 tcpNoDelay,
@@ -3155,7 +3196,7 @@ public class GridNioServer<T> {
                 writerFactory,
                 skipRecoveryPred,
                 msgQueueLsnr,
-                balancing,
+                readWriteSelectorsAssign,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -3169,11 +3210,11 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param balancing NIO sessions balancing flag.
+         * @param readWriteSelectorsAssign {@code True} to assign in/out connections even/odd workers.
          * @return This for chaining.
          */
-        public Builder<T> balancing(boolean balancing) {
-            this.balancing = balancing;
+        public Builder<T> readWriteSelectorsAssign(boolean readWriteSelectorsAssign) {
+            this.readWriteSelectorsAssign = readWriteSelectorsAssign;
 
             return this;
         }
@@ -3220,11 +3261,11 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @return This for chaining.
          */
-        public Builder<T> gridName(@Nullable String gridName) {
-            this.gridName = gridName;
+        public Builder<T> igniteInstanceName(@Nullable String igniteInstanceName) {
+            this.igniteInstanceName = igniteInstanceName;
 
             return this;
         }
@@ -3415,7 +3456,7 @@ public class GridNioServer<T> {
     /**
      *
      */
-    private class SizeBasedBalancer implements IgniteRunnable {
+    private class ReadWriteSizeBasedBalancer implements IgniteRunnable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3428,7 +3469,7 @@ public class GridNioServer<T> {
         /**
          * @param balancePeriod Period.
          */
-        SizeBasedBalancer(long balancePeriod) {
+        ReadWriteSizeBasedBalancer(long balancePeriod) {
             this.balancePeriod = balancePeriod;
         }
 
@@ -3559,6 +3600,100 @@ public class GridNioServer<T> {
     }
 
     /**
+     *
+     */
+    private class SizeBasedBalancer implements IgniteRunnable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private long lastBalance;
+
+        /** */
+        private final long balancePeriod;
+
+        /**
+         * @param balancePeriod Period.
+         */
+        SizeBasedBalancer(long balancePeriod) {
+            this.balancePeriod = balancePeriod;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            long now = U.currentTimeMillis();
+
+            if (lastBalance + balancePeriod < now) {
+                lastBalance = now;
+
+                long maxBytes0 = -1, minBytes0 = -1;
+                int maxBytesIdx = -1, minBytesIdx = -1;
+
+                for (int i = 0; i < clientWorkers.size(); i++) {
+                    GridNioServer.AbstractNioClientWorker worker = clientWorkers.get(i);
+
+                    int sesCnt = worker.workerSessions.size();
+
+                    long bytes0 = worker.bytesRcvd0 + worker.bytesSent0;
+
+                    if ((maxBytes0 == -1 || bytes0 > maxBytes0) && bytes0 > 0 && sesCnt > 1) {
+                        maxBytes0 = bytes0;
+                        maxBytesIdx = i;
+                    }
+
+                    if (minBytes0 == -1 || bytes0 < minBytes0) {
+                        minBytes0 = bytes0;
+                        minBytesIdx = i;
+                    }
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Balancing data [min0=" + minBytes0 + ", minIdx=" + minBytesIdx +
+                        ", max0=" + maxBytes0 + ", maxIdx=" + maxBytesIdx + ']');
+
+                if (maxBytes0 != -1 && minBytes0 != -1) {
+                    GridSelectorNioSessionImpl ses = null;
+
+                    long bytesDiff = maxBytes0 - minBytes0;
+                    long delta = bytesDiff;
+                    double threshold = bytesDiff * 0.9;
+
+                    GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions =
+                        clientWorkers.get(maxBytesIdx).workerSessions;
+
+                    for (GridSelectorNioSessionImpl ses0 : sessions) {
+                        long bytesSent0 = ses0.bytesSent0();
+
+                        if (bytesSent0 < threshold &&
+                            (ses == null || delta > U.safeAbs(bytesSent0 - bytesDiff / 2))) {
+                            ses = ses0;
+                            delta = U.safeAbs(bytesSent0 - bytesDiff / 2);
+                        }
+                    }
+
+                    if (ses != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Will move session to less loaded worker [ses=" + ses +
+                                ", from=" + maxBytesIdx + ", to=" + minBytesIdx + ']');
+
+                        moveSession(ses, maxBytesIdx, minBytesIdx);
+                    }
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Unable to find session to move.");
+                    }
+                }
+
+                for (int i = 0; i < clientWorkers.size(); i++) {
+                    GridNioServer.AbstractNioClientWorker worker = clientWorkers.get(i);
+
+                    worker.reset0();
+                }
+            }
+        }
+    }
+
+    /**
      * For tests only.
      */
     @SuppressWarnings("unchecked")
@@ -3625,6 +3760,9 @@ public class GridNioServer<T> {
      *
      */
     interface SessionChangeRequest {
+        /**
+         * @return Session.
+         */
         GridNioSession session();
 
         /**

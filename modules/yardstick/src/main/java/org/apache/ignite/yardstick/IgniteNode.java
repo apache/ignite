@@ -27,6 +27,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -42,7 +43,6 @@ import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 
 /**
@@ -109,9 +109,6 @@ public class IgniteNode implements BenchmarkServer {
 
                 cc.setWriteSynchronizationMode(args.syncMode());
 
-                if (args.orderMode() != null)
-                    cc.setAtomicWriteOrderMode(args.orderMode());
-
                 cc.setBackups(args.backups());
 
                 if (args.restTcpPort() != 0) {
@@ -123,15 +120,6 @@ public class IgniteNode implements BenchmarkServer {
                         ccc.setHost(args.restTcpHost());
 
                     c.setConnectorConfiguration(ccc);
-                }
-
-                if (args.isOffHeap()) {
-                    cc.setOffHeapMaxMemory(0);
-
-                    if (args.isOffheapValues())
-                        cc.setMemoryMode(OFFHEAP_VALUES);
-                    else
-                        cc.setEvictionPolicy(new LruEvictionPolicy(50000));
                 }
 
                 cc.setReadThrough(args.isStoreEnabled());
@@ -158,6 +146,18 @@ public class IgniteNode implements BenchmarkServer {
 
         c.setCommunicationSpi(commSpi);
 
+        if (args.getPageSize() != MemoryConfiguration.DFLT_PAGE_SIZE) {
+            MemoryConfiguration dbCfg = c.getMemoryConfiguration();
+
+            if (dbCfg == null) {
+                dbCfg = new MemoryConfiguration();
+
+                c.setMemoryConfiguration(dbCfg);
+            }
+
+            dbCfg.setPageSize(args.getPageSize());
+        }
+
         ignite = IgniteSpring.start(c, appCtx);
 
         BenchmarkUtils.println("Configured marshaller: " + ignite.cluster().localNode().attribute(ATTR_MARSHALLER));
@@ -168,7 +168,7 @@ public class IgniteNode implements BenchmarkServer {
      * @return Tuple with grid configuration and Spring application context.
      * @throws Exception If failed.
      */
-    private static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
+    public static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
         throws Exception {
         URL url;
 

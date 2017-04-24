@@ -45,7 +45,7 @@ public class CacheInvokeDirectResult implements Message {
     private CacheObject res;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private Exception err;
 
@@ -133,7 +133,7 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 93;
     }
 

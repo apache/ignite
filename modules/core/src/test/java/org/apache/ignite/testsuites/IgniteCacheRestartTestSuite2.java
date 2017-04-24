@@ -44,7 +44,8 @@ public class IgniteCacheRestartTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteCachePutAllRestartTest.class);
         suite.addTestSuite(GridCachePutAllFailoverSelfTest.class);
 
-        suite.addTestSuite(IgniteBinaryMetadataUpdateNodeRestartTest.class);
+        // TODO IGNITE-4768.
+        //suite.addTestSuite(IgniteBinaryMetadataUpdateNodeRestartTest.class);
 
         suite.addTestSuite(IgniteCacheGetRestartTest.class);
 

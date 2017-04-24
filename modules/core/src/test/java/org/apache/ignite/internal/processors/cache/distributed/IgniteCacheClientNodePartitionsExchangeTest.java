@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -69,21 +68,15 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /** */
     private boolean client;
 
-    /** */
-    private boolean fairAffinity;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
         cfg.setClientMode(client);
 
         CacheConfiguration ccfg = new CacheConfiguration();
-
-        if (fairAffinity)
-            ccfg.setAffinity(new FairAffinityFunction());
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -210,15 +203,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionsExchangeFairAffinity() throws Exception {
-        fairAffinity = true;
-
-        partitionsExchange();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     private void partitionsExchange() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -327,7 +311,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         if (lateAff) {
             // With FairAffinityFunction affinity calculation is different, this causes one more topology change.
-            boolean exchangeAfterRebalance = fairAffinity;
+            boolean exchangeAfterRebalance = false;
 
             waitForTopologyUpdate(4,
                 exchangeAfterRebalance ? new AffinityTopologyVersion(6, 1) : new AffinityTopologyVersion(6, 0));
@@ -519,7 +503,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         ccfg.setName(CACHE_NAME1);
 
         if (srvNode)
-            ccfg.setNodeFilter(new TestFilter(getTestGridName(2)));
+            ccfg.setNodeFilter(new TestFilter(getTestIgniteInstanceName(2)));
 
         ignite0.createCache(ccfg);
 
@@ -627,7 +611,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
-            return !exclNodeName.equals(clusterNode.attribute(IgniteNodeAttributes.ATTR_GRID_NAME));
+            return !exclNodeName.equals(clusterNode.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME));
         }
     }
 

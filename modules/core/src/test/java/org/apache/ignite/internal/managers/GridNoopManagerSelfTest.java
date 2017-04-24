@@ -57,7 +57,7 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
+        @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
             // No-op.
         }
 
@@ -79,7 +79,7 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
      */
     private static class Spi extends IgniteSpiAdapter implements TestSpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             // No-op.
         }
 
