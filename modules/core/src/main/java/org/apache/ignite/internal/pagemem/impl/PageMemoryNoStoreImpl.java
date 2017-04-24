@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.impl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -143,6 +144,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private OffheapReadWriteLock rwLock;
 
     /** */
+    private final int totalPages;
+
+    /** */
     private final boolean trackAcquiredPages;
 
     /**
@@ -175,6 +179,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
         assert sysPageSize % 8 == 0 : sysPageSize;
+
+        totalPages = (int)(memPlcCfg.getMaxSize() / sysPageSize);
 
         // TODO configure concurrency level.
         rwLock = new OffheapReadWriteLock(128);
@@ -337,6 +343,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /**
+     * @return Total number of pages may be allocated for this instance.
+     */
+    public int totalPages() {
+        return totalPages;
+    }
+
+    /**
      * @return Total number of acquired pages.
      */
     public long acquiredPages() {
@@ -460,16 +473,61 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeUnlock(int cacheId, long pageId, long page,
+    @Override public void writeUnlock(
+        int cacheId,
+        long pageId,
+        long page,
         Boolean walPlc,
-        boolean dirtyFlag) {
+        boolean dirtyFlag
+    ) {
         long actualId = PageIO.getPageId(page + PAGE_OVERHEAD);
+
         rwLock.writeUnlock(page + LOCK_OFFSET, PageIdUtils.tag(actualId));
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDirty(int cacheId, long pageId, long page) {
         // always false for page no store.
         return false;
+    }
+
+    /**
+     * @param pageIdx Page index.
+     * @return Total page sequence number.
+     */
+    public int pageSequenceNumber(int pageIdx) {
+        Segment seg = segment(pageIdx);
+
+        return seg.sequenceNumber(pageIdx);
+    }
+
+    /**
+     * @param seqNo Page sequence number.
+     * @return Page index.
+     */
+    public int pageIndex(int seqNo) {
+        Segment[] segs = segments;
+
+        int low = 0, high = segs.length - 1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+
+            Segment seg = segs[mid];
+
+            int cmp = seg.containsPageBySequence(seqNo);
+
+            if (cmp < 0)
+                high = mid - 1;
+            else if (cmp > 0) {
+                low = mid + 1;
+            }
+            else
+                return seg.pageIndex(seqNo);
+        }
+
+        throw new IgniteException("Allocated page must always be present in one of the segments [seqNo=" + seqNo +
+            ", segments=" + Arrays.toString(segs) + ']');
     }
 
     /**
@@ -562,7 +620,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             if (oldRef != null)
                 System.arraycopy(oldRef, 0, newRef, 0, oldRef.length);
 
-            Segment allocated = new Segment(newRef.length - 1, region);
+            Segment lastSeg = oldRef == null ? null : oldRef[oldRef.length - 1];
+
+            Segment allocated = new Segment(newRef.length - 1, region, lastSeg == null ? 0 : lastSeg.sumPages());
 
             allocated.init();
 
@@ -595,15 +655,23 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         private long pagesBase;
 
         /** */
+        private int pagesInPrevSegments;
+
+        /** */
+        private int maxPages;
+
+        /** */
         private final AtomicInteger acquiredPages;
 
         /**
          * @param idx Index.
          * @param region Memory region to use.
+         * @param pagesInPrevSegments Number of pages in previously allocated segments.
          */
-        private Segment(int idx, DirectMemoryRegion region) {
+        private Segment(int idx, DirectMemoryRegion region, int pagesInPrevSegments) {
             this.idx = idx;
             this.region = region;
+            this.pagesInPrevSegments = pagesInPrevSegments;
 
             acquiredPages = new AtomicInteger();
         }
@@ -622,6 +690,10 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             pagesBase = (base + 7) & ~0x7;
 
             GridUnsafe.putLong(lastAllocatedIdxPtr, 0);
+
+            long limit = region.address() + region.size();
+
+            maxPages = (int)((limit - pagesBase) / sysPageSize);
         }
 
         /**
@@ -658,6 +730,23 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         /**
+         * @param pageIdx Page index with encoded segment.
+         * @return Absolute page sequence number.
+         */
+        private int sequenceNumber(int pageIdx) {
+            pageIdx &= IDX_MASK;
+
+            return pagesInPrevSegments + pageIdx;
+        }
+
+        /**
+         * @return Page sequence number upper bound.
+         */
+        private int sumPages() {
+            return pagesInPrevSegments + maxPages;
+        }
+
+        /**
          * @return Total number of loaded pages for the segment.
          */
         private int allocatedPages() {
@@ -680,7 +769,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             long limit = region.address() + region.size();
 
             while (true) {
-                long lastIdx = GridUnsafe.getLong(lastAllocatedIdxPtr);
+                long lastIdx = GridUnsafe.getLongVolatile(null, lastAllocatedIdxPtr);
 
                 // Check if we have enough space to allocate a page.
                 if (pagesBase + (lastIdx + 1) * sysPageSize > limit)
@@ -706,6 +795,29 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                     return pageIdx;
                 }
             }
+        }
+
+        /**
+         * @param seqNo Page sequence number.
+         * @return {@code 0} if this segment contains the page with the given sequence number,
+         *      {@code -1} if one of the previous segments contains the page with the given sequence number,
+         *      {@code 1} if one of the next segments contains the page with the given sequence number.
+         */
+        public int containsPageBySequence(int seqNo) {
+            if (seqNo < pagesInPrevSegments)
+                return -1;
+            else if (seqNo < pagesInPrevSegments + maxPages)
+                return 0;
+            else
+                return 1;
+        }
+
+        /**
+         * @param seqNo Page sequence number.
+         * @return Page index
+         */
+        public int pageIndex(int seqNo) {
+            return PageIdUtils.pageIndex(fromSegmentIndex(idx, seqNo - pagesInPrevSegments));
         }
     }
 }

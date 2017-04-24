@@ -79,6 +79,8 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
 
         MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
 
+        // This will test additional segment allocation.
+        plc.setInitialSize(SIZE / 2);
         plc.setMaxSize(SIZE);
         plc.setEmptyPagesPoolSize(EMPTY_PAGES_POOL_SIZE);
         plc.setEvictionThreshold(EVICTION_THRESHOLD);

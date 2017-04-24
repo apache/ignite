@@ -347,7 +347,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 "[name=" + plcCfg.getName() + ", size=" + U.readableSize(plcCfg.getInitialSize(), true) + "]"
             );
 
-        if (plcCfg.getMaxSize() > plcCfg.getInitialSize())
+        if (plcCfg.getMaxSize() < plcCfg.getInitialSize())
             throw new IgniteCheckedException("MemoryPolicy maxSize must not be smaller than " +
                 "initialSize: " + plcCfg.getName());
     }
@@ -636,14 +636,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics);
 
-        return new MemoryPolicy(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
+        return new MemoryPolicy(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg,
+            (PageMemoryNoStoreImpl)pageMem));
     }
 
     /**
      * @param plc Memory Policy Configuration.
      * @param pageMem Page memory.
      */
-    private PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
+    private PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemoryNoStoreImpl pageMem) {
         if (Boolean.getBoolean("override.fair.fifo.page.eviction.tracker"))
             return new FairFifoPageEvictionTracker(pageMem, plc, cctx);
 
