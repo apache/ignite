@@ -65,8 +65,11 @@ public class MemoryConfiguration implements Serializable {
     /** Default memory policy start size (256 MB). */
     public static final long DFLT_MEMORY_POLICY_INITIAL_SIZE = 256 * 1024 * 1024;
 
-    /** Default memory policy's size (1 GB). */
-    public static final long DFLT_MEMORY_POLICY_MAX_SIZE = 1024 * 1024 * 1024;
+    /** Fraction of available memory to allocate for default MemoryPolicy. */
+    private static final double DFLT_MEMORY_POLICY_FRACTION = 0.8;
+
+    /** Default memory policy's size is 80% of physical memory available on current machine. */
+    public static final long DFLT_MEMORY_POLICY_MAX_SIZE = (long)DFLT_MEMORY_POLICY_FRACTION * U.getTotalMemoryAvailable();
 
     /** Default size of a memory chunk for the system cache (100 MB). */
     public static final long DFLT_SYS_CACHE_MEM_SIZE = 100 * 1024 * 1024;
@@ -85,6 +88,9 @@ public class MemoryConfiguration implements Serializable {
 
     /** A name of the memory policy that defines the default memory region. */
     private String dfltMemPlcName;
+
+    /** Size of memory (in bytes) to use for default MemoryPolicy. */
+    private Long dfltMemPlcSize;
 
     /** Memory policies. */
     private MemoryPolicyConfiguration[] memPlcs;
@@ -167,8 +173,10 @@ public class MemoryConfiguration implements Serializable {
     public MemoryPolicyConfiguration createDefaultPolicyConfig() {
         MemoryPolicyConfiguration memPlc = new MemoryPolicyConfiguration();
 
+        long maxSize = (dfltMemPlcSize != null) ? dfltMemPlcSize : DFLT_MEMORY_POLICY_MAX_SIZE;
+
         memPlc.setName(null);
-        memPlc.setMaxSize(DFLT_MEMORY_POLICY_MAX_SIZE);
+        memPlc.setMaxSize(maxSize);
 
         return memPlc;
     }
@@ -190,6 +198,32 @@ public class MemoryConfiguration implements Serializable {
      */
     public MemoryConfiguration setConcurrencyLevel(int concLvl) {
         this.concLvl = concLvl;
+
+        return this;
+    }
+
+    /**
+     * Gets a size for default memory policy overridden by user.
+     *
+     * @return default memory policy size overridden by user or -1 if nothing was specified.
+     */
+    public long getDefaultMemoryPolicySize() {
+        return (dfltMemPlcSize != null) ? dfltMemPlcSize : -1;
+    }
+
+    /**
+     * Overrides size of default memory policy which is created automatically.
+     *
+     * If user doesn't specify any memory policy configuration, a default one with default size
+     * (80% of available RAM) is created by Ignite.
+     *
+     * This property allows user to specify desired size of default memory policy
+     * without having to use more verbose syntax of MemoryPolicyConfiguration elements.
+     *
+     * @param dfltMemPlcSize Size of default memory policy overridden by user.
+     */
+    public MemoryConfiguration setDefaultMemoryPolicySize(long dfltMemPlcSize) {
+        this.dfltMemPlcSize = dfltMemPlcSize;
 
         return this;
     }
