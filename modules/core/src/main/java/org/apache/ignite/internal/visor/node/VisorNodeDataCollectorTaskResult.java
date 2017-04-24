@@ -109,14 +109,14 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     /**
      * @return {@code True} if grid is active.
      */
-    public boolean active() {
+    public boolean isActive() {
         return active;
     }
 
     /**
      * @param active active New value of grid active flag.
      */
-    public void active(boolean active) {
+    public void setActive(boolean active) {
         this.active = active;
     }
 

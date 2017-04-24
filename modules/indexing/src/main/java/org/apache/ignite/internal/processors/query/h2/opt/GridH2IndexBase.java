@@ -1360,6 +1360,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * Start streaming.
          */
         private void start() {
+            assert ctx != null;
+            assert log != null: getName();
+
             remainingRanges = req.bounds().size();
 
             assert remainingRanges > 0;

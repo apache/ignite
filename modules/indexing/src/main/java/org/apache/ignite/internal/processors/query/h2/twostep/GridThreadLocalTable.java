@@ -122,8 +122,9 @@ public class GridThreadLocalTable extends Table {
     }
 
     /** {@inheritDoc} */
-    @Override public Index getIndexForColumn(Column column) {
-        return innerTable().getIndexForColumn(column);
+    @Override public Index getIndexForColumn(Column column,
+        boolean needGetFirstOrLast, boolean needFindNext) {
+        return innerTable().getIndexForColumn(column, needGetFirstOrLast, needFindNext);
     }
 
     /** {@inheritDoc} */

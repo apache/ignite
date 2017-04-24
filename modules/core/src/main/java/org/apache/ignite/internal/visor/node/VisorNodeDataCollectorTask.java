@@ -71,9 +71,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
             }
         }
 
-        taskRes.active(true /*ignite.active()*/);
-
-        taskRes.active(ignite.active());
+        taskRes.setActive(ignite.active());
 
         return taskRes;
     }
