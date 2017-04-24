@@ -366,12 +366,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (tcpSrvr == null)
             tcpSrvr = new TcpServer();
 
-        clientNioSrv = createClientNioServer(gridName);
+        clientNioSrv = createClientNioServer(igniteInstanceName);
         clientNioSrv.start();
 
         nioClientProcessingPool = new IgniteThreadPoolExecutor(
             "disco-client-nio-msg-processor",
-            gridName,
+            igniteInstanceName,
             spi.getClientNioThreads(),
             spi.getClientNioThreads() * 2,
             60_000L,
@@ -477,7 +477,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 .socketReceiveBufferSize(0)
                 .socketSendBufferSize(0)
                 .idleTimeout(Long.MAX_VALUE)
-                .gridName(gridName)
+                .igniteInstanceName(gridName)
                 .daemon(false)
                 .writeTimeout(writeTimeout)
                 .build();
@@ -4838,7 +4838,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     failedNodesMsgSent.remove(failedNode.id());
 
                     if (!msg.force()) { // ClientMessageWorker will stop after sending force fail message.
-                        final ClientMessageProcessor worker = clientMsgWorkers.remove(node.id());
+                        final ClientMessageProcessor worker = clientMsgWorkers.remove(failedNode.id());
 
                         if (worker != null) {
                             if (worker instanceof ClientMessageWorker) {
@@ -6454,12 +6454,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (req.client()) {
                         res.clientAck(true);
 
-                        // If client proposes async mode accept it.
-                        if (req.asyncMode()) {
-                            res.asyncMode(true);
-
-                            asyncMode = true;
-                        }
+                        asyncMode = true;
                     }
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,

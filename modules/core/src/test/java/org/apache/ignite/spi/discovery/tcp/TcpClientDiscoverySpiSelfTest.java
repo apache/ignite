@@ -2216,7 +2216,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected GridNioFuture<?> sendMessage(final GridNioSession ses, final TcpDiscoveryAbstractMessage msg,
             @Nullable final byte[] msgBytes) {
-            final GridNioFutureImpl fut = new GridNioFutureImpl();
+            final GridNioFutureImpl fut = new GridNioFutureImpl(null);
 
             final Runnable task = new Runnable() {
                 @Override public void run() {

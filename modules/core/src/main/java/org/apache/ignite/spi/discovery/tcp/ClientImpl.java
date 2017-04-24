@@ -618,15 +618,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
 
                 req.client(true);
-                req.asyncMode(true);
 
                 spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
 
                 UUID rmtNodeId = res.creatorNodeId();
-
-                final boolean async = res.asyncMode();
 
                 assert rmtNodeId != null;
                 assert !getLocalNodeId().equals(rmtNodeId);
@@ -654,10 +651,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 msg.client(true);
 
-                if (async)
-                    writeToSocketWithLength(msg, sock, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
-                else
-                    spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                writeToSocketWithLength(msg, sock, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
 
@@ -669,7 +663,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     spi.readReceipt(sock,
                     timeoutHelper.nextTimeoutChunk(ackTimeout0)),
                     res.clientAck(),
-                    res.asyncMode());
+                    true);
             }
             catch (IOException | IgniteCheckedException e) {
                 U.closeQuiet(sock);
@@ -1447,8 +1441,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                                             ", msg=" + msg + ']');
 
                                     if (res.success()) {
-                                        res.asyncMode(joinRes.asyncMode);
-
                                         msgWorker.addMessage(res);
 
                                         if (msgs != null) {
@@ -2255,7 +2247,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     currSock = reconnector.sockStream;
 
-                    sockWriter.setSocket(currSock.socket(), reconnector.clientAck, msg.asyncMode());
+                    sockWriter.setSocket(currSock.socket(), reconnector.clientAck, true);
                     sockReader.setSocket(currSock, locNode.clientRouterNodeId());
 
                     reconnector = null;
