@@ -1569,7 +1569,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Connection c = connectionForSpace(space);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
-        final boolean distributedJoins = qry.isDistributedJoins() && cctx.isPartitioned();
+        final boolean distributedJoins = qry.isDistributedJoins();
         final boolean grpByCollocated = qry.isCollocated();
 
         final DistributedJoinMode distributedJoinMode = distributedJoinMode(qry.isLocal(), distributedJoins);

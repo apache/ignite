@@ -632,7 +632,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      */
     private static class Enemy {
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         int campId;
 
         /** */

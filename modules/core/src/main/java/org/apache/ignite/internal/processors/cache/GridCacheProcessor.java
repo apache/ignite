@@ -738,10 +738,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else
                 cacheType = CacheType.USER;
 
-        if (cacheType != CacheType.USER)
-            cfg.setMemoryPolicyName(sharedCtx.database().systemMemoryPolicyName());
-
-        if (cacheType != CacheType.USER)
+        if (cacheType != CacheType.USER && cfg.getMemoryPolicyName() == null)
             cfg.setMemoryPolicyName(sharedCtx.database().systemMemoryPolicyName());
 
         boolean template = cfg.getName() != null && cfg.getName().endsWith("*");
