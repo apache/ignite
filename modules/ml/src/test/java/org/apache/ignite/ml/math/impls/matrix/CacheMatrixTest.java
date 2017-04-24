@@ -291,7 +291,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         final CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
         ExternalizeTest<CacheMatrix<Integer, Double>> externalizeTest = new ExternalizeTest<CacheMatrix<Integer, Double>>() {
-
+            /** {@inheritDoc} */
             @Override public void externalizeTest() {
                 super.externalizeTest(cacheMatrix);
             }
@@ -351,14 +351,18 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         return new MatrixKeyMapperForTests(rows, cols);
     }
 
-    /** Init the given matrix by random values. */
+    /**
+     * Init the given matrix by random values.
+     */
     private void fillMatrix(Matrix m) {
         for (int i = 0; i < m.rowSize(); i++)
             for (int j = 0; j < m.columnSize(); j++)
                 m.set(i, j, Math.random());
     }
 
-    /** Init the given matrix by zeros. */
+    /**
+     * Init the given matrix by zeros.
+     */
     private void initMatrix(Matrix m) {
         for (int i = 0; i < m.rowSize(); i++)
             for (int j = 0; j < m.columnSize(); j++)
