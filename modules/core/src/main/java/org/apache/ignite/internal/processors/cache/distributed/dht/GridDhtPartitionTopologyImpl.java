@@ -62,6 +62,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
@@ -93,10 +95,11 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** Node to partition map. */
     private GridDhtPartitionFullMap node2part;
 
-    /** Partition to node map. */
-    private Map<Integer, Set<UUID>> part2node = new HashMap<>();
-
+    /** */
     private final Map<Integer, Set<UUID>> diffFromAffinity = new HashMap<>();
+
+    /** */
+    private volatile AffinityTopologyVersion diffFromAffinityVer = AffinityTopologyVersion.NONE;
 
     /** */
     private GridDhtPartitionExchangeId lastExchangeId;
@@ -167,6 +170,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             updateSeq.set(1);
 
             topReadyFut = null;
+
+            diffFromAffinityVer = AffinityTopologyVersion.NONE;
 
             rebalancedTopVer = AffinityTopologyVersion.NONE;
 
@@ -1178,35 +1183,43 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             node2part = partMap;
 
-            diffFromAffinity.clear();
-
             int diffFromAffinitySize = 0;
 
             AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
 
-            AffinityAssignment affAssignment = cctx.affinity().assignment(affVer);
+            if (diffFromAffinityVer.compareTo(affVer) <= 0) {
+                AffinityAssignment affAssignment = cctx.affinity().assignment(affVer);
 
-            for (Map.Entry<UUID, GridDhtPartitionMap> e : partMap.entrySet()) {
-                for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
-                    if (e0.getValue() != MOVING && e0.getValue() != OWNING && e0.getValue() != RENTING)
-                        continue;
+                for (Map.Entry<UUID, GridDhtPartitionMap> e : partMap.entrySet()) {
+                    for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
+                        int p = e0.getKey();
 
-                    int p = e0.getKey();
-
-                    if (!affAssignment.getIds(p).contains(partMap.nodeId())) {
                         Set<UUID> diffIds = diffFromAffinity.get(p);
 
-                        if (diffIds == null)
-                            diffFromAffinity.put(p, diffIds = U.newHashSet(3));
+                        if (e0.getValue() != MOVING && e0.getValue() != OWNING && e0.getValue() != RENTING &&
+                            !affAssignment.getIds(p).contains(partMap.nodeId())) {
+                            if (diffIds == null)
+                                diffFromAffinity.put(p, diffIds = U.newHashSet(3));
 
-                        if (diffIds.add(partMap.nodeId()))
-                            diffFromAffinitySize++;
+                            if (diffIds.add(partMap.nodeId()))
+                                diffFromAffinitySize++;
+                        }
+                        else {
+                            if (diffIds != null && diffIds.remove(partMap.nodeId())) {
+                                diffFromAffinitySize--;
+
+                                if (diffIds.isEmpty())
+                                    diffFromAffinity.remove(p);
+                            }
+                        }
                     }
                 }
-            }
 
-            if (diffFromAffinitySize > 0)
-                U.error(log, "??? S diffFromAffinitySize=" + diffFromAffinitySize + " [exchId=" + exchId + ",cacheId=" + cctx.cacheId() + ",cacheName=" + cctx.name() + "]");
+                diffFromAffinityVer = affVer;
+
+                if (diffFromAffinitySize > 0)
+                    U.error(log, "??? S diffFromAffinitySize=" + diffFromAffinitySize + " [exchId=" + exchId + ",cacheId=" + cctx.cacheId() + ",cacheName=" + cctx.name() + "]");
+            }
 
             boolean changed = false;
 
@@ -1342,62 +1355,64 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             node2part.put(parts.nodeId(), parts);
 
-            diffFromAffinity.clear();
-
             AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
 
-            AffinityAssignment affAssignment = cctx.affinity().assignment(affVer);
+            if (diffFromAffinityVer.compareTo(affVer) <= 0) {
+                AffinityAssignment affAssignment = cctx.affinity().assignment(affVer);
 
-            int diffFromAffinitySize = 0;
+                int diffFromAffinitySize = 0;
 
-            // Add new mappings.
-            for (Map.Entry<Integer, GridDhtPartitionState> e : parts.entrySet()) {
-                int p = e.getKey();
+                // Add new mappings.
+                for (Map.Entry<Integer, GridDhtPartitionState> e : parts.entrySet()) {
+                    int p = e.getKey();
 
-                Set<UUID> diffIds = diffFromAffinity.get(p);
+                    Set<UUID> diffIds = diffFromAffinity.get(p);
 
-                if ((e.getValue() == MOVING || e.getValue() == OWNING || e.getValue() == RENTING)
-                    && !affAssignment.getIds(p).contains(parts.nodeId())) {
-                    if (diffIds == null)
-                        diffFromAffinity.put(p, diffIds = U.newHashSet(3));
+                    if ((e.getValue() == MOVING || e.getValue() == OWNING || e.getValue() == RENTING)
+                        && !affAssignment.getIds(p).contains(parts.nodeId())) {
+                        if (diffIds == null)
+                            diffFromAffinity.put(p, diffIds = U.newHashSet(3));
 
-                    if (diffIds.add(parts.nodeId())) {
-                        changed = true;
+                        if (diffIds.add(parts.nodeId())) {
+                            changed = true;
 
-                        diffFromAffinitySize++;
+                            diffFromAffinitySize++;
+                        }
+                    }
+                    else {
+                        if (diffIds != null && diffIds.remove(parts.nodeId())) {
+                            changed = true;
+
+                            diffFromAffinitySize--;
+
+                            if (diffIds.isEmpty())
+                                diffFromAffinity.remove(p);
+                        }
+
                     }
                 }
-                else {
-                    if (diffIds != null && diffIds.remove(parts.nodeId())) {
-                        changed = true;
 
-                        diffFromAffinitySize--;
+                // Remove obsolete mappings.
+                if (cur != null) {
+                    for (Integer p : F.view(cur.keySet(), F0.notIn(parts.keySet()))) {
+                        Set<UUID> ids = diffFromAffinity.get(p);
 
-                        if (diffIds.isEmpty())
-                            diffFromAffinity.remove(p);
+                        if (ids != null && ids.remove(parts.nodeId())) {
+                            changed = true;
+
+                            diffFromAffinitySize--;
+
+                            if (ids.isEmpty())
+                                diffFromAffinity.remove(p);
+                        }
                     }
-
                 }
+
+                diffFromAffinityVer = affVer;
+
+                if (diffFromAffinitySize > 0)
+                    U.error(log, "??? diffFromAffinitySize=" + diffFromAffinitySize + " [exchId=" + exchId + ",cacheId=" + cctx.cacheId() + ",cacheName=" + cctx.name() + "]");
             }
-
-            // Remove obsolete mappings.
-            if (cur != null) {
-                for (Integer p : F.view(cur.keySet(), F0.notIn(parts.keySet()))) {
-                    Set<UUID> ids = diffFromAffinity.get(p);
-
-                    if (ids != null && ids.remove(parts.nodeId())) {
-                        changed = true;
-
-                        diffFromAffinitySize--;
-
-                        if (ids.isEmpty())
-                            diffFromAffinity.remove(p);
-                    }
-                }
-            }
-
-            if (diffFromAffinitySize > 0)
-                U.error(log, "??? diffFromAffinitySize=" + diffFromAffinitySize + " [exchId=" + exchId + ",cacheId=" + cctx.cacheId() + ",cacheName=" + cctx.name() + "]");
 
             if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
@@ -1416,6 +1431,45 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 cctx.shared().exchange().scheduleResendPartitions();
 
             return changed ? localPartitionMap() : null;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAffinityInitialized(Map<Integer, List<UUID>> assignment) {
+        lock.writeLock().lock();
+
+        try {
+            AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
+
+            if (diffFromAffinityVer.compareTo(affVer) >= 0)
+                return;
+
+            for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+                UUID nodeId = e.getKey();
+
+                for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
+                    int p = e0.getKey();
+                    GridDhtPartitionState state = e0.getValue();
+
+                    Set<UUID> ids = diffFromAffinity.get(p);
+
+                    if ((state == MOVING || state == OWNING || state == RENTING) && !assignment.get(p).contains(nodeId)) {
+                        if (ids == null)
+                            diffFromAffinity.put(p, ids = U.newHashSet(3));
+
+                        ids.add(nodeId);
+                    }
+                    else {
+                        if (ids != null)
+                            ids.remove(nodeId);
+                    }
+                }
+            }
+
+            diffFromAffinityVer = affVer;
         }
         finally {
             lock.writeLock().unlock();
@@ -1991,9 +2045,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 if (affNodes.isEmpty())
                     continue;
 
-                List<ClusterNode> owners = owners(i);
-
-                if (affNodes.size() != owners.size() || !owners.containsAll(affNodes))
+                if (!F.isEmpty(diffFromAffinity.get(i)))
                     return;
             }
 

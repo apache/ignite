@@ -312,4 +312,6 @@ public interface GridDhtPartitionTopology {
      * @param owners Set of new owners.
      */
     public void setOwners(int p, Set<UUID> owners, boolean updateSeq);
+
+    public void onAffinityInitialized(Map<Integer, List<UUID>> assignment);
 }
