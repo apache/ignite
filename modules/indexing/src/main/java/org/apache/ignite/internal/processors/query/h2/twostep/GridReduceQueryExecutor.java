@@ -121,6 +121,9 @@ public class GridReduceQueryExecutor {
     private static final String MERGE_INDEX_SORTED = "merge_sorted";
 
     /** */
+    private static final Set<ClusterNode> UNMAPPED_PARTS = Collections.emptySet();
+
+    /** */
     private GridKernalContext ctx;
 
     /** */
@@ -562,6 +565,9 @@ public class GridReduceQueryExecutor {
 
         final boolean isReplicatedOnly = qry.isReplicatedOnly();
 
+        // Fail if all caches are replicated and explicit partitions are set.
+
+
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -593,6 +599,22 @@ public class GridReduceQueryExecutor {
 
             // Explicit partitions mapping for query.
             Map<ClusterNode, IntArray> qryMap = null;
+
+            // Partitions are not supported for queries over all replicated caches.
+            if (cctx.isReplicated() && parts != null) {
+                boolean failIfReplicatedOnly = true;
+
+                for (Integer cacheId : extraSpaces) {
+                    if (!cacheContext(cacheId).isReplicated()) {
+                        failIfReplicatedOnly = false;
+
+                        break;
+                    }
+                }
+
+                if (failIfReplicatedOnly)
+                    throw new CacheException("Partitions are not supported for replicated caches");
+            }
 
             if (qry.isLocal())
                 nodes = singletonList(ctx.discovery().localNode());
@@ -1137,7 +1159,7 @@ public class GridReduceQueryExecutor {
             if (F.isEmpty(owners)) {
                 // Handle special case: no mapping is configured for a partition.
                 if (F.isEmpty(cctx.affinity().assignment(NONE).get(p))) {
-                    partLocs[p] = Collections.emptySet(); // Mark unmapped partition.
+                    partLocs[p] = UNMAPPED_PARTS; // Mark unmapped partition.
 
                     continue;
                 }
@@ -1166,7 +1188,7 @@ public class GridReduceQueryExecutor {
                 for (int p = 0, parts =  extraCctx.affinity().partitions(); p < parts; p++) {
                     List<ClusterNode> owners = extraCctx.topology().owners(p);
 
-                    if (partLocs[p] == Collections.<ClusterNode>emptySet())
+                    if (partLocs[p] == UNMAPPED_PARTS)
                         continue; // Skip unmapped partitions.
 
                     if (F.isEmpty(owners)) {
@@ -1200,7 +1222,7 @@ public class GridReduceQueryExecutor {
                     return null; // Retry.
 
                 for (Set<ClusterNode> partLoc : partLocs) {
-                    if (partLoc == Collections.<ClusterNode>emptySet())
+                    if (partLoc == UNMAPPED_PARTS)
                         continue; // Skip unmapped partition.
 
                     partLoc.retainAll(dataNodes);
@@ -1219,7 +1241,7 @@ public class GridReduceQueryExecutor {
             Set<ClusterNode> pl = partLocs[p];
 
             // Skip unmapped partitions.
-            if (pl == Collections.<ClusterNode>emptySet())
+            if (pl == UNMAPPED_PARTS)
                 continue;
 
             assert !F.isEmpty(pl) : pl;

@@ -780,8 +780,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                 final SqlQuery p = (SqlQuery)qry;
 
-                if (ctx.isReplicated() && p.getPartitions() != null)
-                    throw new CacheException("Partitions are not supported for replicated caches.");
+                if (p.isReplicatedOnly() && p.getPartitions() != null)
+                    throw new CacheException("Partitions are not supported in replicated only mode.");
 
                 if (p.isDistributedJoins() && p.getPartitions() != null)
                     throw new CacheException(
@@ -801,8 +801,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                 SqlFieldsQuery p = (SqlFieldsQuery)qry;
 
-                if (ctx.isReplicated() && p.getPartitions() != null)
-                    throw new CacheException("Partitions are not supported for replicated caches.");
+                if (p.isReplicatedOnly() && p.getPartitions() != null)
+                    throw new CacheException("Partitions are not supported in replicated only mode.");
 
                 if (p.isDistributedJoins() && p.getPartitions() != null)
                     throw new CacheException(
