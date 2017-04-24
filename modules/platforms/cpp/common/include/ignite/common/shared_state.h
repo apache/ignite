@@ -220,9 +220,8 @@ namespace ignite
              * Set value.
              *
              * @throw IgniteError with IgniteError::IGNITE_ERR_FUTURE_STATE if error or value has been set already.
-             * @param val Value to set.
              */
-            void SetValue(std::auto_ptr<ValueType> val)
+            void SetValue()
             {
                 concurrent::CsLockGuard guard(mutex);
 

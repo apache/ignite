@@ -49,7 +49,9 @@ namespace ignite
             /**
              * Critical section.
              */
-            class IGNITE_IMPORT_EXPORT CriticalSection {
+            class IGNITE_IMPORT_EXPORT CriticalSection
+            {
+                friend class ConditionVariable;
             public:
                 /**
                  * Constructor.
@@ -391,6 +393,93 @@ namespace ignite
             private:
                 /** Index. */
                 int32_t idx;
+            };
+
+            /**
+             * Cross-platform wrapper for Condition Variable synchronization
+             * primitive concept.
+             */
+            class ConditionVariable
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ConditionVariable()
+                {
+                    pthread_condattr_t attr;
+                    int err = pthread_condattr_init(&attr);
+                    assert(!err);
+
+                    err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+                    assert(!err);
+
+                    err = pthread_cond_init(&cond, &attr);
+                    assert(!err);
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~ConditionVariable()
+                {
+                    pthread_cond_destroy(&cond);
+                }
+
+                /**
+                 * Wait for Condition Variable to be notified.
+                 *
+                 * @param cs Critical section in which to wait.
+                 */
+                void Wait(CriticalSection& cs)
+                {
+                    pthread_cond_wait(&cond, &cs.mux);
+                }
+
+                /**
+                 * Wait for Condition Variable to be notified for specified time.
+                 *
+                 * @param cs Critical section in which to wait.
+                 * @param msTimeout Timeout in milliseconds.
+                 * @return True if the object has been notified and false in case of timeout.
+                 */
+                bool WaitFor(CriticalSection& cs, int32_t msTimeout)
+                {
+                    timespec ts;
+                    int err = clock_gettime(CLOCK_MONOTONIC, &ts);
+                    assert(!err);
+
+                    ts.tv_sec += msTimeout / 1000 + (ts.tv_nsec + (msTimeout % 1000) * 1000000) / 1000000000;
+                    ts.tv_nsec = (ts.tv_nsec + (msTimeout % 1000) * 1000000) % 1000000000;
+
+                    int res = pthread_cond_timedwait(&cond, &cs.mux, &ts);
+
+                    return res == 0;
+                }
+
+                /**
+                 * Notify single thread waiting for the condition variable.
+                 */
+                void NotifyOne()
+                {
+                    int err = pthread_cond_signal(&cond);
+                    assert(!err);
+                }
+
+                /**
+                 * Notify all threads that are waiting on the variable.
+                 */
+                void NotifyAll()
+                {
+                    int err = pthread_cond_broadcast(&cond);
+                    assert(!err);
+                }
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(ConditionVariable);
+
+                /** OS-specific type. */
+                pthread_cond_t cond;
             };
 
             /**
