@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.callback;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunctionTarget;
+import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 
 /**
@@ -71,14 +71,13 @@ public class PlatformCallbackGateway {
     /**
      * @param objPtr Object pointer.
      * @param memPtr Memory pointer.
-     * @param cb Callback.
      * @return Result.
      */
-    public int cacheStoreInvoke(long objPtr, long memPtr, Object cb) {
+    public int cacheStoreInvoke(long objPtr, long memPtr) {
         enter();
 
         try {
-            return PlatformCallbackUtils.cacheStoreInvoke(envPtr, objPtr, memPtr, cb);
+            return PlatformCallbackUtils.cacheStoreInvoke(envPtr, objPtr, memPtr);
         }
         finally {
             leave();
@@ -430,7 +429,7 @@ public class PlatformCallbackGateway {
      * @param memPtr Stream pointer.
      * @param keepBinary Binary flag.
      */
-    public void dataStreamerStreamReceiverInvoke(long ptr, Object cache, long memPtr, boolean keepBinary) {
+    public void dataStreamerStreamReceiverInvoke(long ptr, PlatformTargetProxy cache, long memPtr, boolean keepBinary) {
         enter();
 
         try {
@@ -996,7 +995,7 @@ public class PlatformCallbackGateway {
      * @param baseFunc Optional func for base calls.
      * @return Affinity function pointer.
      */
-    public long affinityFunctionInit(long memPtr, PlatformAffinityFunctionTarget baseFunc) {
+    public long affinityFunctionInit(long memPtr, PlatformTargetProxy baseFunc) {
         enter();
 
         try {

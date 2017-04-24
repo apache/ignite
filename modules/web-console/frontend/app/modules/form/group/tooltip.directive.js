@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const template = '<i class="group-legend-btn fa fa-question-circle"></i>';
+const template = '<i class="group-legend-btn icon-help"></i>';
 
 export default ['igniteFormGroupTooltip', ['$tooltip', ($tooltip) => {
     const link = ($scope, $element, $attrs, $ctrls, $transclude) => {

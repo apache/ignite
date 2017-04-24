@@ -184,6 +184,11 @@ if %ERRORLEVEL% equ 0 (
 :: set JVM_OPTS=%JVM_OPTS% -Djava.net.preferIPv4Stack=true
 
 ::
+:: Uncomment to enable reverse DNS lookup.
+::
+:: set JVM_OPTS=%JVM_OPTS% -Dsun.net.spi.nameservice.provider.1=default -Dsun.net.spi.nameservice.provider.2=dns,sun
+
+::
 :: Assertions are disabled by default since version 3.5.
 :: If you want to enable them - set 'ENABLE_ASSERTIONS' flag to '1'.
 ::

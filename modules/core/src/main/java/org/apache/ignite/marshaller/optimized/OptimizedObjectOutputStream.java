@@ -26,7 +26,6 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,13 +64,6 @@ import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.ge
  * Optimized object output stream.
  */
 class OptimizedObjectOutputStream extends ObjectOutputStream {
-    /** */
-    private static final Collection<String> CONVERTED_ERR = F.asList(
-        "weblogic/management/ManagementException",
-        "Externalizable class doesn't have default constructor: class " +
-            "org.apache.ignite.internal.processors.email.IgniteEmailProcessor$2"
-    );
-
     /** */
     private final GridHandleTable handles = new GridHandleTable(10, 3.00f);
 
@@ -157,22 +149,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
     /** {@inheritDoc} */
     @Override protected void writeObjectOverride(Object obj) throws IOException {
-        try {
-            writeObject0(obj);
-        }
-        catch (IOException e) {
-            Throwable t = e;
-
-            do {
-                if (CONVERTED_ERR.contains(t.getMessage()))
-                    throw new IOException("You are trying to serialize internal classes that are not supposed " +
-                        "to be serialized. Check that all non-serializable fields are transient. Consider using " +
-                        "static inner classes instead of non-static inner classes and anonymous classes.", e);
-            }
-            while ((t = t.getCause()) != null);
-
-            throw e;
-        }
+        writeObject0(obj);
     }
 
     /**

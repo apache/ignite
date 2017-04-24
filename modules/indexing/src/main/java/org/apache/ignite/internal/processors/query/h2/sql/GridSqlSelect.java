@@ -74,7 +74,8 @@ public class GridSqlSelect extends GridSqlQuery {
             buff.append(expression.getSQL());
         }
 
-        buff.append("\nFROM ").append(from.getSQL());
+        if (from != null)
+            buff.append("\nFROM ").append(from.getSQL());
 
         if (where != null)
             buff.append("\nWHERE ").append(StringUtils.unEnclose(where.getSQL()));

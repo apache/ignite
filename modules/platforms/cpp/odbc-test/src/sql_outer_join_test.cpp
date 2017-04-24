@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(TestOuterJoinOpsLess)
     BOOST_CHECK_NE(columnsLen[0], SQL_NULL_DATA);
     BOOST_CHECK_EQUAL(columns[0], 30);
 
-    BOOST_CHECK_EQUAL(columnsLen[1], SQL_NULL_DATA);
+    BOOST_CHECK_NE(columnsLen[1], SQL_NULL_DATA);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);

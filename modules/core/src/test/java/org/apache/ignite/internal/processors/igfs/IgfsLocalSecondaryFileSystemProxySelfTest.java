@@ -105,11 +105,6 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public void testUpdatePathDoesNotExist() throws Exception {
-        fail("IGNITE-3645");
-    }
-
     /**
      *
      * @throws Exception If failed.

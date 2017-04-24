@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import StringBuilder from './StringBuilder';
+
 // Java built-in class names.
 import POM_DEPENDENCIES from 'app/data/pom-dependencies.json';
 
@@ -29,8 +31,8 @@ class GeneratorPom {
         return s.replace(/[^A-Za-z0-9_\-.]+/g, '_');
     }
 
-    addProperty(res, tag, val) {
-        res.line('<' + tag + '>' + val + '</' + tag + '>');
+    addProperty(sb, tag, val) {
+        sb.append('<' + tag + '>' + val + '</' + tag + '>');
     }
 
     addDependency(deps, groupId, artifactId, version, jar) {
@@ -38,92 +40,89 @@ class GeneratorPom {
             deps.push({groupId, artifactId, version, jar});
     }
 
-    addResource(res, dir, exclude) {
-        res.startBlock('<resource>');
+    addResource(sb, dir, exclude) {
+        sb.startBlock('<resource>');
         if (dir)
-            this.addProperty(res, 'directory', dir);
+            this.addProperty(sb, 'directory', dir);
 
         if (exclude) {
-            res.startBlock('<excludes>');
-            this.addProperty(res, 'exclude', exclude);
-            res.endBlock('</excludes>');
+            sb.startBlock('<excludes>');
+            this.addProperty(sb, 'exclude', exclude);
+            sb.endBlock('</excludes>');
         }
 
-        res.endBlock('</resource>');
+        sb.endBlock('</resource>');
     }
 
-    artifact(res, cluster, version) {
-        this.addProperty(res, 'groupId', 'org.apache.ignite');
-        this.addProperty(res, 'artifactId', this.escapeId(cluster.name) + '-project');
-        this.addProperty(res, 'version', version);
+    artifact(sb, cluster, version) {
+        this.addProperty(sb, 'groupId', 'org.apache.ignite');
+        this.addProperty(sb, 'artifactId', this.escapeId(cluster.name) + '-project');
+        this.addProperty(sb, 'version', version);
 
-        res.needEmptyLine = true;
+        sb.emptyLine();
     }
 
-    dependencies(res, cluster, deps) {
-        if (!res)
-            res = $generatorCommon.builder();
-
-        res.startBlock('<dependencies>');
+    dependencies(sb, cluster, deps) {
+        sb.startBlock('<dependencies>');
 
         _.forEach(deps, (dep) => {
-            res.startBlock('<dependency>');
+            sb.startBlock('<dependency>');
 
-            this.addProperty(res, 'groupId', dep.groupId);
-            this.addProperty(res, 'artifactId', dep.artifactId);
-            this.addProperty(res, 'version', dep.version);
+            this.addProperty(sb, 'groupId', dep.groupId);
+            this.addProperty(sb, 'artifactId', dep.artifactId);
+            this.addProperty(sb, 'version', dep.version);
 
             if (dep.jar) {
-                this.addProperty(res, 'scope', 'system');
-                this.addProperty(res, 'systemPath', '${project.basedir}/jdbc-drivers/' + dep.jar);
+                this.addProperty(sb, 'scope', 'system');
+                this.addProperty(sb, 'systemPath', '${project.basedir}/jdbc-drivers/' + dep.jar);
             }
 
-            res.endBlock('</dependency>');
+            sb.endBlock('</dependency>');
         });
 
-        res.endBlock('</dependencies>');
+        sb.endBlock('</dependencies>');
 
-        return res;
+        return sb;
     }
 
-    build(res, cluster, excludeGroupIds) {
-        res.startBlock('<build>');
-        res.startBlock('<resources>');
-        this.addResource(res, 'src/main/java', '**/*.java');
-        this.addResource(res, 'src/main/resources');
-        res.endBlock('</resources>');
+    build(sb = new StringBuilder(), cluster, excludeGroupIds) {
+        sb.startBlock('<build>');
+        sb.startBlock('<resources>');
+        this.addResource(sb, 'src/main/java', '**/*.java');
+        this.addResource(sb, 'src/main/resources');
+        sb.endBlock('</resources>');
 
-        res.startBlock('<plugins>');
-        res.startBlock('<plugin>');
-        this.addProperty(res, 'artifactId', 'maven-dependency-plugin');
-        res.startBlock('<executions>');
-        res.startBlock('<execution>');
-        this.addProperty(res, 'id', 'copy-libs');
-        this.addProperty(res, 'phase', 'test-compile');
-        res.startBlock('<goals>');
-        this.addProperty(res, 'goal', 'copy-dependencies');
-        res.endBlock('</goals>');
-        res.startBlock('<configuration>');
-        this.addProperty(res, 'excludeGroupIds', excludeGroupIds.join(','));
-        this.addProperty(res, 'outputDirectory', 'target/libs');
-        this.addProperty(res, 'includeScope', 'compile');
-        this.addProperty(res, 'excludeTransitive', 'true');
-        res.endBlock('</configuration>');
-        res.endBlock('</execution>');
-        res.endBlock('</executions>');
-        res.endBlock('</plugin>');
-        res.startBlock('<plugin>');
-        this.addProperty(res, 'artifactId', 'maven-compiler-plugin');
-        this.addProperty(res, 'version', '3.1');
-        res.startBlock('<configuration>');
-        this.addProperty(res, 'source', '1.7');
-        this.addProperty(res, 'target', '1.7');
-        res.endBlock('</configuration>');
-        res.endBlock('</plugin>');
-        res.endBlock('</plugins>');
-        res.endBlock('</build>');
+        sb.startBlock('<plugins>');
+        sb.startBlock('<plugin>');
+        this.addProperty(sb, 'artifactId', 'maven-dependency-plugin');
+        sb.startBlock('<executions>');
+        sb.startBlock('<execution>');
+        this.addProperty(sb, 'id', 'copy-libs');
+        this.addProperty(sb, 'phase', 'test-compile');
+        sb.startBlock('<goals>');
+        this.addProperty(sb, 'goal', 'copy-dependencies');
+        sb.endBlock('</goals>');
+        sb.startBlock('<configuration>');
+        this.addProperty(sb, 'excludeGroupIds', excludeGroupIds.join(','));
+        this.addProperty(sb, 'outputDirectory', 'target/libs');
+        this.addProperty(sb, 'includeScope', 'compile');
+        this.addProperty(sb, 'excludeTransitive', 'true');
+        sb.endBlock('</configuration>');
+        sb.endBlock('</execution>');
+        sb.endBlock('</executions>');
+        sb.endBlock('</plugin>');
+        sb.startBlock('<plugin>');
+        this.addProperty(sb, 'artifactId', 'maven-compiler-plugin');
+        this.addProperty(sb, 'version', '3.1');
+        sb.startBlock('<configuration>');
+        this.addProperty(sb, 'source', '1.7');
+        this.addProperty(sb, 'target', '1.7');
+        sb.endBlock('</configuration>');
+        sb.endBlock('</plugin>');
+        sb.endBlock('</plugins>');
+        sb.endBlock('</build>');
 
-        res.endBlock('</project>');
+        sb.endBlock('</project>');
     }
 
     /**
@@ -144,19 +143,16 @@ class GeneratorPom {
      *
      * @param cluster Cluster  to take info about dependencies.
      * @param version Ignite version for Ignite dependencies.
-     * @param res Resulting output with generated pom.
+     * @param sb Resulting output with generated pom.
      * @returns {string} Generated content.
      */
-    generate(cluster, version, res) {
+    generate(cluster, version, sb = new StringBuilder()) {
         const caches = cluster.caches;
         const deps = [];
         const storeDeps = [];
         const excludeGroupIds = ['org.apache.ignite'];
 
         const blobStoreFactory = {cacheStoreFactory: {kind: 'CacheHibernateBlobStoreFactory'}};
-
-        if (!res)
-            res = $generatorCommon.builder();
 
         _.forEach(caches, (cache) => {
             if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind)
@@ -166,21 +162,21 @@ class GeneratorPom {
                 this.addDependency(deps, 'org.apache.ignite', 'ignite-extdata-p2p', version);
         });
 
-        res.line('<?xml version="1.0" encoding="UTF-8"?>');
+        sb.append('<?xml version="1.0" encoding="UTF-8"?>');
 
-        res.needEmptyLine = true;
+        sb.emptyLine();
 
-        res.line('<!-- ' + $generatorCommon.mainComment('Maven project') + ' -->');
+        sb.append(`<!-- ${sb.generatedBy()} -->`);
 
-        res.needEmptyLine = true;
+        sb.emptyLine();
 
-        res.startBlock('<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">');
+        sb.startBlock('<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">');
 
-        res.line('<modelVersion>4.0.0</modelVersion>');
+        sb.append('<modelVersion>4.0.0</modelVersion>');
 
-        res.needEmptyLine = true;
+        sb.emptyLine();
 
-        this.artifact(res, cluster, version);
+        this.artifact(sb, cluster, version);
 
         this.addDependency(deps, 'org.apache.ignite', 'ignite-core', version);
 
@@ -200,6 +196,17 @@ class GeneratorPom {
                 this.storeFactoryDependency(storeDeps, cluster.discovery.Jdbc);
         }
 
+        _.forEach(cluster.checkpointSpi, (spi) => {
+            if (spi.kind === 'S3') {
+                dep = POM_DEPENDENCIES.S3;
+
+                if (dep)
+                    this.addDependency(deps, 'org.apache.ignite', dep.artifactId, version);
+            }
+            else if (spi.kind === 'JDBC')
+                this.storeFactoryDependency(storeDeps, spi.JDBC);
+        });
+
         if (_.find(cluster.igfss, (igfs) => igfs.secondaryFileSystemEnabled))
             this.addDependency(deps, 'org.apache.ignite', 'ignite-hadoop', version);
 
@@ -213,13 +220,13 @@ class GeneratorPom {
                 this.addDependency(deps, 'org.apache.ignite', dep.artifactId, version);
         }
 
-        this.dependencies(res, cluster, deps.concat(storeDeps));
+        this.dependencies(sb, cluster, deps.concat(storeDeps));
 
-        res.needEmptyLine = true;
+        sb.emptyLine();
 
-        this.build(res, cluster, excludeGroupIds);
+        this.build(sb, cluster, excludeGroupIds);
 
-        return res;
+        return sb;
     }
 }
 

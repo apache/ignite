@@ -444,6 +444,17 @@ public class IgnitePersistentStoreTest {
                     "Expected number of records is 3, but loaded number of records is " + size);
             }
 
+            personCache3.clear();
+
+            personCache3.loadCache(null);
+
+            size = personCache3.size(CachePeekMode.ALL);
+            if (size != TestsHelper.getBulkOperationSize()) {
+                throw new RuntimeException("Cache data was incorrectly loaded from Cassandra. " +
+                    "Expected number of records is " + TestsHelper.getBulkOperationSize() +
+                    ", but loaded number of records is " + size);
+            }
+
             LOGGER.info("Cache data loaded from Cassandra table");
         }
 

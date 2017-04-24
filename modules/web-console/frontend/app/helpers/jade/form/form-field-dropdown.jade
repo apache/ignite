@@ -41,7 +41,7 @@ mixin ignite-form-field-dropdown(label, model, name, disabled, required, multipl
     .ignite-form-field
         +ignite-form-field__label(label, name, required)
         .ignite-form-field__control
-            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title=tip)
+            i.tipField.icon-help(bs-tooltip='' data-title=tip)
 
             if block
                 block

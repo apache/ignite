@@ -43,7 +43,7 @@ try {
 }
 
 export default () => {
-    const assetsLoader = development ? 'url-loader' : 'file-loader';
+    const assetsLoader = 'file-loader';
 
     return {
         cache: true,
@@ -77,7 +77,10 @@ export default () => {
                 './'
             ]
         },
-
+        jade: {
+            basedir: rootDir,
+            locals: {}
+        },
         // Modules resolvers.
         /* global require */
         module: {

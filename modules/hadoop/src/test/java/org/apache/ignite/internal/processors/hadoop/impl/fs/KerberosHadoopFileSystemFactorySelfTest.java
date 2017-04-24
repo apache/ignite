@@ -70,7 +70,8 @@ public class KerberosHadoopFileSystemFactorySelfTest extends GridCommonAbstractT
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                HadoopFileSystemFactoryDelegate delegate = HadoopDelegateUtils.fileSystemFactoryDelegate(fac);
+                HadoopFileSystemFactoryDelegate delegate = HadoopDelegateUtils.fileSystemFactoryDelegate(
+                    getClass().getClassLoader(), fac);
 
                 delegate.start();
 

@@ -90,7 +90,7 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
         try {
             out.write(arr);
         }
-        catch (IOException e) {
+        catch (Exception e) {
             throw new BinaryObjectException("Failed to marshal the object: " + obj, e);
         }
     }

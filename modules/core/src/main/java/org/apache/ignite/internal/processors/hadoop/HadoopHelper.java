@@ -52,4 +52,11 @@ public interface HadoopHelper {
      * @return Input stream.
      */
     @Nullable public InputStream loadClassBytes(ClassLoader ldr, String clsName);
+
+    /**
+     * Get work directory.
+     *
+     * @return Work directory.
+     */
+    public String workDirectory();
 }

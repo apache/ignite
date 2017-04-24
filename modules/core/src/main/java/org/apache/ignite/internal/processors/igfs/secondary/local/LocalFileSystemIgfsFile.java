@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs.secondary.local;
 
+import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Implementation of the IgfsFile interface for the local filesystem.
@@ -45,7 +44,7 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
     private final long len;
 
     /** Properties. */
-    private final Map<String, String> props;
+    private Map<String, String> props;
 
     /**
      * @param path IGFS path.
@@ -63,7 +62,7 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
         assert !isDir || len == 0 : "length must be 0 for dirs. [length=" + len + ']';
 
         this.path = path;
-        this.flags = IgfsUtils.flags(isDir, isFile);
+        flags = IgfsUtils.flags(isDir, isFile);
         this.blockSize = blockSize;
         this.modTime = modTime;
         this.len = len;

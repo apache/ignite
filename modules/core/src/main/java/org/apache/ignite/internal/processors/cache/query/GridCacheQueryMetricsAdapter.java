@@ -100,31 +100,22 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
     }
 
     /**
-     * Callback for query execution.
-     *
-     * @param fail {@code True} query executed unsuccessfully {@code false} otherwise.
-     */
-    public void onQueryExecute(boolean fail) {
-        execs.increment();
-
-        if (fail)
-            fails.increment();
-    }
-
-    /**
-     * Callback for completion of query execution.
+     * Update metrics.
      *
      * @param duration Duration of queue execution.
      * @param fail {@code True} query executed unsuccessfully {@code false} otherwise.
      */
-    public void onQueryCompleted(long duration, boolean fail) {
-        minTime.setIfLess(duration);
-        maxTime.setIfGreater(duration);
-
-        if (fail)
+    public void update(long duration, boolean fail) {
+        if (fail) {
+            execs.increment();
             fails.increment();
+        }
         else {
+            execs.increment();
             completed.increment();
+
+            minTime.setIfLess(duration);
+            maxTime.setIfGreater(duration);
 
             sumTime.add(duration);
         }

@@ -17,7 +17,11 @@
 
 import JavaTypes from '../../app/services/JavaTypes.service.js';
 
-const INSTANCE = new JavaTypes();
+import ClusterDflts from '../../app/modules/configuration/generator/defaults/cluster.provider';
+import CacheDflts from '../../app/modules/configuration/generator/defaults/cache.provider';
+import IgfsDflts from '../../app/modules/configuration/generator/defaults/igfs.provider';
+
+const INSTANCE = new JavaTypes((new ClusterDflts()).$get[0](), (new CacheDflts()).$get[0](), (new IgfsDflts()).$get[0]());
 
 import { assert } from 'chai';
 
@@ -41,6 +45,23 @@ suite('JavaTypesTestsSuite', () => {
         assert.equal(INSTANCE.nonBuiltInClass('CustomClass'), true);
         assert.equal(INSTANCE.nonBuiltInClass('java.util.CustomClass'), true);
         assert.equal(INSTANCE.nonBuiltInClass('my.package.CustomClass'), true);
+    });
+
+    test('nonEnum', () => {
+        assert.equal(INSTANCE.nonEnum('org.apache.ignite.cache.CacheMode'), false);
+        assert.equal(INSTANCE.nonEnum('org.apache.ignite.transactions.TransactionConcurrency'), false);
+        assert.equal(INSTANCE.nonEnum('org.apache.ignite.cache.CacheWriteSynchronizationMode'), false);
+        assert.equal(INSTANCE.nonEnum('org.apache.ignite.igfs.IgfsIpcEndpointType'), false);
+        assert.equal(INSTANCE.nonEnum('java.io.Serializable'), true);
+        assert.equal(INSTANCE.nonEnum('BigDecimal'), true);
+    });
+
+    test('shortClassName', () => {
+        assert.equal(INSTANCE.shortClassName('java.math.BigDecimal'), 'BigDecimal');
+        assert.equal(INSTANCE.shortClassName('int'), 'int');
+        assert.equal(INSTANCE.shortClassName('java.lang.Integer'), 'Integer');
+        assert.equal(INSTANCE.shortClassName('java.util.UUID'), 'UUID');
+        assert.equal(INSTANCE.shortClassName('Abstract'), 'Abstract');
     });
 
     test('fullClassName', () => {

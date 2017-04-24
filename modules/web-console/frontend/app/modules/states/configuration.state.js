@@ -30,7 +30,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
     // Summary screen
     .directive(...summaryTabs)
     // Services.
-    .service('igniteConfigurationResource', ConfigurationResource)
+    .service('IgniteConfigurationResource', ConfigurationResource)
     // Configure state provider.
     .config(['$stateProvider', 'AclRouteProvider', ($stateProvider, AclRoute) => {
         // Setup the states.

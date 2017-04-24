@@ -34,6 +34,14 @@ public class SQLServerDialect extends BasicJdbcDialect {
     }
 
     /** {@inheritDoc} */
+    @Override public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols) {
+        String cols = mkString(keyCols, ",");
+
+        return String.format("SELECT %1$s FROM (SELECT %1$s, ROW_NUMBER() OVER(ORDER BY %1$s) AS rn FROM %2$s) tbl WHERE rn %% ? = 0 ORDER BY %1$s",
+            cols, fullTblName);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean hasMerge() {
         return true;
     }

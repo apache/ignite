@@ -17,7 +17,9 @@
 
 package org.apache.ignite;
 
+import java.io.Closeable;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -59,6 +61,17 @@ public interface IgniteScheduler {
      * @see org.apache.ignite.lang.IgniteClosure
      */
     public IgniteFuture<?> runLocal(@Nullable Runnable r);
+
+    /**
+     * Executes given closure after the delay.
+     * <p>
+     * Note that class {@link IgniteRunnable} implements {@link Runnable}
+     * @param r Runnable to execute.
+     * @param delay Initial delay.
+     * @param timeUnit Time granularity.
+     * @return java.io.Closeable which can be used to cancel execution.
+     */
+    public Closeable runLocal(@Nullable Runnable r, long delay, TimeUnit timeUnit);
 
     /**
      * Executes given callable on internal system thread pool asynchronously.

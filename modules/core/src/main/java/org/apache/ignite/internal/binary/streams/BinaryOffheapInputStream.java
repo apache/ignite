@@ -66,6 +66,11 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public int capacity() {
+        return cap;
+    }
+
+    /** {@inheritDoc} */
     @Override public byte[] array() {
         return arrayCopy();
     }
@@ -74,7 +79,7 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     @Override public byte[] arrayCopy() {
         byte[] res = new byte[len];
 
-        GridUnsafe.copyMemory(null, ptr, res, GridUnsafe.BYTE_ARR_OFF, res.length);
+        GridUnsafe.copyOffheapHeap(ptr, res, GridUnsafe.BYTE_ARR_OFF, res.length);
 
         return res;
     }
@@ -91,7 +96,7 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object target, long off, int len) {
-        GridUnsafe.copyMemory(null, ptr + pos, target, off, len);
+        GridUnsafe.copyOffheapHeap(ptr + pos, target, off, len);
 
         shift(len);
     }
@@ -146,5 +151,10 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     /** {@inheritDoc} */
     @Override public long offheapPointer() {
         return forceHeap ? 0 : ptr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rawOffheapPointer() {
+        return ptr;
     }
 }

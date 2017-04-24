@@ -330,7 +330,7 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void start() throws IgniteException {
-            delegate = HadoopDelegateUtils.fileSystemFactoryDelegate(factory);
+            delegate = HadoopDelegateUtils.fileSystemFactoryDelegate(getClass().getClassLoader(), factory);
 
             delegate.start();
 

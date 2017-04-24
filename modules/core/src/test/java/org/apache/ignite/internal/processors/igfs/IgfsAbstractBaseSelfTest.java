@@ -871,6 +871,25 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /**
      * Create map with properties.
      *
+     * @param grpName Group name.
+     * @param perm Permission.
+     * @return Map with properties.
+     */
+    protected Map<String, String> properties(@Nullable String grpName, @Nullable String perm) {
+        Map<String, String> props = new HashMap<>();
+
+        if (grpName != null)
+            props.put(IgfsUtils.PROP_GROUP_NAME, grpName);
+
+        if (perm != null)
+            props.put(IgfsUtils.PROP_PERMISSION, perm);
+
+        return props;
+    }
+
+    /**
+     * Create map with properties.
+     *
      * @param username User name.
      * @param grpName Group name.
      * @param perm Permission.

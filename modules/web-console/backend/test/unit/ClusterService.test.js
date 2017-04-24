@@ -19,55 +19,37 @@ const assert = require('chai').assert;
 const injector = require('../injector');
 const testClusters = require('../data/clusters.json');
 const testAccounts = require('../data/accounts.json');
+const testSpaces = require('../data/spaces.json');
 
 let clusterService;
 let mongo;
 let errors;
+let db;
 
 suite('ClusterServiceTestsSuite', () => {
-    const prepareUserSpaces = () => {
-        return mongo.Account.create(testAccounts)
-            .then((accounts) => {
-                return Promise.all(accounts.map((account) => mongo.Space.create(
-                    [
-                        {name: 'Personal space', owner: account._id, demo: false},
-                        {name: 'Demo space', owner: account._id, demo: true}
-                    ]
-                )))
-                    .then((spaces) => [accounts, spaces]);
-            });
-    };
-
     suiteSetup(() => {
         return Promise.all([injector('services/clusters'),
             injector('mongo'),
-            injector('errors')])
-            .then(([_clusterService, _mongo, _errors]) => {
+            injector('errors'),
+            injector('dbHelper')])
+            .then(([_clusterService, _mongo, _errors, _db]) => {
                 mongo = _mongo;
                 clusterService = _clusterService;
                 errors = _errors;
+                db = _db;
             });
     });
 
-    setup(() => {
-        return Promise.all([
-            mongo.Cluster.remove().exec(),
-            mongo.Account.remove().exec(),
-            mongo.Space.remove().exec()
-        ]);
-    });
+    setup(() => db.init());
 
     test('Create new cluster', (done) => {
-        clusterService.merge(testClusters[0])
-            .then((cluster) => {
-                assert.isNotNull(cluster._id);
+        const dupleCluster = Object.assign({}, testClusters[0], {name: 'Other name'});
 
-                return cluster._id;
-            })
-            .then((clusterId) => mongo.Cluster.findById(clusterId))
-            .then((cluster) => {
-                assert.isNotNull(cluster);
-            })
+        delete dupleCluster._id;
+
+        clusterService.merge(dupleCluster)
+            .then((cluster) => mongo.Cluster.findById(cluster._id))
+            .then((cluster) => assert.isNotNull(cluster))
             .then(done)
             .catch(done);
     });
@@ -75,25 +57,21 @@ suite('ClusterServiceTestsSuite', () => {
     test('Update existed cluster', (done) => {
         const newName = 'NewUniqueName';
 
-        clusterService.merge(testClusters[0])
-            .then((cluster) => {
-                const clusterBeforeMerge = Object.assign({}, testClusters[0], {_id: cluster._id, name: newName});
+        const clusterBeforeMerge = Object.assign({}, testClusters[0], {name: newName});
 
-                return clusterService.merge(clusterBeforeMerge);
-            })
+        clusterService.merge(clusterBeforeMerge)
             .then((cluster) => mongo.Cluster.findById(cluster._id))
-            .then((clusterAfterMerge) => {
-                assert.equal(clusterAfterMerge.name, newName);
-            })
+            .then((clusterAfterMerge) => assert.equal(clusterAfterMerge.name, newName))
             .then(done)
             .catch(done);
     });
 
     test('Create duplicated cluster', (done) => {
-        const dupleCluster = Object.assign({}, testClusters[0], {_id: null});
+        const dupleCluster = Object.assign({}, testClusters[0]);
 
-        clusterService.merge(testClusters[0])
-            .then(() => clusterService.merge(dupleCluster))
+        delete dupleCluster._id;
+
+        clusterService.merge(dupleCluster)
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
 
@@ -102,25 +80,20 @@ suite('ClusterServiceTestsSuite', () => {
     });
 
     test('Remove existed cluster', (done) => {
-        clusterService.merge(testClusters[0])
-            .then((existCluster) => {
-                return mongo.Cluster.findById(existCluster._id)
-                    .then((foundCluster) => clusterService.remove(foundCluster._id))
-                    .then(({rowsAffected}) => {
-                        assert.equal(rowsAffected, 1);
-                    })
-                    .then(() => mongo.Cluster.findById(existCluster._id))
-                    .then((notFoundCluster) => {
-                        assert.isNull(notFoundCluster);
-                    });
-            })
+        clusterService.remove(testClusters[0]._id)
+            .then(({rowsAffected}) =>
+                assert.equal(rowsAffected, 1)
+            )
+            .then(() => mongo.Cluster.findById(testClusters[0]._id))
+            .then((notFoundCluster) =>
+                assert.isNull(notFoundCluster)
+            )
             .then(done)
             .catch(done);
     });
 
     test('Remove cluster without identifier', (done) => {
-        clusterService.merge(testClusters[0])
-            .then(() => clusterService.remove())
+        clusterService.remove()
             .catch((err) => {
                 assert.instanceOf(err, errors.IllegalArgumentException);
 
@@ -131,45 +104,28 @@ suite('ClusterServiceTestsSuite', () => {
     test('Remove missed cluster', (done) => {
         const validNoExistingId = 'FFFFFFFFFFFFFFFFFFFFFFFF';
 
-        clusterService.merge(testClusters[0])
-            .then(() => clusterService.remove(validNoExistingId))
-            .then(({rowsAffected}) => {
-                assert.equal(rowsAffected, 0);
-            })
-            .then(done)
-            .catch(done);
-    });
-
-    test('Remove all clusters in space', (done) => {
-        prepareUserSpaces()
-            .then(([accounts, spaces]) => {
-                const currentUser = accounts[0];
-                const userCluster = Object.assign({}, testClusters[0], {space: spaces[0][0]._id});
-
-                return clusterService.merge(userCluster)
-                    .then(() => clusterService.removeAll(currentUser._id, false));
-            })
-            .then(({rowsAffected}) => {
-                assert.equal(rowsAffected, 1);
-            })
+        clusterService.remove(validNoExistingId)
+            .then(({rowsAffected}) =>
+                assert.equal(rowsAffected, 0)
+            )
             .then(done)
             .catch(done);
     });
 
     test('Get all clusters by space', (done) => {
-        prepareUserSpaces()
-            .then(([accounts, spaces]) => {
-                const userCluster = Object.assign({}, testClusters[0], {space: spaces[0][0]._id});
+        clusterService.listBySpaces(testSpaces[0]._id)
+            .then((clusters) =>
+                assert.equal(clusters.length, 2)
+            )
+            .then(done)
+            .catch(done);
+    });
 
-                return clusterService.merge(userCluster)
-                    .then((existCluster) => {
-                        return clusterService.listBySpaces(spaces[0][0]._id)
-                            .then((clusters) => {
-                                assert.equal(clusters.length, 1);
-                                assert.equal(clusters[0]._id.toString(), existCluster._id.toString());
-                            });
-                    });
-            })
+    test('Remove all clusters in space', (done) => {
+        clusterService.removeAll(testAccounts[0]._id, false)
+            .then(({rowsAffected}) =>
+                assert.equal(rowsAffected, 2)
+            )
             .then(done)
             .catch(done);
     });

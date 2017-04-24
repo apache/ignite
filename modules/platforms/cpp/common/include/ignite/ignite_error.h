@@ -245,7 +245,7 @@ namespace ignite
         /**
          * Destructor.
          */
-        ~IgniteError();
+        ~IgniteError() IGNITE_NO_THROW;
 
         /**
          * Get error code.

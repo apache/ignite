@@ -25,7 +25,7 @@ export default ['$scope', 'GeneratorPom', 'IgniteVersion', function($scope, pom,
         if (!value)
             return;
 
-        ctrl.data = pom.generate($scope.cluster, Version.ignite).asString();
+        ctrl.data = pom.generate($scope.cluster, Version.productVersion().ignite).asString();
     };
 
     // Setup watchers.

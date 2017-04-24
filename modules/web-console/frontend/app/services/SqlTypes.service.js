@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-
 // List of H2 reserved SQL keywords.
-import H2_SQL_KEYWORDS from '../data/sql-keywords.json';
+import H2_SQL_KEYWORDS from 'app/data/sql-keywords.json';
 
 // List of JDBC type descriptors.
-import JDBC_TYPES from '../data/jdbc-types.json';
+import JDBC_TYPES from 'app/data/jdbc-types.json';
 
 // Regular expression to check H2 SQL identifier.
 const VALID_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_$]*$/im;

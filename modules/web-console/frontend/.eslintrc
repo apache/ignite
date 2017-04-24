@@ -27,12 +27,8 @@ globals:
     global: true
     angular: true
     $generatorCommon: true
-    $generatorProperties: true
-    $generatorXml: true
+    $generatorSpring: true
     $generatorJava: true
-    $generatorPom: true
-    $generatorReadme: true
-    $generatorDocker: true
     $generatorOptional: true
     saveAs: true
     process: true

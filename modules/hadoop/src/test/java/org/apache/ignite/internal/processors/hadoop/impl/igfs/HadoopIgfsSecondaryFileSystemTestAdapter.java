@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopDelegateUtils;
 import org.apache.ignite.internal.processors.hadoop.delegate.HadoopFileSystemFactoryDelegate;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemTestAdapter;
@@ -50,7 +49,7 @@ public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFi
     public HadoopIgfsSecondaryFileSystemTestAdapter(HadoopFileSystemFactory factory) {
         assert factory != null;
 
-        this.factory = HadoopDelegateUtils.fileSystemFactoryDelegate(factory);
+        this.factory = HadoopDelegateUtils.fileSystemFactoryDelegate(getClass().getClassLoader(), factory);
 
         this.factory.start();
     }

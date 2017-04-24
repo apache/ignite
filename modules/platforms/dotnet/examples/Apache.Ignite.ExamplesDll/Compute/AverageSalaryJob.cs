@@ -18,18 +18,17 @@
 namespace Apache.Ignite.ExamplesDll.Compute
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>
     /// Average salary job.
     /// </summary>
-    [Serializable]
     public class AverageSalaryJob : ComputeJobAdapter<Tuple<long, int>>
     {
         /// <summary> Employees. </summary>
-        private readonly ICollection<Employee> _employees = new List<Employee>();
+        private readonly ArrayList _employees = new ArrayList();
 
         /// <summary>
         ///     Adds employee.

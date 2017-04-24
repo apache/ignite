@@ -67,6 +67,10 @@
                                     </map>
                                 </property>
 
+                                <property name="keyFields">
+                                    <list></list>
+                                </property>
+
                                 <property name="indexes">
                                     <list>
                                         <bean class="org.apache.ignite.cache.QueryIndex">

@@ -35,6 +35,7 @@ module.exports = {
 module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
     /**
      * Convert remove status operation to own presentation.
+     *
      * @param {RemoveResult} result - The results of remove operation.
      */
     const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
@@ -43,7 +44,8 @@ module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
         Promise.all(_.map(cacheStoreChanges, (change) => mongo.Cache.update({_id: {$eq: change.cacheId}}, change.change, {}).exec()));
 
     /**
-     * Update existing domain
+     * Update existing domain.
+     *
      * @param {Object} domain - The domain for updating
      * @param savedDomains List of saved domains.
      * @returns {Promise.<mongo.ObjectId>} that resolves domain id
@@ -67,6 +69,7 @@ module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
 
     /**
      * Create new domain.
+     *
      * @param {Object} domain - The domain for creation.
      * @param savedDomains List of saved domains.
      * @returns {Promise.<mongo.ObjectId>} that resolves cluster id.
@@ -131,6 +134,7 @@ module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
 
     /**
      * Remove all caches by space ids.
+     *
      * @param {Array.<Number>} spaceIds - The space ids for cache deletion.
      * @returns {Promise.<RemoveResult>} - that resolves results of remove operation.
      */
@@ -142,6 +146,7 @@ module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
     class DomainsService {
         /**
          * Batch merging domains.
+         *
          * @param {Array.<mongo.DomainModel>} domains
          */
         static batchMerge(domains) {
@@ -150,9 +155,9 @@ module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
 
         /**
          * Get domain and linked objects by space.
+         *
          * @param {mongo.ObjectId|String} spaceIds - The space id that own domain.
-         * @returns {Promise.<[mongo.Cache[], mongo.Cluster[], mongo.DomainModel[], mongo.Space[]]>}
-         *      contains requested domains and array of linked objects: caches, spaces.
+         * @returns {Promise.<Array.<mongo.DomainModel>>} contains requested domains.
          */
         static listBySpaces(spaceIds) {
             return mongo.DomainModel.find({space: {$in: spaceIds}}).sort('valueType').lean().exec();
@@ -160,6 +165,7 @@ module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
 
         /**
          * Remove domain.
+         *
          * @param {mongo.ObjectId|String} domainId - The domain id for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */

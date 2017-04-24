@@ -17,8 +17,8 @@
 
 // Controller for Caches screen.
 export default ['cachesController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'igniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
-    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, Resource, ErrorPopover, FormUtils) {
+    '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'IgniteLegacyTable',
+    function($scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, Resource, ErrorPopover, FormUtils, LegacyTable) {
         UnsavedChangesGuard.install($scope);
 
         const emptyCache = {empty: true};
@@ -96,6 +96,73 @@ export default ['cachesController', [
             item.offHeapMaxMemory = item.offHeapMaxMemory > 0 ? item.offHeapMaxMemory : null;
         };
 
+        $scope.tablePairSave = LegacyTable.tablePairSave;
+        $scope.tablePairSaveVisible = LegacyTable.tablePairSaveVisible;
+        $scope.tableNewItem = LegacyTable.tableNewItem;
+        $scope.tableNewItemActive = LegacyTable.tableNewItemActive;
+
+        $scope.tableStartEdit = function(item, field, index) {
+            if ($scope.tableReset(true))
+                LegacyTable.tableStartEdit(item, field, index, $scope.tableSave);
+        };
+
+        $scope.tableEditing = LegacyTable.tableEditing;
+
+        $scope.tableSave = function(field, index, stopEdit) {
+            if (LegacyTable.tablePairSaveVisible(field, index))
+                return LegacyTable.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
+
+            return true;
+        };
+
+        $scope.tableRemove = function(item, field, index) {
+            if ($scope.tableReset(true))
+                LegacyTable.tableRemove(item, field, index);
+        };
+
+        $scope.tableReset = (trySave) => {
+            const field = LegacyTable.tableField();
+
+            if (trySave && LegacyUtils.isDefined(field) && !$scope.tableSave(field, LegacyTable.tableEditedRowIndex(), true))
+                return false;
+
+            LegacyTable.tableReset();
+
+            return true;
+        };
+
+        $scope.hibernatePropsTbl = {
+            type: 'hibernate',
+            model: 'cacheStoreFactory.CacheHibernateBlobStoreFactory.hibernateProperties',
+            focusId: 'Property',
+            ui: 'table-pair',
+            keyName: 'name',
+            valueName: 'value',
+            save: $scope.tableSave
+        };
+
+        $scope.tablePairValid = function(item, field, index, stopEdit) {
+            const pairValue = LegacyTable.tablePairValue(field, index);
+
+            const model = _.get(item, field.model);
+
+            if (!_.isNil(model)) {
+                const idx = _.findIndex(model, (pair) => {
+                    return pair.name === pairValue.key;
+                });
+
+                // Found duplicate by key.
+                if (idx >= 0 && idx !== index) {
+                    if (stopEdit)
+                        return false;
+
+                    return ErrorPopover.show(LegacyTable.tableFieldId(index, 'KeyProperty'), 'Property with such name already exists!', $scope.ui, 'query');
+                }
+            }
+
+            return true;
+        };
+
         Loading.start('loadingCachesScreen');
 
         // When landing on the page, get caches and show them.
@@ -117,6 +184,7 @@ export default ['cachesController', [
                     value: cluster._id,
                     label: cluster.name,
                     discovery: cluster.discovery,
+                    checkpointSpi: cluster.checkpointSpi,
                     caches: cluster.caches
                 }));
 
@@ -204,7 +272,7 @@ export default ['cachesController', [
                 else
                     $scope.backupItem = emptyCache;
 
-                $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
+                $scope.backupItem = _.merge({}, blank, $scope.backupItem);
 
                 if ($scope.ui.inputForm) {
                     $scope.ui.inputForm.$error = {};
@@ -258,6 +326,15 @@ export default ['cachesController', [
             return caches;
         }
 
+        const _objToString = (type, name, prefix = '') => {
+            if (type === 'checkpoint')
+                return `${prefix} checkpoint configuration in cluster "${name}"`;
+            if (type === 'cluster')
+                return `${prefix} discovery IP finder in cluster "${name}"`;
+
+            return `${prefix} ${type} "${name}"`;
+        };
+
         function checkDataSources() {
             const clusters = cacheClusters();
 
@@ -272,20 +349,11 @@ export default ['cachesController', [
             });
 
             if (!checkRes.checked) {
-                if (_.get(checkRes.secondObj, 'discovery.kind') === 'Jdbc') {
-                    return ErrorPopover.show(checkRes.firstObj.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'pojoDialectInput' : 'blobDialectInput',
-                        'Found cluster "' + failCluster.label + '" with the same data source bean name "' +
-                        checkRes.secondObj.discovery.Jdbc.dataSourceBean + '" and different database: "' +
-                        LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in current cache and "' +
-                        LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in"' + checkRes.secondObj.label + '" cluster',
-                        $scope.ui, 'store', 10000);
-                }
-
                 return ErrorPopover.show(checkRes.firstObj.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'pojoDialectInput' : 'blobDialectInput',
-                    'Found cache "' + checkRes.secondObj.name + '" in cluster "' + failCluster.label + '" ' +
-                    'with the same data source bean name "' + checkRes.firstObj.cacheStoreFactory[checkRes.firstObj.cacheStoreFactory.kind].dataSourceBean +
-                    '" and different database: "' + LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in current cache and "' +
-                    LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondObj.name + '" cache',
+                    'Found ' + _objToString(checkRes.secondType, checkRes.secondObj.name || failCluster.label) + ' with the same data source bean name "' +
+                    checkRes.firstDs.dataSourceBean + '" and different database: "' +
+                    LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.firstDs.dialect) + '" in ' + _objToString(checkRes.firstType, checkRes.firstObj.name, 'current') + ' and "' +
+                    LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.secondDs.dialect) + '" in ' + _objToString(checkRes.secondType, checkRes.secondObj.name || failCluster.label),
                     $scope.ui, 'store', 10000);
             }
 
@@ -296,7 +364,7 @@ export default ['cachesController', [
             if (evictionPlc && evictionPlc.kind) {
                 const plc = evictionPlc[evictionPlc.kind];
 
-                if (plc.maxMemorySize === 0 && plc.maxSize === 0)
+                if (plc && !plc.maxMemorySize && !plc.maxSize)
                     return ErrorPopover.show('evictionPolicymaxMemorySizeInput', 'Either maximum memory size or maximum size should be great than 0!', $scope.ui, 'memory');
             }
 
@@ -409,7 +477,7 @@ export default ['cachesController', [
                     });
 
                     if (idx >= 0)
-                        angular.merge($scope.caches[idx], item);
+                        _.assign($scope.caches[idx], item);
                     else {
                         item._id = _id;
                         $scope.caches.push(item);
@@ -440,7 +508,7 @@ export default ['cachesController', [
         $scope.saveItem = function() {
             const item = $scope.backupItem;
 
-            angular.extend(item, LegacyUtils.autoCacheStoreConfiguration(item, cacheDomains(item)));
+            _.merge(item, LegacyUtils.autoCacheStoreConfiguration(item, cacheDomains(item)));
 
             if (validate(item))
                 save(item);
@@ -462,7 +530,20 @@ export default ['cachesController', [
 
                     item.name = newName;
 
-                    delete item.sqlSchema;
+                    if (!_.isEmpty(item.clusters) && !_.isNil(item.sqlSchema)) {
+                        delete item.sqlSchema;
+
+                        const scope = $scope.$new();
+
+                        scope.title = 'Info';
+                        scope.content = [
+                            'Use the same SQL schema name in one cluster in not allowed',
+                            'SQL schema name will be reset'
+                        ];
+
+                        // Show a basic modal from a controller
+                        $modal({scope, template: '/templates/message.html', placement: 'center', show: true});
+                    }
 
                     save(item);
                 });

@@ -50,7 +50,6 @@ import static io.socket.client.Socket.EVENT_CONNECT_ERROR;
 import static io.socket.client.Socket.EVENT_DISCONNECT;
 import static io.socket.client.Socket.EVENT_ERROR;
 import static io.socket.client.Socket.EVENT_RECONNECTING;
-import static org.apache.ignite.console.agent.AgentConfiguration.DFLT_SERVER_PORT;
 
 /**
  * Control Center Agent launcher.
@@ -227,10 +226,9 @@ public class AgentLauncher {
 
             URI uri = URI.create(cfg.serverUri());
 
-            if (uri.getPort() == -1)
-                uri = URI.create(cfg.serverUri() + ':' + DFLT_SERVER_PORT);
-
             IO.Options opts = new IO.Options();
+
+            opts.path = "/agents";
 
             opts.reconnectionDelay = RECONNECT_INTERVAL;
 

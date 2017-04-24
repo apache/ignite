@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 .docs-header
     h1 Configure Domain Model And SQL Queries
@@ -61,6 +61,6 @@ include ../../app/helpers/jade/mixins.jade
             div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
                 form.form-horizontal(name='ui.inputForm' novalidate ng-if='contentVisible()')
                     .panel-group
-                        include ../../app/modules/states/configuration/domains/general.jade
-                        include ../../app/modules/states/configuration/domains/query.jade
-                        include ../../app/modules/states/configuration/domains/store.jade
+                        include /app/modules/states/configuration/domains/general.jade
+                        include /app/modules/states/configuration/domains/query.jade
+                        include /app/modules/states/configuration/domains/store.jade

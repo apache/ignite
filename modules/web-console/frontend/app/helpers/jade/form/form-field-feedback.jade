@@ -21,9 +21,12 @@ mixin form-field-feedback(name, error, message)
 
     i.fa.fa-exclamation-triangle.form-field-feedback(
         ng-if='!#{__pristine} && #{__error}'
+        name='{{ #{name} }}'
+
         bs-tooltip
         data-title=message
+
         ignite-error=error
         ignite-error-message=message
-        name='{{ #{name} }}'
+        ignite-restore-input-focus
     )

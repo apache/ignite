@@ -230,9 +230,11 @@ namespace ignite
                 if (!ctx.Get())
                 {
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-                    
+
                     failed = true;
                 }
+
+                env.Get()->SetContext(ctx);
 
                 // 5. Start Ignite.
                 if (!failed)
@@ -263,7 +265,7 @@ namespace ignite
                     }
                     else {
                         // 6. Ignite is started at this point.
-                        env.Get()->Initialize(ctx);
+                        env.Get()->Initialize();
 
                         started = true;
                     }
@@ -288,6 +290,8 @@ namespace ignite
         }
         else 
         {
+            env.Get()->ProcessorReleaseStart();
+
             IgniteImpl* impl = new IgniteImpl(env, javaRef);
 
             return Ignite(impl);

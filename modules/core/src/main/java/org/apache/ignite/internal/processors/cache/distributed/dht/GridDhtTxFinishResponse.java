@@ -115,7 +115,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
         super.prepareMarshal(ctx);
 
         if (checkCommittedErr != null && checkCommittedErrBytes == null)
-            checkCommittedErrBytes = ctx.marshaller().marshal(checkCommittedErr);
+            checkCommittedErrBytes = U.marshal(ctx, checkCommittedErr);
 
         if (retVal != null && retVal.cacheId() != 0) {
             GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());
@@ -132,7 +132,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
         super.finishUnmarshal(ctx, ldr);
 
         if (checkCommittedErrBytes != null && checkCommittedErr == null)
-            checkCommittedErr = ctx.marshaller().unmarshal(checkCommittedErrBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            checkCommittedErr = U.unmarshal(ctx, checkCommittedErrBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (retVal != null && retVal.cacheId() != 0) {
             GridCacheContext cctx = ctx.cacheContext(retVal.cacheId());

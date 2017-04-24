@@ -2357,7 +2357,7 @@ object visor extends VisorTag {
         val folder = Option(f.getParent).getOrElse("")
         val fileName = f.getName
 
-        logFile = new File(U.resolveWorkDirectory(folder, false), fileName)
+        logFile = new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), folder, false), fileName)
 
         logFile.createNewFile()
 

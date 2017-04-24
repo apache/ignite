@@ -345,7 +345,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
                     HadoopFileSystemFactory factory0 =
                         (HadoopFileSystemFactory) paths.getPayload(getClass().getClassLoader());
 
-                    factory = HadoopDelegateUtils.fileSystemFactoryDelegate(factory0);
+                    factory = HadoopDelegateUtils.fileSystemFactoryDelegate(getClass().getClassLoader(), factory0);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IOException("Failed to get secondary file system factory.", e);

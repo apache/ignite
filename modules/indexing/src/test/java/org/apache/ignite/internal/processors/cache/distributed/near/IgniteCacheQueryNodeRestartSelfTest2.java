@@ -33,7 +33,10 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -224,58 +227,77 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                     }
                     while (!locks.compareAndSet(g, 0, 1));
 
-                    if (rnd.nextBoolean()) { // Partitioned query.
-                        IgniteCache<?,?> cache = grid(g).cache("pu");
+                    try {
+                        if (rnd.nextBoolean()) { // Partitioned query.
+                            IgniteCache<?,?> cache = grid(g).cache("pu");
 
-                        SqlFieldsQuery qry = new SqlFieldsQuery(PARTITIONED_QRY);
+                            SqlFieldsQuery qry = new SqlFieldsQuery(PARTITIONED_QRY);
 
-                        boolean smallPageSize = rnd.nextBoolean();
+                            boolean smallPageSize = rnd.nextBoolean();
 
-                        if (smallPageSize)
-                            qry.setPageSize(3);
+                            if (smallPageSize)
+                                qry.setPageSize(3);
 
-                        try {
-                            assertEquals(pRes, cache.query(qry).getAll());
-                        }
-                        catch (CacheException e) {
-                            if (!smallPageSize)
-                                e.printStackTrace();
-
-                            assertTrue("On large page size must retry.", smallPageSize);
-
-                            boolean failedOnRemoteFetch = false;
-
-                            for (Throwable th = e; th != null; th = th.getCause()) {
-                                if (!(th instanceof CacheException))
+                            try {
+                                assertEquals(pRes, cache.query(qry).getAll());
+                            } catch (CacheException e) {
+                                // Interruptions are expected here.
+                                if (e.getCause() instanceof IgniteInterruptedCheckedException)
                                     continue;
 
-                                if (th.getMessage() != null &&
-                                    th.getMessage().startsWith("Failed to fetch data from node:")) {
-                                    failedOnRemoteFetch = true;
+                                if (e.getCause() instanceof QueryCancelledException)
+                                    fail("Retry is expected");
 
-                                    break;
+                                if (!smallPageSize)
+                                    e.printStackTrace();
+
+                                assertTrue("On large page size must retry.", smallPageSize);
+
+                                boolean failedOnRemoteFetch = false;
+                                boolean failedOnInterruption = false;
+
+                                for (Throwable th = e; th != null; th = th.getCause()) {
+                                    if (th instanceof InterruptedException) {
+                                        failedOnInterruption = true;
+
+                                        break;
+                                    }
+
+                                    if (!(th instanceof CacheException))
+                                        continue;
+
+                                    if (th.getMessage() != null &&
+                                        th.getMessage().startsWith("Failed to fetch data from node:")) {
+                                        failedOnRemoteFetch = true;
+
+                                        break;
+                                    }
+                                }
+
+                                // Interruptions are expected here.
+                                if (failedOnInterruption)
+                                    continue;
+
+                                if (!failedOnRemoteFetch) {
+                                    e.printStackTrace();
+
+                                    fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
                                 }
                             }
+                        } else { // Replicated query.
+                            IgniteCache<?, ?> cache = grid(g).cache("co");
 
-                            if (!failedOnRemoteFetch) {
-                                e.printStackTrace();
-
-                                fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
-                            }
+                            assertEquals(rRes, cache.query(new SqlFieldsQuery(REPLICATED_QRY)).getAll());
                         }
+                    } finally {
+                        // Clearing lock in final handler to avoid endless loop if exception is thrown.
+                        locks.set(g, 0);
+
+                        int c = qryCnt.incrementAndGet();
+
+                        if (c % logFreq == 0)
+                            info("Executed queries: " + c);
                     }
-                    else { // Replicated query.
-                        IgniteCache<?,?> cache = grid(g).cache("co");
-
-                        assertEquals(rRes, cache.query(new SqlFieldsQuery(REPLICATED_QRY)).getAll());
-                    }
-
-                    locks.set(g, 0);
-
-                    int c = qryCnt.incrementAndGet();
-
-                    if (c % logFreq == 0)
-                        info("Executed queries: " + c);
                 }
             }
         }, qryThreadNum, "query-thread");
@@ -297,24 +319,26 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                     }
                     while (!locks.compareAndSet(g, 0, -1));
 
-                    log.info("Stop node: " + g);
+                    try {
+                        log.info("Stop node: " + g);
 
-                    stopGrid(g);
+                        stopGrid(g);
 
-                    Thread.sleep(rnd.nextInt(nodeLifeTime));
+                        Thread.sleep(rnd.nextInt(nodeLifeTime));
 
-                    log.info("Start node: " + g);
+                        log.info("Start node: " + g);
 
-                    startGrid(g);
+                        startGrid(g);
 
-                    Thread.sleep(rnd.nextInt(nodeLifeTime));
+                        Thread.sleep(rnd.nextInt(nodeLifeTime));
+                    } finally {
+                        locks.set(g, 0);
 
-                    locks.set(g, 0);
+                        int c = restartCnt.incrementAndGet();
 
-                    int c = restartCnt.incrementAndGet();
-
-                    if (c % logFreq == 0)
-                        info("Node restarts: " + c);
+                        if (c % logFreq == 0)
+                            info("Node restarts: " + c);
+                    }
                 }
 
                 return true;
@@ -333,7 +357,12 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
         qrysDone.set(true);
 
-        fut1.get();
+        // Query thread can stuck in next page waiting loop because all nodes are left.
+        try {
+            fut1.get(5_000);
+        } catch (IgniteFutureTimeoutCheckedException e) {
+            fut1.cancel();
+        }
 
         info("Queries stopped.");
     }

@@ -22,16 +22,13 @@ export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
 
         const packageOnly = attrs.javaPackageName === 'package-only';
 
-        ngModel.$validators.javaKeywords = (value) => {
-            if (value) {
-                if (_.isEmpty(value) || !JavaTypes.validClassName(value) || (!packageOnly && !JavaTypes.packageSpecified(value)))
-                    return true;
+        ngModel.$validators.javaKeywords = (value) => attrs.validationActive === 'false' ||
+            _.isEmpty(value) || !JavaTypes.validClassName(value) ||
+            (!packageOnly && !JavaTypes.packageSpecified(value)) ||
+            _.findIndex(value.split('.'), JavaTypes.isKeyword) < 0;
 
-                return _.findIndex(value.split('.'), JavaTypes.isKeyword) < 0;
-            }
-
-            return true;
-        };
+        if (attrs.validationActive !== 'always')
+            attrs.$observe('validationActive', () => ngModel.$validate());
     };
 
     return {

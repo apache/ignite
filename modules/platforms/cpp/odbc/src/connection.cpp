@@ -19,6 +19,8 @@
 
 #include <sstream>
 
+#include <ignite/common/fixed_size_array.h>
+
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
@@ -178,26 +180,27 @@ namespace ignite
             if (!connected)
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
 
-            OdbcProtocolHeader hdr;
+            int32_t newLen = static_cast<int32_t>(len + sizeof(OdbcProtocolHeader));
 
-            hdr.len = static_cast<int32_t>(len);
+            common::FixedSizeArray<int8_t> msg(newLen);
 
-            size_t sent = SendAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
+            OdbcProtocolHeader *hdr = reinterpret_cast<OdbcProtocolHeader*>(msg.GetData());
 
-            if (sent != sizeof(hdr))
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message header");
+            hdr->len = static_cast<int32_t>(len);
 
-            sent = SendAll(data, len);
+            memcpy(msg.GetData() + sizeof(OdbcProtocolHeader), data, len);
 
-            if (sent != len)
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message body");
+            size_t sent = SendAll(msg.GetData(), msg.GetSize());
+
+            if (sent != len + sizeof(OdbcProtocolHeader))
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message");
         }
 
         size_t Connection::SendAll(const int8_t* data, size_t len)
         {
             int sent = 0;
 
-            while (sent != len)
+            while (sent != static_cast<int64_t>(len))
             {
                 int res = socket.Send(data + sent, len - sent);
 
@@ -221,7 +224,7 @@ namespace ignite
 
             OdbcProtocolHeader hdr;
 
-            size_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
+            int64_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 
             if (received != sizeof(hdr))
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");

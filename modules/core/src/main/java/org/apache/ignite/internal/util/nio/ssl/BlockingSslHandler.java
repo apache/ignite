@@ -35,6 +35,7 @@ import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
+import static javax.net.ssl.SSLEngineResult.Status.BUFFER_OVERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
 import static javax.net.ssl.SSLEngineResult.Status.OK;
@@ -92,7 +93,10 @@ public class BlockingSslHandler {
         this.order = order;
 
         // Allocate a little bit more so SSL engine would not return buffer overflow status.
-        int netBufSize = sslEngine.getSession().getPacketBufferSize() + 50;
+        //
+        // System property override is for test purposes only.
+        int netBufSize = Integer.getInteger("BlockingSslHandler.netBufSize",
+            sslEngine.getSession().getPacketBufferSize() + 50);
 
         outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
         outNetBuf.order(order);
@@ -113,6 +117,13 @@ public class BlockingSslHandler {
     }
 
     /**
+     *
+     */
+    public ByteBuffer inputBuffer(){
+        return inNetBuf;
+    }
+
+    /**
      * Performs handshake procedure with remote peer.
      *
      * @throws GridNioException If filter processing has thrown an exception.
@@ -127,6 +138,8 @@ public class BlockingSslHandler {
         handshakeStatus = sslEngine.getHandshakeStatus();
 
         boolean loop = true;
+
+        SSLEngineResult unwrapRes = null;
 
         while (loop) {
             switch (handshakeStatus) {
@@ -146,11 +159,11 @@ public class BlockingSslHandler {
                 }
 
                 case NEED_UNWRAP: {
-                    Status status = unwrapHandshake();
+                    unwrapRes = unwrapHandshake(unwrapRes);
 
                     handshakeStatus = sslEngine.getHandshakeStatus();
 
-                    if (status == BUFFER_UNDERFLOW && sslEngine.isInboundDone())
+                    if (unwrapRes.getStatus() == BUFFER_UNDERFLOW && sslEngine.isInboundDone())
                         // Either there is no enough data in buffer or session was closed.
                         loop = false;
 
@@ -166,15 +179,22 @@ public class BlockingSslHandler {
 
                     SSLEngineResult res = sslEngine.wrap(handshakeBuf, outNetBuf);
 
-                    outNetBuf.flip();
+                    if (res.getStatus() == BUFFER_OVERFLOW) {
+                        outNetBuf = expandBuffer(outNetBuf, outNetBuf.capacity() * 2);
+
+                        outNetBuf.flip();
+                    }
+                    else {
+                        outNetBuf.flip();
+
+                        writeNetBuffer();
+                    }
 
                     handshakeStatus = res.getHandshakeStatus();
 
                     if (log.isDebugEnabled())
                         log.debug("Wrapped handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
-                        handshakeStatus + ']');
-
-                    writeNetBuffer();
+                            handshakeStatus + ']');
 
                     break;
                 }
@@ -255,6 +275,8 @@ public class BlockingSslHandler {
      * @throws SSLException If failed to process SSL data.
      */
     public ByteBuffer decode(ByteBuffer buf) throws IgniteCheckedException, SSLException {
+        appBuf.clear();
+
         if (buf.limit() > inNetBuf.remaining()) {
             inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() + buf.limit() * 2);
 
@@ -352,28 +374,19 @@ public class BlockingSslHandler {
      * @throws SSLException If SSL exception occurred while unwrapping.
      * @throws GridNioException If failed to pass event to the next filter.
      */
-    private Status unwrapHandshake() throws SSLException, IgniteCheckedException {
-        final int pos = inNetBuf.position();
-
-        // Try to unwrap data already available in buffer.
-        SSLEngineResult res = tryUnwrap();
-
-        if (handshakeStatus == NEED_UNWRAP)
+    private SSLEngineResult unwrapHandshake(SSLEngineResult prevRes) throws SSLException, IgniteCheckedException {
+        // Avoid blocking on reading if there unprocessed data left in input buffer.
+        if (inNetBuf.position() == 0 || prevRes.getStatus() != OK)
             readFromNet();
 
-        if (res == null || handshakeStatus == NEED_UNWRAP) {
-            // Flip input buffer so we can read the collected data.
-            inNetBuf.flip();
+        // Flip input buffer so we can read the collected data.
+        inNetBuf.flip();
 
-            // Must restore position after tryUnwrap()
-            inNetBuf.position(pos);
+        SSLEngineResult res = unwrap0();
 
-            res = unwrap0();
+        handshakeStatus = res.getHandshakeStatus();
 
-            handshakeStatus = res.getHandshakeStatus();
-
-            checkStatus(res);
-        }
+        checkStatus(res);
 
         // If handshake finished, no data was produced, and the status is still ok,
         // try to unwrap more
@@ -387,42 +400,14 @@ public class BlockingSslHandler {
 
             renegotiateIfNeeded(res);
         }
+        else if (res.getStatus() == BUFFER_UNDERFLOW) {
+            inNetBuf.compact();
+
+            inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() * 2);
+        }
         else
             // prepare to be written again
             inNetBuf.compact();
-
-        return res.getStatus();
-    }
-
-    /**
-     * Try to unwrap data left in buffer. If that data was not enough,
-     * position must be restored after reading data from network.
-     * <p>
-     *     This method was made for cases when all required data already read and next reading
-     *     from channel with block thread indefinitely.
-     * </p>
-     *
-     * @return SSLEngineResult after unwrap.
-     * @throws SSLException If failed.
-     */
-    private SSLEngineResult tryUnwrap() throws SSLException {
-        final int pos = inNetBuf.position();
-        final int lim = inNetBuf.limit();
-
-        // Nothing to unwrap.
-        if (pos == 0)
-            return null;
-
-        inNetBuf.flip();
-
-        final SSLEngineResult res = unwrap0();
-
-        handshakeStatus = res.getHandshakeStatus();
-
-        if (handshakeStatus == NEED_UNWRAP) {
-            inNetBuf.position(pos);
-            inNetBuf.limit(lim);
-        }
 
         return res;
     }
@@ -498,6 +483,7 @@ public class BlockingSslHandler {
         int appBufSize = Math.max(sslEngine.getSession().getApplicationBufferSize() + 50, netBufSize * 2);
 
         ByteBuffer buf = ByteBuffer.allocate(appBufSize);
+
         buf.order(order);
 
         return buf;
@@ -519,7 +505,7 @@ public class BlockingSslHandler {
     }
 
     /**
-     * Copies data from out net buffer and passes it to the underlying chain.
+     * Copies data from out net buffer and passes it to the underlying channel.
      *
      * @throws GridNioException If send failed.
      */
@@ -540,31 +526,15 @@ public class BlockingSslHandler {
      * @return Expanded byte buffer.
      */
     private ByteBuffer expandBuffer(ByteBuffer original, int cap) {
-        ByteBuffer res = ByteBuffer.allocate(cap);
+        ByteBuffer res = original.isDirect() ? ByteBuffer.allocateDirect(cap) : ByteBuffer.allocate(cap);
 
-        res.order(ByteOrder.nativeOrder());
+        res.order(original.order());
 
         original.flip();
 
         res.put(original);
 
         return res;
-    }
-
-    /**
-     * Copies the given byte buffer.
-     *
-     * @param original Byte buffer to copy.
-     * @return Copy of the original byte buffer.
-     */
-    private ByteBuffer copy(ByteBuffer original) {
-        ByteBuffer cp = ByteBuffer.allocate(original.remaining());
-
-        cp.put(original);
-
-        cp.flip();
-
-        return cp;
     }
 
     /**

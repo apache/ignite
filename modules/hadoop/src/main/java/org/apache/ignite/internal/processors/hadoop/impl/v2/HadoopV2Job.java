@@ -311,7 +311,7 @@ public class HadoopV2Job implements HadoopJob {
         ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
 
         try {
-            rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(locNodeId, jobId));
+            rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
         }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);
@@ -323,7 +323,7 @@ public class HadoopV2Job implements HadoopJob {
     @Override public void dispose(boolean external) throws IgniteCheckedException {
         try {
             if (rsrcMgr != null && !external) {
-                File jobLocDir = jobLocalDir(locNodeId, jobId);
+                File jobLocDir = jobLocalDir(igniteWorkDirectory(), locNodeId, jobId);
 
                 if (jobLocDir.exists())
                     U.delete(jobLocDir);
@@ -411,7 +411,7 @@ public class HadoopV2Job implements HadoopJob {
 
     /** {@inheritDoc} */
     @Override public void prepareTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException {
-        rsrcMgr.prepareTaskWorkDir(taskLocalDir(locNodeId, info));
+        rsrcMgr.prepareTaskWorkDir(taskLocalDir(igniteWorkDirectory(), locNodeId, info));
     }
 
     /** {@inheritDoc} */
@@ -420,7 +420,7 @@ public class HadoopV2Job implements HadoopJob {
 
         taskCtxClsPool.add(ctx.getClass());
 
-        File locDir = taskLocalDir(locNodeId, info);
+        File locDir = taskLocalDir(igniteWorkDirectory(), locNodeId, info);
 
         if (locDir.exists())
             U.delete(locDir);
@@ -429,6 +429,11 @@ public class HadoopV2Job implements HadoopJob {
     /** {@inheritDoc} */
     @Override public void cleanupStagingDirectory() {
         rsrcMgr.cleanupStagingDirectory();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String igniteWorkDirectory() {
+        return helper.workDirectory();
     }
 
     /**

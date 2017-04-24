@@ -36,6 +36,7 @@ module.exports.factory = (_, mongo, settings, errors) => {
     class AuthService {
         /**
          * Generate token string.
+         *
          * @param length - length of string
          * @returns {string} - generated token
          */
@@ -53,7 +54,8 @@ module.exports.factory = (_, mongo, settings, errors) => {
         }
 
         /**
-         * Reset password reset token for user
+         * Reset password reset token for user.
+         *
          * @param email - user email
          * @returns {Promise.<mongo.Account>} - that resolves account found by email with new reset password token.
          */
@@ -71,6 +73,7 @@ module.exports.factory = (_, mongo, settings, errors) => {
 
         /**
          * Reset password by reset token.
+         *
          * @param {string} token - reset token
          * @param {string} newPassword - new password
          * @returns {Promise.<mongo.Account>} - that resolves account with new password
@@ -95,7 +98,8 @@ module.exports.factory = (_, mongo, settings, errors) => {
         }
 
         /**
-         * Find account by token
+         * Find account by token.
+         *
          * @param {string} token - reset token
          * @returns {Promise.<{token, email}>} - that resolves token and user email
          */

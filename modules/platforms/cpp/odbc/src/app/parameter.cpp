@@ -52,7 +52,7 @@ namespace ignite
                 // No-op.
             }
 
-            Parameter::Parameter(const Parameter & other) :
+            Parameter::Parameter(const Parameter& other) :
                 buffer(other.buffer),
                 sqlType(other.sqlType),
                 columnSize(other.columnSize),
@@ -266,4 +266,3 @@ namespace ignite
         }
     }
 }
-

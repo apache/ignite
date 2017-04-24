@@ -16,7 +16,10 @@
  */
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -116,5 +119,15 @@ public class HadoopHelperImpl implements HadoopHelper {
     /** {@inheritDoc} */
     @Override @Nullable public InputStream loadClassBytes(ClassLoader ldr, String clsName) {
         return ldr.getResourceAsStream(clsName.replace('.', '/') + ".class");
+    }
+
+    /** {@inheritDoc} */
+    @Override public String workDirectory() {
+        try {
+            return ctx != null ? ctx.config().getWorkDirectory() : U.defaultWorkDirectory();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to resolve Ignite work directory.", e);
+        }
     }
 }

@@ -161,6 +161,54 @@ struct ApiRobustnessTestSuiteFixture
     }
 
     /**
+     * Check that SQLFetchScroll does not crash with unsupported orientation.
+     *
+     * @param orientation Fetch orientation.
+     */
+    void CheckFetchScrollUnsupportedOrientation(SQLUSMALLINT orientation)
+    {
+        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
+
+        SQLRETURN ret;
+
+        const int64_t recordsNum = 100;
+
+        for (int i = 0; i < recordsNum; ++i)
+        {
+            TestType val;
+
+            val.i32Field = i * 10;
+
+            testCache.Put(i, val);
+        }
+
+        int32_t i32Field = -1;
+
+        // Binding column.
+        ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &i32Field, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        SQLCHAR request[] = "SELECT i32Field FROM TestType ORDER BY _key";
+
+        ret = SQLExecDirect(stmt, request, SQL_NTS);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        ret = SQLFetchScroll(stmt, SQL_FETCH_NEXT, 0);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECK_EQUAL(i32Field, 0);
+
+        ret = SQLFetchScroll(stmt, orientation, 0);
+
+        // Operation is not supported. However, there should be no crash.
+        BOOST_CHECK(ret == SQL_ERROR);
+    }
+
+    /**
      * Destructor.
      */
     ~ApiRobustnessTestSuiteFixture()
@@ -1001,6 +1049,66 @@ BOOST_AUTO_TEST_CASE(TestSQLSpecialColumns)
     SQLSpecialColumns(stmt, SQL_BEST_ROWID, 0, 0, 0, 0, 0, 0, SQL_SCOPE_CURROW, SQL_NO_NULLS);
 
     SQLCloseCursor(stmt);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchScrollLast)
+{
+    CheckFetchScrollUnsupportedOrientation(SQL_FETCH_LAST);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchScrollPrior)
+{
+    CheckFetchScrollUnsupportedOrientation(SQL_FETCH_PRIOR);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchScrollFirst)
+{
+    CheckFetchScrollUnsupportedOrientation(SQL_FETCH_FIRST);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLError)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+
+    SQLCHAR state[6] = { 0 };
+    SQLINTEGER nativeCode = 0;
+    SQLCHAR message[ODBC_BUFFER_SIZE] = { 0 };
+    SQLSMALLINT messageLen = 0;
+
+    // Everything is ok.
+    SQLRETURN ret = SQLError(env, 0, 0, state, &nativeCode, message, sizeof(message), &messageLen);
+
+    if (ret != SQL_SUCCESS && ret != SQL_NO_DATA)
+        BOOST_FAIL("Unexpected error");
+
+    ret = SQLError(0, dbc, 0, state, &nativeCode, message, sizeof(message), &messageLen);
+
+    if (ret != SQL_SUCCESS && ret != SQL_NO_DATA)
+        BOOST_FAIL("Unexpected error");
+
+    ret = SQLError(0, 0, stmt, state, &nativeCode, message, sizeof(message), &messageLen);
+
+    if (ret != SQL_SUCCESS && ret != SQL_NO_DATA)
+        BOOST_FAIL("Unexpected error");
+
+    SQLError(0, 0, 0, state, &nativeCode, message, sizeof(message), &messageLen);
+
+    SQLError(0, 0, stmt, 0, &nativeCode, message, sizeof(message), &messageLen);
+
+    SQLError(0, 0, stmt, state, 0, message, sizeof(message), &messageLen);
+
+    SQLError(0, 0, stmt, state, &nativeCode, 0, sizeof(message), &messageLen);
+
+    SQLError(0, 0, stmt, state, &nativeCode, message, 0, &messageLen);
+
+    SQLError(0, 0, stmt, state, &nativeCode, message, sizeof(message), 0);
+
+    SQLError(0, 0, stmt, 0, 0, 0, 0, 0);
+
+    SQLError(0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

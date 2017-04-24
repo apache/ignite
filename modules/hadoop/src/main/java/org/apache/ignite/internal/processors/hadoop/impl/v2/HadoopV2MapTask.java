@@ -28,6 +28,7 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 
 /**
@@ -48,6 +49,11 @@ public class HadoopV2MapTask extends HadoopV2Task {
         Exception err = null;
 
         JobContextImpl jobCtx = taskCtx.jobContext();
+
+        if (taskCtx.taskInfo().hasMapperIndex())
+            HadoopMapperUtils.mapperIndex(taskCtx.taskInfo().mapperIndex());
+        else
+            HadoopMapperUtils.clearMapperIndex();
 
         try {
             InputSplit nativeSplit = hadoopContext().getInputSplit();
@@ -72,6 +78,8 @@ public class HadoopV2MapTask extends HadoopV2Task {
 
             try {
                 mapper.run(new WrappedMapper().getMapContext(hadoopContext()));
+
+                hadoopContext().onMapperFinished();
             }
             finally {
                 closeWriter();
@@ -92,6 +100,8 @@ public class HadoopV2MapTask extends HadoopV2Task {
             throw new IgniteCheckedException(e);
         }
         finally {
+            HadoopMapperUtils.clearMapperIndex();
+
             if (err != null)
                 abort(outputFormat);
         }

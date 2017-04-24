@@ -35,9 +35,7 @@ suite('AuthServiceTestsSuite', () => {
             });
     });
 
-    setup(() => {
-        return db.init();
-    });
+    setup(() => db.init());
 
     test('Check token generator', () => {
         const tokenLength = 16;

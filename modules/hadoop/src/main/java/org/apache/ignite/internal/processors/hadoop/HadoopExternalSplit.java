@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Arrays;
 
 /**
  * Split serialized in external file.
@@ -84,5 +87,10 @@ public class HadoopExternalSplit extends HadoopInputSplit {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return (int)(off ^ (off >>> 32));
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return S.toString(HadoopExternalSplit.class, this, "hosts", Arrays.toString(hosts));
     }
 }

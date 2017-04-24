@@ -20,6 +20,10 @@ import webpack from 'webpack';
 
 import {destDir, rootDir, srcDir} from '../../paths';
 
+const devServerHost = 'localhost';
+const devServerPort = 9000;
+const devServerUrl = `http://${devServerHost}:${devServerPort}/`;
+
 export default () => {
     const plugins = [
         new webpack.HotModuleReplacementPlugin()
@@ -27,8 +31,11 @@ export default () => {
 
     return {
         entry: {
-            webpack: 'webpack-dev-server/client?http://localhost:9000/',
+            webpack: `webpack-dev-server/client?${devServerUrl}`,
             app: [path.join(srcDir, 'app.js'), 'webpack/hot/only-dev-server']
+        },
+        output: {
+            publicPath: devServerUrl
         },
         context: rootDir,
         debug: true,
@@ -48,6 +55,11 @@ export default () => {
                     changeOrigin: true,
                     ws: true
                 },
+                '/agents': {
+                    target: 'http://localhost:3000',
+                    changeOrigin: true,
+                    ws: true
+                },
                 '/api/v1/*': {
                     target: 'http://localhost:3000',
                     changeOrigin: true,
@@ -60,10 +72,12 @@ export default () => {
                 aggregateTimeout: 1000,
                 poll: 2000
             },
-            stats: {colors: true},
-            port: 9000
+            stats: {
+                colors: true,
+                chunks: false
+            },
+            port: devServerPort
         },
-        stats: {colors: true},
         plugins
     };
 };
