@@ -753,7 +753,7 @@ public class GridReduceQueryExecutor {
 
                     if (state != null) {
                         if (state instanceof CacheException) {
-                            CacheException err = (CacheException) state;
+                            CacheException err = (CacheException)state;
 
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
@@ -768,7 +768,7 @@ public class GridReduceQueryExecutor {
                             retry = true;
 
                             // If remote node asks us to retry then we have outdated full partition map.
-                            h2.awaitForReadyTopologyVersion((AffinityTopologyVersion) state);
+                            h2.awaitForReadyTopologyVersion((AffinityTopologyVersion)state);
                         }
                     }
                 }
