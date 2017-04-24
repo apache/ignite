@@ -277,6 +277,30 @@ BOOST_AUTO_TEST_CASE(TestEnableSharedFromThis)
     BOOST_CHECK(deleted);
 }
 
+BOOST_AUTO_TEST_CASE(ConditionVariableBasic)
+{
+    CriticalSection cs;
+    ConditionVariable cv;
+
+    CsLockGuard guard(cs);
+
+    bool notified = cv.WaitFor(cs, 100);
+
+    BOOST_REQUIRE(!notified);
+
+    cv.NotifyOne();
+
+    notified = cv.WaitFor(cs, 100);
+
+    BOOST_REQUIRE(!notified);
+
+    cv.NotifyAll();
+
+    notified = cv.WaitFor(cs, 100);
+
+    BOOST_REQUIRE(!notified);
+}
+
 BOOST_AUTO_TEST_CASE(ManualEventBasic)
 {
     ManualEvent evt;
