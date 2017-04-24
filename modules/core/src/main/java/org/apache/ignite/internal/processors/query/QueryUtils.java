@@ -807,6 +807,9 @@ public class QueryUtils {
 
         if (!F.isEmpty(entities)) {
             for (QueryEntity entity : entities) {
+                if (F.isEmpty(entity.getValueType()))
+                    continue;
+
                 Collection<QueryIndex> idxs = entity.getIndexes();
 
                 if (!F.isEmpty(idxs)) {

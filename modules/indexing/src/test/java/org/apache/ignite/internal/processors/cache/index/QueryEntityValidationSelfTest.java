@@ -19,11 +19,15 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -49,7 +53,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testNullValueType() throws Exception {
+    public void testValueTypeNull() throws Exception {
         final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
         QueryEntity entity = new QueryEntity();
@@ -64,6 +68,95 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteCheckedException.class, "Value type cannot be null or empty");
+    }
+
+    /**
+     * Test failure if index type is null.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIndexTypeNull() throws Exception {
+        final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
+
+        QueryEntity entity = new QueryEntity();
+
+        entity.setKeyType("Key");
+        entity.setValueType("Value");
+
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        fields.put("a", Integer.class.getName());
+
+        entity.setFields(fields);
+
+        LinkedHashMap<String, Boolean> idxFields = new LinkedHashMap<>();
+
+        idxFields.put("a", true);
+
+        QueryIndex idx = new QueryIndex().setName("idx").setFields(idxFields).setIndexType(null);
+
+        List<QueryIndex> idxs = new ArrayList<>();
+
+        idxs.add(idx);
+
+        entity.setIndexes(idxs);
+
+        ccfg.setQueryEntities(Collections.singleton(entity));
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                grid(0).createCache(ccfg);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, "Index type is not set");
+    }
+
+    /**
+     * Test duplicated index name.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIndexNameDuplicate() throws Exception {
+        final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
+
+        QueryEntity entity = new QueryEntity();
+
+        entity.setKeyType("Key");
+        entity.setValueType("Value");
+
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        fields.put("a", Integer.class.getName());
+        fields.put("b", Integer.class.getName());
+
+        entity.setFields(fields);
+
+        LinkedHashMap<String, Boolean> idx1Fields = new LinkedHashMap<>();
+        LinkedHashMap<String, Boolean> idx2Fields = new LinkedHashMap<>();
+
+        idx1Fields.put("a", true);
+        idx1Fields.put("b", true);
+
+        QueryIndex idx1 = new QueryIndex().setName("idx").setFields(idx1Fields);
+        QueryIndex idx2 = new QueryIndex().setName("idx").setFields(idx2Fields);
+
+        List<QueryIndex> idxs = new ArrayList<>();
+
+        idxs.add(idx1);
+        idxs.add(idx2);
+
+        entity.setIndexes(idxs);
+
+        ccfg.setQueryEntities(Collections.singleton(entity));
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                grid(0).createCache(ccfg);
+
+                return null;
+            }
+        }, IgniteCheckedException.class, "Duplicate index name");
     }
 }
