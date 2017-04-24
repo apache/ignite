@@ -50,7 +50,6 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * <p>Given <code>Q</code> and <code>R</code>, the last equation is solved by back-substitution.</p>
  */
 public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegression {
-
     /** Cached QR decomposition of X matrix */
     private QRDecomposition qr = null;
 
@@ -79,8 +78,8 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      *
      * Computes and caches QR decomposition of the X matrix.
      *
-     * @param y the [n,1] array representing the y sample
-     * @param x the [n,k] array representing the x sample
+     * @param y the {@code n}-sized vector representing the y sample
+     * @param x the {@code n x k} matrix representing the x sample
      * @throws MathIllegalArgumentException if the x and y array data are not compatible for the regression
      */
     public void newSampleData(Vector y, Matrix x) throws MathIllegalArgumentException {

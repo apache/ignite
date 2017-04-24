@@ -49,6 +49,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         super.setUp();
     }
 
+    /** */
     @Override
     protected OLSMultipleLinearRegression createRegression() {
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
@@ -56,16 +57,19 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         return regression;
     }
 
+    /** */
     @Override
     protected int getNumberOfRegressors() {
         return x[0].length + 1;
     }
 
+    /** */
     @Override
     protected int getSampleSize() {
         return y.length;
     }
 
+    /** */
     @Test(expected = MathIllegalArgumentException.class)
     public void cannotAddSampleDataWithSizeMismatch() {
         double[] y = new double[] {1.0, 2.0};
@@ -74,30 +78,33 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         createRegression().newSampleData(new DenseLocalOnHeapVector(y), new DenseLocalOnHeapMatrix(x));
     }
 
-//    @Test
-//    public void testPerfectFit() {
-//        double[] betaHat = regression.estimateRegressionParameters();
-//        TestUtils.assertEquals(betaHat,
-//            new double[]{ 11.0, 1.0 / 2.0, 2.0 / 3.0, 3.0 / 4.0, 4.0 / 5.0, 5.0 / 6.0 },
-//            1e-14);
-//        double[] residuals = regression.estimateResiduals();
-//        TestUtils.assertEquals(residuals, new double[]{0d,0d,0d,0d,0d,0d},
-//            1e-14);
-//        Matrix errors = regression.estimateRegressionParametersVariance();
-//        final double[] s = { 1.0, -1.0 /  2.0, -1.0 /  3.0, -1.0 /  4.0, -1.0 /  5.0, -1.0 /  6.0 };
-//        Matrix refVar = new DenseLocalOnHeapMatrix(s.length, s.length);
-//        for (int i = 0; i < refVar.rowSize(); i++)
-//            for (int j = 0; j < refVar.columnSize(); j++) {
-//                if (i == 0)
-//                    refVar.setX(i, j, s[j]);
-//                double x = s[i] * s[j];
-//                refVar.setX(i, j, (i == j) ? 2 * x : x);
-//            }
-//        Assert.assertEquals(0.0,
-//            TestUtils.maximumAbsoluteRowSum(errors.minus(refVar)),
-//            5.0e-16 * TestUtils.maximumAbsoluteRowSum(refVar));
-//        Assert.assertEquals(1, ((OLSMultipleLinearRegression) regression).calculateRSquared(), 1E-12);
-//    }
+    /** */
+    @Test
+    public void testPerfectFit() {
+        double[] betaHat = regression.estimateRegressionParameters();
+        TestUtils.assertEquals(new double[]{ 11.0, 1.0 / 2.0, 2.0 / 3.0, 3.0 / 4.0, 4.0 / 5.0, 5.0 / 6.0 },
+            betaHat,
+            1e-13);
+        double[] residuals = regression.estimateResiduals();
+        TestUtils.assertEquals(new double[]{0d, 0d, 0d, 0d, 0d, 0d}, residuals,
+            1e-13);
+        Matrix errors = regression.estimateRegressionParametersVariance();
+        final double[] s = { 1.0, -1.0 /  2.0, -1.0 /  3.0, -1.0 /  4.0, -1.0 /  5.0, -1.0 /  6.0 };
+        Matrix refVar = new DenseLocalOnHeapMatrix(s.length, s.length);
+        for (int i = 0; i < refVar.rowSize(); i++)
+            for (int j = 0; j < refVar.columnSize(); j++) {
+                if (i == 0) {
+                    refVar.setX(i, j, s[j]);
+                    continue;
+                }
+                double x = s[i] * s[j];
+                refVar.setX(i, j, (i == j) ? 2 * x : x);
+            }
+        Assert.assertEquals(0.0,
+            TestUtils.maximumAbsoluteRowSum(errors.minus(refVar)),
+            5.0e-16 * TestUtils.maximumAbsoluteRowSum(refVar));
+        Assert.assertEquals(1, ((OLSMultipleLinearRegression) regression).calculateRSquared(), 1E-12);
+    }
 
     /**
      * Test Longley dataset against certified values provided by NIST.
@@ -457,23 +464,6 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
     }
 
     /**
-     * Verifies that calculateYVariance and calculateResidualVariance return consistent
-     * values with direct variance computation from Y, residuals, respectively.
-     */
-//    protected void checkVarianceConsistency(OLSMultipleLinearRegression model) {
-//        // Check Y variance consistency
-//        TestUtils.assertEquals(StatUtils.variance(model.getY().toArray()), model.calculateYVariance(), 0);
-//
-//        // Check residual variance consistency
-//        double[] residuals = model.calculateResiduals().toArray();
-//        Matrix x = model.getX();
-//        TestUtils.assertEquals(
-//            StatUtils.variance(model.calculateResiduals().toArray()) * (residuals.length - 1),
-//            model.calculateErrorVariance() * (x.getRowDimension() - x.getColumnDimension()), 1E-20);
-//
-//    }
-
-    /**
      * Verifies that setting X and Y separately has the same effect as newSample(X,Y).
      */
     @Test
@@ -505,11 +495,13 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         Assert.assertEquals(combinedY, regression.getY());
     }
 
+    /** */
     @Test(expected = NullArgumentException.class)
     public void testNewSampleDataYNull() {
         createRegression().newSampleData(null, new DenseLocalOnHeapMatrix(new double[][] {{1}}));
     }
 
+    /** */
     @Test(expected = NullArgumentException.class)
     public void testNewSampleDataXNull() {
         createRegression().newSampleData(new DenseLocalOnHeapVector(new double[] {}), null);
@@ -802,28 +794,21 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         model.calculateBeta();
     }
 
-//    @Test
-//    public void testNoSSTOCalculateRsquare() {
-//        OLSMultipleLinearRegression model = new OLSMultipleLinearRegression();
-//        model.newSampleData(new double[] {1,  2,  3, 1, 7, 8, 1, 10, 12}, 3, 2, new DenseLocalOnHeapMatrix());
-//        // TODO: seems we have this test failed because in Apache Common math we have
-//        // some threshhold for zero values, but we haven't. Therefore in calculateRSquared
-//        // we have not 0.0 / 0.0 which is nan, but rather smallNumber / 0.0 which is Infinity.
-//        Assert.assertTrue(Double.isNaN(model.calculateRSquared()));
-//    }
-
+    /** */
     @Test(expected = NullPointerException.class)
     public void testNoDataNPECalculateBeta() {
         OLSMultipleLinearRegression model = new OLSMultipleLinearRegression();
         model.calculateBeta();
     }
 
+    /** */
     @Test(expected = NullPointerException.class)
     public void testNoDataNPECalculateHat() {
         OLSMultipleLinearRegression model = new OLSMultipleLinearRegression();
         model.calculateHat();
     }
 
+    /** */
     @Test(expected = NullPointerException.class)
     public void testNoDataNPESSTO() {
         OLSMultipleLinearRegression model = new OLSMultipleLinearRegression();
