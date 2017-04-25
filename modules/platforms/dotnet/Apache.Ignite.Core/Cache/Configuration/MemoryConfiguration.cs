@@ -56,12 +56,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public const int DefaultPageSize = 2 * 1024;
 
         /// <summary>
+        /// The default value for <see cref="DefaultMemoryPolicyName"/>.
+        /// </summary>
+        public const string DefaultDefaultMemoryPolicyName = "default";
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="MemoryConfiguration"/> class.
         /// </summary>
         public MemoryConfiguration()
         {
             SystemCacheMemorySize = DefaultSystemCacheMemorySize;
             PageSize = DefaultPageSize;
+            DefaultMemoryPolicyName = DefaultDefaultMemoryPolicyName;
         }
 
         /// <summary>
@@ -140,6 +146,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the name of the default memory policy in <see cref="MemoryPolicies"/>.
         /// </summary>
+        [DefaultValue(DefaultDefaultMemoryPolicyName)]
         public string DefaultMemoryPolicyName { get; set; }
 
         /// <summary>
