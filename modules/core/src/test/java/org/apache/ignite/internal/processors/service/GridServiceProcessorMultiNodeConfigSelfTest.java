@@ -116,14 +116,14 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
                 @Override public boolean applyx() {
                     return
                         DummyService.started(CLUSTER_SINGLE) == 1 &&
-                        DummyService.cancelled(CLUSTER_SINGLE) == 0 &&
-                        DummyService.started(NODE_SINGLE) == nodeCount() &&
-                        DummyService.cancelled(NODE_SINGLE) == 0 &&
-                        DummyService.started(NODE_SINGLE_BUT_CLIENT) == nodeCount() &&
-                        DummyService.cancelled(NODE_SINGLE_BUT_CLIENT) == 0 &&
-                        DummyService.started(NODE_SINGLE_WITH_LIMIT) >= nodeCount() &&
-                        DummyService.cancelled(NODE_SINGLE_WITH_LIMIT) == 0 &&
-                        actualCount(AFFINITY, randomGrid().services().serviceDescriptors()) == 1;
+                            DummyService.cancelled(CLUSTER_SINGLE) == 0 &&
+                            DummyService.started(NODE_SINGLE) == nodeCount() &&
+                            DummyService.cancelled(NODE_SINGLE) == 0 &&
+                            DummyService.started(NODE_SINGLE_BUT_CLIENT) == nodeCount() &&
+                            DummyService.cancelled(NODE_SINGLE_BUT_CLIENT) == 0 &&
+                            DummyService.started(NODE_SINGLE_WITH_LIMIT) >= nodeCount() &&
+                            DummyService.cancelled(NODE_SINGLE_WITH_LIMIT) == 0 &&
+                            actualCount(AFFINITY, randomGrid().services().serviceDescriptors()) == 1;
                 }
             },
             2000
