@@ -21,9 +21,7 @@ import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Row;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
-import java.lang.reflect.Method;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 import org.w3c.dom.Element;
@@ -82,18 +80,13 @@ public abstract class PojoField implements Serializable {
      * Creates instance of {@link PojoField}  from its property descriptor.
      *
      * @param desc Field property descriptor.
-     * @param sqlField annotation object.
      */
-    public PojoField(PropertyDescriptor desc, QuerySqlField sqlField) {
+    public PojoField(PropertyDescriptor desc) {
         this.name = desc.getName();
 
-        col = sqlField != null && sqlField.name() != null &&
-            !sqlField.name().trim().isEmpty() ? sqlField.name() : name.toLowerCase();
+        col = name.toLowerCase();
 
         init(desc);
-
-        if (sqlField != null)
-            init(sqlField);
     }
 
     /**
@@ -195,13 +188,6 @@ public abstract class PojoField implements Serializable {
                 " of '" + obj.getClass().toString() + "' class", e);
         }
     }
-
-    /**
-     * Initializes field info from annotation.
-     *
-     * @param sqlField {@link QuerySqlField} annotation.
-     */
-    protected abstract void init(QuerySqlField sqlField);
 
     /**
      * Initializes field info from property descriptor.

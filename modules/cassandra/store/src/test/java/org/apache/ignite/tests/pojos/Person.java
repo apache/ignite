@@ -40,7 +40,6 @@ public class Person implements Externalizable {
     private String lastName;
 
     /** */
-    @QuerySqlField
     private String fullName;
 
     /** */

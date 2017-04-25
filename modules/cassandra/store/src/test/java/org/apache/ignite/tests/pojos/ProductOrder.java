@@ -34,23 +34,18 @@ public class ProductOrder {
     private static final DateFormat FULL_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss:S");
 
     /** */
-    @QuerySqlField(index = true)
     private long id;
 
     /** */
-    @QuerySqlField(index = true)
     private long productId;
 
     /** */
-    @QuerySqlField
     private Date date;
 
     /** */
-    @QuerySqlField
     private int amount;
 
     /** */
-    @QuerySqlField
     private float price;
 
     /** */

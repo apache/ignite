@@ -24,23 +24,18 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
  */
 public class Product {
     /** */
-    @QuerySqlField(index = true)
     private long id;
 
     /** */
-    @QuerySqlField
     private String type;
 
     /** */
-    @QuerySqlField(index = true)
     private String title;
 
     /** */
-    @QuerySqlField
     private String description;
 
     /** */
-    @QuerySqlField
     private float price;
 
     /** */
