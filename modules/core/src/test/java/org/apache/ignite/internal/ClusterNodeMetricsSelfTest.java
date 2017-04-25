@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -113,7 +114,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         MemoryMetrics memMetrics = getDefaultMemoryPolicyMetrics(ignite);
 
-        memMetrics.enableMetrics();
+        ((MemoryMetricsImpl)memMetrics).enableMetrics();
 
         int pageSize = getPageSize(ignite);
 
