@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -25,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessorException;
@@ -915,36 +917,47 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public void testClientServer() throws Exception {
+    public void testStreamingCacheEntryProcessor() throws Exception {
         try {
-            Object alienPair = reloadingClassLoader(Pair.class)
-                    .loadClass(Pair.class.getName())
-                    .getConstructor(Object.class, Object.class)
-                    .newInstance(666, 666);
+            String processorClassName = "org.apache.ignite.internal.processors.datastreamer.StreamingCacheEntryProcessor";
+            Object alienProcessor = loadClass(processorClassName, ".javaclass")
+                    .getConstructor()
+                    .newInstance();
+            Method process = alienProcessor.getClass().getMethod("process", MutableEntry.class, Object[].class);
+            Object response = process.invoke(alienProcessor, null, null);
+            assertEquals("OK", response);
 
 
             useCache = true;
-            Ignite serverNode = startGrid(1);
+            String serverInstanceName = getTestIgniteInstanceName(1);
+            IgniteConfiguration serverConfig = optimize(getConfiguration(serverInstanceName));
+            serverConfig.setClientMode(false);
+            serverConfig.setPeerClassLoadingEnabled(true);
+            Ignite serverNode = startGrid(serverInstanceName, serverConfig);
             assertFalse(serverNode.configuration().isClientMode());
+            assertTrue(serverNode.configuration().isPeerClassLoadingEnabled());
+
             IgniteCache<String, Object> serverCache = serverNode.getOrCreateCache("test");
             serverCache.put("zero", new Pair<>(0, 0));
             assertEquals(new Pair<>(0, 0), serverCache.get("zero"));
 
-            serverCache.put("666", alienPair);
-            assertEquals(new Pair<>(666, 666), serverCache.get("666"));
-
             useCache = false;
-            Ignite clientNode = startGrid(2);
+            String clientInstanceName = getTestIgniteInstanceName(2);
+            IgniteConfiguration clientConfig = optimize(getConfiguration(clientInstanceName));
+            clientConfig.setClientMode(true);
+            clientConfig.setPeerClassLoadingEnabled(true);
+            Ignite clientNode = startGrid(clientInstanceName, clientConfig);
             assertTrue(clientNode.configuration().isClientMode());
+            assertTrue(clientNode.configuration().isPeerClassLoadingEnabled());
             IgniteCache<String, Pair<Integer, Integer>> clientCache = clientNode.getOrCreateCache("test");
             assertEquals(new Pair<>(0, 0), clientCache.get("zero"));
 
             IgniteFuture<?> future;
             try(IgniteDataStreamer<String, Object> streamer = clientNode.dataStreamer("test")) {
                 streamer.allowOverwrite(true);
-//                streamer.receiver(new StreamTransformerCacheEntryProcessor());
-                streamer.receiver((StreamTransformer) StreamTransformer.from(new StreamingCacheEntryProcessor()));
-                future = streamer.addData("one", alienPair);
+//                streamer.receiver(new StreamTransformerProcessor());
+                streamer.receiver((StreamTransformer) StreamTransformer.from((CacheEntryProcessor<? extends Object, ? extends Object, Object>) alienProcessor));
+                future = streamer.addData("666", new Pair<>(666, 666));
             }
             future.get(1000L);
         } finally {
@@ -952,62 +965,85 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public static class StreamingCacheEntryProcessor implements CacheEntryProcessor<String, Pair<Integer, Integer>, Object> {
+    public void testStreamTransformerProcessor() throws Exception {
+        try {
+            useCache = true;
+            String serverInstanceName = getTestIgniteInstanceName(1);
+            IgniteConfiguration serverConfig = optimize(getConfiguration(serverInstanceName));
+            serverConfig.setClientMode(false);
+            serverConfig.setPeerClassLoadingEnabled(true);
+            Ignite serverNode = startGrid(serverInstanceName, serverConfig);
+            assertFalse(serverNode.configuration().isClientMode());
+            assertTrue(serverNode.configuration().isPeerClassLoadingEnabled());
 
-        @Override
-        public Object process(MutableEntry<String, Pair<Integer, Integer>> entry, Object... arguments) throws EntryProcessorException {
-            System.out.println("\n" +
-                    "***********************\n" +
-                    "* CacheEntryProcessor *\n" +
-                    "***********************\n");
-            Pair<Integer, Integer> pair = entry.getValue() == null ? new Pair<>(0,0) : entry.getValue();
-            entry.setValue(new Pair<>(pair.getKey() + 1, pair.getValue() + 1));
-            return entry.getValue();
-        }
-    }
-    public static class StreamTransformerCacheEntryProcessor extends StreamTransformer<String, Pair<Integer, Integer>> {
+            IgniteCache<String, Object> serverCache = serverNode.getOrCreateCache("test");
+            serverCache.put("zero", 0);
+            assertEquals(0, serverCache.get("zero"));
 
-        @Override
-        public Object process(MutableEntry<String, Pair<Integer, Integer>> entry, Object... arguments) throws EntryProcessorException {
-            System.out.println("\n" +
-                    "*********************\n" +
-                    "* StreamTransformer *\n" +
-                    "*********************\n");
-            Pair<Integer, Integer> pair = entry.getValue() == null ? new Pair<>(0,0) : entry.getValue();
-            entry.setValue(new Pair<>(pair.getKey() + 1, pair.getValue() + 1));
-            return entry.getValue();
-        }
-    }
+            useCache = false;
+            String processorClassName = "org.apache.ignite.internal.processors.datastreamer.StreamTransformerProcessor";
+            ClassLoader clientClassLoader = reloadingClassLoader(processorClassName, ".javaclass");
+            final Object alienProcessor = clientClassLoader.loadClass(processorClassName)
+                    .getConstructor()
+                    .newInstance();
+            Method process = alienProcessor.getClass().getMethod("process", MutableEntry.class, Object[].class);
+            Object response = process.invoke(alienProcessor, null, null);
+            assertEquals("OK", response);
+            final AtomicReference<Exception> error = new AtomicReference<>();
+            Thread clientThread = new Thread("ignite-client") {
+                @Override
+                public void run() {
+                    try {
+                        String clientInstanceName = getTestIgniteInstanceName(2);
+                        IgniteConfiguration clientConfig = optimize(getConfiguration(clientInstanceName));
+                        clientConfig.setClientMode(true);
+                        clientConfig.setPeerClassLoadingEnabled(true);
+                        Ignite clientNode = startGrid(clientInstanceName, clientConfig);
+                        assertTrue(clientNode.configuration().isClientMode());
+                        assertTrue(clientNode.configuration().isPeerClassLoadingEnabled());
+                        IgniteCache<String, Pair<Integer, Integer>> clientCache = clientNode.getOrCreateCache("test");
+                        assertEquals(0, clientCache.get("zero"));
 
-    public static class Server {
-        public static void main(String[] args) throws Exception {
-            Ignition.setClientMode(false);
-            URL resource = DataStreamProcessorSelfTest.class.getResource("example-ignite.xml");
-            try (Ignite ignite = Ignition.start(resource)) {
-                assertFalse(ignite.configuration().isClientMode());
-//                ignite.configuration().setPeerClassLoadingLocalClassPathExclude(StreamTransformer.class.getPackage().getName()+"*");
-                IgniteCache<String, Pair<Integer, Integer>> cache = ignite.getOrCreateCache("test");
-                cache.put("zero", new Pair<>(0, 0));
-                assertEquals(new Pair<>(0, 0), cache.get("zero"));
-                while(true)
-                    Thread.sleep(10000L);
+                        IgniteFuture<?> future;
+                        try (IgniteDataStreamer<String, Object> streamer = clientNode.dataStreamer("test")) {
+                            streamer.allowOverwrite(true);
+                            streamer.receiver((StreamReceiver) alienProcessor);
+                            future = streamer.addData("666", 666);
+                        }
+                        future.get(1000L);
+                    }catch (Exception e) {
+                        log.error("ignite-client error: ", e);
+                        error.set(e);
+                    }
+                }
+            };
+            clientThread.setContextClassLoader(clientClassLoader);
+            clientThread.start();
+            clientThread.join();
+            if(error.get()!=null) {
+                fail(error.get().getMessage());
             }
+        } finally {
+            stopAllGrids();
         }
     }
 
-    @NotNull
-    private ClassLoader reloadingClassLoader(final Class forClass) {
-        return new ClassLoader(forClass.getClassLoader()) {
+    private Class loadClass(String className, String ext) throws ClassNotFoundException {
+        return reloadingClassLoader(className, ext).loadClass(className);
+    }
+
+    private ClassLoader reloadingClassLoader(final String className, String ext) {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        return new ClassLoader(classLoader) {
             @Override
             protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-                if (!name.equals(forClass.getName())) {
+                if (!name.equals(className)) {
                     return super.loadClass(name, resolve);
                 }
                 try {
-                    String packageName = forClass.getPackage().getName();
-                    String classFileName = forClass.getName().substring(packageName.length() + 1) + ".class";
+                    String classFileName = className.replace('.', File.separatorChar) + ext;
                     byte[] byteCode;
-                    try (InputStream stream = forClass.getResourceAsStream(classFileName)) {
+                    try (InputStream stream = classLoader.getResourceAsStream(classFileName)) {
                         byteCode = new byte[stream.available()];
                         stream.read(byteCode);
                     }
