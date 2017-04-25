@@ -149,7 +149,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     cfg.getIgniteInstanceName(),
                     "MemoryMetrics",
                     memPlcCfg.getName(),
-                    new MemoryMetricsMXBeanImpl(memMetrics, memPlcCfg),
+                    new MemoryMetricsMXBeanImpl(memMetrics),
                     MemoryMetricsMXBean.class);
         }
         catch (JMException e) {
@@ -264,7 +264,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
 
-        MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(U.maskName(memPlcCfg.getName()));
+        MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg);
 
         MemoryPolicy memPlc = initMemory(dbCfg, memPlcCfg, memMetrics);
 
