@@ -538,6 +538,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return new DataStreamerImpl<TK, TV>(UU.ProcessorDataStreamer(_proc, cacheName, false),
                 _marsh, cacheName, false);
         }
