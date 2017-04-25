@@ -349,7 +349,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         if (plcCfg.getMaxSize() < plcCfg.getInitialSize())
             throw new IgniteCheckedException("MemoryPolicy maxSize must not be smaller than " +
-                "initialSize: " + plcCfg.getName());
+                "initialSize [name=" + plcCfg.getName() +
+                ", initSize=" + U.readableSize(plcCfg.getInitialSize(), true) +
+                ", maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) + ']');
     }
 
     /**
