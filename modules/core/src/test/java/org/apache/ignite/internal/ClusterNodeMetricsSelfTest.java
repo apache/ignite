@@ -113,7 +113,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         MemoryMetricsImpl memMetrics = getDefaultMemoryPolicyMetrics(ignite);
 
-        memMetrics.enableMetrics();
+        ((MemoryMetricsImpl)memMetrics).enableMetrics();
 
         int pageSize = getPageSize(ignite);
 

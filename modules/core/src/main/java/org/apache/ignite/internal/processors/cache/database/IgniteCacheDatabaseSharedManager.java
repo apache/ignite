@@ -128,21 +128,28 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private void registerMetricsMBeans() {
         IgniteConfiguration cfg = cctx.gridConfig();
 
-        for (MemoryMetrics memMetrics : memMetricsMap.values())
-            registerMetricsMBean((MemoryMetricsMXBean)memMetrics, cfg);
+        for (MemoryMetrics memMetrics : memMetricsMap.values()) {
+            MemoryPolicyConfiguration memPlcCfg = memPlcMap.get(memMetrics.getName()).config();
+
+            registerMetricsMBean((MemoryMetricsImpl)memMetrics, memPlcCfg, cfg);
+        }
     }
 
     /**
      * @param memMetrics Memory metrics.
+     * @param memPlcCfg Memory policy configuration.
+     * @param cfg Ignite configuration.
      */
-    private void registerMetricsMBean(MemoryMetricsMXBean memMetrics, IgniteConfiguration cfg) {
+    private void registerMetricsMBean(MemoryMetricsImpl memMetrics,
+        MemoryPolicyConfiguration memPlcCfg,
+        IgniteConfiguration cfg) {
         try {
             U.registerMBean(
                     cfg.getMBeanServer(),
                     cfg.getIgniteInstanceName(),
                     "MemoryMetrics",
-                    memMetrics.getName(),
-                    memMetrics,
+                    memPlcCfg.getName(),
+                    new MemoryMetricsMXBeanImpl(memMetrics, memPlcCfg),
                     MemoryMetricsMXBean.class);
         }
         catch (JMException e) {
@@ -257,7 +264,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
 
-        MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg);
+        MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(U.maskName(memPlcCfg.getName()));
 
         MemoryPolicy memPlc = initMemory(dbCfg, memPlcCfg, memMetrics);
 

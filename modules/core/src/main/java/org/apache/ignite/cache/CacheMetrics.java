@@ -230,13 +230,6 @@ public interface CacheMetrics {
     public long getOffHeapAllocatedSize();
 
     /**
-     * Gets off-heap memory maximum size.
-     *
-     * @return Off-heap memory maximum size.
-     */
-    public long getOffHeapMaxSize();
-
-    /**
      * Gets number of non-{@code null} values in the cache.
      *
      * @return Number of non-{@code null} values in the cache.
