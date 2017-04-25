@@ -2899,7 +2899,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private Index createTreeIndex(String idxName, GridH2Table tbl, boolean pk, List<IndexColumn> columns) {
             final int segments = tbl.rowDescriptor().configuration().getQueryParallelism();
 
-            return new GridH2TreeIndex(idxName, tbl, pk, columns, segments);
+            return new GridH2TreeIndex(idxName, tbl, pk, columns, segments > 0 ? segments : 1);
         }
     }
 
