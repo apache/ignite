@@ -993,10 +993,11 @@ public class GridH2Table extends TableBase {
 
         if (modified) {
             String proxyName = target.getName() + "_proxy";
+
             if (target.getIndexType().isSpatial())
                 return new GridH2ProxySpatialIndex(this, proxyName, proxyCols, target);
 
-            return new GridH2ProxyIndex(this, target.getName() + "_proxy", proxyCols, target);
+            return new GridH2ProxyIndex(this, proxyName, proxyCols, target);
         }
 
         return null;
