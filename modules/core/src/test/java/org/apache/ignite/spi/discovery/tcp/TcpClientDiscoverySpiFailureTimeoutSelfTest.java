@@ -103,12 +103,12 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         checkNodes(1, 1);
 
         assertTrue(((TcpDiscoverySpi)(G.ignite("server-0").configuration().getDiscoverySpi())).
-                failureDetectionTimeoutEnabled());
+            failureDetectionTimeoutEnabled());
         assertEquals(failureDetectionTimeout(),
             ((TcpDiscoverySpi)(G.ignite("server-0").configuration().getDiscoverySpi())).failureDetectionTimeout());
 
         assertTrue(((TcpDiscoverySpi)(G.ignite("client-0").configuration().getDiscoverySpi())).
-                failureDetectionTimeoutEnabled());
+            failureDetectionTimeoutEnabled());
         assertEquals(failureDetectionTimeout(),
             ((TcpDiscoverySpi)(G.ignite("client-0").configuration().getDiscoverySpi())).failureDetectionTimeout());
     }
@@ -147,17 +147,78 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
      * @throws Exception in case of error.
      */
     public void testFailureTimeoutServerServer() throws Exception {
-        failureThreshold = 5000;
+        failureThreshold = 3000;
         clientFailureThreshold = 10000;
         useTestSpi = true;
 
         try {
-            long detectTime = measureFailureDetectedTime(2,0);
 
-            assertTrue("Server node failure detected too fast: " + detectTime + "ms",
-                detectTime > failureThreshold - 100);
-            assertTrue("Server node failure detected too slow:  " + detectTime + "ms",
-                detectTime < clientFailureThreshold);
+            startServerNodes(2);
+
+            checkNodes(2, 0);
+
+            Ignite srv0 = G.ignite("server-0");
+            final TestTcpDiscoverySpi2 spi0 = (TestTcpDiscoverySpi2)srv0.configuration().getDiscoverySpi();
+
+            Ignite srv1 = G.ignite("server-1");
+            final TestTcpDiscoverySpi2 spi1 = (TestTcpDiscoverySpi2)srv1.configuration().getDiscoverySpi();
+
+            long failureTime = U.currentTimeMillis();
+
+            final long[] failureDetectTime = new long[2];
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            spi0.writeToSocketDelay = 7000;
+            spi1.writeToSocketDelay = 7000;
+
+            Thread pinger = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    spi0.pingNode(spi1.getLocalNodeId());
+                }
+            });
+
+            pinger.start();
+
+            System.out.println("0: " + spi0.getLocalNodeId() + " " + spi0.getCoordinator());
+            System.out.println("1: " + spi1.getLocalNodeId() + " " + spi1.getCoordinator());
+
+            srv0.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    failureDetectTime[0] = U.currentTimeMillis();
+                    latch.countDown();
+                    return true;
+                }
+            }, EVT_NODE_FAILED);
+
+            srv1.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    failureDetectTime[1] = U.currentTimeMillis();
+                    latch.countDown();
+                    return true;
+                }
+            }, EVT_NODE_FAILED);
+
+            pinger.join();
+
+            assertTrue("Can't get node failure event", latch.await(15000, TimeUnit.MILLISECONDS));
+
+            System.out.println("0: " + spi0.getLocalNodeId() + " " + spi0.getCoordinator());
+            System.out.println("1: " + spi1.getLocalNodeId() + " " + spi1.getCoordinator());
+
+            U.sleep(7000);
+
+            System.out.println("+0: " + spi0.getLocalNodeId() + " " + spi0.getCoordinator());
+            System.out.println("+1: " + spi1.getLocalNodeId() + " " + spi1.getCoordinator());
+            long detectTime0 = failureDetectTime[0] - failureTime;
+            long detectTime1 = failureDetectTime[1] - failureTime;
+
+            System.out.println("detectTime0=" + detectTime0 + ", detectTime1=" + detectTime1);
+
+            assertTrue("Server node failure detected too fast: " + detectTime1 + "ms",
+                detectTime1 > failureThreshold - 100);
+            assertTrue("Server node failure detected too slow:  " + detectTime1 + "ms",
+                detectTime1 < clientFailureThreshold);
         }
         finally {
             failureThreshold = FAILURE_THRESHOLD;
@@ -172,11 +233,53 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
      * @throws Exception in case of error.
      */
     public void testFailureTimeoutServerClient() throws Exception {
-        failureThreshold = 1000;
+        failureThreshold = 3000;
         clientFailureThreshold = 2000;
 
         try {
-            long detectTime = measureFailureDetectedTime(1,1);
+            startServerNodes(1);
+
+            startClientNodes(1);
+
+            checkNodes(1, 1);
+
+            Ignite serverNode = G.ignite("server-0");
+            final TcpDiscoverySpi serverSpi = (TcpDiscoverySpi)serverNode.configuration().getDiscoverySpi();
+
+            Ignite clientNode = G.ignite("client-0");
+            final TcpDiscoverySpi clientSpi = (TcpDiscoverySpi)clientNode.configuration().getDiscoverySpi();
+
+            long failureTime = U.currentTimeMillis();
+
+            final long[] failureDetectTime = new long[1];
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            clientSpi.simulateNodeFailure();
+
+
+            Thread pinger = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    serverSpi.pingNode(clientSpi.getLocalNodeId());
+                }
+            });
+
+            pinger.start();
+
+            serverNode.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    DiscoveryEvent disoEvt = (DiscoveryEvent)evt;
+                    failureDetectTime[0] = U.currentTimeMillis();
+                    latch.countDown();
+                    return true;
+                }
+            }, EVT_NODE_FAILED);
+
+            pinger.join();
+
+            assertTrue("Can't get node failure event", latch.await(15000, TimeUnit.MILLISECONDS));
+
+            long detectTime = failureDetectTime[0]-failureTime;
 
             assertTrue("Client node failure detected too fast: " + detectTime + "ms",
                 detectTime > clientFailureThreshold - 100);
@@ -190,82 +293,91 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     }
 
     /**
-     * Start servers and client, simulate second (server or client) node failure and measure failure detection time.
+     * Test failure detection time between two server with failure detection.
      *
-     * @param srvCnt Number of server nodes to start.
-     * @param clientCnt Number of client nodes to start.
-     * @return Failure detection time.
      * @throws Exception in case of error.
      */
-    private long measureFailureDetectedTime(int srvCnt, int clientCnt) throws Exception {
-        if (srvCnt > 0)
-            startServerNodes(srvCnt);
+    public void testFailureTimeout3Server() throws Exception {
+        failureThreshold = 1000;
+        clientFailureThreshold = 10000;
+        useTestSpi = true;
 
-        if (clientCnt > 0)
-            startClientNodes(clientCnt);
+        try {
 
-        checkNodes(srvCnt, clientCnt);
+            startServerNodes(3);
 
-        Ignite firstSrv = G.ignite("server-0");
-        TcpDiscoverySpi firstSpi = (TcpDiscoverySpi)firstSrv.configuration().getDiscoverySpi();
+            checkNodes(3, 0);
 
-        String secondName = clientCnt > 0 ? "client-0" : "server-1";
+            Ignite srv0 = G.ignite("server-0");
+            final TestTcpDiscoverySpi2 spi0 = (TestTcpDiscoverySpi2)srv0.configuration().getDiscoverySpi();
 
-        Ignite secondNode = G.ignite(secondName);
-        TcpDiscoverySpi secondSpi = (TcpDiscoverySpi)secondNode.configuration().getDiscoverySpi();
+            Ignite srv1 = G.ignite("server-1");
+            final TestTcpDiscoverySpi2 spi1 = (TestTcpDiscoverySpi2)srv1.configuration().getDiscoverySpi();
 
-        long failureTime = U.currentTimeMillis();
+            Ignite srv2 = G.ignite("server-2");
+            final TestTcpDiscoverySpi2 spi2 = (TestTcpDiscoverySpi2)srv2.configuration().getDiscoverySpi();
 
-        final long[] failureDetectTime = new long[1];
-        final CountDownLatch latch = new CountDownLatch(1);
 
-        Ignite aliveNode;
+            long failureTime = U.currentTimeMillis();
 
-        final TcpDiscoverySpi aliveSpi, failureSpi;
+            final long[] failureDetectTime = new long[1];
+            final CountDownLatch latch = new CountDownLatch(1);
 
-        if (clientCnt == 0) {
-            //firstSpi.simulateNodeFailure();
-            ((TestTcpDiscoverySpi2)firstSpi).writeToSocketDelay = 7000;
+            spi1.writeToSocketDelay = 2000;
+            //spi0.pingResponseReadFail = true;
 
-            ((TestTcpDiscoverySpi2)secondSpi).pingResponseReadFail = true;
+            Thread pinger = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    spi1.pingNode(spi2.getLocalNodeId());
+                }
+            });
 
-            aliveNode = secondNode;
-            aliveSpi = secondSpi;
-            failureSpi = firstSpi;
+            pinger.start();
+
+            System.out.println("0: " + spi0.getLocalNodeId() + " " + spi0.getCoordinator());
+            System.out.println("1: " + spi1.getLocalNodeId() + " " + spi1.getCoordinator());
+            System.out.println("2: " + spi2.getLocalNodeId() + " " + spi2.getCoordinator());
+
+            srv1.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    failureDetectTime[0] = U.currentTimeMillis();
+                    latch.countDown();
+                    return true;
+                }
+            }, EVT_NODE_FAILED);
+
+            pinger.join();
+
+            assertTrue("Can't get node failure event", latch.await(15000, TimeUnit.MILLISECONDS));
+
+            System.out.println("0: " + spi0.getLocalNodeId() + " " + spi0.getCoordinator());
+            System.out.println("1: " + spi1.getLocalNodeId() + " " + spi1.getCoordinator());
+            System.out.println("2: " + spi2.getLocalNodeId() + " " + spi2.getCoordinator());
+
+            U.sleep(7000);
+
+            System.out.println("+0: " + spi0.getLocalNodeId() + " " + spi0.getCoordinator());
+            System.out.println("+1: " + spi1.getLocalNodeId() + " " + spi1.getCoordinator());
+            System.out.println("2: " + spi2.getLocalNodeId() + " " + spi2.getCoordinator());
+
+            long detectTime = failureDetectTime[0] - failureTime;
+
+            System.out.println("detectTime=" + detectTime);
+
+            assertTrue("Server node failure detected too fast: " + detectTime + "ms",
+                detectTime > failureThreshold - 100);
+            assertTrue("Server node failure detected too slow:  " + detectTime + "ms",
+                detectTime < clientFailureThreshold);
         }
-        else {
-            secondSpi.simulateNodeFailure();
-            aliveNode = firstSrv;
-            aliveSpi = firstSpi;
-            failureSpi = secondSpi;
+        finally {
+            failureThreshold = FAILURE_THRESHOLD;
+            clientFailureThreshold = CLIENT_FAILURE_THRESHOLD;
+            useTestSpi = false;
         }
-
-        Thread pinger = new Thread(new Runnable() {
-            @Override public void run() {
-                aliveSpi.pingNode(failureSpi.getLocalNodeId());
-            }
-        });
-
-        pinger.start();
-
-        aliveNode.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                DiscoveryEvent disoEvt = (DiscoveryEvent)evt;
-
-                failureDetectTime[0] = U.currentTimeMillis();
-
-                latch.countDown();
-
-                return true;
-            }
-        }, EVT_NODE_FAILED);
-
-        pinger.join();
-
-        assertTrue("Can't get node failure event", latch.await(15000, TimeUnit.MILLISECONDS));
-
-        return failureDetectTime[0] - failureTime;
     }
+
+
 
 
     /**
@@ -452,14 +564,15 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             if (sock.getSoTimeout() >= writeToSocketDelay) {
                 super.writeToSocket(sock, msg, data, timeout);
             } else {
-                throw new IOException("Write to socket delay timeout exception.");
+                System.out.println("Drop " + data.length + " bytes with sock timeout=" + sock.getSoTimeout());
+                throw new SocketTimeoutException("Write to socket delay timeout exception.");
             }
         }
 
         protected void writeToSocket(Socket sock,
-            OutputStream out,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
+                                     OutputStream out,
+                                     TcpDiscoveryAbstractMessage msg,
+                                     long timeout) throws IOException, IgniteCheckedException {
             if (writeToSocketDelay > 0) {
                 try {
                     Thread.sleep(writeToSocketDelay);
@@ -468,10 +581,12 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 }
             }
 
-            if (sock.getSoTimeout() >= writeToSocketDelay)
+            if (sock.getSoTimeout() >= writeToSocketDelay) {
                 super.writeToSocket(sock, out, msg, timeout);
-            else
-                throw new IOException("Write to socket delay timeout exception.");
+            } else {
+                System.out.println("Drop msg" + msg + " with sock timeout=" + sock.getSoTimeout());
+                throw new SocketTimeoutException("Write to socket delay timeout exception.");
+            }
         }
 
 
