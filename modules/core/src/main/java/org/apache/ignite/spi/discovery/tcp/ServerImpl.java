@@ -3859,7 +3859,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (node != null) {
                     node.clientRouterNodeId(msg.routerNodeId());
-                    node.aliveTime(1000);//!!!!!!!!!!!!!!!!!!!!!!/IgniteCfg.clientFailureDetectionTimeout);
+                    node.aliveTime(spi.clientFailureDetectionTimeout());
                 }
 
                 if (isLocalNodeCoordinator()) {
@@ -4089,7 +4089,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (msg.client())
-                    node.aliveTime(1000);//!!!!!!!!!!!!!!!!!!!!!!/IgniteCfg.clientFailureDetectionTimeout);
+                    node.aliveTime(spi.clientFailureDetectionTimeout());
 
                 boolean topChanged = ring.add(node);
 
@@ -4966,7 +4966,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     for (TcpDiscoveryNode clientNode : ring.clientNodes()) {
                         if (clientNode.visible()) {
                             if (clientNodeIds.contains(clientNode.id()))
-                                clientNode.aliveTime(1000);//!!!!!!!!!!!!!!!!!!!!!!!!/IgniteCfg.clientFailuleDetectionTimeout
+                                clientNode.aliveTime(spi.clientFailureDetectionTimeout());
                             else {
                                 boolean aliveCheck = clientNode.testAliveTime();
 
