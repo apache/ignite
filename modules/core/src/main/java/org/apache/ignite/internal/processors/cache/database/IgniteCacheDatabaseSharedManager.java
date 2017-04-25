@@ -165,8 +165,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * @param dbCfg Database config.
+     *
+     * @throws IgniteCheckedException in case of error during creation of MemoryPolicy
+     * with swap file path configured.
      */
-    protected void initPageMemoryPolicies(MemoryConfiguration dbCfg) {
+    protected void initPageMemoryPolicies(MemoryConfiguration dbCfg) throws IgniteCheckedException {
         MemoryPolicyConfiguration[] memPlcsCfgs = dbCfg.getMemoryPolicies();
 
         if (memPlcsCfgs == null) {
@@ -259,8 +262,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dbCfg Database configuration.
      * @param memPlcCfg MemoryPolicy configuration.
      * @param memMetrics MemoryMetrics instance.
+     *
+     * @throws IgniteCheckedException in case of error during creation of MemoryPolicy
+     * with swap file path configured.
      */
-    private MemoryPolicy createDefaultMemoryPolicy(MemoryConfiguration dbCfg, MemoryPolicyConfiguration memPlcCfg, MemoryMetricsImpl memMetrics) {
+    private MemoryPolicy createDefaultMemoryPolicy(MemoryConfiguration dbCfg,
+                                                   MemoryPolicyConfiguration memPlcCfg,
+                                                   MemoryMetricsImpl memMetrics)
+            throws IgniteCheckedException {
         return initMemory(dbCfg, memPlcCfg, memMetrics);
     }
 
@@ -592,8 +601,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param plc memory policy with PageMemory specific parameters.
      * @param memMetrics {@link MemoryMetrics} object to collect memory usage metrics.
      * @return Memory policy instance.
+     *
+     * @throws IgniteCheckedException if resolving Ignite working directory fails.
      */
-    private MemoryPolicy initMemory(MemoryConfiguration dbCfg, MemoryPolicyConfiguration plc, MemoryMetricsImpl memMetrics) {
+    private MemoryPolicy initMemory(MemoryConfiguration dbCfg,
+                                    MemoryPolicyConfiguration plc,
+                                    MemoryMetricsImpl memMetrics)
+            throws IgniteCheckedException {
         long[] sizes = calculateFragmentSizes(
                 dbCfg.getConcurrencyLevel(),
                 plc.getSize());
@@ -657,8 +671,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * Builds allocation path for memory mapped file to be used with PageMemory.
      *
      * @param plc MemoryPolicyConfiguration.
+     *
+     * @throws IgniteCheckedException If resolving Ignite working directory fails..
      */
-    @Nullable protected File buildAllocPath(MemoryPolicyConfiguration plc) {
+    @Nullable protected File buildAllocPath(MemoryPolicyConfiguration plc)
+            throws IgniteCheckedException {
         String path = plc.getSwapFilePath();
 
         if (path == null)
@@ -687,13 +704,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param path Path to the working directory.
      * @param consId Consistent ID of the local node.
      * @return DB storage path.
+     *
+     * @throws IgniteCheckedException If resolving Ignite working directory fails.
      */
-    protected File buildPath(String path, String consId) {
+    protected File buildPath(String path, String consId) throws IgniteCheckedException {
         String igniteHomeStr = U.getIgniteHome();
 
-        File igniteHome = igniteHomeStr != null ? new File(igniteHomeStr) : null;
+        File workDir = igniteHomeStr == null ? new File(path) : U.resolveWorkDirectory(igniteHomeStr, path, false);
 
-        File workDir = igniteHome == null ? new File(path) : new File(igniteHome, path);
 
         return new File(workDir, consId);
     }
