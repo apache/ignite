@@ -88,11 +88,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         public const int DefaultThreadPriority = 10;
 
         /// <summary>
-        /// Default value for the <see cref="HeartbeatFrequency"/> property.
-        /// </summary>
-        public static readonly TimeSpan DefaultHeartbeatFrequency = TimeSpan.FromSeconds(2);
-        
-        /// <summary>
         /// Default value for the <see cref="TopologyHistorySize"/> property.
         /// </summary>
         public const int DefaultTopologyHistorySize = 1000;
@@ -114,7 +109,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             MaxMissedClientHeartbeats = DefaultMaxMissedClientHeartbeats;
             IpFinderCleanFrequency = DefaultIpFinderCleanFrequency;
             ThreadPriority = DefaultThreadPriority;
-            HeartbeatFrequency = DefaultHeartbeatFrequency;
             TopologyHistorySize = DefaultTopologyHistorySize;
         }
 
@@ -143,7 +137,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             StatisticsPrintFrequency = reader.ReadLongAsTimespan();
             IpFinderCleanFrequency = reader.ReadLongAsTimespan();
             ThreadPriority = reader.ReadInt();
-            HeartbeatFrequency = reader.ReadLongAsTimespan();
             TopologyHistorySize = reader.ReadInt();
         }
 
@@ -248,13 +241,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         public int ThreadPriority { get; set; }
 
         /// <summary>
-        /// Gets or sets delay between issuing of heartbeat messages. SPI sends heartbeat messages
-        /// in configurable time interval to other nodes to notify them about its state.
-        /// </summary>
-        [DefaultValue(typeof(TimeSpan), "0:0:2")]
-        public TimeSpan HeartbeatFrequency { get; set; }
-
-        /// <summary>
         /// Gets or sets the size of topology snapshots history.
         /// </summary>
         [DefaultValue(DefaultTopologyHistorySize)]
@@ -298,7 +284,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             writer.WriteLong((long) StatisticsPrintFrequency.TotalMilliseconds);
             writer.WriteLong((long) IpFinderCleanFrequency.TotalMilliseconds);
             writer.WriteInt(ThreadPriority);
-            writer.WriteLong((long) HeartbeatFrequency.TotalMilliseconds);
             writer.WriteInt(TopologyHistorySize);
         }
     }
