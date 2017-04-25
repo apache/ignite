@@ -2141,32 +2141,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     processAnnotation(key, sqlAnn, txtAnn, cls, c, field.getType(), prop, type);
                 }
             }
-
-            for (Method mtd : c.getDeclaredMethods()) {
-                if (mtd.isBridge())
-                    continue;
-
-                QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
-                QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
-
-                if (sqlAnn != null || txtAnn != null) {
-                    if (mtd.getParameterTypes().length != 0)
-                        throw new CacheException("Getter with QuerySqlField " +
-                            "annotation cannot have parameters: " + mtd);
-
-                    ClassProperty prop = new ClassProperty(mtd);
-
-                    prop.parent(parent);
-
-                    // Add parent property before its possible nested properties so that
-                    // resulting parent column comes before columns corresponding to those
-                    // nested properties in the resulting table - that way nested
-                    // properties override will happen properly (first parent, then children).
-                    type.addProperty(prop, key, true);
-
-                    processAnnotation(key, sqlAnn, txtAnn, cls, c, mtd.getReturnType(), prop, type);
-                }
-            }
         }
     }
 
