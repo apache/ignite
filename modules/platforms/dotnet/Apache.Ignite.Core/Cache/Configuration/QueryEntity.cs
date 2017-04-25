@@ -48,10 +48,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         private string _keyTypeName;
 
         /** */
-        private string _keyFieldName;
 
         /** */
-        private string _valueFieldName;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
@@ -154,25 +152,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
-        /// Gets or sets the name of the field
-        /// that is used to denote the key.
+        /// Gets or sets the name of the field that is used to denote the entire key.
+        /// <para />
+        /// By default, entite key can be accessed with a special "_key" field name.
         /// </summary>
-        public string KeyFieldName
-        {
-            get { return _keyFieldName; }
-            set { _keyFieldName = value; }
-        }
+        public string KeyFieldName { get; set; }
 
         /// <summary>
-        /// Gets or sets the name of the field
-        /// that is used to denote the value.
+        /// Gets or sets the name of the field that is used to denote the entire value.
+        /// <para />
+        /// By default, entite value can be accessed with a special "_val" field name.
         /// </summary>
-        public string ValueFieldName
-        {
-            get { return _valueFieldName; }
-            set { _valueFieldName = value; }
-        }
-
+        public string ValueFieldName { get; set; }
 
         /// <summary>
         /// Gets or sets the name of the SQL table.
