@@ -87,8 +87,10 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Cluster Node Metrics</h1>
  * Cluster node metrics (see {@link #metrics()}) are updated frequently for all nodes
  * and can be used to get dynamic information about a node. The frequency of update
- * is often directly related to the metrics update exchange between nodes. So if, for example,
- * by default the metrics data will be updated every {@code 2} seconds.
+ * is often directly related to the metrics update exchange between nodes.
+ * Controlled by  {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
+ * The metrics data will be updated every {@code 2} seconds by default.
+ *
  * <p>
  * Grid node metrics provide information that can frequently change,
  * such as Heap and Non-Heap memory utilization, CPU load, number of active and waiting
