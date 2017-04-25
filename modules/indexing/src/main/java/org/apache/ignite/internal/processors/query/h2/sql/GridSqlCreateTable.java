@@ -18,20 +18,27 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Parser;
+import org.h2.table.Column;
+import org.h2.value.DataType;
+import org.h2.value.Value;
 
 /**
  * CREATE TABLE statement.
  */
 public class GridSqlCreateTable extends GridSqlStatement {
-    /** Schema name. */
+    /**
+     * Schema name upon which this statement has been issued - <b>not</b> the name of the schema where this new table
+     * will be created. */
     private String schemaName;
-
-    /** New schema name. */
-    private String newSchemaName;
-
-    /** New cache name. */
-    private String newCacheName;
 
     /** Table name. */
     private String tblName;
@@ -39,25 +46,14 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Cache name upon which new cache configuration for this table must be based. */
     private String tplCacheName;
 
+    /** Quietly ignore this command if table already exists. */
+    private boolean ifNotExists;
+
     /** Columns. */
     private LinkedHashMap<String, GridSqlColumn> cols;
 
-    /** Affinity column name. */
-    private String affColName;
-
-    /** Key class name. */
-    private String keyCls;
-
-    /** Value class name. */
-    private String valCls;
-
-    public String affinityColumnName() {
-        return affColName;
-    }
-
-    public void affinityColumnName(String affColName) {
-        this.affColName = affColName;
-    }
+    /** Primary key columns. */
+    private LinkedHashMap<String, GridSqlColumn> pkCols;
 
     public String templateCacheName() {
         return tplCacheName;
@@ -75,20 +71,12 @@ public class GridSqlCreateTable extends GridSqlStatement {
         this.cols = cols;
     }
 
-    public String newCacheName() {
-        return newCacheName;
+    public LinkedHashMap<String, GridSqlColumn> primaryKeyColumns() {
+        return pkCols;
     }
 
-    public void newCacheName(String newCacheName) {
-        this.newCacheName = newCacheName;
-    }
-
-    public String newSchemaName() {
-        return newSchemaName;
-    }
-
-    public void newSchemaName(String newSchemaName) {
-        this.newSchemaName = newSchemaName;
+    public void primaryKeyColumns(LinkedHashMap<String, GridSqlColumn> pkCols) {
+        this.pkCols = pkCols;
     }
 
     public String schemaName() {
@@ -107,24 +95,55 @@ public class GridSqlCreateTable extends GridSqlStatement {
         this.tblName = tblName;
     }
 
-    public String keyClass() {
-        return keyCls;
+    public boolean ifNotExists() {
+        return ifNotExists;
     }
 
-    public void keyClass(String keyCls) {
-        this.keyCls = keyCls;
-    }
-
-    public String valueClass() {
-        return valCls;
-    }
-
-    public void valueClass(String valCls) {
-        this.valCls = valCls;
+    public void ifNotExists(boolean ifNotExists) {
+        this.ifNotExists = ifNotExists;
     }
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
         return "CREATE TABLE " + Parser.quoteIdentifier(schemaName);
+    }
+
+    /**
+     * Convert this statement to query entity and do Ignite specific sanity checks on the way.
+     * @return Query entity mimicking this SQL statement.
+     */
+    public QueryEntity toQueryEntity() {
+        QueryEntity res = new QueryEntity();
+
+        res.setTableName(tableName());
+
+        if (columns().containsKey(IgniteH2Indexing.KEY_FIELD_NAME) ||
+            columns().containsKey(IgniteH2Indexing.VAL_FIELD_NAME))
+            throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
+                IgniteQueryErrorCode.PARSING);
+
+        for (Map.Entry<String, GridSqlColumn> e : columns().entrySet()) {
+            GridSqlColumn gridCol = e.getValue();
+
+            Column col = gridCol.column();
+
+            res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
+        }
+
+        if (F.isEmpty(pkCols))
+            throw new IgniteSQLException("No PRIMARY KEY columns specified");
+
+        int valColsNum = res.getFields().size() - pkCols.size();
+
+        if (valColsNum == 0)
+            throw new IgniteSQLException("No cache value related columns found");
+
+        res.setKeyType(tableName() + "Key");
+
+        res.setValueType(tableName());
+
+        res.setKeyFields(pkCols.keySet());
+
+        return res;
     }
 }

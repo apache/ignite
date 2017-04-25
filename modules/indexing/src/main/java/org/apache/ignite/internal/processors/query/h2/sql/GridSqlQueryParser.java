@@ -22,10 +22,12 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndex;
@@ -387,29 +389,10 @@ public class GridSqlQueryParser {
         "sortedInsertMode");
 
     /** */
-    private static final Getter<CreateTable, String> CREATE_TABLE_COMMENT = getter(CreateTable.class,
-        "comment");
-
-    /** */
     private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
 
     /** */
     private static final String PARAM_TPL_CACHE = "tplCache";
-
-    /** */
-    private static final String PARAM_NEW_SCHEMA = "newSchemaName";
-
-    /** */
-    private static final String PARAM_NEW_CACHE = "newCacheName";
-
-    /** */
-    private static final String PARAM_AFF_COL = "affColumn";
-
-    /** */
-    private static final String PARAM_KEY_CLS = "keyCls";
-
-    /** */
-    private static final String PARAM_VAL_CLS = "valCls";
 
     private static final String[] MANDATORY_CREATE_TABLE_PARAMS = {
         PARAM_TPL_CACHE
@@ -854,18 +837,36 @@ public class GridSqlQueryParser {
 
         CreateTableData data = CREATE_TABLE_DATA.get(createTbl);
 
-        String schemaName = data.schema.getName();
+        Set<String> pkColNames = new HashSet<>();
+
+        IndexColumn[] pkIdxCols = CREATE_TABLE_PK.get(createTbl);
+
+        for (IndexColumn pkCol : pkIdxCols)
+            pkColNames.add(pkCol.columnName);
 
         LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
 
-        for (Column col : data.columns)
-            cols.put(col.getName(), new GridSqlColumn(col, null, col.getName()));
+        LinkedHashMap<String, GridSqlColumn> pkCols = new LinkedHashMap<>();
+
+        for (Column col : data.columns) {
+            if (!col.isNullable())
+                throw new IgniteSQLException("Non nullable columns are forbidden", IgniteQueryErrorCode.PARSING);
+
+            GridSqlColumn gridCol = new GridSqlColumn(col, null, col.getName());
+
+            if (pkColNames.contains(gridCol.columnName()))
+                pkCols.put(gridCol.columnName(), gridCol);
+
+            cols.put(col.getName(), gridCol);
+        }
 
         res.columns(cols);
 
-        res.schemaName(schemaName);
+        res.primaryKeyColumns(pkCols);
 
         res.tableName(data.tableName);
+
+        res.ifNotExists(CREATE_TABLE_IF_NOT_EXISTS.get(createTbl));
 
         List<String> extraParamsStr = data.tableEngineParams;
 
@@ -913,41 +914,6 @@ public class GridSqlQueryParser {
                 ensureParamValueNotEmpty(PARAM_TPL_CACHE, val);
 
                 res.templateCacheName(val);
-
-                break;
-
-            case PARAM_AFF_COL:
-                ensureParamValueNotEmpty(PARAM_AFF_COL, val);
-
-                res.affinityColumnName(val);
-
-                break;
-
-            case PARAM_KEY_CLS:
-                ensureParamValueNotEmpty(PARAM_KEY_CLS, val);
-
-                res.keyClass(val);
-
-                break;
-
-            case PARAM_VAL_CLS:
-                ensureParamValueNotEmpty(PARAM_VAL_CLS, val);
-
-                res.valueClass(val);
-
-                break;
-
-            case PARAM_NEW_CACHE:
-                ensureParamValueNotEmpty(PARAM_NEW_CACHE, val);
-
-                res.newCacheName(val);
-
-                break;
-
-            case PARAM_NEW_SCHEMA:
-                ensureParamValueNotEmpty(PARAM_NEW_SCHEMA, val);
-
-                res.newSchemaName(val);
 
                 break;
 
