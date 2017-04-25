@@ -101,7 +101,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
         eventSpi.setExpireCount(100);
 
-        cfg.setFailureDetectionTimeout(Long.MAX_VALUE);
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         cfg.setEventStorageSpi(eventSpi);
 

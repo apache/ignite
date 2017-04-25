@@ -78,7 +78,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setFailureDetectionTimeout(Long.MAX_VALUE);
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         return cfg;
     }
