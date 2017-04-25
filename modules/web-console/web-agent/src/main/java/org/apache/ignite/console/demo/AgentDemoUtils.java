@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Utilites for Agent demo mode.
+ * Utilities for Agent demo mode.
  */
 public class AgentDemoUtils {
     /** Counter for threads in pool. */

@@ -338,8 +338,8 @@ namespace Apache.Ignite.Linq.Impl
 
             var entity = cacheCfg.QueryEntities.FirstOrDefault(e =>
                 e.Aliases != null &&
-                (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].Name) &&
-                (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].Name));
+                (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].FullName) &&
+                (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].FullName));
 
             if (entity == null)
                 return fieldName;
