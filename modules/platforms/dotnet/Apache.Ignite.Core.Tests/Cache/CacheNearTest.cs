@@ -53,10 +53,11 @@ namespace Apache.Ignite.Core.Tests.Cache
                         {
                             EvictionPolicy = new FifoEvictionPolicy {MaxSize = 5}
                         },
-                        Name = "*"
+                        Name = DefaultCacheName
                     }
                 },
-                IncludedEventTypes = new[] { EventType.CacheEntryCreated }
+                IncludedEventTypes = new[] { EventType.CacheEntryCreated },
+                IgniteInstanceName = "server"
             };
 
             _grid = Ignition.Start(cfg);
@@ -97,15 +98,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             const string cacheName = "dyn_cache";
 
-            var cache = _grid.CreateCache<int, string>(cacheName);
+            var cache = _grid.CreateCache<int, string>(new CacheConfiguration(cacheName));
             cache[1] = "1";
 
-            var nearCache = _grid.CreateNearCache<int, string>(cacheName, new NearCacheConfiguration());
-            Assert.AreEqual("1", nearCache[1]);
+            using (var client = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientMode = true,
+                IgniteInstanceName = "client"
+            }))
+            {
+                var nearCache = client.CreateNearCache<int, string>(cacheName, new NearCacheConfiguration());
+                Assert.AreEqual("1", nearCache[1]);
 
-            // Create when exists
-            nearCache = _grid.CreateNearCache<int, string>(cacheName, new NearCacheConfiguration());
-            Assert.AreEqual("1", nearCache[1]);
+                // Create when exists.
+                nearCache = client.CreateNearCache<int, string>(cacheName, new NearCacheConfiguration());
+                Assert.AreEqual("1", nearCache[1]);
+            }
         }
 
         /// <summary>
