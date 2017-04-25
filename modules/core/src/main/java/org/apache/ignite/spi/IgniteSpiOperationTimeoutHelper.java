@@ -45,12 +45,12 @@ public class IgniteSpiOperationTimeoutHelper {
      * Constructor.
      *
      * @param adapter SPI adapter.
-     * @param srvrOperation {@code True} if so
+     * @param srvOp {@code True} if communicates with server node.
      */
-    public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvrOperation) {
+    public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp) {
         failureDetectionTimeoutEnabled = adapter.failureDetectionTimeoutEnabled();
-        failureDetectionTimeout = srvrOperation?
-            adapter.failureDetectionTimeout() : adapter.clientFailureDetectionTimeout();
+        failureDetectionTimeout = srvOp ? adapter.failureDetectionTimeout() :
+            adapter.clientFailureDetectionTimeout();
     }
 
     /**

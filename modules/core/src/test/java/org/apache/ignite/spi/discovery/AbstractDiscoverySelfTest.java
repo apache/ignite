@@ -257,9 +257,8 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         // Sleep for 3 metrics update.
         Thread.sleep(getMaxDiscoveryTime() * 3);
 
-        for (AtomicInteger cnt : locUpdCnts) {
-            assert cnt.get() > 1 : "One of the SPIs did not get at least 2 METRICS_UPDATE events from local node";
-        }
+        for (AtomicInteger cnt : locUpdCnts)
+            assertTrue("One of the SPIs did not get at least 2 METRICS_UPDATE events from local node", cnt.get() > 1);
     }
 
     /**
@@ -491,9 +490,9 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         }
 
         for (IgniteTestResources rscrs : spiRsrcs) {
-            MBeanServer mBeanServer = rscrs.getMBeanServer();
+            MBeanServer mBeanSrv = rscrs.getMBeanServer();
 
-            mBeanServer.unregisterMBean(new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
+            mBeanSrv.unregisterMBean(new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
 
             rscrs.stopThreads();
         }

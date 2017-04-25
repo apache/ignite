@@ -1878,8 +1878,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
         assertParameter(netTimeout > 0, "networkTimeout > 0");
         assertParameter(ipFinder != null, "ipFinder != null");
-        assertParameter(metricsUpdateFreq > 0, "metricsUpdateFreq > 0 " +
-            "(inited from igniteConfiguration.MetricsUpdateFrequency)");
+        assertParameter(metricsUpdateFreq > 0, "metricsUpdateFreq > 0" +
+            " (inited from igniteConfiguration.metricsUpdateFrequency)");
 
         assertParameter(ipFinderCleanFreq > 0, "ipFinderCleanFreq > 0");
         assertParameter(locPort > 1023, "localPort > 1023");

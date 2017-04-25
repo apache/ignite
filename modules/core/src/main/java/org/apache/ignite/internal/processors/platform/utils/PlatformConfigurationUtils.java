@@ -531,7 +531,8 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
         int[] eventTypes = in.readIntArray();
-        if (eventTypes != null) cfg.setIncludeEventTypes(eventTypes);
+        if (eventTypes != null)
+            cfg.setIncludeEventTypes(eventTypes);
         if (in.readBoolean())
             cfg.setMetricsExpireTime(in.readLong());
         if (in.readBoolean())
@@ -1064,17 +1065,17 @@ public class PlatformConfigurationUtils {
         else
             w.writeBoolean(false);
 
-        EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
+        EventStorageSpi evtStorageSpi = cfg.getEventStorageSpi();
 
-        if (eventStorageSpi == null)
+        if (evtStorageSpi == null)
             w.writeByte((byte) 0);
-        else if (eventStorageSpi instanceof NoopEventStorageSpi)
+        else if (evtStorageSpi instanceof NoopEventStorageSpi)
             w.writeByte((byte) 1);
-        else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
+        else if (evtStorageSpi instanceof MemoryEventStorageSpi) {
             w.writeByte((byte) 2);
 
-            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
-            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireAgeMs());
+            w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireCount());
+            w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireAgeMs());
         }
 
         writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
@@ -1136,9 +1137,8 @@ public class PlatformConfigurationUtils {
                     w.writeInt(ttl);
             }
         }
-        else {
+        else
             w.writeBoolean(false);
-        }
 
         w.writeLong(tcp.getSocketTimeout());
         w.writeLong(tcp.getAckTimeout());

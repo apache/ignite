@@ -2104,8 +2104,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param latch Latch.
      * @throws InterruptedException If interrupted.
      */
-    protected void awaitClient(CountDownLatch latch) throws InterruptedException {
-        assertTrue("Latch count: " + latch.getCount(), latch.await(awaitClientTime(), MILLISECONDS));
+    private void awaitClient(CountDownLatch latch) throws InterruptedException {
+        assertTrue("Failed to wait for latch, latch count: " + latch.getCount(),
+            latch.await(awaitClientTime(), MILLISECONDS));
     }
 
     /**
