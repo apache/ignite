@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl;
 
     /// <summary>
     /// Defines page memory policy configuration. See <see cref="MemoryConfiguration.MemoryPolicies"/>.
@@ -41,6 +42,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public const long DefaultInitialSize = 256 * 1024 * 1024;
 
         /// <summary>
+        /// The default maximum size, equals to 80% of total RAM.
+        /// </summary>
+        public static readonly long DefaultMaxSize = (long) ((long) NativeMethods.GetTotalPhysicalMemory() * 0.8);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="MemoryPolicyConfiguration"/> class.
         /// </summary>
         public MemoryPolicyConfiguration()
@@ -48,6 +54,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictionThreshold = DefaultEvictionThreshold;
             EmptyPagesPoolSize = DefaultEmptyPagesPoolSize;
             InitialSize = DefaultInitialSize;
+            MaxSize = DefaultMaxSize;
         }
 
         /// <summary>
