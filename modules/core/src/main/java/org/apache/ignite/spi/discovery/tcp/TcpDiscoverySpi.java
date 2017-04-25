@@ -1102,6 +1102,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
+     * Gets effective or resulting socket timeout with considering failure detection timeout
+     *
+     * @param serverOperation {@code True} if socket connect to server node,
+     *     {@code False} if socket connect to client node.
+     * @return Resulting socket timeout.
+     */
+    public long getEffectiveSocketTimeout(boolean serverOperation) {
+        if (failureDetectionTimeoutEnabled())
+            return serverOperation ? failureDetectionTimeout() : clientFailureDetectionTimeout();
+        else
+            return sockTimeout;
+    }
+
+    /**
      * Gets message acknowledgement timeout.
      *
      * @return Message acknowledgement timeout.
