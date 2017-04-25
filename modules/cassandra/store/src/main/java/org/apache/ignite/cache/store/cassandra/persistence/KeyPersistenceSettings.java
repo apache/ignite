@@ -22,7 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -252,11 +251,8 @@ public class KeyPersistenceSettings extends PersistenceSettings {
      * @return POJO field descriptors for partition key.
      */
     private List<PropertyDescriptor> getPartitionKeyDescriptors() {
-        List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(),
-            AffinityKeyMapped.class, true);
-
-        primitivePropDescriptors = primitivePropDescriptors != null && !primitivePropDescriptors.isEmpty() ?
-            primitivePropDescriptors : PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
+        List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(
+            getJavaClass(), true);
 
         boolean valid = false;
 
