@@ -52,12 +52,20 @@ public class LoadCacheCustomQueryWorker<K, V> implements Callable<Void> {
      * @param clo Closure for loaded values.
      */
     public LoadCacheCustomQueryWorker(CassandraSession ses, Statement stmt, PersistenceController ctrl,
-        IgniteLogger log, IgniteBiInClosure<K, V> clo) {
+                                    IgniteLogger log, IgniteBiInClosure<K, V> clo) {
         this.ses = ses;
-        this.stmt=stmt;
+        this.stmt = stmt;
         this.ctrl = ctrl;
         this.log = log;
         this.clo = clo;
+    }
+
+    /**
+     * @param clo Closure for loaded values.
+     */
+    public LoadCacheCustomQueryWorker(CassandraSession ses, String qry, PersistenceController ctrl,
+                                      IgniteLogger log, IgniteBiInClosure<K, V> clo) {
+        this(ses, new SimpleStatement(qry.trim().endsWith(";") ? qry : qry + ";"), ctrl, log, clo);
     }
 
     /** {@inheritDoc} */

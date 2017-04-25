@@ -116,21 +116,22 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             CassandraSession ses = getCassandraSession();
 
             for (Object obj : args) {
-                final Statement stmt;
-                if (obj instanceof Statement) {
-                    stmt=(Statement)obj;
-                } else if (obj instanceof String) {
+                LoadCacheCustomQueryWorker<K, V> task;
+
+                if (obj instanceof Statement)
+                    task = new LoadCacheCustomQueryWorker<>(ses, (Statement)obj, controller, log, clo);
+
+                else if (obj instanceof String) {
                     String qry = ((String) obj).trim();
+
                     if (!qry.toLowerCase().startsWith("select"))
                         continue;
-                    if (!qry.endsWith(";")) {
-                        qry += ";";
-                    }
-                    stmt = new SimpleStatement(qry);
-                } else {
-                    continue;
+
+                    task = new LoadCacheCustomQueryWorker<>(ses, qry, controller, log, clo);
                 }
-                LoadCacheCustomQueryWorker<K, V> task = new LoadCacheCustomQueryWorker<>(ses, stmt, controller, log, clo);
+                else
+                    continue;
+
                 futs.add(pool.submit(task));
             }
 
