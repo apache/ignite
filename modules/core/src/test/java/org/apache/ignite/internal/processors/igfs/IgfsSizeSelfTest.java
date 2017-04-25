@@ -90,15 +90,11 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** IGFS maximum space. */
     private long igfsMaxData;
 
-    /** Trash purge timeout. */
-    private long trashPurgeTimeout;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cacheMode = null;
         nearEnabled = false;
         igfsMaxData = 0;
-        trashPurgeTimeout = 0;
 
         mgmtPort = 11400;
     }
@@ -118,7 +114,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setBlockSize(BLOCK_SIZE);
         igfsCfg.setFragmentizerEnabled(false);
         igfsCfg.setMaxSpaceSize(igfsMaxData);
-        igfsCfg.setTrashPurgeTimeout(trashPurgeTimeout);
         igfsCfg.setManagementPort(++mgmtPort);
 
         CacheConfiguration dataCfg = defaultCacheConfiguration();

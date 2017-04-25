@@ -199,28 +199,10 @@ public final class IgfsImpl implements IgfsEx {
             dfltMode = cfg.getDefaultMode();
 
         Map<String, IgfsMode> cfgModes = new LinkedHashMap<>();
-        Map<String, IgfsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
-
-        if (cfg.isInitializeDefaultPathModes() && IgfsUtils.isDualMode(dfltMode)) {
-            dfltModes.put("/ignite/primary", PRIMARY);
-
-            if (secondaryFs != null) {
-                dfltModes.put("/ignite/proxy", PROXY);
-                dfltModes.put("/ignite/sync", DUAL_SYNC);
-                dfltModes.put("/ignite/async", DUAL_ASYNC);
-            }
-        }
-
-        cfgModes.putAll(dfltModes);
 
         if (cfg.getPathModes() != null) {
-            for (Map.Entry<String, IgfsMode> e : cfg.getPathModes().entrySet()) {
-                if (!dfltModes.containsKey(e.getKey()))
-                    cfgModes.put(e.getKey(), e.getValue());
-                else
-                    U.warn(log, "Ignoring path mode because it conflicts with Ignite reserved path " +
-                        "(use another path) [mode=" + e.getValue() + ", path=" + e.getKey() + ']');
-            }
+            for (Map.Entry<String, IgfsMode> e : cfg.getPathModes().entrySet())
+                cfgModes.put(e.getKey(), e.getValue());
         }
 
         ArrayList<T2<IgfsPath, IgfsMode>> modes = null;
@@ -409,7 +391,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String name() {
+    @Override public String name() {
         return cfg.getName();
     }
 
