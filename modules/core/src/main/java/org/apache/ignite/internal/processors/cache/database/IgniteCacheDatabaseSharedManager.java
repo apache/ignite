@@ -313,12 +313,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param plcNames All MemoryPolicy names.
      * @throws IgniteCheckedException In case of validation violation.
      */
-    private static void checkDefaultPolicyConfiguration(String dfltPlcName, Set<String> plcNames) throws IgniteCheckedException {
+    private static void checkDefaultPolicyConfiguration(String dfltPlcName, Set<String> plcNames)
+            throws IgniteCheckedException {
         if (dfltPlcName != null) {
             if (dfltPlcName.isEmpty())
                 throw new IgniteCheckedException("User-defined default MemoryPolicy name must be non-empty");
             if (!plcNames.contains(dfltPlcName))
-                throw new IgniteCheckedException("User-defined default MemoryPolicy name must be presented among configured MemoryPolices: " + dfltPlcName);
+                throw new IgniteCheckedException("User-defined default MemoryPolicy name" +
+                        " must be presented among configured MemoryPolices: " + dfltPlcName);
         }
     }
 
@@ -364,7 +366,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     private static void checkPolicyName(String plcName, Set<String> observedNames) throws IgniteCheckedException {
         if (plcName == null || plcName.isEmpty())
-            throw new IgniteCheckedException("User-defined MemoryPolicyConfiguration must have non-null and non-empty name.");
+            throw new IgniteCheckedException("User-defined MemoryPolicyConfiguration" +
+                    " must have non-null and non-empty name.");
 
         if (observedNames.contains(plcName))
             throw new IgniteCheckedException("Two MemoryPolicies have the same name: " + plcName);
@@ -605,8 +608,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException if resolving Ignite working directory fails.
      */
     private MemoryPolicy initMemory(MemoryConfiguration dbCfg,
-                                    MemoryPolicyConfiguration plc,
-                                    MemoryMetricsImpl memMetrics)
+        MemoryPolicyConfiguration plc,
+        MemoryMetricsImpl memMetrics)
             throws IgniteCheckedException {
         long[] sizes = calculateFragmentSizes(
                 dbCfg.getConcurrencyLevel(),
@@ -696,7 +699,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memMetrics MemoryMetrics to collect memory usage metrics.
      * @return PageMemory instance.
      */
-    protected PageMemory createPageMemory(DirectMemoryProvider memProvider, int pageSize, MemoryMetricsImpl memMetrics) {
+    protected PageMemory createPageMemory(DirectMemoryProvider memProvider,
+        int pageSize,
+        MemoryMetricsImpl memMetrics) {
         return new PageMemoryNoStoreImpl(log, memProvider, cctx, pageSize, memMetrics, false);
     }
 
