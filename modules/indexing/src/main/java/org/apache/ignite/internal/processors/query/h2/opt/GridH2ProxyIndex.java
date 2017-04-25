@@ -43,9 +43,15 @@ import java.util.concurrent.Future;
 public class GridH2ProxyIndex extends BaseIndex {
 
     /** Underlying normal index */
-    private Index idx;
+    protected Index idx;
 
-    /** */
+    /**
+     *
+     * @param tbl Table.
+     * @param name Name of the proxy index.
+     * @param colsList Column list for the proxy index.
+     * @param idx Target index.
+     */
     public GridH2ProxyIndex(GridH2Table tbl,
                             String name,
                             List<IndexColumn> colsList,

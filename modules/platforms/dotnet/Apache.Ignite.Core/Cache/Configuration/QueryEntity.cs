@@ -47,6 +47,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /** */
         private string _keyTypeName;
 
+        /** */
+        private string _keyFieldName;
+
+        /** */
+        private string _valueFieldName;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
         /// </summary>
@@ -148,6 +154,27 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Gets or sets the name of the field
+        /// that is used to denote the key.
+        /// </summary>
+        public string KeyFieldName
+        {
+            get { return _keyFieldName; }
+            set { _keyFieldName = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the name of the field
+        /// that is used to denote the value.
+        /// </summary>
+        public string ValueFieldName
+        {
+            get { return _valueFieldName; }
+            set { _valueFieldName = value; }
+        }
+
+
+        /// <summary>
         /// Gets or sets the name of the SQL table.
         /// When not set, value type name is used.
         /// </summary>
@@ -197,6 +224,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             count = reader.ReadInt();
             Indexes = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryIndex(reader)).ToList();
+
+            KeyFieldName = reader.ReadString();
+            ValueFieldName = reader.ReadString();
         }
 
         /// <summary>
@@ -250,6 +280,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteInt(0);
+
+            writer.WriteString(KeyFieldName);
+            writer.WriteString(ValueFieldName);
         }
 
         /// <summary>

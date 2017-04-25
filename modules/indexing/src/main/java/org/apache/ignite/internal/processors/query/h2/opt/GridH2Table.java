@@ -963,8 +963,8 @@ public class GridH2Table extends TableBase {
      * Creates proxy index for given target index.
      * Proxy index refers to alternative key and val columns.
      *
-     * @param target
-     * @return
+     * @param target Index to clone.
+     * @return Proxy index.
      */
     public Index createDuplicateIndexIfNeeded(Index target) {
         if (!(target instanceof H2TreeIndex) &&
@@ -991,8 +991,13 @@ public class GridH2Table extends TableBase {
             proxyCols.add(proxyCol);
         }
 
-        if (modified)
+        if (modified) {
+            String proxyName = target.getName() + "_proxy";
+            if (target.getIndexType().isSpatial())
+                return new GridH2ProxySpatialIndex(this, proxyName, proxyCols, target);
+
             return new GridH2ProxyIndex(this, target.getName() + "_proxy", proxyCols, target);
+        }
 
         return null;
     }
