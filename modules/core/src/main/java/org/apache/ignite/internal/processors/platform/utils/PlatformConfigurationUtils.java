@@ -529,7 +529,10 @@ public class PlatformConfigurationUtils {
         String localHost = in.readString(); if (localHost != null) cfg.setLocalHost(localHost);
         if (in.readBoolean()) cfg.setDaemon(in.readBoolean());
         if (in.readBoolean()) cfg.setLateAffinityAssignment(in.readBoolean());
-        if (in.readBoolean()) cfg.setFailureDetectionTimeout(in.readLong());
+        if (in.readBoolean()) {
+            cfg.setClientFailureDetectionTimeout(in.readLong());
+            cfg.setFailureDetectionTimeout(in.readLong());
+        }
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -722,12 +725,9 @@ public class PlatformConfigurationUtils {
         disco.setReconnectCount(in.readInt());
         disco.setLocalPort(in.readInt());
         disco.setLocalPortRange(in.readInt());
-        disco.setMaxMissedHeartbeats(in.readInt());
-        disco.setMaxMissedClientHeartbeats(in.readInt());
         disco.setStatisticsPrintFrequency(in.readLong());
         disco.setIpFinderCleanFrequency(in.readLong());
         disco.setThreadPriority(in.readInt());
-        disco.setHeartbeatFrequency(in.readLong());
         disco.setTopHistorySize(in.readInt());
 
         cfg.setDiscoverySpi(disco);
@@ -927,7 +927,8 @@ public class PlatformConfigurationUtils {
         w.writeString(cfg.getLocalHost());
         w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
         w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
-        w.writeBoolean(true); w.writeLong(cfg.getFailureDetectionTimeout());
+        w.writeBoolean(true); w.writeLong(cfg.getClientFailureDetectionTimeout());
+        w.writeLong(cfg.getFailureDetectionTimeout());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -1106,12 +1107,9 @@ public class PlatformConfigurationUtils {
         w.writeInt(tcp.getReconnectCount());
         w.writeInt(tcp.getLocalPort());
         w.writeInt(tcp.getLocalPortRange());
-        w.writeInt(tcp.getMaxMissedHeartbeats());
-        w.writeInt(tcp.getMaxMissedClientHeartbeats());
         w.writeLong(tcp.getStatisticsPrintFrequency());
         w.writeLong(tcp.getIpFinderCleanFrequency());
         w.writeInt(tcp.getThreadPriority());
-        w.writeLong(tcp.getHeartbeatFrequency());
         w.writeInt((int)tcp.getTopHistorySize());
     }
 
