@@ -1481,6 +1481,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.writeLock().lock();
 
         try {
+            if (node2part == null)
+                return false;
+
             int parts = cctx.affinity().partitions();
 
             Set<Integer> lost = new HashSet<>(parts);
