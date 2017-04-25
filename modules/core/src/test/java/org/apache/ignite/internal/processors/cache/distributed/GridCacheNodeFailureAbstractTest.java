@@ -87,10 +87,9 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
         disco.setIpFinder(ipFinder);
 
+        c.setFailureDetectionTimeout(Long.MAX_VALUE);
         c.setDiscoverySpi(disco);
 
         c.setDeploymentMode(DeploymentMode.SHARED);

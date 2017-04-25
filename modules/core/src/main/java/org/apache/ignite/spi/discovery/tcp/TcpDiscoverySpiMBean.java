@@ -76,22 +76,6 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     public int getLocalPortRange();
 
     /**
-     * Gets max heartbeats count node can miss without initiating status check.
-     *
-     * @return Max missed heartbeats.
-     */
-    @MXBeanDescription("Max missed heartbeats.")
-    public int getMaxMissedHeartbeats();
-
-    /**
-     * Gets max heartbeats count node can miss without failing client node.
-     *
-     * @return Max missed client heartbeats.
-     */
-    @MXBeanDescription("Max missed client heartbeats.")
-    public int getMaxMissedClientHeartbeats();
-
-    /**
      * Gets thread priority. All threads within SPI will be started with it.
      *
      * @return Thread priority.

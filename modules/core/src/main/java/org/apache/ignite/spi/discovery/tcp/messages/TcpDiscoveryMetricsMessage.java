@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Heartbeat message.
+ * Metrics message.
  * <p>
  * It is sent by coordinator node across the ring once a configured period.
  * Message makes two passes:
@@ -52,7 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * second pass).
  */
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryMetricsMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -72,7 +72,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
      *
      * @param creatorNodeId Creator node.
      */
-    public TcpDiscoveryHeartbeatMessage(UUID creatorNodeId) {
+    public TcpDiscoveryMetricsMessage(UUID creatorNodeId) {
         super(creatorNodeId);
     }
 
@@ -225,7 +225,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryHeartbeatMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryMetricsMessage.class, this, "super", super.toString());
     }
 
     /**

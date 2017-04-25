@@ -101,7 +101,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         if (clientMode && ((igniteInstanceName.charAt(igniteInstanceName.length() - 1) - '0') & 1) != 0)
             cfg.setClientMode(true);
         else
-            disc.setMaxMissedClientHeartbeats(50);
+            cfg.setClientFailureDetectionTimeout(50000);
 
         disc.setIpFinder(IP_FINDER);
         disc.setAckTimeout(1000);

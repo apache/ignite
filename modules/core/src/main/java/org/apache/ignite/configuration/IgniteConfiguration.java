@@ -200,6 +200,10 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
+    /** Default failure detection timeout for client nodes in millis. */
+    @SuppressWarnings("UnnecessaryBoxing")
+    public static final Long DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT = new Long(30_000);
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -386,6 +390,9 @@ public class IgniteConfiguration {
     /** Failure detection timeout. */
     private Long failureDetectionTimeout = DFLT_FAILURE_DETECTION_TIMEOUT;
 
+    /** Failure detection timeout for client nodes. */
+    private Long clientFailureDetectionTimeout = DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
+
     /** Property names to include into node attributes. */
     private String[] includeProps;
 
@@ -491,6 +498,7 @@ public class IgniteConfiguration {
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         callbackPoolSize = cfg.getAsyncCallbackPoolSize();
         classLdr = cfg.getClassLoader();
+        clientFailureDetectionTimeout = cfg.getClientFailureDetectionTimeout();
         clientMode = cfg.isClientMode();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
@@ -1830,6 +1838,33 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setFailoverSpi(FailoverSpi... failSpi) {
         this.failSpi = failSpi;
+
+        return this;
+    }
+
+    /**
+     * Returns failure detection timeout for client nodes used by {@link TcpDiscoverySpi} and {@link TcpCommunicationSpi}.
+     * <p>
+     * Default is {@link #DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT}.
+     *
+     * @see #setClientFailureDetectionTimeout(long)
+     * @return Failure detection timeout for client nodes in milliseconds.
+     */
+    public Long getClientFailureDetectionTimeout() {
+        return clientFailureDetectionTimeout;
+    }
+
+    /**
+     * Sets failure detection timeout to use in {@link TcpDiscoverySpi} and {@link TcpCommunicationSpi}.
+     * <p>
+     * Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before
+     * considering a remote connection failed.
+     *
+     * @param clientFailureDetectionTimeout Failure detection timeout in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setClientFailureDetectionTimeout(long clientFailureDetectionTimeout) {
+        this.clientFailureDetectionTimeout = clientFailureDetectionTimeout;
 
         return this;
     }

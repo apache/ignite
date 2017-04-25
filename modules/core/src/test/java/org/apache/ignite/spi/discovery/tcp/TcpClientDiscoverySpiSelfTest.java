@@ -24,6 +24,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -142,7 +143,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private boolean longSockTimeouts;
 
     /** */
-    private int maxMissedClientHbs = TcpDiscoverySpi.DFLT_MAX_MISSED_CLIENT_HEARTBEATS;
+    private long clientFailureDetectionTimeout = IgniteConfiguration.DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
 
     /** */
     private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
@@ -154,9 +155,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = getDiscoverySpi();
+        cfg.setClientFailureDetectionTimeout(clientFailureDetectionTimeout);
 
-        disco.setMaxMissedClientHeartbeats(maxMissedClientHbs);
+        TcpDiscoverySpi disco = getDiscoverySpi();
 
         if (igniteInstanceName.startsWith("server"))
             disco.setIpFinder(IP_FINDER);
@@ -296,6 +297,21 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
             assert spiEx.getMessage().contains("Join process timed out") : spiEx.getMessage();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientToClientPing() throws Exception {
+        Ignite s1 = startGrid("server-p1");
+        Ignite c1 = startGrid("client-p1");
+
+        Ignite s2 = startGrid("server-p2");
+        Ignite c2 = startGrid("client-p2");
+
+        U.sleep(5000);
+        boolean res = ((IgniteEx)c1).context().discovery().pingNode(c2.cluster().localNode().id());
+        System.out.println("ping res = " + res);
     }
 
     /**
@@ -588,7 +604,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectTopologyChange1() throws Exception {
-        maxMissedClientHbs = 100;
+
+        clientFailureDetectionTimeout = 100000;
 
         clientsPerSrv = 1;
 
@@ -632,7 +649,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectTopologyChange2() throws Exception {
-        maxMissedClientHbs = 100;
+        clientFailureDetectionTimeout = 100000;
 
         clientsPerSrv = 1;
 
@@ -1721,7 +1738,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     public void testDisconnectAfterNetworkTimeout() throws Exception {
         netTimeout = 5000;
         joinTimeout = 60_000;
-        maxMissedClientHbs = 2;
+        clientFailureDetectionTimeout = 2000;
 
         startServerNodes(1);
 
@@ -2267,7 +2284,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
             waitFor(openSockLock);
 
-            return super.openSocket(sockAddr, new IgniteSpiOperationTimeoutHelper(this));
+            return super.openSocket(sockAddr, timeoutHelper);
         }
 
         /**
