@@ -78,7 +78,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
@@ -154,15 +154,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         spi.setNetworkTimeout(2500);
 
-        spi.setHeartbeatFrequency(1000);
-
-        spi.setMaxMissedHeartbeats(3);
-
         spi.setIpFinderCleanFrequency(5000);
 
         spi.setJoinTimeout(5000);
 
         cfg.setDiscoverySpi(spi);
+
+        cfg.setFailureDetectionTimeout(7500);
 
         if (ccfgs != null)
             cfg.setCacheConfiguration(ccfgs);
@@ -173,12 +171,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
+        cfg.setMetricsUpdateFrequency(1000);
+
         if (!igniteInstanceName.contains("LoopbackProblemTest"))
             cfg.setLocalHost("127.0.0.1");
 
         if (igniteInstanceName.contains("testFailureDetectionOnNodePing")) {
             spi.setReconnectCount(1); // To make test faster: on Windows 1 connect takes 1 second.
-            spi.setHeartbeatFrequency(40000);
+
+            cfg.setMetricsUpdateFrequency(40000);
         }
 
         cfg.setConnectorConfiguration(null);
@@ -433,7 +434,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         assertFalse("Ping is ok for node " + failedNodeId + ", but had to fail.", res);
 
-        // Heartbeat interval is 40 seconds, but we should detect node failure faster.
+        // Metrics update interval is 40 seconds, but we should detect node failure faster.
         assert cnt.await(7, SECONDS);
     }
 
@@ -2252,7 +2253,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             long timeout) throws IOException, IgniteCheckedException {
             boolean add = msgIds.add(msg.id());
 
-            if (checkDuplicates && !add && !(msg instanceof TcpDiscoveryHeartbeatMessage)) {
+            if (checkDuplicates && !add && !(msg instanceof TcpDiscoveryMetricsUpdateMessage)) {
                 log.error("Send duplicated message: " + msg);
 
                 failed = true;

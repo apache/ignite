@@ -529,7 +529,10 @@ public class PlatformConfigurationUtils {
         String localHost = in.readString(); if (localHost != null) cfg.setLocalHost(localHost);
         if (in.readBoolean()) cfg.setDaemon(in.readBoolean());
         if (in.readBoolean()) cfg.setLateAffinityAssignment(in.readBoolean());
-        if (in.readBoolean()) cfg.setFailureDetectionTimeout(in.readLong());
+        if (in.readBoolean()) {
+            cfg.setClientFailureDetectionTimeout(in.readLong());
+            cfg.setFailureDetectionTimeout(in.readLong());
+        }
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -722,12 +725,9 @@ public class PlatformConfigurationUtils {
         disco.setReconnectCount(in.readInt());
         disco.setLocalPort(in.readInt());
         disco.setLocalPortRange(in.readInt());
-        disco.setMaxMissedHeartbeats(in.readInt());
-        disco.setMaxMissedClientHeartbeats(in.readInt());
         disco.setStatisticsPrintFrequency(in.readLong());
         disco.setIpFinderCleanFrequency(in.readLong());
         disco.setThreadPriority(in.readInt());
-        disco.setHeartbeatFrequency(in.readLong());
         disco.setTopHistorySize(in.readInt());
 
         cfg.setDiscoverySpi(disco);
@@ -914,20 +914,32 @@ public class PlatformConfigurationUtils {
         assert w != null;
         assert cfg != null;
 
-        w.writeBoolean(true); w.writeBoolean(cfg.isClientMode());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isClientMode());
         w.writeIntArray(cfg.getIncludeEventTypes());
-        w.writeBoolean(true); w.writeLong(cfg.getMetricsExpireTime());
-        w.writeBoolean(true); w.writeInt(cfg.getMetricsHistorySize());
-        w.writeBoolean(true); w.writeLong(cfg.getMetricsLogFrequency());
-        w.writeBoolean(true); w.writeLong(cfg.getMetricsUpdateFrequency());
-        w.writeBoolean(true); w.writeInt(cfg.getNetworkSendRetryCount());
-        w.writeBoolean(true); w.writeLong(cfg.getNetworkSendRetryDelay());
-        w.writeBoolean(true); w.writeLong(cfg.getNetworkTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getMetricsExpireTime());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getMetricsHistorySize());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getMetricsLogFrequency());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getMetricsUpdateFrequency());
+        w.writeBoolean(true);
+        w.writeInt(cfg.getNetworkSendRetryCount());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getNetworkSendRetryDelay());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
-        w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
-        w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
-        w.writeBoolean(true); w.writeLong(cfg.getFailureDetectionTimeout());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isDaemon());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isLateAffinityAssignment());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getClientFailureDetectionTimeout());
+        w.writeLong(cfg.getFailureDetectionTimeout());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -1022,11 +1034,11 @@ public class PlatformConfigurationUtils {
 
         EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
 
-        if (eventStorageSpi == null) {
+        if (eventStorageSpi == null)
             w.writeByte((byte) 0);
-        } else if (eventStorageSpi instanceof NoopEventStorageSpi) {
+        else if (eventStorageSpi instanceof NoopEventStorageSpi)
             w.writeByte((byte) 1);
-        } else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
+        else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
             w.writeByte((byte) 2);
 
             w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
@@ -1106,12 +1118,9 @@ public class PlatformConfigurationUtils {
         w.writeInt(tcp.getReconnectCount());
         w.writeInt(tcp.getLocalPort());
         w.writeInt(tcp.getLocalPortRange());
-        w.writeInt(tcp.getMaxMissedHeartbeats());
-        w.writeInt(tcp.getMaxMissedClientHeartbeats());
         w.writeLong(tcp.getStatisticsPrintFrequency());
         w.writeLong(tcp.getIpFinderCleanFrequency());
         w.writeInt(tcp.getThreadPriority());
-        w.writeLong(tcp.getHeartbeatFrequency());
         w.writeInt((int)tcp.getTopHistorySize());
     }
 

@@ -54,9 +54,12 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
+
         disco.setIpFinder(ipFinder);
+
         cfg.setDiscoverySpi(disco);
+
+        cfg.setFailureDetectionTimeout(Long.MAX_VALUE);
 
         if (igniteInstanceName.endsWith("1"))
             cfg.setCacheConfiguration(); // Empty cache configuration.

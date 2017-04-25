@@ -93,6 +93,11 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 firstSpi().failureDetectionTimeout());
         assertEquals(IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT.longValue(),
                 secondSpi().failureDetectionTimeout());
+
+        assertEquals(IgniteConfiguration.DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT.longValue(),
+            firstSpi().clientFailureDetectionTimeout());
+        assertEquals(IgniteConfiguration.DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT.longValue(),
+            secondSpi().clientFailureDetectionTimeout());
     }
 
     /**
@@ -102,6 +107,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         for (int i = 2; i < spis.size(); i++) {
             assertFalse(((TcpDiscoverySpi)spis.get(i)).failureDetectionTimeoutEnabled());
             assertEquals(0, ((TcpDiscoverySpi)spis.get(i)).failureDetectionTimeout());
+            assertEquals(0, ((TcpDiscoverySpi)spis.get(i)).clientFailureDetectionTimeout());
         }
     }
 

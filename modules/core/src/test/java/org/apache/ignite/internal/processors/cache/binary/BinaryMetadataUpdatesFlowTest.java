@@ -147,9 +147,9 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
                 }
             };
 
-            discoSpi.setHeartbeatFrequency(1000);
-
             cfg.setDiscoverySpi(discoSpi);
+
+            cfg.setMetricsUpdateFrequency(1000);
         }
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
