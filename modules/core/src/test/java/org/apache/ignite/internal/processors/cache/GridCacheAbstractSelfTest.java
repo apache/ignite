@@ -201,7 +201,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureDetectionTimeout(Long.MAX_VALUE);
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
