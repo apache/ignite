@@ -895,16 +895,6 @@
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="maxMissedClientHeartbeats" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum heartbeats count node can miss without failing client node.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maxMissedHeartbeats" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum heartbeats count node can miss without initiating status check.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                         <xs:attribute name="reconnectCount" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>Maximum number of reconnect attempts used when establishing connection with remote nodes.</xs:documentation>
@@ -925,6 +915,13 @@
                         <xs:attribute name="topologyHistorySize" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>Size of topology snapshots history.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="metricsUpdateFrequency" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Metrics update frequency.
+                                </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="type" type="xs:string" use="required">
@@ -1392,6 +1389,13 @@
                 <xs:annotation>
                     <xs:documentation>
                         Failure detection timeout used by discovery and communication subsystems.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="clientFailureDetectionTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Failure detection timeout used by discovery and communication subsystems for client nodes.
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>

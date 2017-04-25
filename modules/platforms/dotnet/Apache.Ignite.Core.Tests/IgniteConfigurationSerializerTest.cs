@@ -730,12 +730,11 @@ namespace Apache.Ignite.Core.Tests
                     LocalAddress = "127.0.0.1",
                     LocalPort = 49900,
                     LocalPortRange = 13,
-                    MaxMissedClientHeartbeats = 9,
-                    MaxMissedHeartbeats = 7,
                     ReconnectCount = 11,
                     StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
                     ThreadPriority = 6,
-                    TopologyHistorySize = 1234567
+                    TopologyHistorySize = 1234567,
+                    MetricsUpdateFrequency = TimeSpan.FromMinutes(3.7)
                 },
                 IgniteHome = "igniteHome",
                 IncludedEventTypes = EventType.CacheQueryAll,
@@ -793,6 +792,7 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "test",
                 Logger = new IgniteNLogLogger(),
                 FailureDetectionTimeout = TimeSpan.FromMinutes(2),
+                ClientFailureDetectionTimeout = TimeSpan.FromMinutes(3),
                 PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
                 EventStorageSpi = new MemoryEventStorageSpi
                 {

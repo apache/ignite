@@ -2122,6 +2122,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         return S.toString(TcpDiscoverySpi.class, this);
     }
 
+    // TODO
+    public long getMetricsUpdateFrequency() {
+        return metricsUpdateFreq;
+    }
+
+    // TODO
+    public void setMetricsUpdateFrequency(long metricsUpdateFreq) {
+        this.metricsUpdateFreq = metricsUpdateFreq;
+    }
+
     /**
      * Socket timeout object.
      */
