@@ -28,6 +28,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
+import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
+import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_INVOKE;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.plugin.security.SecurityPermission.EVENTS_ENABLE;
@@ -41,6 +43,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @SuppressWarnings({"ThrowableNotThrown", "ArraysAsListWithZeroOrOneArgument"})
     public void testPermissionBuilder() {
         SecurityBasicPermissionSet exp = new SecurityBasicPermissionSet();
 
@@ -55,6 +58,12 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
         permTask.put("task2", Arrays.asList(TASK_EXECUTE));
 
         exp.setTaskPermissions(permTask);
+
+        Map<String, Collection<SecurityPermission>> permSrvc = new HashMap<>();
+        permSrvc.put("service1", Arrays.asList(SERVICE_DEPLOY));
+        permSrvc.put("service2", Arrays.asList(SERVICE_INVOKE));
+
+        exp.setServicePermissions(permSrvc);
 
         exp.setSystemPermissions(Arrays.asList(ADMIN_VIEW, EVENTS_ENABLE));
 
@@ -90,6 +99,16 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                 "you can assign permission only start with [EVENTS_, ADMIN_], but you try TASK_EXECUTE"
         );
 
+        assertThrows(log, new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    permsBuilder.appendSystemPermissions(SERVICE_INVOKE, CACHE_REMOVE);
+                    return null;
+                }
+            }, IgniteException.class,
+            "you can assign permission only start with [EVENTS_, ADMIN_], but you try SERVICE_INVOKE"
+        );
+
         permsBuilder.appendCachePermissions(
                 "cache1", CACHE_PUT, CACHE_REMOVE
         ).appendCachePermissions(
@@ -98,12 +117,17 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                 "task1", TASK_CANCEL
         ).appendTaskPermissions(
                 "task2", TASK_EXECUTE
+        ).appendServicePermissions(
+            "service1", SERVICE_DEPLOY
+        ).appendServicePermissions(
+            "service2", SERVICE_INVOKE
         ).appendSystemPermissions(ADMIN_VIEW, EVENTS_ENABLE);
 
         SecurityPermissionSet actual = permsBuilder.build();
 
         assertEquals(exp.cachePermissions(), actual.cachePermissions());
         assertEquals(exp.taskPermissions(), actual.taskPermissions());
+        assertEquals(exp.servicePermissions(), actual.servicePermissions());
         assertEquals(exp.systemPermissions(), actual.systemPermissions());
         assertEquals(exp.defaultAllowAll(), actual.defaultAllowAll());
     }
