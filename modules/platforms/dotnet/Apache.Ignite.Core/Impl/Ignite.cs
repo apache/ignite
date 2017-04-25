@@ -386,12 +386,16 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> GetCache<TK, TV>(string name)
         {
+            IgniteArgumentCheck.NotNull(name, "name");
+
             return Cache<TK, TV>(UU.ProcessorCache(_proc, name));
         }
 
         /** <inheritdoc /> */
         public ICache<TK, TV> GetOrCreateCache<TK, TV>(string name)
         {
+            IgniteArgumentCheck.NotNull(name, "name");
+
             return Cache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, name));
         }
 
@@ -406,6 +410,7 @@ namespace Apache.Ignite.Core.Impl
             NearCacheConfiguration nearConfiguration)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
+            IgniteArgumentCheck.NotNull(configuration.Name, "CacheConfiguration.Name");
             configuration.Validate(Logger);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -431,6 +436,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(string name)
         {
+            IgniteArgumentCheck.NotNull(name, "name");
+
             return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, name));
         }
 
@@ -445,6 +452,7 @@ namespace Apache.Ignite.Core.Impl
             NearCacheConfiguration nearConfiguration)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
+            IgniteArgumentCheck.NotNull(configuration.Name, "CacheConfiguration.Name");
             configuration.Validate(Logger);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -471,6 +479,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public void DestroyCache(string name)
         {
+            IgniteArgumentCheck.NotNull(name, "name");
+
             UU.ProcessorDestroyCache(_proc, name);
         }
 
@@ -541,6 +551,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICacheAffinity GetAffinity(string cacheName)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return new CacheAffinityImpl(UU.ProcessorAffinity(_proc, cacheName), _marsh, false, this);
         }
 
