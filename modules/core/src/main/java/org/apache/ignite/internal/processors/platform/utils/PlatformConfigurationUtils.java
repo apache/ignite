@@ -41,6 +41,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -177,6 +178,8 @@ public class PlatformConfigurationUtils {
 
         if (memoryPolicyName != null)
             ccfg.setMemoryPolicyName(memoryPolicyName);
+
+        ccfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)in.readInt()));
 
         Object storeFactory = in.readObjectDetached();
 
@@ -801,6 +804,7 @@ public class PlatformConfigurationUtils {
         writer.writeBoolean(ccfg.isWriteThrough());
         writer.writeBoolean(ccfg.isStatisticsEnabled());
         writer.writeString(ccfg.getMemoryPolicyName());
+        writer.writeInt(ccfg.getPartitionLossPolicy().ordinal());
 
         if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());

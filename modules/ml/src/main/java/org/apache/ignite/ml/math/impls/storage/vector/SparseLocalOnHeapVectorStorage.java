@@ -30,8 +30,10 @@ import org.apache.ignite.ml.math.VectorStorage;
  * Sparse, local, on-heap vector storage.
  */
 public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageConstants {
-    /** */ private int size;
-    /** */ private int acsMode;
+    /** */
+    private int size;
+    /** */
+    private int acsMode;
 
     /** Actual map storage. */
     private Map<Integer, Double> sto;
@@ -61,8 +63,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
     }
 
     /**
-     *
-     *
+     * @return Vector elements access mode.
      */
     public int getAccessMode() {
         return acsMode;

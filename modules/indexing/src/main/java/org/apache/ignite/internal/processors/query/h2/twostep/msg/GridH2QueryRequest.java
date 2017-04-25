@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
@@ -92,6 +93,10 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     @GridDirectMap(keyType = UUID.class, valueType = int[].class)
     private Map<UUID, int[]> parts;
 
+    /** Query partitions. */
+    @GridToStringInclude
+    private int[] qryParts;
+
     /** */
     private int pageSize;
 
@@ -118,6 +123,32 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** */
     private byte[] paramsBytes;
+
+    /**
+     * Required by {@link Externalizable}
+     */
+    public GridH2QueryRequest() {
+        // No-op.
+    }
+
+    /**
+     * @param req Request.
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest(GridH2QueryRequest req) {
+        this.reqId = req.reqId;
+        this.caches = req.caches;
+        this.topVer = req.topVer;
+        this.parts = req.parts;
+        this.qryParts = req.qryParts;
+        this.pageSize = req.pageSize;
+        this.qrys = req.qrys;
+        this.flags = req.flags;
+        this.tbls = req.tbls;
+        this.timeout = req.timeout;
+        this.params = req.params;
+        this.paramsBytes = req.paramsBytes;
+    }
 
     /**
      * @return Parameters.
@@ -220,6 +251,23 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      */
     public GridH2QueryRequest partitions(Map<UUID, int[]> parts) {
         this.parts = parts;
+
+        return this;
+    }
+
+    /**
+     * @return Query partitions.
+     */
+    public int[] queryPartitions() {
+        return qryParts;
+    }
+
+    /**
+     * @param qryParts Query partitions.
+     * @return {@code this}.
+     */
+    public GridH2QueryRequest queryPartitions(int[] qryParts) {
+        this.qryParts = qryParts;
 
         return this;
     }
@@ -403,6 +451,12 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 writer.incrementState();
 
+
+            case 10:
+                if (!writer.writeIntArray("qryParts", qryParts))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -496,6 +550,14 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
+
+            case 10:
+                qryParts = reader.readIntArray("qryParts");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridH2QueryRequest.class);
@@ -508,7 +570,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */

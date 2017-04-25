@@ -278,9 +278,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Current IGFS data cache size. */
     private LongAdder8 igfsDataCacheSize;
 
-    /** Max space for IGFS. */
-    private long igfsDataSpaceMax;
-
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
 
@@ -338,12 +335,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     if (!ctx.isNear()) {
                         igfsDataCache = true;
                         igfsDataCacheSize = new LongAdder8();
-
-                        igfsDataSpaceMax = igfsCfg.getMaxSpaceSize();
-
-                        // Do we have limits?
-                        if (igfsDataSpaceMax <= 0)
-                            igfsDataSpaceMax = Long.MAX_VALUE;
                     }
 
                     break;
@@ -2708,12 +2699,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
-        // Supported only in ATOMIC cache.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public final V getAndPutIfAbsent(final K key, final V val) throws IgniteCheckedException {
         return getAndPut(key, val, ctx.noVal());
     }
@@ -4366,11 +4351,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         assert igfsDataCache;
 
         return igfsDataCacheSize.longValue();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        return igfsDataSpaceMax;
     }
 
     /** {@inheritDoc} */

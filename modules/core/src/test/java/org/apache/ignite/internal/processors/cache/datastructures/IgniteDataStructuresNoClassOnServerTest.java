@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteNoClassOnServerAbstractTest;
 
 /**
- * Try put failed exception.
+ *
  */
-public class GridCacheTryPutFailedException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class IgniteDataStructuresNoClassOnServerTest extends IgniteNoClassOnServerAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected String clientClassName() {
+        return "org.apache.ignite.tests.p2p.datastructures.DataStructuresNoClassOnServerTestClient";
+    }
 }

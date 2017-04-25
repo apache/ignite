@@ -71,6 +71,9 @@ public class MemoryConfiguration implements Serializable {
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 2 * 1024;
 
+    /** This name is assigned to default MemoryPolicy if no user-defined default MemPlc is specified */
+    public static final String DFLT_MEM_PLC_DEFAULT_NAME = "default";
+
     /** Size of a memory chunk reserved for system cache needs. */
     private long sysCacheMemSize = DFLT_SYS_CACHE_MEM_SIZE;
 
@@ -81,7 +84,7 @@ public class MemoryConfiguration implements Serializable {
     private int concLvl;
 
     /** A name of the memory policy that defines the default memory region. */
-    private String dfltMemPlcName;
+    private String dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
 
     /** Memory policies. */
     private MemoryPolicyConfiguration[] memPlcs;
@@ -97,6 +100,8 @@ public class MemoryConfiguration implements Serializable {
 
     /**
      * Sets the size of a memory chunk reserved for system cache needs.
+     *
+     * Default value is {@link #DFLT_SYS_CACHE_MEM_SIZE}
      *
      * @param sysCacheMemSize Size in bytes.
      */
@@ -118,6 +123,8 @@ public class MemoryConfiguration implements Serializable {
 
     /**
      * Changes the page size.
+     *
+     * Default value is {@link #DFLT_PAGE_SIZE}
      *
      * @param pageSize Page size in bytes.
      */
@@ -164,7 +171,6 @@ public class MemoryConfiguration implements Serializable {
     public MemoryPolicyConfiguration createDefaultPolicyConfig() {
         MemoryPolicyConfiguration memPlc = new MemoryPolicyConfiguration();
 
-        memPlc.setName(null);
         memPlc.setSize(DFLT_MEMORY_POLICY_SIZE);
 
         return memPlc;
@@ -206,6 +212,8 @@ public class MemoryConfiguration implements Serializable {
      * To set own default memory policy, create the policy first, pass it to
      * {@link MemoryConfiguration#setMemoryPolicies(MemoryPolicyConfiguration...)} method and change the name of the
      * default memory policy with {@code MemoryConfiguration#setDefaultMemoryPolicyName(String)}.
+     *
+     * If nothing is specified by user, it is set to {@link #DFLT_MEM_PLC_DEFAULT_NAME} value.
      *
      * @param dfltMemPlcName Name of a memory policy to be used as default one.
      */

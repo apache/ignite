@@ -462,7 +462,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             PreparedStatement stmt = cache.get(sql);
 
-            if (stmt != null && !stmt.isClosed() && !((JdbcStatement)stmt).wasCancelled()) {
+            if (stmt != null && !stmt.isClosed() && !((JdbcStatement)stmt).isCancelled()) {
                 assert stmt.getConnection() == c;
 
                 return stmt;
@@ -666,17 +666,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return false;
 
         return ctx.cacheObjects().isBinaryObject(o);
-    }
-
-    /**
-     * @param coctx Cache object context.
-     * @param o Object.
-     * @return Object class.
-     */
-    private Class<?> getClass(CacheObjectContext coctx, CacheObject o) {
-        return isBinary(o) ?
-            Object.class :
-            o.value(coctx, false).getClass();
     }
 
     /**
@@ -1482,6 +1471,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @param keepCacheObj Flag to keep cache object.
      * @param enforceJoinOrder Enforce join order of tables.
+     * @param parts Partitions.
      * @return Iterable result.
      */
     private Iterable<List<?>> runQueryTwoStep(
@@ -1491,11 +1481,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final boolean enforceJoinOrder,
         final int timeoutMillis,
         final GridQueryCancel cancel,
-        final Object[] params
+        final Object[] params,
+        final int[] parts
     ) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
-                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params);
+                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params, parts);
             }
         };
     }
@@ -1526,6 +1517,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fqry.setArgs(qry.getArgs());
         fqry.setPageSize(qry.getPageSize());
         fqry.setDistributedJoins(qry.isDistributedJoins());
+        fqry.setPartitions(qry.getPartitions());
         fqry.setLocal(qry.isLocal());
 
         if (qry.getTimeout() > 0)
@@ -1580,7 +1572,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Connection c = connectionForSpace(space);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
-        final boolean distributedJoins = qry.isDistributedJoins() && cctx.isPartitioned();
+        final boolean distributedJoins = qry.isDistributedJoins();
         final boolean grpByCollocated = qry.isCollocated();
 
         final DistributedJoinMode distributedJoinMode = distributedJoinMode(qry.isLocal(), distributedJoins);
@@ -1741,7 +1733,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel = new GridQueryCancel();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel, qry.getArgs()),
+            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel, 
+                    qry.getArgs(), qry.getPartitions()),
             cancel);
 
         cursor.fieldsMeta(meta);
@@ -1761,12 +1754,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (caches.isEmpty())
             return; // Nothing to check
 
-        GridCacheSharedContext sharedContext = ctx.cache().context();
+        GridCacheSharedContext sharedCtx = ctx.cache().context();
 
         int expectedParallelism = 0;
 
         for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = sharedContext.cacheContext(caches.get(i));
+            GridCacheContext cctx = sharedCtx.cacheContext(caches.get(i));
 
             assert cctx != null;
 

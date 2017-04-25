@@ -1272,7 +1272,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void registerCache0(String space, GridCacheContext<?, ?> cctx, Collection<QueryTypeCandidate> cands)
         throws IgniteCheckedException {
         synchronized (stateMux) {
-            idx.registerCache(space, cctx, cctx.config());
+            if (idx != null)
+                idx.registerCache(space, cctx, cctx.config());
 
             try {
                 for (QueryTypeCandidate cand : cands) {
@@ -1301,7 +1302,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         }
                     }
 
-                    idx.registerType(space, desc);
+                    if (idx != null)
+                        idx.registerType(space, desc);
                 }
 
                 spaces.add(CU.mask(space));
@@ -1752,7 +1754,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             qry.getArgs(),
                             cctx.name());
 
-                        return idx.queryLocalSql(cctx, qry, idx.backupFilter(requestTopVer.get(), null), keepBinary);
+                        return idx.queryLocalSql(cctx, qry, idx.backupFilter(requestTopVer.get(), qry.getPartitions()), keepBinary);
                     }
                 }, true);
         }
@@ -1936,7 +1938,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry,
-                        idx.backupFilter(requestTopVer.get(), null), cancel);
+                        idx.backupFilter(requestTopVer.get(), qry.getPartitions()), cancel);
 
                     return new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {
