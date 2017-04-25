@@ -29,6 +29,9 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class CacheNearTest : IEventListener<CacheEvent>
     {
         /** */
+        private const string DefaultCacheName = "default";
+
+        /** */
         private IIgnite _grid;
 
         /** */
@@ -49,7 +52,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                         NearConfiguration = new NearCacheConfiguration
                         {
                             EvictionPolicy = new FifoEvictionPolicy {MaxSize = 5}
-                        }
+                        },
+                        Name = "*"
                     }
                 },
                 IncludedEventTypes = new[] { EventType.CacheEntryCreated }
@@ -73,15 +77,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestExistingNearCache()
         {
-            var cache = _grid.GetCache<int, string>(null);
+            var cache = _grid.GetCache<int, string>(DefaultCacheName);
 
             cache[1] = "1";
 
-            var nearCache = _grid.GetOrCreateNearCache<int, string>(null, new NearCacheConfiguration());
+            var nearCache = _grid.GetOrCreateNearCache<int, string>(DefaultCacheName, new NearCacheConfiguration());
             Assert.AreEqual("1", nearCache[1]);
 
             // GetOrCreate when exists
-            nearCache = _grid.GetOrCreateNearCache<int, string>(null, new NearCacheConfiguration());
+            nearCache = _grid.GetOrCreateNearCache<int, string>(DefaultCacheName, new NearCacheConfiguration());
             Assert.AreEqual("1", nearCache[1]);
         }
 
