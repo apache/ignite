@@ -166,6 +166,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
     /** {@inheritDoc} */
     @Override public boolean compareAndSet(final T expVal, final T newVal) {
+        checkRemoved();
+
         try {
             if (ctx.dataStructures().knownType(expVal) && ctx.dataStructures().knownType(newVal)) {
                 EntryProcessorResult<Boolean> res =
