@@ -55,6 +55,8 @@ import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -957,6 +959,28 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             List<ClusterNode> nodes = null;
 
+            if (!topVer.equals(diffFromAffinityVer)) {
+                System.out.println("??? node2part");
+
+                nodes = new ArrayList<>();
+
+                nodes.addAll(affNodes);
+
+                for (Map.Entry<UUID, GridDhtPartitionMap> entry : node2part.entrySet()) {
+                    GridDhtPartitionState state = entry.getValue().get(p);
+
+                    ClusterNode n = cctx.discovery().node(entry.getKey());
+
+                    if (n != null && state != null && (state == MOVING || state == OWNING || state == RENTING) && !nodes.contains(n)
+                        && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion())) {
+                        nodes.add(n);
+                    }
+
+                }
+
+                return nodes;
+            }
+
             Collection<UUID> diffIds = diffFromAffinity.get(p);
 
             if (!F.isEmpty(diffIds)) {
@@ -1012,7 +1036,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             // Node IDs can be null if both, primary and backup, nodes disappear.
             List<ClusterNode> nodes = new ArrayList<>();
 
-            for (UUID id : allIds) {
+            for (UUID id : node2part.keySet()) {
+                if (topVer.topologyVersion() > 0 && !allIds.contains(id))
+                    continue;
+
                 if (hasState(p, id, state, states)) {
                     ClusterNode n = cctx.discovery().node(id);
 
@@ -1196,16 +1223,18 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                         Set<UUID> diffIds = diffFromAffinity.get(p);
 
-                        if (e0.getValue() != MOVING && e0.getValue() != OWNING && e0.getValue() != RENTING &&
-                            !affAssignment.getIds(p).contains(partMap.nodeId())) {
+                        if ((e0.getValue() == MOVING || e0.getValue() == OWNING || e0.getValue() == RENTING) &&
+                            !affAssignment.getIds(p).contains(e.getKey())) {
+
                             if (diffIds == null)
                                 diffFromAffinity.put(p, diffIds = U.newHashSet(3));
 
-                            if (diffIds.add(partMap.nodeId()))
+                            if (diffIds.add(e.getKey())) {
                                 diffFromAffinitySize++;
+                            }
                         }
                         else {
-                            if (diffIds != null && diffIds.remove(partMap.nodeId())) {
+                            if (diffIds != null && diffIds.remove(e.getKey())) {
                                 diffFromAffinitySize--;
 
                                 if (diffIds.isEmpty())
@@ -1834,6 +1863,19 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             map.updateSequence(updateSeq, topVer);
 
             map.put(p, state);
+
+            if (state == MOVING || state == OWNING || state == RENTING) {
+                AffinityAssignment assignment = cctx.affinity().assignment(diffFromAffinityVer);
+
+                if (!assignment.getIds(p).contains(cctx.localNodeId())) {
+                    Set<UUID> diffIds = diffFromAffinity.get(p);
+
+                    if (diffIds == null)
+                        diffFromAffinity.put(p, diffIds = U.newHashSet(3));
+
+                    diffIds.add(cctx.localNodeId());
+                }
+            }
         }
 
         return updateSeq;
