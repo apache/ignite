@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -79,28 +80,33 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runGrids() throws Exception {
-        final int N = 5;
+        final int N = 2;
         for (int i = 0; i < N; i++) {
-            Ignite ignite = startGridsMultiThreaded(N*i, N);
-            IgniteConfiguration cfg = GridTestUtils.getFieldValue(((IgniteKernal) (ignite)), "cfg");
-            ServerImpl impl = GridTestUtils.getFieldValue(cfg.getDiscoverySpi(), TcpDiscoverySpi.class, "impl");
-            ArrayList nodes = new ArrayList(impl.ring().allNodes());
-            checkRing(nodes);
+            System.out.println("=======================> 0");
+            final Ignite ignite = startGridsMultiThreaded(N*i, N);
+            System.out.println("=======================> 1");
+            final IgniteConfiguration cfg = GridTestUtils.getFieldValue(((IgniteKernal) (ignite)), "cfg");
+            final ServerImpl impl = GridTestUtils.getFieldValue(cfg.getDiscoverySpi(), TcpDiscoverySpi.class, "impl");
+            System.out.println("=======================> 2");
+            checkRing(new ArrayList(impl.ring().allNodes()));
             assertEquals(N*(i+1)+i*(N/2), ignite.cluster().topologyVersion());
-
-            Random rnd = new Random();
+            System.out.println("=======================> 3");
+            final Random rnd = new Random();
             int j = 0;
             while (j < N/2) {
-                int k = rnd.nextInt(N*(i+1));
+                //int k = rnd.nextInt(N*(i+1));
+                final IgniteEx grid;
                 try {
-                    grid(k);
+                    grid = grid(rnd.nextInt(N*(i+1)));
                 } catch (IgniteIllegalStateException e) {
                     continue;
                 }
                 j++;
-                stopGrid(k);
-                nodes = new ArrayList(impl.ring().allNodes());
-                checkRing(nodes);
+                System.out.println("=======================> 4_"+j);
+                grid.close();
+                System.out.println("=======================> 5_"+j);
+                //stopGrid(k);
+                checkRing(new ArrayList(impl.ring().allNodes()));
             }
         }
     }
@@ -132,7 +138,7 @@ public class RegionTcpDiscoveryStressTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testMultiThreadedTwoNoneRegion() throws Exception {
+    public void testMultiThreadedNoneRegion() throws Exception {
         type = Type.NONE;
         runGrids();
         stopAllGrids();

@@ -2667,7 +2667,19 @@ class ServerImpl extends TcpDiscoveryImpl {
             UUID locNodeId = getLocalNodeId();
 
             while (true) {
-                TcpDiscoveryNode newNext = ring.nextNode(failedNodes);
+                TcpDiscoveryNode tempNode = ring.nextNode(failedNodes);
+                if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                    TcpDiscoveryNodeAddedMessage tmsg = (TcpDiscoveryNodeAddedMessage)msg;
+                    //If we have to skip new node for first time
+                    if (tempNode.id().equals(tmsg.node().id()) &&
+                        tmsg.where!= TcpDiscoveryNodeAddedMessage.Where.NODE) {
+                        Collection<TcpDiscoveryNode> failedPlus = U.arrayList(failedNodes);
+                        failedPlus.add(tempNode);
+                        tempNode = ring.nextNode(failedPlus);
+                    }
+                }
+
+                TcpDiscoveryNode newNext = tempNode;
 
                 if (newNext == null) {
                     if (log.isDebugEnabled())
@@ -3898,6 +3910,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return true;
             }
 
+
             msg.verify(locNodeId);
 
             return false;
@@ -4164,9 +4177,57 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             final UUID locNodeId = getLocalNodeId();
 
+            //When message need reach the coordinator or the msg.node
+            if ((msg.where == TcpDiscoveryNodeAddedMessage.Where.COORDINATOR || !msg.verified())
+                && !isLocalNodeCoordinator()) {
+
+                if (sendMessageToRemotes(msg))
+                    sendMessageAcrossRing(msg);
+                return;
+            }
+            if (locNodeId.equals(node.id()) && msg.where != TcpDiscoveryNodeAddedMessage.Where.NODE &&
+                !(msg.where == TcpDiscoveryNodeAddedMessage.Where.COORDINATOR && isLocalNodeCoordinator())
+                && (ring.allNodes().size()!=1)
+                ) {
+
+                if (sendMessageToRemotes(msg))
+                    sendMessageAcrossRing(msg);
+                return;
+            }
+
+            //If message is walking across the ring but back to coordinator
+            if (msg.verified() && isLocalNodeCoordinator() && msg.where == TcpDiscoveryNodeAddedMessage.Where.NEXT) {
+                //If coordinator was changed
+                if (!locNodeId.equals(msg.verifierNodeId())) {
+                    msg.verify(null);
+
+                    //Start from the beggining
+                    if (subProcessAddedMessageByCoordinator(msg, node, locNodeId))
+                        return;
+
+                    if (ring.allNodes().size()==1) {
+                        msg.where = TcpDiscoveryNodeAddedMessage.Where.NODE;
+                    } else
+                        msg.where = TcpDiscoveryNodeAddedMessage.Where.NEXT;
+                    if (sendMessageToRemotes(msg))
+                        sendMessageAcrossRing(msg);
+                    return;
+                }
+
+                msg.where = TcpDiscoveryNodeAddedMessage.Where.NODE;
+                if (sendMessageToRemotes(msg))
+                    sendMessageAcrossRing(msg);
+                return;
+            }
+
             if (isLocalNodeCoordinator()) {
                 if (subProcessAddedMessageByCoordinator(msg, node, locNodeId))
                     return;
+                //Next node can be equals msg.node, in this case we must skip it
+                if (ring.allNodes().size()==1)
+                    msg.where = TcpDiscoveryNodeAddedMessage.Where.NODE;
+                else
+                    msg.where = TcpDiscoveryNodeAddedMessage.Where.NEXT;
             }
             else if (!locNodeId.equals(node.id()) && ring.node(node.id()) != null) {
                 // Local node already has node from message in local topology.
@@ -4192,10 +4253,20 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg.verified() && !locNodeId.equals(node.id())) {
                 if (subProcessAddedMessageFromOtherNode(msg, node, locNodeId))
                     return;
+                if (sendMessageToRemotes(msg))
+                    sendMessageAcrossRing(msg);
+                return;
             }
-            if (msg.verified() && locNodeId.equals(node.id())) {
+
+            if (msg.verified() && locNodeId.equals(node.id()) &&
+                msg.where == TcpDiscoveryNodeAddedMessage.Where.NODE) {
                 if (subProcessAddedMessageFromThisNode(msg, node, locNodeId))
                     return;
+                msg.where = TcpDiscoveryNodeAddedMessage.Where.COORDINATOR;
+
+                if (sendMessageToRemotes(msg))
+                    sendMessageAcrossRing(msg);
+                return;
             }
 
             if (sendMessageToRemotes(msg))

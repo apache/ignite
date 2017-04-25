@@ -68,6 +68,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /** Start time of the first grid node. */
     private final long gridStartTime;
 
+    /** */
+    public Where where = Where.COORDINATOR;
+
     /**
      * Constructor.
      *
@@ -237,5 +240,17 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryNodeAddedMessage.class, this, "super", super.toString());
+    }
+
+    /**
+     * Where we must to send this message
+     */
+    public static enum Where {
+        /** To next node in the ring */
+        NEXT,
+        /** To the coordinator */
+        COORDINATOR,
+        /** To node in message */
+        NODE
     }
 }
