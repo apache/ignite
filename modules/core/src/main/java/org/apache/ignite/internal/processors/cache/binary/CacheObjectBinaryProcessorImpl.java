@@ -455,6 +455,13 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(typeId, holder.pendingVersion());
 
+                if (log.isDebugEnabled() && !fut.isDone())
+                    log.debug("Waiting for update for" +
+                            " [typeId=" + typeId +
+                            ", pendingVer=" + holder.pendingVersion() +
+                            ", acceptedVer=" + holder.acceptedVersion() + "]"
+                    );
+
                 try {
                     fut.get();
                 }
@@ -490,6 +497,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(
                         typeId,
                         holder.pendingVersion());
+
+                if (log.isDebugEnabled() && !fut.isDone())
+                    log.debug("Waiting for update for" +
+                            " [typeId=" + typeId
+                            + ", schemaId=" + schemaId
+                            + ", pendingVer=" + holder.pendingVersion()
+                            + ", acceptedVer=" + holder.acceptedVersion() + "]"
+                    );
 
                 try {
                     fut.get();
@@ -832,7 +847,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             for (Map.Entry<Integer, BinaryMetadataHolder> e : receivedData.entrySet()) {
                 BinaryMetadataHolder holder = e.getValue();
 
-                metadataLocCache.put(e.getKey(), new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), holder.pendingVersion()));
+                BinaryMetadataHolder localHolder = new BinaryMetadataHolder(holder.metadata(),
+                        holder.pendingVersion(),
+                        holder.pendingVersion());
+
+                if (log.isDebugEnabled())
+                    log.debug("Received metadata on join: " + localHolder);
+
+                metadataLocCache.put(e.getKey(), localHolder);
             }
         }
     }
