@@ -511,7 +511,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     continue;
                 }
 
-                GridCacheEntryEx entry = null;
+                GridCacheEntryEx entry;
 
                 while (true) {
                     try {

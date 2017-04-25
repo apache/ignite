@@ -77,6 +77,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 null
             ),
             defaultCacheConfiguration(),
+            null,
             CacheType.USER,
             true,
             true,

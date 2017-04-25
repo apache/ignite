@@ -213,6 +213,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache type. */
     private CacheType cacheType;
 
+    /** */
+    private CacheGroupInfrastructure grp;
+
     /** IO policy. */
     private byte plc;
 
@@ -288,6 +291,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridKernalContext ctx,
         GridCacheSharedContext sharedCtx,
         CacheConfiguration cacheCfg,
+        CacheGroupInfrastructure grp,
         CacheType cacheType,
         boolean affNode,
         boolean updatesAllowed,
@@ -317,6 +321,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert sharedCtx != null;
         assert cacheCfg != null;
 
+        assert grp != null;
+
         assert evtMgr != null;
         assert storeMgr != null;
         assert evictMgr != null;
@@ -332,6 +338,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;
         this.cacheCfg = cacheCfg;
+        this.grp = grp;
         this.cacheType = cacheType;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
@@ -376,6 +383,10 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+    }
+
+    public CacheGroupInfrastructure group() {
+        return grp;
     }
 
     /**
@@ -778,7 +789,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if rebalance is enabled.
      */
     public boolean rebalanceEnabled() {
-        return cacheCfg.getRebalanceMode() != NONE;
+        return grp.rebalanceEnabled();
     }
 
     /**

@@ -218,6 +218,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
+        // TODO IGNITE-5075.
+        if (true)
+            return;
+
         if (ctx.isDaemon() || !ctx.state().active())
             return;
 

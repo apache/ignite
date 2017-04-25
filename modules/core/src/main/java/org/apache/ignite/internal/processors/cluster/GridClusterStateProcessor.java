@@ -338,7 +338,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         assert !F.isEmpty(reqs);
         assert topVer != null;
 
-        for (DynamicCacheChangeRequest req : reqs)
+        for (DynamicCacheChangeRequest req : reqs) {
             if (req.globalStateChange()) {
                 ChangeGlobalStateContext cgsCtx = lastCgsCtx;
 
@@ -348,6 +348,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
                 return true;
             }
+        }
 
 
         return false;

@@ -215,6 +215,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Internal cache names. */
     private final Set<String> internalCaches;
 
+    /** */
+    private ConcurrentMap<Integer, CacheGroupInfrastructure> cacheGrps = new ConcurrentHashMap<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -389,8 +392,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cc Cache Configuration.
      * @return {@code true} if cache is starting on client node and this node is affinity node for the cache.
      */
-    private boolean storesLocallyOnClient(IgniteConfiguration c,
-                                          CacheConfiguration cc) {
+    private boolean storesLocallyOnClient(IgniteConfiguration c, CacheConfiguration cc) {
         if (c.isClientMode() && c.getMemoryConfiguration() == null) {
             if (cc.getCacheMode() == LOCAL)
                 return true;
@@ -643,7 +645,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
-        //if inActivate on start then skip registrate caches
+        //if inActivate on start then skip caches registration.
         if (!activeOnStart)
             return;
 
@@ -662,10 +664,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void registerCacheFromConfig(CacheConfiguration[] cfgs) throws IgniteCheckedException {
-        for (int i = 0; i < cfgs.length; i++) {
-            if (ctx.config().isDaemon())
-                continue;
+        if (ctx.config().isDaemon())
+            return;
 
+        for (int i = 0; i < cfgs.length; i++) {
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
             cfgs[i] = cfg; // Replace original configuration value.
@@ -682,7 +684,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (sharedCtx.pageStore() != null &&
             sharedCtx.database().persistenceEnabled() &&
             !ctx.config().isDaemon()) {
-
             Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
 
             for (CacheConfiguration cfg : cfgs)
@@ -692,7 +693,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 savedCacheNames.remove(name);
 
             if (!F.isEmpty(savedCacheNames)) {
-                log.info("Registrate persistent caches: " + savedCacheNames);
+                if (log.isInfoEnabled())
+                    log.info("Register persistent caches: " + savedCacheNames);
 
                 for (String name : savedCacheNames) {
                     CacheConfiguration cfg = sharedCtx.pageStore().readConfiguration(name);
@@ -702,6 +704,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
         }
+    }
+
+    @Nullable public CacheGroupInfrastructure cacheGroup(int grpId) {
+        return cacheGrps.get(grpId);
+    }
+
+    public Collection<CacheGroupInfrastructure> cacheGroups() {
+        return cacheGrps.values();
+    }
+
+    private int nextCacheGroupId(CacheConfiguration ccfg) {
+        if (ccfg.getGroupName() != null) {
+            for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
+                if (ccfg.getGroupName().equals(cacheDesc.cacheConfiguration().getGroupName()))
+                    return cacheDesc.groupId();
+            }
+        }
+
+        return registeredCaches.size() + 1;
     }
 
     /**
@@ -731,12 +752,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheType cacheType;
 
-            if (CU.isUtilityCache(cfg.getName()))
-                cacheType = CacheType.UTILITY;
-            else if (internalCaches.contains(maskNull(cfg.getName())))
-                cacheType = CacheType.INTERNAL;
-            else
-                cacheType = CacheType.USER;
+        if (CU.isUtilityCache(cfg.getName()))
+            cacheType = CacheType.UTILITY;
+        else if (internalCaches.contains(maskNull(cfg.getName())))
+            cacheType = CacheType.INTERNAL;
+        else
+            cacheType = CacheType.USER;
 
         if (cacheType != CacheType.USER && cfg.getMemoryPolicyName() == null)
             cfg.setMemoryPolicyName(sharedCtx.database().systemMemoryPolicyName());
@@ -746,6 +767,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheDescriptor desc = new DynamicCacheDescriptor(ctx,
             cfg,
             cacheType,
+            0,
             template,
             IgniteUuid.randomUuid(),
             new QuerySchema(cfg.getQueryEntities()));
@@ -783,6 +805,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheDescriptor desc0 = new DynamicCacheDescriptor(ctx,
                 cfg,
                 cacheType,
+                0,
                 true,
                 IgniteUuid.randomUuid(),
                 new QuerySchema(cfg.getQueryEntities()));
@@ -886,7 +909,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     CachePluginManager pluginMgr = desc.pluginManager();
 
                     GridCacheContext ctx = createCache(
-                        ccfg, pluginMgr, desc.cacheType(), cacheObjCtx, desc.updatesAllowed());
+                        ccfg, null, pluginMgr, desc.cacheType(), cacheObjCtx, desc.updatesAllowed());
 
                     ctx.dynamicDeploymentId(desc.deploymentId());
 
@@ -909,9 +932,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         // Must call onKernalStart on shared managers after creation of fetched caches.
-        for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
+        for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers()) {
             if (sharedCtx.database() != mgr)
                 mgr.onKernalStart(false);
+        }
 
         // Escape if start active on start false
         if (!activeOnStart)
@@ -945,7 +969,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
+        // TODO IGNITE-5075.
+        // assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
 
         if (!ctx.clientNode() && !ctx.isDaemon())
             addRemovedItemsCleanupTask(Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, 10_000));
@@ -1442,6 +1467,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed to create cache.
      */
     private GridCacheContext createCache(CacheConfiguration<?, ?> cfg,
+        CacheGroupInfrastructure grp,
         @Nullable CachePluginManager pluginMgr,
         CacheType cacheType,
         CacheObjectContext cacheObjCtx,
@@ -1517,6 +1543,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx,
             sharedCtx,
             cfg,
+            grp,
             cacheType,
             affNode,
             updatesAllowed,
@@ -1648,6 +1675,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ctx,
                 sharedCtx,
                 cfg,
+                grp,
                 cacheType,
                 affNode,
                 true,
@@ -1826,20 +1854,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert req.start() : req;
         assert req.cacheType() != null : req;
 
-        DynamicCacheDescriptor desc = cacheDescriptor(req.cacheName());
+        DynamicCacheDescriptor desc = req.cacheDescriptor();
 
-        if (desc != null)
-            desc.onStart();
+        assert desc != null;
+
+        desc.onStart();
 
         prepareCacheStart(
             req.startCacheConfiguration(),
             req.nearCacheConfiguration(),
             req.cacheType(),
+            desc.groupId(),
             req.clientStartOnly(),
             req.initiatingNodeId(),
             req.deploymentId(),
             topVer,
-            desc != null ? desc.schema() : null
+            desc.schema()
         );
     }
 
@@ -1873,6 +1903,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         desc.cacheConfiguration(),
                         null,
                         desc.cacheType(),
+                        desc.groupId(),
                         false,
                         null,
                         desc.deploymentId(),
@@ -1884,6 +1915,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return started;
+    }
+
+    private CacheGroupInfrastructure startCacheGroup(CacheConfiguration cfg0, int grpId) throws IgniteCheckedException {
+        CacheConfiguration ccfg = new CacheConfiguration(cfg0);
+
+        CacheGroupInfrastructure grp = new CacheGroupInfrastructure(grpId, sharedCtx, ccfg);
+
+        grp.start();
+
+        CacheGroupInfrastructure old = cacheGrps.put(grpId, grp);
+
+        assert old == null;
+
+        return grp;
     }
 
     /**
@@ -1901,6 +1946,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConfiguration cfg,
         NearCacheConfiguration nearCfg,
         CacheType cacheType,
+        int grpId,
         boolean clientStartOnly,
         UUID initiatingNodeId,
         IgniteUuid deploymentId,
@@ -1920,6 +1966,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         if (affNodeStart || clientNodeStart || CU.isSystemCache(cfg.getName())) {
+            String grpName = cfg.getGroupName();
+
+            CacheGroupInfrastructure grp = null;
+
+            if (grpName != null) {
+                for (CacheGroupInfrastructure grp0 : cacheGrps.values()) {
+                    if (grp0.sharedGroup() && grpName.equals(grp0.groupName())) {
+                        grp = grp0;
+
+                        break;
+                    }
+                }
+
+                if (grp == null)
+                    grp = startCacheGroup(cfg, grpId);
+            }
+            else
+                grp = startCacheGroup(cfg, grpId);
+
             if (clientNodeStart && !affNodeStart) {
                 if (nearCfg != null)
                     ccfg.setNearConfiguration(nearCfg);
@@ -1929,7 +1994,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-            GridCacheContext cacheCtx = createCache(ccfg, null, cacheType, cacheObjCtx, true);
+            GridCacheContext cacheCtx = createCache(ccfg, grp, null, cacheType, cacheObjCtx, true);
 
             cacheCtx.startTopologyVersion(topVer);
 
@@ -2307,6 +2372,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 ctx,
                                 ccfg,
                                 req.cacheType(),
+                                0,
                                 true,
                                 req.deploymentId(),
                                 req.schema());
@@ -2349,6 +2415,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 ctx,
                                 ccfg,
                                 req.cacheType(),
+                                nextCacheGroupId(ccfg),
                                 false,
                                 req.deploymentId(),
                                 req.schema());
@@ -3026,8 +3093,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 DynamicCacheDescriptor desc = registeredTemplates.get(maskNull(req.cacheName()));
 
                 if (desc == null) {
-                    DynamicCacheDescriptor templateDesc = new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), true,
-                        req.deploymentId(), req.schema());
+                    DynamicCacheDescriptor templateDesc = new DynamicCacheDescriptor(ctx,
+                        ccfg,
+                        req.cacheType(),
+                        0,
+                        true,
+                        req.deploymentId(),
+                        req.schema());
 
                     DynamicCacheDescriptor old = registeredTemplates.put(maskNull(ccfg.getName()), templateDesc);
 
@@ -3070,8 +3142,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         assert req.cacheType() != null : req;
                         assert F.eq(ccfg.getName(), req.cacheName()) : req;
 
-                        DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false,
-                            req.deploymentId(), req.schema());
+                        DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
+                            ccfg,
+                            req.cacheType(),
+                            nextCacheGroupId(ccfg),
+                            false,
+                            req.deploymentId(),
+                            req.schema());
 
                         if (newTopVer == null) {
                             newTopVer = new AffinityTopologyVersion(topVer.topologyVersion(),
@@ -3094,6 +3171,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         ctx.discovery().addClientNode(req.cacheName(),
                             req.initiatingNodeId(),
                             req.nearCacheConfiguration() != null);
+
+                        req.cacheDescriptor(startDesc);
 
                         needExchange = true;
                     }
@@ -3135,6 +3214,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         }
 
                         desc.clientCacheStartVersion(newTopVer);
+
+                        req.cacheDescriptor(desc);
                     }
                 }
 

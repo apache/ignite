@@ -60,15 +60,10 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        affFunction = cctx.config().getAffinity();
-        affMapper = cctx.config().getAffinityMapper();
+        affFunction = cctx.group().config().getAffinity();
+        affMapper = cctx.group().config().getAffinityMapper();
 
-        aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
-            cctx.namex(),
-            affFunction,
-            cctx.config().getNodeFilter(),
-            cctx.config().getBackups(),
-            cctx.isLocal());
+        aff = cctx.group().affinity();
     }
 
     /** {@inheritDoc} */
@@ -100,18 +95,20 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
-        IgniteCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
-            "Failed to wait for topology update, client disconnected.");
-
-        if (aff != null)
-            aff.cancelFutures(err);
+        // TODO IGNITE-5075.
+//        IgniteCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
+//            "Failed to wait for topology update, client disconnected.");
+//
+//        if (aff != null)
+//            aff.cancelFutures(err);
     }
 
     /**
      *
      */
     public void onReconnected() {
-        aff.onReconnected();
+        // TODO IGNITE-5075.
+//        aff.onReconnected();
     }
 
     /** {@inheritDoc} */

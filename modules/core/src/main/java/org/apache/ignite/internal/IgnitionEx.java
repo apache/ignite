@@ -2196,12 +2196,14 @@ public class IgnitionEx {
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 
-            cacheCfgs.add(utilitySystemCache());
+            // TODO IGNITE-5075.
+            //cacheCfgs.add(utilitySystemCache());
 
             if (IgniteComponentType.HADOOP.inClassPath())
                 cacheCfgs.add(CU.hadoopSystemCache());
 
-            cacheCfgs.add(atomicsSystemCache(cfg.getAtomicConfiguration()));
+            // TODO IGNITE-5075.
+            //cacheCfgs.add(atomicsSystemCache(cfg.getAtomicConfiguration()));
 
             CacheConfiguration[] userCaches = cfg.getCacheConfiguration();
 

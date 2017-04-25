@@ -94,6 +94,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private transient AffinityTopologyVersion cacheFutTopVer;
 
+    /** */
+    private transient DynamicCacheDescriptor cacheDesc;
+
     /**
      * Constructor creates cache stop request.
      *
@@ -370,6 +373,14 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void schema(QuerySchema schema) {
         this.schema = schema != null ? schema.copy() : null;
+    }
+
+    public DynamicCacheDescriptor cacheDescriptor() {
+        return cacheDesc;
+    }
+
+    public void cacheDescriptor(DynamicCacheDescriptor cacheDesc) {
+        this.cacheDesc = cacheDesc;
     }
 
     /** {@inheritDoc} */

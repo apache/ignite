@@ -60,11 +60,11 @@ public class GridAffinityAssignmentCache {
     /** Cleanup history size. */
     private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
 
-    /** Cache name. */
-    private final String cacheName;
+    /** Group name. */
+    private final String grpName;
 
     /** */
-    private final int cacheId;
+    private final int grpId;
 
     /** Number of backups. */
     private final int backups;
@@ -115,7 +115,8 @@ public class GridAffinityAssignmentCache {
      * Constructs affinity cached calculations.
      *
      * @param ctx Kernal context.
-     * @param cacheName Cache name.
+     * @param grpName Cache group name.
+     * @param grpId Group ID.
      * @param aff Affinity function.
      * @param nodeFilter Node filter.
      * @param backups Number of backups.
@@ -123,7 +124,8 @@ public class GridAffinityAssignmentCache {
      */
     @SuppressWarnings("unchecked")
     public GridAffinityAssignmentCache(GridKernalContext ctx,
-        String cacheName,
+        String grpName,
+        int grpId,
         AffinityFunction aff,
         IgnitePredicate<ClusterNode> nodeFilter,
         int backups,
@@ -132,15 +134,15 @@ public class GridAffinityAssignmentCache {
         assert ctx != null;
         assert aff != null;
         assert nodeFilter != null;
+        assert grpId != 0;
 
         this.ctx = ctx;
         this.aff = aff;
         this.nodeFilter = nodeFilter;
-        this.cacheName = cacheName;
+        this.grpName = grpName;
+        this.grpId = grpId;
         this.backups = backups;
         this.locCache = locCache;
-
-        cacheId = CU.cacheId(cacheName);
 
         log = ctx.log(GridAffinityAssignmentCache.class);
 
@@ -160,18 +162,12 @@ public class GridAffinityAssignmentCache {
         return similarAffKey;
     }
 
-    /**
-     * @return Cache name.
-     */
-    public String cacheName() {
-        return cacheName;
+    public String groupName() {
+        return grpName;
     }
 
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
+    public int groupId() {
+        return 0;
     }
 
     /**
@@ -432,7 +428,7 @@ public class GridAffinityAssignmentCache {
      */
     public void dumpDebugInfo() {
         if (!readyFuts.isEmpty()) {
-            U.warn(log, "Pending affinity ready futures [cache=" + cacheName + ", lastVer=" + lastVersion() + "]:");
+            U.warn(log, "Pending affinity ready futures [grp=" + grpName + ", lastVer=" + lastVersion() + "]:");
 
             for (AffinityReadyFuture fut : readyFuts.values())
                 U.warn(log, ">>> " + fut);
@@ -461,7 +457,7 @@ public class GridAffinityAssignmentCache {
             if (cache == null) {
                 throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +
                     "calculated [locNode=" + ctx.discovery().localNode() +
-                    ", cache=" + cacheName +
+                    ", group=" + grpName +
                     ", topVer=" + topVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
@@ -589,9 +585,6 @@ public class GridAffinityAssignmentCache {
      * Affinity ready future. Will remove itself from ready futures map.
      */
     private class AffinityReadyFuture extends GridFutureAdapter<AffinityTopologyVersion> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         private AffinityTopologyVersion reqTopVer;
 
