@@ -103,13 +103,13 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         else
             disc.setMaxMissedClientHeartbeats(50);
 
-        disc.setHeartbeatFrequency(500);
         disc.setIpFinder(IP_FINDER);
         disc.setAckTimeout(1000);
         disc.setSocketTimeout(1000);
 
         cfg.setCacheConfiguration(cCfg);
         cfg.setDiscoverySpi(disc);
+        cfg.setMetricsUpdateFrequency(500);
 
         return cfg;
     }

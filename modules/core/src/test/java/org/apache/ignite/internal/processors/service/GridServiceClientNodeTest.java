@@ -43,9 +43,9 @@ public class GridServiceClientNodeTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setMaxMissedClientHeartbeats(30);
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(1000);
 
         cfg.setClientMode(client);
+        cfg.setMetricsUpdateFrequency(1000);
 
         return cfg;
     }

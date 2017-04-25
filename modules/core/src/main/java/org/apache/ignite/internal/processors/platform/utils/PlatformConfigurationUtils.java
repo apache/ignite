@@ -757,7 +757,6 @@ public class PlatformConfigurationUtils {
         disco.setStatisticsPrintFrequency(in.readLong());
         disco.setIpFinderCleanFrequency(in.readLong());
         disco.setThreadPriority(in.readInt());
-        disco.setHeartbeatFrequency(in.readLong());
         disco.setTopHistorySize(in.readInt());
 
         cfg.setDiscoverySpi(disco);
@@ -1156,7 +1155,6 @@ public class PlatformConfigurationUtils {
         w.writeLong(tcp.getStatisticsPrintFrequency());
         w.writeLong(tcp.getIpFinderCleanFrequency());
         w.writeInt(tcp.getThreadPriority());
-        w.writeLong(tcp.getHeartbeatFrequency());
         w.writeInt((int)tcp.getTopHistorySize());
     }
 

@@ -28,14 +28,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     /**
-     * Gets delay between heartbeat messages sent by coordinator.
-     *
-     * @return Time period in milliseconds.
-     */
-    @MXBeanDescription("Heartbeat frequency.")
-    public long getHeartbeatFrequency();
-
-    /**
      * Gets current SPI state.
      *
      * @return Current SPI state.

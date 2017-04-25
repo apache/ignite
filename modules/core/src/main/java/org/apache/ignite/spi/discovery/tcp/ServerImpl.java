@@ -2483,7 +2483,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (spi.failureDetectionTimeoutEnabled())
                 connCheckThreshold = spi.failureDetectionTimeout();
             else
-                connCheckThreshold = Math.min(spi.getSocketTimeout(), spi.getHeartbeatFrequency());
+                connCheckThreshold = Math.min(spi.getSocketTimeout(), spi.hbFreq);
 
             for (int i = 3; i > 0; i--) {
                 connCheckFreq = connCheckThreshold / i;
