@@ -50,7 +50,7 @@ public class IgniteSpiOperationTimeoutHelper {
     public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean serverOperation) {
         failureDetectionTimeoutEnabled = adapter.failureDetectionTimeoutEnabled();
         failureDetectionTimeout = serverOperation?
-            adapter.failureDetectionTimeout():adapter.clientFailureDetectionTimeout();
+            adapter.failureDetectionTimeout() : adapter.clientFailureDetectionTimeout();
     }
 
     /**
