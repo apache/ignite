@@ -152,7 +152,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
 
             Collection<QueryIndex> idxs = new ArrayList<>(entity.getIndexes());
 
-            entity.clearIndexes();
+            entity.setIndexes(null);
 
             IgniteCache<K, V> cache = grid(0).getOrCreateCache(ccfg);
 
@@ -633,7 +633,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCacheAbstractSel
      */
     private static class Enemy {
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         int campId;
 
         /** */

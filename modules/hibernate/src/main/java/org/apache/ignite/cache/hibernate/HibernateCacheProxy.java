@@ -627,11 +627,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        return delegate.igfsDataSpaceMax();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isMongoDataCache() {
         return delegate.isMongoDataCache();
     }

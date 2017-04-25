@@ -25,8 +25,8 @@ import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 /**
  * Calculates the LU-decomposition of a square matrix.
  * <p>
- * This class is inspired by class from Apache Common Math with similar name.
- * </p>
+ * This class is inspired by class from Apache Common Math with similar name.</p>
+ *
  * @see <a href="http://mathworld.wolfram.com/LUDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/LU_decomposition">Wikipedia</a>
  */
@@ -36,18 +36,22 @@ public class LUDecomposition extends DecompositionSupport {
 
     /** Pivot permutation associated with LU decomposition. */
     private final Vector pivot;
+
     /** Parity of the permutation associated with the LU decomposition. */
     private boolean even;
     /** Singularity indicator. */
     private boolean singular;
+
     /** Cached value of L. */
     private Matrix cachedL;
     /** Cached value of U. */
     private Matrix cachedU;
     /** Cached value of P. */
     private Matrix cachedP;
+
     /** Original matrix. */
     private Matrix matrix;
+
     /** Entries of LU decomposition. */
     private Matrix lu;
 
