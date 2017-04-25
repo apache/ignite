@@ -1343,6 +1343,7 @@ public class PlatformConfigurationUtils {
                 MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
 
                 cfg.setName(in.readString())
+                        .setInitialSize(in.readLong())
                         .setMaxSize(in.readLong())
                         .setSwapFilePath(in.readString())
                         .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
@@ -1384,6 +1385,7 @@ public class PlatformConfigurationUtils {
 
             for (MemoryPolicyConfiguration plc : plcs) {
                 w.writeString(plc.getName());
+                w.writeLong(plc.getInitialSize());
                 w.writeLong(plc.getMaxSize());
                 w.writeString(plc.getSwapFilePath());
                 w.writeInt(plc.getPageEvictionMode().ordinal());

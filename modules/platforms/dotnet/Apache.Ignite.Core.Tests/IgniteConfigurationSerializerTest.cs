@@ -269,7 +269,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("dfPlc", memPlc.Name);
             Assert.AreEqual(DataPageEvictionMode.RandomLru, memPlc.PageEvictionMode);
             Assert.AreEqual("abc", memPlc.SwapFilePath);
-            Assert.AreEqual(89, memPlc.Size);
+            Assert.AreEqual(89, memPlc.MaxSize);
         }
 
         /// <summary>
@@ -812,7 +812,7 @@ namespace Apache.Ignite.Core.Tests
                         {
                             Name = "myDefaultPlc",
                             PageEvictionMode = DataPageEvictionMode.Random2Lru,
-                            Size = 345 * 1024 * 1024,
+                            MaxSize = 345 * 1024 * 1024,
                             EvictionThreshold = 0.88,
                             EmptyPagesPoolSize = 77,
                             SwapFilePath = "myPath1"
@@ -821,7 +821,7 @@ namespace Apache.Ignite.Core.Tests
                         {
                             Name = "customPlc",
                             PageEvictionMode = DataPageEvictionMode.RandomLru,
-                            Size = 456 * 1024 * 1024,
+                            MaxSize = 456 * 1024 * 1024,
                             EvictionThreshold = 0.77,
                             EmptyPagesPoolSize = 66,
                             SwapFilePath = "somePath2"
