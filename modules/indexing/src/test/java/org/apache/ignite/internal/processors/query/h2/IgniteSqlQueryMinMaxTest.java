@@ -142,8 +142,8 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select min(_key), max(_key) from ValueObj"));
             List<List<?>> result = cursor.getAll();
             assertEquals(2, result.size());
-            assertTrue(((String) result.get(0).get(0)).contains("_key_PK"));
-            assertTrue(((String) result.get(0).get(0)).contains("direct lookup"));
+            assertTrue(((String) result.get(0).get(0)).toLowerCase().contains("_key_pk"));
+            assertTrue(((String) result.get(0).get(0)).toLowerCase().contains("direct lookup"));
         }
     }
 
@@ -158,8 +158,8 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select min(idxVal), max(idxVal) from ValueObj"));
             List<List<?>> result = cursor.getAll();
             assertEquals(2, result.size());
-            assertTrue(((String)result.get(0).get(0)).contains("idxVal_idx"));
-            assertTrue(((String)result.get(0).get(0)).contains("direct lookup"));
+            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("idxval_idx"));
+            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("direct lookup"));
         }
     }
 
@@ -174,8 +174,8 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select min(_key), max(_key) from Integer"));
             List<List<?>> result = cursor.getAll();
             assertEquals(2, result.size());
-            assertTrue(((String)result.get(0).get(0)).contains("_key_PK"));
-            assertTrue(((String)result.get(0).get(0)).contains("direct lookup"));
+            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("_key_pk"));
+            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("direct lookup"));
         }
     }
 
@@ -190,8 +190,8 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select min(_val), max(_val) from Integer"));
             List<List<?>> result = cursor.getAll();
             assertEquals(2, result.size());
-            assertTrue(((String)result.get(0).get(0)).contains("_val_idx"));
-            assertTrue(((String)result.get(0).get(0)).contains("direct lookup"));
+            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("_val_idx"));
+            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("direct lookup"));
         }
     }
 
