@@ -180,6 +180,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             spi.setReconnectCount(1); // To make test faster: on Windows 1 connect takes 1 second.
 
             cfg.setMetricsUpdateFrequency(40000);
+            cfg.setClientFailureDetectionTimeout(41000);
         }
 
         cfg.setConnectorConfiguration(null);
