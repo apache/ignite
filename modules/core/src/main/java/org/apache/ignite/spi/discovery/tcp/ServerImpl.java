@@ -3820,8 +3820,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node))) {
                 try {
-                    IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi,
-                        !node.isClient());
+                    IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
 
                     sendMessageDirectly(msg, addr, timeoutHelper);
 
@@ -4978,6 +4977,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     }
 
                                     if (!failedNode) {
+                                        //U.warn(log, "Will fail client node (not receiving metrics updates within"); // TODO
+
                                         TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(
                                             locNodeId, clientNode.id(), clientNode.internalOrder());
 

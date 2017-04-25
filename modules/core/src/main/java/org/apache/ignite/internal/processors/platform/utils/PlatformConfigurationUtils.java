@@ -959,7 +959,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMetricsUpdateFrequency());
         w.writeBoolean(true);
         w.writeInt(cfg.getNetworkSendRetryCount());
-        w.writeBoolean(true);w.writeLong(cfg.getNetworkSendRetryDelay());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getNetworkSendRetryDelay());
         w.writeBoolean(true);
         w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
@@ -1065,11 +1066,11 @@ public class PlatformConfigurationUtils {
 
         EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
 
-        if (eventStorageSpi == null) {
+        if (eventStorageSpi == null)
             w.writeByte((byte) 0);
-        } else if (eventStorageSpi instanceof NoopEventStorageSpi) {
+        else if (eventStorageSpi instanceof NoopEventStorageSpi)
             w.writeByte((byte) 1);
-        } else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
+        else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
             w.writeByte((byte) 2);
 
             w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
