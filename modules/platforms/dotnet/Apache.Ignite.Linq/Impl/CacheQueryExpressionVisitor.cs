@@ -52,7 +52,7 @@ namespace Apache.Ignite.Linq.Impl
             new CopyOnWriteConcurrentDictionary<MemberInfo, string>();
 
         /** */
-        private bool _includeAllFields;
+        private readonly bool _includeAllFields;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor" /> class.

@@ -47,10 +47,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /** */
         private string _keyTypeName;
 
-        /** */
-
-        /** */
-
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
         /// </summary>
