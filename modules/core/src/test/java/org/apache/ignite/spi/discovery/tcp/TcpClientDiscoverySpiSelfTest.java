@@ -141,7 +141,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private boolean longSockTimeouts;
 
     /** */
-    private long clientFailureDetectionTimeout = IgniteConfiguration.DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
+    private long clientFailureDetectionTimeout = 1000;
 
     /** */
     private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
@@ -153,7 +153,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientFailureDetectionTimeout(clientFailureDetectionTimeout);
+        cfg.setClientFailureDetectionTimeout(clientFailureDetectionTimeout());
 
         TcpDiscoverySpi disco = getDiscoverySpi();
 
@@ -189,10 +189,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         else
             throw new IllegalArgumentException();
 
-        if (useFailureDetectionTimeout()) {
-            cfg.setClientFailureDetectionTimeout(clientFailureDetectionTimeout());
+        if (useFailureDetectionTimeout())
             cfg.setFailureDetectionTimeout(failureDetectionTimeout());
-        }
         else {
             if (longSockTimeouts) {
                 disco.setAckTimeout(2000);
@@ -275,7 +273,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @return Client failure detection timeout.
      */
     protected long clientFailureDetectionTimeout() {
-        return 0;
+        return clientFailureDetectionTimeout;
     }
 
     /**
@@ -284,7 +282,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @return Failure detection timeout.
      */
     protected long failureDetectionTimeout() {
-        return 0;
+        return 500;
     }
 
     /**
@@ -383,7 +381,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         failClient(2);
 
-        await(srvFailedLatch);
+        awaitClient(srvFailedLatch);
         awaitClient(clientFailedLatch);
 
         checkNodes(3, 2);
@@ -769,8 +767,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
             failServer(2);
 
-            await(srvFailedLatch);
-            await(clientFailedLatch);
+            awaitClient(srvFailedLatch);
+            awaitClient(clientFailedLatch);
 
             await(client2StoppedLatch);
 
@@ -870,7 +868,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         failClient(1);
         failServer(1);
 
-        await(srvFailedLatch);
+        awaitClient(srvFailedLatch);
         awaitClient(clientFailedLatch);
 
         checkNodes(1, 1);
@@ -1658,7 +1656,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         assertFalse(err.get());
 
         if (!failSrv) {
-            await(srvFailedLatch);
+            awaitClient(srvFailedLatch);
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
@@ -1801,7 +1799,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         clientSpi.brakeConnection();
 
-        assertTrue(disconnectLatch.await(awaitTime(), MILLISECONDS));
+        assertTrue(disconnectLatch.await(awaitClientTime(), MILLISECONDS));
 
         log.info("Fail client connection2.");
 
@@ -1820,7 +1818,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             @Override public boolean apply() {
                 return srv.cluster().nodes().size() == 2;
             }
-        }, awaitTime());
+        }, awaitClientTime());
 
         checkNodes(1, 1);
 
@@ -2107,7 +2105,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If interrupted.
      */
     protected void awaitClient(CountDownLatch latch) throws InterruptedException {
-        assertTrue("Latch count: " + latch.getCount(), latch.await(awaitTime(), MILLISECONDS));
+        assertTrue("Latch count: " + latch.getCount(), latch.await(awaitClientTime(), MILLISECONDS));
     }
 
     /**
@@ -2116,6 +2114,15 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @return Time in milliseconds.
      */
     protected long awaitTime() {
+        return 20_000;
+    }
+
+    /**
+     * Time to wait for client operation completion.
+     *
+     * @return Time in milliseconds.
+     */
+    protected long awaitClientTime() {
         return 20_000;
     }
 

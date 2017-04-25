@@ -88,6 +88,11 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     }
 
     /** {@inheritDoc} */
+    @Override protected long awaitClientTime() {
+        return clientFailureDetectionTimeout() + FAILURE_AWAIT_TIME;
+    }
+
+    /** {@inheritDoc} */
     @Override protected TcpDiscoverySpi getDiscoverySpi() {
         return useTestSpi ? new TestTcpDiscoverySpi2() : super.getDiscoverySpi();
     }
@@ -110,6 +115,10 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             failureDetectionTimeoutEnabled());
         assertEquals(failureDetectionTimeout(),
             ((TcpDiscoverySpi)(G.ignite("client-0").configuration().getDiscoverySpi())).failureDetectionTimeout());
+    }
+
+    public void testDisconnectAfterNetworkTimeout() throws Exception {
+        super.testDisconnectAfterNetworkTimeout();
     }
 
     /**
@@ -195,7 +204,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             long detectTime = failureDetectTime[0]-failureTime;
 
             assertTrue("Client node failure detected too fast: " + detectTime + "ms",
-                detectTime > clientFailureThreshold - 100);
+                detectTime > clientFailureThreshold - 200);
             assertTrue("Client node failure detected too slow:  " + detectTime + "ms",
                 detectTime < clientFailureThreshold + 5000);
         }
@@ -444,9 +453,6 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
         private volatile long writeToSocketDelay;
 
-        /** Throw exception after soket timeout while reading ping response */
-        private volatile boolean pingResponseReadFail;
-
         /** */
         private Exception err;
 
@@ -552,20 +558,14 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 clientFailureDetectionTimeout() : failureDetectionTimeout();
 
             if (readDelay < currentTimeout) {
-                T result = null;
                 try {
-                    result = super.readMessage(sock, in, timeout);
+                    return super.readMessage(sock, in, timeout);
                 }
                 catch (Exception e) {
                     err = e;
 
                     throw e;
                 }
-                if (pingResponseReadFail && result instanceof TcpDiscoveryPingResponse) {
-                    U.sleep(sock.getSoTimeout());
-                    throw new IOException("Ping response read exception");
-                }
-                return result;
             }
             else {
                 T msg = super.readMessage(sock, in, timeout);
@@ -591,7 +591,6 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         private void reset() {
             readDelay = 0;
             writeToSocketDelay = 0;
-            pingResponseReadFail = false;
             err = null;
         }
     }
