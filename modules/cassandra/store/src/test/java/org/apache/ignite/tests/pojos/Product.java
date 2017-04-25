@@ -72,7 +72,6 @@ public class Product {
     }
 
     /** */
-    @QuerySqlField(index = true)
     public long getId() {
         return id;
     }
@@ -83,7 +82,6 @@ public class Product {
     }
 
     /** */
-    @QuerySqlField
     public String getType() {
         return type;
     }
@@ -94,7 +92,6 @@ public class Product {
     }
 
     /** */
-    @QuerySqlField(index = true)
     public String getTitle() {
         return title;
     }
@@ -105,7 +102,6 @@ public class Product {
     }
 
     /** */
-    @QuerySqlField
     public String getDescription() {
         return description;
     }
@@ -116,7 +112,6 @@ public class Product {
     }
 
     /** */
-    @QuerySqlField
     public float getPrice() {
         return price;
     }

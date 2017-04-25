@@ -40,6 +40,9 @@ public class Person implements Externalizable {
     private String lastName;
 
     /** */
+    private String fullName;
+
+    /** */
     private int age;
 
     /** */
@@ -178,6 +181,7 @@ public class Person implements Externalizable {
     @SuppressWarnings("UnusedDeclaration")
     public void setFirstName(String name) {
         firstName = name;
+        fullName = firstName + " " + lastName;
     }
 
     /** */
@@ -190,6 +194,7 @@ public class Person implements Externalizable {
     @SuppressWarnings("UnusedDeclaration")
     public void setLastName(String name) {
         lastName = name;
+        fullName = firstName + " " + lastName;
     }
 
     /** */
@@ -200,9 +205,8 @@ public class Person implements Externalizable {
 
     /** */
     @SuppressWarnings("UnusedDeclaration")
-    @QuerySqlField
     public String getFullName() {
-        return firstName + " " + lastName;
+        return fullName;
     }
 
     /** */
