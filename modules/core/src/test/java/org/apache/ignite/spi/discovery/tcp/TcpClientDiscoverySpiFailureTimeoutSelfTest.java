@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -38,7 +39,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -146,6 +149,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
     public void testFailureTimeoutServerServer() throws Exception {
         failureThreshold = 5000;
         clientFailureThreshold = 10000;
+        useTestSpi = true;
         try {
             long detectTime = measureFailureDetectedTime(2,0);
 
@@ -156,6 +160,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         } finally {
             failureThreshold = FAILURE_THRESHOLD;
             clientFailureThreshold = CLIENT_FAILURE_THRESHOLD;
+            useTestSpi = false;
         }
     }
 
@@ -211,19 +216,27 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         final CountDownLatch latch = new CountDownLatch(1);
 
         Ignite aliveNode;
-        TcpDiscoverySpi aliveSpi;
+        TcpDiscoverySpi aliveSpi, failureSpi;
         if (clientCnt == 0) {
-            firstSpi.simulateNodeFailure();
+            //firstSpi.simulateNodeFailure();
+            TestTcpDiscoverySpi2 testFSpi = (TestTcpDiscoverySpi2)firstSpi;
+            testFSpi.writeToSocketDelay = 7000;
+
+            TestTcpDiscoverySpi2 testSSpi = (TestTcpDiscoverySpi2)secondSpi;
+            testSSpi.pingResponseReadFail = true;
+
             aliveNode = secondNode;
             aliveSpi = secondSpi;
+            failureSpi = firstSpi;
         }
         else {
             secondSpi.simulateNodeFailure();
             aliveNode = firstSrv;
             aliveSpi = firstSpi;
+            failureSpi = secondSpi;
         }
 
-        Thread pinger = new Thread(() -> aliveSpi.pingNode(secondSpi.getLocalNodeId()));
+        Thread pinger = new Thread(() -> aliveSpi.pingNode(failureSpi.getLocalNodeId()));
         pinger.start();
 
         aliveNode.events().localListen(new IgnitePredicate<Event>() {
@@ -407,8 +420,49 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         /** */
         private volatile long readDelay;
 
+        private volatile long writeToSocketDelay;
+
+        /** Throw exception after soket timeout while reading ping response */
+        private volatile boolean pingResponseReadFail;
+
         /** */
         private Exception err;
+
+        protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
+
+            if (writeToSocketDelay > 0) {
+                try {
+                    Thread.sleep(writeToSocketDelay);
+                } catch (InterruptedException e) {
+                    // Nothing to do.
+                }
+            }
+            if (sock.getSoTimeout() >= writeToSocketDelay) {
+                super.writeToSocket(sock, msg, data, timeout);
+            } else {
+                throw new IOException("Write to socket delay timeout exception.");
+            }
+        }
+
+        protected void writeToSocket(Socket sock,
+            OutputStream out,
+            TcpDiscoveryAbstractMessage msg,
+            long timeout) throws IOException, IgniteCheckedException {
+            if (writeToSocketDelay > 0) {
+                try {
+                    Thread.sleep(writeToSocketDelay);
+                } catch (InterruptedException e) {
+                    // Nothing to do.
+                }
+            }
+
+            if (sock.getSoTimeout() >= writeToSocketDelay) {
+                super.writeToSocket(sock, out, msg, timeout);
+            } else {
+                throw new IOException("Write to socket delay timeout exception.");
+            }
+        }
+
 
         /** {@inheritDoc} */
         @Override protected <T> T readMessage(Socket sock, @Nullable InputStream in, long timeout)
@@ -418,14 +472,20 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 clientFailureDetectionTimeout() : failureDetectionTimeout();
 
             if (readDelay < currentTimeout) {
+                T result = null;
                 try {
-                    return super.readMessage(sock, in, timeout);
+                    result = super.readMessage(sock, in, timeout);
                 }
                 catch (Exception e) {
                     err = e;
 
                     throw e;
                 }
+                if (pingResponseReadFail && result instanceof TcpDiscoveryPingResponse) {
+                    U.sleep(sock.getSoTimeout());
+                    throw new IOException("Ping response read exception");
+                }
+                return result;
             }
             else {
                 T msg = super.readMessage(sock, in, timeout);
@@ -450,6 +510,8 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
          */
         private void reset() {
             readDelay = 0;
+            writeToSocketDelay = 0;
+            pingResponseReadFail = false;
             err = null;
         }
     }
