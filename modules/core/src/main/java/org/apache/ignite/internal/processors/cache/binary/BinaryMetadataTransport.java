@@ -258,7 +258,7 @@ final class BinaryMetadataTransport {
                 }
 
                 if (log.isDebugEnabled())
-                    log.debug("Versions are stamped on coordinator:" +
+                    log.debug("[S] Versions are stamped on coordinator:" +
                         " [typeId=" + typeId +
                         ", pendingVer=" + pendingVer +
                         ", acceptedVer=" + acceptedVer + "]"
@@ -302,12 +302,18 @@ final class BinaryMetadataTransport {
                             do {
                                 holder = metaLocCache.get(typeId);
 
+                                if (log.isDebugEnabled())
+                                    log.debug("[C] Replacing from discovery: " + newHolder);
+
                                 if (obsoleteUpdate(
                                         holder.pendingVersion(),
                                         holder.acceptedVersion(),
                                         pendingVer,
                                         acceptedVer)) {
                                     obsoleteUpd = true;
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("[C] Metadata is obsolete comparing to: " + holder);
 
                                     fut.onDone(MetadataUpdateResult.createSuccessfulResult());
 
@@ -328,7 +334,7 @@ final class BinaryMetadataTransport {
                         BinaryMetadataHolder newHolder = new BinaryMetadataHolder(msg.metadata(), pendingVer, acceptedVer);
 
                         if (log.isDebugEnabled())
-                            log.debug("Updated on originating node: " + newHolder);
+                            log.debug("[S] Updated on originating node: " + newHolder);
 
                         metaLocCache.put(typeId, newHolder);
                     }
@@ -362,7 +368,7 @@ final class BinaryMetadataTransport {
                         }
                         else {
                             if (log.isDebugEnabled())
-                                log.debug("Updated on server node: " + newHolder);
+                                log.debug("[S] Updated on node: " + newHolder);
 
                             metaLocCache.put(typeId, newHolder);
                         }
@@ -431,7 +437,7 @@ final class BinaryMetadataTransport {
 
                 if (oldAcceptedVer >= newAcceptedVer) {
                     if (log.isDebugEnabled())
-                        log.debug("Marking ack as duplicate for " + holder +
+                        log.debug("[S] Marking ack as duplicate for " + holder +
                             "; newAcceptedVer: " + newAcceptedVer
                         );
 
@@ -588,6 +594,11 @@ final class BinaryMetadataTransport {
                 }
             }
 
+            if (log.isDebugEnabled())
+                log.debug("[S] Received metadata request from " + nodeId +
+                    "; sending back " + metaHolder
+                );
+
             resp.binaryMetadataBytes(binMetaBytes);
 
             try {
@@ -634,14 +645,25 @@ final class BinaryMetadataTransport {
                     do {
                         oldHolder = metaLocCache.get(typeId);
 
+                        if (log.isDebugEnabled())
+                            log.debug("[C] Replacing from IO metadata: " + newHolder);
+
                         if (oldHolder != null && obsoleteUpdate(
                                 oldHolder.pendingVersion(),
                                 oldHolder.acceptedVersion(),
                                 newHolder.pendingVersion(),
-                                newHolder.acceptedVersion()))
+                                newHolder.acceptedVersion())) {
+                            if (log.isDebugEnabled())
+                                log.debug("[C] Metadata is obsolete comparing to " + oldHolder);
+
                             break;
+                        }
                     }
                     while (!metaLocCache.replace(typeId, oldHolder, newHolder));
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("[C] Metadata was updated with " + newHolder);
                 }
 
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult());
