@@ -4977,7 +4977,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     }
 
                                     if (!failedNode) {
-                                        //U.warn(log, "Will fail client node (not receiving metrics updates within"); // TODO
+                                        U.warn(log, "Failing client node due to not receiving metrics updates " +
+                                            "from client node within " +
+                                            "'IgniteConfiguration.clientFailureDetectionTimeout' " +
+                                            "(consider increasing configuration property): " + clientNode);
 
                                         TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(
                                             locNodeId, clientNode.id(), clientNode.internalOrder());
