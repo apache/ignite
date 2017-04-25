@@ -217,17 +217,22 @@ public class KeyPersistenceSettings extends PersistenceSettings {
             for (PropertyDescriptor desc : descriptors) {
                 QuerySqlField sqlField = null;
 
+                boolean valid = false;
+
                 try {
                     Field f = getJavaClass().getDeclaredField(desc.getName());
 
                     sqlField = f.getAnnotation(QuerySqlField.class);
+
+                    valid = desc.getWriteMethod() != null || sqlField != null
+                        || f.getAnnotation(AffinityKeyMapped.class) != null;
                 }
                 catch (NoSuchFieldException e) {
                     // No-op.
                 }
 
                 // Skip POJO field if it's read-only and is not annotated with @QuerySqlField or @AffinityKeyMapped.
-                if (desc.getWriteMethod() != null || sqlField != null)
+                if (valid)
                     list.add(new PojoKeyField(desc, sqlField));
             }
 
