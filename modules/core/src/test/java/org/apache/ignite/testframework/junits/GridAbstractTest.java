@@ -673,14 +673,18 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGridsMultiThreaded(int cnt) throws Exception {
-        if (cnt == 1)
-            return startGrids(1);
+        assert cnt > 0 : "Number grids can not be " + cnt;
 
-        Ignite ignite = startGridsMultiThreaded(0, cnt);
+        if (cnt == 1)
+            return startGrid(0);
+
+        IgniteEx ig = startGrid(0);
+
+        startGridsMultiThreaded(1, cnt - 1);
 
         checkTopology(cnt);
 
-        return ignite;
+        return ig;
     }
 
     /**
