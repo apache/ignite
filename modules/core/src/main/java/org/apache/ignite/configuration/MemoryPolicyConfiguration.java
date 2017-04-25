@@ -62,6 +62,9 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default metrics enabled flag. */
+    public static final boolean DFLT_METRICS_ENABLED = false;
+
     /** Memory policy name. */
     private String name = DFLT_MEM_PLC_DEFAULT_NAME;
 
@@ -83,6 +86,9 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Minimum number of empty pages in reuse lists. */
     private int emptyPagesPoolSize = 100;
 
+    /** */
+    private boolean metricsEnabled = DFLT_METRICS_ENABLED;
+
     /**
      * Gets memory policy name.
      *
@@ -98,6 +104,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * If not specified, {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} value is used.
      *
      * @param name Memory policy name.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setName(String name) {
         this.name = name;
@@ -118,6 +125,9 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /**
      * Sets maximum memory region size defined by this memory policy. The total size should not be less than 10 MB
      * due to the internal data structures overhead.
+     *
+     * @param size Maximum memory region size in bytes.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setSize(long size) {
         this.size = size;
@@ -140,6 +150,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Sets a path to the memory-mapped file.
      *
      * @param swapFilePath A Path to the memory mapped file.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setSwapFilePath(String swapFilePath) {
         this.swapFilePath = swapFilePath;
@@ -162,6 +173,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Sets memory pages eviction mode.
      *
      * @param evictionMode Eviction mode.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setPageEvictionMode(DataPageEvictionMode evictionMode) {
         pageEvictionMode = evictionMode;
@@ -183,6 +195,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Sets memory pages eviction threshold.
      *
      * @param evictionThreshold Eviction threshold.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setEvictionThreshold(double evictionThreshold) {
         this.evictionThreshold = evictionThreshold;
@@ -213,9 +226,33 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Increase this parameter if {@link IgniteOutOfMemoryException} occurred with enabled page eviction.
      *
      * @param emptyPagesPoolSize Empty pages pool size.
+     * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setEmptyPagesPoolSize(int emptyPagesPoolSize) {
         this.emptyPagesPoolSize = emptyPagesPoolSize;
+
+        return this;
+    }
+
+    /**
+     * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
+     * at runtime via memory metrics MX bean.
+     *
+     * @return Metrics enabled flag.
+     */
+    public boolean isMetricsEnabled() {
+        return metricsEnabled;
+    }
+
+    /**
+     * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
+     * Memory metrics can be enabled and disabled at runtime via memory metrics MX bean.
+     *
+     * @param metricsEnabled Metrics enanabled flag.
+     * @return {@code this} for chaining.
+     */
+    public MemoryPolicyConfiguration setMetricsEnabled(boolean metricsEnabled) {
+        this.metricsEnabled = metricsEnabled;
 
         return this;
     }

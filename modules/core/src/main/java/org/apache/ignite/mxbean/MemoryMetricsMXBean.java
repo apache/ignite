@@ -29,19 +29,11 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
 
     /** {@inheritDoc} */
     @MXBeanDescription("Size of PageMemory in MBytes.")
-    @Override public int getSize();
+    @Override public long getSize();
 
     /** {@inheritDoc} */
     @MXBeanDescription("File path of memory-mapped swap file.")
     @Override public String getSwapFilePath();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Enables metrics gathering.")
-    @Override public void enableMetrics();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Disables metrics gathering.")
-    @Override public void disableMetrics();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Total number of allocated pages.")
@@ -63,27 +55,53 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
     @MXBeanDescription("Pages fill factor: size of all entries in cache over size of all allocated pages.")
     @Override public float getPagesFillFactor();
 
-    /** {@inheritDoc} */
-    @MXBeanDescription(
-            "Sets time interval average allocation rate (pages per second) is calculated over."
-    )
-    @MXBeanParametersNames(
-            "rateTimeInterval"
-    )
-    @MXBeanParametersDescriptions(
-            "Time interval (in seconds) to set."
-    )
-    @Override public void rateTimeInterval(int rateTimeInterval);
+    /**
+     * Enables collecting memory metrics.
+     */
+    @MXBeanDescription("Enables metrics gathering.")
+    public void enableMetrics();
 
-    /** {@inheritDoc} */
+    /**
+     * Disables collecting memory metrics.
+     */
+    @MXBeanDescription("Disables metrics gathering.")
+    public void disableMetrics();
+
+    /**
+     * Sets interval of time (in seconds) to monitor allocation rate.
+     *
+     * E.g. after setting rateTimeInterval to 60 seconds subsequent calls to {@link #getAllocationRate()}
+     * will return average allocation rate (pages per second) for the last minute.
+     *
+     * @param rateTimeInterval Time interval used to calculate allocation/eviction rate.
+     */
     @MXBeanDescription(
-            "Sets number of subintervals to calculate allocationRate metrics."
+        "Sets time interval average allocation rate (pages per second) is calculated over."
     )
     @MXBeanParametersNames(
-            "subInts"
+        "rateTimeInterval"
     )
     @MXBeanParametersDescriptions(
-            "Number of subintervals to set."
+        "Time interval (in seconds) to set."
     )
-    @Override public void subIntervals(int subInts);
+    public void rateTimeInterval(int rateTimeInterval);
+
+    /**
+     * Sets number of subintervals the whole rateTimeInterval will be split into to calculate allocation rate,
+     * 5 by default.
+     * Setting it to bigger number allows more precise calculation and smaller drops of allocationRate metric
+     * when next subinterval has to be recycled but introduces bigger calculation overhead.
+     *
+     * @param subInts Number of subintervals.
+     */
+    @MXBeanDescription(
+        "Sets number of subintervals to calculate allocationRate metrics."
+    )
+    @MXBeanParametersNames(
+        "subInts"
+    )
+    @MXBeanParametersDescriptions(
+        "Number of subintervals to set."
+    )
+    public void subIntervals(int subInts);
 }

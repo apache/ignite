@@ -3393,7 +3393,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
-        return ctx.cache().context().database().memoryMetrics();
+        guard();
+
+        try {
+            return ctx.cache().context().database().memoryMetrics();
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */

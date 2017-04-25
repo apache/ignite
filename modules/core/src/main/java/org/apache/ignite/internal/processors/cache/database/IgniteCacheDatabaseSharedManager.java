@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -28,8 +30,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -38,8 +40,8 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.snapshot.StartFullSnapshotAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.pagemem.snapshot.StartFullSnapshotAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -52,8 +54,9 @@ import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.MemoryMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -126,13 +129,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         IgniteConfiguration cfg = cctx.gridConfig();
 
         for (MemoryMetrics memMetrics : memMetricsMap.values())
-            registerMetricsMBean((MemoryMetricsImpl) memMetrics, cfg);
+            registerMetricsMBean((MemoryMetricsMXBean)memMetrics, cfg);
     }
 
     /**
      * @param memMetrics Memory metrics.
      */
-    private void registerMetricsMBean(MemoryMetricsImpl memMetrics, IgniteConfiguration cfg) {
+    private void registerMetricsMBean(MemoryMetricsMXBean memMetrics, IgniteConfiguration cfg) {
         try {
             U.registerMBean(
                     cfg.getMBeanServer(),
@@ -143,7 +146,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     MemoryMetricsMXBean.class);
         }
         catch (JMException e) {
-            log.warning("Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'");
+            U.error(log, "Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'", e);
         }
     }
 
@@ -330,7 +333,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param plcNames All MemoryPolicy names.
      * @throws IgniteCheckedException In case of validation violation.
      */
-    private static void checkDefaultPolicyConfiguration(String dfltPlcName, Set<String> plcNames) throws IgniteCheckedException {
+    private static void checkDefaultPolicyConfiguration(String dfltPlcName, Collection<String> plcNames) throws IgniteCheckedException {
         if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltPlcName)) {
             if (dfltPlcName.isEmpty())
                 throw new IgniteCheckedException("User-defined default MemoryPolicy name must be non-empty");
@@ -379,7 +382,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param observedNames Names of MemoryPolicies observed before.
      * @throws IgniteCheckedException If config is invalid.
      */
-    private static void checkPolicyName(String plcName, Set<String> observedNames) throws IgniteCheckedException {
+    private static void checkPolicyName(String plcName, Collection<String> observedNames) throws IgniteCheckedException {
         if (plcName == null || plcName.isEmpty())
             throw new IgniteCheckedException("User-defined MemoryPolicyConfiguration must have non-null and non-empty name.");
 
@@ -420,7 +423,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return MemoryMetrics for all MemoryPolicies configured in Ignite instance.
      */
     public Collection<MemoryMetrics> memoryMetrics() {
-        return memMetricsMap != null ? memMetricsMap.values() : null;
+        if (!F.isEmpty(memMetricsMap)) {
+            // Intentionally return a collection copy to make it explicitly serializable.
+            Collection<MemoryMetrics> res = new ArrayList<>(memMetricsMap.size());
+
+            for (MemoryMetrics metrics : memMetricsMap.values())
+                res.add(new MemoryMetricsSnapshot(metrics));
+
+            return res;
+        }
+        else
+            return Collections.emptyList();
     }
 
     /**
@@ -619,7 +632,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memMetrics {@link MemoryMetrics} object to collect memory usage metrics.
      * @return Memory policy instance.
      */
-    private MemoryPolicy initMemory(MemoryConfiguration dbCfg, MemoryPolicyConfiguration plc, MemoryMetricsImpl memMetrics) {
+    private MemoryPolicy initMemory(
+        MemoryConfiguration dbCfg,
+        MemoryPolicyConfiguration plc,
+        MemoryMetricsImpl memMetrics
+    ) {
         long[] sizes = calculateFragmentSizes(
                 dbCfg.getConcurrencyLevel(),
                 plc.getSize());

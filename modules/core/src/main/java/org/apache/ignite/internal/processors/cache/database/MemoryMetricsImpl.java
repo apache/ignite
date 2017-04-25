@@ -68,6 +68,8 @@ public class MemoryMetricsImpl implements MemoryMetricsMXBean {
     public MemoryMetricsImpl(MemoryPolicyConfiguration memPlcCfg) {
         this.memPlcCfg = memPlcCfg;
 
+        metricsEnabled = memPlcCfg.isMetricsEnabled();
+
         for (int i = 0; i < subInts; i++)
             allocRateCounters[i] = new LongAdder8();
     }
@@ -78,8 +80,8 @@ public class MemoryMetricsImpl implements MemoryMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public int getSize() {
-        return (int) (memPlcCfg.getSize() / (1024 * 1024));
+    @Override public long getSize() {
+        return memPlcCfg.getSize();
     }
 
     /** {@inheritDoc} */
