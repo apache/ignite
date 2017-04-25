@@ -3858,7 +3858,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (node != null) {
                     node.clientRouterNodeId(msg.routerNodeId());
-                    node.aliveTime(spi.clientFailureDetectionTimeout());
+                    node.clientAliveTime(spi.clientFailureDetectionTimeout());
                 }
 
                 if (isLocalNodeCoordinator()) {
@@ -4088,7 +4088,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (msg.client())
-                    node.aliveTime(spi.clientFailureDetectionTimeout());
+                    node.clientAliveTime(spi.clientFailureDetectionTimeout());
 
                 boolean topChanged = ring.add(node);
 
@@ -4965,9 +4965,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     for (TcpDiscoveryNode clientNode : ring.clientNodes()) {
                         if (clientNode.visible()) {
                             if (clientNodeIds.contains(clientNode.id()))
-                                clientNode.aliveTime(spi.clientFailureDetectionTimeout());
+                                clientNode.clientAliveTime(spi.clientFailureDetectionTimeout());
                             else {
-                                boolean aliveCheck = clientNode.testAliveTime();
+                                boolean aliveCheck = clientNode.isClientAlive();
 
                                 if (!aliveCheck && isLocalNodeCoordinator()) {
                                     boolean failedNode;
@@ -5558,7 +5558,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             ClientMessageWorker clientMsgWrk = null;
 
-            boolean serverSocket;
+            boolean srvrSock;
 
             try {
                 InputStream in;
@@ -5650,7 +5650,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // Handshake.
                     TcpDiscoveryHandshakeRequest req = (TcpDiscoveryHandshakeRequest)msg;
 
-                    serverSocket = !req.client();
+                    srvrSock = !req.client();
 
                     UUID nodeId = req.creatorNodeId();
 
@@ -5662,7 +5662,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (req.client())
                         res.clientAck(true);
 
-                    spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(serverSocket));
+                    spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvrSock));
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
@@ -5777,7 +5777,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                long sockTimeout = spi.getEffectiveSocketTimeout(serverSocket);
+                long sockTimeout = spi.getEffectiveSocketTimeout(srvrSock);
 
                 while (!isInterrupted()) {
                     try {
