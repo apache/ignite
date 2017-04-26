@@ -109,7 +109,6 @@ public interface CacheMetrics {
      */
     public float getAverageRemoveTime();
 
-
     /**
      * The mean time to execute tx commit.
      *

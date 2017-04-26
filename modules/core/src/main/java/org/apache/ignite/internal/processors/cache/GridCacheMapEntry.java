@@ -2709,31 +2709,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean initialValue(KeyCacheObject key, GridCacheSwapEntry unswapped) throws
-        IgniteCheckedException,
-        GridCacheEntryRemovedException {
-        checkObsolete();
-
-        if (isNew()) {
-            CacheObject val = unswapped.value();
-
-            val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
-            // Version does not change for load ops.
-            update(val,
-                unswapped.expireTime(),
-                unswapped.ttl(),
-                unswapped.version(),
-                true
-            );
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public synchronized GridCacheVersionedEntryEx versionedEntry(final boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean isNew = isStartVersion();
@@ -3516,54 +3491,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public final GridCacheBatchSwapEntry evictInBatchInternal(GridCacheVersion obsoleteVer)
-        throws IgniteCheckedException {
-        assert Thread.holdsLock(this);
-        assert !obsolete();
-
-        GridCacheBatchSwapEntry ret = null;
-
-        try {
-            if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
-                if (!isStartVersion() && hasValueUnlocked()) {
-                    IgniteUuid valClsLdrId = null;
-                    IgniteUuid keyClsLdrId = null;
-
-                    if (cctx.deploymentEnabled()) {
-                        if (val != null) {
-                            valClsLdrId = cctx.deploy().getClassLoaderId(
-                                U.detectObjectClassLoader(val.value(cctx.cacheObjectContext(), false)));
-                        }
-
-                        keyClsLdrId = cctx.deploy().getClassLoaderId(
-                            U.detectObjectClassLoader(keyValue(false)));
-                    }
-
-                    IgniteBiTuple<byte[], Byte> valBytes = valueBytes0();
-
-                    ret = new GridCacheBatchSwapEntry(key(),
-                        partition(),
-                        ByteBuffer.wrap(valBytes.get1()),
-                        valBytes.get2(),
-                        ver,
-                        ttlExtras(),
-                        expireTimeExtras(),
-                        keyClsLdrId,
-                        valClsLdrId);
-                }
-
-                value(null);
-            }
-        }
-        catch (GridCacheEntryRemovedException ignored) {
-            if (log.isDebugEnabled())
-                log.debug("Got removed entry when evicting (will simply return): " + this);
-        }
-
-        return ret;
     }
 
     /**

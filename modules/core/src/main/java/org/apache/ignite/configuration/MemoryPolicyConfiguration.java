@@ -19,6 +19,8 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+
 /**
  * This class allows defining custom memory policies' configurations with various parameters for Apache Ignite
  * page memory (see {@link MemoryConfiguration}. For each configured memory policy Apache Ignite instantiates
@@ -61,7 +63,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Memory policy name. */
-    private String name;
+    private String name = DFLT_MEM_PLC_DEFAULT_NAME;
 
     /** Memory policy start size. */
     private long initialSize = MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE;
@@ -95,6 +97,8 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Sets memory policy name. The name must be non empty and must not be equal to the reserved 'sysMemPlc' one.
+     *
+     * If not specified, {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} value is used.
      *
      * @param name Memory policy name.
      */

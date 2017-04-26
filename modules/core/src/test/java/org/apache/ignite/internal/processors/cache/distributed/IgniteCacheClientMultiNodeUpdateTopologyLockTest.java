@@ -100,7 +100,7 @@ public class IgniteCacheClientMultiNodeUpdateTopologyLockTest extends GridCommon
 
         TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(ignite(2));
 
-        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(clientNode);
+        final TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(clientNode);
 
         final UUID node0Id = ignite(0).cluster().localNode().id();
         final UUID node2Id = ignite(2).cluster().localNode().id();
@@ -115,22 +115,30 @@ public class IgniteCacheClientMultiNodeUpdateTopologyLockTest extends GridCommon
             }
         });
 
-        clientSpi.record(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
+        clientSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(final ClusterNode node, final Message msg) {
                 if (!node2Id.equals(node.id()))
                     return false;
 
                 if (msg instanceof GridNearTxFinishRequest) {
                     log.info("Delay message [msg=" + msg + ']');
 
-                    try {
-                        Thread.sleep(5000);
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    GridTestUtils.runAsync(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                Thread.sleep(5000);
+                            }
+                            catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
 
-                    log.info("Send delayed message [msg=" + msg + ']');
+                            log.info("Send delayed message [msg=" + msg + ']');
+
+                            clientSpi.stopBlock(true);
+                        }
+                    });
+
+                    return true;
                 }
 
                 return false;

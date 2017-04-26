@@ -52,7 +52,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
 
                 break;
 
-            case RESERVED_MEMORY_POLICY_MISUSE:
+            case SYSTEM_MEMORY_POLICY_NAME_MISUSE:
                 plcs = createPlcWithReservedNameMisuseCfg();
 
                 break;
@@ -207,7 +207,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
      * 'sysMemPlc' name is reserved for MemoryPolicyConfiguration for system caches.
      */
     public void testReservedMemoryPolicyMisuse() throws Exception {
-        violationType = ValidationViolationType.RESERVED_MEMORY_POLICY_MISUSE;
+        violationType = ValidationViolationType.SYSTEM_MEMORY_POLICY_NAME_MISUSE;
 
         doTest(violationType);
     }
@@ -305,7 +305,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         NAMES_CONFLICT("Two MemoryPolicies have the same name: "),
 
         /** */
-        RESERVED_MEMORY_POLICY_MISUSE("'sysMemPlc' policy name is reserved for internal use."),
+        SYSTEM_MEMORY_POLICY_NAME_MISUSE("'sysMemPlc' policy name is reserved for internal use."),
 
         /** */
         TOO_SMALL_MEMORY_SIZE("MemoryPolicy must have size more than 10MB "),

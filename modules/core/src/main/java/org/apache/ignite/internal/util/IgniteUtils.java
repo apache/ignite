@@ -10114,4 +10114,23 @@ public abstract class IgniteUtils {
             throw new IgniteCheckedException(e);
         }
     }
+
+    /**
+     * Returns {@link GridIntIterator} for range of primitive integers.
+     * @param start Start.
+     * @param cnt Count.
+     */
+    public static GridIntIterator forRange(final int start, final int cnt) {
+        return new GridIntIterator() {
+            int c = 0;
+
+            @Override public boolean hasNext() {
+                return c < cnt;
+            }
+
+            @Override public int next() {
+                return start + c++;
+            }
+        };
+    }
 }

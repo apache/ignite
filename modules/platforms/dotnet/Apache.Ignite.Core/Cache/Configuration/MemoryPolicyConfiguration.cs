@@ -53,6 +53,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         {
             EvictionThreshold = DefaultEvictionThreshold;
             EmptyPagesPoolSize = DefaultEmptyPagesPoolSize;
+            Name = MemoryConfiguration.DefaultDefaultMemoryPolicyName;
             InitialSize = DefaultInitialSize;
             MaxSize = DefaultMaxSize;
         }
@@ -88,7 +89,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets the memory policy name.
+        /// Defaults to <see cref="MemoryConfiguration.DefaultDefaultMemoryPolicyName"/>.
         /// </summary>
+        [DefaultValue(MemoryConfiguration.DefaultDefaultMemoryPolicyName)]
         public string Name { get; set; }
 
         /// <summary>

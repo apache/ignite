@@ -60,12 +60,14 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.mxbean.MemoryMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+
 /**
  *
  */
 public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter implements IgniteChangeGlobalStateSupport {
     /** MemoryPolicyConfiguration name reserved for internal caches. */
-    private static final String SYSTEM_MEMORY_POLICY_NAME = "sysMemPlc";
+    static final String SYSTEM_MEMORY_POLICY_NAME = "sysMemPlc";
 
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10 * 1024 * 1024;
@@ -116,9 +118,39 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             initPageMemoryPolicies(memCfg);
 
+            registerMetricsMBeans();
+
             startMemoryPolicies();
 
             initPageMemoryDataStructures(memCfg);
+        }
+    }
+
+    /**
+     * Registers MBeans for all MemoryMetrics configured in this instance.
+     */
+    private void registerMetricsMBeans() {
+        IgniteConfiguration cfg = cctx.gridConfig();
+
+        for (MemoryPolicy memPlc : memPlcMap.values())
+            registerMetricsMBean((MemoryMetricsMXBean)memPlc.memoryMetrics(), cfg);
+    }
+
+    /**
+     * @param memMetrics Memory metrics.
+     */
+    private void registerMetricsMBean(MemoryMetricsMXBean memMetrics, IgniteConfiguration cfg) {
+        try {
+            U.registerMBean(
+                    cfg.getMBeanServer(),
+                    cfg.getIgniteInstanceName(),
+                    "MemoryMetrics",
+                    memMetrics.getName(),
+                    memMetrics,
+                    MemoryMetricsMXBean.class);
+        }
+        catch (JMException e) {
+            U.error(log, "Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'", e);
         }
     }
 
@@ -180,77 +212,74 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             //reserve place for default and system memory policies
             memPlcMap = U.newHashMap(2);
 
-            MemoryPolicyConfiguration dfltPlcCfg = memCfg.createDefaultPolicyConfig();
-
-            dfltMemPlc = initMemoryPolicy(dfltPlcCfg, memCfg);
+            addMemoryPolicy(memCfg,
+                memCfg.createDefaultPolicyConfig(),
+                DFLT_MEM_PLC_DEFAULT_NAME);
 
             U.warn(log, "No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
         }
         else {
             String dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
 
-            if (dfltMemPlcName == null) {
+            if (DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltMemPlcName) && !hasCustomDefaultMemoryPolicy(memPlcsCfgs)) {
                 //reserve additional place for default and system memory policies
                 memPlcMap = U.newHashMap(memPlcsCfgs.length + 2);
 
-                MemoryPolicyConfiguration dfltPlcCfg = memCfg.createDefaultPolicyConfig();
-
-                dfltMemPlc = initMemoryPolicy(dfltPlcCfg, memCfg);
+                addMemoryPolicy(memCfg,
+                    memCfg.createDefaultPolicyConfig(),
+                    DFLT_MEM_PLC_DEFAULT_NAME);
 
                 U.warn(log, "No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
             }
             else
-                //reserve additional place for system memory policy only
+                //reserve additional space for system memory policy only
                 memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
 
-            for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
-                MemoryPolicy memPlc = initMemoryPolicy(memPlcCfg, memCfg);
-
-                if (memPlcCfg.getName().equals(dfltMemPlcName))
-                    dfltMemPlc = memPlc;
-            }
+            for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs)
+                addMemoryPolicy(memCfg, memPlcCfg, memPlcCfg.getName());
         }
 
-        MemoryPolicyConfiguration sysPlcCfg = createSystemMemoryPolicy(memCfg.getSystemCacheMemorySize());
-
-        initMemoryPolicy(sysPlcCfg, memCfg);
+        addMemoryPolicy(memCfg,
+            createSystemMemoryPolicy(memCfg.getSystemCacheMemorySize()),
+            SYSTEM_MEMORY_POLICY_NAME);
     }
 
     /**
-     * @param plcCfg Policy configuration.
-     * @param memCfg Memory configuration.
-     * @return Initialized memory policy.
+     * @param dbCfg Database config.
+     * @param memPlcCfg Memory policy config.
+     * @param memPlcName Memory policy name.
      */
-    private MemoryPolicy initMemoryPolicy(MemoryPolicyConfiguration plcCfg, MemoryConfiguration memCfg) {
-        MemoryMetricsImpl sysMemMetrics = new MemoryMetricsImpl(plcCfg);
+    private void addMemoryPolicy(MemoryConfiguration dbCfg,
+                                 MemoryPolicyConfiguration memPlcCfg,
+                                 String memPlcName) {
+        String dfltMemPlcName = dbCfg.getDefaultMemoryPolicyName();
 
-        MemoryPolicy plc = initMemory(memCfg, plcCfg, sysMemMetrics);
+        if (dfltMemPlcName == null)
+            dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
 
-        memPlcMap.put(plcCfg.getName(), plc);
+        MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg);
 
-        registerMetricsMBean(sysMemMetrics);
+        MemoryPolicy memPlc = initMemory(dbCfg, memPlcCfg, memMetrics);
 
-        return plc;
+        memPlcMap.put(memPlcName, memPlc);
+
+        if (memPlcName.equals(dfltMemPlcName))
+            dfltMemPlc = memPlc;
+        else if (memPlcName.equals(DFLT_MEM_PLC_DEFAULT_NAME))
+            U.warn(log, "Memory Policy with name 'default' isn't used as a default. " +
+                    "Please check Memory Policies configuration.");
     }
 
     /**
-     * @param memMetrics Mem metrics.
+     * @param memPlcsCfgs User-defined memory policy configurations.
      */
-    private void registerMetricsMBean(MemoryMetricsMXBean memMetrics) {
-        IgniteConfiguration cfg = cctx.gridConfig();
+    private boolean hasCustomDefaultMemoryPolicy(MemoryPolicyConfiguration[] memPlcsCfgs) {
+        for (MemoryPolicyConfiguration memPlcsCfg : memPlcsCfgs) {
+            if (DFLT_MEM_PLC_DEFAULT_NAME.equals(memPlcsCfg.getName()))
+                return true;
+        }
 
-        try {
-            U.registerMBean(
-                    cfg.getMBeanServer(),
-                    cfg.getIgniteInstanceName(),
-                    "MemoryMetrics",
-                    memMetrics.getName(),
-                    memMetrics,
-                    MemoryMetricsMXBean.class);
-        }
-        catch (JMException e) {
-            U.error(log, "Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'", e);
-        }
+        return false;
     }
 
     /**
@@ -315,7 +344,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                         "Use MemoryConfiguration.defaultMemoryPolicySize property to set correct size.");
         }
 
-        if (dfltPlcName != null) {
+        if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltPlcName)) {
             if (dfltPlcName.isEmpty())
                 throw new IgniteCheckedException("User-defined default MemoryPolicy name must be non-empty");
 
