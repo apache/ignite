@@ -78,7 +78,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
      *
      */
     private IgniteCache<Integer, Person> createAndFillCache() {
-        CacheConfiguration<Integer, Person> cacheConf = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Person> cacheConf = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheConf.setCacheMode(CacheMode.PARTITIONED);
         cacheConf.setBackups(0);

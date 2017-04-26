@@ -77,7 +77,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         cfg.setCommunicationSpi(new TestTcpCommunicationSpi());
 
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(backupCnt);
@@ -113,7 +113,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         ignite(2).events().localListen(lsnr1, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
         ignite(3).events().localListen(lsnr2, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
-        Affinity<Integer> aff = ignite(0).affinity(null);
+        Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         int key = 0;
 

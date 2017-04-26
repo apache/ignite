@@ -107,7 +107,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSmall() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid().cache(null);
+        IgniteCache<Integer, Integer> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < SMALL_ENTRY_CNT; i++)
             cache.put(i, i);
@@ -136,7 +136,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLarge() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid().cache(null);
+        IgniteCache<Integer, Integer> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
             cache.put(i, i);
@@ -165,7 +165,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFiltered() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid().cache(null);
+        IgniteCache<Integer, Integer> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
             cache.put(i, i);

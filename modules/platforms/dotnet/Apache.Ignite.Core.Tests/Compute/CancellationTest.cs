@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             TestClosure((c, t) => c.BroadcastAsync(new ComputeFunc(), t));
             TestClosure((c, t) => c.BroadcastAsync(new ComputeBiFunc(), 10, t));
 
-            TestClosure((c, t) => c.AffinityRunAsync(null, 0, new ComputeAction(), t));
+            TestClosure((c, t) => c.AffinityRunAsync("default", 0, new ComputeAction(), t));
 
             TestClosure((c, t) => c.RunAsync(new ComputeAction(), t));
             TestClosure((c, t) => c.RunAsync(Enumerable.Range(1, 10).Select(x => new ComputeAction()), t));
@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             TestClosure((c, t) => c.CallAsync(Enumerable.Range(1, 10).Select(x => new ComputeFunc()), 
                 new ComputeReducer(), t));
 
-            TestClosure((c, t) => c.AffinityCallAsync(null, 0, new ComputeFunc(), t));
+            TestClosure((c, t) => c.AffinityCallAsync("default", 0, new ComputeFunc(), t));
 
             TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), 10, t));
             TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 100), t));

@@ -473,12 +473,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache name.
      *
-     * @param name Cache name. May be <tt>null</tt>, but may not be empty string.
+     * @param name Cache name. Can not be <tt>null</tt> or empty.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setName(String name) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
-
         this.name = name;
 
         return this;
@@ -499,7 +497,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
+        A.ensure(memPlcName == null || !memPlcName.isEmpty(), "Name cannot be empty.");
 
         this.memPlcName = memPlcName;
 

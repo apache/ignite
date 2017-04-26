@@ -180,7 +180,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         int iterations = 10000000;
 
         for (int i = 0; i < iterations; i++)
-            aff.mapKeyToNode(null, keys);
+            aff.mapKeyToNode(DEFAULT_CACHE_NAME, keys);
 
         long diff = System.currentTimeMillis() - start;
 
