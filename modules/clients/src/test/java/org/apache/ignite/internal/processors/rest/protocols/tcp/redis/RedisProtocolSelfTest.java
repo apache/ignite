@@ -221,8 +221,8 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSet() throws Exception {
-        long EXPIRE_MS = 5000L;
-        int EXPIRE_SEC = 5;
+        long EXPIRE_MS = 1000L;
+        int EXPIRE_SEC = 1;
 
         try (Jedis jedis = pool.getResource()) {
             jedis.set("setKey1", "1");
@@ -245,7 +245,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertNull(jcache().get("setKey4"));
 
             // wait for expiration.
-            Thread.sleep(EXPIRE_MS);
+            Thread.sleep((long)(EXPIRE_MS * 1.2));
 
             Assert.assertNull(jcache().get("setKey1"));
             Assert.assertNull(jcache().get("setKey3"));
