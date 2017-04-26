@@ -197,6 +197,9 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
             outgoingSignals.put(condition, cnt + 1);
         }
 
+        /**
+         * @param condition Condition.
+         */
         protected void addOutgoingSignalAll(String condition) {
             outgoingSignals.put(condition, 0);
         }
@@ -329,6 +332,9 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
             return thisNode.equals(getOwnerNode()) || thisNode.equals(newOwnerID);
         }
 
+        /**
+         * @param newOwnerThreadId New owner thread id.
+         */
         protected void setCurrentOwnerThread(long newOwnerThreadId) {
             currentOwnerThreadId = newOwnerThreadId;
         }
