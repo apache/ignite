@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Impl
         /// Formats the Win32 error.
         /// </summary>
         [ExcludeFromCodeCoverage]
-        private static string FormatWin32Error(int errorCode)
+        public static string FormatWin32Error(int errorCode)
         {
             if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)
             {
@@ -246,6 +246,14 @@ namespace Apache.Ignite.Core.Impl
                 return string.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
                                      "This is often caused by x64/x86 mismatch. " +
                                      "Current process runs in {0} mode, and DLL is not {0}.", mode);
+            }
+
+            if (errorCode == NativeMethods.ERROR_MOD_NOT_FOUND)
+            {
+                return "DLL could not be loaded (126: ERROR_MOD_NOT_FOUND). " +
+                       "This can be caused by missing dependencies. " +
+                       "Make sure that Microsoft Visual C++ 2010 Redistributable Package is installed " +
+                       "(https://www.microsoft.com/en-us/download/details.aspx?id=14632).";
             }
 
             return string.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);

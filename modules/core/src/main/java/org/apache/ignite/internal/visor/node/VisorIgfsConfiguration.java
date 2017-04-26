@@ -92,9 +92,6 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     /** IPC endpoint enabled flag. */
     private boolean ipcEndpointEnabled;
 
-    /** Maximum space. */
-    private long maxSpace;
-
     /** Management port. */
     private int mgmtPort;
 
@@ -135,7 +132,6 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         ipcEndpointCfg = endpointCfg != null ? endpointCfg.toString() : null;
 
         ipcEndpointEnabled = igfs.isIpcEndpointEnabled();
-        maxSpace = igfs.getMaxSpaceSize();
         mgmtPort = igfs.getManagementPort();
         seqReadsBeforePrefetch = igfs.getSequentialReadsBeforePrefetch();
     }
@@ -277,13 +273,6 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Maximum space.
-     */
-    public long getMaxSpace() {
-        return maxSpace;
-    }
-
-    /**
      * @return Management port.
      */
     public int getManagementPort() {
@@ -316,7 +305,6 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         out.writeLong(fragmentizerThrottlingDelay);
         U.writeString(out, ipcEndpointCfg);
         out.writeBoolean(ipcEndpointEnabled);
-        out.writeLong(maxSpace);
         out.writeInt(mgmtPort);
         out.writeInt(seqReadsBeforePrefetch);
     }
@@ -340,7 +328,6 @@ public class VisorIgfsConfiguration extends VisorDataTransferObject {
         fragmentizerThrottlingDelay = in.readLong();
         ipcEndpointCfg = U.readString(in);
         ipcEndpointEnabled = in.readBoolean();
-        maxSpace = in.readLong();
         mgmtPort = in.readInt();
         seqReadsBeforePrefetch = in.readInt();
     }

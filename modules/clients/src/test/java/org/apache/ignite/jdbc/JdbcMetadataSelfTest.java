@@ -195,8 +195,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             names.add("NAME");
             names.add("AGE");
             names.add("ORGID");
-            names.add("_KEY");
-            names.add("_VAL");
 
             int cnt = 0;
 
@@ -229,7 +227,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             }
 
             assert names.isEmpty();
-            assert cnt == 5;
+            assert cnt == 3;
 
             rs = meta.getColumns("", "org", "Organization", "%");
 
@@ -237,8 +235,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             names.add("ID");
             names.add("NAME");
-            names.add("_KEY");
-            names.add("_VAL");
 
             cnt = 0;
 
@@ -271,7 +267,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             }
 
             assert names.isEmpty();
-            assert cnt == 4;
+            assert cnt == 2;
         }
     }
 

@@ -71,10 +71,11 @@ public class DdlStatementsProcessor {
     /**
      * Execute DDL statement.
      *
+     * @param sql SQL.
      * @param stmt H2 statement to parse and execute.
      */
     @SuppressWarnings("unchecked")
-    public QueryCursor<List<?>> runDdlStatement(PreparedStatement stmt)
+    public QueryCursor<List<?>> runDdlStatement(String sql, PreparedStatement stmt)
         throws IgniteCheckedException {
         assert stmt instanceof JdbcPreparedStatement;
 
@@ -99,8 +100,8 @@ public class DdlStatementsProcessor {
                 GridH2Table tbl = idx.dataTable(createIdx.schemaName(), createIdx.tableName());
 
                 if (tbl == null)
-                    throw new IgniteSQLException("Table not found [schemaName=" + createIdx.schemaName() + ", " +
-                        "tblName=" + createIdx.tableName() + ']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
+                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                        createIdx.tableName());
 
                 assert tbl.rowDescriptor() != null;
 
@@ -111,8 +112,7 @@ public class DdlStatementsProcessor {
                     GridQueryProperty prop = typeDesc.property(e.getKey());
 
                     if (prop == null)
-                        throw new IgniteSQLException("Property not found [typeName=" + typeDesc.name() + ", propName=" +
-                            e.getKey() + ']');
+                        throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, e.getKey());
 
                     flds.put(prop.name(), e.getValue());
                 }
@@ -129,8 +129,8 @@ public class DdlStatementsProcessor {
                 fut = ctx.query().dynamicIndexDrop(spaceName, dropIdx.name(), dropIdx.ifExists());
             }
             else
-                throw new IgniteSQLException("Unexpected DDL operation [type=" + gridStmt.getClass() + ']',
-                    IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+                throw new IgniteSQLException("Unsupported DDL operation: " + sql,
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             fut.get();
 
@@ -144,8 +144,11 @@ public class DdlStatementsProcessor {
         catch (SchemaOperationException e) {
             throw convert(e);
         }
+        catch (IgniteSQLException e) {
+            throw e;
+        }
         catch (Exception e) {
-            throw new IgniteSQLException("DLL operation failed.", e);
+            throw new IgniteSQLException("Unexpected DLL operation failure: " + e.getMessage(), e);
         }
     }
 

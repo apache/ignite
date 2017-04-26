@@ -31,7 +31,8 @@ package org.apache.ignite.ml.math;
  * Lifted from Apache Mahout.
  */
 public class Algebra extends Constants {
-    /** */ private static final double[] STIRLING_CORRECTION = {
+    /** */
+    private static final double[] STIRLING_CORRECTION = {
         0.0,
         8.106146679532726e-02, 4.134069595540929e-02,
         2.767792568499834e-02, 2.079067210376509e-02,
@@ -50,7 +51,8 @@ public class Algebra extends Constants {
         2.873449362352470e-03, 2.777674929752690e-03,
     };
 
-    /** */ private static final double[] LOG_FACTORIALS = {
+    /** */
+    private static final double[] LOG_FACTORIALS = {
         0.00000000000000000, 0.00000000000000000, 0.69314718055994531,
         1.79175946922805500, 3.17805383034794562, 4.78749174278204599,
         6.57925121201010100, 8.52516136106541430, 10.60460290274525023,
@@ -63,7 +65,8 @@ public class Algebra extends Constants {
         64.55753862700633106, 67.88974313718153498, 71.25703896716800901
     };
 
-    /** */ private static final long[] LONG_FACTORIALS = {
+    /** */
+    private static final long[] LONG_FACTORIALS = {
         1L,
         1L,
         2L,
@@ -87,7 +90,8 @@ public class Algebra extends Constants {
         2432902008176640000L
     };
 
-    /** */ private static final double[] DOUBLE_FACTORIALS = {
+    /** */
+    private static final double[] DOUBLE_FACTORIALS = {
         5.109094217170944E19,
         1.1240007277776077E21,
         2.585201673888498E22,
@@ -337,19 +341,27 @@ public class Algebra extends Constants {
 
     /**
      * Evaluates the series of Chebyshev polynomials Ti at argument x/2. The series is given by
-     * <pre>
-     *        N-1
-     *         - '
-     *  y  =   &gt;   coef[i] T (x/2)
-     *         -            i
-     *        i=0
+     * <pre class="snippet">
+     * N-1
+     * - '
+     * y  =   &gt;   coef[i] T (x/2)
+     * -            i
+     * i=0
      * </pre>
      * Coefficients are stored in reverse order, i.e. the zero order term is last in the array.  Note N is the number of
-     * coefficients, not the order. <p> If coefficients are for the interval a to b, x must have been transformed to x
+     * coefficients, not the order.
+     * <p>
+     * If coefficients are for the interval a to b, x must have been transformed to x
      * -&lt; 2(2x - b - a)/(b-a) before entering the routine.  This maps x from (a, b) to (-1, 1), over which the
-     * Chebyshev polynomials are defined. <p> If the coefficients are for the inverted interval, in which (a, b) is
+     * Chebyshev polynomials are defined.</p>
+     * <p>
+     * If the coefficients are for the inverted interval, in which (a, b) is
      * mapped to (1/b, 1/a), the transformation required is {@code x -> 2(2ab/x - b - a)/(b-a)}.  If b is infinity, this
-     * becomes {@code x -> 4a/x - 1}. <p> SPEED: <p> Taking advantage of the recurrence properties of the Chebyshev
+     * becomes {@code x -> 4a/x - 1}.</p>
+     * <p>
+     * SPEED:
+     * </p>
+     * Taking advantage of the recurrence properties of the Chebyshev
      * polynomials, the routine requires one more addition per loop than evaluating a nested polynomial of the same
      * degree.
      *
@@ -466,11 +478,11 @@ public class Algebra extends Constants {
 
     /**
      * Returns the StirlingCorrection.
-     *
+     * <p>
      * Correction term of the Stirling approximation for {@code log(k!)} (series in
-     * 1/k, or table values for small k) with int parameter k. </p> {@code  log k! = (k + 1/2)log(k + 1) - (k + 1) +
+     * 1/k, or table values for small k) with int parameter k. {@code  log k! = (k + 1/2)log(k + 1) - (k + 1) +
      * (1/2)log(2Pi) + STIRLING_CORRECTION(k + 1) log k! = (k + 1/2)log(k)     -  k      + (1/2)log(2Pi) +
-     * STIRLING_CORRECTION(k) }
+     * STIRLING_CORRECTION(k) } </p>
      */
     public static double stirlingCorrection(int k) {
         if (k > 30) {
@@ -490,21 +502,24 @@ public class Algebra extends Constants {
     /**
      * Evaluates the given polynomial of degree {@code N} at {@code x}, assuming coefficient of N is 1.0. Otherwise same
      * as {@link #evalPoly(double, double[], int)}.
-     * <pre>
-     *                     2          N
+     * <pre class="snippet">
+     * 2          N
      * y  =  C  + C x + C x  +...+ C x
-     *        0    1     2          N
-     *
-     * where C  = 1 and hence is omitted from the array.
-     *        N
-     *
-     * Coefficients are stored in reverse order:
-     *
-     * coef[0] = C  , ..., coef[N-1] = C  .
-     *            N-1                   0
-     *
-     * Calling arguments are otherwise the same as {@link #evalPoly(double, double[], int)}.
+     * 0    1     2          N
      * </pre>
+     * where <pre class="snippet">
+     * C  = 1
+     * N
+     * </pre>
+     * and hence is omitted from the array.
+     * <p>
+     * Coefficients are stored in reverse order:</p>
+     * <pre class="snippet">
+     * coef[0] = C  , ..., coef[N-1] = C  .
+     * N-1                   0
+     * </pre>
+     * Calling arguments are otherwise the same as {@link #evalPoly(double, double[], int)}.
+     * <p>
      * In the interest of speed, there are no checks for out of bounds arithmetic.
      *
      * @param x Argument to the polynomial.
@@ -522,17 +537,19 @@ public class Algebra extends Constants {
 
     /**
      * Evaluates the given polynomial of degree {@code N} at {@code x}.
-     * <pre>
-     *                     2          N
+     * <pre class="snippet">
+     * 2          N
      * y  =  C  + C x + C x  +...+ C x
-     *        0    1     2          N
-     *
-     * Coefficients are stored in reverse order:
-     *
-     * coef[0] = C  , ..., coef[N] = C  .
-     *            N                   0
+     * 0    1     2          N
      * </pre>
-     * In the interest of speed, there are no checks for out of bounds arithmetic.
+     * <p>
+     * Coefficients are stored in reverse order:</p>
+     * <pre class="snippet">
+     * coef[0] = C  , ..., coef[N] = C  .
+     * N                   0
+     * </pre>
+     * <p>
+     * In the interest of speed, there are no checks for out of bounds arithmetic.</p>
      *
      * @param x Argument to the polynomial.
      * @param coef Coefficients of the polynomial.

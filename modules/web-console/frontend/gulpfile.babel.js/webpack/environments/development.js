@@ -18,7 +18,8 @@
 import {destDir} from '../../paths';
 
 const backendPort = 3000;
-const devServerPort = 9000;
+const devServerPort = process.env.PORT || 9000;
+const devServerHost = process.env.HOST;
 
 export default {
     devtool: 'source-map',
@@ -56,6 +57,7 @@ export default {
             colors: true,
             chunks: false
         },
+        host: devServerHost,
         port: devServerPort
     }
 };

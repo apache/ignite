@@ -34,11 +34,15 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
     /** Default zero value. */
     private static final double DEFAULT_VALUE = 0.0;
 
-    /** */ private int rows;
-    /** */ private int cols;
+    /** */
+    private int rows;
+    /** */
+    private int cols;
 
-    /** */ private int acsMode;
-    /** */ private int stoMode;
+    /** */
+    private int acsMode;
+    /** */
+    private int stoMode;
 
     /** Actual map storage. */
     private Map<Integer, Map<Integer, Double>> sto;
@@ -64,16 +68,14 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
     }
 
     /**
-     *
-     *
+     * @return Matrix elements storage mode.
      */
     public int getStorageMode() {
         return stoMode;
     }
 
     /**
-     *
-     *
+     * @return Matrix elements access mode.
      */
     public int getAccessMode() {
         return acsMode;

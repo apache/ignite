@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 
+@import '../../../public/stylesheets/variables';
+
 .ui-grid-header--subcategories {
+    border-color: $table-border-color;
+
     .ui-grid-row:nth-child(even) .ui-grid-cell.cell-total {
         background-color: rgba(102,175,233,.6);
     }
@@ -32,6 +36,10 @@
         .ui-grid-cell-contents > span:not(.ui-grid-header-cell-label) {
             right: 3px;
         }
+    }
+
+    .ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
+        border-color: $table-border-color;
     }
 
     .ui-grid-header-cell [role="columnheader"] {
@@ -81,7 +89,7 @@
         }
 
         & > div > .ui-grid-cell-contents {
-            border-bottom: 1px solid #d4d4d4;
+            border-bottom: 1px solid $table-border-color;
         }
     }
 

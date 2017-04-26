@@ -1423,6 +1423,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         {
                             new QueryAlias("AliasTest", "Person_AliasTest"),
                             new QueryAlias("Address.AliasTest", "Addr_AliasTest")
+                        },
+                        KeyFieldName = "MyKey",
+                        ValueFieldName = "MyValue",
+                        Fields =
+                        {
+                            new QueryField("MyKey", typeof(int)),
+                            new QueryField("MyValue", typeof(T)),
                         }
                     },
                     new QueryEntity(typeof (int), typeof (Organization))) {CacheMode = CacheMode.Replicated});

@@ -18,16 +18,18 @@
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query entity is a description of {@link org.apache.ignite.IgniteCache cache} entry (composed of key and value)
@@ -43,17 +45,27 @@ public class QueryEntity implements Serializable {
     /** Value type. */
     private String valType;
 
+    /** Key name. Can be used in field list to denote the key as a whole. */
+    private String keyFieldName;
+
+    /** Value name. Can be used in field list to denote the entire value. */
+    private String valueFieldName;
+
     /** Fields available for query. A map from field name to type name. */
+    @GridToStringInclude
     private LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
     /** Set of field names that belong to the key. */
+    @GridToStringInclude
     private Set<String> keyFields;
 
     /** Aliases. */
+    @GridToStringInclude
     private Map<String, String> aliases = new HashMap<>();
 
     /** Collection of query indexes. */
-    private Map<String, QueryIndex> idxs = new HashMap<>();
+    @GridToStringInclude
+    private Collection<QueryIndex> idxs;
 
     /** Table name. */
     private String tableName;
@@ -74,11 +86,14 @@ public class QueryEntity implements Serializable {
         keyType = other.keyType;
         valType = other.valType;
 
+        keyFieldName = other.keyFieldName;
+        valueFieldName = other.valueFieldName;
+
         fields = new LinkedHashMap<>(other.fields);
         keyFields = other.keyFields != null ? new HashSet<>(other.keyFields) : null;
 
         aliases = new HashMap<>(other.aliases);
-        idxs = new HashMap<>(other.idxs);
+        idxs = other.idxs != null ? new ArrayList<>(other.idxs) : null;
 
         tableName = other.tableName;
     }
@@ -104,6 +119,21 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * Attempts to get key type from fields in case it was not set directly.
+     *
+     * @return Key type.
+     */
+    public String findKeyType() {
+        if (keyType != null)
+            return keyType;
+
+        if (fields != null && keyFieldName != null)
+            return fields.get(keyFieldName);
+
+        return null;
+    }
+
+    /**
      * Sets key type for this query pair.
      *
      * @param keyType Key type.
@@ -122,6 +152,21 @@ public class QueryEntity implements Serializable {
      */
     public String getValueType() {
         return valType;
+    }
+
+    /**
+     * Attempts to get value type from fields in case it was not set directly.
+     *
+     * @return Value type.
+     */
+    public String findValueType() {
+        if (valType != null)
+            return valType;
+
+        if (fields != null && valueFieldName != null)
+            return fields.get(valueFieldName);
+
+        return null;
     }
 
     /**
@@ -185,12 +230,54 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * Gets key field name.
+     *
+     * @return Key name.
+     */
+    public String getKeyFieldName() {
+        return keyFieldName;
+    }
+
+    /**
+     * Sets key field name.
+     *
+     * @param keyFieldName Key name.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setKeyFieldName(String keyFieldName) {
+        this.keyFieldName = keyFieldName;
+
+        return this;
+    }
+
+    /**
+     * Get value field name.
+     *
+     * @return Value name.
+     */
+    public String getValueFieldName() {
+        return valueFieldName;
+    }
+
+    /**
+     * Sets value field name.
+     *
+     * @param valueFieldName value name.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setValueFieldName(String valueFieldName) {
+        this.valueFieldName = valueFieldName;
+
+        return this;
+    }
+
+    /**
      * Gets a collection of index entities.
      *
      * @return Collection of index entities.
      */
     public Collection<QueryIndex> getIndexes() {
-        return idxs.values();
+        return idxs == null ? Collections.<QueryIndex>emptyList() : idxs;
     }
 
     /**
@@ -222,29 +309,9 @@ public class QueryEntity implements Serializable {
      * @return {@code this} for chaining.
      */
     public QueryEntity setIndexes(Collection<QueryIndex> idxs) {
-        for (QueryIndex idx : idxs) {
-            if (!F.isEmpty(idx.getFields())) {
-                if (idx.getName() == null)
-                    idx.setName(QueryUtils.indexName(this, idx));
-
-                if (idx.getIndexType() == null)
-                    throw new IllegalArgumentException("Index type is not set " + idx.getName());
-
-                if (!this.idxs.containsKey(idx.getName()))
-                    this.idxs.put(idx.getName(), idx);
-                else
-                    throw new IllegalArgumentException("Duplicate index name: " + idx.getName());
-            }
-        }
+        this.idxs = idxs;
 
         return this;
-    }
-
-    /**
-     * Clear indexes.
-     */
-    public void clearIndexes() {
-        this.idxs.clear();
     }
 
     /**
@@ -281,5 +348,10 @@ public class QueryEntity implements Serializable {
             aliases.put(fullName, alias);
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(QueryEntity.class, this);
     }
 }
