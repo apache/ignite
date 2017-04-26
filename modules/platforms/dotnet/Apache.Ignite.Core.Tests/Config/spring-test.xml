@@ -45,7 +45,6 @@
 
         <property name="memoryConfiguration">
             <bean class="org.apache.ignite.configuration.MemoryConfiguration">
-                <property name="systemCacheMemorySize" value="#{40 * 1024 * 1024}"/>
                 <property name="defaultMemoryPolicyName" value="dfltPlc"/>
 
                 <property name="memoryPolicies">
