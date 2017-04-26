@@ -299,7 +299,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return col;
         }
 
-        throw new IgniteCheckedException("Incompatible types [appendVal=" + appendVal + ", old=" + origVal + ']');
+        throw new IgniteCheckedException("Incompatible types [appendVal=" + appendVal +
+            ",type=" + (appendVal != null ? appendVal.getClass().getSimpleName() : "NULL") + ", old=" + origVal +
+            ",type= " + (origVal != null ? origVal.getClass().getSimpleName() : "NULL") + ']');
     }
 
     /**

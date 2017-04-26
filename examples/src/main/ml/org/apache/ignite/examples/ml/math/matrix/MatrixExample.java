@@ -17,8 +17,8 @@
 
 package org.apache.ignite.examples.ml.math.matrix;
 
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 
 /**
  * This example shows how to use {@link Matrix} API.

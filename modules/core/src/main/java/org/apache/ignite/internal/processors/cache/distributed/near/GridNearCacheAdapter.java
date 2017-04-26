@@ -403,11 +403,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        return dht().igfsDataSpaceMax();
-    }
-
-    /** {@inheritDoc} */
     @Override public void onIgfsDataSizeChanged(long delta) {
         dht().onIgfsDataSizeChanged(delta);
     }

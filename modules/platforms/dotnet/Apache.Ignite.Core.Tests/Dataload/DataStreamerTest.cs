@@ -25,8 +25,6 @@ namespace Apache.Ignite.Core.Tests.Dataload
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Datastream;
-    using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Tests.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -34,9 +32,6 @@ namespace Apache.Ignite.Core.Tests.Dataload
     /// </summary>
     public sealed class DataStreamerTest
     {
-        /** Node name. */
-        private const string GridName = "grid";
-
         /** Cache name. */
         private const string CacheName = "partitioned";
 
@@ -52,15 +47,18 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [TestFixtureSetUp]
         public void InitClient()
         {
-            _grid = Ignition.Start(GetIgniteConfiguration(GridName));
+            _grid = Ignition.Start(TestUtils.GetTestConfiguration());
 
-            Ignition.Start(GetIgniteConfiguration(GridName + "_1"));
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = "grid1"
+            });
 
-            _cache = _grid.GetCache<int, int?>(CacheName);
+            _cache = _grid.CreateCache<int, int?>(CacheName);
         }
 
         /// <summary>
-        ///
+        /// Fixture teardown.
         /// </summary>
         [TestFixtureTearDown]
         public void StopGrids()
@@ -455,45 +453,6 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 for (var i = 0; i < 100; i++)
                     Assert.AreEqual(i + 1, cache.Get(i).Val);
             }
-        }
-
-        /// <summary>
-        /// Gets the Ignite configuration.
-        /// </summary>
-        /// <param name="gridName">Grid name.</param>
-        private static IgniteConfiguration GetIgniteConfiguration(string gridName)
-        {
-            return new IgniteConfiguration
-            {
-                IgniteInstanceName = gridName,
-                SpringConfigUrl = "config\\native-client-test-cache.xml",
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new List<BinaryTypeConfiguration>
-                    {
-                        new BinaryTypeConfiguration(typeof (CacheTestKey)),
-                        new BinaryTypeConfiguration(typeof (TestReferenceObject)),
-                        new BinaryTypeConfiguration(typeof (StreamReceiverBinarizable)),
-                        new BinaryTypeConfiguration(typeof (EntryProcessorBinarizable)),
-                        new BinaryTypeConfiguration(typeof (BinarizableEntry))
-                    }
-                },
-                JvmOptions = TestUtils.TestJavaOptions().Concat(new[]
-                {
-                    "-Xms3096m",
-                    "-Xmx3096m",
-                    "-XX:+UseParNewGC",
-                    "-XX:+UseConcMarkSweepGC",
-                    "-XX:+UseTLAB",
-                    "-XX:NewSize=128m",
-                    "-XX:MaxNewSize=128m",
-                    "-XX:MaxTenuringThreshold=0",
-                    "-XX:SurvivorRatio=1024",
-                    "-XX:+UseCMSInitiatingOccupancyOnly",
-                    "-XX:CMSInitiatingOccupancyFraction=60"
-                }).ToArray()
-            };
         }
 
         /// <summary>

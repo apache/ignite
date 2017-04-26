@@ -46,7 +46,6 @@ import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
-import org.h2.value.ValueTimestampUtc;
 import org.h2.value.ValueUuid;
 
 /**
@@ -140,6 +139,7 @@ public class InlineIndexHelperTest extends TestCase {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            null,
             new MemoryMetricsImpl(null),
             false);
 
@@ -186,6 +186,7 @@ public class InlineIndexHelperTest extends TestCase {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            null,
             new MemoryMetricsImpl(null),
             false);
 
@@ -284,13 +285,6 @@ public class InlineIndexHelperTest extends TestCase {
     }
 
     /** */
-    public void testTimestampUTC() throws Exception {
-        testPutGet(ValueTimestampUtc.fromMillis(System.currentTimeMillis()),
-            ValueTimestampUtc.fromMillis(System.currentTimeMillis() + 100),
-            ValueTimestampUtc.fromMillis(System.currentTimeMillis() + 200));
-    }
-
-    /** */
     public void testUUID() throws Exception {
         testPutGet(ValueUuid.get(UUID.randomUUID().toString()),
             ValueUuid.get(UUID.randomUUID().toString()),
@@ -308,6 +302,7 @@ public class InlineIndexHelperTest extends TestCase {
             new UnsafeMemoryProvider(sizes),
             null,
             PAGE_SIZE,
+            null,
             new MemoryMetricsImpl(null),
             false);
 

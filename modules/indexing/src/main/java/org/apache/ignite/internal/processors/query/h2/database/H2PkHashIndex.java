@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -40,6 +41,7 @@ import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
@@ -157,10 +159,10 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false);
+        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 
         int mul = getDistributedMultiplier(ses, filters, filter);
 
