@@ -69,7 +69,9 @@ public class MemoryConfiguration implements Serializable {
     private static final double DFLT_MEMORY_POLICY_FRACTION = 0.8;
 
     /** Default memory policy's size is 80% of physical memory available on current machine. */
-    public static final long DFLT_MEMORY_POLICY_MAX_SIZE = (long)DFLT_MEMORY_POLICY_FRACTION * U.getTotalMemoryAvailable();
+    public static final long DFLT_MEMORY_POLICY_MAX_SIZE = Math.max(
+        (long)(DFLT_MEMORY_POLICY_FRACTION * U.getTotalMemoryAvailable()),
+        DFLT_MEMORY_POLICY_INITIAL_SIZE);
 
     /** Default size of a memory chunk for the system cache (100 MB). */
     public static final long DFLT_SYS_CACHE_MEM_SIZE = 100 * 1024 * 1024;
@@ -176,6 +178,10 @@ public class MemoryConfiguration implements Serializable {
         long maxSize = (dfltMemPlcSize != null) ? dfltMemPlcSize : DFLT_MEMORY_POLICY_MAX_SIZE;
 
         memPlc.setName(null);
+
+        if (maxSize < DFLT_MEMORY_POLICY_INITIAL_SIZE)
+            memPlc.setInitialSize(maxSize);
+
         memPlc.setMaxSize(maxSize);
 
         return memPlc;

@@ -87,6 +87,11 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
 
                 break;
 
+            case MAX_SIZE_IS_SMALLER_THAN_INITIAL_SIZE:
+                plcs = createMaxSizeSmallerThanInitialSize();
+
+                break;
+
             default:
                 fail("Violation type was not configured: " + violationType);
         }
@@ -104,7 +109,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createValidUserDefault() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024);
+        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
 
         return res;
     }
@@ -115,7 +120,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createMissingUserDefinedDefault() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_USER_MEM_PLC_NAME, 10 * 1024 * 1024);
+        res[0] = createMemoryPolicy(VALID_USER_MEM_PLC_NAME, 10 * 1024 * 1024, 10 * 1024 * 1024);
 
         return res;
     }
@@ -126,7 +131,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createPlcWithNullName() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(null, 10 * 1024 * 1024);
+        res[0] = createMemoryPolicy(null, 10 * 1024 * 1024, 10 * 1024 * 1024);
 
         return res;
     }
@@ -137,7 +142,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createTooSmallMemoryCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 10);
+        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 10, 10);
 
         return res;
     }
@@ -148,7 +153,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createPlcWithReservedNameMisuseCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy("sysMemPlc", 1024 * 1024);
+        res[0] = createMemoryPolicy("sysMemPlc", 1024 * 1024, 1024 * 1024);
 
         return res;
     }
@@ -159,8 +164,19 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createPlcsWithNamesConflictCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
 
-        res[0] = createMemoryPolicy("cflt0", 1024 * 1024);
-        res[1] = createMemoryPolicy("cflt0", 1024 * 1024);
+        res[0] = createMemoryPolicy("cflt0", 10 * 1024 * 1024, 10 * 1024 * 1024);
+        res[1] = createMemoryPolicy("cflt0", 10 * 1024 * 1024, 10 * 1024 * 1024);
+
+        return res;
+    }
+
+    /**
+     *
+     */
+    private MemoryPolicyConfiguration[] createMaxSizeSmallerThanInitialSize() {
+        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
+
+        res[0] = createMemoryPolicy("invalidSize", 100 * 1024 * 1024, 10 * 1024 * 1024);
 
         return res;
     }
@@ -174,13 +190,15 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
 
     /**
      * @param name Name of MemoryPolicyConfiguration.
-     * @param size Size of MemoryPolicyConfiguration in bytes.
+     * @param initialSize Initial size of MemoryPolicyConfiguration in bytes.
+     * @param maxSize Max size of MemoryPolicyConfiguration in bytes.
      */
-    private MemoryPolicyConfiguration createMemoryPolicy(String name, long size) {
+    private MemoryPolicyConfiguration createMemoryPolicy(String name, long initialSize, long maxSize) {
         MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
 
         plc.setName(name);
-        plc.setMaxSize(size);
+        plc.setInitialSize(initialSize);
+        plc.setMaxSize(maxSize);
 
         return plc;
     }
@@ -226,6 +244,15 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
      */
     public void testMemoryTooSmall() throws Exception {
         violationType = ValidationViolationType.TOO_SMALL_MEMORY_SIZE;
+
+        doTest(violationType);
+    }
+
+    /**
+     * MemoryPolicy must be configured with size of at least 1MB.
+     */
+    public void testMaxSizeSmallerThanInitialSize() throws Exception {
+        violationType = ValidationViolationType.MAX_SIZE_IS_SMALLER_THAN_INITIAL_SIZE;
 
         doTest(violationType);
     }
@@ -281,7 +308,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         RESERVED_MEMORY_POLICY_MISUSE("'sysMemPlc' policy name is reserved for internal use."),
 
         /** */
-        TOO_SMALL_MEMORY_SIZE("MemoryPolicy must have size more than 1MB: "),
+        TOO_SMALL_MEMORY_SIZE("MemoryPolicy must have size more than 10MB "),
 
         /** */
         NULL_NAME_ON_USER_DEFINED_POLICY("User-defined MemoryPolicyConfiguration must have non-null and non-empty name."),
@@ -293,9 +320,10 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         DEFAULT_SIZE_IS_DEFINED_TWICE("User-defined MemoryPolicy configuration and defaultMemoryPolicySize properties are set at the same time."),
 
         /** */
-        TOO_SMALL_USER_DEFINED_DFLT_MEM_PLC_SIZE("User-defined default MemoryPolicy size is less than 1MB.");
+        TOO_SMALL_USER_DEFINED_DFLT_MEM_PLC_SIZE("User-defined default MemoryPolicy size is less than 1MB."),
 
-
+        /** */
+        MAX_SIZE_IS_SMALLER_THAN_INITIAL_SIZE("MemoryPolicy maxSize must not be smaller than initialSize");
 
         /**
          * @param violationMsg Violation message.

@@ -84,7 +84,8 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
 
         MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
         dfltPlcCfg.setName("dfltPlc");
-        dfltPlcCfg.setMaxSize(1024 * 1024);
+        dfltPlcCfg.setInitialSize(10 * 1024 * 1024);
+        dfltPlcCfg.setMaxSize(10 * 1024 * 1024);
 
         MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
         bigPlcCfg.setName("bigPlc");
@@ -137,6 +138,7 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
 
         MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
         dfltPlcCfg.setName("dfltPlc");
+        dfltPlcCfg.setInitialSize(1024 * 1024);
         dfltPlcCfg.setMaxSize(1024 * 1024);
 
         MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
