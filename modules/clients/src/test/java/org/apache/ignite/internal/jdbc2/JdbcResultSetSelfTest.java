@@ -654,10 +654,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         protected boolean boolVal3;
 
         /** */
+        @QuerySqlField(index = false)
         protected boolean boolVal4;
 
         /** */
-        @QuerySqlField(index = false)
         public boolean isBoolVal4() {
             return boolVal4;
         }

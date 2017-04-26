@@ -855,8 +855,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     }
                 });
 
-            if (metricsUpdateFreq > -1L)
-                updateJobMetrics();
+            updateJobMetrics();
         }
         finally {
             handlingCollision.set(Boolean.FALSE);
@@ -867,24 +866,21 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      */
     private void updateJobMetrics() {
-        assert metricsUpdateFreq > -1L;
+        assert metricsUpdateFreq > 0L;
 
-        if (metricsUpdateFreq == 0L)
+        long now = U.currentTimeMillis();
+        long lastUpdate = metricsLastUpdateTstamp.get();
+
+        if (now - lastUpdate > metricsUpdateFreq && metricsLastUpdateTstamp.compareAndSet(lastUpdate, now))
             updateJobMetrics0();
-        else {
-            long now = U.currentTimeMillis();
-            long lastUpdate = metricsLastUpdateTstamp.get();
 
-            if (now - lastUpdate > metricsUpdateFreq && metricsLastUpdateTstamp.compareAndSet(lastUpdate, now))
-                updateJobMetrics0();
-        }
     }
 
     /**
      *
      */
     private void updateJobMetrics0() {
-        assert metricsUpdateFreq > -1L;
+        assert metricsUpdateFreq > 0L;
 
         GridJobMetricsSnapshot m = new GridJobMetricsSnapshot();
 
