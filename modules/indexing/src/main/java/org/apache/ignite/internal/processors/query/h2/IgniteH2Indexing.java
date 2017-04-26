@@ -139,7 +139,6 @@ import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -429,8 +428,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Connection.
      */
     public Connection connectionForSpace(String space) {
-        validateSpaceName(space);
-
         try {
             return connectionForThread(schema(space));
         }
@@ -483,8 +480,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
-        validateSpaceName(space);
-
         return prepareStatement(connectionForSpace(space), sql, true);
     }
 
@@ -492,8 +487,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
         long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
-        validateSpaceName(spaceName);
-
         Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
 
         if (!(prep instanceof Insert))
@@ -650,8 +643,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheVersion ver,
         long expirationTime,
         long link) throws IgniteCheckedException {
-        validateSpaceName(spaceName);
-
         TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
         if (tbl == null)
@@ -706,8 +697,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         int partId,
         CacheObject val,
         GridCacheVersion ver) throws IgniteCheckedException {
-        validateSpaceName(spaceName);
-
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
 
@@ -798,8 +787,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void dynamicIndexCreate(final String spaceName, final String tblName,
         final QueryIndexDescriptorImpl idxDesc, boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor)
         throws IgniteCheckedException {
-        validateSpaceName(spaceName);
-
         // Locate table.
         String schemaName = schema(spaceName);
 
@@ -856,8 +843,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Override public void dynamicIndexDrop(final String spaceName, String idxName, boolean ifExists)
         throws IgniteCheckedException{
-        validateSpaceName(spaceName);
-
         String schemaName = schema(spaceName);
 
         Schema schema = schemas.get(schemaName);
@@ -1018,8 +1003,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void unregisterType(String spaceName, String typeName)
         throws IgniteCheckedException {
-        validateSpaceName(spaceName);
-
         TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
         if (tbl != null)
@@ -1044,8 +1027,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable final Collection<Object> params, final IndexingQueryFilter filter, boolean enforceJoinOrder,
         final int timeout, final GridQueryCancel cancel)
         throws IgniteCheckedException {
-        validateSpaceName(spaceName);
-
         final Connection conn = connectionForSpace(spaceName);
 
         setupConnection(conn, false, enforceJoinOrder);
@@ -1109,8 +1090,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public long streamUpdateQuery(String spaceName, String qry,
         @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
-        validateSpaceName(spaceName);
-
         final Connection conn = connectionForSpace(spaceName);
 
         final PreparedStatement stmt;
@@ -1267,8 +1246,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean useStmtCache,
         int timeoutMillis,
         @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
-        validateSpaceName(space);
-
         return executeSqlQueryWithTimer(space, preparedStatementWithParams(conn, sql, params, useStmtCache),
             conn, sql, params, timeoutMillis, cancel);
     }
@@ -1457,8 +1434,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(String spaceName,
         final String qry, String alias, @Nullable final Collection<Object> params, String type,
         final IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
-        validateSpaceName(spaceName);
-
         final TableDescriptor tbl = tableDescriptor(type, spaceName);
 
         if (tbl == null)
@@ -1866,7 +1841,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     @Override public boolean registerType(String spaceName, GridQueryTypeDescriptor type)
         throws IgniteCheckedException {
-        validateSpaceName(spaceName);
         validateTypeDescriptor(type);
 
         String schemaName = schema(spaceName);
@@ -2134,8 +2108,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     @Override public void rebuildIndexesFromHash(String spaceName,
         GridQueryTypeDescriptor type) throws IgniteCheckedException {
-        validateSpaceName(spaceName);
-
         TableDescriptor tbl = tableDescriptor(type.name(), spaceName);
 
         if (tbl == null)
@@ -2194,8 +2166,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void markForRebuildFromHash(String spaceName, GridQueryTypeDescriptor type) {
-        validateSpaceName(spaceName);
-
         TableDescriptor tbl = tableDescriptor(type.name(), spaceName);
 
         if (tbl == null)
@@ -2215,8 +2185,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed or {@code -1} if the type is unknown.
      */
     long size(String spaceName, String typeName) throws IgniteCheckedException {
-        validateSpaceName(spaceName);
-
         TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
         if (tbl == null)
@@ -2529,9 +2497,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void registerCache(String spaceName, GridCacheContext<?, ?> cctx, CacheConfiguration<?, ?> ccfg)
         throws IgniteCheckedException {
-        validateSpaceName(spaceName);
-        CU.validateCacheName(ccfg.getName());
-
         String schema = schemaNameFromCacheConf(ccfg);
 
         if (schemas.putIfAbsent(schema, new Schema(spaceName, schema, cctx, ccfg)) != null)
@@ -2546,8 +2511,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void unregisterCache(String spaceName) {
-        validateSpaceName(spaceName);
-
         String schema = schema(spaceName);
         Schema rmv = schemas.remove(schema);
 
@@ -2587,8 +2550,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         return new IndexingQueryFilter() {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
-                validateSpaceName(spaceName);
-
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
                 if (cache.context().isReplicated())
@@ -2664,14 +2625,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         rdcQryExec.onDisconnected(reconnectFut);
-    }
-
-    /**
-     * @param name Space name.
-     * @throws IllegalArgumentException In case the name is not valid.
-     */
-    public static void validateSpaceName(String name) throws IllegalArgumentException {
-        A.ensure(name != null && !name.isEmpty(), "Space name must not be null or empty.");
     }
 
     /**
