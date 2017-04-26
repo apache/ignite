@@ -1329,7 +1329,7 @@ public class PlatformConfigurationUtils {
 
         MemoryConfiguration res = new MemoryConfiguration();
 
-        res.setSystemCacheMemorySize(in.readLong())
+        res.setSystemCacheInitialSize(in.readLong())
                 .setPageSize(in.readInt())
                 .setConcurrencyLevel(in.readInt())
                 .setDefaultMemoryPolicyName(in.readString());
@@ -1373,7 +1373,7 @@ public class PlatformConfigurationUtils {
 
         w.writeBoolean(true);
 
-        w.writeLong(cfg.getSystemCacheMemorySize());
+        w.writeLong(cfg.getSystemCacheInitialSize());
         w.writeInt(cfg.getPageSize());
         w.writeInt(cfg.getConcurrencyLevel());
         w.writeString(cfg.getDefaultMemoryPolicyName());

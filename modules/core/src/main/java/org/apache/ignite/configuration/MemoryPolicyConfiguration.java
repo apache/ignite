@@ -39,18 +39,19 @@ import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_D
  *                 <list>
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="Default_Region"/>
- *                          <property name="size" value="#{100 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="20MB_Region_Eviction"/>
- *                          <property name="size" value="#{20 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{20 * 1024 * 1024}"/>
  *                          <property name="pageEvictionMode" value="RANDOM_2_LRU"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="25MB_Region_Swapping"/>
- *                          <property name="size" value="#{25 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{25 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
  *                          <property name="swapFilePath" value="memoryPolicyExampleSwap"/>
  *                      </bean>
  *                  </list>
@@ -129,7 +130,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Sets maximum memory region size defined by this memory policy. The total size should not be less than 10 MB
      * due to the internal data structures overhead.
      *
-     * @param maxSize Maxumum memory policy size in bytes.
+     * @param maxSize Maximum memory policy size in bytes.
      * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setMaxSize(long maxSize) {

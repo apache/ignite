@@ -49,7 +49,7 @@
                         <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
                             <property name="name" value="Default_Region"/>
                             <!-- 100 MB memory region with disabled eviction -->
-                            <property name="size" value="#{100 * 1024 * 1024}"/>
+                            <property name="initialSize" value="#{100 * 1024 * 1024}"/>
                         </bean>
 
                         <!--
@@ -57,8 +57,10 @@
                         -->
                         <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
                             <property name="name" value="20MB_Region_Eviction"/>
-                            <!-- 20 MB memory region. -->
-                            <property name="size" value="#{20 * 1024 * 1024}"/>
+                            <!-- Memory region of 20 MB initial size. -->
+                            <property name="initialSize" value="#{20 * 1024 * 1024}"/>
+                            <!-- Maximum size is 40 MB. -->
+                            <property name="maxSize" value="#{40 * 1024 * 1024}"/>
                             <!-- Enabling eviction for this memory region -->
                             <property name="pageEvictionMode" value="RANDOM_2_LRU"/>
                         </bean>
@@ -69,8 +71,10 @@
                         -->
                         <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
                             <property name="name" value="15MB_Region_Swapping"/>
-                            <!-- 15 MB memory region. -->
-                            <property name="size" value="#{15 * 1024 * 1024}"/>
+                            <!-- Memory region of 15 MB initial size. -->
+                            <property name="initialSize" value="#{15 * 1024 * 1024}"/>
+                            <!-- Maximum size is 30 MB. -->
+                            <property name="maxSize" value="#{30 * 1024 * 1024}"/>
                             <!-- Setting a name of the swapping file. -->
                             <property name="swapFilePath" value="memoryPolicyExampleSwap"/>
                         </bean>

@@ -27,11 +27,6 @@ public interface MemoryMetrics {
     public String getName();
 
     /**
-     * @return Path of memory-mapped file used to swap PageMemory pages to disk.
-     */
-    public String getSwapFilePath();
-
-    /**
      * @return Total number of allocated pages.
      */
     public long getTotalAllocatedPages();

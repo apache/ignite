@@ -17,6 +17,9 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.MemoryMetricsMXBean;
 
 /**
@@ -26,11 +29,18 @@ class MemoryMetricsMXBeanImpl implements MemoryMetricsMXBean {
     /** */
     private final MemoryMetricsImpl memMetrics;
 
+    /** */
+    private final MemoryPolicyConfiguration memPlcCfg;
+
     /**
      * @param memMetrics MemoryMetrics instance to expose through JMX interface.
+     * @param memPlcCfg configuration of memory policy this MX Bean is created for.
      */
-    MemoryMetricsMXBeanImpl(MemoryMetricsImpl memMetrics) {
+    MemoryMetricsMXBeanImpl(MemoryMetricsImpl memMetrics,
+        MemoryPolicyConfiguration memPlcCfg
+    ) {
         this.memMetrics = memMetrics;
+        this.memPlcCfg = memPlcCfg;
     }
 
     /** {@inheritDoc} */
@@ -84,7 +94,17 @@ class MemoryMetricsMXBeanImpl implements MemoryMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public int getInitialSize() {
+        return (int) (memPlcCfg.getInitialSize() / (1024 * 1024));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMaxSize() {
+        return (int) (memPlcCfg.getMaxSize() / (1024 * 1024));
+    }
+
+    /** {@inheritDoc} */
     @Override public String getSwapFilePath() {
-        return memMetrics.getSwapFilePath();
+        return memPlcCfg.getSwapFilePath();
     }
 }

@@ -81,11 +81,6 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSwapFilePath() {
-        return memPlcCfg.getSwapFilePath();
-    }
-
-    /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
         return metricsEnabled ? totalAllocatedPages.longValue() : 0;
     }

@@ -73,8 +73,11 @@ public class MemoryConfiguration implements Serializable {
         (long)(DFLT_MEMORY_POLICY_FRACTION * U.getTotalMemoryAvailable()),
         DFLT_MEMORY_POLICY_INITIAL_SIZE);
 
-    /** Default size of a memory chunk for the system cache (100 MB). */
-    public static final long DFLT_SYS_CACHE_MEM_SIZE = 100 * 1024 * 1024;
+    /** Default initial size of a memory chunk for the system cache (40 MB). */
+    private static final long DFLT_SYS_CACHE_INIT_SIZE = 40 * 1024 * 1024;
+
+    /** Default max size of a memory chunk for the system cache (40 MB). */
+    private static final long DFLT_SYS_CACHE_MAX_SIZE = 100 * 1024 * 1024;
 
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 2 * 1024;
@@ -82,8 +85,11 @@ public class MemoryConfiguration implements Serializable {
     /** This name is assigned to default MemoryPolicy if no user-defined default MemPlc is specified */
     public static final String DFLT_MEM_PLC_DEFAULT_NAME = "default";
 
-    /** Size of a memory chunk reserved for system cache needs. */
-    private long sysCacheMemSize = DFLT_SYS_CACHE_MEM_SIZE;
+    /** Size of a memory chunk reserved for system cache initially. */
+    private long sysCacheInitSize = DFLT_SYS_CACHE_INIT_SIZE;
+
+    /** Maximum size of system cache. */
+    private long sysCacheMaxSize = DFLT_SYS_CACHE_MAX_SIZE;
 
     /** Memory page size. */
     private int pageSize = DFLT_PAGE_SIZE;
@@ -101,23 +107,48 @@ public class MemoryConfiguration implements Serializable {
     private MemoryPolicyConfiguration[] memPlcs;
 
     /**
-     * Gets size of a memory chunk reserved for system cache needs.
+     * Initial size of a memory region reserved for system cache.
      *
      * @return Size in bytes.
      */
-    public long getSystemCacheMemorySize() {
-        return sysCacheMemSize;
+    public long getSystemCacheInitialSize() {
+        return sysCacheInitSize;
     }
 
     /**
-     * Sets the size of a memory chunk reserved for system cache needs.
+     * Sets initial size of a memory region reserved for system cache.
      *
-     * Default value is {@link #DFLT_SYS_CACHE_MEM_SIZE}
+     * Default value is {@link #DFLT_SYS_CACHE_INIT_SIZE}
      *
-     * @param sysCacheMemSize Size in bytes.
+     * @param sysCacheInitSize Size in bytes.
+     *
+     * @return {@code this} for chaining.
      */
-    public MemoryConfiguration setSystemCacheMemorySize(long sysCacheMemSize) {
-        this.sysCacheMemSize = sysCacheMemSize;
+    public MemoryConfiguration setSystemCacheInitialSize(long sysCacheInitSize) {
+        this.sysCacheInitSize = sysCacheInitSize;
+
+        return this;
+    }
+
+    /**
+     * Maximum memory region size reserved for system cache.
+     *
+     * @return Size in bytes.
+     */
+    public long getSystemCacheMaxSize() {
+        return sysCacheMaxSize;
+    }
+
+    /**
+     * Sets maximum memory region size reserved for system cache. The total size should not be less than 10 MB
+     * due to internal data structures overhead.
+     *
+     * @param sysCacheMaxSize Maximum size in bytes for system cache memory region.
+     *
+     * @return {@code this} for chaining.
+     */
+    public MemoryConfiguration setSysCacheMaxSize(long sysCacheMaxSize) {
+        this.sysCacheMaxSize = sysCacheMaxSize;
 
         return this;
     }

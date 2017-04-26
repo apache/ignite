@@ -24,12 +24,33 @@ import org.apache.ignite.MemoryMetrics;
 @MXBeanDescription("MBean that provides access to MemoryMetrics of current Ignite node.")
 public interface MemoryMetricsMXBean extends MemoryMetrics {
     /** {@inheritDoc} */
-    @MXBeanDescription("Name of PageMemory metrics are collected for.")
+    @MXBeanDescription("Name of MemoryPolicy metrics are collected for.")
     @Override public String getName();
 
-    /** {@inheritDoc} */
-    @MXBeanDescription("File path of memory-mapped swap file.")
-    @Override public String getSwapFilePath();
+    /**
+     * Initial size configured for MemoryPolicy on local node.
+     *
+     * @return Initial size in MB.
+     */
+    @MXBeanDescription("Initial size configured for MemoryPolicy on local node.")
+    public int getInitialSize();
+
+    /**
+     * Maximum size configured for MemoryPolicy on local node.
+     *
+     * @return Maximum size in MB.
+     */
+    @MXBeanDescription("Maximum size configured for MemoryPolicy on local node.")
+    public int getMaxSize();
+
+    /**
+     * Path from MemoryPolicy configuration to directory where memory-mapped files used for swap are created.
+     * Depending on configuration may be absolute or relative; in the latter case it is relative to IGNITE_HOME.
+     *
+     * @return path to directory with memory-mapped files.
+     */
+    @MXBeanDescription("Path to directory with memory-mapped files.")
+    public String getSwapFilePath();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Total number of allocated pages.")
@@ -52,15 +73,15 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
     @Override public float getPagesFillFactor();
 
     /**
-     * Enables collecting memory metrics.
+     * Enables collecting memory metrics on local node.
      */
-    @MXBeanDescription("Enables metrics gathering.")
+    @MXBeanDescription("Enables collecting memory metrics on local node.")
     public void enableMetrics();
 
     /**
-     * Disables collecting memory metrics.
+     * Disables collecting memory metrics on local node.
      */
-    @MXBeanDescription("Disables metrics gathering.")
+    @MXBeanDescription("Disables collecting memory metrics on local node.")
     public void disableMetrics();
 
     /**
