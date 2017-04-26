@@ -67,6 +67,15 @@
     <ClInclude Include="..\..\include\ignite\time.h">
       <Filter>Code</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\future.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\promise.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\shared_state.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\date.cpp">

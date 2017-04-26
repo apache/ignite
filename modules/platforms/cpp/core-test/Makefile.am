@@ -77,6 +77,7 @@ ignite_tests_SOURCES = \
     src/decimal_test.cpp \
     src/dynamic_size_array_test.cpp \
     src/fixed_size_array_test.cpp \
+    src/future_test.cpp \
     src/transactions_test.cpp \
     src/teamcity_messages.cpp \
     src/teamcity_boost.cpp \

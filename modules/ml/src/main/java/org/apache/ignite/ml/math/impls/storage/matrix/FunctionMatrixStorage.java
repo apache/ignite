@@ -29,11 +29,15 @@ import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
  * Read-only or read-write function-based matrix storage.
  */
 public class FunctionMatrixStorage implements MatrixStorage {
-    /** */ private int rows;
-    /** */ private int cols;
+    /** */
+    private int rows;
+    /** */
+    private int cols;
 
-    /** */ private IntIntToDoubleFunction getFunc;
-    /** */ private IntIntDoubleToVoidFunction setFunc;
+    /** */
+    private IntIntToDoubleFunction getFunc;
+    /** */
+    private IntIntDoubleToVoidFunction setFunc;
 
     /**
      *
@@ -83,14 +87,14 @@ public class FunctionMatrixStorage implements MatrixStorage {
     }
 
     /**
-     *
+     * @return Getter function.
      */
     public IntIntToDoubleFunction getFunction() {
         return getFunc;
     }
 
     /**
-     *
+     * @return Setter function.
      */
     public IntIntDoubleToVoidFunction setFunction() {
         return setFunc;

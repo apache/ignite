@@ -96,8 +96,6 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
-        GridQueryProcessor.idxCls = FakeIndexing.class;
-
         return cfg;
     }
 
@@ -140,24 +138,6 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         return DURATION + 60_000;
     }
 
-    /**
-     *
-     */
-    private static class FakeIndexing extends IgniteH2Indexing {
-        @Override public void onSwap(@Nullable String spaceName, KeyCacheObject key, int partId) throws IgniteCheckedException {
-            super.onSwap(spaceName, key, partId);
-
-            idxSwapCnt.incrementAndGet();
-        }
-
-        @Override public void onUnswap(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val)
-        throws IgniteCheckedException {
-            super.onUnswap(spaceName, key, partId, val);
-
-            idxUnswapCnt.incrementAndGet();
-        }
-    }
-
     /** @return {@code true} If evictions enabled. */
     protected boolean evictsEnabled() {
         return false;
@@ -185,11 +165,6 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
-
-        if (evictsEnabled()) {
-            assertTrue(idxSwapCnt.get() > 0);
-            assertTrue(idxUnswapCnt.get() > 0);
-        }
     }
 
     /** {@inheritDoc} */

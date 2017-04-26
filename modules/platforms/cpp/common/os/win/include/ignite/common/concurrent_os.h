@@ -18,12 +18,14 @@
 #ifndef _IGNITE_COMMON_CONCURRENT_OS
 #define _IGNITE_COMMON_CONCURRENT_OS
 
-#include <map>
 #include <stdint.h>
+
+#include <cassert>
+#include <map>
+
 #include <windows.h>
 
 #include "ignite/common/common.h"
-
 namespace ignite
 {
     namespace common
@@ -33,7 +35,8 @@ namespace ignite
             /**
              * Static class to manage memory visibility semantics. 
              */
-            class IGNITE_IMPORT_EXPORT Memory {
+            class Memory
+            {
             public:
                 /**
                  * Full fence. 
@@ -44,7 +47,9 @@ namespace ignite
             /**
              * Critical section.
              */
-            class IGNITE_IMPORT_EXPORT CriticalSection {
+            class IGNITE_IMPORT_EXPORT CriticalSection
+            {
+                friend class ConditionVariable;
             public:
                 /**
                  * Constructor.
@@ -67,7 +72,7 @@ namespace ignite
                 void Leave();
             private:
                 /** Handle. */
-                CRITICAL_SECTION* hnd;
+                CRITICAL_SECTION hnd;
 
                 IGNITE_NO_COPY_ASSIGNMENT(CriticalSection)
             };
@@ -76,7 +81,7 @@ namespace ignite
              * Special latch with count = 1.
              */
             class IGNITE_IMPORT_EXPORT SingleLatch
-            {                
+            {
             public:
                 /**
                  * Constructor.
@@ -99,7 +104,7 @@ namespace ignite
                 void Await();
             private:
                 /** Handle. */
-                void* hnd;
+                HANDLE hnd;
 
                 IGNITE_NO_COPY_ASSIGNMENT(SingleLatch)
             };
@@ -107,7 +112,7 @@ namespace ignite
             /**
              * Primitives for atomic access.
              */
-            class IGNITE_IMPORT_EXPORT Atomics
+            class Atomics
             {
             public:
                 /**
@@ -398,6 +403,154 @@ namespace ignite
             private:
                 /** Index. */
                 int32_t idx; 
+            };
+
+            /**
+             * Cross-platform wrapper for Condition Variable synchronization
+             * primitive concept.
+             */
+            class ConditionVariable
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ConditionVariable()
+                {
+                    InitializeConditionVariable(&cond);
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~ConditionVariable()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Wait for Condition Variable to be notified.
+                 *
+                 * @param cs Critical section in which to wait.
+                 */
+                void Wait(CriticalSection& cs)
+                {
+                    SleepConditionVariableCS(&cond, &cs.hnd, INFINITE);
+                }
+
+                /**
+                 * Wait for Condition Variable to be notified for specified time.
+                 *
+                 * @param cs Critical section in which to wait.
+                 * @param msTimeout Timeout in milliseconds.
+                 * @return True if the object has been notified and false in case of timeout.
+                 */
+                bool WaitFor(CriticalSection& cs, int32_t msTimeout)
+                {
+                    BOOL notified = SleepConditionVariableCS(&cond, &cs.hnd, msTimeout);
+
+                    return notified != FALSE;
+                }
+
+                /**
+                 * Notify single thread waiting for the condition variable.
+                 */
+                void NotifyOne()
+                {
+                    WakeConditionVariable(&cond);
+                }
+
+                /**
+                 * Notify all threads that are waiting on the variable.
+                 */
+                void NotifyAll()
+                {
+                    WakeAllConditionVariable(&cond);
+                }
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(ConditionVariable);
+
+                /** OS-specific type. */
+                CONDITION_VARIABLE cond;
+            };
+
+            /**
+             * Manually triggered event.
+             * Once triggered it stays in passing state until manually reset.
+             */
+            class ManualEvent
+            {
+            public:
+                /**
+                 * Constructs manual event.
+                 * Initial state is untriggered.
+                 */
+                ManualEvent()
+                {
+                    handle = CreateEvent(NULL, TRUE, FALSE, NULL);
+
+                    assert(handle != NULL);
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~ManualEvent()
+                {
+                    CloseHandle(handle);
+                }
+
+                /**
+                 * Sets event into triggered state.
+                 */
+                void Set()
+                {
+                    BOOL success = SetEvent(handle);
+
+                    assert(success);
+                }
+
+                /**
+                 * Resets event into non-triggered state.
+                 */
+                void Reset()
+                {
+                    BOOL success = ResetEvent(handle);
+
+                    assert(success);
+                }
+
+                /**
+                 * Wait for event to be triggered.
+                 */
+                void Wait()
+                {
+                    DWORD res = WaitForSingleObject(handle, INFINITE);
+
+                    assert(res == WAIT_OBJECT_0);
+                }
+
+                /**
+                 * Wait for event to be triggered for specified time.
+                 *
+                 * @param msTimeout Timeout in milliseconds.
+                 * @return True if the object has been triggered and false in case of timeout.
+                 */
+                bool WaitFor(int32_t msTimeout)
+                {
+                    DWORD res = WaitForSingleObject(handle, static_cast<DWORD>(msTimeout));
+
+                    assert(res == WAIT_OBJECT_0 || res == WAIT_TIMEOUT);
+
+                    return res == WAIT_OBJECT_0;
+                }
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(ManualEvent);
+
+                /** Event handle. */
+                HANDLE handle;
             };
         }
     }

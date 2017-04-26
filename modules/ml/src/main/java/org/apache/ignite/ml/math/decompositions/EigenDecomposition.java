@@ -43,12 +43,17 @@ public class EigenDecomposition implements Destroyable {
     /** Array for internal storage of eigenvalues. */
     private final Vector e;
 
-    /** */
+    /**
+     * @param matrix Matrix to decompose.
+     */
     public EigenDecomposition(Matrix matrix) {
         this(matrix, isSymmetric(matrix));
     }
 
-    /** */
+    /**
+     * @param matrix Matrix to decompose.
+     * @param isSymmetric {@code true} if matrix passes symmetry check, {@code false otherwise}.
+     */
     public EigenDecomposition(Matrix matrix, boolean isSymmetric) {
         n = matrix.columnSize();
 
@@ -73,7 +78,7 @@ public class EigenDecomposition implements Destroyable {
     }
 
     /**
-     * Return the eigen vector matrix
+     * Return the eigen vector matrix.
      *
      * @return V
      */
@@ -89,7 +94,9 @@ public class EigenDecomposition implements Destroyable {
     }
 
     /**
-     * Return the imaginary parts of the eigenvalues
+     * Return the imaginary parts of the eigenvalues.
+     *
+     * @return Vector of imaginary parts.
      */
     public Vector getImagEigenvalues() {
         return e;
@@ -289,7 +296,9 @@ public class EigenDecomposition implements Destroyable {
         return hessenBerg;
     }
 
-    /** Symmetric tridiagonal QL algorithm. */
+    /**
+     * Symmetric tridiagonal QL algorithm.
+     */
     private void tql2() {
         //  This is derived from the Algol procedures tql2, by
         //  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for

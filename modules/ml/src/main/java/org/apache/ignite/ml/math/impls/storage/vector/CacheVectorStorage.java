@@ -32,10 +32,12 @@ import org.apache.ignite.ml.math.VectorStorage;
 public class CacheVectorStorage<K, V> implements VectorStorage {
     /** Storage size. */
     private int size;
+
     /** Key mapper. */
     private VectorKeyMapper<K> keyMapper;
     /** Value mapper. */
     private ValueMapper<V> valMapper;
+
     /** Underlying ignite cache. */
     private IgniteCache<K, V> cache;
 
@@ -47,10 +49,10 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
     }
 
     /**
-     * @param size
-     * @param cache
-     * @param keyMapper
-     * @param valMapper
+     * @param size Vector size.
+     * @param cache Ignite cache.
+     * @param keyMapper {@link VectorKeyMapper} to validate cache key.
+     * @param valMapper {@link ValueMapper} to obtain value for given cache key.
      */
     public CacheVectorStorage(int size, IgniteCache<K, V> cache, VectorKeyMapper<K> keyMapper,
         ValueMapper<V> valMapper) {
@@ -66,24 +68,21 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
     }
 
     /**
-     *
-     *
+     * @return Ignite cache.
      */
     public IgniteCache<K, V> cache() {
         return cache;
     }
 
     /**
-     *
-     *
+     * @return Key mapper to validate cache keys.
      */
     public VectorKeyMapper<K> keyMapper() {
         return keyMapper;
     }
 
     /**
-     *
-     *
+     * @return Value mapper to obtain vector element values.
      */
     public ValueMapper<V> valueMapper() {
         return valMapper;
@@ -113,6 +112,7 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         keyMapper = (VectorKeyMapper<K>)in.readObject();
