@@ -85,10 +85,11 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(ipFinder);
 
         c.setDiscoverySpi(disco);
+
+        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         c.setDeploymentMode(depMode);
 
