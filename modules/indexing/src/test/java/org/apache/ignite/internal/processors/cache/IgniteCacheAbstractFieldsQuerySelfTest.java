@@ -310,7 +310,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     Map<String, String> fields = meta.fields("Organization");
 
                     assert fields != null;
-                    assertEquals("Fields: " + fields, 5, fields.size());
+                    assertEquals("Fields: " + fields, 4, fields.size());
 
                     if (binaryMarshaller) {
                         assert Object.class.getName().equals(fields.get("_VAL"));
@@ -605,7 +605,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         int cnt = 0;
 
         for (List<?> row : res) {
-            assertEquals(10, row.size());
+            assertEquals(9, row.size());
 
             if (cnt == 0) {
                 assert new AffinityKey<>("p1", "o1").equals(row.get(0));
@@ -860,23 +860,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    public void testMethodAnnotationWithoutGet() throws Exception {
-        if (!binaryMarshaller) {
-            QueryCursor<List<?>> qry =
-                orgCache.query(sqlFieldsQuery("select methodField from Organization where methodField='name-A'")
-                    .setPageSize(10));
-
-            List<List<?>> flds = qry.getAll();
-
-            assertEquals(1, flds.size());
-
-            assertEquals("name-A", flds.get(0).get(0));
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPaginationGet() throws Exception {
         QueryCursor<List<?>> qry =
             intCache.query(sqlFieldsQuery("select _key, _val from Integer").setPageSize(10));
@@ -1058,14 +1041,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
             this.id = id;
             this.name = name;
-        }
-
-        /**
-         * @return Generated method value.
-         */
-        @QuerySqlField
-        public String methodField() {
-            return "name-" + name;
         }
 
         /** {@inheritDoc} */

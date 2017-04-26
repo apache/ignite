@@ -1496,6 +1496,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param qry Query.
      * @param keepCacheObj Flag to keep cache object.
      * @param enforceJoinOrder Enforce join order of tables.
+     * @param parts Partitions.
      * @return Iterable result.
      */
     private Iterable<List<?>> runQueryTwoStep(
@@ -1505,11 +1506,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final boolean enforceJoinOrder,
         final int timeoutMillis,
         final GridQueryCancel cancel,
-        final Object[] params
+        final Object[] params,
+        final int[] parts
     ) {
         return new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
-                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params);
+                return rdcQryExec.query(cctx, qry, keepCacheObj, enforceJoinOrder, timeoutMillis, cancel, params, parts);
             }
         };
     }
@@ -1540,6 +1542,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fqry.setArgs(qry.getArgs());
         fqry.setPageSize(qry.getPageSize());
         fqry.setDistributedJoins(qry.isDistributedJoins());
+        fqry.setPartitions(qry.getPartitions());
         fqry.setLocal(qry.isLocal());
 
         if (qry.getTimeout() > 0)
@@ -1755,7 +1758,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel = new GridQueryCancel();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel, qry.getArgs()),
+            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel, 
+                    qry.getArgs(), qry.getPartitions()),
             cancel);
 
         cursor.fieldsMeta(meta);
@@ -1775,12 +1779,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (caches.isEmpty())
             return; // Nothing to check
 
-        GridCacheSharedContext sharedContext = ctx.cache().context();
+        GridCacheSharedContext sharedCtx = ctx.cache().context();
 
         int expectedParallelism = 0;
 
         for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext cctx = sharedContext.cacheContext(caches.get(i));
+            GridCacheContext cctx = sharedCtx.cacheContext(caches.get(i));
 
             assert cctx != null;
 

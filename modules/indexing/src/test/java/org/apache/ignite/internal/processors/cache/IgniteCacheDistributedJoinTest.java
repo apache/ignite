@@ -234,12 +234,15 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
      */
     public static class X {
         /** */
+        @QuerySqlField(index = true)
         public long a;
 
         /** */
+        @QuerySqlField(index = true)
         public long b;
 
         /** */
+        @QuerySqlField(index = true)
         public long c;
 
         /**
@@ -254,19 +257,16 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         }
 
         /** */
-        @QuerySqlField(index = true)
         public long getA() {
             return a;
         }
 
         /** */
-        @QuerySqlField(index = true)
         public long getB() {
             return b;
         }
 
         /** */
-        @QuerySqlField(index = true)
         public long getC() {
             return c;
         }
