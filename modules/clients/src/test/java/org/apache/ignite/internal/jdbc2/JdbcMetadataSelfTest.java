@@ -203,8 +203,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             names.add("NAME");
             names.add("AGE");
             names.add("ORGID");
-            names.add("_KEY");
-            names.add("_VAL");
 
             int cnt = 0;
 
@@ -222,22 +220,12 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
                     assertEquals(0, rs.getInt("NULLABLE"));
                 }
-                if ("_KEY".equals(name)) {
-                    assertEquals(OTHER, rs.getInt("DATA_TYPE"));
-                    assertEquals("OTHER", rs.getString("TYPE_NAME"));
-                    assertEquals(0, rs.getInt("NULLABLE"));
-                }
-                if ("_VAL".equals(name)) {
-                    assertEquals(OTHER, rs.getInt("DATA_TYPE"));
-                    assertEquals("OTHER", rs.getString("TYPE_NAME"));
-                    assertEquals(0, rs.getInt("NULLABLE"));
-                }
 
                 cnt++;
             }
 
             assertTrue(names.isEmpty());
-            assertEquals(5, cnt);
+            assertEquals(3, cnt);
 
             rs = meta.getColumns("", "org", "Organization", "%");
 
@@ -245,8 +233,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             names.add("ID");
             names.add("NAME");
-            names.add("_KEY");
-            names.add("_VAL");
 
             cnt = 0;
 
@@ -264,22 +250,12 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assertEquals("VARCHAR", rs.getString("TYPE_NAME"));
                     assertEquals(1, rs.getInt("NULLABLE"));
                 }
-                if ("_KEY".equals(name)) {
-                    assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
-                    assertEquals("VARCHAR", rs.getString("TYPE_NAME"));
-                    assertEquals(0, rs.getInt("NULLABLE"));
-                }
-                if ("_VAL".equals(name)) {
-                    assertEquals(OTHER, rs.getInt("DATA_TYPE"));
-                    assertEquals("OTHER", rs.getString("TYPE_NAME"));
-                    assertEquals(0, rs.getInt("NULLABLE"));
-                }
 
                 cnt++;
             }
 
             assertTrue(names.isEmpty());
-            assertEquals(4, cnt);
+            assertEquals(2, cnt);
         }
     }
 
