@@ -1853,63 +1853,43 @@ BOOST_AUTO_TEST_CASE(TestKeyValFields)
 
         QueryFieldsCursor cursor = cache.Query(qry);
 
-        IgniteError error;
-        BOOST_REQUIRE(cursor.HasNext(error));
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+        BOOST_REQUIRE(cursor.HasNext());
 
-        QueryFieldsRow row = cursor.GetNext(error);
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+        QueryFieldsRow row = cursor.GetNext();
 
-        BOOST_REQUIRE(row.HasNext(error));
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        int id = row.GetNext<int>(error);
+        BOOST_REQUIRE(row.HasNext());
+        int id = row.GetNext<int>();
+        BOOST_CHECK_EQUAL(1, id);
 
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        BOOST_REQUIRE_EQUAL(1, id);
+        BOOST_REQUIRE(row.HasNext());
+        QueryPerson p = row.GetNext<QueryPerson>();
+        BOOST_CHECK_EQUAL(p, person);
 
-        BOOST_REQUIRE(row.HasNext(error));
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        QueryPerson p = row.GetNext<QueryPerson>(error);
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        BOOST_REQUIRE_EQUAL(p, person);
+        BOOST_REQUIRE(row.HasNext());
+        id = row.GetNext<int>();
+        BOOST_CHECK_EQUAL(1, id);
 
-        BOOST_REQUIRE(row.HasNext(error));
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        id = row.GetNext<int>(error);
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        BOOST_REQUIRE_EQUAL(1, id);
+        BOOST_REQUIRE(row.HasNext());
+        p = row.GetNext<QueryPerson>();
+        BOOST_CHECK_EQUAL(p, person);
 
-        BOOST_REQUIRE(row.HasNext(error));
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        p = row.GetNext<QueryPerson>(error);
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        BOOST_REQUIRE_EQUAL(p, person);
+        BOOST_REQUIRE(row.HasNext());
+        std::string name = row.GetNext<std::string>();
+        BOOST_CHECK_EQUAL(name, person.GetName());
 
-        BOOST_REQUIRE(row.HasNext(error));
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        std::string name = row.GetNext<std::string>(error);
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        BOOST_REQUIRE_EQUAL(name, person.GetName());
+        BOOST_REQUIRE(row.HasNext());
+        int age = row.GetNext<int>();
+        BOOST_CHECK_EQUAL(age, person.GetAge());
 
-        BOOST_REQUIRE(row.HasNext(error));
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        int age = row.GetNext<int>(error);
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        BOOST_REQUIRE_EQUAL(age, person.GetAge());
+        BOOST_REQUIRE(row.HasNext());
+        Date birthday = row.GetNext<Date>();
+        BOOST_CHECK(birthday == person.GetBirthday());
 
-        BOOST_REQUIRE(row.HasNext(error));
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        Date birthday = row.GetNext<Date>(error);
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        BOOST_REQUIRE(birthday == person.GetBirthday());
+        BOOST_REQUIRE(row.HasNext());
+        Timestamp recordCreated = row.GetNext<Timestamp>();
+        BOOST_CHECK(recordCreated == person.GetCreationTime());
 
-        BOOST_REQUIRE(row.HasNext(error));
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        Timestamp recordCreated = row.GetNext<Timestamp>(error);
-        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
-        BOOST_REQUIRE(recordCreated == person.GetCreationTime());
-
-        BOOST_REQUIRE(!row.HasNext());
+        BOOST_CHECK(!row.HasNext());
     }
 }
 

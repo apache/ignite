@@ -213,6 +213,9 @@ import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VER_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
@@ -268,15 +271,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private static final int TWO_STEP_QRY_CACHE_SIZE = 1024;
-
-    /** Field name for key. */
-    public static final String KEY_FIELD_NAME = "_KEY";
-
-    /** Field name for value. */
-    public static final String VAL_FIELD_NAME = "_VAL";
-
-    /** Version field name. */
-    public static final String VER_FIELD_NAME = "_VER";
 
     /** */
     private static final Field COMMAND_FIELD;
@@ -3851,23 +3845,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (int idx = 0; idx < data.length; idx++)
                 data[idx] = row.getValue(idx);
 
-            if (keyAliasColumnId > 0) {
-                if (row.getValue(keyAliasColumnId) == null && row.getValue(KEY_COL) != null)
-                    data[keyAliasColumnId] = row.getValue(KEY_COL);
-
-                if (row.getValue(KEY_COL) == null && row.getValue(keyAliasColumnId) != null)
-                    data[KEY_COL] = row.getValue(keyAliasColumnId);
-            }
-
-            if (valueAliasColumnId > 0) {
-                if (row.getValue(valueAliasColumnId) == null && row.getValue(VAL_COL) != null)
-                    data[valueAliasColumnId] = row.getValue(VAL_COL);
-
-                if (row.getValue(VAL_COL) == null && row.getValue(valueAliasColumnId) != null)
-                    data[VAL_COL] = row.getValue(valueAliasColumnId);
-            }
+            copyAliasColumnData(data, KEY_COL, keyAliasColumnId);
+            copyAliasColumnData(data, VAL_COL, valueAliasColumnId);
 
             return new SimpleRow(data);
+        }
+
+        /**
+         * Copies data between original and alias columns
+         *
+         * @param data Array of values.
+         * @param colId Original column id.
+         * @param aliasColId Alias column id.
+         */
+        private void copyAliasColumnData(Value[] data, int colId, int aliasColId) {
+            if (aliasColId <= 0)
+                return;
+
+            if (data[aliasColId] == null && data[colId] != null)
+                data[aliasColId] = data[colId];
+
+            if (data[colId] == null && data[aliasColId] != null)
+                data[colId] = data[aliasColId];
         }
 
         /** {@inheritDoc} */

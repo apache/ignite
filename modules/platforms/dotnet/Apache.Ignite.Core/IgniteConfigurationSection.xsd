@@ -417,6 +417,20 @@
                                                                     </xs:documentation>
                                                                 </xs:annotation>
                                                             </xs:attribute>
+                                                            <xs:attribute name="keyFieldName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        Name of the field that denotes the key.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                            <xs:attribute name="valueFieldName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        Name of the field that denotes the value.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
                                                         </xs:complexType>
                                                     </xs:element>
                                                 </xs:sequence>

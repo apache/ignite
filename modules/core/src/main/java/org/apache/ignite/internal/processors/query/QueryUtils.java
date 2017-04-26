@@ -62,11 +62,15 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * Utility methods for queries.
  */
 public class QueryUtils {
-    /** */
-    public static final String _KEY = "_key";
 
-    /** */
-    public static final String _VAL = "_val";
+    /** Field name for key. */
+    public static final String KEY_FIELD_NAME = "_key";
+
+    /** Field name for value. */
+    public static final String VAL_FIELD_NAME = "_val";
+
+    /** Version field name. */
+    public static final String VER_FIELD_NAME = "_ver";
 
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
