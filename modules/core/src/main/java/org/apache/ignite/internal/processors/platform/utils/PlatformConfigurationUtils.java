@@ -644,7 +644,8 @@ public class PlatformConfigurationUtils {
                 break;
         }
 
-        cfg.setMemoryConfiguration(readMemoryConfiguration(in));
+        if (in.readBoolean())
+            cfg.setMemoryConfiguration(readMemoryConfiguration(in));
 
         readPluginConfiguration(cfg, in);
     }
@@ -1324,9 +1325,6 @@ public class PlatformConfigurationUtils {
      * @return Config.
      */
     private static MemoryConfiguration readMemoryConfiguration(BinaryRawReader in) {
-        if (!in.readBoolean())
-            return null;
-
         MemoryConfiguration res = new MemoryConfiguration();
 
         res.setSystemCacheInitialSize(in.readLong())

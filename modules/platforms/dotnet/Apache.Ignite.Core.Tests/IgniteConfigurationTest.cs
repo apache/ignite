@@ -246,6 +246,21 @@ namespace Apache.Ignite.Core.Tests
                 var disco = resCfg.DiscoverySpi as TcpDiscoverySpi;
                 Assert.IsNotNull(disco);
                 Assert.AreEqual(TimeSpan.FromMilliseconds(300), disco.SocketTimeout);
+
+                // Check memory configuration defaults.
+                var mem = resCfg.MemoryConfiguration;
+
+                Assert.IsNotNull(mem);
+                Assert.AreEqual("dfltPlc", mem.DefaultMemoryPolicyName);
+                Assert.AreEqual(MemoryConfiguration.DefaultPageSize, mem.PageSize);
+                Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheMemorySize, mem.SystemCacheMemorySize);
+
+                var plc = mem.MemoryPolicies.Single();
+                Assert.AreEqual("dfltPlc", plc.Name);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultEmptyPagesPoolSize, plc.EmptyPagesPoolSize);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultEvictionThreshold, plc.EvictionThreshold);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultInitialSize, plc.InitialSize);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultMaxSize, plc.MaxSize);
             }
         }
 
