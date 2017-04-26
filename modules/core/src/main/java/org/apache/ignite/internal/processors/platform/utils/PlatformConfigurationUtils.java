@@ -530,9 +530,9 @@ public class PlatformConfigurationUtils {
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
-        int[] eventTypes = in.readIntArray();
-        if (eventTypes != null)
-            cfg.setIncludeEventTypes(eventTypes);
+        int[] evtTypes = in.readIntArray();
+        if (evtTypes != null)
+            cfg.setIncludeEventTypes(evtTypes);
         if (in.readBoolean())
             cfg.setMetricsExpireTime(in.readLong());
         if (in.readBoolean())
@@ -550,9 +550,9 @@ public class PlatformConfigurationUtils {
         String workDir = in.readString();
         if (workDir != null)
             cfg.setWorkDirectory(workDir);
-        String localHost = in.readString();
-        if (localHost != null)
-            cfg.setLocalHost(localHost);
+        String locHost = in.readString();
+        if (locHost != null)
+            cfg.setLocalHost(locHost);
         if (in.readBoolean())
             cfg.setDaemon(in.readBoolean());
         if (in.readBoolean())
@@ -691,9 +691,9 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      */
     private static void readDiscoveryConfiguration(BinaryRawReader in, IgniteConfiguration cfg) {
-        boolean hasConfig = in.readBoolean();
+        boolean hasCfg = in.readBoolean();
 
-        if (!hasConfig)
+        if (!hasCfg)
             return;
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -703,21 +703,20 @@ public class PlatformConfigurationUtils {
         if (hasIpFinder) {
             byte ipFinderType = in.readByte();
 
-            int addrCount = in.readInt();
+            int addrCnt = in.readInt();
 
             ArrayList<String> addrs = null;
 
-            if (addrCount > 0) {
-                addrs = new ArrayList<>(addrCount);
+            if (addrCnt > 0) {
+                addrs = new ArrayList<>(addrCnt);
 
-                for (int i = 0; i < addrCount; i++)
+                for (int i = 0; i < addrCnt; i++)
                     addrs.add(in.readString());
             }
 
             TcpDiscoveryVmIpFinder finder = null;
-            if (ipFinderType == 1) {
+            if (ipFinderType == 1)
                 finder = new TcpDiscoveryVmIpFinder();
-            }
             else if (ipFinderType == 2) {
                 TcpDiscoveryMulticastIpFinder finder0 = new TcpDiscoveryMulticastIpFinder();
 
@@ -734,9 +733,8 @@ public class PlatformConfigurationUtils {
 
                 finder = finder0;
             }
-            else {
+            else
                 assert false;
-            }
 
             finder.setAddresses(addrs);
 
@@ -758,7 +756,6 @@ public class PlatformConfigurationUtils {
         disco.setStatisticsPrintFrequency(in.readLong());
         disco.setIpFinderCleanFrequency(in.readLong());
         disco.setThreadPriority(in.readInt());
-        disco.setMetricsUpdateFrequency(in.readLong());
         disco.setTopHistorySize(in.readInt());
 
         cfg.setDiscoverySpi(disco);
@@ -1112,9 +1109,9 @@ public class PlatformConfigurationUtils {
         if (finder instanceof TcpDiscoveryVmIpFinder) {
             w.writeBoolean(true);
 
-            boolean isMulticast = finder instanceof TcpDiscoveryMulticastIpFinder;
+            boolean isMcast = finder instanceof TcpDiscoveryMulticastIpFinder;
 
-            w.writeByte((byte)(isMulticast ? 2 : 1));
+            w.writeByte((byte)(isMcast ? 2 : 1));
 
             Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
 
@@ -1123,7 +1120,7 @@ public class PlatformConfigurationUtils {
             for (InetSocketAddress a : addrs)
                 w.writeString(a.toString());
 
-            if (isMulticast) {
+            if (isMcast) {
                 TcpDiscoveryMulticastIpFinder multiFinder = (TcpDiscoveryMulticastIpFinder) finder;
 
                 w.writeString(multiFinder.getLocalAddress());
@@ -1157,7 +1154,6 @@ public class PlatformConfigurationUtils {
         w.writeLong(tcp.getStatisticsPrintFrequency());
         w.writeLong(tcp.getIpFinderCleanFrequency());
         w.writeInt(tcp.getThreadPriority());
-        w.writeLong(tcp.getMetricsUpdateFrequency());
         w.writeInt((int)tcp.getTopHistorySize());
     }
 

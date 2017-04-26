@@ -733,8 +733,7 @@ namespace Apache.Ignite.Core.Tests
                     ReconnectCount = 11,
                     StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
                     ThreadPriority = 6,
-                    TopologyHistorySize = 1234567,
-                    MetricsUpdateFrequency = TimeSpan.FromMinutes(3.7)
+                    TopologyHistorySize = 1234567
                 },
                 IgniteHome = "igniteHome",
                 IncludedEventTypes = EventType.CacheQueryAll,

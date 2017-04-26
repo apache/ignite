@@ -78,12 +78,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         public const int DefaultThreadPriority = 10;
 
         /// <summary>
-        /// Default value for the <see cref="MetricsUpdateFrequency"/> property.
-        /// </summary>
-        public static readonly TimeSpan DefaultMetricsUpdateFrequency = 
-            IgniteConfiguration.DefaultMetricsUpdateFrequency;
-
-        /// <summary>
         /// Default value for the <see cref="TopologyHistorySize"/> property.
         /// </summary>
         public const int DefaultTopologyHistorySize = 1000;
@@ -103,7 +97,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             LocalPortRange = DefaultLocalPortRange;
             IpFinderCleanFrequency = DefaultIpFinderCleanFrequency;
             ThreadPriority = DefaultThreadPriority;
-            MetricsUpdateFrequency = DefaultMetricsUpdateFrequency;
             TopologyHistorySize = DefaultTopologyHistorySize;
         }
 
@@ -130,7 +123,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             StatisticsPrintFrequency = reader.ReadLongAsTimespan();
             IpFinderCleanFrequency = reader.ReadLongAsTimespan();
             ThreadPriority = reader.ReadInt();
-            MetricsUpdateFrequency = reader.ReadLongAsTimespan();
             TopologyHistorySize = reader.ReadInt();
         }
 
@@ -223,13 +215,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         public int ThreadPriority { get; set; }
 
         /// <summary>
-        /// Gets or sets delay between issuing of heartbeat messages. SPI sends heartbeat messages
-        /// in configurable time interval to other nodes to notify them about its state.
-        /// </summary>
-        [DefaultValue(typeof(TimeSpan), "0:0:2")]
-        public TimeSpan MetricsUpdateFrequency { get; set; }
-
-        /// <summary>
         /// Gets or sets the size of topology snapshots history.
         /// </summary>
         [DefaultValue(DefaultTopologyHistorySize)]
@@ -271,7 +256,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             writer.WriteLong((long) StatisticsPrintFrequency.TotalMilliseconds);
             writer.WriteLong((long) IpFinderCleanFrequency.TotalMilliseconds);
             writer.WriteInt(ThreadPriority);
-            writer.WriteLong((long) MetricsUpdateFrequency.TotalMilliseconds);
             writer.WriteInt(TopologyHistorySize);
         }
     }
