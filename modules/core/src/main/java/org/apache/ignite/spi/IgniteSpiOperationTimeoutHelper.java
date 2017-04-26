@@ -51,6 +51,8 @@ public class IgniteSpiOperationTimeoutHelper {
         failureDetectionTimeoutEnabled = adapter.failureDetectionTimeoutEnabled();
         failureDetectionTimeout = srvOp ? adapter.failureDetectionTimeout() :
             adapter.clientFailureDetectionTimeout();
+
+        assert !failureDetectionTimeoutEnabled || failureDetectionTimeout > 0;
     }
 
     /**
