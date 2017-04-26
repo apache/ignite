@@ -45,16 +45,10 @@ public class QueryEntity implements Serializable {
     /** Value type. */
     private String valType;
 
-    /** Key name.
-     * Can be used in field list to denote the key as a whole.
-     * Default is _key.
-     * */
+    /** Key name. Can be used in field list to denote the key as a whole. */
     private String keyFieldName;
 
-    /** Value name.
-     * Can be used in field list to denote the entire value.
-     * Default is _val.
-     * */
+    /** Value name. Can be used in field list to denote the entire value. */
     private String valueFieldName;
 
     /** Fields available for query. A map from field name to type name. */
@@ -125,10 +119,9 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Attempts to get key type from fields
-     * in case it was not set directly
+     * Attempts to get key type from fields in case it was not set directly.
      *
-     * @return Value type.
+     * @return Key type.
      */
     public String findKeyType() {
         if (keyType != null)
@@ -162,8 +155,7 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Attempts to get value type from fields
-     * in case it was not set directly
+     * Attempts to get value type from fields in case it was not set directly.
      *
      * @return Value type.
      */
@@ -239,6 +231,7 @@ public class QueryEntity implements Serializable {
 
     /**
      * Gets key field name.
+     *
      * @return Key name.
      */
     public String getKeyFieldName() {
@@ -247,14 +240,19 @@ public class QueryEntity implements Serializable {
 
     /**
      * Sets key field name.
+     *
      * @param keyFieldName Key name.
+     * @return {@code this} for chaining.
      */
-    public void setKeyFieldName(String keyFieldName) {
+    public QueryEntity setKeyFieldName(String keyFieldName) {
         this.keyFieldName = keyFieldName;
+
+        return this;
     }
 
     /**
      * Get value field name.
+     *
      * @return Value name.
      */
     public String getValueFieldName() {
@@ -263,10 +261,14 @@ public class QueryEntity implements Serializable {
 
     /**
      * Sets value field name.
+     *
      * @param valueFieldName value name.
+     * @return {@code this} for chaining.
      */
-    public void setValueFieldName(String valueFieldName) {
+    public QueryEntity setValueFieldName(String valueFieldName) {
         this.valueFieldName = valueFieldName;
+
+        return this;
     }
 
     /**
