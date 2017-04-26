@@ -20,6 +20,9 @@ import org.apache.ignite.IgniteException;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
+ * In most cases, this class should not be instantiated directly: it should
+ * serve as a base class for implementing exception classes that describe a
+ * specific "problem".
  */
 public class MathRuntimeException extends IgniteException {
     /** Serializable version Id. */
@@ -29,8 +32,7 @@ public class MathRuntimeException extends IgniteException {
      * @param format Message pattern explaining the cause of the error.
      * @param args Arguments.
      */
-    public MathRuntimeException(String format,
-                                Object ... args) {
+    public MathRuntimeException(String format, Object ... args) {
         this(null, format, args);
     }
 
@@ -39,9 +41,7 @@ public class MathRuntimeException extends IgniteException {
      * @param format Message pattern explaining the cause of the error.
      * @param args Arguments.
      */
-    public MathRuntimeException(Throwable cause,
-                                String format,
-                                Object ... args) {
+    public MathRuntimeException(Throwable cause, String format, Object ... args) {
         super(String.format(format, args), cause);
     }
 }
