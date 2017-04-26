@@ -614,8 +614,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forIgfsMetadataDataNodes(@Nullable String igfsName, String metaCacheName) {
-        CU.validateCacheName(metaCacheName);
+    @Override public ClusterGroup forIgfsMetadataDataNodes(String igfsName, String metaCacheName) {
+        assert metaCacheName != null;
 
         return forPredicate(new IgfsNodePredicate(igfsName)).forDataNodes(metaCacheName);
     }
@@ -775,7 +775,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /**
          * @param cacheName Cache name.
          */
-        private CachesFilter(@Nullable String cacheName, boolean affNodes, boolean nearNodes, boolean clients) {
+        private CachesFilter(String cacheName, boolean affNodes, boolean nearNodes, boolean clients) {
             this.cacheName = cacheName;
             this.affNodes = affNodes;
             this.nearNodes = nearNodes;

@@ -72,7 +72,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -380,8 +379,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param name Cache name.
      */
     public CacheConfiguration(String name) {
-        CU.validateCacheName(name);
-
         this.name = name;
     }
 
@@ -480,8 +477,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setName(String name) {
-        CU.validateCacheName(name);
-
         this.name = name;
 
         return this;
@@ -502,7 +497,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
+        A.ensure(memPlcName == null || !memPlcName.isEmpty(), "Name cannot be empty.");
 
         this.memPlcName = memPlcName;
 

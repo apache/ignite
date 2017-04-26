@@ -159,10 +159,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Key partition.
      * @throws IgniteCheckedException If failed.
      */
-    public int partition(String cacheName,
-        Object key,
-        @Nullable AffinityInfo aff) throws IgniteCheckedException {
-        CU.validateCacheName(cacheName);
+    public int partition(String cacheName, Object key, @Nullable AffinityInfo aff) throws IgniteCheckedException {
+        assert cacheName != null;
 
         if (key instanceof KeyCacheObject) {
             int part = ((KeyCacheObject)key).partition();
@@ -181,10 +179,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Key partition.
      * @throws IgniteCheckedException If failed.
      */
-    public int partition0(String cacheName,
-        Object key,
-        @Nullable AffinityInfo aff) throws IgniteCheckedException {
-        CU.validateCacheName(cacheName);
+    public int partition0(String cacheName, Object key, @Nullable AffinityInfo aff) throws IgniteCheckedException {
+        assert cacheName != null;
 
         if (aff == null) {
             aff = affinityCache(cacheName, ctx.discovery().topologyVersionEx());
@@ -205,10 +201,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Picked node.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public ClusterNode mapPartitionToNode(String cacheName, int partId,
-        AffinityTopologyVersion topVer)
+    @Nullable public ClusterNode mapPartitionToNode(String cacheName, int partId, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
-        CU.validateCacheName(cacheName);
+        assert cacheName != null;
 
         AffinityInfo affInfo = affinityCache(cacheName, topVer);
 
@@ -224,9 +219,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Map of nodes to keys.
      * @throws IgniteCheckedException If failed.
      */
-    public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(String cacheName,
-        @Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        CU.validateCacheName(cacheName);
+    public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(String cacheName, @Nullable Collection<? extends K> keys)
+        throws IgniteCheckedException {
+        assert cacheName != null;
 
         return keysToNodes(cacheName, keys);
     }
@@ -240,7 +235,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public <K> ClusterNode mapKeyToNode(String cacheName, K key) throws IgniteCheckedException {
-        CU.validateCacheName(cacheName);
+        assert cacheName != null;
 
         Map<ClusterNode, Collection<K>> map = keysToNodes(cacheName, F.asList(key));
 
@@ -255,9 +250,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Picked node.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(String cacheName, K key,
-        AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        CU.validateCacheName(cacheName);
+    @Nullable public <K> ClusterNode mapKeyToNode(String cacheName, K key, AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
+        assert cacheName != null;
 
         Map<ClusterNode, Collection<K>> map = keysToNodes(cacheName, F.asList(key), topVer);
 
@@ -278,9 +273,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
-        A.notNull(key, "key");
-        CU.validateCacheName(cacheName);
+        assert cacheName != null;
 
+        A.notNull(key, "key");
         AffinityInfo affInfo = affinityCache(cacheName, topVer);
 
         if (affInfo == null)
@@ -301,7 +296,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     @Nullable public Object affinityKey(String cacheName, @Nullable Object key) throws IgniteCheckedException {
-        CU.validateCacheName(cacheName);
+        assert cacheName != null;
 
         if (key == null)
             return null;

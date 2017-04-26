@@ -2742,7 +2742,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) {
         A.notNull(cacheCfgs, "cacheCfgs");
-        CU.validateCfgCacheNames(cacheCfgs);
+        CU.validateConfigurationCacheNames(cacheCfgs);
 
         guard();
 
@@ -2819,7 +2819,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs) {
         A.notNull(cacheCfgs, "cacheCfgs");
-        CU.validateCfgCacheNames(cacheCfgs);
+        CU.validateConfigurationCacheNames(cacheCfgs);
 
         guard();
 
@@ -3382,6 +3382,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void resetLostPartitions(Collection<String> cacheNames) {
+        CU.validateCacheNames(cacheNames);
+
         guard();
 
         try {

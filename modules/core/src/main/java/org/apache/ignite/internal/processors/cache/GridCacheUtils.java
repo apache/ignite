@@ -62,15 +62,12 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -1707,18 +1704,17 @@ public class GridCacheUtils {
      * @throws IllegalArgumentException In case the name is not valid.
      */
     public static void validateCacheNames(Collection<String> cacheNames) throws IllegalArgumentException {
-        for (String name : cacheNames) {
+        for (String name : cacheNames)
             validateCacheName(name);
-        }
     }
 
     /**
      * @param ccfgs Configurations to validate.
      * @throws IllegalArgumentException In case the name is not valid.
      */
-    public static void validateCfgCacheNames(Collection<CacheConfiguration> ccfgs) throws IllegalArgumentException {
-        for (CacheConfiguration ccfg : ccfgs) {
+    public static void validateConfigurationCacheNames(Collection<CacheConfiguration> ccfgs)
+        throws IllegalArgumentException {
+        for (CacheConfiguration ccfg : ccfgs)
             validateCacheName(ccfg.getName());
-        }
     }
 }
