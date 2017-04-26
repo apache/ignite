@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * <p>
  * If initial size of the default memory region doesn't satisfy requirements or it's required to have multiple memory
  * regions with different properties then {@link MemoryPolicyConfiguration} can be used for both scenarios.
- * For instance, Using memory policies you can define memory regions of different maximum size, eviction policies,
+ * For instance, using memory policies you can define memory regions of different maximum size, eviction policies,
  * swapping options, etc. Once you define a new memory region you can bind particular Ignite caches to it.
  * <p>
  * To learn more about memory policies refer to {@link MemoryPolicyConfiguration} documentation.
@@ -42,14 +42,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     {@code
  *     <property name="memoryConfiguration">
  *         <bean class="org.apache.ignite.configuration.MemoryConfiguration">
- *             <property name="systemCacheMemorySize" value="#{100 * 1024 * 1024}"/>
+ *             <property name="systemCacheInitialSize" value="#{100 * 1024 * 1024}"/>
  *             <property name="defaultMemoryPolicyName" value="default_mem_plc"/>
  *
  *             <property name="memoryPolicies">
  *                 <list>
  *                     <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                         <property name="name" value="default_mem_plc"/>
- *                         <property name="size" value="#{5 * 1024 * 1024 * 1024}"/>
+ *                         <property name="initialSize" value="#{5 * 1024 * 1024 * 1024}"/>
  *                     </bean>
  *                 </list>
  *             </property>
