@@ -36,6 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -199,7 +200,7 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
      * @param name Name.
      * @param near Near.
      */
-    private IgniteCache<Integer, Integer> getCache(Ignite ignite, String name, boolean near) {
+    private IgniteCache<Integer, Integer> getCache(Ignite ignite, @NotNull String name, boolean near) {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName(name);

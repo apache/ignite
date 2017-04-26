@@ -137,7 +137,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
 
             Ignite ignite = startGrid();
 
-            final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(null);
+            final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
 
             ldr.perNodeBufferSize(8192);
             ldr.receiver(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());

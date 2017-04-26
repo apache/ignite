@@ -81,7 +81,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setRebalanceMode(SYNC);
@@ -127,7 +127,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                         break;
                 }
 
-                Ignition.localIgnite().cache(null).put(1, aOrg1);
+                Ignition.localIgnite().cache(DEFAULT_CACHE_NAME).put(1, aOrg1);
             }
         });
 
@@ -148,7 +148,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                         break;
                 }
 
-                Ignition.localIgnite().cache(null).put(2, bOrg2);
+                Ignition.localIgnite().cache(DEFAULT_CACHE_NAME).put(2, bOrg2);
             }
         });
         startLatch.countDown();
@@ -163,7 +163,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
         Ignite ignite = startGrid(2);
 
-        int cacheSize = ignite.cache(null).size(CachePeekMode.PRIMARY);
+        int cacheSize = ignite.cache(DEFAULT_CACHE_NAME).size(CachePeekMode.PRIMARY);
 
         assertTrue("Expected cache size 1 but was " + cacheSize, cacheSize == 1);
 

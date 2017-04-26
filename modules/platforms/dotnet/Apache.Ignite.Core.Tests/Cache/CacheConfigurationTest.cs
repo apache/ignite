@@ -43,6 +43,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         private const string CacheName = "cacheName";
 
         /** */
+        private const string DefaultCacheName = "default";
+
+        /** */
         private const string CacheName2 = "cacheName2";
 
         /** */
@@ -59,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 CacheConfiguration = new List<CacheConfiguration>
                 {
-                    new CacheConfiguration(),
+                    new CacheConfiguration(DefaultCacheName),
                     GetCustomCacheConfiguration(),
                     GetCustomCacheConfiguration2()
                 },
@@ -97,11 +100,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestDefaultConfiguration()
         {
-            AssertConfigIsDefault(new CacheConfiguration());
+            AssertConfigIsDefault(new CacheConfiguration(DefaultCacheName));
 
-            AssertConfigIsDefault(_ignite.GetCache<int, int>(null).GetConfiguration());
+            AssertConfigIsDefault(_ignite.GetCache<int, int>(DefaultCacheName).GetConfiguration());
 
-            AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == null));
+            AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == DefaultCacheName));
         }
 
         /// <summary>

@@ -662,7 +662,9 @@ namespace Apache.Ignite.Core.Tests
                                 },
                                 KeyType = typeof (string),
                                 ValueType = typeof (long),
-                                TableName = "table-1"
+                                TableName = "table-1",
+                                KeyFieldName = "k",
+                                ValueFieldName = "v"
                             },
                         },
                         ReadFromBackup = false,
@@ -727,7 +729,6 @@ namespace Apache.Ignite.Core.Tests
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
-                    HeartbeatFrequency = TimeSpan.FromSeconds(3),
                     IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
                     LocalAddress = "127.0.0.1",
                     LocalPort = 49900,

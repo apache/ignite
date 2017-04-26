@@ -59,31 +59,31 @@ public class IgniteCacheConfigurationPrimitiveTypesSelfTest extends GridCommonAb
     public void testPrimitiveTypes() throws Exception {
         Ignite ignite = startGrid(1);
 
-        IgniteCache<Byte, Byte> cacheByte = jcache(ignite, new CacheConfiguration(), byte.class, byte.class);
+        IgniteCache<Byte, Byte> cacheByte = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), byte.class, byte.class);
         byte b = 1;
         cacheByte.put(b, b);
 
-        IgniteCache<Short, Short> cacheShort = jcache(ignite, new CacheConfiguration(), short.class, short.class);
+        IgniteCache<Short, Short> cacheShort = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), short.class, short.class);
         short s = 2;
         cacheShort.put(s, s);
 
-        IgniteCache<Integer, Integer> cacheInt = jcache(ignite, new CacheConfiguration(), int.class, int.class);
+        IgniteCache<Integer, Integer> cacheInt = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), int.class, int.class);
         int i = 3;
         cacheInt.put(i, i);
 
-        IgniteCache<Long, Long> cacheLong = jcache(ignite, new CacheConfiguration(), long.class, long.class);
+        IgniteCache<Long, Long> cacheLong = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), long.class, long.class);
         long l = 4;
         cacheLong.put(l, l);
 
-        IgniteCache<Float, Float> cacheFloat = jcache(ignite, new CacheConfiguration(), float.class, float.class);
+        IgniteCache<Float, Float> cacheFloat = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), float.class, float.class);
         float f = 5;
         cacheFloat.put(f, f);
 
-        IgniteCache<Double, Double> cacheDouble = jcache(ignite, new CacheConfiguration(), double.class, double.class);
+        IgniteCache<Double, Double> cacheDouble = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), double.class, double.class);
         double d = 6;
         cacheDouble.put(d, d);
 
-        IgniteCache<Boolean, Boolean> cacheBoolean = jcache(ignite, new CacheConfiguration(), boolean.class, boolean.class);
+        IgniteCache<Boolean, Boolean> cacheBoolean = jcache(ignite, new CacheConfiguration(DEFAULT_CACHE_NAME), boolean.class, boolean.class);
         boolean bool = true;
         cacheBoolean.put(bool, bool);
 

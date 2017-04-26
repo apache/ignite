@@ -67,7 +67,7 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
             @Override public void apply(Integer idx) {
                 for (int i = 0; i < 100; i++) {
-                    CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+                    CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
                     ccfg.setName("cache-" + idx + "-" + i);
                     ccfg.setEvictionPolicy(new LruEvictionPolicy(1000));
                     ccfg.setOnheapCacheEnabled(true);

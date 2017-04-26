@@ -86,7 +86,7 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testQueryWhenLocked() throws Exception {
-        IgniteCache<Integer, TestValue> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestValue> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         List<Lock> locks = new ArrayList<>();
 
@@ -120,7 +120,7 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
     public void testUpdates() throws Exception {
         final int ENTRIES = 500;
 
-        IgniteCache<Integer, TestValue> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestValue> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < ENTRIES; i++) {
             for (int j = 0; j < 3; j++) {

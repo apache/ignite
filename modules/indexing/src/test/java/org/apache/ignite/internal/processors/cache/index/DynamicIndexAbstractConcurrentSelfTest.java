@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -1024,7 +1025,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
-        @Override public void dynamicIndexCreate(@Nullable String spaceName, String tblName,
+        @Override public void dynamicIndexCreate(@NotNull String spaceName, String tblName,
             QueryIndexDescriptorImpl idxDesc, boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor)
             throws IgniteCheckedException {
             awaitIndexing(ctx.localNodeId());
@@ -1033,7 +1034,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         }
 
         /** {@inheritDoc} */
-        @Override public void dynamicIndexDrop(@Nullable String spaceName, String idxName, boolean ifExists)
+        @Override public void dynamicIndexDrop(@NotNull String spaceName, String idxName, boolean ifExists)
             throws IgniteCheckedException{
             awaitIndexing(ctx.localNodeId());
 

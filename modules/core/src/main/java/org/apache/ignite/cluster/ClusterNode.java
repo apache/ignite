@@ -87,9 +87,8 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Cluster Node Metrics</h1>
  * Cluster node metrics (see {@link #metrics()}) are updated frequently for all nodes
  * and can be used to get dynamic information about a node. The frequency of update
- * is often directly related to the heartbeat exchange between nodes. So if, for example,
- * default {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} is used,
- * the metrics data will be updated every {@code 2} seconds by default.
+ * is controlled by  {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
+ * The metrics data will be updated every {@code 2} seconds by default.
  * <p>
  * Grid node metrics provide information that can frequently change,
  * such as Heap and Non-Heap memory utilization, CPU load, number of active and waiting
@@ -145,9 +144,9 @@ public interface ClusterNode {
      * method and use it during {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} or during collision
      * resolution.
      * <p>
-     * Node metrics are updated with some delay which is directly related to heartbeat
-     * frequency. For example, when used with default
-     * {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} the update will happen every {@code 2} seconds.
+     * Node metrics are updated with some delay which is controlled by
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
+     * By default the update will happen every {@code 2} seconds.
      *
      * @return Runtime metrics snapshot for this node.
      */

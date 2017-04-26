@@ -473,12 +473,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache name.
      *
-     * @param name Cache name. May be <tt>null</tt>, but may not be empty string.
+     * @param name Cache name. Can not be <tt>null</tt> or empty.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setName(String name) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
-
         this.name = name;
 
         return this;
@@ -499,7 +497,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
-        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
+        A.ensure(memPlcName == null || !memPlcName.isEmpty(), "Name cannot be empty.");
 
         this.memPlcName = memPlcName;
 
@@ -1749,7 +1747,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean dup = false;
 
             for (QueryEntity entity : qryEntities) {
-                if (F.eq(entity.getValueType(), converted.getValueType())) {
+                if (F.eq(entity.findValueType(), converted.findValueType())) {
                     dup = true;
 
                     break;
@@ -1832,7 +1830,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean found = false;
 
             for (QueryEntity existing : this.qryEntities) {
-                if (F.eq(entity.getValueType(), existing.getValueType())) {
+                if (F.eq(entity.findValueType(), existing.findValueType())) {
                     found = true;
 
                     break;
@@ -2032,10 +2030,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 txtIdx.setIndexType(QueryIndexType.FULLTEXT);
 
-                txtIdx.setFieldNames(Arrays.asList(QueryUtils._VAL), true);
+                txtIdx.setFieldNames(Arrays.asList(QueryUtils.VAL_FIELD_NAME), true);
             }
             else
-                txtIdx.getFields().put(QueryUtils._VAL, true);
+                txtIdx.getFields().put(QueryUtils.VAL_FIELD_NAME, true);
         }
 
         if (txtIdx != null)
@@ -2089,12 +2087,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         @Nullable ClassProperty parent) {
         if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = cls.getSimpleName() + "_" + QueryUtils._VAL + "_idx";
+                String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
 
                 type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
-                type.addFieldToIndex(idxName, QueryUtils._VAL, 0, false);
+                type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
             }
 
             return;
