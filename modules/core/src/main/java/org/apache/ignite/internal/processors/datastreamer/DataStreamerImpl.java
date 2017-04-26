@@ -1694,7 +1694,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.classLoaderId() : null,
                     dep == null,
                     topVer);
-
+                System.out.println("\n"
+                        + "\n******************\n"
+                        + req
+                        + "\n******************\n"
+                );
                 try {
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
 

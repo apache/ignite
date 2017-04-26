@@ -285,7 +285,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             StreamReceiver<K, V> updater;
 
             try {
-                updater = U.unmarshal(marsh, req.updaterBytes(), U.resolveClassLoader(clsLdr, ctx.config()));
+                Object unmarshal = U.unmarshal(marsh, req.updaterBytes(), U.resolveClassLoader(clsLdr, ctx.config()));
+                updater = (StreamReceiver) unmarshal;
 
                 if (updater != null)
                     ctx.resource().injectGeneric(updater);

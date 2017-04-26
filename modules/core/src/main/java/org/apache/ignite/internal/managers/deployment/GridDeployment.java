@@ -131,6 +131,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
         this.depMode = depMode;
         this.sampleClsName = sampleClsName;
         this.loc = loc;
+        System.out.println("new GridDeployment for "+sampleClsName+" : "+clsLdrId +" = " + clsLdr);
     }
 
     /**

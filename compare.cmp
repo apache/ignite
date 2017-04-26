@@ -1,0 +1,41 @@
+1. Если на сервер приходит класс которого нет в его classpath, сервер загружает его на лету отдельным класлодером.
+    Если на сервер приходит класс StreamTransformer$1, который уже есть в classpath сервера, тот пытается загрузить его корневым classloader'ом,
+    но в нутрь обекта StreamTransformer$1 вложен объект вражеского класса который корневой класслодер загрузить не может.
+   Казалось бы логичное решение проблемы грузить все peer-classloader'ом, у которого parent'ом стоит local-classloader.
+
+2. Воспроизвести тест по честному одним Junit тестом не удасться, потому что на 1 тест - 1 ОБШИЙ classloader,
+ таким образом и серверая и клиентская ноды будут видеть один и тот же ПОЛНЫЙ набор классов и проблема не воспроизведется.
+
+3. То есть написать общий тест демонстрирующий проблему, не зависимо от решения затруднительно.
+    Потому как по отдельности все компоненты системы работают корректно, как и предпалогалось.
+    Приходиться сначала искать рещение проблемы и потом уже отталкиваясь от него писать тест.
+
+
+DataStreamerRequest [
+reqId=1,
+cacheName=test,
+ignoreDepOwnership=true,
+skipStore=false,
+keepBinary=false,
+depMode=SHARED,
+sampleClsName=Client$StreamTransformerCacheEntryProcessor,
+userVer=0,
+ldrParticipants=null,
+clsLdrId=8d770ca9b51-033f0ffb-3803-4445-ac84-b871ab3ce2e1,
+forceLocDep=false,
+topVer=AffinityTopologyVersion [topVer=12, minorTopVer=1]]
+
+
+DataStreamerRequest [
+reqId=1,
+cacheName=test,
+ignoreDepOwnership=true,
+skipStore=false,
+keepBinary=false,
+depMode=SHARED,
+sampleClsName=org.apache.ignite.stream.StreamTransformer$1,
+userVer=0,
+ldrParticipants=null,
+clsLdrId=a81d9da9b51-271d164e-413b-4436-9b0a-510b78923337,
+forceLocDep=false,
+topVer=AffinityTopologyVersion [topVer=4, minorTopVer=1]]
