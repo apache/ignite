@@ -656,6 +656,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
         });
 
+        if (!ctx.config().isDaemon())
+            ctx.service().onContinuousProcessorStarted(ctx);
+
         spi.setDataExchange(new DiscoverySpiDataExchange() {
             @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
                 assert dataBag != null;
