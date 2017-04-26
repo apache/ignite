@@ -27,6 +27,8 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import java.io.ByteArrayInputStream;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -116,6 +118,9 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     /** AWS Credentials. */
     @GridToStringExclude
     private AWSCredentialsProvider credProvider;
+
+    /** Use aws proxy. */
+    private final String useProxy = System.getProperty("use.cloud.proxy", null);
 
     /**
      * Constructor.
@@ -298,7 +303,21 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      *
      * @return Client instance to use to connect to AWS.
      */
-    private AmazonS3Client createAmazonS3Client() {
+    private AmazonS3 createAmazonS3Client() {
+        if (useProxy != null)
+            try {
+                return (AmazonS3)Proxy.newProxyInstance(
+                    getClass().getClassLoader(),
+                    new Class[] {AmazonS3.class},
+                    (InvocationHandler)Class.forName(useProxy)
+                        .getConstructor(String.class)
+                        .newInstance("AWS")
+                );
+            }
+            catch (Throwable e) {
+                throw new RuntimeException("Failed initialize proxy", e);
+            }
+
         return cfg != null
             ? (cred != null ? new AmazonS3Client(cred, cfg) : new AmazonS3Client(credProvider, cfg))
             : (cred != null ? new AmazonS3Client(cred) : new AmazonS3Client(credProvider));
