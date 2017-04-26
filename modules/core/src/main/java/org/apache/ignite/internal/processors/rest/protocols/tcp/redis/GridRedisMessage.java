@@ -48,6 +48,9 @@ public class GridRedisMessage implements GridClientMessage {
     /** Auxiliary parameters offset. */
     private static final int AUX_OFFSET = 2;
 
+    /** Default cache name. */
+    private static final String DFLT_CACHE = "redis_cache";
+
     /** Request message parts. */
     private transient final List<String> msgParts;
 
@@ -55,7 +58,7 @@ public class GridRedisMessage implements GridClientMessage {
     private ByteBuffer response;
 
     /** Cache name. */
-    private String cacheName;
+    private String cacheName = DFLT_CACHE;
 
     /**
      * Constructor.

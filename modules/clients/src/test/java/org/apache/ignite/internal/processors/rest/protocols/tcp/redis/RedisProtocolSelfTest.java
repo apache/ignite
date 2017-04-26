@@ -51,6 +51,9 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
     /** Port. */
     private static final int PORT = 6379;
 
+    /** Default Redis cache name. */
+    private static final String REDIS_CACHE = "redis_cache";
+
     /** Pool. */
     private static JedisPool pool;
 
@@ -102,6 +105,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
+        ccfg.setName(REDIS_CACHE);
         ccfg.setStatisticsEnabled(true);
         ccfg.setIndexedTypes(String.class, String.class);
 
@@ -114,7 +118,7 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache() {
-        return grid(0).cache(null);
+        return grid(0).cache(REDIS_CACHE);
     }
 
     /** {@inheritDoc} */
