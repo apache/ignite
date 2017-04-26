@@ -493,6 +493,9 @@ public class PlatformConfigurationUtils {
             res.setIndexes(indexes);
         }
 
+        res.setKeyFieldName(in.readString());
+        res.setValueFieldName(in.readString());
+
         return res;
     }
 
@@ -531,7 +534,8 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
         int[] eventTypes = in.readIntArray();
-        if (eventTypes != null) cfg.setIncludeEventTypes(eventTypes);
+        if (eventTypes != null)
+            cfg.setIncludeEventTypes(eventTypes);
         if (in.readBoolean())
             cfg.setMetricsExpireTime(in.readLong());
         if (in.readBoolean())
@@ -558,6 +562,8 @@ public class PlatformConfigurationUtils {
             cfg.setLateAffinityAssignment(in.readBoolean());
         if (in.readBoolean())
             cfg.setFailureDetectionTimeout(in.readLong());
+        if (in.readBoolean())
+            cfg.setClientFailureDetectionTimeout(in.readLong());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -752,12 +758,9 @@ public class PlatformConfigurationUtils {
         disco.setReconnectCount(in.readInt());
         disco.setLocalPort(in.readInt());
         disco.setLocalPortRange(in.readInt());
-        disco.setMaxMissedHeartbeats(in.readInt());
-        disco.setMaxMissedClientHeartbeats(in.readInt());
         disco.setStatisticsPrintFrequency(in.readLong());
         disco.setIpFinderCleanFrequency(in.readLong());
         disco.setThreadPriority(in.readInt());
-        disco.setHeartbeatFrequency(in.readLong());
         disco.setTopHistorySize(in.readInt());
 
         cfg.setDiscoverySpi(disco);
@@ -909,6 +912,9 @@ public class PlatformConfigurationUtils {
         }
         else
             writer.writeInt(0);
+
+        writer.writeString(queryEntity.getKeyFieldName());
+        writer.writeString(queryEntity.getValueFieldName());
     }
 
     /**
@@ -960,7 +966,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getMetricsUpdateFrequency());
         w.writeBoolean(true);
         w.writeInt(cfg.getNetworkSendRetryCount());
-        w.writeBoolean(true);w.writeLong(cfg.getNetworkSendRetryDelay());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getNetworkSendRetryDelay());
         w.writeBoolean(true);
         w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
@@ -971,6 +978,8 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(cfg.isLateAffinityAssignment());
         w.writeBoolean(true);
         w.writeLong(cfg.getFailureDetectionTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getClientFailureDetectionTimeout());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -1063,17 +1072,17 @@ public class PlatformConfigurationUtils {
         else
             w.writeBoolean(false);
 
-        EventStorageSpi eventStorageSpi = cfg.getEventStorageSpi();
+        EventStorageSpi evtStorageSpi = cfg.getEventStorageSpi();
 
-        if (eventStorageSpi == null) {
+        if (evtStorageSpi == null)
             w.writeByte((byte) 0);
-        } else if (eventStorageSpi instanceof NoopEventStorageSpi) {
+        else if (evtStorageSpi instanceof NoopEventStorageSpi)
             w.writeByte((byte) 1);
-        } else if (eventStorageSpi instanceof MemoryEventStorageSpi) {
+        else if (evtStorageSpi instanceof MemoryEventStorageSpi) {
             w.writeByte((byte) 2);
 
-            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireCount());
-            w.writeLong(((MemoryEventStorageSpi)eventStorageSpi).getExpireAgeMs());
+            w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireCount());
+            w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireAgeMs());
         }
 
         writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
@@ -1135,9 +1144,8 @@ public class PlatformConfigurationUtils {
                     w.writeInt(ttl);
             }
         }
-        else {
+        else
             w.writeBoolean(false);
-        }
 
         w.writeLong(tcp.getSocketTimeout());
         w.writeLong(tcp.getAckTimeout());
@@ -1151,12 +1159,9 @@ public class PlatformConfigurationUtils {
         w.writeInt(tcp.getReconnectCount());
         w.writeInt(tcp.getLocalPort());
         w.writeInt(tcp.getLocalPortRange());
-        w.writeInt(tcp.getMaxMissedHeartbeats());
-        w.writeInt(tcp.getMaxMissedClientHeartbeats());
         w.writeLong(tcp.getStatisticsPrintFrequency());
         w.writeLong(tcp.getIpFinderCleanFrequency());
         w.writeInt(tcp.getThreadPriority());
-        w.writeLong(tcp.getHeartbeatFrequency());
         w.writeInt((int)tcp.getTopHistorySize());
     }
 

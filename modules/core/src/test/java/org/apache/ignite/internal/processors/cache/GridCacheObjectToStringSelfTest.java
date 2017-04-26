@@ -157,13 +157,13 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(0);
 
         try {
-            IgniteCache<Object, Object> cache = g.cache(null);
+            IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 10; i++)
                 cache.put(i, i);
 
             for (int i = 0; i < 10; i++) {
-                GridCacheEntryEx entry = ((IgniteKernal)g).context().cache().internalCache().peekEx(i);
+                GridCacheEntryEx entry = ((IgniteKernal)g).context().cache().internalCache(DEFAULT_CACHE_NAME).peekEx(i);
 
                 if (entry != null)
                     assertFalse("Entry is locked after implicit transaction commit: " + entry, entry.lockedByAny());

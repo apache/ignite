@@ -93,8 +93,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
 
+        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
 
@@ -116,7 +116,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        IgniteCache<String, Integer> c0 = g0.cache(null);
+        IgniteCache<String, Integer> c0 = g0.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -124,8 +124,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        IgniteCache<String, Integer> c1 = g1.cache(null);
-        IgniteCache<String, Integer> c2 = g2.cache(null);
+        IgniteCache<String, Integer> c1 = g1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<String, Integer> c2 = g2.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < cnt; i++)
             assertNull(c1.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
@@ -195,7 +195,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        IgniteCache<String, Integer> c0 = g0.cache(null);
+        IgniteCache<String, Integer> c0 = g0.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -203,8 +203,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        IgniteCache<String, Integer> c1 = g1.cache(null);
-        IgniteCache<String, Integer> c2 = g2.cache(null);
+        IgniteCache<String, Integer> c1 = g1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<String, Integer> c2 = g2.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < cnt; i++)
             assertNull(c1.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
@@ -267,7 +267,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        IgniteCache<String, Integer> c0 = g0.cache(null);
+        IgniteCache<String, Integer> c0 = g0.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -275,8 +275,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        IgniteCache<String, Integer> c1 = g1.cache(null);
-        IgniteCache<String, Integer> c2 = g2.cache(null);
+        IgniteCache<String, Integer> c1 = g1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<String, Integer> c2 = g2.cache(DEFAULT_CACHE_NAME);
 
         GridDhtCacheAdapter<String, Integer> d0 = dht(0);
         GridDhtCacheAdapter<String, Integer> d1 = dht(1);
@@ -375,7 +375,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
             long start = System.currentTimeMillis();
 
-            g.cache(null).rebalance().get();
+            g.cache(DEFAULT_CACHE_NAME).rebalance().get();
 
             info(">>> Finished preloading of empty cache in " + (System.currentTimeMillis() - start) + "ms.");
         }
@@ -389,7 +389,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @return Topology.
      */
     private GridDhtPartitionTopology topology(Ignite g) {
-        return ((GridNearCacheAdapter<Integer, String>)((IgniteKernal)g).<Integer, String>internalCache()).dht().topology();
+        return ((GridNearCacheAdapter<Integer, String>)((IgniteKernal)g).<Integer, String>internalCache(DEFAULT_CACHE_NAME)).dht().topology();
     }
 
     /**
@@ -397,7 +397,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @return Affinity.
      */
     private Affinity<Object> affinity(Ignite g) {
-        return g.affinity(null);
+        return g.affinity(DEFAULT_CACHE_NAME);
     }
 
     /**

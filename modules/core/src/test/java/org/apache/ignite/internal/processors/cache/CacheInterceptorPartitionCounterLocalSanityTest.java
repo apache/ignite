@@ -480,7 +480,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     protected CacheConfiguration<Object, Object> cacheConfiguration(
         CacheAtomicityMode atomicityMode,
         boolean store) {
-        CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(LOCAL);

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.expiry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Checks that one and only one Ttl cleanup worker thread must exists, and only
@@ -70,8 +71,8 @@ public class IgniteCacheOnlyOneTtlCleanupThreadExistsTest extends GridCommonAbst
      * @param eagerTtl Eager ttl falg.
      * @return Cache configuration.
      */
-    private CacheConfiguration createCacheConfiguration(String name, boolean eagerTtl) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+    private CacheConfiguration createCacheConfiguration(@NotNull String name, boolean eagerTtl) {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setEagerTtl(eagerTtl);
         ccfg.setName(name);

@@ -101,7 +101,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         Ignite g4 = grid(4);
 
-        IgniteDataStreamer<Object, Object> dataLdr = g4.dataStreamer(null);
+        IgniteDataStreamer<Object, Object> dataLdr = g4.dataStreamer(DEFAULT_CACHE_NAME);
 
         dataLdr.perNodeBufferSize(32);
 
@@ -136,7 +136,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         Ignite g0 = grid(0);
 
-        IgniteDataStreamer<Integer, String> dataLdr = g0.dataStreamer(null);
+        IgniteDataStreamer<Integer, String> dataLdr = g0.dataStreamer(DEFAULT_CACHE_NAME);
 
         Map<Integer, String> map = U.newHashMap(KEYS_COUNT);
 
@@ -149,7 +149,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         Random rnd = new Random();
 
-        IgniteCache<Integer, String> c = g0.cache(null);
+        IgniteCache<Integer, String> c = g0.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < KEYS_COUNT; i++) {
             Integer k = rnd.nextInt(KEYS_COUNT);
@@ -175,7 +175,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(null)) {
+            try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.addData(1, "1");
             }
             catch (CacheException ignored) {
@@ -206,7 +206,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             IgniteFuture fut = null;
 
-            try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(null)) {
+            try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
                 fut = streamer.addData(1, "1");
 
                 streamer.flush();

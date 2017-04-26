@@ -133,4 +133,16 @@ public interface GridQueryTypeDescriptor {
      * @return BinaryObject's type ID if indexed value is BinaryObject, otherwise value class' hash code.
      */
     public int typeId();
+
+    /**
+     * Gets key field name.
+     * @return Key field name.
+     */
+    public String keyFieldName();
+
+    /**
+     * Gets value field name.
+     * @return value field name.
+     */
+    public String valueFieldName();
 }

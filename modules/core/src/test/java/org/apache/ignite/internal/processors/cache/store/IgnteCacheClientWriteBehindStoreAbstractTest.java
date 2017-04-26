@@ -88,7 +88,7 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
 
         assertTrue(client.configuration().isClientMode());
 
-        IgniteCache<Integer, Integer> cache = client.cache(null);
+        IgniteCache<Integer, Integer> cache = client.cache(DEFAULT_CACHE_NAME);
 
         assertNull(cache.getConfiguration(CacheConfiguration.class).getCacheStoreFactory());
 

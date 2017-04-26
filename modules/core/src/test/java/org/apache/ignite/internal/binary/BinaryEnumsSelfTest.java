@@ -90,7 +90,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 

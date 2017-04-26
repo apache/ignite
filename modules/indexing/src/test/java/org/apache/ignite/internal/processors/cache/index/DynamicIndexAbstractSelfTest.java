@@ -157,6 +157,9 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         entity.setKeyType(KeyClass.class.getName());
         entity.setValueType(ValueClass.class.getName());
 
+        entity.setKeyFieldName(FIELD_KEY_ALIAS);
+        entity.addQueryField(FIELD_KEY_ALIAS, entity.getKeyType(), null);
+
         entity.addQueryField(FIELD_KEY, Long.class.getName(), null);
         entity.addQueryField(FIELD_NAME_1, Long.class.getName(), null);
         entity.addQueryField(FIELD_NAME_2, Long.class.getName(), null);

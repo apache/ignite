@@ -252,7 +252,8 @@ namespace Apache.Ignite.Core
         IgniteConfiguration GetConfiguration();
 
         /// <summary>
-        /// Starts a near cache on local node if cache with specified was previously started.
+        /// Starts a near cache on local client node if cache with specified was previously started.
+        /// This method does not work on server nodes.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="configuration">The configuration.</param>
