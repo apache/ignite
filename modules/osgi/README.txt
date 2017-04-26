@@ -43,12 +43,7 @@ Bundles are provisioned into the container via mvn: URLs. For this to work, you 
 top directory of the Ignite source tree, including the install goal, which provisions the modules into your local
 Maven repository:
 
-   mvn clean install -Plgpl
-
-Neither compiling and running the tests, nor generating Javadocs are necessary. To disable these steps,
-use these switches:
-
-   -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+   mvn clean install -Plgpl -Dmaven.javadoc.skip=true
 
 You may then run the OSGi test suite:
 
