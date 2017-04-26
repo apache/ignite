@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -33,60 +34,28 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Custom message ID. */
+    private IgniteUuid id = IgniteUuid.randomUuid();
+
     /** Change requests. */
     @GridToStringInclude
     private Collection<DynamicCacheChangeRequest> reqs;
 
-    /** Client nodes map. Used in discovery data exchange. */
-    @GridToStringInclude
-    private Map<String, Map<UUID, Boolean>> clientNodes;
-
-    /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
-
     /** */
-    private boolean clientReconnect;
+    private transient ExchangeActions exchangeActions;
 
     /**
      * @param reqs Requests.
      */
-    public DynamicCacheChangeBatch(
-        Collection<DynamicCacheChangeRequest> reqs
-    ) {
+    public DynamicCacheChangeBatch(Collection<DynamicCacheChangeRequest> reqs) {
+        assert !F.isEmpty(reqs) : reqs;
+
         this.reqs = reqs;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
-    }
-
-    /**
-     * @param id Message ID.
-     */
-    public void id(IgniteUuid id) {
-        this.id = id;
-    }
-
-    /**
-     * @return Collection of change requests.
-     */
-    public Collection<DynamicCacheChangeRequest> requests() {
-        return reqs;
-    }
-
-    /**
-     * @return Client nodes map.
-     */
-    public Map<String, Map<UUID, Boolean>> clientNodes() {
-        return clientNodes;
-    }
-
-    /**
-     * @param clientNodes Client nodes map.
-     */
-    public void clientNodes(Map<String, Map<UUID, Boolean>> clientNodes) {
-        this.clientNodes = clientNodes;
     }
 
     /** {@inheritDoc} */
@@ -100,31 +69,21 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     }
 
     /**
-     * @param clientReconnect {@code True} if this is discovery data sent on client reconnect.
+     * @return Collection of change requests.
      */
-    public void clientReconnect(boolean clientReconnect) {
-        this.clientReconnect = clientReconnect;
-    }
-
-    /**
-     * @return {@code True} if this is discovery data sent on client reconnect.
-     */
-    public boolean clientReconnect() {
-        return clientReconnect;
+    public Collection<DynamicCacheChangeRequest> requests() {
+        return reqs;
     }
 
     /**
      * @return {@code True} if request should trigger partition exchange.
      */
     public boolean exchangeNeeded() {
-        if (reqs != null) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.exchangeNeeded())
-                    return true;
-            }
-        }
+        return exchangeActions != null && !exchangeActions.empty();
+    }
 
-        return false;
+    void exchangeActions(ExchangeActions exchangeActions) {
+        this.exchangeActions = exchangeActions;
     }
 
     /** {@inheritDoc} */

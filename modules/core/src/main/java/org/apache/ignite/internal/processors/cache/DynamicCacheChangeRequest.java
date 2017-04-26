@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -89,9 +90,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     private QuerySchema schema;
 
     /** */
-    private transient boolean exchangeNeeded;
-
-    /** */
     private transient AffinityTopologyVersion cacheFutTopVer;
 
     /**
@@ -106,18 +104,49 @@ public class DynamicCacheChangeRequest implements Serializable {
         this.initiatingNodeId = initiatingNodeId;
     }
 
+    static DynamicCacheChangeRequest resetLostPartitions(GridKernalContext ctx, String cacheName) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.markResetLostPartitions();
+
+        return req;
+    }
+
+    static DynamicCacheChangeRequest addTemplateRequest(GridKernalContext ctx, CacheConfiguration<?, ?> cfg0) {
+        CacheConfiguration<?, ?> cfg = new CacheConfiguration<>(cfg0);
+
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cfg.getName(), ctx.localNodeId());
+
+        req.template(true);
+        req.startCacheConfiguration(cfg);
+        req.schema(new QuerySchema(cfg.getQueryEntities()));
+        req.deploymentId(IgniteUuid.randomUuid());
+
+        return req;
+    }
+
+    static DynamicCacheChangeRequest closeRequest(GridKernalContext ctx, String cacheName) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.close(true);
+
+        return req;
+    }
+
+    static DynamicCacheChangeRequest stopRequest(GridKernalContext ctx, String cacheName, boolean destroy) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.stop(true);
+        req.destroy(destroy);
+
+        return req;
+    }
+
     /**
      * @return Request ID.
      */
     public UUID requestId() {
         return reqId;
-    }
-
-    /**
-     * @return {@code True} if request should trigger partition exchange.
-     */
-    public boolean exchangeNeeded() {
-        return exchangeNeeded;
     }
 
     /**
@@ -153,13 +182,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public AffinityTopologyVersion cacheFutureTopologyVersion() {
         return cacheFutTopVer;
-    }
-
-    /**
-     * @param exchangeNeeded {@code True} if request should trigger partition exchange.
-     */
-    public void exchangeNeeded(boolean exchangeNeeded) {
-        this.exchangeNeeded = exchangeNeeded;
     }
 
     /**

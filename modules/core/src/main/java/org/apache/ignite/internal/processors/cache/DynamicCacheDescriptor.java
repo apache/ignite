@@ -206,26 +206,6 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return {@code True} if started flag was flipped by this call.
-     */
-    public boolean onStart() {
-        if (!started) {
-            started = true;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return Started flag.
-     */
-    public boolean started() {
-        return started;
-    }
-
-    /**
      * @return Cache configuration.
      */
     public CacheConfiguration cacheConfiguration() {

@@ -200,7 +200,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final CountDownLatch cacheStartedLatch = new CountDownLatch(1);
 
     /** */
-    private Map<UUID, DynamicCacheChangeBatch> clientReconnectReqs;
+    //private Map<UUID, DynamicCacheChangeBatch> clientReconnectReqs;
 
     /** Internal cache names. */
     private final Set<String> internalCaches;
@@ -1224,13 +1224,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
         }
-
-        if (clientReconnectReqs != null) {
-            for (Map.Entry<UUID, DynamicCacheChangeBatch> e : clientReconnectReqs.entrySet())
-                processClientReconnectData(e.getKey(), e.getValue());
-
-            clientReconnectReqs = null;
-        }
+//
+//        if (clientReconnectReqs != null) {
+//            for (Map.Entry<UUID, DynamicCacheChangeBatch> e : clientReconnectReqs.entrySet())
+//                processClientReconnectData(e.getKey(), e.getValue());
+//
+//            clientReconnectReqs = null;
+//        }
 
         sharedCtx.onReconnected();
 
@@ -2087,14 +2087,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Request to complete future for.
      */
     public void completeStartFuture(DynamicCacheChangeRequest req) {
-        DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
+        if (req.initiatingNodeId().equals(ctx.localNodeId())) {
+            DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
 
-        assert req.deploymentId() != null || req.globalStateChange() || req.resetLostPartitions();
-        assert fut == null || fut.deploymentId != null || req.globalStateChange() || req.resetLostPartitions();
+            assert req.deploymentId() != null || req.globalStateChange() || req.resetLostPartitions();
+            assert fut == null || req.globalStateChange() || req.resetLostPartitions();
 
-        if (fut != null && F.eq(fut.deploymentId(), req.deploymentId()) &&
-            F.eq(req.initiatingNodeId(), ctx.localNodeId()))
-            fut.onDone();
+            if (fut != null)
+                fut.onDone();
+        }
     }
 
     /**
@@ -2170,39 +2171,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
         cachesInfo.onGridDataReceived(data);
-    }
-
-    /**
-     * @param clientNodeId Client node ID.
-     * @param batch Cache change batch.
-     */
-    private void processClientReconnectData(UUID clientNodeId, DynamicCacheChangeBatch batch) {
-        assert batch.clientReconnect() : batch;
-
-        for (DynamicCacheChangeRequest req : batch.requests()) {
-            assert !req.template() : req;
-
-            initReceivedCacheConfiguration(req);
-
-            String name = req.cacheName();
-
-            boolean sysCache = CU.isUtilityCache(name) || CU.isAtomicsCache(name);
-
-            if (!sysCache) {
-                DynamicCacheDescriptor desc = cacheDescriptor(req.cacheName());
-
-                if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
-                    Map<UUID, Boolean> nodes = batch.clientNodes().get(name);
-
-                    assert nodes != null : req;
-                    assert nodes.containsKey(clientNodeId) : nodes;
-
-                    ctx.discovery().addClientNode(req.cacheName(), clientNodeId, nodes.get(clientNodeId));
-                }
-            }
-            else
-                ctx.discovery().addClientNode(req.cacheName(), clientNodeId, false);
-        }
     }
 
     /**
@@ -2469,12 +2437,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (checkThreadTx)
             checkEmptyTransactions();
 
-        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+        DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, true);
 
-        t.stop(true);
-        t.destroy(true);
-
-        return F.first(initiateCacheChanges(F.asList(t), false));
+        return F.first(initiateCacheChanges(F.asList(req), false));
     }
 
     /**
@@ -2489,11 +2454,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         List<DynamicCacheChangeRequest> reqs = new ArrayList<>(cacheNames.size());
 
         for (String cacheName : cacheNames) {
-            DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+            DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, true);
 
-            t.stop(true);
-
-            reqs.add(t);
+            reqs.add(req);
         }
 
         GridCompoundFuture<?, ?> compoundFut = new GridCompoundFuture<>();
@@ -2520,9 +2483,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         checkEmptyTransactions();
 
-        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
-
-        t.close(true);
+        DynamicCacheChangeRequest t = DynamicCacheChangeRequest.closeRequest(ctx, cacheName);
 
         return F.first(initiateCacheChanges(F.asList(t), false));
     }
@@ -2551,10 +2512,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 continue;
             }
 
-            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
-                UUID.randomUUID(), cacheName, ctx.localNodeId());
-
-            req.markResetLostPartitions();
+            DynamicCacheChangeRequest req = DynamicCacheChangeRequest.resetLostPartitions(ctx, cacheName);
 
             reqs.add(req);
         }
@@ -2607,14 +2565,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         List<DynamicCacheChangeRequest> reqs = new ArrayList<>();
 
         for (String cacheName : cacheNames()) {
-            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
-                UUID.randomUUID(), cacheName, ctx.localNodeId());
-
-            DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
-
-            req.deploymentId(desc.deploymentId());
-            req.stop(true);
-            req.destroy(false);
+            DynamicCacheChangeRequest req = DynamicCacheChangeRequest.stopRequest(ctx, cacheName, false);
 
             reqs.add(req);
         }
@@ -2642,11 +2593,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String cacheName = cfg.getName();
 
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
-            UUID.randomUUID(), cacheName, ctx.localNodeId());
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         req.startCacheConfiguration(cfg);
-        req.template(cfg.getName() != null && cfg.getName().endsWith("*"));
+        req.template(cfg.getName().endsWith("*"));
         req.nearCacheConfiguration(cfg.getNearConfiguration());
         req.deploymentId(IgniteUuid.randomUuid());
         req.schema(new QuerySchema(cfg.getQueryEntities()));
@@ -2676,7 +2626,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<DynamicCacheChangeRequest> sndReqs = new ArrayList<>(reqs.size());
 
         for (DynamicCacheChangeRequest req : reqs) {
-            DynamicCacheStartFuture fut = new DynamicCacheStartFuture(req.cacheName(), req.deploymentId(), req);
+            DynamicCacheStartFuture fut = new DynamicCacheStartFuture(req.cacheName(), req);
 
             try {
                 if (req.stop() || req.close()) {
@@ -2690,17 +2640,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         if (req.close() && desc.cacheConfiguration().getCacheMode() == LOCAL) {
                             req.close(false);
-
                             req.stop(true);
+                            req.destroy(true);
                         }
-
-                        IgniteUuid dynamicDeploymentId = desc.deploymentId();
-
-                        assert dynamicDeploymentId != null : desc;
-
-                        // Save deployment ID to avoid concurrent stops.
-                        req.deploymentId(dynamicDeploymentId);
-                        fut.deploymentId = dynamicDeploymentId;
                     }
                 }
 
@@ -2710,7 +2652,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 DynamicCacheStartFuture old = (DynamicCacheStartFuture)pendingFuts.putIfAbsent(
                     req.requestId(), fut);
 
-                assert old == null; //TODO : check failIfExists.
+                assert old == null;
 
                 if (fut.isDone())
                     continue;
@@ -2803,184 +2745,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.localNodeId().equals(req.initiatingNodeId())) {
             DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
 
-            if (fut != null && F.eq(req.deploymentId(), fut.deploymentId()))
+            if (fut != null)
                 fut.onDone(err);
         }
-    }
-
-    /**
-     * @param batch Change request batch.
-     * @param topVer Current topology version.
-     * @return {@code True} if minor topology version should be increased.
-     */
-    private boolean onCacheChangeRequested(
-        DynamicCacheChangeBatch batch,
-        AffinityTopologyVersion topVer
-    ) {
-        AffinityTopologyVersion newTopVer = null;
-
-        boolean incMinorTopVer = false;
-
-        for (DynamicCacheChangeRequest req : batch.requests()) {
-            initReceivedCacheConfiguration(req);
-
-            if (req.template()) {
-                CacheConfiguration ccfg = req.startCacheConfiguration();
-
-                assert ccfg != null : req;
-
-                DynamicCacheDescriptor desc = cachesInfo.registeredTemplates().get(req.cacheName());
-
-                if (desc == null) {
-                    DynamicCacheDescriptor templateDesc = new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), true,
-                        req.deploymentId(), req.schema());
-
-                    DynamicCacheDescriptor old = cachesInfo.registeredTemplates().put(ccfg.getName(), templateDesc);
-
-                    assert old == null :
-                        "Dynamic cache map was concurrently modified [new=" + templateDesc + ", old=" + old + ']';
-                }
-
-                TemplateConfigurationFuture fut =
-                    (TemplateConfigurationFuture)pendingTemplateFuts.get(ccfg.getName());
-
-                if (fut != null && fut.deploymentId().equals(req.deploymentId()))
-                    fut.onDone();
-
-                continue;
-            }
-
-            DynamicCacheDescriptor desc = cacheDescriptor(req.cacheName());
-
-            DynamicCacheStartFuture fut = null;
-
-            if (ctx.localNodeId().equals(req.initiatingNodeId())) {
-                fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
-
-                if (fut != null && !F.eq(req.deploymentId(), fut.deploymentId()))
-                    fut = null;
-            }
-
-            boolean needExchange = false;
-
-            if (req.start()) {
-                if (desc == null) {
-                    if (req.clientStartOnly()) {
-                        if (fut != null)
-                            fut.onDone(new IgniteCheckedException("Failed to start client cache " +
-                                "(a cache with the given name is not started): " + U.maskName(req.cacheName())));
-                    }
-                    else {
-                        CacheConfiguration ccfg = req.startCacheConfiguration();
-
-                        assert req.cacheType() != null : req;
-                        assert F.eq(ccfg.getName(), req.cacheName()) : req;
-
-                        DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false,
-                            req.deploymentId(), req.schema());
-
-                        if (newTopVer == null) {
-                            newTopVer = new AffinityTopologyVersion(topVer.topologyVersion(),
-                                topVer.minorTopologyVersion() + 1);
-                        }
-
-                        startDesc.startTopologyVersion(newTopVer);
-
-                        // TODO
-                        DynamicCacheDescriptor old = null;//cacheDescriptor(ccfg.getName(), startDesc);
-
-                        assert old == null :
-                            "Dynamic cache map was concurrently modified [new=" + startDesc + ", old=" + old + ']';
-
-                        ctx.discovery().setCacheFilter(
-                            ccfg.getName(),
-                            ccfg.getNodeFilter(),
-                            ccfg.getNearConfiguration() != null,
-                            ccfg.getCacheMode());
-
-                        ctx.discovery().addClientNode(req.cacheName(),
-                            req.initiatingNodeId(),
-                            req.nearCacheConfiguration() != null);
-
-                        needExchange = true;
-                    }
-                }
-                else {
-                    assert req.initiatingNodeId() != null : req;
-
-                    // Cache already exists, exchange is needed only if client cache should be created.
-                    ClusterNode node = ctx.discovery().node(req.initiatingNodeId());
-
-                    boolean clientReq = node != null &&
-                        !ctx.discovery().cacheAffinityNode(node, req.cacheName());
-
-                    if (req.clientStartOnly()) {
-                        needExchange = clientReq && ctx.discovery().addClientNode(req.cacheName(),
-                            req.initiatingNodeId(),
-                            req.nearCacheConfiguration() != null);
-                    }
-                    else {
-                        if (req.failIfExists()) {
-                            if (fut != null)
-                                fut.onDone(new CacheExistsException("Failed to start cache " +
-                                    "(a cache with the same name is already started): " + U.maskName(req.cacheName())));
-                        }
-                        else {
-                            needExchange = clientReq && ctx.discovery().addClientNode(req.cacheName(),
-                                req.initiatingNodeId(),
-                                req.nearCacheConfiguration() != null);
-
-                            if (needExchange)
-                                req.clientStartOnly(true);
-                        }
-                    }
-
-                    if (needExchange) {
-                        if (newTopVer == null) {
-                            newTopVer = new AffinityTopologyVersion(topVer.topologyVersion(),
-                                topVer.minorTopologyVersion() + 1);
-                        }
-
-                        desc.clientCacheStartVersion(newTopVer);
-                    }
-                }
-
-                if (!needExchange && desc != null) {
-                    if (desc.clientCacheStartVersion() != null)
-                        req.cacheFutureTopologyVersion(desc.clientCacheStartVersion());
-                    else
-                        req.cacheFutureTopologyVersion(desc.startTopologyVersion());
-                }
-            }
-            else if (req.globalStateChange() || req.resetLostPartitions())
-                needExchange = true;
-            else {
-                assert req.stop() ^ req.close() : req;
-
-                if (desc != null) {
-                    if (req.stop()) {
-                        DynamicCacheDescriptor old = cachesInfo.registeredCaches().remove(req.cacheName());
-
-                        assert old != null : "Dynamic cache map was concurrently modified [req=" + req + ']';
-
-                        ctx.discovery().removeCacheFilter(req.cacheName());
-
-                        needExchange = true;
-                    }
-                    else {
-                        assert req.close() : req;
-
-                        needExchange = ctx.discovery().onClientCacheClose(req.cacheName(), req.initiatingNodeId());
-                    }
-                }
-            }
-
-            req.exchangeNeeded(needExchange);
-
-            incMinorTopVer |= needExchange;
-        }
-
-        return incMinorTopVer;
     }
 
     /**
@@ -3448,23 +3215,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void addCacheConfiguration(CacheConfiguration cacheCfg) throws IgniteCheckedException {
         assert cacheCfg.getName() != null;
 
-        String masked = cacheCfg.getName();
+        String name = cacheCfg.getName();
 
-        DynamicCacheDescriptor desc = cachesInfo.registeredTemplates().get(masked);
+        DynamicCacheDescriptor desc = cachesInfo.registeredTemplates().get(name);
 
         if (desc != null)
             return;
 
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheCfg.getName(), ctx.localNodeId());
-
-        CacheConfiguration cfg = new CacheConfiguration(cacheCfg);
-
-        req.template(true);
-
-        req.startCacheConfiguration(cfg);
-        req.schema(new QuerySchema(cfg.getQueryEntities()));
-
-        req.deploymentId(IgniteUuid.randomUuid());
+        DynamicCacheChangeRequest req = DynamicCacheChangeRequest.addTemplateRequest(ctx, cacheCfg);
 
         TemplateConfigurationFuture fut = new TemplateConfigurationFuture(req.cacheName(), req.deploymentId());
 
@@ -3937,10 +3695,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     private class DynamicCacheStartFuture extends GridFutureAdapter<Object> {
-        /** Start ID. */
-        @GridToStringInclude
-        private IgniteUuid deploymentId;
-
         /** Cache name. */
         private String cacheName;
 
@@ -3950,20 +3704,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         /**
          * @param cacheName Cache name.
-         * @param deploymentId Deployment ID.
          * @param req Cache start request.
          */
-        private DynamicCacheStartFuture(String cacheName, IgniteUuid deploymentId, DynamicCacheChangeRequest req) {
-            this.deploymentId = deploymentId;
+        private DynamicCacheStartFuture(String cacheName, DynamicCacheChangeRequest req) {
             this.cacheName = cacheName;
             this.req = req;
-        }
-
-        /**
-         * @return Start ID.
-         */
-        public IgniteUuid deploymentId() {
-            return deploymentId;
         }
 
         /**

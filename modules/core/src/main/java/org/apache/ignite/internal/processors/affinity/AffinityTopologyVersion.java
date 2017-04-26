@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
+
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -70,6 +72,12 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     ) {
         this.topVer = topVer;
         this.minorTopVer = minorTopVer;
+    }
+
+    public AffinityTopologyVersion nextMinorVersion() {
+        assert topVer > 0;
+
+        return new AffinityTopologyVersion(topVer, minorTopVer + 1);
     }
 
     /**
