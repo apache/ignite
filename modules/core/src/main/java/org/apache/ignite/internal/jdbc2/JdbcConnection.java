@@ -85,7 +85,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZ
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
 
 /**
- * JDBC connection implementation.
+ * JDBC connection implementation based on Ignite client node.
  */
 public class JdbcConnection implements Connection {
     /** Null stub. */
