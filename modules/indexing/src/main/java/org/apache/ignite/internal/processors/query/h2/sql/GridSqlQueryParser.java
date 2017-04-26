@@ -22,12 +22,11 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndex;
@@ -835,18 +834,13 @@ public class GridSqlQueryParser {
     private GridSqlCreateTable parseCreateTable(CreateTable createTbl) {
         GridSqlCreateTable res = new GridSqlCreateTable();
 
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(createTbl);
+
+        res.schemaName(schema.getName());
+
         CreateTableData data = CREATE_TABLE_DATA.get(createTbl);
 
-        Set<String> pkColNames = new HashSet<>();
-
-        IndexColumn[] pkIdxCols = CREATE_TABLE_PK.get(createTbl);
-
-        for (IndexColumn pkCol : pkIdxCols)
-            pkColNames.add(pkCol.columnName);
-
         LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
-
-        LinkedHashMap<String, GridSqlColumn> pkCols = new LinkedHashMap<>();
 
         for (Column col : data.columns) {
             if (!col.isNullable())
@@ -854,10 +848,19 @@ public class GridSqlQueryParser {
 
             GridSqlColumn gridCol = new GridSqlColumn(col, null, col.getName());
 
-            if (pkColNames.contains(gridCol.columnName()))
-                pkCols.put(gridCol.columnName(), gridCol);
-
             cols.put(col.getName(), gridCol);
+        }
+
+        IndexColumn[] pkIdxCols = CREATE_TABLE_PK.get(createTbl);
+
+        LinkedHashSet<String> pkCols = new LinkedHashSet<>();
+
+        for (IndexColumn pkIdxCol : pkIdxCols) {
+            GridSqlColumn gridCol = cols.get(pkIdxCol.columnName);
+
+            assert gridCol != null;
+
+            pkCols.add(gridCol.columnName());
         }
 
         res.columns(cols);

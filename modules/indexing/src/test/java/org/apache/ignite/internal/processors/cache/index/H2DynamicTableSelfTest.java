@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -29,10 +32,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaCreateTableOperation;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
@@ -51,7 +56,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         for (IgniteConfiguration cfg : configurations())
             Ignition.start(cfg);
 
-        client().createCache(cacheConfiguration());
+        client().getOrCreateCache(cacheConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -63,10 +68,15 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /** */
     public void testCreateTableLocal() throws Exception {
-        GridSqlCreateTable stmt = parse("CREATE TABLE IF NOT EXISTS \"cache\".Person (id int PRIMARY KEY, city varchar," +
-            " name varchar, surname varchar, age int) WITH \"tplCache=cache\"");
+        GridSqlCreateTable stmt = parse("CREATE TABLE IF NOT EXISTS Person (id int, city varchar," +
+            " name varchar, surname varchar, age int, PRIMARY KEY (id, city)) WITH \"tplCache=cache\"");
 
         QueryEntity entity = stmt.toQueryEntity();
+
+        SchemaCreateTableOperation op = new SchemaCreateTableOperation(UUID.randomUUID(), CACHE_NAME, entity,
+            stmt.templateCacheName(), stmt.ifNotExists());
+
+        queryProcessor(client()).processIndexOperationLocal(op, null, cache().context().dynamicDeploymentId(), null);
     }
 
     /**
@@ -126,6 +136,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     private IgniteEx client() {
         return grid(CLIENT);
+    }
+
+    /**
+     * @return Client node.
+     */
+    private IgniteInternalCache<?, ?> cache() {
+        return client().cachex(CACHE_NAME);
     }
 
     /**

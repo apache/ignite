@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -36,18 +37,8 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -62,6 +53,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDi
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaCreateTableOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -1250,6 +1242,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 idx.dynamicIndexDrop(space, op0.indexName(), op0.ifExists());
             }
+            else if (op instanceof SchemaCreateTableOperation) {
+                SchemaCreateTableOperation op0 = (SchemaCreateTableOperation) op;
+
+                dynamicTableCreate(op0.entity(), op0.templateCacheName(), op0.ifNotExists());
+            }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
         }
@@ -1258,6 +1255,66 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 throw (SchemaOperationException)e;
             else
                 throw new SchemaOperationException("Schema change operation failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Create cache and table from given query entity.
+     *
+     * @param entity Entity to create table from.
+     * @param tplCacheName Cache name to take settings from.
+     * @param ifNotExists Quietly ignore this command if table already exists.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void dynamicTableCreate(QueryEntity entity, String tplCacheName, boolean ifNotExists)
+            throws IgniteCheckedException {
+        IgniteInternalCache<?, ?> tplCache = ctx.cache().cache(tplCacheName);
+
+        if (tplCache == null)
+            throw new IgniteSQLException("", IgniteQueryErrorCode.CACHE_NOT_FOUND);
+
+        CacheConfiguration<?, ?> tplCfg = tplCache.configuration();
+
+        CacheConfiguration<?, ?> newCfg = new CacheConfiguration<>(tplCfg);
+
+        newCfg.setName(entity.getTableName());
+
+        // setQueryEntities actually and sadly does Collection.add, so we have to clear first
+        newCfg.getQueryEntities().clear();
+
+        newCfg.setQueryEntities(Collections.singleton(entity));
+
+        // We want to preserve user specified names as they are
+        newCfg.setSqlEscapeAll(true);
+
+        IgniteCache<?, ?> res = ctx.grid().getOrCreateCache(newCfg);
+
+        // Instead of interpreting error message, let's just check that configuration of new cache matches
+        // what we've just tried to create.
+        if (!ifNotExists) {
+            boolean chkRes;
+
+            CacheConfiguration<?, ?> resCfg = res.getConfiguration(CacheConfiguration.class);
+
+            if (resCfg.getQueryEntities().size() != 1)
+                chkRes = false;
+            else {
+                QueryEntity resEntity = resCfg.getQueryEntities().iterator().next();
+
+                chkRes =
+                    F.eq(resEntity.getTableName(), entity.getTableName()) &&
+                        F.eq(resEntity.getFields(), entity.getFields()) &&
+                        F.eq(resEntity.getKeyType(), entity.getKeyType()) &&
+                        F.eq(resEntity.getFields(), entity.getFields()) &&
+                        F.eq(resEntity.getKeyFields(), entity.getKeyFields()) &&
+                        F.isEmpty(resEntity.getIndexes()) &&
+                        F.isEmpty(resEntity.getAliases());
+            }
+
+            if (!chkRes)
+                throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
+                    IgniteQueryErrorCode.TABLE_ALREADY_EXISTS);
         }
     }
 

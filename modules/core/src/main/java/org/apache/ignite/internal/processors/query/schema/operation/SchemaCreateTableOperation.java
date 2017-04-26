@@ -20,15 +20,17 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 import java.util.UUID;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Schema create table operation.
  */
 public class SchemaCreateTableOperation extends SchemaAbstractOperation {
-    /** */
+    /** Query entity to create table from. */
     @GridToStringInclude
     private final QueryEntity entity;
 
+    /** Cache name to take settings from. */
     private final String tplCacheName;
 
     /** Quietly ignore this command if table already exists. */
@@ -48,5 +50,31 @@ public class SchemaCreateTableOperation extends SchemaAbstractOperation {
         this.entity = entity;
         this.tplCacheName = tplCacheName;
         this.ifNotExists = ifNotExists;
+    }
+
+    /**
+     * @return Query entity to create table from.
+     */
+    public QueryEntity entity() {
+        return entity;
+    }
+
+    /**
+     * @return tplCacheName Cache name to take settings from.
+     */
+    public String templateCacheName() {
+        return tplCacheName;
+    }
+
+    /**
+     * @return Quietly ignore this command if table already exists.
+     */
+    public boolean ifNotExists() {
+        return ifNotExists;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SchemaCreateTableOperation.class, this, "parent", super.toString());
     }
 }

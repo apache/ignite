@@ -53,7 +53,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
     private LinkedHashMap<String, GridSqlColumn> cols;
 
     /** Primary key columns. */
-    private LinkedHashMap<String, GridSqlColumn> pkCols;
+    private LinkedHashSet<String> pkCols;
 
     public String templateCacheName() {
         return tplCacheName;
@@ -71,11 +71,11 @@ public class GridSqlCreateTable extends GridSqlStatement {
         this.cols = cols;
     }
 
-    public LinkedHashMap<String, GridSqlColumn> primaryKeyColumns() {
+    public LinkedHashSet<String> primaryKeyColumns() {
         return pkCols;
     }
 
-    public void primaryKeyColumns(LinkedHashMap<String, GridSqlColumn> pkCols) {
+    public void primaryKeyColumns(LinkedHashSet<String> pkCols) {
         this.pkCols = pkCols;
     }
 
@@ -105,7 +105,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return "CREATE TABLE " + Parser.quoteIdentifier(schemaName);
+        return "CREATE TABLE " + Parser.quoteIdentifier(tblName);
     }
 
     /**
@@ -142,7 +142,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
 
         res.setValueType(tableName());
 
-        res.setKeyFields(pkCols.keySet());
+        res.setKeyFields(pkCols);
 
         return res;
     }
