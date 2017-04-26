@@ -71,8 +71,8 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
-        discoSpi.setMaxMissedClientHeartbeats(50);
 
+        cfg.setClientFailureDetectionTimeout(50000);
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
