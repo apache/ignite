@@ -65,6 +65,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
@@ -242,7 +243,11 @@ public class IgfsDataManager extends IgfsManager {
      * @return Maximum number of bytes for IGFS data cache.
      */
     public long maxSpaceSize() {
-        return (igfsCtx.configuration().getMaxSpaceSize() <= 0) ? 0 : dataCachePrj.igfsDataSpaceMax();
+        MemoryPolicy plc = dataCachePrj.context().memoryPolicy();
+
+        long size = plc != null ? plc.config().getSize() : 0;
+
+        return (size <= 0) ? 0 : size ;
     }
 
     /**
@@ -1022,27 +1027,6 @@ public class IgfsDataManager extends IgfsManager {
      */
     private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,
         byte[] data, int blockSize) throws IgniteCheckedException {
-        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-            final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
-
-            if (completionFut == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Missing completion future for file write request (most likely exception occurred " +
-                        "which will be thrown upon stream close) [fileId=" + fileId + ']');
-
-                return;
-            }
-
-            IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
-                "(IGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
-
-            completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
-                igfsCtx.kernalContext().localNodeId(), e));
-
-            return;
-        }
-
         // No affinity key present, just concat and return.
         if (colocatedKey.affinityKey() == null) {
             dataCachePrj.invoke(colocatedKey, new UpdateProcessor(startOff, data));
@@ -1097,14 +1081,6 @@ public class IgfsDataManager extends IgfsManager {
     @SuppressWarnings("unchecked")
     private IgniteInternalFuture<?> storeBlocksAsync(Map<IgfsBlockKey, byte[]> blocks) {
         assert !blocks.isEmpty();
-
-        if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-            return new GridFinishedFuture<Object>(
-                new IgfsOutOfSpaceException("Failed to write data block (IGFS maximum data size " +
-                    "exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                    ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']'));
-        }
-
         return dataCachePrj.putAllAsync(blocks);
     }
 

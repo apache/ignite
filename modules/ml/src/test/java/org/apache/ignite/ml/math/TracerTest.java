@@ -35,8 +35,11 @@ import static org.junit.Assert.assertEquals;
  * Tests for {@link Tracer}.
  */
 public class TracerTest {
-    /** */ private static final String DEFAULT_FORMAT = "%.10f";
-    /** */ private static final double DEFAULT_DELTA = 0.000000001d;
+    /** */
+    private static final String DEFAULT_FORMAT = "%.10f";
+
+    /** */
+    private static final double DEFAULT_DELTA = 0.000000001d;
 
     /**
      * Color mapper that maps [0, 1] range into three distinct RGB segments.
@@ -153,7 +156,7 @@ public class TracerTest {
 
         List<String> strings = Files.readAllLines(file);
         Optional<String> reduce = strings.stream().reduce((s1, s2) -> s1 + s2);
-        String[] csvVals = reduce.get().split(",");
+        String[] csvVals = reduce.orElse("").split(",");
 
         for (int i = 0; i < vector.size(); i++) {
             Double csvVal = Double.valueOf(csvVals[i]);
@@ -181,7 +184,7 @@ public class TracerTest {
 
         List<String> strings = Files.readAllLines(file);
         Optional<String> reduce = strings.stream().reduce((s1, s2) -> s1 + s2);
-        String[] csvVals = reduce.get().split(",");
+        String[] csvVals = reduce.orElse("").split(",");
 
         for (int i = 0; i < matrix.rowSize(); i++)
             for (int j = 0; j < matrix.columnSize(); j++) {

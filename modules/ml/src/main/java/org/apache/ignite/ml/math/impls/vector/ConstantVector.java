@@ -35,8 +35,8 @@ public class ConstantVector extends AbstractReadOnlyVector {
     }
 
     /**
-     * @param size
-     * @param val
+     * @param size Vector size.
+     * @param val Value of the constant.
      */
     public ConstantVector(int size, double val) {
         super(new ConstantVectorStorage(size, val));

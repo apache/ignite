@@ -278,9 +278,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Current IGFS data cache size. */
     private LongAdder8 igfsDataCacheSize;
 
-    /** Max space for IGFS. */
-    private long igfsDataSpaceMax;
-
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
 
@@ -338,12 +335,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     if (!ctx.isNear()) {
                         igfsDataCache = true;
                         igfsDataCacheSize = new LongAdder8();
-
-                        igfsDataSpaceMax = igfsCfg.getMaxSpaceSize();
-
-                        // Do we have limits?
-                        if (igfsDataSpaceMax <= 0)
-                            igfsDataSpaceMax = Long.MAX_VALUE;
                     }
 
                     break;
@@ -2451,7 +2442,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKey(key);
 
         return syncOp(new SyncOp<EntryProcessorResult<T>>(true) {
-            @Nullable @Override public EntryProcessorResult<T> op(GridNearTxLocal tx)
+            @Override public EntryProcessorResult<T> op(GridNearTxLocal tx)
                 throws IgniteCheckedException {
                 assert topVer == null || tx.implicit();
 
@@ -2489,7 +2480,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKeys(keys);
 
         return syncOp(new SyncOp<Map<K, EntryProcessorResult<T>>>(keys.size() == 1) {
-            @Nullable @Override public Map<K, EntryProcessorResult<T>> op(GridNearTxLocal tx)
+            @Override public Map<K, EntryProcessorResult<T>> op(GridNearTxLocal tx)
                 throws IgniteCheckedException {
                 Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys,
                     new C1<K, EntryProcessor<K, V, Object>>() {
@@ -2705,12 +2696,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     "filter", filter, false);
             }
         });
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
-        // Supported only in ATOMIC cache.
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -4288,6 +4273,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Tries to acquire asynchronous operations permit, if limited.
      *
+     * @param retry Retry flag.
      * @return Failed future if waiting was interrupted.
      */
     @Nullable protected <T> IgniteInternalFuture<T> asyncOpAcquire(boolean retry) {
@@ -4307,8 +4293,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * Releases asynchronous operations permit, if limited.
+     *
+     * @param retry Retry flag.
      */
-    private void asyncOpRelease(boolean retry) {
+    protected final void asyncOpRelease(boolean retry) {
         if (!retry && asyncOpsSem != null)
             asyncOpsSem.release();
     }
@@ -4363,11 +4351,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         assert igfsDataCache;
 
         return igfsDataCacheSize.longValue();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        return igfsDataSpaceMax;
     }
 
     /** {@inheritDoc} */
