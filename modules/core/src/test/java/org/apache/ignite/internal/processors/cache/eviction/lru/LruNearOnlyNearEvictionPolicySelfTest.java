@@ -79,7 +79,6 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
             cc.setAtomicityMode(atomicityMode);
             cc.setWriteSynchronizationMode(PRIMARY_SYNC);
             cc.setRebalanceMode(SYNC);
-            cc.setStartSize(100);
             cc.setBackups(0);
 
             c.setCacheConfiguration(cc);

@@ -106,7 +106,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         cc.setEvictionPolicy(createPolicy(plcMax));
         cc.setOnheapCacheEnabled(true);
         cc.setWriteSynchronizationMode(syncCommit ? FULL_SYNC : FULL_ASYNC);
-        cc.setStartSize(plcMax);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         if (nearEnabled) {

@@ -61,9 +61,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** Invalidate. */
     private boolean invalidate;
 
-    /** Start size. */
-    private int startSize;
-
     /** Max concurrent async operations. */
     private int maxConcurrentAsyncOps;
 
@@ -147,7 +144,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         eagerTtl = ccfg.isEagerTtl();
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
         invalidate = ccfg.isInvalidate();
-        startSize = ccfg.getStartSize();
         maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
         interceptor = compactClass(ccfg.getInterceptor());
         dfltLockTimeout = ccfg.getDefaultLockTimeout();
@@ -215,13 +211,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      */
     public boolean isInvalidate() {
         return invalidate;
-    }
-
-    /**
-     * @return Start size.
-     */
-    public int getStartSize() {
-        return startSize;
     }
 
     /**
@@ -393,7 +382,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         out.writeBoolean(eagerTtl);
         U.writeEnum(out, writeSynchronizationMode);
         out.writeBoolean(invalidate);
-        out.writeInt(startSize);
         out.writeInt(maxConcurrentAsyncOps);
         U.writeString(out, interceptor);
         out.writeLong(dfltLockTimeout);
@@ -425,7 +413,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         eagerTtl = in.readBoolean();
         writeSynchronizationMode = CacheWriteSynchronizationMode.fromOrdinal(in.readByte());
         invalidate = in.readBoolean();
-        startSize = in.readInt();
         maxConcurrentAsyncOps = in.readInt();
         interceptor = U.readString(in);
         dfltLockTimeout = in.readLong();

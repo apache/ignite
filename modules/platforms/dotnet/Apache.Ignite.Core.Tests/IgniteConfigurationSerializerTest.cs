@@ -671,7 +671,6 @@ namespace Apache.Ignite.Core.Tests
                         RebalanceThrottle = TimeSpan.FromHours(44),
                         RebalanceTimeout = TimeSpan.FromMinutes(8),
                         SqlEscapeAll = true,
-                        StartSize = 1023,
                         WriteBehindBatchSize = 45,
                         WriteBehindEnabled = true,
                         WriteBehindFlushFrequency = TimeSpan.FromSeconds(55),

@@ -62,7 +62,6 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
         cc.setAtomicityMode(atomicityMode);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setRebalanceMode(SYNC);
-        cc.setStartSize(100);
         cc.setBackups(0);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();

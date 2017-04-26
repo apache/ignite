@@ -82,7 +82,6 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
 
             cc.setNearConfiguration(null);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setStartSize(ENTRY_CNT / GRID_CNT);
 
             cc.setBackups(1);
 

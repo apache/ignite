@@ -66,8 +66,6 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
@@ -89,8 +87,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-                    <property name="startSize" value="10"/>
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
@@ -114,8 +110,6 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
@@ -137,8 +131,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-                    <property name="startSize" value="10"/>
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
@@ -162,9 +154,6 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
@@ -186,8 +175,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-                    <property name="startSize" value="10"/>
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
@@ -211,8 +198,6 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
@@ -234,8 +219,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-                    <property name="startSize" value="10"/>
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
