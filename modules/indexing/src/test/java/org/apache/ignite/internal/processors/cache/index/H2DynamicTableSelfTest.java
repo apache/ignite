@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -27,17 +28,20 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaCreateTableOperation;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
@@ -66,17 +70,99 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         super.afterTestsStopped();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        client().destroyCache("Person");
+
+        super.afterTest();
+    }
+
     /** */
-    public void testCreateTableLocal() throws Exception {
-        GridSqlCreateTable stmt = parse("CREATE TABLE IF NOT EXISTS Person (id int, city varchar," +
-            " name varchar, surname varchar, age int, PRIMARY KEY (id, city)) WITH \"tplCache=cache\"");
+    public void testCreateTable() throws Exception {
+        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"tplCache=cache\""));
 
-        QueryEntity entity = stmt.toQueryEntity();
+        for (int i = 0; i < 4; i++) {
+            IgniteEx node = grid(i);
 
-        SchemaCreateTableOperation op = new SchemaCreateTableOperation(UUID.randomUUID(), CACHE_NAME, entity,
-            stmt.templateCacheName(), stmt.ifNotExists());
+            assertNotNull(node.cache("Person"));
 
-        queryProcessor(client()).processIndexOperationLocal(op, null, cache().context().dynamicDeploymentId(), null);
+            QueryTypeDescriptorImpl desc = typeExisting(node, "Person", "Person");
+
+            assertEquals(Object.class, desc.keyClass());
+
+            assertEquals("PersonKey", desc.keyTypeName());
+
+            assertEquals(Object.class, desc.valueClass());
+
+            assertEquals("Person", desc.valueTypeName());
+
+            assertEquals(
+                F.asList("id", "city", "name", "surname", "age"),
+                new ArrayList<>(desc.fields().keySet())
+            );
+
+            assertProperty(desc, "id", Integer.class, true);
+
+            assertProperty(desc, "city", String.class, true);
+
+            assertProperty(desc, "name", String.class, false);
+
+            assertProperty(desc, "surname", String.class, false);
+
+            assertProperty(desc, "age", Integer.class, false);
+
+            GridH2Table tbl = ((IgniteH2Indexing)node.context().query().getIndexing()).dataTable("Person", "Person");
+
+            assertNotNull(tbl);
+        }
+    }
+
+    /** */
+    public void testCreateTableIfNotExists() throws Exception {
+        cache().query(new SqlFieldsQuery("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"tplCache=cache\""));
+
+        cache().query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"tplCache=cache\""));
+    }
+
+    /** */
+    public void testDropTable() throws Exception {
+        cache().query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"tplCache=cache\""));
+
+        cache().query(new SqlFieldsQuery("DROP TABLE \"Person\".\"Person\""));
+
+        for (int i = 0; i < 4; i++) {
+            IgniteEx node = grid(i);
+
+            assertNull(node.cache("Person"));
+
+            QueryTypeDescriptorImpl desc = type(node, "Person", "Person");
+
+            assertNull(desc);
+        }
+    }
+
+    /** */
+    public void testDropTableIfExists() throws Exception {
+        cache().query(new SqlFieldsQuery("DROP TABLE IF EXISTS \"cache\".\"City\""));
+    }
+
+    /** */
+    private void assertProperty(QueryTypeDescriptorImpl desc, String name, Class<?> type, boolean isKey) {
+        GridQueryProperty p = desc.property(name);
+
+        assertNotNull(name, p);
+
+        assertEquals(type, p.type());
+
+        assertEquals(isKey, p.key());
     }
 
     /**
@@ -141,8 +227,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * @return Client node.
      */
-    private IgniteInternalCache<?, ?> cache() {
-        return client().cachex(CACHE_NAME);
+    private IgniteCache<?, ?> cache() {
+        return client().cache(CACHE_NAME);
     }
 
     /**
@@ -177,6 +263,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         ccfg.setSqlEscapeAll(true);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
+
+        ccfg.setQueryEntities(Collections.singletonList(
+            new QueryEntity()
+                .setKeyType(Integer.class.getName())
+                .setValueType(Integer.class.getName())
+        ));
 
         return ccfg;
     }

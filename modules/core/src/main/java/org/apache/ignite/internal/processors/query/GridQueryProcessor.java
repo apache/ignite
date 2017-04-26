@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDi
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaCreateTableOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -1242,11 +1241,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 idx.dynamicIndexDrop(space, op0.indexName(), op0.ifExists());
             }
-            else if (op instanceof SchemaCreateTableOperation) {
-                SchemaCreateTableOperation op0 = (SchemaCreateTableOperation) op;
-
-                dynamicTableCreate(op0.entity(), op0.templateCacheName(), op0.ifNotExists());
-            }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
         }
@@ -1267,7 +1261,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void dynamicTableCreate(QueryEntity entity, String tplCacheName, boolean ifNotExists)
+    public void dynamicTableCreate(QueryEntity entity, String tplCacheName, boolean ifNotExists)
             throws IgniteCheckedException {
         IgniteInternalCache<?, ?> tplCache = ctx.cache().cache(tplCacheName);
 
@@ -1316,6 +1310,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 throw new IgniteSQLException("Table already exists [tblName=" + entity.getTableName() + ']',
                     IgniteQueryErrorCode.TABLE_ALREADY_EXISTS);
         }
+    }
+
+    /**
+     * Drop table by destroying its cache if it's an 1:1 per cache table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param ifExists Quietly ignore this command if table does not exist.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void dynamicTableDrop(String schemaName, String tblName, boolean ifExists) {
+        String spaceName = idx.space(schemaName);
+
+        QueryTypeDescriptorImpl type = type(spaceName, tblName);
+
+        if (type == null || !F.eq(schemaName, spaceName)) {
+            if (!ifExists)
+                throw new IgniteSQLException("Table not found [schemaName=" + schemaName +
+                    ",tblName=" + tblName +']', IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+            return;
+        }
+
+        if (!F.eq(schemaName, tblName))
+            throw new IgniteSQLException("Only dynamically created table can be dropped [schemaName=" + schemaName +
+                ",tblName=" + tblName +']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        IgniteCache cache = ctx.grid().cache(spaceName);
+
+        assert cache != null;
+
+        cache.destroy();
     }
 
     /**

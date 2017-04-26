@@ -107,43 +107,4 @@ public class GridSqlCreateTable extends GridSqlStatement {
     @Override public String getSQL() {
         return "CREATE TABLE " + Parser.quoteIdentifier(tblName);
     }
-
-    /**
-     * Convert this statement to query entity and do Ignite specific sanity checks on the way.
-     * @return Query entity mimicking this SQL statement.
-     */
-    public QueryEntity toQueryEntity() {
-        QueryEntity res = new QueryEntity();
-
-        res.setTableName(tableName());
-
-        if (columns().containsKey(IgniteH2Indexing.KEY_FIELD_NAME) ||
-            columns().containsKey(IgniteH2Indexing.VAL_FIELD_NAME))
-            throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
-                IgniteQueryErrorCode.PARSING);
-
-        for (Map.Entry<String, GridSqlColumn> e : columns().entrySet()) {
-            GridSqlColumn gridCol = e.getValue();
-
-            Column col = gridCol.column();
-
-            res.addQueryField(e.getKey(), DataType.getTypeClassName(col.getType()), null);
-        }
-
-        if (F.isEmpty(pkCols))
-            throw new IgniteSQLException("No PRIMARY KEY columns specified");
-
-        int valColsNum = res.getFields().size() - pkCols.size();
-
-        if (valColsNum == 0)
-            throw new IgniteSQLException("No cache value related columns found");
-
-        res.setKeyType(tableName() + "Key");
-
-        res.setValueType(tableName());
-
-        res.setKeyFields(pkCols);
-
-        return res;
-    }
 }

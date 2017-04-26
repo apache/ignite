@@ -42,6 +42,7 @@ import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.ddl.DefineCommand;
 import org.h2.command.ddl.DropIndex;
+import org.h2.command.ddl.DropTable;
 import org.h2.command.ddl.SchemaCommand;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
@@ -386,6 +387,12 @@ public class GridSqlQueryParser {
     /** */
     private static final Getter<CreateTable, Boolean> CREATE_TABLE_SORTED_INSERT = getter(CreateTable.class,
         "sortedInsertMode");
+
+    /** */
+    private static final Getter<DropTable, Boolean> DROP_TABLE_IF_EXISTS = getter(DropTable.class, "ifExists");
+
+    /** */
+    private static final Getter<DropTable, String> DROP_TABLE_NAME = getter(DropTable.class, "tableName");
 
     /** */
     private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
@@ -905,6 +912,26 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Parse {@code DROP TABLE} statement.
+     *
+     * @param dropTbl {@code DROP TABLE} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#drop_table">H2 {@code DROP TABLE} spec.</a>
+     */
+    private GridSqlDropTable parseDropTable(DropTable dropTbl) {
+        GridSqlDropTable res = new GridSqlDropTable();
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(dropTbl);
+
+        res.schemaName(schema.getName());
+
+        res.ifExists(DROP_TABLE_IF_EXISTS.get(dropTbl));
+
+        res.tableName(DROP_TABLE_NAME.get(dropTbl));
+
+        return res;
+    }
+
+    /**
      * @param name Param name.
      * @param val Param value.
      * @param res Table params to update.
@@ -1008,6 +1035,9 @@ public class GridSqlQueryParser {
 
         if (stmt instanceof CreateTable)
             return parseCreateTable((CreateTable)stmt);
+
+        if (stmt instanceof DropTable)
+            return parseDropTable((DropTable) stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
     }
