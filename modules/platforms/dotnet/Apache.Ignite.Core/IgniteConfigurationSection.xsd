@@ -1189,7 +1189,12 @@
                                                         <xs:documentation>Page eviction mode.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
-                                                <xs:attribute name="size" type="xs:int" use="required">
+                                                <xs:attribute name="initialSize" type="xs:long">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Initial memory region size defined by this memory policy.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="maxSize" type="xs:long">
                                                     <xs:annotation>
                                                         <xs:documentation>Maximum memory region size defined by this memory policy.</xs:documentation>
                                                     </xs:annotation>

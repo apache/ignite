@@ -15,41 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.mem;
-
-import java.util.List;
+package org.apache.ignite.internal.util;
 
 /**
- *
+ * Iterator over integer primitives.
  */
-public class DirectMemory {
-    /** Will be set if  */
-    private boolean restored;
-
-    /** */
-    private List<DirectMemoryRegion> regions;
+public interface GridIntIterator {
+    /**
+     * @return {@code true} if the iteration has more elements.
+     */
+    public boolean hasNext();
 
     /**
-     * @param restored Restored flag.
-     * @param regions Memory fragments.
+     * @return Next int.
      */
-    public DirectMemory(boolean restored, List<DirectMemoryRegion> regions) {
-        this.restored = restored;
-        this.regions = regions;
-    }
-
-    /**
-     * @return Restored flag. If {@code true}, the memory fragments were successfully restored since the previous
-     *      usage and can be reused.
-     */
-    public boolean restored() {
-        return restored;
-    }
-
-    /**
-     * @return Memory fragments.
-     */
-    public List<DirectMemoryRegion> regions() {
-        return regions;
-    }
+    public int next();
 }

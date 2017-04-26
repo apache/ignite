@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Tests
                     var resPlc = resMemCfg.MemoryPolicies.Skip(i).First();
 
                     Assert.AreEqual(plc.PageEvictionMode, resPlc.PageEvictionMode);
-                    Assert.AreEqual(plc.Size, resPlc.Size);
+                    Assert.AreEqual(plc.MaxSize, resPlc.MaxSize);
                     Assert.AreEqual(plc.EmptyPagesPoolSize, resPlc.EmptyPagesPoolSize);
                     Assert.AreEqual(plc.EvictionThreshold, resPlc.EvictionThreshold);
                     Assert.AreEqual(plc.Name, resPlc.Name);
@@ -445,7 +445,9 @@ namespace Apache.Ignite.Core.Tests
         {
             var props = obj.GetType().GetProperties();
 
-            foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber"))
+            foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber" &&
+                                                  !(p.Name == "MaxSize" &&
+                                                    p.DeclaringType == typeof(MemoryPolicyConfiguration))))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -575,7 +577,7 @@ namespace Apache.Ignite.Core.Tests
                         {
                             Name = "myDefaultPlc",
                             PageEvictionMode = DataPageEvictionMode.Random2Lru,
-                            Size = 345 * 1024 * 1024,
+                            MaxSize = 345 * 1024 * 1024,
                             EvictionThreshold = 0.88,
                             EmptyPagesPoolSize = 77,
                             SwapFilePath = "myPath1"
@@ -584,7 +586,7 @@ namespace Apache.Ignite.Core.Tests
                         {
                             Name = "customPlc",
                             PageEvictionMode = DataPageEvictionMode.RandomLru,
-                            Size = 456 * 1024 * 1024,
+                            MaxSize = 456 * 1024 * 1024,
                             EvictionThreshold = 0.77,
                             EmptyPagesPoolSize = 66,
                             SwapFilePath = "somePath2"

@@ -299,11 +299,13 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         checkCount(name, g.services().serviceDescriptors(), nodeCount());
 
-        latch = new CountDownLatch(1);
+
+
+            latch = new CountDownLatch(1);
 
         DummyService.exeLatch(name, latch);
 
-        int extraNodes = 2;
+            int extraNodes =2;
 
         startExtraNodes(extraNodes);
 

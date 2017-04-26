@@ -68,8 +68,11 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Memory policy name. */
     private String name = DFLT_MEM_PLC_DEFAULT_NAME;
 
+    /** Memory policy start size. */
+    private long initialSize = MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE;
+
     /** Memory policy maximum size. */
-    private long size;
+    private long maxSize = MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 
     /** An optional path to a memory mapped file for this memory policy. */
     private String swapFilePath;
@@ -118,19 +121,42 @@ public final class MemoryPolicyConfiguration implements Serializable {
      *
      * @return Size in bytes.
      */
-    public long getSize() {
-        return size;
+    public long getMaxSize() {
+        return maxSize;
     }
 
     /**
      * Sets maximum memory region size defined by this memory policy. The total size should not be less than 10 MB
      * due to the internal data structures overhead.
      *
-     * @param size Maximum memory region size in bytes.
+     * @param maxSize Maxumum memory policy size in bytes.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setSize(long size) {
-        this.size = size;
+    public MemoryPolicyConfiguration setMaxSize(long maxSize) {
+        this.maxSize = maxSize;
+
+        return this;
+    }
+
+    /**
+     * Gets initial memory region size defined by this memory policy. When the used memory size exceeds this value,
+     * new chunks of memory will be allocated.
+     *
+     * @return Memory policy start size.
+     */
+    public long getInitialSize() {
+        return initialSize;
+    }
+
+    /**
+     * Sets initial memory region size defined by this memory policy. When the used memory size exceeds this value,
+     * new chunks of memory will be allocated.
+     *
+     * @param initialSize Memory policy initial size.
+     * @return {@code this} for chaining.
+     */
+    public MemoryPolicyConfiguration setInitialSize(long initialSize) {
+        this.initialSize = initialSize;
 
         return this;
     }
@@ -161,7 +187,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /**
      * Gets memory pages eviction mode. If {@link DataPageEvictionMode#DISABLED} is used (default) then an out of
      * memory exception will be thrown if the memory region usage, defined by this memory policy, goes beyond its
-     * capacity which is {@link #getSize()}.
+     * capacity which is {@link #getMaxSize()}.
      *
      * @return Memory pages eviction algorithm. {@link DataPageEvictionMode#DISABLED} used by default.
      */

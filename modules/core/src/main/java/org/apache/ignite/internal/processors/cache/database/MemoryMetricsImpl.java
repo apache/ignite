@@ -81,11 +81,6 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getSize() {
-        return memPlcCfg.getSize();
-    }
-
-    /** {@inheritDoc} */
     @Override public String getSwapFilePath() {
         return memPlcCfg.getSwapFilePath();
     }

@@ -27,9 +27,6 @@ public class MemoryMetricsSnapshot implements MemoryMetrics {
     private String name;
 
     /** */
-    private long size;
-
-    /** */
     private String swapFilePath;
 
     /** */
@@ -52,7 +49,6 @@ public class MemoryMetricsSnapshot implements MemoryMetrics {
      */
     public MemoryMetricsSnapshot(MemoryMetrics metrics) {
         name = metrics.getName();
-        size = metrics.getSize();
         swapFilePath = metrics.getSwapFilePath();
         totalAllocatedPages = metrics.getTotalAllocatedPages();
         allocationRate = metrics.getAllocationRate();
@@ -64,11 +60,6 @@ public class MemoryMetricsSnapshot implements MemoryMetrics {
     /** {@inheritDoc} */
     @Override public String getName() {
         return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSize() {
-        return size;
     }
 
     /** {@inheritDoc} */

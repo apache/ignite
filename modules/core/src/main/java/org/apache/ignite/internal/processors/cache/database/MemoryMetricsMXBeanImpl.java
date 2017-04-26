@@ -84,11 +84,6 @@ class MemoryMetricsMXBeanImpl implements MemoryMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getSize() {
-        return memMetrics.getSize();
-    }
-
-    /** {@inheritDoc} */
     @Override public String getSwapFilePath() {
         return memMetrics.getSwapFilePath();
     }

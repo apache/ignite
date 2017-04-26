@@ -28,10 +28,6 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
     @Override public String getName();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Size of PageMemory in MBytes.")
-    @Override public long getSize();
-
-    /** {@inheritDoc} */
     @MXBeanDescription("File path of memory-mapped swap file.")
     @Override public String getSwapFilePath();
 

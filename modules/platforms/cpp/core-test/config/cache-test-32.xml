@@ -40,7 +40,8 @@
                     <list>
                         <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
                             <property name="name" value="dfltPlc"/>
-                            <property name="size" value="103833600"/>
+                            <property name="maxSize" value="103833600"/>
+                            <property name="initialSize" value="103833600"/>
                         </bean>
                     </list>
                 </property>
