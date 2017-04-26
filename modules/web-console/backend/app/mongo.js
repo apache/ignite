@@ -179,7 +179,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         },
 
         backups: Number,
-        startSize: Number,
 
         onheapCacheEnabled: Boolean,
 

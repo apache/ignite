@@ -113,6 +113,9 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
     /** Whether update checker is enabled. */
     private boolean updateNtf;
 
+    /** Full metrics enabled flag. */
+    private long metricsUpdateFreq;
+
     /**
      * Default constructor.
      */
@@ -148,6 +151,7 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         quiet = boolValue(IGNITE_QUIET, true);
         successFile = getProperty(IGNITE_SUCCESS_FILE);
         updateNtf = boolValue(IGNITE_UPDATE_NOTIFIER, true);
+        metricsUpdateFreq = c.getMetricsUpdateFrequency();
     }
 
     /**
@@ -297,6 +301,13 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         return updateNtf;
     }
 
+    /**
+     * @return Job metrics update frequency in milliseconds.
+     */
+    public long getMetricsUpdateFrequency() {
+        return metricsUpdateFreq;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, igniteInstanceName);
@@ -320,6 +331,7 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         out.writeBoolean(quiet);
         U.writeString(out, successFile);
         out.writeBoolean(updateNtf);
+        out.writeLong(metricsUpdateFreq);
     }
 
     /** {@inheritDoc} */
@@ -345,6 +357,7 @@ public class VisorBasicConfiguration extends VisorDataTransferObject {
         quiet = in.readBoolean();
         successFile = U.readString(in);
         updateNtf = in.readBoolean();
+        metricsUpdateFreq = in.readLong();
     }
 
     /** {@inheritDoc} */
