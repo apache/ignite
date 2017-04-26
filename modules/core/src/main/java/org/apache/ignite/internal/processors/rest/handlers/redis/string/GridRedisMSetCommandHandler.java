@@ -69,7 +69,7 @@ public class GridRedisMSetCommandHandler extends GridRedisRestCommandHandler {
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-
+        restReq.cacheName(msg.cacheName());
         restReq.command(CACHE_PUT_ALL);
 
         List<String> els = msg.auxMKeys();
