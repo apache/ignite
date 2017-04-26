@@ -5668,7 +5668,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (!sslHnd.handshake())
                                 throw new IgniteSpiException("Failed to perform SSL handshake.");
                         }
-                        catch (SSLException | IgniteCheckedException e) {
+                        catch (SSLException e) {
                             log.warning("Failed to perform SSL handshake. [socket=" + sock + "]", e);
 
                             U.closeQuiet(sock);

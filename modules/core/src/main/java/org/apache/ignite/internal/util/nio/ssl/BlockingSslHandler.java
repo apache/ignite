@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.util.nio.ssl;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
@@ -29,6 +31,7 @@ import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.nio.GridNioException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
@@ -68,11 +71,17 @@ public class BlockingSslHandler {
     /** Input buffer from which SSL engine will decrypt data. */
     private ByteBuffer inNetBuf;
 
-    /** Empty buffer used in handshake procedure.  */
+    /** Empty buffer used in handshake procedure. */
     private ByteBuffer handshakeBuf = ByteBuffer.allocate(0);
 
     /** Application buffer. */
     private ByteBuffer appBuf;
+
+    /** Input stream. */
+    private final SslInputStream is;
+
+    /** Output stream. */
+    private final SslOutputStream os;
 
     /**
      * @param sslEngine SSLEngine.
@@ -85,8 +94,7 @@ public class BlockingSslHandler {
         SocketChannel ch,
         boolean directBuf,
         ByteOrder order,
-        IgniteLogger log)
-        throws SSLException {
+        IgniteLogger log) {
         this.ch = ch;
         this.log = log;
         this.sslEngine = sslEngine;
@@ -114,22 +122,24 @@ public class BlockingSslHandler {
 
         if (log.isDebugEnabled())
             log.debug("Started SSL session [netBufSize=" + netBufSize + ", appBufSize=" + appBuf.capacity() + ']');
+
+        is = new SslInputStream(this);
+        os = new SslOutputStream(this);
     }
 
     /**
      *
      */
-    public ByteBuffer inputBuffer(){
+    public ByteBuffer inputBuffer() {
         return inNetBuf;
     }
 
     /**
      * Performs handshake procedure with remote peer.
      *
-     * @throws GridNioException If filter processing has thrown an exception.
      * @throws SSLException If failed to process SSL data.
      */
-    public boolean handshake() throws IgniteCheckedException, SSLException {
+    public boolean handshake() throws SSLException {
         if (log.isDebugEnabled())
             log.debug("Entered handshake. Handshake status: " + handshakeStatus + '.');
 
@@ -148,6 +158,8 @@ public class BlockingSslHandler {
                     handshakeFinished = true;
 
                     loop = false;
+
+                    appBuf.flip();
 
                     break;
                 }
@@ -225,8 +237,8 @@ public class BlockingSslHandler {
      * Encrypts data to be written to the network.
      *
      * @param src data to encrypt.
-     * @throws SSLException on errors.
      * @return Output buffer with encrypted data.
+     * @throws SSLException on errors.
      */
     public ByteBuffer encrypt(ByteBuffer src) throws SSLException {
         assert handshakeFinished;
@@ -315,10 +327,9 @@ public class BlockingSslHandler {
     }
 
     /**
-     * @return {@code True} if inbound data stream has ended, i.e. SSL engine received
-     * <tt>close_notify</tt> message.
+     * @return {@code True} if inbound data stream has ended, i.e. SSL engine received <tt>close_notify</tt> message.
      */
-    boolean isInboundDone() {
+    private boolean isInboundDone() {
         return sslEngine.isInboundDone();
     }
 
@@ -326,9 +337,8 @@ public class BlockingSslHandler {
      * Unwraps user data to the application buffer.
      *
      * @throws SSLException If failed to process SSL data.
-     * @throws GridNioException If failed to pass events to the next filter.
      */
-    private void unwrapData() throws IgniteCheckedException, SSLException {
+    private void unwrapData() throws SSLException {
         if (log.isDebugEnabled())
             log.debug("Unwrapping received data.");
 
@@ -366,15 +376,13 @@ public class BlockingSslHandler {
         return sslEngine.getHandshakeStatus();
     }
 
-
     /**
      * Unwraps handshake data and processes it.
      *
      * @return Status.
      * @throws SSLException If SSL exception occurred while unwrapping.
-     * @throws GridNioException If failed to pass event to the next filter.
      */
-    private SSLEngineResult unwrapHandshake(SSLEngineResult prevRes) throws SSLException, IgniteCheckedException {
+    private SSLEngineResult unwrapHandshake(SSLEngineResult prevRes) throws SSLException {
         // Avoid blocking on reading if there unprocessed data left in input buffer.
         if (inNetBuf.position() == 0 || prevRes.getStatus() != OK)
             readFromNet();
@@ -403,7 +411,8 @@ public class BlockingSslHandler {
         else if (res.getStatus() == BUFFER_UNDERFLOW) {
             inNetBuf.compact();
 
-            inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() * 2);
+            if (inNetBuf.position() > inNetBuf.capacity() / 2)
+                inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() * 2);
         }
         else
             // prepare to be written again
@@ -455,10 +464,9 @@ public class BlockingSslHandler {
      * Check status and retry the negotiation process if needed.
      *
      * @param res Result.
-     * @throws GridNioException If exception occurred during handshake.
      * @throws SSLException If failed to process SSL data
      */
-    private void renegotiateIfNeeded(SSLEngineResult res) throws IgniteCheckedException, SSLException {
+    private void renegotiateIfNeeded(SSLEngineResult res) throws SSLException {
         if (res.getStatus() != CLOSED && res.getStatus() != BUFFER_UNDERFLOW
             && res.getHandshakeStatus() != NOT_HANDSHAKING) {
             // Renegotiation required.
@@ -492,29 +500,29 @@ public class BlockingSslHandler {
     /**
      * Read data from net buffer.
      */
-    private void readFromNet() throws IgniteCheckedException {
+    private void readFromNet() throws SSLException {
         try {
             int read = ch.read(inNetBuf);
 
             if (read == -1)
-                throw new IgniteCheckedException("Failed to read remote node response (connection closed).");
+                throw new SSLException("Failed to read remote node response (connection closed).");
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to read byte from socket.", e);
+            throw new SSLException("Failed to read byte from socket.", e);
         }
     }
 
     /**
      * Copies data from out net buffer and passes it to the underlying channel.
      *
-     * @throws GridNioException If send failed.
+     * @throws SSLException If send failed.
      */
-    private void writeNetBuffer() throws IgniteCheckedException {
+    private void writeNetBuffer() throws SSLException {
         try {
             ch.write(outNetBuf);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to write byte to socket.", e);
+            throw new SSLException("Failed to write byte to socket.", e);
         }
     }
 
@@ -538,11 +546,168 @@ public class BlockingSslHandler {
     }
 
     /**
+     * Receive and decode byte from channel.
+     *
+     * @return data.
+     * @throws IOException If fails.
+     */
+    public int receive() throws IOException {
+        if (appBuf.hasRemaining())
+            return appBuf.get() & 0xff;
+
+        while (!appBuf.hasRemaining()) {
+            appBuf.clear();
+
+            int n = ch.read(inNetBuf);
+
+            if (n == -1)
+                break;
+
+            if (!handshakeFinished)
+                handshake();
+            else
+                unwrapData();
+
+            if (isInboundDone()) {
+                inNetBuf.clear();
+                break;
+            }
+
+            appBuf.flip();
+        }
+
+        return appBuf.hasRemaining() ? appBuf.get() & 0xff : -1;
+    }
+
+    /**
+     * Encode and send byte to channel.
+     *
+     * @param b data byte;
+     * @throws IOException if fails.
+     */
+    public void send(final byte b) throws IOException {
+        ByteBuffer buf = ByteBuffer.wrap(new byte[] {b});
+
+        encrypt(buf);
+
+        ch.write(outNetBuf);
+    }
+
+    /**
+     * Encode and send byte array.
+     *
+     * @param b Byte array.
+     * @param off Offset.
+     * @param len Length.
+     * @throws IOException if fails.
+     */
+    public void send(final byte[] b, final int off, final int len) throws IOException {
+        ByteBuffer buf = ByteBuffer.wrap(b, off, len);
+
+        encrypt(buf);
+
+        ch.write(outNetBuf);
+    }
+
+    /**
      * Get SSLEngine instance.
      *
      * @return SSLEngine instance.
      */
     public SSLEngine sslEngine() {
         return sslEngine;
+    }
+
+    /**
+     * Get input stream.
+     *
+     * @return Input stream.
+     */
+    public InputStream inputStream() {
+        return is;
+    }
+
+    /**
+     * Get output stream.
+     *
+     * @return Output stream.
+     */
+    public OutputStream outputStream() {
+        return os;
+    }
+
+    /**
+     * Stream for receive and decode data.
+     */
+    private static class SslInputStream extends InputStream {
+        /** */
+        private final BlockingSslHandler sslHnd;
+
+        /**
+         * @param sslHnd SSL handler.
+         */
+        SslInputStream(final BlockingSslHandler sslHnd) {
+            this.sslHnd = sslHnd;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int read() throws IOException {
+            return sslHnd.receive();
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int available() throws IOException {
+            return sslHnd.appBuf.remaining();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SslInputStream.class, this);
+        }
+    }
+
+    /**
+     * Stream for encode and send data.
+     */
+    private static class SslOutputStream extends OutputStream {
+        /** */
+        private final BlockingSslHandler sslHnd;
+
+        /**
+         * @param sslHnd SSL handler.
+         */
+        SslOutputStream(final BlockingSslHandler sslHnd) {
+            this.sslHnd = sslHnd;
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void write(final int b) throws IOException {
+            sslHnd.send((byte)(b & 0xff));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(final byte[] b) throws IOException {
+            write(b, 0, b.length);
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void write(final byte[] b, final int off, final int len) throws IOException {
+            sslHnd.send(b, off, len);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SslOutputStream.class, this);
+        }
     }
 }
