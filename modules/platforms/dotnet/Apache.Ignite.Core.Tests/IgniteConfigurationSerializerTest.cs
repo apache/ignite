@@ -661,7 +661,9 @@ namespace Apache.Ignite.Core.Tests
                                 },
                                 KeyType = typeof (string),
                                 ValueType = typeof (long),
-                                TableName = "table-1"
+                                TableName = "table-1",
+                                KeyFieldName = "k",
+                                ValueFieldName = "v"
                             },
                         },
                         ReadFromBackup = false,
