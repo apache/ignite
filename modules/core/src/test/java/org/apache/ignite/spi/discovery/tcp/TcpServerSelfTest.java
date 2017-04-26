@@ -30,11 +30,14 @@ import java.nio.channels.SocketChannel;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import junit.framework.TestCase;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -43,7 +46,6 @@ import org.apache.ignite.testframework.GridTestUtils;
  * Simple tests for {@link ServerImpl.TcpServer}.
  */
 public class TcpServerSelfTest extends TestCase {
-
     /** */
     private SSLContext sslCtx;
 
@@ -76,16 +78,13 @@ public class TcpServerSelfTest extends TestCase {
         final BlockingSslHandler h1 = new BlockingSslHandler(sslEngine1, ch1, true, ByteOrder.nativeOrder(), log);
         final BlockingSslHandler h2 = new BlockingSslHandler(sslEngine2, ch2, true, ByteOrder.nativeOrder(), log);
 
-        GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    h1.handshake();
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+        IgniteInternalFuture handshakeFut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception{
+                h1.handshake();
+
+                return null;
             }
-        });
+        }, "handshake");
 
         h2.handshake();
 
@@ -99,22 +98,21 @@ public class TcpServerSelfTest extends TestCase {
 
             random.nextBytes(data);
 
-            GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        h1.outputStream().write(data);
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
+            GridTestUtils.runAsync(new Callable() {
+                @Override public Void call() throws Exception {
+                    h1.outputStream().write(data);
+
+                    return null;
                 }
-            });
+            }, "write");
 
             h2.inputStream().read(data2);
 
             for (int i = 0; i < size; i++)
                 assertEquals("bad data in pos " + i, data[i], data2[i]);
         }
+
+        handshakeFut.get();
     }
 
     /**
