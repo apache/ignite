@@ -458,6 +458,14 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
     /**
      * {@inheritDoc}
      */
+    @Override protected void doSetRollbackOnly(DefaultTransactionStatus status) throws TransactionException {
+        Transaction tx = ((Ignite)this.getResourceFactory()).transactions().tx();
+        if (tx != null) tx.setRollbackOnly();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override protected void doCleanupAfterCompletion(Object transaction) {
         IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
 
