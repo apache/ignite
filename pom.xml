@@ -91,6 +91,7 @@
         <module>modules/flink</module>
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
+        <module>modules/hibernate-core</module>
     </modules>
 
     <profiles>
@@ -100,8 +101,8 @@
                 <module>examples</module>
                 <module>modules/benchmarks</module>
                 <module>modules/geospatial</module>
-                <module>modules/hibernate5</module>
-                <module>modules/hibernate</module>
+                <module>modules/hibernate-4.2</module>
+                <module>modules/hibernate-5.1</module>
                 <module>modules/schedule</module>
                 <module>modules/web-console/web-agent</module>
                 <module>modules/yardstick</module>
@@ -197,8 +198,8 @@
         <profile>
             <id>lgpl</id>
             <modules>
-                <module>modules/hibernate</module>
-                <module>modules/hibernate5</module>
+                <module>modules/hibernate-4.2</module>
+                <module>modules/hibernate-5.1</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
