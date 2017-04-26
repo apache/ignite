@@ -133,21 +133,20 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
 
     /**
      * @param req Request.
-     * @return {@code this}.
      */
     public GridH2QueryRequest(GridH2QueryRequest req) {
-        this.reqId = req.reqId;
-        this.caches = req.caches;
-        this.topVer = req.topVer;
-        this.parts = req.parts;
-        this.qryParts = req.qryParts;
-        this.pageSize = req.pageSize;
-        this.qrys = req.qrys;
-        this.flags = req.flags;
-        this.tbls = req.tbls;
-        this.timeout = req.timeout;
-        this.params = req.params;
-        this.paramsBytes = req.paramsBytes;
+        reqId = req.reqId;
+        caches = req.caches;
+        topVer = req.topVer;
+        parts = req.parts;
+        qryParts = req.qryParts;
+        pageSize = req.pageSize;
+        qrys = req.qrys;
+        flags = req.flags;
+        tbls = req.tbls;
+        timeout = req.timeout;
+        params = req.params;
+        paramsBytes = req.paramsBytes;
     }
 
     /**
@@ -359,6 +358,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("IfMayBeConditional")
     @Override public void unmarshall(Marshaller m, GridKernalContext ctx) {
         if (params != null)
             return;
