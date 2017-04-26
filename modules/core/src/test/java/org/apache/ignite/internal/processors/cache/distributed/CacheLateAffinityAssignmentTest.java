@@ -158,10 +158,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         discoSpi.setForceServerMode(forceSrvMode);
         discoSpi.setIpFinder(ipFinder);
-        discoSpi.setMaxMissedClientHeartbeats(100);
         discoSpi.setNetworkTimeout(60_000);
 
         cfg.setDiscoverySpi(discoSpi);
+
+        cfg.setClientFailureDetectionTimeout(100000);
 
         CacheConfiguration[] ccfg;
 
