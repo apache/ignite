@@ -42,5 +42,20 @@
                 <property name="socketTimeout" value="300" />
             </bean>
         </property>
+
+        <property name="memoryConfiguration">
+            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
+                <property name="systemCacheMemorySize" value="#{40 * 1024 * 1024}"/>
+                <property name="defaultMemoryPolicyName" value="dfltPlc"/>
+
+                <property name="memoryPolicies">
+                    <list>
+                        <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+                            <property name="name" value="dfltPlc"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+        </property>
     </bean>
 </beans>
