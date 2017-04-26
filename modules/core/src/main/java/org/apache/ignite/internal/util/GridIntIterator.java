@@ -15,24 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query.annotations;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import org.apache.ignite.internal.processors.cache.query.CacheQuery;
+package org.apache.ignite.internal.util;
 
 /**
- * Annotation for fields to be indexed for full text
- * search using Lucene. For more information
- * refer to {@link CacheQuery} documentation.
- * @see CacheQuery
+ * Iterator over integer primitives.
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.TYPE})
-public @interface QueryTextField {
-    // No-op.
+public interface GridIntIterator {
+    /**
+     * @return {@code true} if the iteration has more elements.
+     */
+    public boolean hasNext();
+
+    /**
+     * @return Next int.
+     */
+    public int next();
 }
