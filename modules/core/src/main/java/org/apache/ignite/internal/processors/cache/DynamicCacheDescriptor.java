@@ -50,9 +50,6 @@ public class DynamicCacheDescriptor {
     /** Statically configured flag. */
     private boolean staticCfg;
 
-    /** Started flag. */
-    private boolean started;
-
     /** Cache type. */
     private CacheType cacheType;
 

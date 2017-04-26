@@ -150,12 +150,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                     DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheMsg.cacheId());
 
-                    if (cacheDesc != null) {
-                        if (cacheDesc.startTopologyVersion() != null)
-                            startTopVer = cacheDesc.startTopologyVersion();
-                        else if (cacheDesc.receivedFromStartVersion() != null)
-                            startTopVer = cacheDesc.receivedFromStartVersion();
-                    }
+                    // TODO: should be specified on request since cache desc can be removed,
+                    if (cacheDesc != null)
+                        startTopVer = cacheDesc.startTopologyVersion();
 
                     // Need to wait for exchange to avoid race between cache start and affinity request.
                     fut = cctx.exchange().affinityReadyFuture(startTopVer);

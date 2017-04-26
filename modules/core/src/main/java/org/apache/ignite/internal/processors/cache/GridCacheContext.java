@@ -237,6 +237,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Start topology version. */
     private AffinityTopologyVersion startTopVer;
 
+    private AffinityTopologyVersion cacheStartTopVer;
+
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
 
@@ -456,6 +458,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
         this.startTopVer = startTopVer;
+    }
+
+    public void cacheStartTopologyVersion(AffinityTopologyVersion cacheStartTopVer) {
+        this.cacheStartTopVer = cacheStartTopVer;
     }
 
     /**
