@@ -86,7 +86,7 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testQueue(CacheAtomicityMode atomicityMode, boolean nearCache) throws Exception {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode);
@@ -111,7 +111,7 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     for (int i = 0; i < NODES; i++) {
                         final GridDhtPartitionTopology top =
-                            ((IgniteKernal)ignite(i)).context().cache().cache(null).context().topology();
+                            ((IgniteKernal)ignite(i)).context().cache().cache(DEFAULT_CACHE_NAME).context().topology();
 
                         for (GridDhtLocalPartition p : top.currentLocalPartitions()) {
                             Collection<Object> rmvQueue = GridTestUtils.getFieldValue(p, "rmvQueue");

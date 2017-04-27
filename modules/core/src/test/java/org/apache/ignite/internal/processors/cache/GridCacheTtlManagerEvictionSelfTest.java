@@ -59,7 +59,7 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setEagerTtl(true);
@@ -104,9 +104,9 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
         final IgniteKernal g = (IgniteKernal)startGrid(0);
 
         try {
-            final IgniteCache<Object, Object> cache = g.cache(null);
+            final IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
-            final GridCacheContext<Object, Object> cctx = g.cachex(null).context();
+            final GridCacheContext<Object, Object> cctx = g.cachex(DEFAULT_CACHE_NAME).context();
 
             for (int i = 1; i <= ENTRIES_TO_PUT; i++) {
                 String key = "Some test entry key#" + i;

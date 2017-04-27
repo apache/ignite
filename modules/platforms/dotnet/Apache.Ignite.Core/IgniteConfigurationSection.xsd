@@ -417,6 +417,20 @@
                                                                     </xs:documentation>
                                                                 </xs:annotation>
                                                             </xs:attribute>
+                                                            <xs:attribute name="keyFieldName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        Name of the field that denotes the key.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                            <xs:attribute name="valueFieldName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        Name of the field that denotes the value.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
                                                         </xs:complexType>
                                                     </xs:element>
                                                 </xs:sequence>
@@ -563,11 +577,6 @@
                                     <xs:attribute name="writeSynchronizationMode" type="cacheWriteSynchronizationMode">
                                         <xs:annotation>
                                             <xs:documentation>Write synchronization mode. This mode controls whether the main caller should wait for update on other nodes to complete or not.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="startSize" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>Initial cache size which will be used to pre-create internal hash table after start.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                     <xs:attribute name="loadPreviousValue" type="xs:string">
@@ -873,11 +882,6 @@
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="heartbeatFrequency" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>Delay between issuing of heartbeat messages. SPI sends heartbeat messages in configurable time interval to other nodes to notify them about its state.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                         <xs:attribute name="ipFinderCleanFrequency" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>IP finder clean frequency.</xs:documentation>
@@ -898,16 +902,6 @@
                                 <xs:documentation>
                                     Local port range for local host ports (value must greater than or equal to <tt>0</tt>). If provided local port LocalPort is occupied, implementation will try to increment the port number for as long as it is less than initial value plus this range.
                                 </xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maxMissedClientHeartbeats" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum heartbeats count node can miss without failing client node.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maxMissedHeartbeats" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum heartbeats count node can miss without initiating status check.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="reconnectCount" type="xs:int">
@@ -1397,6 +1391,13 @@
                 <xs:annotation>
                     <xs:documentation>
                         Failure detection timeout used by discovery and communication subsystems.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="clientFailureDetectionTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Failure detection timeout used by discovery and communication subsystems for client nodes.
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>

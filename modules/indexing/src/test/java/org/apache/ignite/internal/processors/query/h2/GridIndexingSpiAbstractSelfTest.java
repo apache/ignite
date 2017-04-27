@@ -119,7 +119,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     /**
      */
     private CacheConfiguration cacheACfg() {
-        CacheConfiguration<?,?> cfg = new CacheConfiguration<>();
+        CacheConfiguration<?,?> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setName("A");
 
@@ -147,7 +147,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      *
      */
     private CacheConfiguration cacheBCfg() {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName("B");
 
@@ -681,6 +681,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** */
         @Override public int typeId() {
             return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String keyFieldName() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String valueFieldName() {
+            return null;
         }
     }
 

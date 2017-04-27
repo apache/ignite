@@ -661,7 +661,9 @@ namespace Apache.Ignite.Core.Tests
                                 },
                                 KeyType = typeof (string),
                                 ValueType = typeof (long),
-                                TableName = "table-1"
+                                TableName = "table-1",
+                                KeyFieldName = "k",
+                                ValueFieldName = "v"
                             },
                         },
                         ReadFromBackup = false,
@@ -671,7 +673,6 @@ namespace Apache.Ignite.Core.Tests
                         RebalanceThrottle = TimeSpan.FromHours(44),
                         RebalanceTimeout = TimeSpan.FromMinutes(8),
                         SqlEscapeAll = true,
-                        StartSize = 1023,
                         WriteBehindBatchSize = 45,
                         WriteBehindEnabled = true,
                         WriteBehindFlushFrequency = TimeSpan.FromSeconds(55),
@@ -726,13 +727,10 @@ namespace Apache.Ignite.Core.Tests
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
-                    HeartbeatFrequency = TimeSpan.FromSeconds(3),
                     IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
                     LocalAddress = "127.0.0.1",
                     LocalPort = 49900,
                     LocalPortRange = 13,
-                    MaxMissedClientHeartbeats = 9,
-                    MaxMissedHeartbeats = 7,
                     ReconnectCount = 11,
                     StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
                     ThreadPriority = 6,
@@ -794,6 +792,7 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = "test",
                 Logger = new IgniteNLogLogger(),
                 FailureDetectionTimeout = TimeSpan.FromMinutes(2),
+                ClientFailureDetectionTimeout = TimeSpan.FromMinutes(3),
                 PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
                 EventStorageSpi = new MemoryEventStorageSpi
                 {

@@ -102,7 +102,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     /** Node order in the topology (internal). */
     private volatile long intOrder;
 
-    /** The most recent time when heartbeat message was received from the node. */
+    /** The most recent time when metrics update message was received from the node. */
     @GridToStringExclude
     private volatile long lastUpdateTime = U.currentTimeMillis();
 
@@ -123,9 +123,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     /** Version. */
     private IgniteProductVersion ver;
 
-    /** Alive check (used by clients). */
+    /** Alive check time (used by clients). */
     @GridToStringExclude
-    private transient int aliveCheck;
+    private transient long aliveCheckTime;
 
     /** Client router node ID. */
     @GridToStringExclude
@@ -291,9 +291,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      * Gets collections of cache metrics for this node. Note that node cache metrics are constantly updated
      * and provide up to date information about caches.
      * <p>
-     * Cache metrics are updated with some delay which is directly related to heartbeat
-     * frequency. For example, when used with default
-     * {@link TcpDiscoverySpi} the update will happen every {@code 2} seconds.
+     * Cache metrics are updated with some delay which is directly related to metrics update
+     * frequency. For example, by default the update will happen every {@code 2} seconds.
      *
      * @return Runtime metrics snapshots for this node.
      */
@@ -414,7 +413,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     /**
      * Gets node last update time.
      *
-     * @return Time of the last heartbeat.
+     * @return Time of the last metrics update.
      */
     public long lastUpdateTime() {
         return lastUpdateTime;
@@ -473,23 +472,25 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     }
 
     /**
-     * Decrements alive check value and returns new one.
+     * Test alive check time value.
      *
-     * @return Alive check value.
+     * @return {@code True} if client alive, {@code False} otherwise.
      */
-    public int decrementAliveCheck() {
-        assert isClient();
+    public boolean isClientAlive() {
+        assert isClient() : this;
 
-        return --aliveCheck;
+        return (aliveCheckTime - U.currentTimeMillis()) >= 0;
     }
 
     /**
-     * @param aliveCheck Alive check value.
+     * Set client alive time.
+     *
+     * @param aliveTime Alive time interval.
      */
-    public void aliveCheck(int aliveCheck) {
-        assert isClient();
+    public void clientAliveTime(long aliveTime) {
+        assert isClient() : this;
 
-        this.aliveCheck = aliveCheck;
+        this.aliveCheckTime = U.currentTimeMillis() + aliveTime;
     }
 
     /**

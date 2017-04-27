@@ -94,6 +94,7 @@
         <osgi.core.version>5.0.0</osgi.core.version>
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
+        <rocketmq.version>4.0.0-incubating</rocketmq.version>
         <scala210.jline.version>2.10.4</scala210.jline.version>
         <scala210.library.version>2.10.4</scala210.library.version>
         <scala211.library.version>2.11.7</scala211.library.version>
@@ -448,6 +449,10 @@
                             <group>
                                 <title>SpringData integration</title>
                                 <packages>org.apache.ignite.springdata.repository*</packages>
+                            </group>
+                            <group>
+                                <title>RocketMQ integration</title>
+                                <packages>org.apache.ignite.rocketmq*</packages>
                             </group>
                         </groups>
                         <header>
@@ -895,6 +900,7 @@
                                         <exclude>**/backend/config/settings.json.sample</exclude>
                                         <exclude>**/backend/node_modules/**</exclude>
                                         <exclude>**/frontend/build/**</exclude>
+                                        <exclude>**/frontend/public/images/icons/**</exclude>
                                         <exclude>**/frontend/ignite_modules/**</exclude>
                                         <exclude>**/frontend/ignite_modules_temp/**</exclude>
                                         <exclude>**/frontend/node_modules/**</exclude>

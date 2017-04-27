@@ -387,7 +387,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the primary keys.
         /// </summary>
-        public static IEnumerable<int> GetPrimaryKeys(IIgnite ignite, string cacheName = null,
+        public static IEnumerable<int> GetPrimaryKeys(IIgnite ignite, string cacheName,
             IClusterNode node = null)
         {
             var aff = ignite.GetAffinity(cacheName);
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the primary key.
         /// </summary>
-        public static int GetPrimaryKey(IIgnite ignite, string cacheName = null, IClusterNode node = null)
+        public static int GetPrimaryKey(IIgnite ignite, string cacheName, IClusterNode node = null)
         {
             return GetPrimaryKeys(ignite, cacheName, node).First();
         }
