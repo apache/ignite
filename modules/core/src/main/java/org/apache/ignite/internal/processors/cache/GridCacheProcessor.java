@@ -2018,8 +2018,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             sharedCtx.removeCacheContext(ctx);
 
-            assert req.deploymentId().equals(ctx.dynamicDeploymentId()) : "Different deployment IDs [req=" + req +
-                ", ctxDepId=" + ctx.dynamicDeploymentId() + ']';
+//            assert req.deploymentId().equals(ctx.dynamicDeploymentId()) : "Different deployment IDs [req=" + req +
+//                ", ctxDepId=" + ctx.dynamicDeploymentId() + ']';
 
             onKernalStop(cache, req.destroy());
 

@@ -435,16 +435,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             cctx.cache().blockGateway(req);
 
-            CacheHolder cache = caches.remove(cacheId);
+            if (crd) {
+                CacheHolder cache = caches.remove(cacheId);
 
-            assert cache != null : req;
+                assert cache != null : req;
 
-            if (stoppedCaches == null)
-                stoppedCaches = new HashSet<>();
+                if (stoppedCaches == null)
+                    stoppedCaches = new HashSet<>();
 
-            stoppedCaches.add(cache.cacheId());
+                stoppedCaches.add(cache.cacheId());
 
-            cctx.io().removeHandler(cacheId, GridDhtAffinityAssignmentResponse.class);
+                cctx.io().removeHandler(cacheId, GridDhtAffinityAssignmentResponse.class);
+            }
         }
 
         if (stoppedCaches != null) {
