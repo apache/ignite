@@ -70,8 +70,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
         final SecurityPermissionSetBuilder permsBuilder = new SecurityPermissionSetBuilder();
 
         assertThrows(log, new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
+                    @Override public Object call() throws Exception {
                         permsBuilder.appendCachePermissions("cache", ADMIN_VIEW);
                         return null;
                     }
@@ -80,8 +79,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
         );
 
         assertThrows(log, new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
+                    @Override public Object call() throws Exception {
                         permsBuilder.appendTaskPermissions("task", CACHE_READ);
                         return null;
                     }
@@ -90,8 +88,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
         );
 
         assertThrows(log, new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
+                    @Override public Object call() throws Exception {
                         permsBuilder.appendSystemPermissions(TASK_EXECUTE, CACHE_PUT);
                         return null;
                     }
@@ -100,8 +97,7 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
         );
 
         assertThrows(log, new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     permsBuilder.appendSystemPermissions(SERVICE_INVOKE, CACHE_REMOVE);
                     return null;
                 }
