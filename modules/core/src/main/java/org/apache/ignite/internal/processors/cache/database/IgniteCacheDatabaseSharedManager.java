@@ -379,7 +379,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         Collection<String> plcNames
     ) throws IgniteCheckedException {
         if (dfltPlcSize != -1) {
-            if (dfltPlcName != null)
+            if (!F.eq(dfltPlcName, MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME))
                 throw new IgniteCheckedException("User-defined MemoryPolicy configuration " +
                     "and defaultMemoryPolicySize properties are set at the same time. " +
                     "Delete either MemoryConfiguration.defaultMemoryPolicySize property " +
