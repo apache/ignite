@@ -649,7 +649,8 @@ public class PlatformConfigurationUtils {
                 break;
         }
 
-        cfg.setMemoryConfiguration(readMemoryConfiguration(in));
+        if (in.readBoolean())
+            cfg.setMemoryConfiguration(readMemoryConfiguration(in));
 
         readPluginConfiguration(cfg, in);
     }
@@ -1327,12 +1328,10 @@ public class PlatformConfigurationUtils {
      * @return Config.
      */
     private static MemoryConfiguration readMemoryConfiguration(BinaryRawReader in) {
-        if (!in.readBoolean())
-            return null;
-
         MemoryConfiguration res = new MemoryConfiguration();
 
-        res.setSystemCacheMemorySize(in.readLong())
+        res.setSystemCacheInitialSize(in.readLong())
+                .setSystemCacheMaxSize(in.readLong())
                 .setPageSize(in.readInt())
                 .setConcurrencyLevel(in.readInt())
                 .setDefaultMemoryPolicyName(in.readString());
@@ -1346,7 +1345,8 @@ public class PlatformConfigurationUtils {
                 MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
 
                 cfg.setName(in.readString())
-                        .setSize(in.readLong())
+                        .setInitialSize(in.readLong())
+                        .setMaxSize(in.readLong())
                         .setSwapFilePath(in.readString())
                         .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
                         .setEvictionThreshold(in.readDouble())
@@ -1375,7 +1375,8 @@ public class PlatformConfigurationUtils {
 
         w.writeBoolean(true);
 
-        w.writeLong(cfg.getSystemCacheMemorySize());
+        w.writeLong(cfg.getSystemCacheInitialSize());
+        w.writeLong(cfg.getSystemCacheMaxSize());
         w.writeInt(cfg.getPageSize());
         w.writeInt(cfg.getConcurrencyLevel());
         w.writeString(cfg.getDefaultMemoryPolicyName());
@@ -1387,7 +1388,8 @@ public class PlatformConfigurationUtils {
 
             for (MemoryPolicyConfiguration plc : plcs) {
                 w.writeString(plc.getName());
-                w.writeLong(plc.getSize());
+                w.writeLong(plc.getInitialSize());
+                w.writeLong(plc.getMaxSize());
                 w.writeString(plc.getSwapFilePath());
                 w.writeInt(plc.getPageEvictionMode().ordinal());
                 w.writeDouble(plc.getEvictionThreshold());

@@ -70,7 +70,7 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
         assert plc != null;
 
         name = plc.getName();
-        size = plc.getSize();
+        size = plc.getMaxSize();
         swapFilePath = plc.getSwapFilePath();
         pageEvictionMode = plc.getPageEvictionMode();
         evictionThreshold = plc.getEvictionThreshold();

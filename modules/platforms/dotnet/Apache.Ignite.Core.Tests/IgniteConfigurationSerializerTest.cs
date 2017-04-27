@@ -134,9 +134,9 @@ namespace Apache.Ignite.Core.Tests
                                 <iPluginConfiguration type='Apache.Ignite.Core.Tests.Plugin.TestIgnitePluginConfiguration, Apache.Ignite.Core.Tests' />
                             </pluginConfigurations>
                             <eventStorageSpi type='MemoryEventStorageSpi' expirationTimeout='00:00:23.45' maxEventCount='129' />
-                            <memoryConfiguration concurrencyLevel='3' defaultMemoryPolicyName='dfPlc' pageSize='45' systemCacheMemorySize='67'>
+                            <memoryConfiguration concurrencyLevel='3' defaultMemoryPolicyName='dfPlc' pageSize='45' systemCacheInitialSize='67' systemCacheMaxSize='68'>
                                 <memoryPolicies>
-                                    <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' size='89' swapFilePath='abc' />
+                                    <memoryPolicyConfiguration emptyPagesPoolSize='1' evictionThreshold='0.2' name='dfPlc' pageEvictionMode='RandomLru' initialSize='89' maxSize='98' swapFilePath='abc' />
                                 </memoryPolicies>
                             </memoryConfiguration>
                         </igniteConfig>";
@@ -261,7 +261,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(3, memCfg.ConcurrencyLevel);
             Assert.AreEqual("dfPlc", memCfg.DefaultMemoryPolicyName);
             Assert.AreEqual(45, memCfg.PageSize);
-            Assert.AreEqual(67, memCfg.SystemCacheMemorySize);
+            Assert.AreEqual(67, memCfg.SystemCacheInitialSize);
+            Assert.AreEqual(68, memCfg.SystemCacheMaxSize);
 
             var memPlc = memCfg.MemoryPolicies.Single();
             Assert.AreEqual(1, memPlc.EmptyPagesPoolSize);
@@ -269,7 +270,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("dfPlc", memPlc.Name);
             Assert.AreEqual(DataPageEvictionMode.RandomLru, memPlc.PageEvictionMode);
             Assert.AreEqual("abc", memPlc.SwapFilePath);
-            Assert.AreEqual(89, memPlc.Size);
+            Assert.AreEqual(89, memPlc.InitialSize);
+            Assert.AreEqual(98, memPlc.MaxSize);
         }
 
         /// <summary>
@@ -804,14 +806,16 @@ namespace Apache.Ignite.Core.Tests
                     ConcurrencyLevel = 3,
                     DefaultMemoryPolicyName = "somePolicy",
                     PageSize = 4,
-                    SystemCacheMemorySize = 5,
+                    SystemCacheInitialSize = 5,
+                    SystemCacheMaxSize = 6,
                     MemoryPolicies = new[]
                     {
                         new MemoryPolicyConfiguration
                         {
                             Name = "myDefaultPlc",
                             PageEvictionMode = DataPageEvictionMode.Random2Lru,
-                            Size = 345 * 1024 * 1024,
+                            InitialSize = 245 * 1024 * 1024,
+                            MaxSize = 345 * 1024 * 1024,
                             EvictionThreshold = 0.88,
                             EmptyPagesPoolSize = 77,
                             SwapFilePath = "myPath1"
@@ -820,7 +824,6 @@ namespace Apache.Ignite.Core.Tests
                         {
                             Name = "customPlc",
                             PageEvictionMode = DataPageEvictionMode.RandomLru,
-                            Size = 456 * 1024 * 1024,
                             EvictionThreshold = 0.77,
                             EmptyPagesPoolSize = 66,
                             SwapFilePath = "somePath2"

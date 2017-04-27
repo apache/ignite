@@ -199,7 +199,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(memCfg.PageSize, resMemCfg.PageSize);
                 Assert.AreEqual(memCfg.ConcurrencyLevel, resMemCfg.ConcurrencyLevel);
                 Assert.AreEqual(memCfg.DefaultMemoryPolicyName, resMemCfg.DefaultMemoryPolicyName);
-                Assert.AreEqual(memCfg.SystemCacheMemorySize, resMemCfg.SystemCacheMemorySize);
+                Assert.AreEqual(memCfg.SystemCacheInitialSize, resMemCfg.SystemCacheInitialSize);
+                Assert.AreEqual(memCfg.SystemCacheMaxSize, resMemCfg.SystemCacheMaxSize);
                 Assert.IsNotNull(memCfg.MemoryPolicies);
                 Assert.IsNotNull(resMemCfg.MemoryPolicies);
                 Assert.AreEqual(2, memCfg.MemoryPolicies.Count);
@@ -211,7 +212,7 @@ namespace Apache.Ignite.Core.Tests
                     var resPlc = resMemCfg.MemoryPolicies.Skip(i).First();
 
                     Assert.AreEqual(plc.PageEvictionMode, resPlc.PageEvictionMode);
-                    Assert.AreEqual(plc.Size, resPlc.Size);
+                    Assert.AreEqual(plc.MaxSize, resPlc.MaxSize);
                     Assert.AreEqual(plc.EmptyPagesPoolSize, resPlc.EmptyPagesPoolSize);
                     Assert.AreEqual(plc.EvictionThreshold, resPlc.EvictionThreshold);
                     Assert.AreEqual(plc.Name, resPlc.Name);
@@ -245,6 +246,22 @@ namespace Apache.Ignite.Core.Tests
                 var disco = resCfg.DiscoverySpi as TcpDiscoverySpi;
                 Assert.IsNotNull(disco);
                 Assert.AreEqual(TimeSpan.FromMilliseconds(300), disco.SocketTimeout);
+
+                // Check memory configuration defaults.
+                var mem = resCfg.MemoryConfiguration;
+
+                Assert.IsNotNull(mem);
+                Assert.AreEqual("dfltPlc", mem.DefaultMemoryPolicyName);
+                Assert.AreEqual(MemoryConfiguration.DefaultPageSize, mem.PageSize);
+                Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheInitialSize, mem.SystemCacheInitialSize);
+                Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheMaxSize, mem.SystemCacheMaxSize);
+
+                var plc = mem.MemoryPolicies.Single();
+                Assert.AreEqual("dfltPlc", plc.Name);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultEmptyPagesPoolSize, plc.EmptyPagesPoolSize);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultEvictionThreshold, plc.EvictionThreshold);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultInitialSize, plc.InitialSize);
+                Assert.AreEqual(MemoryPolicyConfiguration.DefaultMaxSize, plc.MaxSize);
             }
         }
 
@@ -446,7 +463,9 @@ namespace Apache.Ignite.Core.Tests
         {
             var props = obj.GetType().GetProperties();
 
-            foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber"))
+            foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber" &&
+                                                  !(p.Name == "MaxSize" &&
+                                                    p.DeclaringType == typeof(MemoryPolicyConfiguration))))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -567,14 +586,15 @@ namespace Apache.Ignite.Core.Tests
                     ConcurrencyLevel = 3,
                     DefaultMemoryPolicyName = "myDefaultPlc",
                     PageSize = 2048,
-                    SystemCacheMemorySize = 13 * 1024 * 1024,
+                    SystemCacheInitialSize = 13 * 1024 * 1024,
+                    SystemCacheMaxSize = 15 * 1024 * 1024,
                     MemoryPolicies = new[]
                     {
                         new MemoryPolicyConfiguration
                         {
                             Name = "myDefaultPlc",
                             PageEvictionMode = DataPageEvictionMode.Random2Lru,
-                            Size = 345 * 1024 * 1024,
+                            MaxSize = 345 * 1024 * 1024,
                             EvictionThreshold = 0.88,
                             EmptyPagesPoolSize = 77,
                             SwapFilePath = "myPath1"
@@ -583,7 +603,7 @@ namespace Apache.Ignite.Core.Tests
                         {
                             Name = "customPlc",
                             PageEvictionMode = DataPageEvictionMode.RandomLru,
-                            Size = 456 * 1024 * 1024,
+                            MaxSize = 456 * 1024 * 1024,
                             EvictionThreshold = 0.77,
                             EmptyPagesPoolSize = 66,
                             SwapFilePath = "somePath2"

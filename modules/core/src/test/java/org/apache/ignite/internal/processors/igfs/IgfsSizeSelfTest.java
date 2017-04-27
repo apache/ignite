@@ -397,7 +397,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                 String memPlcName = "igfsDataMemPlc";
 
                 cfg.setMemoryConfiguration(new MemoryConfiguration().setMemoryPolicies(
-                    new MemoryPolicyConfiguration().setSize(maxSize).setName(memPlcName)));
+                    new MemoryPolicyConfiguration().setMaxSize(maxSize).setName(memPlcName)));
 
                 FileSystemConfiguration igfsCfg = cfg.getFileSystemConfiguration()[0];
 
