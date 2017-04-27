@@ -116,22 +116,20 @@ public class TestUtils {
 
         if (exp.columnSize() != observed.columnSize() ||
                 exp.rowSize() != observed.rowSize()) {
-            StringBuilder msgBuff = new StringBuilder(msg);
-            msgBuff.append("\nObserved has incorrect dimensions.");
-            msgBuff.append("\nobserved is " + observed.rowSize() +
-                    " x " + observed.columnSize());
-            msgBuff.append("\nexpected " + exp.rowSize() +
-                    " x " + exp.columnSize());
-            Assert.fail(msgBuff.toString());
+            String msgBuff = msg + "\nObserved has incorrect dimensions." +
+                "\nobserved is " + observed.rowSize() +
+                " x " + observed.columnSize() +
+                "\nexpected " + exp.rowSize() +
+                " x " + exp.columnSize();
+            Assert.fail(msgBuff);
         }
 
         Matrix delta = exp.minus(observed);
         if (TestUtils.maximumAbsoluteRowSum(delta) >= tolerance) {
-            StringBuilder msgBuff = new StringBuilder(msg);
-            msgBuff.append("\nExpected: " + exp);
-            msgBuff.append("\nObserved: " + observed);
-            msgBuff.append("\nexpected - observed: " + delta);
-            Assert.fail(msgBuff.toString());
+            String msgBuff = msg + "\nExpected: " + exp +
+                "\nObserved: " + observed +
+                "\nexpected - observed: " + delta;
+            Assert.fail(msgBuff);
         }
     }
 
@@ -143,13 +141,12 @@ public class TestUtils {
 
         if (exp.columnSize() != act.columnSize() ||
                 exp.rowSize() != act.rowSize()) {
-            StringBuilder msgBuff = new StringBuilder();
-            msgBuff.append("Observed has incorrect dimensions.");
-            msgBuff.append("\nobserved is " + act.rowSize() +
-                    " x " + act.columnSize());
-            msgBuff.append("\nexpected " + exp.rowSize() +
-                    " x " + exp.columnSize());
-            Assert.fail(msgBuff.toString());
+            String msgBuff = "Observed has incorrect dimensions." +
+                "\nobserved is " + act.rowSize() +
+                " x " + act.columnSize() +
+                "\nexpected " + exp.rowSize() +
+                " x " + exp.columnSize();
+            Assert.fail(msgBuff);
         }
 
         for (int i = 0; i < exp.rowSize(); ++i) {
@@ -189,7 +186,7 @@ public class TestUtils {
         if (failure)
             Assert.fail(out.toString());
     }
-    
+
     /** verifies that two arrays are close (sup norm) */
     public static void assertEquals(String msg, float[] exp, float[] observed, float tolerance) {
         StringBuilder out = new StringBuilder(msg);

@@ -32,6 +32,7 @@ import org.junit.Test;
  * Abstract base class for implementations of {@link MultipleLinearRegression}.
  */
 public abstract class AbstractMultipleLinearRegressionTest {
+    /** */
     protected AbstractMultipleLinearRegression regression;
 
     /** */

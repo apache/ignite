@@ -92,8 +92,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      * {@inheritDoc}
      * <p>This implementation computes and caches the QR decomposition of the X matrix.</p>
      */
-    @Override
-    public void newSampleData(double[] data, int nobs, int nvars, Matrix like) {
+    @Override public void newSampleData(double[] data, int nobs, int nvars, Matrix like) {
         super.newSampleData(data, nobs, nvars, like);
         qr = new QRDecomposition(getX(), threshold);
     }
@@ -226,8 +225,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      * <p>This implementation computes and caches the QR decomposition of the X matrix
      * once it is successfully loaded.</p>
      */
-    @Override
-    protected void newXSampleData(Matrix x) {
+    @Override protected void newXSampleData(Matrix x) {
         super.newXSampleData(x);
         qr = new QRDecomposition(getX());
     }
@@ -243,8 +241,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      * @throws SingularMatrixException if the design matrix is singular
      * @throws NullPointerException if the data for the model have not been loaded
      */
-    @Override
-    protected Vector calculateBeta() {
+    @Override protected Vector calculateBeta() {
         return qr.solve(getY());
     }
 
@@ -265,8 +262,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      * @throws SingularMatrixException if the design matrix is singular
      * @throws NullPointerException if the data for the model have not been loaded
      */
-    @Override
-    protected Matrix calculateBetaVariance() {
+    @Override protected Matrix calculateBetaVariance() {
         int p = getX().columnSize();
         Matrix rAug = MatrixUtil.copy(qr.getR().viewPart(0, p, 0, p));
         Matrix rInv = rAug.inverse();

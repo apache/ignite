@@ -134,7 +134,7 @@ public final class Functions {
     }
 
     /** Function that returns passed constant. */
-    public static final IgniteDoubleFunction<Double> constant(Double c) {
+    public static IgniteDoubleFunction<Double> constant(Double c) {
         return a -> c;
     }
 

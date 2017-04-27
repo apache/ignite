@@ -235,38 +235,26 @@ public abstract class AbstractMultipleLinearRegression implements
             throw new NonSquareMatrixException(covariance.length, covariance[0].length);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double[] estimateRegressionParameters() {
+    /** {@inheritDoc} */
+    @Override public double[] estimateRegressionParameters() {
         Vector b = calculateBeta();
         return b.getStorage().data();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double[] estimateResiduals() {
+    /** {@inheritDoc} */
+    @Override public double[] estimateResiduals() {
         Vector b = calculateBeta();
         Vector e = yVector.minus(xMatrix.times(b));
         return e.getStorage().data();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Matrix estimateRegressionParametersVariance() {
+    /** {@inheritDoc} */
+    @Override public Matrix estimateRegressionParametersVariance() {
         return calculateBetaVariance();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double[] estimateRegressionParametersStandardErrors() {
+    /** {@inheritDoc} */
+    @Override public double[] estimateRegressionParametersStandardErrors() {
         Matrix betaVariance = estimateRegressionParametersVariance();
         double sigma = calculateErrorVariance();
         int len = betaVariance.rowSize();
@@ -276,11 +264,8 @@ public abstract class AbstractMultipleLinearRegression implements
         return res;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double estimateRegressandVariance() {
+    /** {@inheritDoc} */
+    @Override public double estimateRegressandVariance() {
         return calculateYVariance();
     }
 
