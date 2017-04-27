@@ -3614,9 +3614,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Descriptor.
      */
     public DynamicCacheDescriptor cacheDescriptor(String name) {
-        assert name != null;
-
-        return registeredCaches.get(name);
+        return name != null ? registeredCaches.get(name) : null;
     }
 
     /**
