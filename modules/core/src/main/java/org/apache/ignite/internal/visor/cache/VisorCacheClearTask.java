@@ -32,19 +32,19 @@ import org.apache.ignite.resources.JobContextResource;
  * Task that clears specified caches on specified node.
  */
 @GridInternal
-public class VisorCacheClearTask extends VisorOneNodeTask<String, VisorCacheClearTaskResult> {
+public class VisorCacheClearTask extends VisorOneNodeTask<VisorCacheClearTaskArg, VisorCacheClearTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheClearJob job(String arg) {
+    @Override protected VisorCacheClearJob job(VisorCacheClearTaskArg arg) {
         return new VisorCacheClearJob(arg, debug);
     }
 
     /**
      * Job that clear specified caches.
      */
-    private static class VisorCacheClearJob extends VisorJob<String, VisorCacheClearTaskResult> {
+    private static class VisorCacheClearJob extends VisorJob<VisorCacheClearTaskArg, VisorCacheClearTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -61,11 +61,11 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, VisorCacheClea
         /**
          * Create job.
          *
-         * @param cacheName Cache name to clear.
+         * @param arg Task argument.
          * @param debug Debug flag.
          */
-        private VisorCacheClearJob(String cacheName, boolean debug) {
-            super(cacheName, debug);
+        private VisorCacheClearJob(VisorCacheClearTaskArg arg, boolean debug) {
+            super(arg, debug);
 
             lsnr = new IgniteInClosure<IgniteFuture>() {
                 /** */
@@ -97,12 +97,17 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, VisorCacheClea
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorCacheClearTaskResult run(final String cacheName) {
+        @Override protected VisorCacheClearTaskResult run(final VisorCacheClearTaskArg arg) {
             if (futs == null)
                 futs = new IgniteFuture[3];
 
             if (futs[0] == null || futs[1] == null || futs[2] == null) {
+                String cacheName = arg.getCacheName();
+
                 IgniteCache cache = ignite.cache(cacheName);
+
+                if (cache == null)
+                    throw new IllegalStateException("Failed to find cache for name: " + cacheName);
 
                 if (futs[0] == null) {
                     futs[0] = cache.sizeLongAsync(CachePeekMode.PRIMARY);

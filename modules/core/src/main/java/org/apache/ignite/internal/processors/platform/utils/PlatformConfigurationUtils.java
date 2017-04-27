@@ -162,7 +162,6 @@ public class PlatformConfigurationUtils {
         ccfg.setRebalanceThrottle(in.readLong());
         ccfg.setRebalanceTimeout(in.readLong());
         ccfg.setSqlEscapeAll(in.readBoolean());
-        ccfg.setStartSize(in.readInt());
         ccfg.setWriteBehindBatchSize(in.readInt());
         ccfg.setWriteBehindEnabled(in.readBoolean());
         ccfg.setWriteBehindFlushFrequency(in.readLong());
@@ -795,7 +794,6 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getRebalanceThrottle());
         writer.writeLong(ccfg.getRebalanceTimeout());
         writer.writeBoolean(ccfg.isSqlEscapeAll());
-        writer.writeInt(ccfg.getStartSize());
         writer.writeInt(ccfg.getWriteBehindBatchSize());
         writer.writeBoolean(ccfg.isWriteBehindEnabled());
         writer.writeLong(ccfg.getWriteBehindFlushFrequency());

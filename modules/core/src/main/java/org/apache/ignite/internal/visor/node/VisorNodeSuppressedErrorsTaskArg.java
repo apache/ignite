@@ -15,100 +15,60 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.file;
+package org.apache.ignite.internal.visor.node;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Arguments for {@link VisorFileBlockTask}
+ * Arguments for task {@link VisorNodeSuppressedErrorsTask}
  */
-public class VisorFileBlockArg extends VisorDataTransferObject {
+public class VisorNodeSuppressedErrorsTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Log file path. */
-    private String path;
-
-    /** Log file offset. */
-    private long off;
-
-    /** Block size. */
-    private int blockSz;
-
-    /** Log file last modified timestamp. */
-    private long lastModified;
+    /** Last laded error orders. */
+    private Map<UUID, Long> orders;
 
     /**
      * Default constructor.
      */
-    public VisorFileBlockArg() {
+    public VisorNodeSuppressedErrorsTaskArg() {
         // No-op.
     }
 
     /**
-     * @param path Log file path.
-     * @param off Offset in file.
-     * @param blockSz Block size.
-     * @param lastModified Log file last modified timestamp.
+     * @param orders Last laded error orders.
      */
-    public VisorFileBlockArg(String path, long off, int blockSz, long lastModified) {
-        this.path = path;
-        this.off = off;
-        this.blockSz = blockSz;
-        this.lastModified = lastModified;
+    public VisorNodeSuppressedErrorsTaskArg(Map<UUID, Long> orders) {
+        this.orders = orders;
     }
 
     /**
-     * @return Log file path.
+     * @return Last laded error orders.
      */
-    public String getPath() {
-        return path;
-    }
-
-    /**
-     * @return Log file offset.
-     */
-    public long getOffset() {
-        return off;
-    }
-
-    /**
-     * @return Block size
-     */
-    public int getBlockSize() {
-        return blockSz;
-    }
-
-    /**
-     * @return Log file last modified timestamp.
-     */
-    public long getLastModified() {
-        return lastModified;
+    public Map<UUID, Long> getOrders() {
+        return orders;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, path);
-        out.writeLong(off);
-        out.writeInt(blockSz);
-        out.writeLong(lastModified);
+        U.writeMap(out, orders);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        path = U.readString(in);
-        off = in.readLong();
-        blockSz = in.readInt();
-        lastModified = in.readLong();
+        orders = U.readMap(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorFileBlockArg.class, this);
+        return S.toString(VisorNodeSuppressedErrorsTaskArg.class, this);
     }
 }

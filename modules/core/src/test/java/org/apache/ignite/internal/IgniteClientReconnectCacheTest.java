@@ -257,7 +257,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertTrue(reconnectLatch.await(5000, MILLISECONDS));
 
-        checkCacheDiscoveryData(srv, client, null, true, true, false);
+        checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, true, false);
 
         checkCacheDiscoveryData(srv, client, "nearCache", true, true, true);
 
@@ -295,7 +295,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertEquals(4, cache.get(key));
 
-        checkCacheDiscoveryData(srv2, client, null, true, true, false);
+        checkCacheDiscoveryData(srv2, client, DEFAULT_CACHE_NAME, true, true, false);
 
         checkCacheDiscoveryData(srv2, client, "nearCache", true, true, true);
 
@@ -843,11 +843,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
         }, IllegalStateException.class, null);
 
-        checkCacheDiscoveryData(srv, client, null, false, false, false);
+        checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, false, false, false);
 
         IgniteCache<Object, Object> clientCache0 = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        checkCacheDiscoveryData(srv, client, null, true, true, false);
+        checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, true, false);
 
         clientCache0.put(1, 1);
 
@@ -889,11 +889,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
         }, IllegalStateException.class, null);
 
-        checkCacheDiscoveryData(srv, client, null, true, false, false);
+        checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, false, false);
 
         IgniteCache<Object, Object> clientCache0 = client.cache(DEFAULT_CACHE_NAME);
 
-        checkCacheDiscoveryData(srv, client, null, true, true, false);
+        checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, true, false);
 
         assertEquals(TRANSACTIONAL,
             clientCache0.getConfiguration(CacheConfiguration.class).getAtomicityMode());

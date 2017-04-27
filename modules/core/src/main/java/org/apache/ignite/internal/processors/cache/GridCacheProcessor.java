@@ -659,7 +659,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void registerCache(CacheConfiguration cfg,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates) throws IgniteCheckedException {
-        assert cfg.getName() != null;
+        CU.validateCacheName(cfg.getName());
         cloneCheckSerializable(cfg);
 
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);

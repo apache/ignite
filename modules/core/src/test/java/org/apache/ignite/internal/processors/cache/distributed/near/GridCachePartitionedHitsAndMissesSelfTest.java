@@ -84,7 +84,6 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
-        cfg.setStartSize(700000);
         cfg.setWriteSynchronizationMode(FULL_ASYNC);
         cfg.setEvictionPolicy(null);
         cfg.setBackups(1);

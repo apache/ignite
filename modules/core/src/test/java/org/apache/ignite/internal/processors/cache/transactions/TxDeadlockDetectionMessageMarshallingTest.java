@@ -61,7 +61,7 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
         try {
             Ignite ignite = startGrid(0);
 
-            CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
             IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(ccfg);
 

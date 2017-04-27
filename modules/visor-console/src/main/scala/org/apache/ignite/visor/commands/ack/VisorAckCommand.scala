@@ -22,8 +22,7 @@ import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.common.VisorConsoleCommand
 import org.apache.ignite.visor.visor._
-
-import org.apache.ignite.internal.visor.misc.VisorAckTask
+import org.apache.ignite.internal.visor.misc.{VisorAckTask, VisorAckTaskArg}
 
 import scala.language.implicitConversions
 
@@ -93,7 +92,7 @@ class VisorAckCommand extends VisorConsoleCommand {
             adviseToConnect()
         else
             try {
-                executeMulti(classOf[VisorAckTask], msg)
+                executeMulti(classOf[VisorAckTask], new VisorAckTaskArg(msg))
             }
             catch {
                 case _: ClusterGroupEmptyException => scold("Topology is empty.")

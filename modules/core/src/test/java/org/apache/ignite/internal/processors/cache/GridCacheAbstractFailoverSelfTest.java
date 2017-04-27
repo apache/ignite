@@ -78,7 +78,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setNetworkTimeout(60_000);
-        cfg.setMetricsUpdateFrequency(30_000);
+        cfg.setMetricsUpdateFrequency(5_000);
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 

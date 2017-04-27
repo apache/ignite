@@ -71,7 +71,6 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setStartSize(200);
         cc.setRebalanceMode(CacheRebalanceMode.SYNC);
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
