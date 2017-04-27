@@ -24,7 +24,6 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -34,8 +33,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -110,7 +107,7 @@ public interface GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public long streamUpdateQuery(@Nullable final String spaceName, final String qry,
+    public long streamUpdateQuery(final String spaceName, final String qry,
          @Nullable final Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
 
     /**
@@ -135,7 +132,7 @@ public interface GridQueryIndexing {
      * @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(@Nullable String spaceName, String qry,
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String spaceName, String qry,
         String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
@@ -148,7 +145,7 @@ public interface GridQueryIndexing {
      * @param cacheVisitor Cache visitor
      * @throws IgniteCheckedException if failed.
      */
-    public void dynamicIndexCreate(@Nullable String spaceName, String tblName, QueryIndexDescriptorImpl idxDesc,
+    public void dynamicIndexCreate(String spaceName, String tblName, QueryIndexDescriptorImpl idxDesc,
         boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException;
 
     /**
@@ -160,7 +157,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public void dynamicIndexDrop(@Nullable String spaceName, String idxName, boolean ifExists)
+    public void dynamicIndexDrop(String spaceName, String idxName, boolean ifExists)
         throws IgniteCheckedException;
 
     /**
@@ -190,7 +187,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if type was registered, {@code false} if for some reason it was rejected.
      */
-    public boolean registerType(@Nullable String spaceName, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
+    public boolean registerType(String spaceName, GridQueryTypeDescriptor desc) throws IgniteCheckedException;
 
     /**
      * Unregisters type and removes all corresponding data.
@@ -199,7 +196,7 @@ public interface GridQueryIndexing {
      * @param typeName Type name.
      * @throws IgniteCheckedException If failed.
      */
-    public void unregisterType(@Nullable String spaceName, String typeName) throws IgniteCheckedException;
+    public void unregisterType(String spaceName, String typeName) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for space, so if space contains multiple indexes
@@ -213,7 +210,7 @@ public interface GridQueryIndexing {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(@Nullable String spaceName,
+    public void store(String spaceName,
         String typeName,
         KeyCacheObject key,
         int partId,
@@ -230,7 +227,7 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName,
+    public void remove(String spaceName,
         GridQueryTypeDescriptor type,
         KeyCacheObject key,
         int partId,
@@ -244,7 +241,7 @@ public interface GridQueryIndexing {
      * @param type Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public void rebuildIndexesFromHash(@Nullable String spaceName,
+    public void rebuildIndexesFromHash(String spaceName,
         GridQueryTypeDescriptor type) throws IgniteCheckedException;
 
     /**
@@ -253,7 +250,7 @@ public interface GridQueryIndexing {
      * @param spaceName Space name.
      * @param type Type descriptor.
      */
-    public void markForRebuildFromHash(@Nullable String spaceName, GridQueryTypeDescriptor type);
+    public void markForRebuildFromHash(String spaceName, GridQueryTypeDescriptor type);
 
     /**
      * Returns backup filter.

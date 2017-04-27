@@ -49,7 +49,7 @@ public class VisorCacheAffinityConfiguration extends VisorDataTransferObject {
     private int partitionedBackups;
 
     /** Total partition count. */
-    private Integer partitions;
+    private int partitions;
 
     /** Cache partitioned affinity exclude neighbors. */
     private Boolean exclNeighbors;
@@ -110,7 +110,7 @@ public class VisorCacheAffinityConfiguration extends VisorDataTransferObject {
     /**
      * @return Total partition count.
      */
-    public Integer getPartitions() {
+    public int getPartitions() {
         return partitions;
     }
 
@@ -126,7 +126,7 @@ public class VisorCacheAffinityConfiguration extends VisorDataTransferObject {
         U.writeString(out, function);
         U.writeString(out, mapper);
         out.writeInt(partitionedBackups);
-        out.writeObject(partitions);
+        out.writeInt(partitions);
         out.writeObject(exclNeighbors);
     }
 
@@ -135,7 +135,7 @@ public class VisorCacheAffinityConfiguration extends VisorDataTransferObject {
         function = U.readString(in);
         mapper = U.readString(in);
         partitionedBackups = in.readInt();
-        partitions = (Integer)in.readObject();
+        partitions = in.readInt();
         exclNeighbors = (Boolean)in.readObject();
     }
 

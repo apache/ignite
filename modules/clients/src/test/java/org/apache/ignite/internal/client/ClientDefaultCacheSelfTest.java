@@ -112,7 +112,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration cLoc = new CacheConfiguration();
+        CacheConfiguration cLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cLoc.setName(LOCAL_CACHE);
 

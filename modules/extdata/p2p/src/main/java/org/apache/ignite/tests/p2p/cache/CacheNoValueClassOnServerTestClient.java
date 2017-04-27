@@ -36,7 +36,7 @@ public class CacheNoValueClassOnServerTestClient extends NoValueClassOnServerAbs
 
     /** {@inheritDoc} */
     @Override protected void runTest() throws Exception {
-        IgniteCache<Integer, Person> cache = ignite.cache(null);
+        IgniteCache<Integer, Person> cache = ignite.cache("default");
 
         for (int i = 0; i < 100; i++)
             cache.put(i, new Person("name-" + i));

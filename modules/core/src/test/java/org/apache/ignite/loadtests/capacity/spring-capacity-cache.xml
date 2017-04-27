@@ -57,6 +57,8 @@
                     Partitioned cache example configuration.
                 -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="test-cache"/>
+
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <!--

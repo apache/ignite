@@ -417,6 +417,20 @@
                                                                     </xs:documentation>
                                                                 </xs:annotation>
                                                             </xs:attribute>
+                                                            <xs:attribute name="keyFieldName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        Name of the field that denotes the key.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                            <xs:attribute name="valueFieldName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        Name of the field that denotes the value.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
                                                         </xs:complexType>
                                                     </xs:element>
                                                 </xs:sequence>
@@ -888,16 +902,6 @@
                                 <xs:documentation>
                                     Local port range for local host ports (value must greater than or equal to <tt>0</tt>). If provided local port LocalPort is occupied, implementation will try to increment the port number for as long as it is less than initial value plus this range.
                                 </xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maxMissedClientHeartbeats" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum heartbeats count node can miss without failing client node.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maxMissedHeartbeats" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum heartbeats count node can miss without initiating status check.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="reconnectCount" type="xs:int">
@@ -1387,6 +1391,13 @@
                 <xs:annotation>
                     <xs:documentation>
                         Failure detection timeout used by discovery and communication subsystems.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="clientFailureDetectionTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Failure detection timeout used by discovery and communication subsystems for client nodes.
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>

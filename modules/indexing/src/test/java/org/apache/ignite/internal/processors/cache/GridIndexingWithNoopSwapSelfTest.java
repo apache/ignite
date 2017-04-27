@@ -93,7 +93,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testQuery() throws Exception {
-        IgniteCache<Integer, ObjectValue> cache = ignite.cache(null);
+        IgniteCache<Integer, ObjectValue> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         int cnt = 10;
 

@@ -50,7 +50,7 @@ public class IgniteCacheMultipleIndexedTypesTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testMultipleIndexedTypes() throws Exception {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         List<QueryEntity> qryEntities = new ArrayList<>();
 

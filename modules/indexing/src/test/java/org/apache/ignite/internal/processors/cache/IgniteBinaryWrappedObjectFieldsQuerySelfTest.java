@@ -20,7 +20,8 @@ package org.apache.ignite.internal.processors.cache;
  * Tests that server nodes do not need class definitions to execute queries.
  * Used internal class.
  */
-public class IgniteBinaryWrappedObjectFieldsQuerySelfTest extends IgniteBinaryObjectFieldsQuerySelfTest {
+public class
+IgniteBinaryWrappedObjectFieldsQuerySelfTest extends IgniteBinaryObjectFieldsQuerySelfTest {
     /** {@inheritDoc} */
     protected String getPersonClassName() {
         return "org.apache.ignite.tests.p2p.cache.PersonWrapper$Person";

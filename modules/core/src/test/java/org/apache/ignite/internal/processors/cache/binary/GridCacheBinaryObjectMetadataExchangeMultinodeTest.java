@@ -96,7 +96,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
 
         cfg.setClientMode(clientMode);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.REPLICATED);
 
@@ -244,7 +244,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
                     // No-op.
                 }
 
-                Object fieldVal = ((BinaryObject) ignite2.cache(null).withKeepBinary().get(1)).field("f1");
+                Object fieldVal = ((BinaryObject) ignite2.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(1)).field("f1");
 
                 return fieldVal;
             }
@@ -272,7 +272,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             }
         }).get();
 
-        int fld = ((BinaryObject) ignite0.cache(null).withKeepBinary().get(1)).field(intFieldName);
+        int fld = ((BinaryObject) ignite0.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(1)).field(intFieldName);
 
         assertEquals(fld, 101);
 
@@ -286,7 +286,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             }
         }).get();
 
-        assertEquals(((BinaryObject)ignite1.cache(null).withKeepBinary().get(2)).field(strFieldName), "str");
+        assertEquals(((BinaryObject)ignite1.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(2)).field(strFieldName), "str");
     }
 
     /**
@@ -317,7 +317,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
 
         String res = client.compute(clientGrp).call(new IgniteCallable<String>() {
             @Override public String call() throws Exception {
-                return ((BinaryObject)client.cache(null).withKeepBinary().get(1)).field("f2");
+                return ((BinaryObject)client.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(1)).field("f2");
             }
         });
 
@@ -349,7 +349,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
 
         client.compute(clientGrp).call(new IgniteCallable<String>() {
             @Override public String call() throws Exception {
-                return ((BinaryObject)client.cache(null).withKeepBinary().get(0)).field("f2");
+                return ((BinaryObject)client.cache(DEFAULT_CACHE_NAME).withKeepBinary().get(0)).field("f2");
             }
         });
 
@@ -436,7 +436,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     private void addIntField(Ignite ignite, String fieldName, int fieldVal, int cacheIdx) {
         BinaryObjectBuilder builder = ignite.binary().builder(BINARY_TYPE_NAME);
 
-        IgniteCache<Object, Object> cache = ignite.cache(null).withKeepBinary();
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
         builder.setField(fieldName, fieldVal);
 
@@ -454,7 +454,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     private void addStringField(Ignite ignite, String fieldName, String fieldVal, int cacheIdx) {
         BinaryObjectBuilder builder = ignite.binary().builder(BINARY_TYPE_NAME);
 
-        IgniteCache<Object, Object> cache = ignite.cache(null).withKeepBinary();
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
         builder.setField(fieldName, fieldVal);
 

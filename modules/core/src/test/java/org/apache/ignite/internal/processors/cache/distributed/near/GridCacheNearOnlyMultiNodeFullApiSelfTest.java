@@ -73,9 +73,9 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             if (ignite(i).configuration().isClientMode()) {
                 if (clientHasNearCache())
-                    ignite(i).createNearCache(null, new NearCacheConfiguration<>());
+                    ignite(i).createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
                 else
-                    ignite(i).cache(null);
+                    ignite(i).cache(DEFAULT_CACHE_NAME);
 
                 break;
             }
@@ -289,7 +289,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
             IgnitePair<Long> entryTtl = null;
 
-            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), key))
                 entryTtl = entryTtl(jcache(i), key);
             else if (i == nearIdx)
                 entryTtl = nearEntryTtl(jcache(i), key);
@@ -322,7 +322,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             IgnitePair<Long> entryTtl = null;
 
-            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), key))
                 entryTtl = entryTtl(jcache(i), key);
             else if (i == nearIdx)
                 entryTtl = nearEntryTtl(jcache(i), key);
@@ -352,7 +352,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             IgnitePair<Long> entryTtl = null;
 
-            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), key))
                 entryTtl = entryTtl(jcache(i), key);
             else if (i == nearIdx)
                 entryTtl = nearEntryTtl(jcache(i), key);

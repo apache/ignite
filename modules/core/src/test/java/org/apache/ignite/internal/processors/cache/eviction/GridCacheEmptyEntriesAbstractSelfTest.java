@@ -174,7 +174,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
                 Ignite g = startGrids();
 
-                IgniteCache<String, String> cache = g.cache(null);
+                IgniteCache<String, String> cache = g.cache(DEFAULT_CACHE_NAME);
 
                 try {
                     info(">>> Checking policy [txConcurrency=" + txConcurrency + ", txIsolation=" + txIsolation +

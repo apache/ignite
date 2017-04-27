@@ -492,6 +492,9 @@ public class PlatformConfigurationUtils {
             res.setIndexes(indexes);
         }
 
+        res.setKeyFieldName(in.readString());
+        res.setValueFieldName(in.readString());
+
         return res;
     }
 
@@ -556,10 +559,10 @@ public class PlatformConfigurationUtils {
             cfg.setDaemon(in.readBoolean());
         if (in.readBoolean())
             cfg.setLateAffinityAssignment(in.readBoolean());
-        if (in.readBoolean()) {
-            cfg.setClientFailureDetectionTimeout(in.readLong());
+        if (in.readBoolean())
             cfg.setFailureDetectionTimeout(in.readLong());
-        }
+        if (in.readBoolean())
+            cfg.setClientFailureDetectionTimeout(in.readLong());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -907,6 +910,9 @@ public class PlatformConfigurationUtils {
         }
         else
             writer.writeInt(0);
+
+        writer.writeString(queryEntity.getKeyFieldName());
+        writer.writeString(queryEntity.getValueFieldName());
     }
 
     /**
@@ -969,8 +975,9 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(true);
         w.writeBoolean(cfg.isLateAffinityAssignment());
         w.writeBoolean(true);
-        w.writeLong(cfg.getClientFailureDetectionTimeout());
         w.writeLong(cfg.getFailureDetectionTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getClientFailureDetectionTimeout());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
