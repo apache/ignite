@@ -147,7 +147,7 @@ public class MemoryConfiguration implements Serializable {
      *
      * @return {@code this} for chaining.
      */
-    public MemoryConfiguration setSysCacheMaxSize(long sysCacheMaxSize) {
+    public MemoryConfiguration setSystemCacheMaxSize(long sysCacheMaxSize) {
         this.sysCacheMaxSize = sysCacheMaxSize;
 
         return this;

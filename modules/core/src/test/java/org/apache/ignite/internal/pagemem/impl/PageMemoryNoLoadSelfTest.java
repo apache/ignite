@@ -284,7 +284,14 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir);
 
-        return new PageMemoryNoStoreImpl(log(), provider, null, PAGE_SIZE, plcCfg, new MemoryMetricsImpl(plcCfg), true);
+        return new PageMemoryNoStoreImpl(
+            log(),
+            provider,
+            null,
+            PAGE_SIZE,
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
+            true);
     }
 
     /**
