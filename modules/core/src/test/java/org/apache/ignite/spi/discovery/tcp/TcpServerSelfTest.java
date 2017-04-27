@@ -18,21 +18,11 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.SocketOption;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.SocketChannel;
 import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import junit.framework.TestCase;
@@ -71,11 +61,11 @@ public class TcpServerSelfTest extends TestCase {
         SSLEngine sslEngine2 = sslCtx.createSSLEngine();
         sslEngine2.setUseClientMode(true);
 
-        final BlockingSslHandler h1 = new TestSslHandler(sslEngine1, true, log, buf1, buf2);
-        final BlockingSslHandler h2 = new TestSslHandler(sslEngine2, true, log, buf2, buf1);
+        final TestSslHandler h1 = new TestSslHandler(sslEngine1, true, log, buf1, buf2);
+        final TestSslHandler h2 = new TestSslHandler(sslEngine2, true, log, buf2, buf1);
 
         IgniteInternalFuture handshakeFut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception{
+            @Override public Void call() throws Exception {
                 h1.handshake();
 
                 return null;
@@ -84,32 +74,54 @@ public class TcpServerSelfTest extends TestCase {
 
         h2.handshake();
 
-        Random random = new Random();
+        final Random random = new Random();
 
         for (int iter = 0; iter < 50; iter++) {
-            int size = random.nextInt(65535);
+            final int size = random.nextInt(65535);
 
             final byte[] data = new byte[size];
             byte[] data2 = new byte[size];
 
             random.nextBytes(data);
 
-            GridTestUtils.runAsync(new Callable() {
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable() {
                 @Override public Void call() throws Exception {
-                    h1.outputStream().write(data);
+                    int pos = 0;
+
+                    while (pos < size) {
+                        int len0 = Math.min(random.nextInt(20000), size - pos);
+
+                        byte[] data0 = new byte[len0];
+                        System.arraycopy(data, pos, data0, 0, len0);
+                        pos += len0;
+
+                        h1.outputStream().write(data0);
+                    }
 
                     return null;
                 }
             }, "write");
 
-            h2.inputStream().read(data2);
+            int pos = 0;
+
+            while (pos < size) {
+                int len0 = Math.min(random.nextInt(20000), size - pos);
+                byte[] data0 = new byte[len0];
+                h2.inputStream().read(data0);
+
+                System.arraycopy(data0, 0, data2, pos, len0);
+                pos += len0;
+            }
+
+            fut.get(5000);
 
             for (int i = 0; i < size; i++)
                 assertEquals("bad data in pos " + i, data[i], data2[i]);
         }
 
-        handshakeFut.get();
+        handshakeFut.get(5000);
     }
+
     /**
      *
      */
@@ -151,8 +163,10 @@ public class TcpServerSelfTest extends TestCase {
         @Override protected int doWrite(ByteBuffer buf) throws IOException {
             int cnt = 0;
 
-            while (buf.hasRemaining())
+            while (buf.hasRemaining()) {
                 out.add(buf.get());
+                cnt++;
+            }
 
             return cnt;
         }

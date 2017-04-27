@@ -498,6 +498,13 @@ public class BlockingSslHandler {
         return buf;
     }
 
+    /**
+     * Read from channel to ByteBuffer
+     *
+     * @param inBuf ByteBuffer to read to.
+     * @return Number of bytes read.
+     * @throws IOException If failed.
+     */
     protected int doRead(ByteBuffer inBuf) throws IOException {
         return ch.read(inBuf);
     }
@@ -584,6 +591,13 @@ public class BlockingSslHandler {
         return appBuf.hasRemaining() ? appBuf.get() & 0xff : -1;
     }
 
+    /**
+     * Write ByteBuffer to channel.
+     *
+     * @param buf ByteBuffer to write.
+     * @return Number of bytes written.
+     * @throws IOException if fails.
+     */
     protected int doWrite(ByteBuffer buf) throws IOException {
         return ch.write(buf);
     }
@@ -656,7 +670,7 @@ public class BlockingSslHandler {
     /**
      * Get socket channel.
      *
-     * @return
+     * @return Channel.
      */
     public SocketChannel channel() {
         return ch;
