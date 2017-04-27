@@ -83,7 +83,7 @@ public class VisorRunningQueriesCollectorTask extends VisorMultiNodeTask<VisorRu
             assert arg != null;
 
             Collection<GridRunningQueryInfo> queries = ignite.context().query()
-                .runningQueries(arg.getDuration() != null ? arg.getDuration() : 0);
+                .runningQueries(arg.getDuration());
 
             Collection<VisorRunningQuery> res = new ArrayList<>(queries.size());
 
