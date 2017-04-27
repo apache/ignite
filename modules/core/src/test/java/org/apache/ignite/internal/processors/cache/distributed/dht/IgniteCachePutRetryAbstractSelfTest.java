@@ -443,13 +443,13 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     private void checkInternalCleanup() throws Exception{
         checkNoAtomicFutures();
 
-        checkOnePhaseCommitReturnValuesCleaned();
+        checkOnePhaseCommitReturnValuesCleaned(GRID_CNT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    void checkNoAtomicFutures() throws Exception {
+    private void checkNoAtomicFutures() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             final IgniteKernal ignite = (IgniteKernal)grid(i);
 
@@ -462,27 +462,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             Collection<?> futs = ignite.context().cache().context().mvcc().atomicFutures();
 
             assertTrue("Unexpected atomic futures: " + futs, futs.isEmpty());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    void checkOnePhaseCommitReturnValuesCleaned() throws Exception {
-        U.sleep(DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT);
-
-        for (int i = 0; i < GRID_CNT; i++) {
-            IgniteKernal ignite = (IgniteKernal)grid(i);
-
-            IgniteTxManager tm = ignite.context().cache().context().tm();
-
-            Map completedVersHashMap = U.field(tm, "completedVersHashMap");
-
-            for (Object o : completedVersHashMap.values()) {
-                assertTrue("completedVersHashMap contains" + o.getClass() + " instead of boolean. " +
-                    "These values should be replaced by boolean after onePhaseCommit finished. " +
-                    "[node=" + i + "]", o instanceof Boolean);
-            }
         }
     }
 

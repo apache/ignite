@@ -71,9 +71,7 @@ public abstract class AbstractVector implements Vector {
     /** Read-only error message. */
     private static final String RO_MSG = "Vector is read-only.";
 
-    /**
-     *
-     */
+    /** */
     private void ensureReadOnly() {
         if (readOnly)
             throw new UnsupportedOperationException(RO_MSG);
@@ -707,19 +705,25 @@ public abstract class AbstractVector implements Vector {
             return foldMap(vec, Functions.PLUS, Functions.MINUS_SQUARED, 0d);
     }
 
-    /** */
+    /**
+     * @param vec Vector to check for valid cardinality.
+     */
     protected void checkCardinality(Vector vec) {
         if (vec.size() != size())
             throw new CardinalityException(size(), vec.size());
     }
 
-    /** */
+    /**
+     * @param vec Array to check for valid cardinality.
+     */
     protected void checkCardinality(double[] vec) {
         if (vec.length != size())
             throw new CardinalityException(size(), vec.length);
     }
 
-    /** */
+    /**
+     * @param arr Array to check for valid cardinality.
+     */
     protected void checkCardinality(int[] arr) {
         if (arr.length != size())
             throw new CardinalityException(size(), arr.length);

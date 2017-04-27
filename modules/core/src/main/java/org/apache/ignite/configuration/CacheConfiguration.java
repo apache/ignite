@@ -143,15 +143,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default rebalance batch size in bytes. */
     public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
 
-    /** Default maximum eviction queue ratio. */
-    public static final float DFLT_MAX_EVICTION_OVERFLOW_RATIO = 10;
-
-    /** Default synchronous eviction timeout in milliseconds. */
-    public static final long DFLT_EVICT_SYNCHRONIZED_TIMEOUT = 10000;
-
-    /** Default synchronous eviction concurrency level. */
-    public static final int DFLT_EVICT_SYNCHRONIZED_CONCURRENCY_LEVEL = 4;
-
     /** Default value for eager ttl flag. */
     public static final boolean DFLT_EAGER_TTL = true;
 
@@ -175,6 +166,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default batch size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_BATCH_SIZE = 512;
+
+    /** Default write coalescing for write-behind cache store. */
+    public static final boolean DFLT_WRITE_BEHIND_COALESCING = true;
 
     /** Default maximum number of query iterators that can be stored. */
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
@@ -287,13 +281,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Rebalance batches prefetch count. */
-    private long rebalanceBatchesPrefetchCount = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
+    private long rebalanceBatchesPrefetchCnt = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
 
     /** Maximum inline size for sql indexes. */
-    private int sqlIndexMaxInlineSize = DFLT_SQL_INDEX_MAX_INLINE_SIZE;
+    private int sqlIdxMaxInlineSize = DFLT_SQL_INDEX_MAX_INLINE_SIZE;
 
     /** Write-behind feature. */
     private boolean writeBehindEnabled = DFLT_WRITE_BEHIND_ENABLED;
@@ -309,6 +303,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
+
+    /** Write coalescing flag for write-behind cache store */
+    private boolean writeBehindCoalescing = DFLT_WRITE_BEHIND_COALESCING;
 
     /** Maximum number of query iterators that can be stored. */
     private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
@@ -368,7 +365,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Collection<QueryEntity> qryEntities;
 
     /** Partition loss policy. */
-    private PartitionLossPolicy partitionLossPolicy = DFLT_PARTITION_LOSS_POLICY;
+    private PartitionLossPolicy partLossPlc = DFLT_PARTITION_LOSS_POLICY;
 
     /** */
     private int qryParallelism = DFLT_QUERY_PARALLELISM;
@@ -427,18 +424,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         memPlcName = cc.getMemoryPolicyName();
-        sqlIndexMaxInlineSize = cc.getSqlIndexMaxInlineSize();
+        sqlIdxMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         onheapCache = cc.isOnheapCacheEnabled();
-        partitionLossPolicy = cc.getPartitionLossPolicy();
+        partLossPlc = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
         qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
-        rebalanceBatchesPrefetchCount = cc.getRebalanceBatchesPrefetchCount();
+        rebalanceBatchesPrefetchCnt = cc.getRebalanceBatchesPrefetchCount();
         rebalanceDelay = cc.getRebalanceDelay();
         rebalanceMode = cc.getRebalanceMode();
         rebalanceOrder = cc.getRebalanceOrder();
@@ -454,6 +451,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
+        writeBehindCoalescing = cc.getWriteBehindCoalescing();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
@@ -1081,7 +1079,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return batches count
      */
     public long getRebalanceBatchesPrefetchCount() {
-        return rebalanceBatchesPrefetchCount;
+        return rebalanceBatchesPrefetchCnt;
     }
 
     /**
@@ -1095,7 +1093,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setRebalanceBatchesPrefetchCount(long rebalanceBatchesCnt) {
-        this.rebalanceBatchesPrefetchCount = rebalanceBatchesCnt;
+        this.rebalanceBatchesPrefetchCnt = rebalanceBatchesCnt;
 
         return this;
     }
@@ -1138,16 +1136,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Maximum payload size for offheap indexes.
      */
     public int getSqlIndexMaxInlineSize() {
-        return sqlIndexMaxInlineSize;
+        return sqlIdxMaxInlineSize;
     }
 
     /**
      * Sets maximum inline size for sql indexes.
      *
-     * @param sqlIndexMaxInlineSize Maximum inline size for sql indexes.
+     * @param sqlIdxMaxInlineSize Maximum inline size for sql indexes.
+     * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setSqlIndexMaxInlineSize(int sqlIndexMaxInlineSize) {
-        this.sqlIndexMaxInlineSize = sqlIndexMaxInlineSize;
+    public CacheConfiguration<K, V> setSqlIndexMaxInlineSize(int sqlIdxMaxInlineSize) {
+        this.sqlIdxMaxInlineSize = sqlIdxMaxInlineSize;
 
         return this;
     }
@@ -1282,6 +1281,32 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setWriteBehindBatchSize(int writeBehindBatchSize) {
         this.writeBehindBatchSize = writeBehindBatchSize;
+
+        return this;
+    }
+
+    /**
+     * Write coalescing flag for write-behind cache store operations. Store operations (get or remove)
+     * with the same key are combined or coalesced to single, resulting operation
+     * to reduce pressure to underlying cache store.
+     * <p/>
+     * If not provided, default value is {@link #DFLT_WRITE_BEHIND_COALESCING}.
+     *
+     * @return Write coalescing flag.
+     */
+    public boolean getWriteBehindCoalescing() {
+        return writeBehindCoalescing;
+    }
+
+    /**
+     * Sets write coalescing flag for write-behind cache.
+     *
+     * @param writeBehindCoalescing Write coalescing flag.
+     * @see #getWriteBehindCoalescing()
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setWriteBehindCoalescing(boolean writeBehindCoalescing) {
+        this.writeBehindCoalescing = writeBehindCoalescing;
 
         return this;
     }
@@ -1776,18 +1801,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see PartitionLossPolicy
      */
     public PartitionLossPolicy getPartitionLossPolicy() {
-        return partitionLossPolicy == null ? DFLT_PARTITION_LOSS_POLICY : partitionLossPolicy;
+        return partLossPlc == null ? DFLT_PARTITION_LOSS_POLICY : partLossPlc;
     }
 
     /**
      * Sets partition loss policy. This policy defines how Ignite will react to a situation when all nodes for
      * some partition leave the cluster.
      *
-     * @param partitionLossPolicy Partition loss policy.
+     * @param partLossPlc Partition loss policy.
+     * @return {@code this} for chaining.
      * @see PartitionLossPolicy
      */
-    public CacheConfiguration<K, V> setPartitionLossPolicy(PartitionLossPolicy partitionLossPolicy) {
-        this.partitionLossPolicy = partitionLossPolicy;
+    public CacheConfiguration<K, V> setPartitionLossPolicy(PartitionLossPolicy partLossPlc) {
+        this.partLossPlc = partLossPlc;
 
         return this;
     }
@@ -1958,7 +1984,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         for (ClassProperty prop : desc.props.values())
             entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
 
-        entity.setKeyFields(desc.keyProperties);
+        entity.setKeyFields(desc.keyProps);
 
         QueryIndex txtIdx = null;
 
@@ -2063,7 +2089,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         @Nullable ClassProperty parent) {
         if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = QueryUtils._VAL + "_idx";
+                String idxName = cls.getSimpleName() + "_" + QueryUtils._VAL + "_idx";
 
                 type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
@@ -2112,33 +2138,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
 
-                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
-                }
-            }
-
-            for (Method mtd : c.getDeclaredMethods()) {
-                if (mtd.isBridge())
-                    continue;
-
-                QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
-                QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
-
-                if (sqlAnn != null || txtAnn != null) {
-                    if (mtd.getParameterTypes().length != 0)
-                        throw new CacheException("Getter with QuerySqlField " +
-                            "annotation cannot have parameters: " + mtd);
-
-                    ClassProperty prop = new ClassProperty(mtd);
-
-                    prop.parent(parent);
-
-                    // Add parent property before its possible nested properties so that
-                    // resulting parent column comes before columns corresponding to those
-                    // nested properties in the resulting table - that way nested
-                    // properties override will happen properly (first parent, then children).
-                    type.addProperty(prop, key, true);
-
-                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
+                    processAnnotation(key, sqlAnn, txtAnn, cls, c, field.getType(), prop, type);
                 }
             }
         }
@@ -2150,20 +2150,25 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param key If given class relates to key.
      * @param sqlAnn SQL annotation, can be {@code null}.
      * @param txtAnn H2 text annotation, can be {@code null}.
-     * @param cls Class of field or return type for method.
+     * @param cls Entity class.
+     * @param curCls Current entity class.
+     * @param fldCls Class of field or return type for method.
      * @param prop Current property.
      * @param desc Class description.
      */
     private static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
-        Class<?> cls, ClassProperty prop, TypeDescriptor desc) {
+        Class<?> cls, Class<?> curCls, Class<?> fldCls, ClassProperty prop, TypeDescriptor desc) {
         if (sqlAnn != null) {
-            processAnnotationsInClass(key, cls, desc, prop);
+            processAnnotationsInClass(key, fldCls, desc, prop);
 
             if (!sqlAnn.name().isEmpty())
                 prop.alias(sqlAnn.name());
 
             if (sqlAnn.index()) {
-                String idxName = prop.alias() + "_idx";
+                String idxName = curCls.getSimpleName() + "_" + prop.alias() + "_idx";
+
+                if (cls != curCls)
+                    idxName = cls.getSimpleName() + "_" + idxName;
 
                 desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
@@ -2223,8 +2228,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheConfiguration<K, V> setTypes(Class<K> keyType, Class<V> valueType) {
-        super.setTypes(keyType, valueType);
+    @Override public CacheConfiguration<K, V> setTypes(Class<K> keyType, Class<V> valType) {
+        super.setTypes(keyType, valType);
 
         return this;
     }
@@ -2244,8 +2249,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheConfiguration<K, V> setStoreByValue(boolean isStoreByValue) {
-        super.setStoreByValue(isStoreByValue);
+    @Override public CacheConfiguration<K, V> setStoreByValue(boolean isStoreByVal) {
+        super.setStoreByValue(isStoreByVal);
 
         return this;
     }
@@ -2292,7 +2297,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         /** */
         @GridToStringInclude
-        private final Set<String> keyProperties = new HashSet<>();
+        private final Set<String> keyProps = new HashSet<>();
 
         /** */
         @GridToStringInclude
@@ -2426,7 +2431,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             fields.put(name, prop.type());
 
             if (key)
-                keyProperties.add(name);
+                keyProps.add(name);
         }
 
         /**
@@ -2491,6 +2496,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          */
         private IndexDescriptor(QueryIndexType type) {
             this(type, -1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return null;
         }
 
         /** {@inheritDoc} */

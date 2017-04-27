@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -73,6 +74,7 @@ import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -853,8 +855,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     }
                 });
 
-            if (metricsUpdateFreq > -1L)
-                updateJobMetrics();
+            updateJobMetrics();
         }
         finally {
             handlingCollision.set(Boolean.FALSE);
@@ -865,24 +866,21 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      */
     private void updateJobMetrics() {
-        assert metricsUpdateFreq > -1L;
+        assert metricsUpdateFreq > 0L;
 
-        if (metricsUpdateFreq == 0L)
+        long now = U.currentTimeMillis();
+        long lastUpdate = metricsLastUpdateTstamp.get();
+
+        if (now - lastUpdate > metricsUpdateFreq && metricsLastUpdateTstamp.compareAndSet(lastUpdate, now))
             updateJobMetrics0();
-        else {
-            long now = U.currentTimeMillis();
-            long lastUpdate = metricsLastUpdateTstamp.get();
 
-            if (now - lastUpdate > metricsUpdateFreq && metricsLastUpdateTstamp.compareAndSet(lastUpdate, now))
-                updateJobMetrics0();
-        }
     }
 
     /**
      *
      */
     private void updateJobMetrics0() {
-        assert metricsUpdateFreq > -1L;
+        assert metricsUpdateFreq > 0L;
 
         GridJobMetricsSnapshot m = new GridJobMetricsSnapshot();
 
@@ -1058,7 +1056,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             sesAttrs,
                             req.isSessionFullSupport(),
                             req.isInternal(),
-                            req.getSubjectId());
+                            req.getSubjectId(),
+                            req.executorName());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
                         taskSes.setClassLoader(dep.classLoader());
@@ -1098,7 +1097,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         evtLsnr,
                         holdLsnr,
                         partsReservation,
-                        req.getTopVer());
+                        req.getTopVer(),
+                        req.executorName());
 
                     jobCtx.job(job);
 
@@ -1274,7 +1274,20 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private boolean executeAsync(GridJobWorker jobWorker) {
         try {
-            ctx.getExecutorService().execute(jobWorker);
+            if (jobWorker.executorName() != null) {
+                Executor customExec = ctx.pools().customExecutor(jobWorker.executorName());
+
+                if (customExec != null)
+                    customExec.execute(jobWorker);
+                else {
+                    LT.warn(log, "Custom executor doesn't exist (local job will be processed in default " +
+                        "thread pool): " + jobWorker.executorName());
+
+                    ctx.getExecutorService().execute(jobWorker);
+                }
+            }
+            else
+                ctx.getExecutorService().execute(jobWorker);
 
             if (metricsUpdateFreq > -1L)
                 startedJobsCnt.increment();

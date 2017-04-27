@@ -20,7 +20,6 @@ package org.apache.ignite.cache.store.cassandra.common;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Row;
 import java.beans.PropertyDescriptor;
-import java.lang.annotation.Annotation;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetAddress;
@@ -103,25 +102,12 @@ public class PropertyMappingHelper {
      * Extracts all property descriptors from a class.
      *
      * @param clazz class which property descriptors should be extracted.
-     * @param primitive boolean flag indicating that only property descriptors for primitive properties should be extracted.
+     * @param primitive boolean flag indicating that only property descriptors for primitive properties
+     *      should be extracted.
      *
      * @return list of class property descriptors
      */
     public static List<PropertyDescriptor> getPojoPropertyDescriptors(Class clazz, boolean primitive) {
-        return getPojoPropertyDescriptors(clazz, null, primitive);
-    }
-
-    /**
-     * Extracts all property descriptors having specific annotation from a class.
-     *
-     * @param clazz class which property descriptors should be extracted.
-     * @param annotation annotation to look for.
-     * @param primitive boolean flag indicating that only property descriptors for primitive properties should be extracted.
-     *
-     * @return list of class property descriptors
-     */
-    public static <T extends Annotation> List<PropertyDescriptor> getPojoPropertyDescriptors(Class clazz,
-        Class<T> annotation, boolean primitive) {
         PropertyDescriptor[] descriptors = PropertyUtils.getPropertyDescriptors(clazz);
 
         List<PropertyDescriptor> list = new ArrayList<>(descriptors == null ? 1 : descriptors.length);
@@ -133,8 +119,7 @@ public class PropertyMappingHelper {
             if (descriptor.getReadMethod() == null || (primitive && !isPrimitivePropertyDescriptor(descriptor)))
                 continue;
 
-            if (annotation == null || descriptor.getReadMethod().getAnnotation(annotation) != null)
-                list.add(descriptor);
+            list.add(descriptor);
         }
 
         return list;

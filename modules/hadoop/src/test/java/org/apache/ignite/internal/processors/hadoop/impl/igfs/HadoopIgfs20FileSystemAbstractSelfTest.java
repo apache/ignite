@@ -305,7 +305,6 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
         cfg.setName("igfs");
         cfg.setPrefetchBlocks(1);
-        cfg.setMaxSpaceSize(64 * 1024 * 1024);
         cfg.setDefaultMode(mode);
         cfg.setMetaCacheConfiguration(metaCacheConfiguration(igniteInstanceName));
         cfg.setDataCacheConfiguration(dataCacheConfiguration(igniteInstanceName));

@@ -33,6 +33,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -106,6 +107,13 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Test near cache flag.
+     */
+    protected boolean nearCacheEnabled() {
+        return false;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testTxOperations() throws Exception {
@@ -144,11 +152,13 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
      * @param name Cache name.
      * @param cacheMode Cache mode.
      * @param writeSync Write synchronization mode.
+     * @param nearCache Near cache flag.
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(String name,
         CacheMode cacheMode,
-        CacheWriteSynchronizationMode writeSync) {
+        CacheWriteSynchronizationMode writeSync,
+        boolean nearCache) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
@@ -161,20 +171,25 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
 
         ccfg.setAffinity(new RendezvousAffinityFunction());
 
+        if (nearCache)
+            ccfg.setNearConfiguration(new NearCacheConfiguration());
+
         return ccfg;
     }
 
     /**
      * @param cacheMode Cache mode.
      * @param writeSync Write synchronization mode.
+     * @param nearCache Near cache flag.
      * @param ignite Node to use.
      * @param name Cache name.
      */
     protected void createCache(CacheMode cacheMode,
         CacheWriteSynchronizationMode writeSync,
+        boolean nearCache,
         Ignite ignite,
         String name) {
-        ignite.createCache(cacheConfiguration(name, cacheMode, writeSync));
+        ignite.createCache(cacheConfiguration(name, cacheMode, writeSync, nearCache));
     }
 
     /**
@@ -189,8 +204,8 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         Ignite ignite = ignite(0);
 
         try {
-            createCache(cacheMode, writeSync, ignite, CACHE1);
-            createCache(cacheMode, writeSync, ignite, CACHE2);
+            createCache(cacheMode, writeSync, nearCacheEnabled(), ignite, CACHE1);
+            createCache(cacheMode, writeSync, false, ignite, CACHE2);
 
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, false);
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, true);
