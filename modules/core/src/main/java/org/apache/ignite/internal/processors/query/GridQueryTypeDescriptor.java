@@ -81,6 +81,13 @@ public interface GridQueryTypeDescriptor {
     public Map<String, GridQueryIndexDescriptor> indexes();
 
     /**
+     * Get text index for this type (if any).
+     *
+     * @return Text index or {@code null}.
+     */
+    public GridQueryIndexDescriptor textIndex();
+
+    /**
      * Gets value class.
      *
      * @return Value class.
@@ -121,4 +128,9 @@ public interface GridQueryTypeDescriptor {
      * @return Affinity key.
      */
     public String affinityKey();
+
+    /**
+     * @return BinaryObject's type ID if indexed value is BinaryObject, otherwise value class' hash code.
+     */
+    public int typeId();
 }

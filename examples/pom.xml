@@ -81,6 +81,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring-data</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.code.simple-spring-memcached</groupId>
             <artifactId>spymemcached</artifactId>
             <version>2.7.3</version>
@@ -113,6 +119,7 @@
         <lgpl.folder>src/main/java</lgpl.folder>
         <java8.folder>src/main/java</java8.folder>
         <spark.folder>src/main/java</spark.folder>
+        <ml.folder>src/main/java</ml.folder>
         <spark.test.folder>src/test/java</spark.test.folder>
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <java8.test.folder>src/test/java</java8.test.folder>
@@ -247,6 +254,34 @@
         </profile>
 
         <profile>
+            <id>ml</id>
+
+            <properties>
+                <ml.folder>src/main/ml</ml.folder>
+            </properties>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
             <id>lgpl</id>
 
             <properties>
@@ -282,10 +317,10 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>schema-import/src/main/java</source>
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>
+                                <source>${ml.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

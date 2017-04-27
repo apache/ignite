@@ -479,7 +479,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @param igniteInstanceName Ignite instance name.
      * @return Hibernate configuration.
      */
-    protected Configuration hibernateConfiguration(AccessType accessType,
+    private Configuration hibernateConfiguration(AccessType accessType,
         String igniteInstanceName) {
         Configuration cfg = new Configuration();
 

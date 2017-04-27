@@ -144,6 +144,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     }
 
     /**
+     * @param off Offset relative to the {@link #position()}.
      * @return Read int value.
      */
     public byte readByte(int off) {
@@ -483,6 +484,14 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr, pos + 4 + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
+            }
+
+            case GridBinaryMarshaller.OPTM_MARSH: {
+                final BinaryHeapInputStream bin = BinaryHeapInputStream.create(arr, pos + 1);
+
+                final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(ctx.configuration()));
+
+                return obj;
             }
 
             default:
@@ -887,8 +896,8 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         }
 
         /** {@inheritDoc} */
-        @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
-            return ctx.writeValue(writer, wrappedCollection());
+        @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+            ctx.writeValue(writer, wrappedCollection());
         }
 
         /** {@inheritDoc} */

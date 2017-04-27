@@ -604,9 +604,9 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     public void testSerializableReadLocksAdd() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
-        GridCacheVersion serOrder1 = new GridCacheVersion(0, 0, 10, 1);
-        GridCacheVersion serOrder2 = new GridCacheVersion(0, 0, 20, 1);
-        GridCacheVersion serOrder3 = new GridCacheVersion(0, 0, 15, 1);
+        GridCacheVersion serOrder1 = new GridCacheVersion(0, 10, 1);
+        GridCacheVersion serOrder2 = new GridCacheVersion(0, 20, 1);
+        GridCacheVersion serOrder3 = new GridCacheVersion(0, 15, 1);
 
         {
             GridCacheMvcc mvcc = new GridCacheMvcc(cache.context());
@@ -681,9 +681,9 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     public void testSerializableReadLocksAssign() throws Exception {
         GridCacheAdapter<String, String> cache = grid.internalCache();
 
-        GridCacheVersion serOrder1 = new GridCacheVersion(0, 0, 10, 1);
-        GridCacheVersion serOrder2 = new GridCacheVersion(0, 0, 20, 1);
-        GridCacheVersion serOrder3 = new GridCacheVersion(0, 0, 15, 1);
+        GridCacheVersion serOrder1 = new GridCacheVersion(0, 10, 1);
+        GridCacheVersion serOrder2 = new GridCacheVersion(0, 20, 1);
+        GridCacheVersion serOrder3 = new GridCacheVersion(0, 15, 1);
 
         {
             GridCacheMvcc mvcc = new GridCacheMvcc(cache.context());
@@ -859,7 +859,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
             1,
             version(2),
             0,
-            new GridCacheVersion(0, 0, 30, 1),
+            new GridCacheVersion(0, 0, 1),
             false,
             true,
             false,
@@ -883,10 +883,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         GridCacheTestEntryEx e = new GridCacheTestEntryEx(cache.context(), "1");
 
-        GridCacheVersion serOrder1 = new GridCacheVersion(0, 0, 10, 1);
-        GridCacheVersion serOrder2 = new GridCacheVersion(0, 0, 20, 1);
-        GridCacheVersion serOrder3 = new GridCacheVersion(0, 0, 15, 1);
-        GridCacheVersion serOrder4 = new GridCacheVersion(0, 0, 30, 1);
+        GridCacheVersion serOrder1 = new GridCacheVersion(0, 10, 1);
+        GridCacheVersion serOrder2 = new GridCacheVersion(0, 20, 1);
+        GridCacheVersion serOrder3 = new GridCacheVersion(0, 15, 1);
+        GridCacheVersion serOrder4 = new GridCacheVersion(0, 30, 1);
 
         GridCacheVersion ver1 = incVer ? version(1) : version(4);
         GridCacheVersion ver2 = incVer ? version(2) : version(3);
@@ -991,7 +991,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
      * @return Version.
      */
     private GridCacheVersion version(int order) {
-        return new GridCacheVersion(1, 0, order, order, 0);
+        return new GridCacheVersion(1, order, order, 0);
     }
 
     /**

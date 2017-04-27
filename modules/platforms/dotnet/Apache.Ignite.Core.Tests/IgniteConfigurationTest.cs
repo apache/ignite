@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
@@ -34,8 +33,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -76,13 +73,14 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
             CheckDefaultValueAttributes(new TcpCommunicationSpi());
             CheckDefaultValueAttributes(new RendezvousAffinityFunction());
-            CheckDefaultValueAttributes(new FairAffinityFunction());
             CheckDefaultValueAttributes(new NearCacheConfiguration());
             CheckDefaultValueAttributes(new FifoEvictionPolicy());
             CheckDefaultValueAttributes(new LruEvictionPolicy());
             CheckDefaultValueAttributes(new AtomicConfiguration());
             CheckDefaultValueAttributes(new TransactionConfiguration());
-            CheckDefaultValueAttributes(new FileSwapSpaceSpi());
+            CheckDefaultValueAttributes(new MemoryEventStorageSpi());
+            CheckDefaultValueAttributes(new MemoryConfiguration());
+            CheckDefaultValueAttributes(new MemoryPolicyConfiguration());
         }
 
         /// <summary>
@@ -176,14 +174,6 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
 
-                var swap = (FileSwapSpaceSpi) cfg.SwapSpaceSpi;
-                var resSwap = (FileSwapSpaceSpi) resCfg.SwapSpaceSpi;
-                Assert.AreEqual(swap.MaximumSparsity, resSwap.MaximumSparsity);
-                Assert.AreEqual(swap.BaseDirectory, resSwap.BaseDirectory);
-                Assert.AreEqual(swap.MaximumWriteQueueSize, resSwap.MaximumWriteQueueSize);
-                Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
-                Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
-
                 var binCfg = cfg.BinaryConfiguration;
                 Assert.IsFalse(binCfg.CompactFooter);
 
@@ -193,11 +183,41 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("affKey", typ.AffinityKeyFieldName);
                 Assert.AreEqual(false, typ.KeepDeserialized);
 
-                CollectionAssert.AreEqual(new[] {"fld1", "fld2"},
-                    ((BinaryFieldEqualityComparer)typ.EqualityComparer).FieldNames);
-
                 Assert.IsNotNull(resCfg.PluginConfigurations);
                 Assert.AreEqual(cfg.PluginConfigurations, resCfg.PluginConfigurations);
+
+                var eventCfg = cfg.EventStorageSpi as MemoryEventStorageSpi;
+                var resEventCfg = resCfg.EventStorageSpi as MemoryEventStorageSpi;
+                Assert.IsNotNull(eventCfg);
+                Assert.IsNotNull(resEventCfg);
+                Assert.AreEqual(eventCfg.ExpirationTimeout, resEventCfg.ExpirationTimeout);
+                Assert.AreEqual(eventCfg.MaxEventCount, resEventCfg.MaxEventCount);
+
+                var memCfg = cfg.MemoryConfiguration;
+                var resMemCfg = resCfg.MemoryConfiguration;
+                Assert.IsNotNull(memCfg);
+                Assert.IsNotNull(resMemCfg);
+                Assert.AreEqual(memCfg.PageSize, resMemCfg.PageSize);
+                Assert.AreEqual(memCfg.ConcurrencyLevel, resMemCfg.ConcurrencyLevel);
+                Assert.AreEqual(memCfg.DefaultMemoryPolicyName, resMemCfg.DefaultMemoryPolicyName);
+                Assert.AreEqual(memCfg.SystemCacheMemorySize, resMemCfg.SystemCacheMemorySize);
+                Assert.IsNotNull(memCfg.MemoryPolicies);
+                Assert.IsNotNull(resMemCfg.MemoryPolicies);
+                Assert.AreEqual(2, memCfg.MemoryPolicies.Count);
+                Assert.AreEqual(2, resMemCfg.MemoryPolicies.Count);
+
+                for (var i = 0; i < memCfg.MemoryPolicies.Count; i++)
+                {
+                    var plc = memCfg.MemoryPolicies.Skip(i).First();
+                    var resPlc = resMemCfg.MemoryPolicies.Skip(i).First();
+
+                    Assert.AreEqual(plc.PageEvictionMode, resPlc.PageEvictionMode);
+                    Assert.AreEqual(plc.Size, resPlc.Size);
+                    Assert.AreEqual(plc.EmptyPagesPoolSize, resPlc.EmptyPagesPoolSize);
+                    Assert.AreEqual(plc.EvictionThreshold, resPlc.EvictionThreshold);
+                    Assert.AreEqual(plc.Name, resPlc.Name);
+                    Assert.AreEqual(plc.SwapFilePath, resPlc.SwapFilePath);
+                }
             }
         }
 
@@ -473,7 +493,7 @@ namespace Apache.Ignite.Core.Tests
                     TopologyHistorySize = 1234567
                 },
                 IgniteInstanceName = "gridName1",
-                IncludedEventTypes = EventType.SwapspaceAll,
+                IncludedEventTypes = EventType.DiscoveryAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,
                 MetricsLogFrequency = TimeSpan.FromMinutes(8),
@@ -523,14 +543,6 @@ namespace Apache.Ignite.Core.Tests
                     UnacknowledgedMessagesBufferSize = 3450
                 },
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
-                SwapSpaceSpi = new FileSwapSpaceSpi
-                {
-                    ReadStripesNumber = 64,
-                    MaximumWriteQueueSize = 8,
-                    WriteBufferSize = 9,
-                    BaseDirectory = Path.GetTempPath(),
-                    MaximumSparsity = 0.123f
-                },
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = false,
@@ -541,12 +553,44 @@ namespace Apache.Ignite.Core.Tests
                             TypeName = "myType",
                             IsEnum = true,
                             AffinityKeyFieldName = "affKey",
-                            KeepDeserialized = false,
-                            EqualityComparer = new BinaryFieldEqualityComparer("fld1", "fld2")
+                            KeepDeserialized = false
                         }
                     }
                 },
-                PluginConfigurations = new[] { new TestIgnitePluginConfiguration() }
+                PluginConfigurations = new[] { new TestIgnitePluginConfiguration() },
+                EventStorageSpi = new MemoryEventStorageSpi
+                {
+                    ExpirationTimeout = TimeSpan.FromSeconds(5),
+                    MaxEventCount = 10
+                },
+                MemoryConfiguration = new MemoryConfiguration
+                {
+                    ConcurrencyLevel = 3,
+                    DefaultMemoryPolicyName = "myDefaultPlc",
+                    PageSize = 2048,
+                    SystemCacheMemorySize = 13 * 1024 * 1024,
+                    MemoryPolicies = new[]
+                    {
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "myDefaultPlc",
+                            PageEvictionMode = DataPageEvictionMode.Random2Lru,
+                            Size = 345 * 1024 * 1024,
+                            EvictionThreshold = 0.88,
+                            EmptyPagesPoolSize = 77,
+                            SwapFilePath = "myPath1"
+                        },
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = "customPlc",
+                            PageEvictionMode = DataPageEvictionMode.RandomLru,
+                            Size = 456 * 1024 * 1024,
+                            EvictionThreshold = 0.77,
+                            EmptyPagesPoolSize = 66,
+                            SwapFilePath = "somePath2"
+                        } 
+                    }
+                }
             };
         }
     }

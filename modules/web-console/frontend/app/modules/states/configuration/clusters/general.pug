@@ -49,9 +49,10 @@ include /app/helpers/jade/mixins
                             <li>AWS S3 - AWS S3 based IP finder that automatically discover cluster nodes on Amazon EC2 cloud</li>\
                             <li>Apache jclouds - Apache jclouds multi cloud toolkit based IP finder for cloud platforms with unstable IP addresses</li>\
                             <li>Google cloud storage - Google Cloud Storage based IP finder that automatically discover cluster nodes on Google Compute Engine cluster</li>\
-                            <li>JDBC - JDBC based IP finder that use database to store node IP addres</li>\
+                            <li>JDBC - JDBC based IP finder that use database to store node IP address</li>\
                             <li>Shared filesystem - Shared filesystem based IP finder that use file to store node IP address</li>\
                             <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
+                            <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
                         </ul>')
                 .settings-row
                     .panel-details
@@ -71,6 +72,8 @@ include /app/helpers/jade/mixins
                             include ./general/discovery/vm
                         div(ng-if=`${modelDiscoveryKind} === 'ZooKeeper'`)
                             include ./general/discovery/zookeeper
+                        div(ng-if=`${modelDiscoveryKind} === 'Kubernetes'`)
+                            include ./general/discovery/kubernetes
             .col-sm-6
                 -var model = 'backupItem'
                 +preview-xml-java(model, 'clusterCaches', 'caches')

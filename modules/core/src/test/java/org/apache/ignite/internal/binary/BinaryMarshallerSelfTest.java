@@ -698,8 +698,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject po = marshal(obj, marsh);
 
-        assertEquals(obj.hashCode(), po.hashCode());
-
         assertEquals(obj, po.deserialize());
     }
 
@@ -714,8 +712,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         SimpleObject obj = simpleObjectZero();
 
         BinaryObject po = marshal(obj, marsh);
-
-        assertEquals(obj.hashCode(), po.hashCode());
 
         assertEquals(obj, po.deserialize());
 

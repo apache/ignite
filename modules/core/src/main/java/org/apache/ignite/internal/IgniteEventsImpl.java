@@ -78,8 +78,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
-        @Nullable int... types) {
+    @Override public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types) {
         A.notNull(p, "p");
 
         guard();
@@ -247,6 +246,9 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
 
         try {
             return ctx.event().localEvents(compoundPredicate(p, types));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();

@@ -107,11 +107,10 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestType)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestType)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(TestType)
             IGNITE_BINARY_IS_NULL_FALSE(TestType)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(TestType)
 
-            void Write(BinaryWriter& writer, TestType obj)
+            static void Write(BinaryWriter& writer, const TestType& obj)
             {
                 if (!obj.allNulls)
                 {
@@ -154,32 +153,27 @@ namespace ignite
                 }
             }
 
-            TestType Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, TestType& dst)
             {
-                int8_t i8Field = reader.ReadInt8("i8Field");
-                int16_t i16Field = reader.ReadInt16("i16Field");
-                int32_t i32Field = reader.ReadInt32("i32Field");
-                int64_t i64Field = reader.ReadInt64("i64Field");
-                std::string strField = reader.ReadString("strField");
-                float floatField = reader.ReadFloat("floatField");
-                double doubleField = reader.ReadDouble("doubleField");
-                bool boolField = reader.ReadBool("boolField");
-                Guid guidField = reader.ReadGuid("guidField");
-                Date dateField = reader.ReadDate("dateField");
-                Time timeField = reader.ReadTime("timeField");
-                Timestamp timestampField = reader.ReadTimestamp("timestampField");
-
-                TestType result(i8Field, i16Field, i32Field, i64Field, strField,
-                    floatField, doubleField, boolField, guidField, dateField,
-                    timeField, timestampField);
+                dst.i8Field = reader.ReadInt8("i8Field");
+                dst.i16Field = reader.ReadInt16("i16Field");
+                dst.i32Field = reader.ReadInt32("i32Field");
+                dst.i64Field = reader.ReadInt64("i64Field");
+                dst.strField = reader.ReadString("strField");
+                dst.floatField = reader.ReadFloat("floatField");
+                dst.doubleField = reader.ReadDouble("doubleField");
+                dst.boolField = reader.ReadBool("boolField");
+                dst.guidField = reader.ReadGuid("guidField");
+                dst.dateField = reader.ReadDate("dateField");
+                dst.timeField = reader.ReadTime("timeField");
+                dst.timestampField = reader.ReadTimestamp("timestampField");
 
                 int32_t len = reader.ReadInt8Array("i8ArrayField", 0, 0);
                 if (len > 0)
                 {
-                    result.i8ArrayField.resize(len);
-                    reader.ReadInt8Array("i8ArrayField", &result.i8ArrayField[0], len);
+                    dst.i8ArrayField.resize(len);
+                    reader.ReadInt8Array("i8ArrayField", &dst.i8ArrayField[0], len);
                 }
-                return result;
             }
 
         IGNITE_BINARY_TYPE_END

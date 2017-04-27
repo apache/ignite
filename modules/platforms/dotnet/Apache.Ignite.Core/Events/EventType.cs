@@ -222,44 +222,9 @@ namespace Apache.Ignite.Core.Events
         public static readonly int CacheObjectUnlocked = 67;
 
         /// <summary>
-        /// Built-in event type: cache object swapped from swap storage.
-        /// </summary>
-        public static readonly int CacheObjectSwapped = 68;
-
-        /// <summary>
-        /// Built-in event type: cache object unswapped from swap storage.
-        /// </summary>
-        public static readonly int CacheObjectUnswapped = 69;
-
-        /// <summary>
         /// Built-in event type: cache object was expired when reading it.
         /// </summary>
         public static readonly int CacheObjectExpired = 70;
-
-        /// <summary>
-        /// Built-in event type: swap space data read.
-        /// </summary>
-        public static readonly int SwapSpaceDataRead = 71;
-
-        /// <summary>
-        /// Built-in event type: swap space data stored.
-        /// </summary>
-        public static readonly int SwapSpaceDataStored = 72;
-
-        /// <summary>
-        /// Built-in event type: swap space data removed.
-        /// </summary>
-        public static readonly int SwapSpaceDataRemoved = 73;
-
-        /// <summary>
-        /// Built-in event type: swap space cleared.
-        /// </summary>
-        public static readonly int SwapSpaceCleared = 74;
-
-        /// <summary>
-        /// Built-in event type: swap space data evicted.
-        /// </summary>
-        public static readonly int SwapSpaceDataEvicted = 75;
 
         /// <summary>
         /// Built-in event type: cache object stored in off-heap storage.
@@ -420,8 +385,6 @@ namespace Apache.Ignite.Core.Events
             CacheObjectRemoved,
             CacheObjectLocked,
             CacheObjectUnlocked,
-            CacheObjectSwapped,
-            CacheObjectUnswapped,
             CacheObjectExpired
         }.AsReadOnly();
 
@@ -459,18 +422,6 @@ namespace Apache.Ignite.Core.Events
         }.AsReadOnly();
 
         /// <summary>
-        /// All swap space events.
-        /// </summary>
-        private static readonly ICollection<int> SwapspaceAll0 = new[]
-        {
-            SwapSpaceCleared,
-            SwapSpaceDataRemoved,
-            SwapSpaceDataRead,
-            SwapSpaceDataStored,
-            SwapSpaceDataEvicted
-        }.AsReadOnly();
-
-        /// <summary>
         /// All Ignite events.
         /// </summary>
         private static readonly ICollection<int> All0 = GetAllEvents().AsReadOnly();
@@ -496,14 +447,6 @@ namespace Apache.Ignite.Core.Events
         public static ICollection<int> AllMinusMetricUpdate
         {
             get { return AllMinusMetricUpdate0; }
-        }
-
-        /// <summary>
-        /// All swap space events.
-        /// </summary>
-        public static ICollection<int> SwapspaceAll
-        {
-            get { return SwapspaceAll0; }
         }
 
         /// <summary>

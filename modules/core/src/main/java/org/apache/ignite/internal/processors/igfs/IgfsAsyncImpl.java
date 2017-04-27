@@ -58,9 +58,9 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void format() {
+    @Override public void clear() {
         try {
-            saveOrGet(igfs.formatAsync0());
+            saveOrGet(igfs.clearAsync0());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -68,8 +68,8 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> formatAsync() throws IgniteException {
-        return igfs.formatAsync();
+    @Override public IgniteFuture<Void> clearAsync() throws IgniteException {
+        return igfs.clearAsync();
     }
 
     /** {@inheritDoc} */
@@ -154,11 +154,6 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsPaths proxyPaths() {
-        return igfs.proxyPaths();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgfsInputStream open(IgfsPath path, int bufSize,
         int seqReadsBeforePrefetch) {
         return igfs.open(path, bufSize, seqReadsBeforePrefetch);
@@ -220,7 +215,7 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String name() {
+    @Override public String name() {
         return igfs.name();
     }
 
@@ -263,8 +258,8 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) {
-        igfs.setTimes(path, accessTime, modificationTime);
+    @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) {
+        igfs.setTimes(path, modificationTime, accessTime);
     }
 
     /** {@inheritDoc} */

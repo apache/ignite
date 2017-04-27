@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -67,11 +69,9 @@ namespace Apache.Ignite.Core.Tests
         {
             Ignition.StopAll(true);
 
-            var grid = Ignition.Start(new IgniteConfiguration
+            var grid = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = "config\\cache-binarizables.xml",
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 BinaryConfiguration = binaryConfiguration
             });
 
@@ -110,6 +110,47 @@ namespace Apache.Ignite.Core.Tests
             StartGrid(null);
 
             CheckBinarizableTypes(TestTypesXml);
+        }
+
+        /// <summary>
+        /// Tests that invalid configuration produces meaningful error message.
+        /// </summary>
+        [Test]
+        public void TestInvalidConfiguration()
+        {
+            // Pass open generic type.
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                // Open generics are not allowed
+                BinaryConfiguration = new BinaryConfiguration(typeof(List<>))
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("Failed to start Ignite.NET, check inner exception for details", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.IsTrue(ex.InnerException.Message.StartsWith(
+                "Open generic types (Type.IsGenericTypeDefinition == true) are not allowed in BinaryConfiguration: " +
+                "System.Collections.Generic.List`1, mscorlib"));
+
+            // Pass open generic type name.
+            cfg.BinaryConfiguration = new BinaryConfiguration {Types = new[] {typeof(IList<>).AssemblyQualifiedName}};
+            
+            ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("Failed to start Ignite.NET, check inner exception for details", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.IsTrue(ex.InnerException.Message.StartsWith(
+                "Open generic types (Type.IsGenericTypeDefinition == true) are not allowed in BinaryConfiguration: " +
+                "System.Collections.Generic.IList`1, mscorlib"));
+
+            // Pass interface.
+            cfg.BinaryConfiguration = new BinaryConfiguration(typeof(ICollection));
+            
+            ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("Failed to start Ignite.NET, check inner exception for details", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.IsTrue(ex.InnerException.Message.StartsWith(
+                "Abstract types and interfaces are not allowed in BinaryConfiguration: " +
+                "System.Collections.ICollection, mscorlib"));
         }
 
         /// <summary>

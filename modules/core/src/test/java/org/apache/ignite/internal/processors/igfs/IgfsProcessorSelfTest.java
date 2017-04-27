@@ -101,7 +101,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        igfs.format();
+        igfs.clear();
     }
 
     /** {@inheritDoc} */
@@ -223,7 +223,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
             for (int i = 0; i < nodesCount(); i++) {
                 IgfsEntryInfo fileInfo =
-                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), ONHEAP_PEEK_MODES, null);
+                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), null, null);
 
                 assertNotNull(fileInfo);
                 assertNotNull(fileInfo.listing());
@@ -595,7 +595,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assertEquals(text, read("/b"));
 
         // Cleanup.
-        igfs.format();
+        igfs.clear();
 
         assertTrue(F.isEmpty(igfs.listPaths(root)));
     }
@@ -772,7 +772,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         create(filePath, false, "Some text.");
 
-        igfs.format();
+        igfs.clear();
 
         assert !igfs.exists(path(dirPath));
         assert !igfs.exists(path(filePath));
@@ -798,7 +798,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFormatEmpty() throws Exception {
-        igfs.format();
+        igfs.clear();
     }
 
     /**

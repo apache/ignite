@@ -30,7 +30,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryWriter;
@@ -950,18 +949,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeByteField(@Nullable Byte val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeByteField(@Nullable Byte val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeByteFieldPrimitive(val);
-
-            return off;
-        }
+        writeByteFieldPrimitive(val);
     }
 
     /**
@@ -983,19 +975,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     *
-     * @return Filed offset.
      */
-    int writeShortField(@Nullable Short val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeShortField(@Nullable Short val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeShortFieldPrimitive(val);
-
-            return off;
-        }
+        writeShortFieldPrimitive(val);
     }
 
     /**
@@ -1010,18 +994,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeIntField(@Nullable Integer val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeIntField(@Nullable Integer val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeIntFieldPrimitive(val);
-
-            return off;
-        }
+        writeIntFieldPrimitive(val);
     }
 
     /**
@@ -1036,18 +1013,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Filed offset.
      */
-    int writeLongField(@Nullable Long val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeLongField(@Nullable Long val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeLongFieldPrimitive(val);
-
-            return off;
-        }
+        writeLongFieldPrimitive(val);
     }
 
     /**
@@ -1062,18 +1032,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeFloatField(@Nullable Float val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeFloatField(@Nullable Float val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeFloatFieldPrimitive(val);
-
-            return off;
-        }
+        writeFloatFieldPrimitive(val);
     }
 
     /**
@@ -1088,18 +1051,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Filed offset.
      */
-    int writeDoubleField(@Nullable Double val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeDoubleField(@Nullable Double val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeDoubleFieldPrimitive(val);
-
-            return off;
-        }
+        writeDoubleFieldPrimitive(val);
     }
 
     /**
@@ -1114,18 +1070,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Filed offset.
      */
-    int writeCharField(@Nullable Character val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeCharField(@Nullable Character val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeCharFieldPrimitive(val);
-
-            return off;
-        }
+        writeCharFieldPrimitive(val);
     }
 
     /**
@@ -1140,438 +1089,250 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeBooleanField(@Nullable Boolean val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeBooleanField(@Nullable Boolean val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeBooleanFieldPrimitive(val);
-
-            return off;
-        }
+        writeBooleanFieldPrimitive(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeDecimalField(@Nullable BigDecimal val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeDecimalField(@Nullable BigDecimal val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteDecimal(val);
-
-            return off;
-        }
+        doWriteDecimal(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeStringField(@Nullable String val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeStringField(@Nullable String val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteString(val);
+        doWriteString(val);
 
-            return off;
-        }
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeUuidField(@Nullable UUID val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeUuidField(@Nullable UUID val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteUuid(val);
-
-            return off;
-        }
+        doWriteUuid(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeDateField(@Nullable Date val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeDateField(@Nullable Date val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteDate(val);
-
-            return off;
-        }
+        doWriteDate(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeTimestampField(@Nullable Timestamp val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeTimestampField(@Nullable Timestamp val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteTimestamp(val);
-
-            return off;
-        }
+        doWriteTimestamp(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeTimeField(@Nullable Time val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeTimeField(@Nullable Time val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteTime(val);
-
-            return off;
-        }
+        doWriteTime(val);
     }
 
     /**
      * @param obj Object.
-     * @return Field offset.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    int writeObjectField(@Nullable Object obj) throws BinaryObjectException {
-        if (obj == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeObjectField(@Nullable Object obj) throws BinaryObjectException {
+        assert obj != null : "Null value must be written as special offset";
 
-            doWriteObject(obj);
-
-            return off;
-        }
+        doWriteObject(obj);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeByteArrayField(@Nullable byte[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeByteArrayField(@Nullable byte[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteByteArray(val);
-
-            return off;
-        }
+        doWriteByteArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeShortArrayField(@Nullable short[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeShortArrayField(@Nullable short[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteShortArray(val);
-
-            return off;
-        }
+        doWriteShortArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeIntArrayField(@Nullable int[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeIntArrayField(@Nullable int[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteIntArray(val);
-
-            return off;
-        }
+        doWriteIntArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeLongArrayField(@Nullable long[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeLongArrayField(@Nullable long[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteLongArray(val);
-
-            return off;
-        }
+        doWriteLongArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeFloatArrayField(@Nullable float[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeFloatArrayField(@Nullable float[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteFloatArray(val);
-
-            return off;
-        }
+        doWriteFloatArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeDoubleArrayField(@Nullable double[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeDoubleArrayField(@Nullable double[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteDoubleArray(val);
-
-            return off;
-        }
+        doWriteDoubleArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeCharArrayField(@Nullable char[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeCharArrayField(@Nullable char[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteCharArray(val);
-
-            return off;
-        }
+        doWriteCharArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeBooleanArrayField(@Nullable boolean[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeBooleanArrayField(@Nullable boolean[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteBooleanArray(val);
-
-            return off;
-        }
+        doWriteBooleanArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeDecimalArrayField(@Nullable BigDecimal[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeDecimalArrayField(@Nullable BigDecimal[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteDecimalArray(val);
-
-            return off;
-        }
+        doWriteDecimalArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeStringArrayField(@Nullable String[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeStringArrayField(@Nullable String[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteStringArray(val);
-
-            return off;
-        }
+        doWriteStringArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeUuidArrayField(@Nullable UUID[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeUuidArrayField(@Nullable UUID[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteUuidArray(val);
-
-            return off;
-        }
+        doWriteUuidArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeDateArrayField(@Nullable Date[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void  writeDateArrayField(@Nullable Date[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteDateArray(val);
-
-            return off;
-        }
+        doWriteDateArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeTimestampArrayField(@Nullable Timestamp[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeTimestampArrayField(@Nullable Timestamp[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteTimestampArray(val);
-
-            return off;
-        }
+        doWriteTimestampArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeTimeArrayField(@Nullable Time[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeTimeArrayField(@Nullable Time[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteTimeArray(val);
-
-            return off;
-        }
+        doWriteTimeArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    int writeObjectArrayField(@Nullable Object[] val) throws BinaryObjectException {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeObjectArrayField(@Nullable Object[] val) throws BinaryObjectException {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteObjectArray(val);
-
-            return off;
-        }
+        doWriteObjectArray(val);
     }
 
     /**
      * @param col Collection.
-     * @return Field offset.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    int writeCollectionField(@Nullable Collection<?> col) throws BinaryObjectException {
-        if (col == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeCollectionField(@Nullable Collection<?> col) throws BinaryObjectException {
+        assert col != null : "Null value must be written as special offset";
 
-            doWriteCollection(col);
-
-            return off;
-        }
+        doWriteCollection(col);
     }
 
     /**
      * @param map Map.
-     * @return Field offset.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    int writeMapField(@Nullable Map<?, ?> map) throws BinaryObjectException {
-        if (map == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeMapField(@Nullable Map<?, ?> map) throws BinaryObjectException {
+        assert map != null : "Null value must be written as special offset";
 
-            doWriteMap(map);
-
-            return off;
-        }
+        doWriteMap(map);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeEnumField(@Nullable Enum<?> val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeEnumField(@Nullable Enum<?> val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteEnum(val);
-
-            return off;
-        }
+        doWriteEnum(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeEnumArrayField(@Nullable Object[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeEnumArrayField(@Nullable Object[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteEnumArray(val);
-
-            return off;
-        }
+        doWriteEnumArray(val);
     }
 
     /**
@@ -1584,7 +1345,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeByte(String fieldName, byte val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeByteField(val));
+        writeFieldId(fieldName, currentOffset());
+        writeByteField(val);
     }
 
     /** {@inheritDoc} */
@@ -1594,7 +1356,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeShort(String fieldName, short val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeShortField(val));
+        writeFieldId(fieldName, currentOffset());
+        writeShortField(val);
     }
 
     /** {@inheritDoc} */
@@ -1604,7 +1367,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeInt(String fieldName, int val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeIntField(val));
+        writeFieldId(fieldName, currentOffset());
+        writeIntField(val);
     }
 
     /** {@inheritDoc} */
@@ -1614,7 +1378,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeLong(String fieldName, long val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeLongField(val));
+        writeFieldId(fieldName, currentOffset());
+        writeLongField(val);
     }
 
     /** {@inheritDoc} */
@@ -1624,7 +1389,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeFloat(String fieldName, float val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeFloatField(val));
+        writeFieldId(fieldName, currentOffset());
+        writeFloatField(val);
     }
 
     /** {@inheritDoc} */
@@ -1634,7 +1400,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeDouble(String fieldName, double val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeDoubleField(val));
+        writeFieldId(fieldName, currentOffset());
+        writeDoubleField(val);
     }
 
     /** {@inheritDoc} */
@@ -1644,7 +1411,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeChar(String fieldName, char val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeCharField(val));
+        writeFieldId(fieldName, currentOffset());
+        writeCharField(val);
     }
 
     /** {@inheritDoc} */
@@ -1654,7 +1422,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeBoolean(String fieldName, boolean val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeBooleanField(val));
+        writeFieldId(fieldName, currentOffset());
+        writeBooleanField(val);
     }
 
     /** {@inheritDoc} */
@@ -1664,7 +1433,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeDecimal(String fieldName, @Nullable BigDecimal val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeDecimalField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeDecimalField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1674,7 +1448,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeString(String fieldName, @Nullable String val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeStringField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeStringField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1684,7 +1463,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeUuid(String fieldName, @Nullable UUID val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeUuidField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeUuidField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1694,7 +1478,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeDate(String fieldName, @Nullable Date val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeDateField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeDateField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1704,7 +1493,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeTimestamp(String fieldName, @Nullable Timestamp val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeTimestampField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeTimestampField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1714,7 +1508,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeTime(String fieldName, @Nullable Time val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeTimeField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeTimeField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1724,7 +1523,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeObject(String fieldName, @Nullable Object obj) throws BinaryObjectException {
-        writeFieldId(fieldName, writeObjectField(obj));
+        if (obj == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeObjectField(obj);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1745,7 +1549,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeByteArray(String fieldName, @Nullable byte[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeByteArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeByteArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1755,7 +1564,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeShortArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeShortArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1765,7 +1579,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeIntArray(String fieldName, @Nullable int[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeIntArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeIntArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1775,7 +1594,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeLongArray(String fieldName, @Nullable long[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeLongArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeLongArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1785,7 +1609,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeFloatArray(String fieldName, @Nullable float[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeFloatArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeFloatArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1796,7 +1625,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeDoubleArray(String fieldName, @Nullable double[] val)
         throws BinaryObjectException {
-        writeFieldId(fieldName, writeDoubleArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeDoubleArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1806,7 +1640,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeCharArray(String fieldName, @Nullable char[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeCharArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeCharArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1817,7 +1656,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeBooleanArray(String fieldName, @Nullable boolean[] val)
         throws BinaryObjectException {
-        writeFieldId(fieldName, writeBooleanArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeBooleanArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1828,7 +1672,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeDecimalArray(String fieldName, @Nullable BigDecimal[] val)
         throws BinaryObjectException {
-        writeFieldId(fieldName, writeDecimalArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeDecimalArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1839,7 +1688,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeStringArray(String fieldName, @Nullable String[] val)
         throws BinaryObjectException {
-        writeFieldId(fieldName, writeStringArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeStringArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1849,7 +1703,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeUuidArray(String fieldName, @Nullable UUID[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeUuidArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeUuidArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1859,7 +1718,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeDateArray(String fieldName, @Nullable Date[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeDateArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeDateArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1869,7 +1733,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeTimestampArray(String fieldName, @Nullable Timestamp[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeTimestampArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeTimestampArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1879,9 +1748,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeTimeArray(String fieldName, @Nullable Time[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeTimeArrayField(val));
-
-        ;
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeTimeArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1891,9 +1763,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
      /** {@inheritDoc} */
     @Override public void writeObjectArray(String fieldName, @Nullable Object[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeObjectArrayField(val));
-
-        ;
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeObjectArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1904,7 +1779,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public <T> void writeCollection(String fieldName, @Nullable Collection<T> col)
         throws BinaryObjectException {
-        writeFieldId(fieldName, writeCollectionField(col));
+        if (col == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeCollectionField(col);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1915,7 +1795,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map)
         throws BinaryObjectException {
-        writeFieldId(fieldName, writeMapField(map));
+        if (map == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeMapField(map);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1925,7 +1810,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeEnumField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeEnumField(val);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1935,7 +1825,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnumArray(String fieldName, T[] val) throws BinaryObjectException {
-        writeFieldId(fieldName, writeEnumArrayField(val));
+        if (val == null)
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
+        else {
+            writeFieldId(fieldName, currentOffset());
+            writeEnumArrayField(val);
+        }
     }
 
     /** {@inheritDoc} */

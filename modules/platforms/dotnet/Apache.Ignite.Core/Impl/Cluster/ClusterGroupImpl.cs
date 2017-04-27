@@ -115,6 +115,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpCacheMetrics = 24;
         
+        /** */
+        private const int OpResetLostPartitions = 25;
+        
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
         
@@ -508,6 +511,30 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public void ResetMetrics()
         {
             DoOutInOp(OpResetMetrics);
+        }
+
+        /// <summary>
+        /// Resets the lost partitions.
+        /// </summary>
+        public void ResetLostPartitions(IEnumerable<string> cacheNames)
+        {
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+
+            DoOutOp(OpResetLostPartitions, w =>
+            {
+                var pos = w.Stream.Position;
+
+                var count = 0;
+                w.WriteInt(count);  // Reserve space.
+
+                foreach (var cacheName in cacheNames)
+                {
+                    w.WriteString(cacheName);
+                    count++;
+                }
+
+                w.Stream.WriteInt(pos, count);
+            });
         }
 
         /// <summary>

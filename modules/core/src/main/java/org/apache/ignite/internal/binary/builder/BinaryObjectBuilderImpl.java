@@ -28,6 +28,7 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
@@ -197,7 +198,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             BinaryType meta = ctx.metadata(typeId);
 
-            Map<String, Integer> fieldsMeta = null;
+            Map<String, BinaryFieldMetadata> fieldsMeta = null;
 
             if (reader != null && BinaryUtils.hasSchema(flags)) {
                 BinarySchema schema = reader.schema();
@@ -216,7 +217,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         assignedFldsById.put(fieldId, val);
 
                         if (val != REMOVED_FIELD_MARKER)
-                            fieldsMeta = checkMetadata(meta, fieldsMeta, val, name);
+                            fieldsMeta = checkMetadata(meta, fieldsMeta, val, name, fieldId);
                     }
 
                     remainsFlds = assignedFldsById.keySet();
@@ -254,9 +255,14 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         Object assignedVal = assignedFldsById.remove(fieldId);
 
                         if (assignedVal != REMOVED_FIELD_MARKER) {
-                            int off = serializer.writeValue(writer, assignedVal);
+                            if (assignedVal == null || (assignedVal instanceof BinaryLazyValue
+                                && ((BinaryLazyValue)assignedVal).value() == null))
+                                writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
+                            else {
+                                writer.writeFieldId(fieldId, writer.currentOffset());
 
-                            writer.writeFieldId(fieldId, off);
+                                serializer.writeValue(writer, assignedVal);
+                            }
                         }
                     }
                     else {
@@ -280,9 +286,13 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                             else
                                 val = readCache.get(fieldId);
 
-                            int off = serializer.writeValue(writer, val);
+                            if (val == null)
+                                writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
+                            else {
+                                writer.writeFieldId(fieldId, writer.currentOffset());
 
-                            writer.writeFieldId(fieldId, off);
+                                serializer.writeValue(writer, val);
+                            }
                         }
                     }
 
@@ -304,13 +314,17 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     if (remainsFlds != null && !remainsFlds.contains(fieldId))
                         continue;
 
-                    int off = serializer.writeValue(writer, val);
+                    if (val == null || (val instanceof BinaryLazyValue && ((BinaryLazyValue)val).value() == null))
+                        writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
+                    else {
+                        writer.writeFieldId(fieldId, writer.currentOffset());
 
-                    writer.writeFieldId(fieldId, off);
+                        serializer.writeValue(writer, val);
+                    }
 
                     if (reader == null)
                         // Metadata has already been checked.
-                        fieldsMeta = checkMetadata(meta, fieldsMeta, val, name);
+                        fieldsMeta = checkMetadata(meta, fieldsMeta, val, name, fieldId);
                 }
             }
 
@@ -369,9 +383,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param fieldsMeta Map holding metadata information that has to be updated.
      * @param newVal Field value being serialized.
      * @param name Field name.
+     * @param fieldId Field ID.
      */
-    private Map<String, Integer> checkMetadata(BinaryType meta, Map<String, Integer> fieldsMeta, Object newVal,
-        String name) {
+    private Map<String, BinaryFieldMetadata> checkMetadata(BinaryType meta, Map<String, BinaryFieldMetadata> fieldsMeta,
+        Object newVal, String name, int fieldId) {
         String oldFldTypeName = meta == null ? null : meta.fieldTypeName(name);
 
         boolean nullFieldVal = false;
@@ -405,7 +420,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     fieldsMeta = new LinkedHashMap<>();
             }
 
-            fieldsMeta.put(name, newFldTypeId);
+            fieldsMeta.put(name, new BinaryFieldMetadata(newFldTypeId, fieldId));
         }
         else if (!nullFieldVal) {
             String newFldTypeName = BinaryUtils.fieldTypeName(newFldTypeId);
@@ -461,6 +476,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 if (!BinaryUtils.isNullOffset(nextFieldOff, fieldOffsetLen)) {
                     fieldLen = nextFieldOff - fieldOff;
+
                     break;
                 }
             }
@@ -513,6 +529,21 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         }
     }
 
+    /**
+     * If value of {@link #assignedVals} is null, set it according to
+     * {@link BinaryUtils#FIELDS_SORTED_ORDER}.
+     */
+    private Map<String, Object> assignedValues() {
+        if (assignedVals == null) {
+            if (BinaryUtils.FIELDS_SORTED_ORDER)
+                assignedVals = new TreeMap<>();
+            else
+                assignedVals = new LinkedHashMap<>();
+        }
+
+        return assignedVals;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T getField(String name) {
@@ -539,19 +570,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
         Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
 
-        if (assignedVals == null) {
-            if (BinaryUtils.FIELDS_SORTED_ORDER)
-                assignedVals = new TreeMap<>();
-            else
-                assignedVals = new LinkedHashMap<>();
-        }
-
-        Object oldVal = assignedVals.put(name, val);
+        Object oldVal = assignedValues().put(name, val);
 
         if (oldVal instanceof BinaryValueWithType && val0 != null) {
             ((BinaryValueWithType)oldVal).value(val);
 
-            assignedVals.put(name, oldVal);
+            assignedValues().put(name, oldVal);
         }
 
         return this;
@@ -568,10 +592,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         else
             typeId = BinaryUtils.typeByClass(type);
 
-        if (assignedVals == null)
-            assignedVals = new LinkedHashMap<>();
-
-        assignedVals.put(name, new BinaryValueWithType(typeId, val));
+        assignedValues().put(name, new BinaryValueWithType(typeId, val));
 
         return this;
     }
@@ -591,10 +612,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @return {@code this} instance for chaining.
      */
     @Override public BinaryObjectBuilderImpl removeField(String name) {
-        if (assignedVals == null)
-            assignedVals = new LinkedHashMap<>();
-
-        assignedVals.put(name, REMOVED_FIELD_MARKER);
+        assignedValues().put(name, REMOVED_FIELD_MARKER);
 
         return this;
     }

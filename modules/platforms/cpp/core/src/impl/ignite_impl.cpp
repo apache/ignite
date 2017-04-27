@@ -59,7 +59,7 @@ namespace ignite
             return env.Get()->Context();
         }
 
-        IgniteBinding IgniteImpl::GetBinding()
+        SharedPointer<IgniteBindingImpl> IgniteImpl::GetBinding()
         {
             return env.Get()->GetBinding();
         }

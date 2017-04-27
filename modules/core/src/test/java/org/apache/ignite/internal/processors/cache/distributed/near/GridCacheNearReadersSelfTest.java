@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -82,8 +83,6 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         cacheCfg.setRebalanceMode(NONE);
 
         cacheCfg.setAffinity(aff);
-        cacheCfg.setSwapEnabled(false);
-        cacheCfg.setEvictSynchronized(true);
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setBackups(aff.backups());
 
@@ -166,7 +165,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNull(cache1.getAndPut(1, "v1"));
         assertNull(cache1.getAndPut(2, "v2"));
 
-        final GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
+        GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
         GridDhtCacheEntry e2 = (GridDhtCacheEntry)dht(cache2).entryEx(2);
 
         assertNotNull(e1.readers());
@@ -186,6 +185,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         // put key 2 came from node1.
         assertTrue(e2.readers().contains(n1.id()));
 
+        e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
+
         // Node1 should not have node2 in readers map yet.
         assertFalse(e1.readers().contains(n2.id()));
 
@@ -194,6 +195,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         // Check that key1 is in near cache of cache2.
         assertNotNull(nearPeek(cache2, 1));
+
+        e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
 
         // Now node1 should have node2 in readers map.
         assertTrue(e1.readers().contains(n2.id()));
@@ -209,10 +212,15 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(cache1.getAndPut(1, "z1"));
 
+        final GridDhtCacheEntry e1f = e1;
+
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    return !e1.readers().contains(n2.id());
+                    return !e1f.readers().contains(n2.id());
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    return true;
                 }
                 catch (Exception e) {
                     throw new RuntimeException(e);
@@ -221,7 +229,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         }, 5000);
 
         // Node 1 still has node2 in readers map.
-        assertFalse(e1.readers().contains(n2.id()));
+        assertFalse(((GridDhtCacheEntry)dht(cache1).entryEx(1)).readers().contains(n2.id()));
     }
 
     /** @throws Exception If failed. */
@@ -315,6 +323,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         // Since DHT cache2 has the value, Near cache2 should not have it.
         assertNull(near(cache2).peekEx(1));
 
+        e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
+
         // Since v1 was retrieved locally from cache2, cache1 should not know about it.
         assertFalse(e1.readers().contains(n2.id()));
 
@@ -326,6 +336,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertEquals("v1", dhtPeek(cache2, 1));
 
         assertEquals("v1", cache1.getAndPut(1, "z1"));
+
+        e1 = (GridDhtCacheEntry)dht(cache1).entryEx(1);
 
         // Node 1 should not have node2 in readers map.
         assertFalse(e1.readers().contains(n2.id()));
@@ -446,18 +458,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         GridDhtCacheEntry e1 = (GridDhtCacheEntry)dht(cache1).peekEx(1);
         GridDhtCacheEntry e2 = (GridDhtCacheEntry)dht(cache2).peekEx(1);
 
-        assert e1 != null;
-        assert e2 != null;
-
-        // Check entry on primary node.
-        assertTrue(grid(primary.id()).affinity(null).isPrimary(primary, e1.key()));
-        assertNotNull(e1.readers());
-        assertTrue(e1.readers().isEmpty());
-
-        // Check entry on backup node.
-        assertFalse(grid(backup.id()).affinity(null).isPrimary(backup, e2.key()));
-        assertNotNull(e2.readers());
-        assertTrue(e2.readers().isEmpty());
+        assertNull(e1);
+        assertNull(e2);
     }
 
     /** @throws Exception If failed. */

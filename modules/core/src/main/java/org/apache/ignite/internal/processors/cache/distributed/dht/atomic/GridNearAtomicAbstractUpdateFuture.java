@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -54,11 +55,12 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 
 /**
  * Base for near atomic update futures.
  */
-public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapter<Object>
+public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFutureAdapter<Object>
     implements GridCacheAtomicFuture<Object> {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -108,14 +110,11 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
     /** Keep binary flag. */
     protected final boolean keepBinary;
 
-    /** Wait for topology future flag. */
-    protected final boolean waitTopFut;
+    /** Recovery flag. */
+    protected final boolean recovery;
 
     /** Near cache flag. */
     protected final boolean nearEnabled;
-
-    /** Mutex to synchronize state updates. */
-    protected final Object mux = new Object();
 
     /** Topology locked flag. Set if atomic update is performed inside a TX or explicit lock. */
     protected boolean topLocked;
@@ -136,9 +135,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
     @GridToStringInclude
     protected CachePartialUpdateCheckedException err;
 
-    /** Future ID. */
+    /** Future ID, changes when operation is remapped. */
     @GridToStringInclude
-    protected Long futId;
+    protected long futId;
 
     /** Operation result. */
     protected GridCacheReturn opRes;
@@ -159,8 +158,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param taskNameHash Task name hash.
      * @param skipStore Skip store flag.
      * @param keepBinary Keep binary flag.
+     * @param recovery {@code True} if cache operation is called in recovery mode.
      * @param remapCnt Remap count.
-     * @param waitTopFut Wait topology future flag.
      */
     protected GridNearAtomicAbstractUpdateFuture(
         GridCacheContext cctx,
@@ -176,8 +175,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
-        int remapCnt,
-        boolean waitTopFut
+        boolean recovery,
+        int remapCnt
     ) {
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
@@ -197,14 +196,26 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
-        this.waitTopFut = waitTopFut;
+        this.recovery = recovery;
 
         nearEnabled = CU.isNearEnabled(cctx);
 
-        if (!waitTopFut)
-            remapCnt = 1;
-
         this.remapCnt = remapCnt;
+    }
+
+    /**
+     * @return {@code True} if future was initialized and waits for responses.
+     */
+    final boolean futureMapped() {
+        return topVer != AffinityTopologyVersion.ZERO;
+    }
+
+    /**
+     * @param futId Expected future ID.
+     * @return {@code True} if future was initialized with the same ID.
+     */
+    final boolean checkFutureId(long futId) {
+        return topVer != AffinityTopologyVersion.ZERO && this.futId == futId;
     }
 
     /** {@inheritDoc} */
@@ -223,7 +234,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
             onSendError(req, e);
         }
         catch (IgniteCheckedException e) {
-            onDone(e);
+            completeFuture(null, e, req.futureId());
         }
     }
 
@@ -330,6 +341,50 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param res Response.
      */
     public abstract void onDhtResponse(UUID nodeId, GridDhtAtomicNearResponse res);
+
+    /**
+     * @param ret Result.
+     * @param err Error.
+     * @param futId Not null ID if need remove future.
+     */
+    final void completeFuture(@Nullable GridCacheReturn ret, Throwable err, @Nullable Long futId) {
+        Object retval = ret == null ? null : rawRetval ? ret : (this.retval || op == TRANSFORM) ?
+                cctx.unwrapBinaryIfNeeded(ret.value(), keepBinary) : ret.success();
+
+        if (op == TRANSFORM && retval == null)
+            retval = Collections.emptyMap();
+
+        if (futId != null)
+            cctx.mvcc().removeAtomicFuture(futId);
+
+        super.onDone(retval, err);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
+    @Override public final boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+        assert err != null : "onDone should be called only to finish future with error on cache/node stop";
+
+        Long futId = null;
+
+        synchronized (this) {
+            if (futureMapped()) {
+                futId = this.futId;
+
+                topVer = AffinityTopologyVersion.ZERO;
+                this.futId = 0;
+            }
+        }
+
+        if (super.onDone(null, err)) {
+            if (futId != null)
+                cctx.mvcc().removeAtomicFuture(futId);
+
+            return true;
+        }
+
+        return false;
+    }
 
     /**
      * @param req Request.
@@ -529,7 +584,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
          * @return Request if need process primary fail response, {@code null} otherwise.
          */
         @Nullable GridNearAtomicAbstractUpdateRequest onPrimaryFail() {
-            if (finished())
+            if (finished() || req.nodeFailedResponse())
                 return null;
 
             /*

@@ -606,6 +606,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// with multiple participating caches.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-1561")]
         public void TestTransactionScopeMultiCache()
         {
             var cache1 = Cache();

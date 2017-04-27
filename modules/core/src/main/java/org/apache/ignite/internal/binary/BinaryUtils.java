@@ -110,6 +110,10 @@ public class BinaryUtils {
     /** Flag: compact footer, no field IDs. */
     public static final short FLAG_COMPACT_FOOTER = 0x0020;
 
+    /** Flag: raw data contains .NET type information. Always 0 in Java. Keep it here for information only. */
+    @SuppressWarnings("unused")
+    public static final short FLAG_CUSTOM_DOTNET_TYPE = 0x0040;
+
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
 
@@ -374,40 +378,53 @@ public class BinaryUtils {
      *
      * @param writer W
      * @param val Value.
-     * @return Filed offset.
      */
-    public static int writePlainObject(BinaryWriterExImpl writer, Object val) {
+    public static void writePlainObject(BinaryWriterExImpl writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
-
-        int off = writer.currentOffset();
 
         if (flag == null)
             throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
 
         switch (flag) {
             case GridBinaryMarshaller.BYTE:
-                return writer.writeByteField((Byte)val);
+                writer.writeByteField((Byte)val);
+
+                break;
 
             case GridBinaryMarshaller.SHORT:
-                return writer.writeShortField((Short)val);
+                writer.writeShortField((Short)val);
+
+                break;
 
             case GridBinaryMarshaller.INT:
-                return writer.writeIntField((Integer)val);
+                writer.writeIntField((Integer)val);
+
+                break;
 
             case GridBinaryMarshaller.LONG:
-                return writer.writeLongField((Long)val);
+                writer.writeLongField((Long)val);
+
+                break;
 
             case GridBinaryMarshaller.FLOAT:
-                return writer.writeFloatField((Float)val);
+                writer.writeFloatField((Float)val);
+
+                break;
 
             case GridBinaryMarshaller.DOUBLE:
-                return writer.writeDoubleField((Double)val);
+                writer.writeDoubleField((Double)val);
+
+                break;
 
             case GridBinaryMarshaller.CHAR:
-                return writer.writeCharField((Character)val);
+                writer.writeCharField((Character)val);
+
+                break;
 
             case GridBinaryMarshaller.BOOLEAN:
-                return writer.writeBooleanField((Boolean)val);
+                writer.writeBooleanField((Boolean)val);
+
+                break;
 
             case GridBinaryMarshaller.DECIMAL:
                 writer.doWriteDecimal((BigDecimal)val);
@@ -512,8 +529,6 @@ public class BinaryUtils {
             default:
                 throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
         }
-
-        return off;
     }
 
     /**
@@ -992,25 +1007,25 @@ public class BinaryUtils {
             }
 
             // Check and merge fields.
-            Map<String, Integer> mergedFields;
+            Map<String, BinaryFieldMetadata> mergedFields;
 
             if (FIELDS_SORTED_ORDER)
                 mergedFields = new TreeMap<>(oldMeta.fieldsMap());
             else
                 mergedFields = new LinkedHashMap<>(oldMeta.fieldsMap());
 
-            Map<String, Integer> newFields = newMeta.fieldsMap();
+            Map<String, BinaryFieldMetadata> newFields = newMeta.fieldsMap();
 
             boolean changed = false;
 
-            for (Map.Entry<String, Integer> newField : newFields.entrySet()) {
-                Integer oldFieldType = mergedFields.put(newField.getKey(), newField.getValue());
+            for (Map.Entry<String, BinaryFieldMetadata> newField : newFields.entrySet()) {
+                BinaryFieldMetadata oldFieldMeta = mergedFields.put(newField.getKey(), newField.getValue());
 
-                if (oldFieldType == null)
+                if (oldFieldMeta == null)
                     changed = true;
                 else {
-                    String oldFieldTypeName = fieldTypeName(oldFieldType);
-                    String newFieldTypeName = fieldTypeName(newField.getValue());
+                    String oldFieldTypeName = fieldTypeName(oldFieldMeta.typeId());
+                    String newFieldTypeName = fieldTypeName(newField.getValue().typeId());
 
                     if (!F.eq(oldFieldTypeName, newFieldTypeName)) {
                         throw new BinaryObjectException(
@@ -1479,7 +1494,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx) {
+    public static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx, boolean detach) {
         if (in.offheapPointer() > 0) {
             int len = in.readInt();
 
@@ -1495,7 +1510,15 @@ public class BinaryUtils {
             byte[] arr = doReadByteArray(in);
             int start = in.readInt();
 
-            return new BinaryObjectImpl(ctx, arr, start);
+            BinaryObjectImpl binO = new BinaryObjectImpl(ctx, arr, start);
+
+            if (detach) {
+                binO.detachAllowed(true);
+
+                return binO.detach();
+            }
+
+            return binO;
         }
     }
 
@@ -1594,7 +1617,7 @@ public class BinaryUtils {
         Class cls;
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
+            cls = ctx.descriptorForTypeId(true, typeId, ldr, true).describedClass();
         else {
             String clsName = doReadClassName(in);
 
@@ -1920,7 +1943,7 @@ public class BinaryUtils {
                 return doReadMap(in, ctx, ldr, handles, false, null);
 
             case GridBinaryMarshaller.BINARY_OBJ:
-                return doReadBinaryObject(in, ctx);
+                return doReadBinaryObject(in, ctx, detach);
 
             case GridBinaryMarshaller.ENUM:
                 return doReadBinaryEnum(in, ctx, doReadEnumType(in));

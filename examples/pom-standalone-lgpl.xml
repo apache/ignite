@@ -33,6 +33,7 @@
         <lgpl.folder>src/main/java</lgpl.folder>
         <java8.folder>src/main/java</java8.folder>
         <spark.folder>src/main/java</spark.folder>
+        <ml.folder>src/main/java</ml.folder>
         <java.ver>1.7</java.ver>
     </properties>
 
@@ -72,6 +73,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring-data</artifactId>
+            <version>to_be_replaced_by_ignite_version</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.code.simple-spring-memcached</groupId>
             <artifactId>spymemcached</artifactId>
             <version>2.7.3</version>
@@ -96,6 +103,23 @@
             <activation>
                 <jdk>[1.8,)</jdk>
             </activation>
+        </profile>
+
+        <profile>
+            <id>ml</id>
+
+            <properties>
+                <ml.folder>src/main/ml</ml.folder>
+                <java.ver>1.8</java.ver>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml</artifactId>
+                    <version>to_be_replaced_by_ignite_version</version>
+                </dependency>
+            </dependencies>
         </profile>
 
         <profile>
@@ -221,10 +245,10 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>schema-import/src/main/java</source>
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>
+                                <source>${ml.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

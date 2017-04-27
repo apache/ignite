@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 
 /**
  * Test for {@link CacheJdbcPojoStore} with optimized marshaller.

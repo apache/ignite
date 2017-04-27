@@ -154,56 +154,46 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(14, metrics.CacheTxCommits);
                 Assert.AreEqual(15, metrics.CacheTxRollbacks);
                 Assert.AreEqual("myCache", metrics.CacheName);
-                Assert.AreEqual(16, metrics.OverflowSize);
-                Assert.AreEqual(17, metrics.OffHeapGets);
-                Assert.AreEqual(18, metrics.OffHeapPuts);
-                Assert.AreEqual(19, metrics.OffHeapRemovals);
-                Assert.AreEqual(20, metrics.OffHeapEvictions);
-                Assert.AreEqual(21, metrics.OffHeapHits);
-                Assert.AreEqual(22, metrics.OffHeapHitPercentage);
-                Assert.AreEqual(23, metrics.OffHeapMisses);
-                Assert.AreEqual(24, metrics.OffHeapMissPercentage);
-                Assert.AreEqual(25, metrics.OffHeapEntriesCount);
-                Assert.AreEqual(26, metrics.OffHeapPrimaryEntriesCount);
-                Assert.AreEqual(27, metrics.OffHeapBackupEntriesCount);
-                Assert.AreEqual(28, metrics.OffHeapAllocatedSize);
-                Assert.AreEqual(29, metrics.OffHeapMaxSize);
-                Assert.AreEqual(30, metrics.SwapGets);
-                Assert.AreEqual(31, metrics.SwapPuts);
-                Assert.AreEqual(32, metrics.SwapRemovals);
-                Assert.AreEqual(33, metrics.SwapHits);
-                Assert.AreEqual(34, metrics.SwapMisses);
-                Assert.AreEqual(35, metrics.SwapEntriesCount);
-                Assert.AreEqual(36, metrics.SwapSize);
-                Assert.AreEqual(37, metrics.SwapHitPercentage);
-                Assert.AreEqual(38, metrics.SwapMissPercentage);
-                Assert.AreEqual(39, metrics.Size);
-                Assert.AreEqual(40, metrics.KeySize);
+                Assert.AreEqual(16, metrics.OffHeapGets);
+                Assert.AreEqual(17, metrics.OffHeapPuts);
+                Assert.AreEqual(18, metrics.OffHeapRemovals);
+                Assert.AreEqual(19, metrics.OffHeapEvictions);
+                Assert.AreEqual(20, metrics.OffHeapHits);
+                Assert.AreEqual(21, metrics.OffHeapHitPercentage);
+                Assert.AreEqual(22, metrics.OffHeapMisses);
+                Assert.AreEqual(23, metrics.OffHeapMissPercentage);
+                Assert.AreEqual(24, metrics.OffHeapEntriesCount);
+                Assert.AreEqual(25, metrics.OffHeapPrimaryEntriesCount);
+                Assert.AreEqual(26, metrics.OffHeapBackupEntriesCount);
+                Assert.AreEqual(27, metrics.OffHeapAllocatedSize);
+                Assert.AreEqual(28, metrics.OffHeapMaxSize);
+                Assert.AreEqual(29, metrics.Size);
+                Assert.AreEqual(30, metrics.KeySize);
                 Assert.AreEqual(true, metrics.IsEmpty);
-                Assert.AreEqual(41, metrics.DhtEvictQueueCurrentSize);
-                Assert.AreEqual(42, metrics.TxThreadMapSize);
-                Assert.AreEqual(43, metrics.TxXidMapSize);
-                Assert.AreEqual(44, metrics.TxCommitQueueSize);
-                Assert.AreEqual(45, metrics.TxPrepareQueueSize);
-                Assert.AreEqual(46, metrics.TxStartVersionCountsSize);
-                Assert.AreEqual(47, metrics.TxCommittedVersionsSize);
-                Assert.AreEqual(48, metrics.TxRolledbackVersionsSize);
-                Assert.AreEqual(49, metrics.TxDhtThreadMapSize);
-                Assert.AreEqual(50, metrics.TxDhtXidMapSize);
-                Assert.AreEqual(51, metrics.TxDhtCommitQueueSize);
-                Assert.AreEqual(52, metrics.TxDhtPrepareQueueSize);
-                Assert.AreEqual(53, metrics.TxDhtStartVersionCountsSize);
-                Assert.AreEqual(54, metrics.TxDhtCommittedVersionsSize);
-                Assert.AreEqual(55, metrics.TxDhtRolledbackVersionsSize);
+                Assert.AreEqual(31, metrics.DhtEvictQueueCurrentSize);
+                Assert.AreEqual(32, metrics.TxThreadMapSize);
+                Assert.AreEqual(33, metrics.TxXidMapSize);
+                Assert.AreEqual(34, metrics.TxCommitQueueSize);
+                Assert.AreEqual(35, metrics.TxPrepareQueueSize);
+                Assert.AreEqual(36, metrics.TxStartVersionCountsSize);
+                Assert.AreEqual(37, metrics.TxCommittedVersionsSize);
+                Assert.AreEqual(38, metrics.TxRolledbackVersionsSize);
+                Assert.AreEqual(39, metrics.TxDhtThreadMapSize);
+                Assert.AreEqual(40, metrics.TxDhtXidMapSize);
+                Assert.AreEqual(41, metrics.TxDhtCommitQueueSize);
+                Assert.AreEqual(42, metrics.TxDhtPrepareQueueSize);
+                Assert.AreEqual(43, metrics.TxDhtStartVersionCountsSize);
+                Assert.AreEqual(44, metrics.TxDhtCommittedVersionsSize);
+                Assert.AreEqual(45, metrics.TxDhtRolledbackVersionsSize);
                 Assert.AreEqual(true, metrics.IsWriteBehindEnabled);
-                Assert.AreEqual(56, metrics.WriteBehindFlushSize);
-                Assert.AreEqual(57, metrics.WriteBehindFlushThreadCount);
-                Assert.AreEqual(58, metrics.WriteBehindFlushFrequency);
-                Assert.AreEqual(59, metrics.WriteBehindStoreBatchSize);
-                Assert.AreEqual(60, metrics.WriteBehindTotalCriticalOverflowCount);
-                Assert.AreEqual(61, metrics.WriteBehindCriticalOverflowCount);
-                Assert.AreEqual(62, metrics.WriteBehindErrorRetryCount);
-                Assert.AreEqual(63, metrics.WriteBehindBufferSize);
+                Assert.AreEqual(46, metrics.WriteBehindFlushSize);
+                Assert.AreEqual(47, metrics.WriteBehindFlushThreadCount);
+                Assert.AreEqual(48, metrics.WriteBehindFlushFrequency);
+                Assert.AreEqual(49, metrics.WriteBehindStoreBatchSize);
+                Assert.AreEqual(50, metrics.WriteBehindTotalCriticalOverflowCount);
+                Assert.AreEqual(51, metrics.WriteBehindCriticalOverflowCount);
+                Assert.AreEqual(52, metrics.WriteBehindErrorRetryCount);
+                Assert.AreEqual(53, metrics.WriteBehindBufferSize);
                 Assert.AreEqual("foo", metrics.KeyType);
                 Assert.AreEqual("bar", metrics.ValueType);
                 Assert.AreEqual(true, metrics.IsStoreByValue);
@@ -222,7 +212,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             func2 = func2 ?? func;
 
-            var localCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration(cacheName)
+            var localIgnite = Ignition.GetIgnite();
+            var localCache = localIgnite.CreateCache<int, int>(new CacheConfiguration(cacheName)
             {
                 EnableStatistics = true
             });
@@ -232,9 +223,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
             Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
 
-            localCache.Put(1, 1);
-            localCache.Get(1);
-            
+            var localKey = TestUtils.GetPrimaryKey(localIgnite, cacheName);
+
+            localCache.Put(localKey, 1);
+            localCache.Get(localKey);
             // Wait for metrics to propagate.
             Thread.Sleep(TcpDiscoverySpi.DefaultHeartbeatFrequency);
 

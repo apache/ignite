@@ -39,24 +39,19 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -66,26 +61,35 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCacheClearTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheLoadTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheLoadTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetadataTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheNodesTask;
+import org.apache.ignite.internal.visor.cache.VisorCachePartitionsTask;
+import org.apache.ignite.internal.visor.cache.VisorCachePartitionsTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheStartTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheStartTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeResetMetricsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTaskArg;
 import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.debug.VisorThreadDumpTask;
+import org.apache.ignite.internal.visor.file.VisorFileBlockTaskArg;
 import org.apache.ignite.internal.visor.file.VisorFileBlockTask;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTask;
+import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTaskArg;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTaskArg;
+import org.apache.ignite.internal.visor.log.VisorLogSearchTaskArg;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
 import org.apache.ignite.internal.visor.misc.VisorAckTask;
 import org.apache.ignite.internal.visor.misc.VisorLatestVersionTask;
@@ -94,15 +98,16 @@ import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask;
 import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg;
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask;
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg;
 import org.apache.ignite.internal.visor.node.VisorNodeGcTask;
 import org.apache.ignite.internal.visor.node.VisorNodePingTask;
 import org.apache.ignite.internal.visor.node.VisorNodeSuppressedErrorsTask;
-import org.apache.ignite.internal.visor.query.VisorQueryArg;
+import org.apache.ignite.internal.visor.query.VisorQueryTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCleanupTask;
 import org.apache.ignite.internal.visor.query.VisorQueryNextPageTask;
+import org.apache.ignite.internal.visor.query.VisorQueryNextPageTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryTask;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -539,7 +544,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testIncorrectPut() throws Exception {
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "key", "key0"));
 
-        assertResponseContainsError(ret, "Failed to find mandatory parameter in request: val");
+        assertResponseContainsError(ret,
+            "Failed to handle request: [req=CACHE_PUT, err=Failed to find mandatory parameter in request: val]");
     }
 
     /**
@@ -684,7 +690,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Put command result: " + ret);
 
-        assertEquals("putVal", jcache().localPeek("putKey", CachePeekMode.ONHEAP));
+        assertEquals("putVal", jcache().localPeek("putKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -716,8 +722,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertCacheOperation(ret, true);
 
-        assertEquals("addVal1", jcache().localPeek("addKey1", CachePeekMode.ONHEAP));
-        assertEquals("addVal2", jcache().localPeek("addKey2", CachePeekMode.ONHEAP));
+        assertEquals("addVal1", jcache().localPeek("addKey1"));
+        assertEquals("addVal2", jcache().localPeek("addKey2"));
     }
 
     /**
@@ -746,8 +752,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Put all command result: " + ret);
 
-        assertEquals("putVal1", jcache().localPeek("putKey1", CachePeekMode.ONHEAP));
-        assertEquals("putVal2", jcache().localPeek("putKey2", CachePeekMode.ONHEAP));
+        assertEquals("putVal1", jcache().localPeek("putKey1"));
+        assertEquals("putVal2", jcache().localPeek("putKey2"));
 
         assertCacheBulkOperation(ret, true);
     }
@@ -758,14 +764,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testRemove() throws Exception {
         jcache().put("rmvKey", "rmvVal");
 
-        assertEquals("rmvVal", jcache().localPeek("rmvKey", CachePeekMode.ONHEAP));
+        assertEquals("rmvVal", jcache().localPeek("rmvKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE.key(),
             "key", "rmvKey"));
 
         info("Remove command result: " + ret);
 
-        assertNull(jcache().localPeek("rmvKey", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("rmvKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -779,20 +785,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jcache().put("rmvKey3", "rmvVal3");
         jcache().put("rmvKey4", "rmvVal4");
 
-        assertEquals("rmvVal1", jcache().localPeek("rmvKey1", CachePeekMode.ONHEAP));
-        assertEquals("rmvVal2", jcache().localPeek("rmvKey2", CachePeekMode.ONHEAP));
-        assertEquals("rmvVal3", jcache().localPeek("rmvKey3", CachePeekMode.ONHEAP));
-        assertEquals("rmvVal4", jcache().localPeek("rmvKey4", CachePeekMode.ONHEAP));
+        assertEquals("rmvVal1", jcache().localPeek("rmvKey1"));
+        assertEquals("rmvVal2", jcache().localPeek("rmvKey2"));
+        assertEquals("rmvVal3", jcache().localPeek("rmvKey3"));
+        assertEquals("rmvVal4", jcache().localPeek("rmvKey4"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REMOVE_ALL.key(),
             "k1", "rmvKey1", "k2", "rmvKey2"));
 
         info("Remove all command result: " + ret);
 
-        assertNull(jcache().localPeek("rmvKey1", CachePeekMode.ONHEAP));
-        assertNull(jcache().localPeek("rmvKey2", CachePeekMode.ONHEAP));
-        assertEquals("rmvVal3", jcache().localPeek("rmvKey3", CachePeekMode.ONHEAP));
-        assertEquals("rmvVal4", jcache().localPeek("rmvKey4", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("rmvKey1"));
+        assertNull(jcache().localPeek("rmvKey2"));
+        assertEquals("rmvVal3", jcache().localPeek("rmvKey3"));
+        assertEquals("rmvVal4", jcache().localPeek("rmvKey4"));
 
         assertCacheBulkOperation(ret, true);
 
@@ -800,10 +806,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Remove all command result: " + ret);
 
-        assertNull(jcache().localPeek("rmvKey1", CachePeekMode.ONHEAP));
-        assertNull(jcache().localPeek("rmvKey2", CachePeekMode.ONHEAP));
-        assertNull(jcache().localPeek("rmvKey3", CachePeekMode.ONHEAP));
-        assertNull(jcache().localPeek("rmvKey4", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("rmvKey1"));
+        assertNull(jcache().localPeek("rmvKey2"));
+        assertNull(jcache().localPeek("rmvKey3"));
+        assertNull(jcache().localPeek("rmvKey4"));
         assertTrue(jcache().localSize() == 0);
 
         assertCacheBulkOperation(ret, true);
@@ -815,14 +821,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testCas() throws Exception {
         jcache().put("casKey", "casOldVal");
 
-        assertEquals("casOldVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertEquals("casOldVal", jcache().localPeek("casKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(),
             "key", "casKey", "val2", "casOldVal", "val1", "casNewVal"));
 
         info("CAS command result: " + ret);
 
-        assertEquals("casNewVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertEquals("casNewVal", jcache().localPeek("casKey"));
 
         assertCacheOperation(ret, true);
 
@@ -835,14 +841,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testReplace() throws Exception {
         jcache().put("repKey", "repOldVal");
 
-        assertEquals("repOldVal", jcache().localPeek("repKey", CachePeekMode.ONHEAP));
+        assertEquals("repOldVal", jcache().localPeek("repKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_REPLACE.key(),
             "key", "repKey", "val", "repVal"));
 
         info("Replace command result: " + ret);
 
-        assertEquals("repVal", jcache().localPeek("repKey", CachePeekMode.ONHEAP));
+        assertEquals("repVal", jcache().localPeek("repKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -943,14 +949,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testCar() throws Exception {
         jcache().put("casKey", "casOldVal");
 
-        assertEquals("casOldVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertEquals("casOldVal", jcache().localPeek("casKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(),
             "key", "casKey", "val2", "casOldVal"));
 
         info("CAR command result: " + ret);
 
-        assertNull(jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("casKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -959,14 +965,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testPutIfAbsent() throws Exception {
-        assertNull(jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("casKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(),
             "key", "casKey", "val1", "casNewVal"));
 
         info("PutIfAbsent command result: " + ret);
 
-        assertEquals("casNewVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertEquals("casNewVal", jcache().localPeek("casKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -977,13 +983,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     public void testCasRemove() throws Exception {
         jcache().put("casKey", "casVal");
 
-        assertEquals("casVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertEquals("casVal", jcache().localPeek("casKey"));
 
         String ret = content(F.asMap("cmd", GridRestCommand.CACHE_CAS.key(), "key", "casKey"));
 
         info("CAS Remove command result: " + ret);
 
-        assertNull(jcache().localPeek("casKey", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("casKey"));
 
         assertCacheOperation(ret, true);
     }
@@ -1011,7 +1017,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         for (JsonNode item : arr) {
             JsonNode cacheNameNode = item.get("cacheName");
-            final String cacheName = cacheNameNode != null ? cacheNameNode.asText() : null;
+            final String cacheName = (cacheNameNode == null || "null".equals(cacheNameNode.asText())) ? null : cacheNameNode.asText();
 
             GridCacheSqlMetadata meta = F.find(metas, null, new P1<GridCacheSqlMetadata>() {
                 @Override public boolean apply(GridCacheSqlMetadata meta) {
@@ -1279,19 +1285,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonTaskResult(ret);
 
-        ret = content(new VisorGatewayArgument(VisorCacheLoadTask.class)
+        ret = content(new VisorGatewayArgument(VisorCachePartitionsTask.class)
             .forNode(locNode)
-            .tuple3(Set.class, Long.class, Object[].class, "person", 0, "null"));
+            .argument(VisorCachePartitionsTaskArg.class, "person"));
 
-        info("VisorCacheLoadTask result: " + ret);
+        info("VisorCachePartitionsTask result: " + ret);
 
         jsonTaskResult(ret);
 
-        ret = content(new VisorGatewayArgument(VisorCacheSwapBackupsTask.class)
+        ret = content(new VisorGatewayArgument(VisorCacheLoadTask.class)
             .forNode(locNode)
-            .set(String.class, "person"));
+            .argument(VisorCacheLoadTaskArg.class, "person", 0, "null"));
 
-        info("VisorCacheSwapBackupsTask result: " + ret);
+        info("VisorCacheLoadTask result: " + ret);
 
         jsonTaskResult(ret);
 
@@ -1321,7 +1327,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorIgfsSamplingStateTask.class)
             .forNode(locNode)
-            .pair(String.class, Boolean.class, "igfs", false));
+            .argument(VisorIgfsSamplingStateTaskArg.class, "igfs", false));
 
         info("VisorIgfsSamplingStateTask result: " + ret);
 
@@ -1368,7 +1374,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorLatestTextFilesTask.class)
             .forNode(locNode)
-            .pair(String.class, String.class, "", ""));
+            .argument(VisorLatestTextFilesTaskArg.class, "", ""));
 
         info("VisorLatestTextFilesTask result: " + ret);
 
@@ -1383,7 +1389,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorFileBlockTask.class)
             .forNode(locNode)
-            .argument(VisorFileBlockTask.VisorFileBlockArg.class, "", 0L, 1, 0L));
+            .argument(VisorFileBlockTaskArg.class, "", 0L, 1, 0L));
 
         info("VisorFileBlockTask result: " + ret);
 
@@ -1413,17 +1419,18 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorQueryTask.class)
             .forNode(locNode)
-            .argument(VisorQueryArg.class, "person", URLEncoder.encode("select * from Person", CHARSET), false, 1));
+            .argument(VisorQueryTaskArg.class, "person", URLEncoder.encode("select * from Person", CHARSET),
+                false, false, false, false, 1));
 
         info("VisorQueryTask result: " + ret);
 
         JsonNode res = jsonTaskResult(ret);
 
-        final String qryId = res.get("value").get("queryId").asText();
+        final String qryId = res.get("result").get("queryId").asText();
 
         ret = content(new VisorGatewayArgument(VisorQueryNextPageTask.class)
             .forNode(locNode)
-            .pair(String.class, Integer.class, qryId, 1));
+            .argument(VisorQueryNextPageTaskArg.class, qryId, 1));
 
         info("VisorQueryNextPageTask result: " + ret);
 
@@ -1453,20 +1460,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
-            .pair(Boolean.class, Set.class, false, "person"));
+            .argument(VisorCacheMetricsCollectorTaskArg.class, false, "person"));
 
         info("VisorCacheMetricsCollectorTask result: " + ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
             .forNodes(grid(1).cluster().nodes())
-            .pair(Boolean.class, Set.class, false, "person"));
+            .argument(VisorCacheMetricsCollectorTaskArg.class, false, "person"));
 
         info("VisorCacheMetricsCollectorTask (with nodes) result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorLogSearchTask.class)
-            .argument(VisorLogSearchTask.VisorLogSearchArg.class, ".", ".", "abrakodabra.txt", 1));
+            .argument(VisorLogSearchTaskArg.class, ".", ".", "abrakodabra.txt", 1));
 
         info("VisorLogSearchTask result: " + ret);
 
@@ -1486,7 +1493,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorNodeEventsCollectorTask.class)
-            .argument(VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg.class,
+            .argument(VisorNodeEventsCollectorTaskArg.class,
                 "null", "null", "null", "taskName", "null"));
 
         info("VisorNodeEventsCollectorTask result: " + ret);
@@ -1502,7 +1509,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorComputeToggleMonitoringTask.class)
-            .pair(String.class, Boolean.class, UUID.randomUUID(), false));
+            .argument(VisorComputeToggleMonitoringTaskArg.class, UUID.randomUUID(), false));
 
         info("VisorComputeToggleMonitoringTask result: " + ret);
 
@@ -1523,7 +1530,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonTaskResult(ret);
 
-        /** Spring XML to start cache via Visor task. */
+        // Spring XML to start cache via Visor task.
         final String START_CACHE =
             "<beans xmlns=\"http://www.springframework.org/schema/beans\"\n" +
                     "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
@@ -1536,7 +1543,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
                     "</beans>";
 
         ret = content(new VisorGatewayArgument(VisorCacheStartTask.class)
-            .argument(VisorCacheStartTask.VisorCacheStartArg.class, false, "person2",
+            .argument(VisorCacheStartTaskArg.class, false, "person2",
                 URLEncoder.encode(START_CACHE, CHARSET)));
 
         info("VisorCacheStartTask result: " + ret);
@@ -2151,49 +2158,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             put("p" + idx++, Collection.class.getName());
             put("p" + idx++, cls.getName());
             put("p" + idx++, concat(vals, ";"));
-
-            return this;
-        }
-
-        /**
-         * Add tuple argument.
-         *
-         * @param keyCls Key class.
-         * @param valCls Values class.
-         * @param key Key.
-         * @param val Value.
-         * @return This helper for chaining method calls.
-         */
-        public VisorGatewayArgument pair(Class keyCls, Class valCls, Object key, Object val) {
-            put("p" + idx++, IgniteBiTuple.class.getName());
-            put("p" + idx++, keyCls.getName());
-            put("p" + idx++, valCls.getName());
-            put("p" + idx++, key != null ? key.toString() : "null");
-            put("p" + idx++, val != null ? val.toString() : "null");
-
-            return this;
-        }
-
-        /**
-         * Add tuple argument.
-         *
-         * @param firstCls Class of first argument.
-         * @param secondCls Class of second argument.
-         * @param thirdCls Class of third argument.
-         * @param first First argument.
-         * @param second Second argument.
-         * @param third Third argument.
-         * @return This helper for chaining method calls.
-         */
-        public VisorGatewayArgument tuple3(Class firstCls, Class secondCls, Class thirdCls,
-            Object first, Object second, Object third) {
-            put("p" + idx++, GridTuple3.class.getName());
-            put("p" + idx++, firstCls.getName());
-            put("p" + idx++, secondCls.getName());
-            put("p" + idx++, thirdCls.getName());
-            put("p" + idx++, first != null ? first.toString() : "null");
-            put("p" + idx++, second != null ? second.toString() : "null");
-            put("p" + idx++, third != null ? third.toString() : "null");
 
             return this;
         }

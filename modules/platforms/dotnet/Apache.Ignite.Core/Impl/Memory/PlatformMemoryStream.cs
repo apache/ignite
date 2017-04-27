@@ -29,9 +29,8 @@ namespace Apache.Ignite.Core.Impl.Memory
     /// <summary>
     /// Platform memory stream.
     /// </summary>
-    [CLSCompliant(false)]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public unsafe class PlatformMemoryStream : IBinaryStream
+    internal unsafe class PlatformMemoryStream : IBinaryStream
     {
         /** Length: 1 byte. */
         protected const int Len1 = 1;

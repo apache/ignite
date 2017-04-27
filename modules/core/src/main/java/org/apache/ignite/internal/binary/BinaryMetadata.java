@@ -28,7 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,14 +51,18 @@ public class BinaryMetadata implements Externalizable {
 
     /** Recorded object fields. */
     @GridToStringInclude(sensitive = true)
-    private Map<String, Integer> fields;
+    private Map<String, BinaryFieldMetadata> fields;
 
     /** Affinity key field name. */
     @GridToStringInclude(sensitive = true)
     private String affKeyFieldName;
 
     /** Schemas associated with type. */
+    @GridToStringInclude
     private Collection<BinarySchema> schemas;
+
+    /** Schema IDs registered for this type */
+    private Set<Integer> schemaIds;
 
     /** Whether this is enum type. */
     private boolean isEnum;
@@ -80,7 +84,7 @@ public class BinaryMetadata implements Externalizable {
      * @param schemas Schemas.
      * @param isEnum Enum flag.
      */
-    public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, Integer> fields,
+    public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, BinaryFieldMetadata> fields,
         @Nullable String affKeyFieldName, @Nullable Collection<BinarySchema> schemas, boolean isEnum) {
         assert typeName != null;
 
@@ -89,6 +93,16 @@ public class BinaryMetadata implements Externalizable {
         this.fields = fields;
         this.affKeyFieldName = affKeyFieldName;
         this.schemas = schemas;
+
+        if (schemas != null) {
+            schemaIds = U.newHashSet(schemas.size());
+
+            for (BinarySchema schema : schemas)
+                schemaIds.add(schema.schemaId());
+        }
+        else
+            schemaIds = Collections.emptySet();
+
         this.isEnum = isEnum;
     }
 
@@ -116,8 +130,8 @@ public class BinaryMetadata implements Externalizable {
     /**
      * @return Fields.
      */
-    public Map<String, Integer> fieldsMap() {
-        return fields != null ? fields : Collections.<String, Integer>emptyMap();
+    public Map<String, BinaryFieldMetadata> fieldsMap() {
+        return fields != null ? fields : Collections.<String, BinaryFieldMetadata>emptyMap();
     }
 
     /**
@@ -125,9 +139,9 @@ public class BinaryMetadata implements Externalizable {
      * @return Field type name.
      */
     @Nullable public String fieldTypeName(String fieldName) {
-        Integer typeId = fields != null ? fields.get(fieldName) : null;
+        BinaryFieldMetadata meta = fields != null ? fields.get(fieldName) : null;
 
-        return typeId != null ? BinaryUtils.fieldTypeName(typeId) : null;
+        return meta != null ? BinaryUtils.fieldTypeName(meta.typeId()) : null;
     }
 
     /**
@@ -142,6 +156,14 @@ public class BinaryMetadata implements Externalizable {
      */
     public Collection<BinarySchema> schemas() {
         return schemas != null ? schemas : Collections.<BinarySchema>emptyList();
+    }
+
+    /**
+     * @param schemaId Schema ID.
+     * @return {@code true} if <b>BinaryMetadata</b> instance has schema with ID specified, {@code false} otherwise.
+     */
+    public boolean hasSchema(int schemaId) {
+        return schemaIds.contains(schemaId);
     }
 
     /**
@@ -184,9 +206,9 @@ public class BinaryMetadata implements Externalizable {
         else {
             out.writeInt(fields.size());
 
-            for (Map.Entry<String, Integer> fieldEntry : fields.entrySet()) {
+            for (Map.Entry<String, BinaryFieldMetadata> fieldEntry : fields.entrySet()) {
                 U.writeString(out, fieldEntry.getKey());
-                out.writeInt(fieldEntry.getValue());
+                fieldEntry.getValue().writeTo(out);
             }
         }
 
@@ -232,9 +254,11 @@ public class BinaryMetadata implements Externalizable {
 
             for (int i = 0; i < fieldsSize; i++) {
                 String fieldName = U.readString(in);
-                int fieldId = in.readInt();
 
-                fields.put(fieldName, fieldId);
+                BinaryFieldMetadata fieldMeta = new BinaryFieldMetadata();
+                fieldMeta.readFrom(in);
+
+                fields.put(fieldName, fieldMeta);
             }
         }
 
@@ -247,12 +271,16 @@ public class BinaryMetadata implements Externalizable {
         else {
             schemas = new ArrayList<>();
 
+            schemaIds = U.newHashSet(schemasSize);
+
             for (int i = 0; i < schemasSize; i++) {
                 BinarySchema schema = new BinarySchema();
 
                 schema.readFrom(in);
 
                 schemas.add(schema);
+
+                schemaIds.add(schema.schemaId());
             }
         }
 

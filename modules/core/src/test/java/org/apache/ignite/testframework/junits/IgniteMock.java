@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -55,6 +56,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -327,6 +329,9 @@ public class IgniteMock implements Ignite {
                     return typeName.hashCode();
                 }
             };
+
+            if (marshaller instanceof BinaryMarshaller)
+                ctx.configure((BinaryMarshaller)marshaller, configuration());
         }
 
         binaryMock = new NoOpBinary() {
@@ -418,6 +423,26 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetLostPartitions(Collection<String> cacheNames) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
         return null;
     }
 

@@ -82,7 +82,6 @@ export default class IgniteConfigurationGenerator {
         this.clusterODBC(cluster.odbc, cfg);
         this.clusterMarshaller(cluster, cfg);
         this.clusterMetrics(cluster, cfg);
-        this.clusterSwap(cluster, cfg);
         this.clusterTime(cluster, cfg);
         this.clusterPools(cluster, cfg);
         this.clusterTransactions(cluster.transactionConfiguration, cfg);
@@ -320,6 +319,18 @@ export default class IgniteConfigurationGenerator {
                     .boolProperty('allowDuplicateRegistrations');
 
                 break;
+
+            case 'Kubernetes':
+                ipFinder = new Bean('org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder',
+                    'ipFinder', cluster.discovery.Kubernetes, clusterDflts.discovery.Kubernetes);
+
+                ipFinder.stringProperty('serviceName')
+                    .stringProperty('namespace')
+                    .stringProperty('masterUrl')
+                    .pathProperty('accountToken');
+
+                break;
+
             default:
                 // No-op.
         }
@@ -1158,7 +1169,6 @@ export default class IgniteConfigurationGenerator {
 
             this.igfsIPC(igfs, igfsCfg);
             this.igfsFragmentizer(igfs, igfsCfg);
-            this.igfsDualMode(igfs, igfsCfg);
             this.igfsSecondFS(igfs, igfsCfg);
             this.igfsMisc(igfs, igfsCfg);
 
@@ -1179,7 +1189,7 @@ export default class IgniteConfigurationGenerator {
 
         switch (kind) {
             case 'OptimizedMarshaller':
-                bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
+                bean = new Bean('org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
                     .intProperty('poolSize')
                     .intProperty('requireSerializable');
 
@@ -1197,9 +1207,7 @@ export default class IgniteConfigurationGenerator {
         if (bean)
             cfg.beanProperty('marshaller', bean);
 
-        cfg.intProperty('marshalLocalJobs')
-            .intProperty('marshallerCacheKeepAliveTime')
-            .intProperty('marshallerCacheThreadPoolSize', 'marshallerCachePoolSize');
+        cfg.intProperty('marshalLocalJobs');
 
         return cfg;
     }
@@ -1236,14 +1244,14 @@ export default class IgniteConfigurationGenerator {
             const bean = new Bean('org.apache.ignite.ssl.SslContextFactory', 'sslCtxFactory',
                 cluster.sslContextFactory);
 
-            bean.intProperty('keyAlgorithm')
+            bean.stringProperty('keyAlgorithm')
                 .pathProperty('keyStoreFilePath');
 
             if (_.nonEmpty(bean.valueOf('keyStoreFilePath')))
                 bean.propertyChar('keyStorePassword', 'ssl.key.storage.password', 'YOUR_SSL_KEY_STORAGE_PASSWORD');
 
-            bean.intProperty('keyStoreType')
-                .intProperty('protocol');
+            bean.stringProperty('keyStoreType')
+                .stringProperty('protocol');
 
             if (_.nonEmpty(cluster.sslContextFactory.trustManagers)) {
                 bean.arrayProperty('trustManagers', 'trustManagers',
@@ -1256,7 +1264,7 @@ export default class IgniteConfigurationGenerator {
                 if (_.nonEmpty(bean.valueOf('trustStoreFilePath')))
                     bean.propertyChar('trustStorePassword', 'ssl.trust.storage.password', 'YOUR_SSL_TRUST_STORAGE_PASSWORD');
 
-                bean.intProperty('trustStoreType');
+                bean.stringProperty('trustStoreType');
             }
 
             cfg.beanProperty('sslContextFactory', bean);
@@ -1265,29 +1273,9 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
-    // Generate swap group.
-    static clusterSwap(cluster, cfg = this.igniteConfigurationBean(cluster)) {
-        if (_.get(cluster.swapSpaceSpi, 'kind') === 'FileSwapSpaceSpi') {
-            const bean = new Bean('org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi', 'swapSpaceSpi',
-                cluster.swapSpaceSpi.FileSwapSpaceSpi);
-
-            bean.pathProperty('baseDirectory')
-                .intProperty('readStripesNumber')
-                .floatProperty('maximumSparsity')
-                .intProperty('maxWriteQueueSize')
-                .intProperty('writeBufferSize');
-
-            cfg.beanProperty('swapSpaceSpi', bean);
-        }
-
-        return cfg;
-    }
-
     // Generate time group.
     static clusterTime(cluster, cfg = this.igniteConfigurationBean(cluster)) {
-        cfg.intProperty('clockSyncSamples')
-            .intProperty('clockSyncFrequency')
-            .intProperty('timeServerPortBase')
+        cfg.intProperty('timeServerPortBase')
             .intProperty('timeServerPortRange');
 
         return cfg;
@@ -1449,6 +1437,8 @@ export default class IgniteConfigurationGenerator {
                 .intProperty('readFromBackup');
         }
 
+        ccfg.enumProperty('partitionLossPolicy');
+
         ccfg.intProperty('copyOnRead');
 
         if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && ccfg.valueOf('atomicityMode') === 'TRANSACTIONAL')
@@ -1494,15 +1484,9 @@ export default class IgniteConfigurationGenerator {
 
     // Generate cache memory group.
     static cacheMemory(cache, ccfg = this.cacheConfigurationBean(cache)) {
-        ccfg.enumProperty('memoryMode');
-
-        if (ccfg.valueOf('memoryMode') !== 'OFFHEAP_VALUES')
-            ccfg.intProperty('offHeapMaxMemory');
-
         this._evictionPolicy(ccfg, 'evictionPolicy', cache.evictionPolicy, cacheDflts.evictionPolicy);
 
-        ccfg.intProperty('startSize')
-            .boolProperty('swapEnabled');
+        ccfg.intProperty('startSize');
 
         return ccfg;
     }
@@ -1521,6 +1505,7 @@ export default class IgniteConfigurationGenerator {
             .intProperty('longQueryWarningTimeout')
             .arrayProperty('indexedTypes', 'indexedTypes', indexedTypes, 'java.lang.Class')
             .intProperty('queryDetailMetricsSize')
+            .intProperty('queryParallelism')
             .arrayProperty('sqlFunctionClasses', 'sqlFunctionClasses', cache.sqlFunctionClasses, 'java.lang.Class')
             .intProperty('snapshotableIndex')
             .intProperty('sqlEscapeAll');
@@ -1639,7 +1624,6 @@ export default class IgniteConfigurationGenerator {
     static cacheConcurrency(cache, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.intProperty('maxConcurrentAsyncOperations')
             .intProperty('defaultLockTimeout')
-            .enumProperty('atomicWriteOrderMode')
             .enumProperty('writeSynchronizationMode');
 
         return ccfg;
@@ -1852,19 +1836,10 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
-    // Generate IGFS Dual mode group.
-    static igfsDualMode(igfs, cfg = this.igfsConfigurationBean(igfs)) {
-        cfg.intProperty('dualModeMaxPendingPutsSize')
-            .emptyBeanProperty('dualModePutExecutorService')
-            .intProperty('dualModePutExecutorServiceShutdown');
-
-        return cfg;
-    }
-
     // Generate IGFS miscellaneous group.
     static igfsMisc(igfs, cfg = this.igfsConfigurationBean(igfs)) {
         cfg.intProperty('blockSize')
-            .intProperty('streamBufferSize')
+            .intProperty('bufferSize')
             .intProperty('maxSpaceSize')
             .intProperty('maximumTaskRangeLength')
             .intProperty('managementPort')
@@ -1872,7 +1847,6 @@ export default class IgniteConfigurationGenerator {
             .intProperty('perNodeParallelBatchCount')
             .intProperty('prefetchBlocks')
             .intProperty('sequentialReadsBeforePrefetch')
-            .intProperty('trashPurgeTimeout')
             .intProperty('colocateMetadata')
             .intProperty('relaxedConsistency')
             .mapProperty('pathModes', 'pathModes');

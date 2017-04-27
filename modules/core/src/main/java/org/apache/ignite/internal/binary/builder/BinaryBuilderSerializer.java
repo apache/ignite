@@ -48,10 +48,9 @@ class BinaryBuilderSerializer {
     /**
      * @param writer Writer.
      * @param val Value.
-     * @return Field offset.
      */
-    public int writeValue(BinaryWriterExImpl writer, Object val) {
-        return writeValue(writer, val, false, false);
+    public void writeValue(BinaryWriterExImpl writer, Object val) {
+        writeValue(writer, val, false, false);
     }
 
     /**
@@ -59,18 +58,18 @@ class BinaryBuilderSerializer {
      * @param val Value.
      * @param forceCol Whether to force collection type.
      * @param forceMap Whether to force map type.
-     * @return Value offset.
      */
-    public int writeValue(BinaryWriterExImpl writer, Object val, boolean forceCol, boolean forceMap) {
+    public void writeValue(BinaryWriterExImpl writer, Object val, boolean forceCol, boolean forceMap) {
         assert !(forceCol && forceMap);
 
         if (val == null)
-            return BinaryUtils.NULL_4;
+            return;
 
-        int off = writer.currentOffset();
+        if (val instanceof BinaryBuilderSerializationAware) {
+            ((BinaryBuilderSerializationAware)val).writeTo(writer, this);
 
-        if (val instanceof BinaryBuilderSerializationAware)
-            return ((BinaryBuilderSerializationAware)val).writeTo(writer, this);
+            return;
+        }
 
         if (val instanceof BinaryObjectExImpl) {
             if (binaryObjToWrapper == null)
@@ -104,7 +103,7 @@ class BinaryBuilderSerializer {
                 writer.writeInt(handle);
             }
 
-            return off;
+            return;
         }
 
         if (val.getClass().isEnum()) {
@@ -124,7 +123,7 @@ class BinaryBuilderSerializer {
             writer.writeInt(typeId);
             writer.writeInt(((Enum)val).ordinal());
 
-            return off;
+            return;
         }
 
         if (forceCol || BinaryUtils.isSpecialCollection(val.getClass())) {
@@ -140,7 +139,7 @@ class BinaryBuilderSerializer {
             for (Object obj : c)
                 writeValue(writer, obj);
 
-            return off;
+            return;
         }
 
         if (forceMap || BinaryUtils.isSpecialMap(val.getClass())) {
@@ -156,11 +155,14 @@ class BinaryBuilderSerializer {
                 writeValue(writer, entry.getValue());
             }
 
-            return off;
+            return;
         }
 
-        if (BinaryUtils.PLAIN_CLASS_TO_FLAG.get(val.getClass()) != null)
-            return BinaryUtils.writePlainObject(writer, val);
+        if (BinaryUtils.PLAIN_CLASS_TO_FLAG.get(val.getClass()) != null) {
+            BinaryUtils.writePlainObject(writer, val);
+
+            return;
+        }
 
         if (val instanceof Object[]) {
             int compTypeId = writer.context().typeId(((Object[])val).getClass().getComponentType().getName());
@@ -168,7 +170,7 @@ class BinaryBuilderSerializer {
             if (val instanceof BinaryBuilderEnum[]) {
                 writeArray(writer, GridBinaryMarshaller.ENUM_ARR, (Object[])val, compTypeId);
 
-                return off;
+                return;
             }
 
             if (((Object[])val).getClass().getComponentType().isEnum()) {
@@ -181,17 +183,15 @@ class BinaryBuilderSerializer {
                 for (Enum anEnum : enumArr)
                     writeValue(writer, anEnum);
 
-                return off;
+                return;
             }
 
             writeArray(writer, GridBinaryMarshaller.OBJ_ARR, (Object[])val, compTypeId);
 
-            return off;
+            return;
         }
 
         writer.doWriteObject(val);
-
-        return off;
     }
 
     /**

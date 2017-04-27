@@ -16,6 +16,7 @@
  */
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -35,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Queries tests.
     /// </summary>
-    public sealed class CacheQueriesTest
+    public class CacheQueriesTest
     {
         /** Grid count. */
         private const int GridCnt = 2;
@@ -50,46 +51,40 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const int MaxItemCnt = 100;
 
         /// <summary>
-        /// 
+        /// Fixture setup.
         /// </summary>
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            TestUtils.JvmDebug = true;
-            TestUtils.KillProcesses();
-
-            IgniteConfiguration cfg = new IgniteConfiguration
-            {
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new[]
-                    {
-                        new BinaryTypeConfiguration(typeof (QueryPerson)),
-                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<QueryPerson>)),
-                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<BinaryObject>))
-                    }
-                },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                SpringConfigUrl = CfgPath
-            };
-
             for (int i = 0; i < GridCnt; i++)
             {
-                cfg.IgniteInstanceName = "grid-" + i;
-
-                Ignition.Start(cfg);
+                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    BinaryConfiguration = new BinaryConfiguration
+                    {
+                        NameMapper = GetNameMapper()
+                    },
+                    SpringConfigUrl = CfgPath,
+                    IgniteInstanceName = "grid-" + i
+                });
             }
+        }
+        
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>
-        /// 
+        /// Fixture teardown.
         /// </summary>
         [TestFixtureTearDown]
         public void StopGrids()
         {
-            for (int i = 0; i < GridCnt; i++)
-                Ignition.Stop("grid-" + i, true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -244,6 +239,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             }
 
             SqlQuery qry = new SqlQuery(typeof (QueryPerson), "age < 60");
+
+            Assert.AreEqual(QueryBase.DefaultPageSize, qry.PageSize);
 
             // 2. Page size is bigger than result set.
             qry.PageSize = 4;
@@ -865,8 +862,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Filter that can't be serialized.
     /// </summary>
-    public class InvalidScanQueryFilter<TV> : ScanQueryFilter<TV>
+    public class InvalidScanQueryFilter<TV> : ScanQueryFilter<TV>, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 }
