@@ -107,8 +107,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(disco.LocalAddress, resDisco.LocalAddress);
                 Assert.AreEqual(disco.LocalPort, resDisco.LocalPort);
                 Assert.AreEqual(disco.LocalPortRange, resDisco.LocalPortRange);
-                Assert.AreEqual(disco.MaxMissedClientHeartbeats, resDisco.MaxMissedClientHeartbeats);
-                Assert.AreEqual(disco.MaxMissedHeartbeats, resDisco.MaxMissedHeartbeats);
                 Assert.AreEqual(disco.ReconnectCount, resDisco.ReconnectCount);
                 Assert.AreEqual(disco.StatisticsPrintFrequency, resDisco.StatisticsPrintFrequency);
                 Assert.AreEqual(disco.ThreadPriority, resDisco.ThreadPriority);
@@ -173,6 +171,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
 
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
+                Assert.AreEqual(cfg.ClientFailureDetectionTimeout, resCfg.ClientFailureDetectionTimeout);
 
                 var binCfg = cfg.BinaryConfiguration;
                 Assert.IsFalse(binCfg.CompactFooter);
@@ -450,6 +449,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryCount, cfg.NetworkSendRetryCount);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryDelay, cfg.NetworkSendRetryDelay);
             Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.FailureDetectionTimeout);
+            Assert.AreEqual(IgniteConfiguration.DefaultClientFailureDetectionTimeout,
+                cfg.ClientFailureDetectionTimeout);
         }
 
         /// <summary>
@@ -501,8 +502,6 @@ namespace Apache.Ignite.Core.Tests
                     LocalAddress = "127.0.0.1",
                     LocalPort = 49900,
                     LocalPortRange = 13,
-                    MaxMissedClientHeartbeats = 9,
-                    MaxMissedHeartbeats = 7,
                     ReconnectCount = 11,
                     StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
                     ThreadPriority = 6,
@@ -559,6 +558,7 @@ namespace Apache.Ignite.Core.Tests
                     UnacknowledgedMessagesBufferSize = 3450
                 },
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
+                ClientFailureDetectionTimeout = TimeSpan.FromMinutes(12.3),
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = false,

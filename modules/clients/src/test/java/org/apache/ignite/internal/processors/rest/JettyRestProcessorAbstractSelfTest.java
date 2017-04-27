@@ -59,21 +59,29 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCacheClearTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheClearTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheLoadTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheLoadTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetadataTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetadataTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheNodesTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheNodesTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCachePartitionsTask;
 import org.apache.ignite.internal.visor.cache.VisorCachePartitionsTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheStartTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheStartTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheStopTaskArg;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTaskArg;
 import org.apache.ignite.internal.visor.compute.VisorComputeResetMetricsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTaskArg;
@@ -84,14 +92,21 @@ import org.apache.ignite.internal.visor.file.VisorFileBlockTask;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTask;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTaskArg;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTaskArg;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTaskArg;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTaskArg;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTaskArg;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTaskArg;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTaskArg;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
 import org.apache.ignite.internal.visor.misc.VisorAckTask;
+import org.apache.ignite.internal.visor.misc.VisorAckTaskArg;
+import org.apache.ignite.internal.visor.misc.VisorChangeGridActiveStateTask;
+import org.apache.ignite.internal.visor.misc.VisorChangeGridActiveStateTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorLatestVersionTask;
 import org.apache.ignite.internal.visor.misc.VisorResolveHostNameTask;
 import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask;
@@ -101,12 +116,23 @@ import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask;
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg;
 import org.apache.ignite.internal.visor.node.VisorNodeGcTask;
 import org.apache.ignite.internal.visor.node.VisorNodePingTask;
+import org.apache.ignite.internal.visor.node.VisorNodePingTaskArg;
 import org.apache.ignite.internal.visor.node.VisorNodeSuppressedErrorsTask;
+import org.apache.ignite.internal.visor.node.VisorNodeSuppressedErrorsTaskArg;
+import org.apache.ignite.internal.visor.query.VisorQueryCancelTask;
+import org.apache.ignite.internal.visor.query.VisorQueryCancelTaskArg;
+import org.apache.ignite.internal.visor.query.VisorQueryCleanupTaskArg;
+import org.apache.ignite.internal.visor.query.VisorQueryDetailMetricsCollectorTask;
+import org.apache.ignite.internal.visor.query.VisorQueryDetailMetricsCollectorTaskArg;
+import org.apache.ignite.internal.visor.query.VisorQueryResetMetricsTask;
+import org.apache.ignite.internal.visor.query.VisorQueryResetMetricsTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCleanupTask;
 import org.apache.ignite.internal.visor.query.VisorQueryNextPageTask;
 import org.apache.ignite.internal.visor.query.VisorQueryNextPageTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryTask;
+import org.apache.ignite.internal.visor.query.VisorRunningQueriesCollectorTask;
+import org.apache.ignite.internal.visor.query.VisorRunningQueriesCollectorTaskArg;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -1276,6 +1302,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         String ret = content(new VisorGatewayArgument(VisorCacheConfigurationCollectorTask.class)
             .forNode(locNode)
+            .argument(VisorCacheConfigurationCollectorTaskArg.class)
             .collection(IgniteUuid.class, cid));
 
         info("VisorCacheConfigurationCollectorTask result: " + ret);
@@ -1284,7 +1311,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorCacheNodesTask.class)
             .forNode(locNode)
-            .argument("person"));
+            .argument(VisorCacheNodesTaskArg.class, "person"));
 
         info("VisorCacheNodesTask result: " + ret);
 
@@ -1300,7 +1327,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorCacheLoadTask.class)
             .forNode(locNode)
-            .argument(VisorCacheLoadTaskArg.class, "person", 0, "null"));
+            .argument(VisorCacheLoadTaskArg.class)
+            .set(String.class, "person")
+            .arguments(0, "null"));
 
         info("VisorCacheLoadTask result: " + ret);
 
@@ -1308,6 +1337,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorCacheRebalanceTask.class)
             .forNode(locNode)
+            .argument(VisorCacheRebalanceTaskArg.class)
             .set(String.class, "person"));
 
         info("VisorCacheRebalanceTask result: " + ret);
@@ -1316,7 +1346,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorCacheMetadataTask.class)
             .forNode(locNode)
-            .argument("person"));
+            .argument(VisorCacheMetadataTaskArg.class, "person"));
 
         info("VisorCacheMetadataTask result: " + ret);
 
@@ -1324,7 +1354,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorCacheResetMetricsTask.class)
             .forNode(locNode)
-            .argument("person"));
+            .argument(VisorCacheResetMetricsTaskArg.class, "person"));
 
         info("VisorCacheResetMetricsTask result: " + ret);
 
@@ -1340,7 +1370,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorIgfsProfilerClearTask.class)
             .forNode(locNode)
-            .argument("igfs"));
+            .argument(VisorIgfsProfilerClearTaskArg.class, "igfs"));
 
         info("VisorIgfsProfilerClearTask result: " + ret);
 
@@ -1348,7 +1378,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorIgfsProfilerTask.class)
             .forNode(locNode)
-            .argument("igfs"));
+            .argument(VisorIgfsProfilerTaskArg.class, "igfs"));
 
         info("VisorIgfsProfilerTask result: " + ret);
 
@@ -1356,7 +1386,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorIgfsFormatTask.class)
             .forNode(locNode)
-            .argument("igfs"));
+            .argument(VisorIgfsFormatTaskArg.class, "igfs"));
 
         info("VisorIgfsFormatTask result: " + ret);
 
@@ -1364,6 +1394,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorIgfsResetMetricsTask.class)
             .forNode(locNode)
+            .argument(VisorIgfsResetMetricsTaskArg.class)
             .set(String.class, "igfs"));
 
         info("VisorIgfsResetMetricsTask result: " + ret);
@@ -1402,7 +1433,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorNodePingTask.class)
             .forNode(locNode)
-            .argument(UUID.class, locNode.id()));
+            .argument(VisorNodePingTaskArg.class, locNode.id()));
 
         info("VisorNodePingTask result: " + ret);
 
@@ -1442,6 +1473,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorQueryCleanupTask.class)
+            .argument(VisorQueryCleanupTaskArg.class)
             .map(UUID.class, Set.class, F.asMap(locNode.id(), qryId)));
 
         info("VisorQueryCleanupTask result: " + ret);
@@ -1455,9 +1487,38 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonTaskResult(ret);
 
+        ret = content(new VisorGatewayArgument(VisorQueryCancelTask.class)
+            .argument(VisorQueryCancelTaskArg.class, 0L));
+
+        info("VisorResolveHostNameTask result: " + ret);
+
+        jsonTaskResult(ret);
+
+        ret = content(new VisorGatewayArgument(VisorQueryResetMetricsTask.class)
+            .argument(VisorQueryResetMetricsTaskArg.class, "person"));
+
+        info("VisorResolveHostNameTask result: " + ret);
+
+        jsonTaskResult(ret);
+
+        ret = content(new VisorGatewayArgument(VisorQueryCancelTask.class)
+            .argument(VisorQueryCancelTaskArg.class, 0L));
+
+        info("VisorResolveHostNameTask result: " + ret);
+
+        jsonTaskResult(ret);
+
+        ret = content(new VisorGatewayArgument(VisorQueryResetMetricsTask.class)
+            .argument(VisorQueryResetMetricsTaskArg.class, "person"));
+
+        info("VisorResolveHostNameTask result: " + ret);
+
+        jsonTaskResult(ret);
+
         // Multinode tasks
 
         ret = content(new VisorGatewayArgument(VisorComputeCancelSessionsTask.class)
+            .argument(VisorComputeCancelSessionsTaskArg.class)
             .map(UUID.class, Set.class, new HashMap()));
 
         info("VisorComputeCancelSessionsTask result: " + ret);
@@ -1465,13 +1526,15 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
-            .argument(VisorCacheMetricsCollectorTaskArg.class, false, "person"));
+            .argument(VisorCacheMetricsCollectorTaskArg.class, false)
+            .collection(String.class, "person"));
 
         info("VisorCacheMetricsCollectorTask result: " + ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
             .forNodes(grid(1).cluster().nodes())
-            .argument(VisorCacheMetricsCollectorTaskArg.class, false, "person"));
+            .argument(VisorCacheMetricsCollectorTaskArg.class, false)
+            .collection(String.class, "person"));
 
         info("VisorCacheMetricsCollectorTask (with nodes) result: " + ret);
 
@@ -1491,7 +1554,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorAckTask.class)
-            .argument("MSG"));
+            .argument(VisorAckTaskArg.class, "MSG"));
 
         info("VisorAckTask result: " + ret);
 
@@ -1521,6 +1584,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorNodeSuppressedErrorsTask.class)
+            .argument(VisorNodeSuppressedErrorsTaskArg.class)
             .map(UUID.class, Long.class, new HashMap()));
 
         info("VisorNodeSuppressedErrorsTask result: " + ret);
@@ -1529,7 +1593,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorCacheClearTask.class)
             .forNode(locNode)
-            .argument("person"));
+            .argument(VisorCacheClearTaskArg.class, "person"));
 
         info("VisorCacheClearTask result: " + ret);
 
@@ -1557,9 +1621,30 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorCacheStopTask.class)
             .forNode(locNode)
-            .argument(String.class, "c"));
+            .argument(VisorCacheStopTaskArg.class, "c"));
 
         info("VisorCacheStopTask result: " + ret);
+
+        jsonTaskResult(ret);
+
+        ret = content(new VisorGatewayArgument(VisorQueryDetailMetricsCollectorTask.class)
+            .argument(VisorQueryDetailMetricsCollectorTaskArg.class, 0));
+
+        info("VisorQueryDetailMetricsCollectorTask result: " + ret);
+
+        jsonTaskResult(ret);
+
+        ret = content(new VisorGatewayArgument(VisorRunningQueriesCollectorTask.class)
+            .argument(VisorRunningQueriesCollectorTaskArg.class, 0L));
+
+        info("VisorQueryDetailMetricsCollectorTask result: " + ret);
+
+        jsonTaskResult(ret);
+
+        ret = content(new VisorGatewayArgument(VisorChangeGridActiveStateTask.class)
+            .argument(VisorChangeGridActiveStateTaskArg.class, true));
+
+        info("VisorQueryDetailMetricsCollectorTask result: " + ret);
 
         jsonTaskResult(ret);
     }
@@ -2120,6 +2205,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
                     return node.id();
                 }
             }).toArray(), ";"));
+
+            return this;
+        }
+
+        /**
+         * Add custom argument.
+         *
+         * @param vals Values.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument arguments(Object... vals) {
+            for (Object val: vals)
+                put("p" + idx++, String.valueOf(val));
 
             return this;
         }

@@ -333,6 +333,29 @@ public class VisorTaskUtils {
     }
 
     /**
+     * Joins iterable collection elements to string.
+     *
+     * @param col Iterable collection.
+     * @return String.
+     */
+    @Nullable public static String compactIterable(Iterable col) {
+        if (col == null || !col.iterator().hasNext())
+            return null;
+
+        String sep = ", ";
+
+        StringBuilder sb = new StringBuilder();
+
+        for (Object s : col)
+            sb.append(s).append(sep);
+
+        if (sb.length() > 0)
+            sb.setLength(sb.length() - sep.length());
+
+        return U.compact(sb.toString());
+    }
+
+    /**
      * Returns boolean value from system property or provided function.
      *
      * @param propName System property name.

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.configuration;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Defines memory page eviction algorithm. A mode is set for a specific
  * {@link MemoryPolicyConfiguration}. Only data pages, that store key-value entries, are eligible for eviction. The
@@ -49,5 +51,18 @@ public enum DataPageEvictionMode {
      * minimums of other pages that might be evicted. LRU-2 outperforms LRU by resolving "one-hit wonder" problem -
      * if a data page is accessed rarely, but accidentally accessed once, it's protected from eviction for a long time.
      */
-    RANDOM_2_LRU
+    RANDOM_2_LRU;
+
+    /** Enumerated values. */
+    private static final DataPageEvictionMode[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static DataPageEvictionMode fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

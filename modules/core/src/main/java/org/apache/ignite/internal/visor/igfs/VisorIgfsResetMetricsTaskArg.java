@@ -15,100 +15,59 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.log;
+package org.apache.ignite.internal.visor.igfs;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Set;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Arguments for {@link VisorLogSearchTask}.
+ * Argument for {@link VisorIgfsResetMetricsTask}.
  */
-public class VisorLogSearchArg extends VisorDataTransferObject {
+public class VisorIgfsResetMetricsTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Searched string. */
-    private String searchStr;
-
-    /** Folder. */
-    private String folder;
-
-    /** File name search pattern. */
-    private String filePtrn;
-
-    /** Max number of results. */
-    private int limit;
+    /** IGFS names. */
+    private Set<String> igfsNames;
 
     /**
      * Default constructor.
      */
-    public VisorLogSearchArg() {
+    public VisorIgfsResetMetricsTaskArg() {
         // No-op.
     }
 
     /**
-     * @param searchStr Searched string.
-     * @param folder Folder.
-     * @param filePtrn File name search pattern.
-     * @param limit Max number of results.
+     * @param igfsNames IGFS names.
      */
-    public VisorLogSearchArg(String searchStr, String folder, String filePtrn, int limit) {
-        this.searchStr = searchStr;
-        this.folder = folder;
-        this.filePtrn = filePtrn;
-        this.limit = limit;
+    public VisorIgfsResetMetricsTaskArg(Set<String> igfsNames) {
+        this.igfsNames = igfsNames;
     }
 
     /**
-     * @return Searched string.
+     * @return IGFS names.
      */
-    public String getSearchString() {
-        return searchStr;
-    }
-
-    /**
-     * @return Folder.
-     */
-    public String getFolder() {
-        return folder;
-    }
-
-    /**
-     * @return File name search pattern.
-     */
-    public String getFilePattern() {
-        return filePtrn;
-    }
-
-    /**
-     * @return Max number of results.
-     */
-    public int getLimit() {
-        return limit;
+    public Set<String> getIgfsNames() {
+        return igfsNames;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, searchStr);
-        U.writeString(out, folder);
-        U.writeString(out, filePtrn);
-        out.writeInt(limit);
+        U.writeCollection(out, igfsNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        searchStr = U.readString(in);
-        folder = U.readString(in);
-        filePtrn = U.readString(in);
-        limit = in.readInt();
+        igfsNames = U.readSet(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorLogSearchArg.class, this);
+        return S.toString(VisorIgfsResetMetricsTaskArg.class, this);
     }
 }
