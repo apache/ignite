@@ -33,7 +33,9 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
@@ -855,6 +857,8 @@ public class GridSqlQueryParser {
 
             GridSqlColumn gridCol = new GridSqlColumn(col, null, col.getName());
 
+            gridCol.resultType(GridSqlType.fromColumn(col));
+
             cols.put(col.getName(), gridCol);
         }
 
@@ -878,11 +882,13 @@ public class GridSqlQueryParser {
 
         res.ifNotExists(CREATE_TABLE_IF_NOT_EXISTS.get(createTbl));
 
-        List<String> extraParamsStr = data.tableEngineParams;
+        List<String> extraParams = data.tableEngineParams;
+
+        res.params(extraParams);
 
         Map<String, String> params = new HashMap<>();
 
-        for (String p : extraParamsStr) {
+        for (String p : extraParams) {
             String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
 
             if (parts.length > 2)

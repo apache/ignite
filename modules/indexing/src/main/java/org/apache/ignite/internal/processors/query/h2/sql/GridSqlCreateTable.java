@@ -19,17 +19,11 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import java.util.List;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.command.Parser;
-import org.h2.table.Column;
-import org.h2.value.DataType;
-import org.h2.value.Value;
 
 /**
  * CREATE TABLE statement.
@@ -54,6 +48,9 @@ public class GridSqlCreateTable extends GridSqlStatement {
 
     /** Primary key columns. */
     private LinkedHashSet<String> pkCols;
+
+    /** Extra WITH-params. */
+    private List<String> params;
 
     public String templateCacheName() {
         return tplCacheName;
@@ -103,8 +100,89 @@ public class GridSqlCreateTable extends GridSqlStatement {
         this.ifNotExists = ifNotExists;
     }
 
+    public List<String> params() {
+        return params;
+    }
+
+    public void params(List<String> params) {
+        this.params = params;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return "CREATE TABLE " + Parser.quoteIdentifier(tblName);
+        GridStringBuilder b = new SB("CREATE TABLE ")
+            .a(ifNotExists ? "IF NOT EXISTS " : "")
+            .a("\n")
+            .a(Parser.quoteIdentifier(schemaName))
+            .a('.')
+            .a(Parser.quoteIdentifier(tblName))
+            .a("\n(");
+
+        boolean singleColPk = false;
+
+        boolean first = true;
+
+        for (GridSqlColumn col : cols.values()) {
+            if (!first)
+                b.a(",\n");
+            else
+                first = false;
+
+            if (col.column().isPrimaryKey()) {
+                // Only one column may be marked PRIMARY KEY - multi-col PK is defined separately
+                assert !singleColPk;
+
+                singleColPk = true;
+            }
+
+            b.a('\t')
+                .a(col.getSQL())
+                .a(' ')
+                .a(col.resultType().sql())
+                .a(col.column().isPrimaryKey() ? " PRIMARY KEY" : "");
+        }
+
+        first = true;
+
+        if (!singleColPk && !F.isEmpty(pkCols)) {
+            b.a(",\n")
+                .a('\t')
+                .a("PRIMARY KEY (\n");
+
+            for (String col : pkCols) {
+                GridSqlColumn pkCol = cols.get(col);
+
+                assert pkCol != null;
+
+                if (!first)
+                    b.a(",\n");
+                else
+                    first = false;
+
+                b.a("\t\t")
+                    .a(pkCol.getSQL());
+            }
+
+            b.a("\n\t)");
+        }
+
+        b.a("\n)");
+
+        if (!F.isEmpty(params)) {
+            b.a("\nWITH ");
+
+            first = true;
+
+            for (String p : params) {
+                if (!first)
+                    b.a(',');
+                else
+                    first = false;
+
+                b.a(Parser.quoteIdentifier(p));
+            }
+        }
+
+        return b.toString();
     }
 }

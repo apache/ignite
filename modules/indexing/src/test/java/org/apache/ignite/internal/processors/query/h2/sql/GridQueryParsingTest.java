@@ -544,6 +544,13 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertParseThrows("drop index if exists schema2.", DbException.class, null);
     }
 
+    /** */
+    public void testParseCreateTable() throws Exception {
+        checkQuery("CREATE TABLE IF NOT EXISTS sch1.\"Person\" (\"id\" integer, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" integer, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"tplCache=cache\"");
+    }
+
     /**
      * @param sql Statement.
      * @param exCls Exception class.
