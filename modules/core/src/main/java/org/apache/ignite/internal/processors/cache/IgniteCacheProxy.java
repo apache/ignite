@@ -774,11 +774,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     opCtxCall != null && opCtxCall.isKeepBinary());
 
             if (qry instanceof SqlQuery) {
-                if (isReplicatedDataNode() && ((SqlQuery)qry).isDistributedJoins())
-                    throw new CacheException("Queries using distributed JOINs have to be run on partitioned cache, " +
-                        "not on replicated.");
-
                 final SqlQuery p = (SqlQuery)qry;
+
+                if (p.isReplicatedOnly() && p.getPartitions() != null)
+                    throw new CacheException("Partitions are not supported in replicated only mode.");
+
+                if (p.isDistributedJoins() && p.getPartitions() != null)
+                    throw new CacheException(
+                        "Using both partitions and distributed JOINs is not supported for the same query");
 
                 if ((p.isReplicatedOnly() && isReplicatedDataNode()) || ctx.isLocal() || qry.isLocal())
                      return (QueryCursor<R>)ctx.kernalContext().query().queryLocal(ctx, p,
@@ -788,11 +791,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             }
 
             if (qry instanceof SqlFieldsQuery) {
-                if (isReplicatedDataNode() && ((SqlFieldsQuery)qry).isDistributedJoins())
-                    throw new CacheException("Queries using distributed JOINs have to be run on partitioned cache, " +
-                        "not on replicated.");
-
                 SqlFieldsQuery p = (SqlFieldsQuery)qry;
+
+                if (p.isReplicatedOnly() && p.getPartitions() != null)
+                    throw new CacheException("Partitions are not supported in replicated only mode.");
+
+                if (p.isDistributedJoins() && p.getPartitions() != null)
+                    throw new CacheException(
+                        "Using both partitions and distributed JOINs is not supported for the same query");
 
                 if ((p.isReplicatedOnly() && isReplicatedDataNode()) || ctx.isLocal() || qry.isLocal())
                     return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);
@@ -1011,12 +1017,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         finally {
             onLeave(gate, prev);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void localPromote(Set<? extends K> keys) throws CacheException {
-        // TODO GG-11148.
-        throw new UnsupportedOperationException("localPromote will be removed");
     }
 
     /** {@inheritDoc} */

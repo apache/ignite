@@ -49,10 +49,11 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
+
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         if (igniteInstanceName.endsWith("1"))
             cfg.setClientMode(true);

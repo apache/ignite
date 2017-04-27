@@ -260,7 +260,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
             fut2.get();
         }
 
-        checkOnePhaseCommitReturnValuesCleaned();
+        checkOnePhaseCommitReturnValuesCleaned(GRID_CNT);
     }
 
     /**

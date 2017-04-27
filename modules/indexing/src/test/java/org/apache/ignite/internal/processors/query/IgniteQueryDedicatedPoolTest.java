@@ -83,7 +83,6 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         if ("client".equals(gridName))
             cfg.setClientMode(true);
 
-
         cfg.setIndexingSpi(new TestIndexingSpi());
 
         return cfg;
@@ -207,16 +206,6 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void remove(@Nullable String spaceName, Object key) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSwap(@Nullable String spaceName, Object key) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) {
             // No-op.
         }
     }

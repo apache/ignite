@@ -524,7 +524,6 @@ public interface Ignite extends AutoCloseable {
      *      all threads on other nodes waiting to acquire lock are interrupted.
      * @param fair If {@code True}, fair lock will be created.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
-     *      Will re-create lock if the node that stored the lock left topology and there are no backups left.
      * @return ReentrantLock for the given name.
      * @throws IgniteException If reentrant lock could not be fetched or created.
      */

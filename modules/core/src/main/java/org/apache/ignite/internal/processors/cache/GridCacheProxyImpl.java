@@ -454,18 +454,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.igfsDataSpaceMax();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isMongoDataCache() {
         CacheOperationContext prev = gate.enter(opCtx);
 
@@ -1267,18 +1255,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         try {
             return delegate.removeAllAsync(keys);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.tryGetAndPut(key, val);
         }
         finally {
             gate.leave(prev);

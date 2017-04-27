@@ -152,11 +152,12 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             assertEquals(name, 0, DummyService.cancelled(name));
 
             int servers = 2;
-            int clients = 2;
 
             latch = new CountDownLatch(servers);
 
             DummyService.exeLatch(name, latch);
+
+            int clients = 2;
 
             startExtraNodes(servers, clients);
 
@@ -165,11 +166,10 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
                 waitForDeployment(name, servers);
 
+                // Since we start extra nodes, there may be extra start and cancel events,
+                // so we check only the difference between start and cancel and
+                // not start and cancel events individually.
                 assertEquals(name, nodeCount() + servers,  DummyService.started(name) - DummyService.cancelled(name));
-
-//                 Next may fails. Server can be restarted on unstable topology.
-//                assertEquals(name, nodeCount() + servers, DummyService.started(name));
-//                assertEquals(name, 0, DummyService.cancelled(name));
 
                 checkCount(name, g.services().serviceDescriptors(), nodeCount() + servers);
             }
@@ -241,12 +241,11 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
                 waitForDeployment(name, prestartedNodes + extraNodes);
 
+                // Since we start extra nodes, there may be extra start and cancel events,
+                // so we check only the difference between start and cancel and
+                // not start and cancel events individually.
                 assertEquals(name, prestartedNodes + extraNodes,
                     DummyService.started(name) - DummyService.cancelled(name));
-
-//                 Next may fails. Server can be restarted on unstable topology.
-//                assertEquals(name, prestartedNodes + extraNodes, DummyService.started(name));
-//                assertEquals(name, 0, DummyService.cancelled(name));
 
                 checkCount(name, g.services().serviceDescriptors(), prestartedNodes + extraNodes);
             }
@@ -262,6 +261,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("deprecation")
     public void testDeployLimits() throws Exception {
         final String name = "serviceWithLimitsUpdateTopology";
 
@@ -299,24 +299,23 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         checkCount(name, g.services().serviceDescriptors(), nodeCount());
 
-        int extraNodes = 2;
-
         latch = new CountDownLatch(1);
 
         DummyService.exeLatch(name, latch);
 
-        startExtraNodes(2);
+        int extraNodes = 2;
+
+        startExtraNodes(extraNodes);
 
         try {
             latch.await();
 
             waitForDeployment(name, totalInstances);
 
+            // Since we start extra nodes, there may be extra start and cancel events,
+            // so we check only the difference between start and cancel and
+            // not start and cancel events individually.
             assertEquals(name, totalInstances,  DummyService.started(name) - DummyService.cancelled(name));
-
-//            Next may fails. Server can be restarted on unstable topology.
-//            assertEquals(name, totalInstances, DummyService.started(name));
-//            assertEquals(name, 0, DummyService.cancelled(name));
 
             checkCount(name, g.services().serviceDescriptors(), totalInstances);
         }
