@@ -199,9 +199,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Count down latch for caches. */
     private final CountDownLatch cacheStartedLatch = new CountDownLatch(1);
 
-    /** */
-    //private Map<UUID, DynamicCacheChangeBatch> clientReconnectReqs;
-
     /** Internal cache names. */
     private final Set<String> internalCaches;
 

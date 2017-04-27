@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- *
+ * Information about configured caches sent from joining node.
  */
 class CacheJoinNodeDiscoveryData implements Serializable {
     /** */

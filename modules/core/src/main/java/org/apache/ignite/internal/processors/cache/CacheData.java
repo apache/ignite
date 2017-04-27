@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- *
+ * Cache information sent in discovery data to joining node.
  */
 public class CacheData implements Serializable {
     /** */

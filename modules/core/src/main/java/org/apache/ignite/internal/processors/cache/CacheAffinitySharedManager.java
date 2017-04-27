@@ -356,8 +356,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             assert old == null : old;
         }
 
-        boolean clientOnly = true;
-
         // Affinity did not change for existing caches.
         forAllCaches(crd && lateAffAssign, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {

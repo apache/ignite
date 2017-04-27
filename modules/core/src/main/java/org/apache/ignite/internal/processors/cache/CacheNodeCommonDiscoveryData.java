@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- *
+ * Cache information sent in discovery data to joining node.
  */
 class CacheNodeCommonDiscoveryData implements Serializable {
     /** */
@@ -34,6 +34,11 @@ class CacheNodeCommonDiscoveryData implements Serializable {
     /** */
     private final Map<String, Map<UUID, Boolean>> clientNodesMap;
 
+    /**
+     * @param caches
+     * @param templates
+     * @param clientNodesMap
+     */
     CacheNodeCommonDiscoveryData(Map<String, CacheData> caches,
         Map<String, CacheData> templates,
         Map<String, Map<UUID, Boolean>> clientNodesMap) {

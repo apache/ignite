@@ -30,14 +30,23 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
     /** */
     private final Map<String, CacheInfo> clientCaches;
 
+    /**
+     * @param clientCaches Information about caches started on re-joining client node.
+     */
     public CacheClientReconnectDiscoveryData(Map<String, CacheInfo> clientCaches) {
         this.clientCaches = clientCaches;
     }
 
+    /**
+     * @return Information about caches started on re-joining client node.
+     */
     Map<String, CacheInfo> clientCaches() {
         return clientCaches;
     }
 
+    /**
+     *
+     */
     static class CacheInfo implements Serializable {
         /** */
         private final CacheConfiguration ccfg;

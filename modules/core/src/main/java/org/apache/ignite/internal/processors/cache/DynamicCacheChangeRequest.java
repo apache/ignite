@@ -89,16 +89,18 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Dynamic schema. */
     private QuerySchema schema;
 
-    /** */
-    private transient AffinityTopologyVersion cacheFutTopVer;
-
     /**
      * Constructor creates cache stop request.
      *
+     * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
      * @param initiatingNodeId Initiating node ID.
      */
     public DynamicCacheChangeRequest(UUID reqId, String cacheName, UUID initiatingNodeId) {
+        assert reqId != null;
+        assert cacheName != null;
+        assert initiatingNodeId != null;
+
         this.reqId = reqId;
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
@@ -168,20 +170,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean globalStateChange() {
         return state != null;
-    }
-
-    /**
-     * @param cacheFutTopVer Ready topology version when dynamic cache future should be completed.
-     */
-    public void cacheFutureTopologyVersion(AffinityTopologyVersion cacheFutTopVer) {
-        this.cacheFutTopVer = cacheFutTopVer;
-    }
-
-    /**
-     * @return Ready topology version when dynamic cache future should be completed.
-     */
-    @Nullable public AffinityTopologyVersion cacheFutureTopologyVersion() {
-        return cacheFutTopVer;
     }
 
     /**

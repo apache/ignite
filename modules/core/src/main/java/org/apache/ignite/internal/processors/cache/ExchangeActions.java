@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 
 import java.util.ArrayList;
@@ -211,8 +210,10 @@ public class ExchangeActions {
      *
      */
     static class ActionData {
+        /** */
         private DynamicCacheChangeRequest req;
 
+        /** */
         private DynamicCacheDescriptor desc;
 
         public ActionData(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {

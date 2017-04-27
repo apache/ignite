@@ -150,7 +150,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                     DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheMsg.cacheId());
 
-                    // TODO: should be specified on request since cache desc can be removed,
+                    // TODO: should be specified in request since cache desc can be removed,
                     if (cacheDesc != null)
                         startTopVer = cacheDesc.startTopologyVersion();
 

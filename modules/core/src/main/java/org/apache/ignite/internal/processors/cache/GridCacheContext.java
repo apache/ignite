@@ -234,9 +234,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private CountDownLatch startLatch = new CountDownLatch(1);
 
-    /** Start topology version. */
+    /** Topology version when cache was started on local node. */
     private AffinityTopologyVersion startTopVer;
 
+    /** Global cache start topology version. */
     private AffinityTopologyVersion cacheStartTopVer;
 
     /** Dynamic cache deployment ID. */
