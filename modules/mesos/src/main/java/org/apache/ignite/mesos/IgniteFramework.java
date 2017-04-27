@@ -174,8 +174,8 @@ public class IgniteFramework {
     static boolean isRoleValid(String mRole) {
         if (mRole == null || mRole.isEmpty() || mRole.equals(".") || mRole.equals("..") ||
             mRole.startsWith("-") || mRole.contains("/") || mRole.contains("\\") || mRole.contains(" ")) {
-            log.severe("Provided mesos role is not valid:" + mRole +
-                ". Mesos role should be a valid directory name.");
+            log.severe("Provided mesos role is not valid: [" + mRole +
+                "]. Mesos role should be a valid directory name.");
 
             return false;
         }
