@@ -157,13 +157,15 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
     protected PageMemory memory(boolean clean) throws Exception {
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(30 * 1024 * 1024);
+
         return new PageMemoryNoStoreImpl(
             log,
             provider,
             null,
             PAGE_SIZE,
-            new MemoryPolicyConfiguration().setMaxSize(30 * 1024 * 1024),
-            new MemoryMetricsImpl(null),
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
             true);
     }
 }

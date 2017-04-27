@@ -1699,17 +1699,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @return Page memory.
      */
     protected PageMemory createPageMemory() throws Exception {
-        long[] sizes = new long[CPUS];
-
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * MB / CPUS;
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
             new UnsafeMemoryProvider(log),
             null,
             PAGE_SIZE,
-            new MemoryPolicyConfiguration().setMaxSize(5 * 1024 * MB),
-            new MemoryMetricsImpl(null), true);
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg), true);
 
         pageMem.start();
 

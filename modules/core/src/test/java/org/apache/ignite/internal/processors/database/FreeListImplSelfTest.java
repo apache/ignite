@@ -314,13 +314,13 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @return Page memory.
      */
-    protected PageMemory createPageMemory(int pageSize) throws Exception {
+    protected PageMemory createPageMemory(int pageSize, MemoryPolicyConfiguration plcCfg) throws Exception {
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
             new UnsafeMemoryProvider(log),
             null,
             pageSize,
-            new MemoryPolicyConfiguration().setMaxSize(1024 * MB),
-            new MemoryMetricsImpl(null),
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
             true);
 
         pageMem.start();
@@ -334,13 +334,15 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected FreeList createFreeList(int pageSize) throws Exception {
-        pageMem = createPageMemory(pageSize);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
+
+        pageMem = createPageMemory(pageSize, plcCfg);
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-        MemoryMetricsImpl metrics = new MemoryMetricsImpl(null);
+        MemoryMetricsImpl metrics = new MemoryMetricsImpl(plcCfg);
 
-        MemoryPolicy memPlc = new MemoryPolicy(pageMem, null, metrics, new NoOpPageEvictionTracker());
+        MemoryPolicy memPlc = new MemoryPolicy(pageMem, plcCfg, metrics, new NoOpPageEvictionTracker());
 
         return new FreeListImpl(1, "freelist", metrics, memPlc, null, null, metaPageId, true);
     }
