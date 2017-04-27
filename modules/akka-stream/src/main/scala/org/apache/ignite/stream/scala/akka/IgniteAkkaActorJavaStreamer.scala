@@ -14,35 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.stream.scala.akka
 
-import org.apache.ignite.IgniteDataStreamer
+import akka.actor.Actor
+import org.apache.ignite.{IgniteDataStreamer}
 import org.apache.ignite.stream.{StreamMultipleTupleExtractor, StreamSingleTupleExtractor}
 
-trait StreamAdapter[T, K, V] {
-    /** Streamer. */
-    val strm: IgniteDataStreamer[K, V]
-
-    /** Tuple extractor extracting a single tuple from an event */
-    val singleTupleExtractor: StreamSingleTupleExtractor[T, K, V]
-
-    /** Tuple extractor that supports extracting N tuples from a single event (1:n cardinality). */
+/**
+ * Actor
+ *
+ * @param strm
+ * @param singleTupleExtractor
+ * @param multipleTupleExtractor
+ * @tparam T Message type.
+ * @tparam K Key type.
+ * @tparam V Value type.
+ */
+class IgniteAkkaActorJavaStreamer[T, K, V](
+    val strm: IgniteDataStreamer[K, V],
+    val singleTupleExtractor: StreamSingleTupleExtractor[T, K, V],
     val multipleTupleExtractor: StreamMultipleTupleExtractor[T, K, V]
+) extends org.apache.ignite.stream.StreamAdapter[T, K, V] with Actor {
+    require(strm != null, "the IgniteDataStreamer must be initialize.")
+    require(singleTupleExtractor != null || multipleTupleExtractor != null, "the extractor must be initialize.")
 
-    /**
-     * Converts given message to 1 or many tuples (depending on the type of extractor) and adds it/them to the
-     * underlying streamer.
-     *
-     * @param msg Message to convert.
-     */
-    def addMessage(msg: T): Unit = {
-        if (multipleTupleExtractor == null) {
-            val e = singleTupleExtractor.extract(msg)
-            if (e != null) strm.addData(e)
-        }
-        else {
-            val m = multipleTupleExtractor.extract(msg)
-            if (m != null && !m.isEmpty) strm.addData(m)
+    setMultipleTupleExtractor(multipleTupleExtractor)
+    setSingleTupleExtractor(singleTupleExtractor)
+    setStreamer(strm)
+
+    def receive = {
+        case msg: T => {
+            addMessage(msg)
         }
     }
 }

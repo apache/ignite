@@ -40,7 +40,7 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
-import org.apache.ignite.stream.scala.akka.IgniteAkkaActorStreamer;
+import org.apache.ignite.stream.scala.akka.IgniteAkkaActorJavaStreamer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -104,7 +104,7 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception Test exception.
+     * @throws Exception Test exception. Extends StreamAdapter scala
      */
     public void testStreamer3() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(CACHE_NAME)) {
@@ -113,7 +113,16 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Execute akka streamer.
+     * @throws Exception Test exception. Extends StreamAdapter java
+     */
+    public void testStreamer4() throws Exception {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(CACHE_NAME)) {
+            executeActorStreamer(dataStreamer);
+        }
+    }
+
+    /**
+     * Execute akka streamer wrap akka-stream.
      */
     private void executeStreamer(Sink sink) throws Exception {
         IgniteCache<Integer, Integer> cache = grid().cache(CACHE_NAME);
@@ -138,13 +147,13 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Execute akka streamer.
+     * Execute akka streamer wrap akka-actor.
      */
     private void executeActorStreamer(IgniteDataStreamer<Integer, String> dataStreamer) throws Exception {
         dataStreamer.allowOverwrite(true);
         dataStreamer.autoFlushFrequency(1);
 
-        final ActorRef actorRef = system.actorOf(Props.create(IgniteAkkaActorStreamer.class, dataStreamer, new MySingleTupleExtractor(), null), "ignite-streamer");
+        final ActorRef actorRef = system.actorOf(Props.create(IgniteAkkaActorJavaStreamer.class, dataStreamer, new MySingleTupleExtractor(), null), "ignite-streamer");
 
         IgniteCache<Integer, Integer> cache = grid().cache(CACHE_NAME);
 
@@ -173,15 +182,9 @@ public class IgniteAkkaStreamerTest extends GridCommonAbstractTest {
      * @return Akka-stream streamer.
      */
     private IgniteAkkaStreamer newStreamerInstance(IgniteDataStreamer<Integer, String> dataStreamer) {
-        final AtomicInteger count = new AtomicInteger(0);
-
         IgniteAkkaStreamer streamer = new IgniteAkkaStreamer();
 
-        streamer.setSingleTupleExtractor(new StreamSingleTupleExtractor<Integer, Integer, Integer>() {
-            @Override public Map.Entry extract(Integer msg) {
-                return new IgniteBiTuple<>(count.getAndIncrement(), msg);
-            }
-        });
+        streamer.setSingleTupleExtractor(new MySingleTupleExtractor());
 
         streamer.setIgnite(grid());
         streamer.setStreamer(dataStreamer);

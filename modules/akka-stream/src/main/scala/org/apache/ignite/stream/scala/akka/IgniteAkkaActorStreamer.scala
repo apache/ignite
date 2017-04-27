@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.stream.scala.akka
 
 import akka.actor.Actor
@@ -34,11 +35,9 @@ class IgniteAkkaActorStreamer[T, K, V](
     val _strm: IgniteDataStreamer[K, V],
     val _singleTupleExtractor: StreamSingleTupleExtractor[T, K, V],
     val _multipleTupleExtractor: StreamMultipleTupleExtractor[T, K, V]
-) extends Actor with StreamAdapter[T, K, V] {
+) extends Actor with StreamAdapterTrait[T, K, V] {
     require(_strm != null, "the IgniteDataStreamer must be initialize.")
     require(_singleTupleExtractor != null || _multipleTupleExtractor != null, "the extractor must be initialize.")
-
-    protected var log: IgniteLogger = null
 
     def receive = {
         case msg: T => {
