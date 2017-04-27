@@ -17,39 +17,40 @@
 package org.apache.ignite.mxbean;
 
 import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 
 /**
- * This interface defines JMX view on {@link MemoryMetrics}.
+ * This interface defines a JMX view on {@link MemoryMetrics}.
  */
-@MXBeanDescription("MBean that provides access to MemoryMetrics of current Ignite node.")
+@MXBeanDescription("MBean that provides access to MemoryMetrics of a local Apache Ignite node.")
 public interface MemoryMetricsMXBean extends MemoryMetrics {
     /** {@inheritDoc} */
-    @MXBeanDescription("Name of MemoryPolicy metrics are collected for.")
+    @MXBeanDescription("A name of a memory region the metrics are collected for.")
     @Override public String getName();
 
     /**
-     * Initial size configured for MemoryPolicy on local node.
+     * Gets initial memory region size defined by its {@link MemoryPolicyConfiguration}.
      *
      * @return Initial size in MB.
      */
-    @MXBeanDescription("Initial size configured for MemoryPolicy on local node.")
+    @MXBeanDescription("Initial memory region size defined by its memory policy.")
     public int getInitialSize();
 
     /**
-     * Maximum size configured for MemoryPolicy on local node.
+     * Maximum memory region size defined by its {@link MemoryPolicyConfiguration}.
      *
      * @return Maximum size in MB.
      */
-    @MXBeanDescription("Maximum size configured for MemoryPolicy on local node.")
+    @MXBeanDescription("Maximum memory region size defined by its memory policy.")
     public int getMaxSize();
 
     /**
-     * Path from MemoryPolicy configuration to directory where memory-mapped files used for swap are created.
-     * Depending on configuration may be absolute or relative; in the latter case it is relative to IGNITE_HOME.
+     * A path to the memory-mapped files the memory region defined by {@link MemoryPolicyConfiguration} will be
+     * mapped to.
      *
-     * @return path to directory with memory-mapped files.
+     * @return Path to the memory-mapped files.
      */
-    @MXBeanDescription("Path to directory with memory-mapped files.")
+    @MXBeanDescription("Path to the memory-mapped files.")
     public String getSwapFilePath();
 
     /** {@inheritDoc} */
@@ -65,35 +66,35 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
     @Override public float getEvictionRate();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Percentage of pages fully occupied by large entities' fragments.")
+    @MXBeanDescription("Percentage of pages that are fully occupied by large entries that go beyond page size.")
     @Override public float getLargeEntriesPagesPercentage();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Pages fill factor: size of all entries in cache over size of all allocated pages.")
+    @MXBeanDescription("Percentage of space that is still free and can be filled in.")
     @Override public float getPagesFillFactor();
 
     /**
-     * Enables collecting memory metrics on local node.
+     * Enables memory metrics collection on an Apache Ignite node.
      */
-    @MXBeanDescription("Enables collecting memory metrics on local node.")
+    @MXBeanDescription("Enables memory metrics collection on an Apache Ignite node.")
     public void enableMetrics();
 
     /**
-     * Disables collecting memory metrics on local node.
+     * Disables memory metrics collection on an Apache Ignite node.
      */
-    @MXBeanDescription("Disables collecting memory metrics on local node.")
+    @MXBeanDescription("Disables memory metrics collection on an Apache Ignite node.")
     public void disableMetrics();
 
     /**
-     * Sets interval of time (in seconds) to monitor allocation rate.
-     *
-     * E.g. after setting rateTimeInterval to 60 seconds subsequent calls to {@link #getAllocationRate()}
+     * Sets time interval for {@link #getAllocationRate()} and {@link #getEvictionRate()} monitoring purposes.
+     * <p>
+     * For instance, after setting the interval to 60 seconds, subsequent calls to {@link #getAllocationRate()}
      * will return average allocation rate (pages per second) for the last minute.
      *
-     * @param rateTimeInterval Time interval used to calculate allocation/eviction rate.
+     * @param rateTimeInterval Time interval used for allocation and eviction rates calculations.
      */
     @MXBeanDescription(
-        "Sets time interval average allocation rate (pages per second) is calculated over."
+        "Sets time interval for pages allocation and eviction monitoring purposes."
     )
     @MXBeanParametersNames(
         "rateTimeInterval"
@@ -104,15 +105,17 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
     public void rateTimeInterval(int rateTimeInterval);
 
     /**
-     * Sets number of subintervals the whole rateTimeInterval will be split into to calculate allocation rate,
-     * 5 by default.
-     * Setting it to bigger number allows more precise calculation and smaller drops of allocationRate metric
-     * when next subinterval has to be recycled but introduces bigger calculation overhead.
+     * Sets a number of sub-intervals the whole {@link #rateTimeInterval(int)} will be split into to calculate
+     * {@link #getAllocationRate()} and {@link #getEvictionRate()} rates (5 by default).
+     * <p>
+     * Setting it to a bigger value will result in more precise calculation and smaller drops of
+     * {@link #getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
+     * calculation overhead.
      *
-     * @param subInts Number of subintervals.
+     * @param subInts A number of sub-intervals.
      */
     @MXBeanDescription(
-        "Sets number of subintervals to calculate allocationRate metrics."
+        "Sets a number of sub-intervals to calculate allocation and eviction rates metrics."
     )
     @MXBeanParametersNames(
         "subInts"
