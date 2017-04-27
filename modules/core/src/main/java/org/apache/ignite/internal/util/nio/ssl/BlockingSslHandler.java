@@ -497,12 +497,16 @@ public class BlockingSslHandler {
         return buf;
     }
 
+    protected int doRead(ByteBuffer inBuf) throws IOException {
+        return ch.read(inBuf);
+    }
+
     /**
      * Read data from net buffer.
      */
     private void readFromNet() throws SSLException {
         try {
-            int read = ch.read(inNetBuf);
+            int read = doRead(inNetBuf);
 
             if (read == -1)
                 throw new SSLException("Failed to read remote node response (connection closed).");
@@ -519,7 +523,7 @@ public class BlockingSslHandler {
      */
     private void writeNetBuffer() throws SSLException {
         try {
-            ch.write(outNetBuf);
+            doWrite(outNetBuf);
         }
         catch (IOException e) {
             throw new SSLException("Failed to write byte to socket.", e);
@@ -558,7 +562,7 @@ public class BlockingSslHandler {
         while (!appBuf.hasRemaining()) {
             appBuf.clear();
 
-            int n = ch.read(inNetBuf);
+            int n = doRead(inNetBuf);
 
             if (n == -1)
                 break;
@@ -579,6 +583,10 @@ public class BlockingSslHandler {
         return appBuf.hasRemaining() ? appBuf.get() & 0xff : -1;
     }
 
+    protected int doWrite(ByteBuffer buf) throws IOException {
+        return ch.write(buf);
+    }
+
     /**
      * Encode and send byte to channel.
      *
@@ -590,7 +598,7 @@ public class BlockingSslHandler {
 
         encrypt(buf);
 
-        ch.write(outNetBuf);
+        doWrite(outNetBuf);
     }
 
     /**
@@ -606,7 +614,7 @@ public class BlockingSslHandler {
 
         encrypt(buf);
 
-        ch.write(outNetBuf);
+        doWrite(outNetBuf);
     }
 
     /**

@@ -56,10 +56,12 @@ public class TcpServerSelfTest extends TestCase {
         sslCtx = GridTestUtils.sslContext();
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testBlockingSslHandler() throws Exception {
-        LinkedBlockingQueue<Byte> buf1 = new LinkedBlockingQueue<>(65535);
-        LinkedBlockingQueue<Byte> buf2 = new LinkedBlockingQueue<>(65535);
+        LinkedBlockingQueue<Byte> buf1 = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<Byte> buf2 = new LinkedBlockingQueue<>();
 
         NullLogger log = new NullLogger();
 
@@ -69,14 +71,8 @@ public class TcpServerSelfTest extends TestCase {
         SSLEngine sslEngine2 = sslCtx.createSSLEngine();
         sslEngine2.setUseClientMode(true);
 
-        final TestSocket sock1 = new TestSocket(buf1, buf2);
-        final TestSocket sock2 = new TestSocket(buf2, buf1);
-
-        SocketChannel ch1 = new TestChannel(sock1, buf1, buf2);
-        SocketChannel ch2 = new TestChannel(sock2, buf2, buf1);
-
-        final BlockingSslHandler h1 = new BlockingSslHandler(sslEngine1, ch1, true, ByteOrder.nativeOrder(), log);
-        final BlockingSslHandler h2 = new BlockingSslHandler(sslEngine2, ch2, true, ByteOrder.nativeOrder(), log);
+        final BlockingSslHandler h1 = new TestSslHandler(sslEngine1, true, log, buf1, buf2);
+        final BlockingSslHandler h2 = new TestSslHandler(sslEngine2, true, log, buf2, buf1);
 
         IgniteInternalFuture handshakeFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception{
@@ -114,250 +110,51 @@ public class TcpServerSelfTest extends TestCase {
 
         handshakeFut.get();
     }
-
     /**
-     * Test InputStream above BlockingQueue
+     *
      */
-    private static class QueueInputStream extends InputStream {
+    static class TestSslHandler extends BlockingSslHandler {
         /** */
-        private BlockingQueue<Byte> buf;
+        final LinkedBlockingQueue<Byte> in;
 
         /** */
-        public QueueInputStream(BlockingQueue<Byte> buf) {
-            this.buf = buf;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int read() throws IOException {
-            try {
-                Byte res = buf.poll(1, TimeUnit.SECONDS);
-                return res != null ? res : -1;
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-                return -1;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public int read(byte[] bytes, int offset, int length) throws IOException {
-            int end = offset + length;
-
-            for (int i = offset; i < end; i++) {
-                try {
-                    bytes[i] = buf.take();
-                }
-                catch (InterruptedException e) {
-                    return i - 1;
-                }
-            }
-
-            return length;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int available() throws IOException {
-            return buf.size();
-        }
-    }
-
-    /**
-     * Test Output Stream above BlockingQueue
-     */
-    private static class QueueOutputStream extends OutputStream {
-        /**  */
-        private BlockingQueue<Byte> buf;
-
-        /**  */
-        public QueueOutputStream(BlockingQueue<Byte> buf) {
-            this.buf = buf;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(int b) throws IOException {
-            try {
-                buf.put((byte)b);
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(byte[] bytes, int offset, int length) throws IOException {
-            int end = offset + length;
-
-            for (int i = offset; i < end; i++) {
-                try {
-                    buf.put(bytes[i]);
-                }
-                catch (InterruptedException e) {
-                    return;
-                }
-            }
-        }
-    }
-
-    /**
-     * Test channel.
-     */
-    private static class TestChannel extends SocketChannel {
-        /**  */
-        private final Socket socket;
-        /**  */
-        private BlockingQueue<Byte> buf_in;
-        /**  */
-        private BlockingQueue<Byte> buf_out;
-
-        /**  */
-        protected TestChannel(TestSocket socket, BlockingQueue<Byte> buf_in, BlockingQueue<Byte> buf_out) {
-            super(null);
-
-            this.socket = socket;
-            this.buf_in = buf_in;
-            this.buf_out = buf_out;
-
-            socket.channel(this);
-        }
-
-        @Override protected void implCloseSelectableChannel() throws IOException {
-
-        }
-
-        @Override protected void implConfigureBlocking(boolean block) throws IOException {
-
-        }
-
-        @Override public SocketChannel bind(SocketAddress local) throws IOException {
-            return null;
-        }
-
-        @Override public <T> SocketChannel setOption(SocketOption<T> name, T value) throws IOException {
-            return null;
-        }
-
-        @Override public <T> T getOption(SocketOption<T> name) throws IOException {
-            return null;
-        }
-
-        @Override public Set<SocketOption<?>> supportedOptions() {
-            return null;
-        }
-
-        @Override public SocketChannel shutdownInput() throws IOException {
-            return null;
-        }
-
-        @Override public SocketChannel shutdownOutput() throws IOException {
-            return null;
-        }
-
-        @Override public Socket socket() {
-            return socket;
-        }
-
-        @Override public boolean isConnected() {
-            return true;
-        }
-
-        @Override public boolean isConnectionPending() {
-            return false;
-        }
-
-        @Override public boolean connect(SocketAddress remote) throws IOException {
-            return false;
-        }
-
-        @Override public boolean finishConnect() throws IOException {
-            return false;
-        }
-
-        @Override public SocketAddress getRemoteAddress() throws IOException {
-            return null;
-        }
-
-        @Override public int read(ByteBuffer dst) throws IOException {
-            int n = Math.min(buf_in.size(), dst.capacity() - dst.position());
-
-            for (int i = 0; i < n; i++)
-                dst.put(buf_in.poll());
-
-            return n;
-        }
-
-        @Override public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
-            return 0;
-        }
-
-        @Override public int write(ByteBuffer src) throws IOException {
-            int n = src.remaining();
-
-            for (int i = 0; i < n; i++)
-                try {
-                    buf_out.put(src.get());
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-            return n;
-        }
-
-        @Override public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
-            return 0;
-        }
-
-        @Override public SocketAddress getLocalAddress() throws IOException {
-            return null;
-        }
-
-    }
-
-    /**
-     * Test socket.
-     */
-    private static class TestSocket extends Socket {
-        /**  */
-        private BlockingQueue<Byte> buf_in;
-        /**  */
-        private BlockingQueue<Byte> buf_out;
-        /**  */
-        private SocketChannel ch;
-
-        /**  */
-        public TestSocket(BlockingQueue<Byte> buf_in, BlockingQueue<Byte> buf_out) {
-            this.buf_in = buf_in;
-            this.buf_out = buf_out;
-        }
-
-        @Override public InputStream getInputStream() throws IOException {
-            return new QueueInputStream(buf_in);
-        }
-
-        @Override public OutputStream getOutputStream() throws IOException {
-            return new QueueOutputStream(buf_out);
-        }
-
-        @Override public boolean isConnected() {
-            return true;
-        }
-
-        @Override public SocketChannel getChannel() {
-            return ch;
-        }
+        final LinkedBlockingQueue<Byte> out;
 
         /**
-         * Add channel.
-         *
-         * @param ch Channel.
+         * @param sslEngine Engine.
+         * @param directBuf Direct buffer flag.
+         * @param log Logger.
+         * @param in In data queue.
+         * @param out Out data queue.
          */
-        public void channel(SocketChannel ch) {
-            this.ch = ch;
+        public TestSslHandler(SSLEngine sslEngine,
+            boolean directBuf,
+            IgniteLogger log,
+            LinkedBlockingQueue<Byte> in,
+            LinkedBlockingQueue<Byte> out) {
+            super(sslEngine, null, directBuf, ByteOrder.nativeOrder(), log);
+            this.in = in;
+            this.out = out;
         }
 
-        @Override public synchronized void setSoTimeout(int timeout) throws SocketException {
-            super.setSoTimeout(timeout);
+        /** {@inheritDoc} */
+        @Override protected int doRead(ByteBuffer inBuf) throws IOException {
+            int n = Math.min(in.size(), inBuf.remaining());
+
+            for (int i = 0; i < n; i++)
+                inBuf.put(in.poll());
+
+            return n;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected int doWrite(ByteBuffer buf) throws IOException {
+            int cnt = 0;
+
+            while (buf.hasRemaining())
+                out.add(buf.get());
+
+            return cnt;
         }
     }
-
 }
