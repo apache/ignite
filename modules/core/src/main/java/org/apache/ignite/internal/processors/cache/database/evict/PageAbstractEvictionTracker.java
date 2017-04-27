@@ -126,7 +126,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             if (!cacheCtx.userCache())
                 continue;
 
-            GridCacheEntryEx entryEx = cacheCtx.cache().entryEx(dataRow.key());
+            GridCacheEntryEx entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataRow.key()) :
+                cacheCtx.cache().entryEx(dataRow.key());
 
             evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true);
         }
