@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
 import org.jsr166.LongAdder8;
 
 /**

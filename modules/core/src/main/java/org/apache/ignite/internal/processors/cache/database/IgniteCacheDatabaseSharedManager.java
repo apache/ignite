@@ -306,9 +306,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @return {@link MemoryPolicyConfiguration configuration} of MemoryPolicy for system cache.
      */
-    private MemoryPolicyConfiguration createSystemMemoryPolicy(long sysCacheInitSize,
-        long sysCacheMaxSize
-        ) {
+    private MemoryPolicyConfiguration createSystemMemoryPolicy(long sysCacheInitSize, long sysCacheMaxSize) {
         MemoryPolicyConfiguration res = new MemoryPolicyConfiguration();
 
         res.setName(SYSTEM_MEMORY_POLICY_NAME);
