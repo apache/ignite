@@ -755,7 +755,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAffinityInitialized(Map<Integer, List<UUID>> assignment) {
+    @Override public void onAffinityInitialized(AffinityAssignment assignment) {
         // TODO
     }
 

@@ -199,6 +199,8 @@ public class GridAffinityAssignmentCache {
             }
         }
 
+        ctx.cache().context().cacheContext(cacheId).topology().onAffinityInitialized(assignment);
+
         onHistoryAdded(assignment);
     }
 

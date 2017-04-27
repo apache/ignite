@@ -1486,10 +1486,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             Map<Integer, Map<Integer, List<UUID>>> assignmentChange = fut.get();
 
-            for (Map.Entry<Integer, Map<Integer, List<UUID>>> e : assignmentChange.entrySet()) {
-                cctx.cacheContext(e.getKey()).topology().onAffinityInitialized(e.getValue());
-            }
-
             GridDhtPartitionsFullMessage m = createPartitionsMessage(null, false);
 
             CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
