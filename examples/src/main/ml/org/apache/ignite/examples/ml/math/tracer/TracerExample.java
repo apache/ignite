@@ -46,7 +46,7 @@ public class TracerExample {
     public static void main(String[] args) throws IOException {
         System.out.println(">>> Tracer utility example started.");
 
-        // Tracer is a simple utility class that allows pretty-printing of matrices/vectors
+        // Tracer is a simple utility class that allows pretty-printing of matrices/vectors.
         DenseLocalOnHeapMatrix m = new DenseLocalOnHeapMatrix(new double[][] {
             {1.12345, 2.12345},
             {3.12345, 4.12345}
