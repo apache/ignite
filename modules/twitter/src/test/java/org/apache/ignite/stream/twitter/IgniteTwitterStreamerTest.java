@@ -93,7 +93,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
      * @throws Exception Test exception.
      */
     public void testStatusesFilterEndpointOAuth1() throws Exception {
-        try (IgniteDataStreamer<Long, String> dataStreamer = grid().dataStreamer(null)) {
+        try (IgniteDataStreamer<Long, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             TwitterStreamerImpl streamer = newStreamerInstance(dataStreamer);
 
             Map<String, String> params = new HashMap<>();
@@ -153,7 +153,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
 
         Status status = TwitterObjectFactory.createStatus(tweet);
 
-        IgniteCache<Long, String> cache = grid().cache(null);
+        IgniteCache<Long, String> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         String cachedValue = cache.get(status.getId());
 
@@ -173,7 +173,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
         // Listen to cache PUT events and expect as many as messages as test data items.
         CacheListener listener = new CacheListener();
 
-        ignite.events(ignite.cluster().forCacheNodes(null)).localListen(listener, EVT_CACHE_OBJECT_PUT);
+        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).localListen(listener, EVT_CACHE_OBJECT_PUT);
 
         return listener;
     }
@@ -184,7 +184,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     private void unsubscribeToPutEvents(CacheListener listener) {
         Ignite ignite = grid();
 
-        ignite.events(ignite.cluster().forCacheNodes(null)).stopLocalListen(listener, EVT_CACHE_OBJECT_PUT);
+        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).stopLocalListen(listener, EVT_CACHE_OBJECT_PUT);
     }
 
     /**

@@ -1346,7 +1346,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                CacheConfiguration ccfg = new CacheConfiguration();
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                 ccfg.setName(CACHE_NAME);
 
@@ -1616,7 +1616,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             @Override public Void call() throws Exception {
                 log.info("Create test cache");
 
-                CacheConfiguration ccfg = new CacheConfiguration();
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                 ccfg.setName(CACHE_NAME);
 
@@ -1753,7 +1753,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             waitNodeStop(ignite0.name());
 
-            ignite1.getOrCreateCache(new CacheConfiguration<>()).put(1, 1);
+            ignite1.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)).put(1, 1);
 
             startGrid(2);
 
@@ -1909,9 +1909,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            ignite0.createCache(new CacheConfiguration<>()); // Send custom message.
+            ignite0.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)); // Send custom message.
 
-            ignite0.destroyCache(null); // Send custom message.
+            ignite0.destroyCache(DEFAULT_CACHE_NAME); // Send custom message.
 
             stopGrid(1);
 
@@ -2025,7 +2025,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < ccfgs.length; i++) {
                 CacheConfiguration ccfg = new CacheConfiguration();
 
-                ccfg.setName(i == 0 ? null : ("static-cache-" + i));
+                ccfg.setName(i == 0 ? DEFAULT_CACHE_NAME : ("static-cache-" + i));
 
                 ccfgs[i] = ccfg;
             }
@@ -2048,7 +2048,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             assertTrue(clientNode.configuration().isClientMode());
 
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName("c1");
 
             clientNode.createCache(ccfg);
@@ -2103,7 +2103,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         int cntr = 0;
 
         for (Ignite ignite : allNodes) {
-            CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+            CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cache-" + cntr++);
 

@@ -76,7 +76,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
     public void testNonCoalescingIncrementing() throws Exception {
         Ignite ignite = grid(0);
 
-        IgniteCache<Integer, Integer> cache = ignite.cache(null);
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         assertEquals(cache.getConfiguration(CacheConfiguration.class).getCacheStoreFactory().getClass(),
             TestIncrementStoreFactory.class);

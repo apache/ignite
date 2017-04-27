@@ -103,7 +103,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<TestKey, Integer> cfg = new CacheConfiguration<>();
+        CacheConfiguration<TestKey, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setName(CACHE);
         cfg.setCacheMode(CacheMode.PARTITIONED);
