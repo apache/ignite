@@ -708,7 +708,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void registerCache(CacheConfiguration<?, ?> cfg) throws IgniteCheckedException {
-        assert cfg.getName() != null;
+        CU.validateCacheName(cfg.getName());
 
         cloneCheckSerializable(cfg);
 
