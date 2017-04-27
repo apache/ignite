@@ -105,7 +105,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 KeyTypeName = value == null
                     ? null
-                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetSqlTypeName(value));
 
                 _keyType = value;
             }
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 ValueTypeName = value == null
                     ? null
-                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetSqlTypeName(value));
 
                 _valueType = value;
             }

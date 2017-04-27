@@ -32,6 +32,12 @@ namespace Apache.Ignite.Core.Impl
         public const int ERROR_BAD_EXE_FORMAT = 193;
 
         /// <summary>
+        /// ERROR_MOD_NOT_FOUND constant.
+        /// </summary>
+        // ReSharper disable once InconsistentNaming
+        public const int ERROR_MOD_NOT_FOUND = 126;
+
+        /// <summary>
         /// Load DLL with WinAPI.
         /// </summary>
         /// <param name="path">Path to dll.</param>

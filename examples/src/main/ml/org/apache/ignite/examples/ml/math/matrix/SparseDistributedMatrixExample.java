@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.examples.ml.math.matrix;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.math.StorageConstants;
-import org.apache.ignite.math.impls.matrix.SparseDistributedMatrix;
+import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.thread.IgniteThread;
 
 /**

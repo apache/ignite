@@ -272,6 +272,10 @@ namespace Apache.Ignite.Core
                 {
                     writer.WriteBoolean(false);
                 }
+
+                // Name mapper.
+                var mapper = BinaryConfiguration.NameMapper as BinaryBasicNameMapper;
+                writer.WriteBoolean(mapper != null && mapper.IsSimpleName);
             }
             else
             {
@@ -344,6 +348,16 @@ namespace Apache.Ignite.Core
                 writer.WriteByte(2);
 
                 memEventStorage.Write(writer);
+            }
+
+            if (MemoryConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                MemoryConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
             }
 
             // Plugins (should be last)
@@ -430,7 +444,14 @@ namespace Apache.Ignite.Core
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
 
                 if (r.ReadBoolean())
+                {
                     BinaryConfiguration.CompactFooter = r.ReadBoolean();
+                }
+
+                if (r.ReadBoolean())
+                {
+                    BinaryConfiguration.NameMapper = BinaryBasicNameMapper.SimpleNameInstance;
+                }
             }
 
             // User attributes
@@ -470,6 +491,11 @@ namespace Apache.Ignite.Core
                 case 2:
                     EventStorageSpi = MemoryEventStorageSpi.Read(r);
                     break;
+            }
+
+            if (r.ReadBoolean())
+            {
+                MemoryConfiguration = new MemoryConfiguration(r);
             }
         }
 
@@ -926,5 +952,11 @@ namespace Apache.Ignite.Core
         /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
         /// </summary>
         public IEventStorageSpi EventStorageSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the page memory configuration.
+        /// <see cref="MemoryConfiguration"/> for more details.
+        /// </summary>
+        public MemoryConfiguration MemoryConfiguration { get; set; }
     }
 }

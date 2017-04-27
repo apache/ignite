@@ -169,14 +169,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureTearDown]
         public void StopClient()
         {
-            if (_grid1 != null)
-                Ignition.Stop(_grid1.Name, true);
-
-            if (_grid2 != null)
-                Ignition.Stop(_grid2.Name, true);
-
-            if (_grid3 != null)
-                Ignition.Stop(_grid3.Name, true);
+            Ignition.StopAll(true);
         }
 
         [TearDown]
@@ -1315,7 +1308,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                         new BinaryTypeConfiguration(JavaBinaryCls),
                         new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
                         new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
-                    }
+                    },
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 },
                 SpringConfigUrl = path
             };

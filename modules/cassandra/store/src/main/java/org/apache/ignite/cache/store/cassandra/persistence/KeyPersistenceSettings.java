@@ -22,8 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -214,12 +212,8 @@ public class KeyPersistenceSettings extends PersistenceSettings {
 
         if (el == null) {
             for (PropertyDescriptor desc : descriptors) {
-                boolean valid = desc.getWriteMethod() != null ||
-                        desc.getReadMethod().getAnnotation(QuerySqlField.class) != null ||
-                        desc.getReadMethod().getAnnotation(AffinityKeyMapped.class) != null;
-
-                // Skip POJO field if it's read-only and is not annotated with @QuerySqlField or @AffinityKeyMapped.
-                if (valid)
+                // Skip POJO field if it's read-only
+                if (desc.getWriteMethod() != null)
                     list.add(new PojoKeyField(desc));
             }
 
@@ -256,11 +250,8 @@ public class KeyPersistenceSettings extends PersistenceSettings {
      * @return POJO field descriptors for partition key.
      */
     private List<PropertyDescriptor> getPartitionKeyDescriptors() {
-        List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(),
-            AffinityKeyMapped.class, true);
-
-        primitivePropDescriptors = primitivePropDescriptors != null && !primitivePropDescriptors.isEmpty() ?
-            primitivePropDescriptors : PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
+        List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(
+            getJavaClass(), true);
 
         boolean valid = false;
 
@@ -281,6 +272,7 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     }
 
     /**
+     * @param partKeyFields List of fields.
      * @return POJO field descriptors for cluster key.
      */
     private List<PropertyDescriptor> getClusterKeyDescriptors(List<PojoField> partKeyFields) {

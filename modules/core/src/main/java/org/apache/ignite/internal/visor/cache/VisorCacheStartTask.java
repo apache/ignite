@@ -40,12 +40,12 @@ import org.jetbrains.annotations.Nullable;
  * Task that start cache or near cache with specified configuration.
  */
 @GridInternal
-public class VisorCacheStartTask extends VisorMultiNodeTask<VisorCacheStartArg, Map<UUID, IgniteException>, Void> {
+public class VisorCacheStartTask extends VisorMultiNodeTask<VisorCacheStartTaskArg, Map<UUID, IgniteException>, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheStartJob job(VisorCacheStartArg arg) {
+    @Override protected VisorCacheStartJob job(VisorCacheStartTaskArg arg) {
         return new VisorCacheStartJob(arg, debug);
     }
 
@@ -63,7 +63,7 @@ public class VisorCacheStartTask extends VisorMultiNodeTask<VisorCacheStartArg, 
     /**
      * Job that start cache or near cache with specified configuration.
      */
-    private static class VisorCacheStartJob extends VisorJob<VisorCacheStartArg, Void> {
+    private static class VisorCacheStartJob extends VisorJob<VisorCacheStartTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -73,12 +73,12 @@ public class VisorCacheStartTask extends VisorMultiNodeTask<VisorCacheStartArg, 
          * @param arg Contains cache name and XML configurations of cache.
          * @param debug Debug flag.
          */
-        private VisorCacheStartJob(VisorCacheStartArg arg, boolean debug) {
+        private VisorCacheStartJob(VisorCacheStartTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorCacheStartArg arg) throws IgniteException {
+        @Override protected Void run(VisorCacheStartTaskArg arg) throws IgniteException {
             String cfg = arg.getConfiguration();
 
             assert !F.isEmpty(cfg);

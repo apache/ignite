@@ -133,14 +133,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static IgniteConfiguration Config(string springUrl)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springUrl,
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 BinaryConfiguration = new BinaryConfiguration(
                     typeof (PlatformComputeBinarizable),
                     typeof (PlatformComputeNetBinarizable))
+                {
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                }
             };
         }
     }
