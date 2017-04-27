@@ -17,34 +17,43 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.mxbean.MemoryMetricsMXBean;
+
 /**
- * Interface provides methods to access metrics of memory usage on local instance of Ignite.
+ * An interface to collect metrics about page memory usage on Ignite node. Overall page memory architecture
+ * is described in {@link MemoryConfiguration} javadoc.
+ * <p>
+ * As multiple page memories may be configured on a single Ignite node; memory metrics will be collected
+ * for each page memory separately.
+ * </p>
+ * <p>
+ * There are two ways to access metrics on local node.
+ * <ol>
+ *     <li>
+ *       Firstly, collection of metrics can be obtained through {@link Ignite#memoryMetrics()} call.<br/>
+ *       Please pay attention that this call returns snapshots of memory metrics and not live objects.
+ *     </li>
+ *     <li>
+ *       Secondly, all {@link MemoryMetrics} on local node are exposed through JMX interface. <br/>
+ *       See {@link MemoryMetricsMXBean} interface describing information provided about metrics
+ *       and page memory configuration.
+ *     </li>
+ * </ol>
+ * </p>
+ * <p>
+ * Also users must be aware that using memory metrics has some overhead and for performance reasons is turned off
+ * by default.
+ * For turning them on both {@link MemoryPolicyConfiguration#setMetricsEnabled(boolean)} configuration property
+ * or {@link MemoryMetricsMXBean#enableMetrics()} method of JMX bean can be used.
+ * </p>
  */
 public interface MemoryMetrics {
     /**
-     * @return Memory policy name.
+     * @return Name of memory region metrics are collected for.
      */
     public String getName();
-
-    /**
-     * @return Returns size (in MBytes) of MemoryPolicy observed by this MemoryMetrics MBean.
-     */
-    public int getSize();
-
-    /**
-     * @return Path of memory-mapped file used to swap PageMemory pages to disk.
-     */
-    public String getSwapFilePath();
-
-    /**
-     * Enables collecting memory metrics.
-     */
-    public void enableMetrics();
-
-    /**
-     * Disables collecting memory metrics.
-     */
-    public void disableMetrics();
 
     /**
      * @return Total number of allocated pages.
@@ -72,24 +81,4 @@ public interface MemoryMetrics {
      * @return Free space to overall size ratio across all pages in FreeList.
      */
     public float getPagesFillFactor();
-
-    /**
-     * Sets interval of time (in seconds) to monitor allocation rate.
-     *
-     * E.g. after setting rateTimeInterval to 60 seconds subsequent calls to {@link #getAllocationRate()}
-     * will return average allocation rate (pages per second) for the last minute.
-     *
-     * @param rateTimeInterval Time interval used to calculate allocation/eviction rate.
-     */
-    public void rateTimeInterval(int rateTimeInterval);
-
-    /**
-     * Sets number of subintervals the whole rateTimeInterval will be split into to calculate allocation rate,
-     * 5 by default.
-     * Setting it to bigger number allows more precise calculation and smaller drops of allocationRate metric
-     * when next subinterval has to be recycled but introduces bigger calculation overhead.
-     *
-     * @param subInts Number of subintervals.
-     */
-    public void subIntervals(int subInts);
 }
