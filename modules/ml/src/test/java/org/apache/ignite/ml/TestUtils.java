@@ -50,10 +50,8 @@ public class TestUtils {
      */
     public static void assertEquals(String msg, double exp, double actual, double delta) {
         // Check for NaN.
-        if (Double.isNaN(exp)) {
-            Assert.assertTrue("" + actual + " is not NaN.",
-                Double.isNaN(actual));
-        }
+        if (Double.isNaN(exp))
+            Assert.assertTrue("" + actual + " is not NaN.", Double.isNaN(actual));
         else
             Assert.assertEquals(msg, exp, actual, delta);
     }
@@ -78,12 +76,11 @@ public class TestUtils {
     public static void assertEquals(final String msg,
         final double[] exp, final Vector actual, final double delta) {
         final String msgAndSep = msg.equals("") ? "" : msg + ", ";
-        Assert.assertEquals(msgAndSep + "dimension", exp.length,
-            actual.size());
-        for (int i = 0; i < exp.length; i++) {
-            Assert.assertEquals(msgAndSep + "entry #" + i, exp[i],
-                actual.getX(i), delta);
-        }
+
+        Assert.assertEquals(msgAndSep + "dimension", exp.length, actual.size());
+
+        for (int i = 0; i < exp.length; i++)
+            Assert.assertEquals(msgAndSep + "entry #" + i, exp[i], actual.getX(i), delta);
     }
 
     /**
@@ -100,14 +97,11 @@ public class TestUtils {
         final Vector exp, final Vector actual, final double delta) {
         final String msgAndSep = msg.equals("") ? "" : msg + ", ";
 
-        Assert.assertEquals(msgAndSep + "dimension", exp.size(),
-            actual.size());
+        Assert.assertEquals(msgAndSep + "dimension", exp.size(), actual.size());
 
         final int dim = exp.size();
-        for (int i = 0; i < dim; i++) {
-            Assert.assertEquals(msgAndSep + "entry #" + i,
-                exp.getX(i), actual.getX(i), delta);
-        }
+        for (int i = 0; i < dim; i++)
+            Assert.assertEquals(msgAndSep + "entry #" + i, exp.getX(i), actual.getX(i), delta);
     }
 
     /**
@@ -121,8 +115,7 @@ public class TestUtils {
     public static void assertEquals(String msg, Matrix exp, Matrix actual, double tolerance) {
         Assert.assertNotNull(msg + "\nObserved should not be null", actual);
 
-        if (exp.columnSize() != actual.columnSize() ||
-            exp.rowSize() != actual.rowSize()) {
+        if (exp.columnSize() != actual.columnSize() || exp.rowSize() != actual.rowSize()) {
             String msgBuff = msg + "\nObserved has incorrect dimensions." +
                 "\nobserved is " + actual.rowSize() +
                 " x " + actual.columnSize() +
@@ -152,24 +145,24 @@ public class TestUtils {
     public static void assertEquals(Matrix exp, Matrix actual) {
         Assert.assertNotNull("Observed should not be null", actual);
 
-        if (exp.columnSize() != actual.columnSize() ||
-            exp.rowSize() != actual.rowSize()) {
+        if (exp.columnSize() != actual.columnSize() || exp.rowSize() != actual.rowSize()) {
             String msgBuff = "Observed has incorrect dimensions." +
                 "\nobserved is " + actual.rowSize() +
                 " x " + actual.columnSize() +
                 "\nexpected " + exp.rowSize() +
                 " x " + exp.columnSize();
+
             Assert.fail(msgBuff);
         }
 
-        for (int i = 0; i < exp.rowSize(); ++i) {
+        for (int i = 0; i < exp.rowSize(); ++i)
             for (int j = 0; j < exp.columnSize(); ++j) {
                 double eij = exp.getX(i, j);
                 double aij = actual.getX(i, j);
+
                 // TODO: Check precision here.
                 Assert.assertEquals(eij, aij, 0.0);
             }
-        }
     }
 
     /**
@@ -194,7 +187,7 @@ public class TestUtils {
 
         boolean failure = false;
 
-        for (int i = 0; i < exp.length; i++) {
+        for (int i = 0; i < exp.length; i++)
             if (!Precision.equalsIncludingNaN(exp[i], actual[i], tolerance)) {
                 failure = true;
                 out.append("\n Elements at index ");
@@ -205,7 +198,6 @@ public class TestUtils {
                 out.append(" observed = ");
                 out.append(actual[i]);
             }
-        }
 
         if (failure)
             Assert.fail(out.toString());
@@ -233,7 +225,7 @@ public class TestUtils {
 
         boolean failure = false;
 
-        for (int i = 0; i < exp.length; i++) {
+        for (int i = 0; i < exp.length; i++)
             if (!Precision.equalsIncludingNaN(exp[i], actual[i], tolerance)) {
                 failure = true;
                 out.append("\n Elements at index ");
@@ -244,7 +236,6 @@ public class TestUtils {
                 out.append(" observed = ");
                 out.append(actual[i]);
             }
-        }
 
         if (failure)
             Assert.fail(out.toString());

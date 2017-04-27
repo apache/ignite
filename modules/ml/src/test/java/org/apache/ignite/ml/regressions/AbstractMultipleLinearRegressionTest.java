@@ -92,29 +92,38 @@ public abstract class AbstractMultipleLinearRegressionTest {
             3, 25, 35, 45,
             4, 27, 37, 47
         };
+
         double[] y = new double[] {1, 2, 3, 4};
+
         double[][] x = new double[][] {
             {19, 22, 33},
             {20, 30, 40},
             {25, 35, 45},
             {27, 37, 47}
         };
+
         AbstractMultipleLinearRegression regression = createRegression();
         regression.newSampleData(design, 4, 3, new DenseLocalOnHeapMatrix());
+
         Matrix flatX = regression.getX().copy();
         Vector flatY = regression.getY().copy();
+
         regression.newXSampleData(new DenseLocalOnHeapMatrix(x));
         regression.newYSampleData(new DenseLocalOnHeapVector(y));
+
         Assert.assertEquals(flatX, regression.getX());
         Assert.assertEquals(flatY, regression.getY());
 
         // No intercept
         regression.setNoIntercept(true);
         regression.newSampleData(design, 4, 3, new DenseLocalOnHeapMatrix());
+
         flatX = regression.getX().copy();
         flatY = regression.getY().copy();
+
         regression.newXSampleData(new DenseLocalOnHeapMatrix(x));
         regression.newYSampleData(new DenseLocalOnHeapVector(y));
+        
         Assert.assertEquals(flatX, regression.getX());
         Assert.assertEquals(flatY, regression.getY());
     }

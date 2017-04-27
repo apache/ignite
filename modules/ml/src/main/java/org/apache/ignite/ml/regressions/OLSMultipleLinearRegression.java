@@ -122,16 +122,16 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
         // No try-catch or advertised NotStrictlyPositiveException - NPE above if n < 3
         Matrix q = qr.getQ();
         Matrix augI = MatrixUtil.like(q, q.columnSize(), q.columnSize());
+
         int n = augI.columnSize();
         int p = qr.getR().columnSize();
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
+
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
                 if (i == j && i < p)
                     augI.setX(i, j, 1d);
                 else
                     augI.setX(i, j, 0d);
-            }
-        }
 
         // Compute and return Hat matrix
         // No DME advertised - args valid if we get here
@@ -214,10 +214,9 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
         final double n = getX().rowSize();
         if (isNoIntercept())
             return 1 - (1 - calculateRSquared()) * (n / (n - getX().columnSize()));
-        else {
+        else
             return 1 - (calculateResidualSumOfSquares() * (n - 1)) /
                 (calculateTotalSumOfSquares() * (n - getX().columnSize()));
-        }
     }
 
     /**
@@ -264,8 +263,10 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
      */
     @Override protected Matrix calculateBetaVariance() {
         int p = getX().columnSize();
+
         Matrix rAug = MatrixUtil.copy(qr.getR().viewPart(0, p, 0, p));
         Matrix rInv = rAug.inverse();
+
         return rInv.times(rInv.transpose());
     }
 }
