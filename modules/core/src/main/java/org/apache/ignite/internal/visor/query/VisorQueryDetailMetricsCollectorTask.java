@@ -43,13 +43,13 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSyste
  * Task to collect cache query metrics.
  */
 @GridInternal
-public class VisorQueryDetailMetricsCollectorTask extends VisorMultiNodeTask<Long, Collection<VisorQueryDetailMetrics>,
-    Collection<? extends QueryDetailMetrics>> {
+public class VisorQueryDetailMetricsCollectorTask extends VisorMultiNodeTask<VisorQueryDetailMetricsCollectorTaskArg,
+    Collection<VisorQueryDetailMetrics>, Collection<? extends QueryDetailMetrics>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheQueryDetailMetricsCollectorJob job(Long arg) {
+    @Override protected VisorCacheQueryDetailMetricsCollectorJob job(VisorQueryDetailMetricsCollectorTaskArg arg) {
         return new VisorCacheQueryDetailMetricsCollectorJob(arg, debug);
     }
 
@@ -80,7 +80,8 @@ public class VisorQueryDetailMetricsCollectorTask extends VisorMultiNodeTask<Lon
     /**
      * Job that will actually collect query metrics.
      */
-    private static class VisorCacheQueryDetailMetricsCollectorJob extends VisorJob<Long, Collection<? extends QueryDetailMetrics>> {
+    private static class VisorCacheQueryDetailMetricsCollectorJob
+        extends VisorJob<VisorQueryDetailMetricsCollectorTaskArg, Collection<? extends QueryDetailMetrics>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -90,7 +91,7 @@ public class VisorQueryDetailMetricsCollectorTask extends VisorMultiNodeTask<Lon
          * @param arg Last time when metrics were collected.
          * @param debug Debug flag.
          */
-        protected VisorCacheQueryDetailMetricsCollectorJob(@Nullable Long arg, boolean debug) {
+        protected VisorCacheQueryDetailMetricsCollectorJob(@Nullable VisorQueryDetailMetricsCollectorTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -113,7 +114,9 @@ public class VisorQueryDetailMetricsCollectorTask extends VisorMultiNodeTask<Lon
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends QueryDetailMetrics> run(@Nullable Long arg) throws IgniteException {
+        @Override protected Collection<? extends QueryDetailMetrics> run(
+            @Nullable VisorQueryDetailMetricsCollectorTaskArg arg
+        ) throws IgniteException {
             assert arg != null;
 
             IgniteConfiguration cfg = ignite.configuration();
@@ -131,7 +134,7 @@ public class VisorQueryDetailMetricsCollectorTask extends VisorMultiNodeTask<Lon
                     if (cache == null || !cache.context().started())
                         continue;
 
-                    aggregateMetrics(arg, aggMetrics, cache.context().queries().detailMetrics());
+                    aggregateMetrics(arg.getSince(), aggMetrics, cache.context().queries().detailMetrics());
                 }
             }
 
