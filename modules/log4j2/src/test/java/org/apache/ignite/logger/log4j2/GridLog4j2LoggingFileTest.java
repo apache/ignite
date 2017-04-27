@@ -33,8 +33,7 @@ public class GridLog4j2LoggingFileTest extends TestCase {
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override
-    protected void setUp() throws Exception {
+    @Override protected void setUp() throws Exception {
         
 
         File xml = GridTestUtils

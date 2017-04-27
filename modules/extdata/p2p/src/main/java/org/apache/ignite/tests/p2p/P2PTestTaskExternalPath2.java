@@ -127,9 +127,7 @@ public class P2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, Integer
             this.sleep = sleep;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public Integer execute() {
             assert ignite.configuration().getNodeId().equals(argument(0));
 

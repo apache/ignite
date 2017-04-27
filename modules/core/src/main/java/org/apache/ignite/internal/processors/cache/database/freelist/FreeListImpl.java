@@ -259,8 +259,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      *
      */
     private final class RemoveRowHandler extends PageHandler<Void, Long> {
-        @Override
-        public Long run(
+        @Override public Long run(
             int cacheId,
             long pageId,
             long page,

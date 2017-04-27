@@ -214,8 +214,7 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override
-        public IgfsSecondaryFileSystemPositionedReadable open(IgfsPath path, int bufSize) throws IgniteException {
+        @Override public IgfsSecondaryFileSystemPositionedReadable open(IgfsPath path, int bufSize) throws IgniteException {
             return null;
         }
 
@@ -225,8 +224,7 @@ public class IgfsSecondaryFileSystemInjectionSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override
-        public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication, long blockSize,
+        @Override public OutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication, long blockSize,
             @Nullable Map<String, String> props) throws IgniteException {
             return null;
         }

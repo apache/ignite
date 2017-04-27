@@ -133,8 +133,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         private Map<String, Integer> outgoingSignals;
 
         /** Last condition waited on. */
-        @Nullable
-        private volatile String lastCondition;
+        @Nullable private volatile String lastCondition;
 
         /** True if any node owning the lock had failed. */
         private volatile boolean isBroken;

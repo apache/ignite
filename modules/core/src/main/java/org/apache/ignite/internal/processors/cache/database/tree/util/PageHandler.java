@@ -34,8 +34,7 @@ import static java.lang.Boolean.TRUE;
 public abstract class PageHandler<X, R> {
     /** */
     private static final PageHandler<Void, Boolean> NO_OP = new PageHandler<Void, Boolean>() {
-        @Override
-        public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
+        @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
             Void arg,
             int intArg) throws IgniteCheckedException {
             return Boolean.TRUE;

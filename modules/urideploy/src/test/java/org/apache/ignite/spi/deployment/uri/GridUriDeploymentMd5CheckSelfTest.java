@@ -179,11 +179,9 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
      *
      * @throws Exception if failed.
      */
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         getSpi().setListener(new DeploymentListener() {
-            @Override
-            public void onUnregistered(ClassLoader ldr) {
+            @Override public void onUnregistered(ClassLoader ldr) {
                 undeployCntr.incrementAndGet();
             }
         });
@@ -194,8 +192,7 @@ public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstract
      *
      * @throws Exception if cleanup failed.
      */
-    @Override
-    protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         U.delete(getDeployDir());
     }
 }

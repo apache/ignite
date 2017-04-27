@@ -122,8 +122,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
             final CountDownLatch latch = new CountDownLatch(10);
 
             qry.setLocalListener(new CacheEntryUpdatedListener<String, Integer>() {
-                @Override
-                public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends Integer>> evts)
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends Integer>> evts)
                         throws CacheEntryListenerException {
                     for (CacheEntryEvent<? extends String, ? extends Integer> evt : evts) {
                         cnt.incrementAndGet();

@@ -251,9 +251,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
             return val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SqlValue.class, this);
         }
