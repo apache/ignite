@@ -1475,10 +1475,10 @@ public abstract class GridAbstractTest extends TestCase {
         }
         else {
             // Set network timeout to 10 sec to avoid unexpected p2p class loading errors.
-            cfg.setNetworkTimeout(10000);
+            cfg.setNetworkTimeout(10_000);
 
-            // Increase failure detection timeoute to avoid unexpected node fails.
-            cfg.setFailureDetectionTimeout(300000);
+            cfg.setFailureDetectionTimeout(10_000);
+            cfg.setClientFailureDetectionTimeout(10_000);
         }
 
         // Set metrics update interval to 1 second to speed up tests.
