@@ -20,8 +20,17 @@ package org.apache.ignite.jdbc.suite;
 import junit.framework.TestSuite;
 import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcConnectionSelfTest;
+import org.apache.ignite.jdbc.JdbcDeleteStatementSelfTest;
+import org.apache.ignite.jdbc.JdbcDynamicIndexAtomicPartitionedNearSelfTest;
+import org.apache.ignite.jdbc.JdbcDynamicIndexAtomicPartitionedSelfTest;
+import org.apache.ignite.jdbc.JdbcDynamicIndexAtomicReplicatedSelfTest;
+import org.apache.ignite.jdbc.JdbcDynamicIndexTransactionalPartitionedNearSelfTest;
+import org.apache.ignite.jdbc.JdbcDynamicIndexTransactionalPartitionedSelfTest;
+import org.apache.ignite.jdbc.JdbcDynamicIndexTransactionalReplicatedSelfTest;
 import org.apache.ignite.jdbc.JdbcEmptyCacheSelfTest;
+import org.apache.ignite.jdbc.JdbcInsertStatementSelfTest;
 import org.apache.ignite.jdbc.JdbcLocalCachesSelfTest;
+import org.apache.ignite.jdbc.JdbcMergeStatementSelfTest;
 import org.apache.ignite.jdbc.JdbcMetadataSelfTest;
 import org.apache.ignite.jdbc.JdbcNoDefaultCacheTest;
 import org.apache.ignite.jdbc.JdbcPojoLegacyQuerySelfTest;
@@ -29,6 +38,7 @@ import org.apache.ignite.jdbc.JdbcPojoQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.JdbcResultSetSelfTest;
 import org.apache.ignite.jdbc.JdbcStatementSelfTest;
+import org.apache.ignite.jdbc.JdbcUpdateStatementSelfTest;
 
 /**
  * JDBC driver test suite.
@@ -53,33 +63,44 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcNoDefaultCacheTest.class));
         suite.addTest(new TestSuite(JdbcPojoQuerySelfTest.class));
         suite.addTest(new TestSuite(JdbcPojoLegacyQuerySelfTest.class));
+        suite.addTest(new TestSuite(JdbcInsertStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcUpdateStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcMergeStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcDeleteStatementSelfTest.class));
+
+        suite.addTest(new TestSuite(JdbcDynamicIndexAtomicPartitionedNearSelfTest.class));
+        suite.addTest(new TestSuite(JdbcDynamicIndexAtomicPartitionedSelfTest.class));
+        suite.addTest(new TestSuite(JdbcDynamicIndexAtomicReplicatedSelfTest.class));
+        suite.addTest(new TestSuite(JdbcDynamicIndexTransactionalPartitionedNearSelfTest.class));
+        suite.addTest(new TestSuite(JdbcDynamicIndexTransactionalPartitionedSelfTest.class));
+        suite.addTest(new TestSuite(JdbcDynamicIndexTransactionalReplicatedSelfTest.class));
 
         // Ignite client node based driver tests
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcConnectionSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcSpringSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcStatementSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcPreparedStatementSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcResultSetSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcComplexQuerySelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcMetadataSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcEmptyCacheSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcLocalCachesSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcNoDefaultCacheTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcMergeStatementSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcBinaryMarshallerMergeStatementSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcInsertStatementSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcBinaryMarshallerInsertStatementSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDeleteStatementSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest.class));
-
-        // DDL tests.
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexAtomicPartitionedNearSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexAtomicPartitionedSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexAtomicReplicatedSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalPartitionedNearSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalPartitionedSelfTest.class));
-        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalReplicatedSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcConnectionSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcSpringSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcStatementSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcPreparedStatementSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcResultSetSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcComplexQuerySelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcMetadataSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcEmptyCacheSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcLocalCachesSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcNoDefaultCacheTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcMergeStatementSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcBinaryMarshallerMergeStatementSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcInsertStatementSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcBinaryMarshallerInsertStatementSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDeleteStatementSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest.class));
+//
+//        // DDL tests.
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexAtomicPartitionedNearSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexAtomicPartitionedSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexAtomicReplicatedSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalPartitionedNearSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalPartitionedSelfTest.class));
+//        suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcDynamicIndexTransactionalReplicatedSelfTest.class));
 
         return suite;
     }

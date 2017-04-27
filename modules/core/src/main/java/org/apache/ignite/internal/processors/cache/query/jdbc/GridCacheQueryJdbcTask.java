@@ -170,7 +170,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             else {
                 status = 1;
 
-                bytes = U.marshal(MARSHALLER, new SQLException(res.getException().getMessage()));
+                bytes = U.marshal(MARSHALLER, new SQLException(res.getException()));
             }
 
             byte[] packet = new byte[bytes.length + 1];

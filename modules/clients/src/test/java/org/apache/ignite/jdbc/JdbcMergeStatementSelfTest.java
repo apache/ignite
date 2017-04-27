@@ -21,33 +21,27 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- * Statement test.
+ * MERGE statement test.
  */
-public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTest {
+public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** SQL query. */
-    private static final String SQL = "insert into Person(_key, id, firstName, lastName, age) values " +
+    private static final String SQL = "merge into Person(_key, id, firstName, lastName, age) values " +
         "('p1', 1, 'John', 'White', 25), " +
         "('p2', 2, 'Joe', 'Black', 35), " +
         "('p3', 3, 'Mike', 'Green', 40)";
 
     /** SQL query. */
-    private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age) values " +
+    protected static final String SQL_PREPARED = "merge into Person(_key, id, firstName, lastName, age) values " +
         "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?)";
 
     /** Statement. */
-    private Statement stmt;
+    protected Statement stmt;
 
     /** Prepared statement. */
-    private PreparedStatement prepStmt;
+    protected PreparedStatement prepStmt;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -144,21 +138,5 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
         boolean res = stmt.execute(SQL);
 
         assertEquals(false, res);
-    }
-
-    /**
-     *
-     */
-    public void testDuplicateKeys() {
-        jcache(0).put("p2", new Person(2, "Joe", "Black", 35));
-
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-            /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
-                return stmt.execute(SQL);
-            }
-        }, IgniteSQLException.class, "Failed to INSERT some keys because they are already in cache [keys=[p2]]");
-
-        assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
     }
 }

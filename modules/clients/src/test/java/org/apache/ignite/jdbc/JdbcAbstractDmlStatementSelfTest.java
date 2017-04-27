@@ -66,17 +66,6 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     private IgniteConfiguration getConfiguration0(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
-
-        cache.setCacheMode(PARTITIONED);
-        cache.setBackups(1);
-        cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            String.class, Person.class
-        );
-
-        cfg.setCacheConfiguration(cache);
-
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
@@ -117,6 +106,54 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         return cfg;
     }
 
+    /**
+     * @return Cache configuration for non binary marshaller tests.
+     */
+    private CacheConfiguration nonBinCacheConfig() {
+        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+
+        cache.setCacheMode(PARTITIONED);
+        cache.setBackups(1);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+        cache.setIndexedTypes(
+            String.class, Person.class
+        );
+
+        return cache;
+    }
+
+    /**
+     * @return Cache configuration for binary marshaller tests.
+     */
+    final CacheConfiguration binaryCacheConfig() {
+        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+
+        cache.setCacheMode(PARTITIONED);
+        cache.setBackups(1);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        QueryEntity e = new QueryEntity();
+
+        e.setKeyType(String.class.getName());
+        e.setValueType("Person");
+
+        e.addQueryField("id", Integer.class.getName(), null);
+        e.addQueryField("age", Integer.class.getName(), null);
+        e.addQueryField("firstName", String.class.getName(), null);
+        e.addQueryField("lastName", String.class.getName(), null);
+
+        cache.setQueryEntities(Collections.singletonList(e));
+
+        return cache;
+    }
+
+    /**
+     * @return Configuration of cache to create.
+     */
+    CacheConfiguration cacheConfig() {
+        return nonBinCacheConfig();
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
@@ -132,13 +169,15 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(URL);
+
+        ignite(0).getOrCreateCache(cacheConfig());
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).clear();
-
-        assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
+        grid(0).cache(null).destroy();
 
         conn.close();
         assertTrue(conn.isClosed());
