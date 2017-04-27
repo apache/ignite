@@ -24,10 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.mem.DirectMemory;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
-import org.apache.ignite.internal.mem.OutOfMemoryException;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
@@ -105,6 +107,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Direct memory allocator. */
     private final DirectMemoryProvider directMemoryProvider;
 
+    /** Name of MemoryPolicy this PageMemory is associated with. */
+    private final MemoryPolicyConfiguration memoryPolicyCfg;
+
     /** Object to collect memory usage metrics. */
     private final MemoryMetricsImpl memMetrics;
 
@@ -137,6 +142,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      * @param directMemoryProvider Memory allocator to use.
      * @param sharedCtx Cache shared context.
      * @param pageSize Page size.
+     * @param memPlcCfg Memory Policy configuration.
      * @param memMetrics Memory Metrics.
      * @param trackAcquiredPages If {@code true} tracks number of allocated pages (for tests purpose only).
      */
@@ -145,6 +151,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         DirectMemoryProvider directMemoryProvider,
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
+        MemoryPolicyConfiguration memPlcCfg,
         MemoryMetricsImpl memMetrics,
         boolean trackAcquiredPages
     ) {
@@ -155,6 +162,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.directMemoryProvider = directMemoryProvider;
         this.trackAcquiredPages = trackAcquiredPages;
         this.memMetrics = memMetrics;
+        memoryPolicyCfg = memPlcCfg;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
@@ -252,7 +260,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         if (relPtr == INVALID_REL_PTR)
-            throw new OutOfMemoryException();
+            throw new IgniteOutOfMemoryException("Not enough memory allocated " +
+                "(consider increasing memory policy size or enabling evictions) " +
+                "[policyName=" + memoryPolicyCfg.getName() +
+                ", size=" + U.readableSize(memoryPolicyCfg.getSize(), true) + "]"
+            );
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0;
 
