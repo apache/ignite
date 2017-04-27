@@ -275,7 +275,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
      * Memory metrics can be enabled and disabled at runtime via memory metrics MX bean.
      *
-     * @param metricsEnabled Metrics enanabled flag.
+     * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.
      */
     public MemoryPolicyConfiguration setMetricsEnabled(boolean metricsEnabled) {

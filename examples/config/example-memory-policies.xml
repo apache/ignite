@@ -55,10 +55,10 @@
                         </bean>
 
                         <!--
-                            Memory region of 20 MBs in size with an eviction enabled.
+                            Memory region of 40 MBs in size with an eviction enabled.
                         -->
                         <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
-                            <property name="name" value="20MB_Region_Eviction"/>
+                            <property name="name" value="40MB_Region_Eviction"/>
                             <!-- Memory region of 20 MB initial size. -->
                             <property name="initialSize" value="#{20 * 1024 * 1024}"/>
                             <!-- Maximum size is 40 MB. -->
@@ -72,7 +72,7 @@
                             'swapFilePath' parameter.
                         -->
                         <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
-                            <property name="name" value="15MB_Region_Swapping"/>
+                            <property name="name" value="30MB_Region_Swapping"/>
                             <!-- Memory region of 15 MB initial size. -->
                             <property name="initialSize" value="#{15 * 1024 * 1024}"/>
                             <!-- Maximum size is 30 MB. -->
