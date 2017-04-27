@@ -1333,7 +1333,7 @@ public class PlatformConfigurationUtils {
         MemoryConfiguration res = new MemoryConfiguration();
 
         res.setSystemCacheInitialSize(in.readLong())
-                .setSysCacheMaxSize(in.readLong())
+                .setSystemCacheMaxSize(in.readLong())
                 .setPageSize(in.readInt())
                 .setConcurrencyLevel(in.readInt())
                 .setDefaultMemoryPolicyName(in.readString());
