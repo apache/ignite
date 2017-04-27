@@ -53,7 +53,7 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setAtomicityMode(atomicityMode());
@@ -121,7 +121,7 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
 
         final LongAdder8 cnt = new LongAdder8();
 
-        try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(null)) {
+        try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             IgniteInternalFuture<?> f = multithreadedAsync(
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {

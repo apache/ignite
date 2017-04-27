@@ -140,7 +140,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                         Set<Integer> keys = F.asSet(1, 2, 3, 4, 5);
 
                         while ((ignite = randomNode()) != null) {
-                            IgniteCache<Object, Object> cache = ignite.get1().cache(null);
+                            IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
 
                             for (int i = 0; i < 100; i++)
                                 cache.containsKey(ThreadLocalRandom.current().nextInt(100_000));
@@ -164,7 +164,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                         T2<Ignite, Integer> ignite;
 
                         while ((ignite = randomNode()) != null) {
-                            IgniteCache<Object, Object> cache = ignite.get1().cache(null);
+                            IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
 
                             for (int i = 0; i < 100; i++)
                                 cache.put(ThreadLocalRandom.current().nextInt(100_000), UUID.randomUUID());

@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestClearCache()
         {
-            _grid.GetCache<object, object>(null).Clear();
+            _grid.GetCache<object, object>("default").Clear();
         }
     }
 }

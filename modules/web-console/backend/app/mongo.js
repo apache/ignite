@@ -179,7 +179,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         },
 
         backups: Number,
-        startSize: Number,
 
         onheapCacheEnabled: Boolean,
 
@@ -390,9 +389,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             networkTimeout: Number,
             joinTimeout: Number,
             threadPriority: Number,
-            heartbeatFrequency: Number,
-            maxMissedHeartbeats: Number,
-            maxMissedClientHeartbeats: Number,
+            metricsUpdateFrequency: Number,
             topHistorySize: Number,
             listener: String,
             dataExchange: String,

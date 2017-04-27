@@ -470,7 +470,8 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      */
     queryClose(nid, queryId) {
-        return this.visorTask('queryClose', nid, queryId);
+        return this.visorTask('queryClose', nid, 'java.util.Map', 'java.util.UUID', 'java.util.Collection',
+            nid + '=' + queryId);
     }
 
     /**

@@ -258,20 +258,11 @@ object scalar extends ScalarConversions {
     }
 
     /**
-     * Gets default cache.
-     *
-     * Note that you always need to provide types when calling
-     * this function - otherwise Scala will create `Cache[Nothing, Nothing]`
-     * typed instance that cannot be used.
-     */
-    @inline def cache$[K, V]: Option[IgniteCache[K, V]] = Option(Ignition.ignite.cache[K, V](null))
-
-    /**
      * Gets named cache from default grid.
      *
      * @param cacheName Name of the cache to get.
      */
-    @inline def cache$[K, V](@Nullable cacheName: String): Option[IgniteCache[K, V]] =
+    @inline def cache$[K, V](cacheName: String): Option[IgniteCache[K, V]] =
         Option(Ignition.ignite.cache(cacheName))
 
     /**
@@ -279,7 +270,7 @@ object scalar extends ScalarConversions {
      *
      * @param cacheName Name of the cache to get.
      */
-    @inline def createCache$[K, V](@Nullable cacheName: String, cacheMode: CacheMode = CacheMode.PARTITIONED,
+    @inline def createCache$[K, V](cacheName: String, cacheMode: CacheMode = CacheMode.PARTITIONED,
         indexedTypes: Seq[Class[_]] = Seq.empty): IgniteCache[K, V] = {
         val cfg = new CacheConfiguration[K, V]()
 
@@ -295,7 +286,7 @@ object scalar extends ScalarConversions {
       *
       * @param cacheName Name of the cache to destroy.
       */
-    @inline def destroyCache$(@Nullable cacheName: String) = {
+    @inline def destroyCache$(cacheName: String) = {
         Ignition.ignite.destroyCache(cacheName)
     }
 
@@ -306,7 +297,7 @@ object scalar extends ScalarConversions {
      * @param cacheName Name of the cache to get.
      */
     @inline def cache$[K, V](@Nullable igniteInstanceName: String,
-        @Nullable cacheName: String): Option[IgniteCache[K, V]] =
+        cacheName: String): Option[IgniteCache[K, V]] =
         ignite$(igniteInstanceName) match {
             case Some(g) => Option(g.cache(cacheName))
             case None => None
@@ -320,7 +311,7 @@ object scalar extends ScalarConversions {
      * @return New instance of data streamer.
      */
     @inline def dataStreamer$[K, V](
-        @Nullable cacheName: String,
+        cacheName: String,
         bufSize: Int): IgniteDataStreamer[K, V] = {
         val dl = ignite$.dataStreamer[K, V](cacheName)
 

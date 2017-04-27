@@ -162,7 +162,6 @@ public class PlatformConfigurationUtils {
         ccfg.setRebalanceThrottle(in.readLong());
         ccfg.setRebalanceTimeout(in.readLong());
         ccfg.setSqlEscapeAll(in.readBoolean());
-        ccfg.setStartSize(in.readInt());
         ccfg.setWriteBehindBatchSize(in.readInt());
         ccfg.setWriteBehindEnabled(in.readBoolean());
         ccfg.setWriteBehindFlushFrequency(in.readLong());
@@ -493,6 +492,9 @@ public class PlatformConfigurationUtils {
             res.setIndexes(indexes);
         }
 
+        res.setKeyFieldName(in.readString());
+        res.setValueFieldName(in.readString());
+
         return res;
     }
 
@@ -557,10 +559,10 @@ public class PlatformConfigurationUtils {
             cfg.setDaemon(in.readBoolean());
         if (in.readBoolean())
             cfg.setLateAffinityAssignment(in.readBoolean());
-        if (in.readBoolean()) {
-            cfg.setClientFailureDetectionTimeout(in.readLong());
+        if (in.readBoolean())
             cfg.setFailureDetectionTimeout(in.readLong());
-        }
+        if (in.readBoolean())
+            cfg.setClientFailureDetectionTimeout(in.readLong());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -792,7 +794,6 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getRebalanceThrottle());
         writer.writeLong(ccfg.getRebalanceTimeout());
         writer.writeBoolean(ccfg.isSqlEscapeAll());
-        writer.writeInt(ccfg.getStartSize());
         writer.writeInt(ccfg.getWriteBehindBatchSize());
         writer.writeBoolean(ccfg.isWriteBehindEnabled());
         writer.writeLong(ccfg.getWriteBehindFlushFrequency());
@@ -909,6 +910,9 @@ public class PlatformConfigurationUtils {
         }
         else
             writer.writeInt(0);
+
+        writer.writeString(queryEntity.getKeyFieldName());
+        writer.writeString(queryEntity.getValueFieldName());
     }
 
     /**
@@ -971,8 +975,9 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(true);
         w.writeBoolean(cfg.isLateAffinityAssignment());
         w.writeBoolean(true);
-        w.writeLong(cfg.getClientFailureDetectionTimeout());
         w.writeLong(cfg.getFailureDetectionTimeout());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getClientFailureDetectionTimeout());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -75,12 +76,31 @@ public class VisorPartitionMap extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeIntKeyMap(out, parts);
+        if (parts != null) {
+            out.writeInt(parts.size());
+
+            for (Map.Entry<Integer, GridDhtPartitionState> e : parts.entrySet()) {
+                out.writeInt(e.getKey());
+                U.writeEnum(out, e.getValue());
+            }
+        }
+        else
+            out.writeInt(-1);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        parts = U.readIntKeyMap(in);
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            parts = null;
+        else {
+            parts = new HashMap<>(size, 1.0f);
+
+            for (int i = 0; i < size; i++)
+                parts.put(in.readInt(), GridDhtPartitionState.fromOrdinal(in.readByte()));
+        }
     }
 
     /** {@inheritDoc} */
