@@ -15,32 +15,47 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.decompositions;
+package org.apache.ignite.ml.math.util;
 
-import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.matrix.MatrixView;
 import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
 import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
- * Helper methods to support decomposition of matrix types having some functionality limited.
+ * Utility class for various matrix operations.
  */
-public abstract class DecompositionSupport implements Destroyable {
+public class MatrixUtil {
     /**
      * Create the like matrix with read-only matrices support.
      *
      * @param matrix Matrix for like.
      * @return Like matrix.
      */
-    protected Matrix like(Matrix matrix) {
+    public static Matrix like(Matrix matrix) {
         if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
         else
             return matrix.like(matrix.rowSize(), matrix.columnSize());
+    }
+
+    /**
+     * Create the identity matrix like a given matrix.
+     *
+     * @param matrix Matrix for like.
+     * @return Identity matrix.
+     */
+    public static Matrix identityLike(Matrix matrix, int n) {
+        Matrix res = like(matrix, n, n);
+        // TODO: Maybe we should introduce API for walking(and changing) matrix in
+        // a fastest possible visiting order.
+        for (int i = 0; i < n; i++)
+            res.setX(i, i, 1.0);
+        return res;
     }
 
     /**
@@ -49,7 +64,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @param matrix Matrix for like.
      * @return Like matrix.
      */
-    protected Matrix like(Matrix matrix, int rows, int cols) {
+    public static Matrix like(Matrix matrix, int rows, int cols) {
         if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapMatrix(rows, cols);
         else
@@ -63,7 +78,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @param crd Cardinality of the vector.
      * @return Like vector.
      */
-    protected Vector likeVector(Matrix matrix, int crd) {
+    public static Vector likeVector(Matrix matrix, int crd) {
         if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapVector(crd);
         else
@@ -76,7 +91,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @param matrix Matrix for like.
      * @return Like vector.
      */
-    protected Vector likeVector(Matrix matrix) {
+    public static Vector likeVector(Matrix matrix) {
         return likeVector(matrix, matrix.rowSize());
     }
 
@@ -86,7 +101,7 @@ public abstract class DecompositionSupport implements Destroyable {
      * @param matrix Matrix for copy.
      * @return Copy.
      */
-    protected Matrix copy(Matrix matrix) {
+    public static Matrix copy(Matrix matrix) {
         if (isCopyLikeSupport(matrix)) {
             DenseLocalOnHeapMatrix cp = new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
 
@@ -99,7 +114,8 @@ public abstract class DecompositionSupport implements Destroyable {
     }
 
     /** */
-    private boolean isCopyLikeSupport(Matrix matrix) {
-        return matrix instanceof RandomMatrix || matrix instanceof PivotedMatrixView || matrix instanceof CacheMatrix;
+    private static boolean isCopyLikeSupport(Matrix matrix) {
+        return matrix instanceof RandomMatrix || matrix instanceof MatrixView || matrix instanceof CacheMatrix ||
+            matrix instanceof PivotedMatrixView;
     }
 }
