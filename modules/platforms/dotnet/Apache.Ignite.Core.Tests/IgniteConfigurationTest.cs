@@ -199,7 +199,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(memCfg.PageSize, resMemCfg.PageSize);
                 Assert.AreEqual(memCfg.ConcurrencyLevel, resMemCfg.ConcurrencyLevel);
                 Assert.AreEqual(memCfg.DefaultMemoryPolicyName, resMemCfg.DefaultMemoryPolicyName);
-                Assert.AreEqual(memCfg.SystemCacheMemorySize, resMemCfg.SystemCacheMemorySize);
+                Assert.AreEqual(memCfg.SystemCacheInitialSize, resMemCfg.SystemCacheInitialSize);
+                Assert.AreEqual(memCfg.SystemCacheMaxSize, resMemCfg.SystemCacheMaxSize);
                 Assert.IsNotNull(memCfg.MemoryPolicies);
                 Assert.IsNotNull(resMemCfg.MemoryPolicies);
                 Assert.AreEqual(2, memCfg.MemoryPolicies.Count);
@@ -252,7 +253,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsNotNull(mem);
                 Assert.AreEqual("dfltPlc", mem.DefaultMemoryPolicyName);
                 Assert.AreEqual(MemoryConfiguration.DefaultPageSize, mem.PageSize);
-                Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheMemorySize, mem.SystemCacheMemorySize);
+                Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheInitialSize, mem.SystemCacheInitialSize);
+                Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheMaxSize, mem.SystemCacheMaxSize);
 
                 var plc = mem.MemoryPolicies.Single();
                 Assert.AreEqual("dfltPlc", plc.Name);
@@ -584,7 +586,8 @@ namespace Apache.Ignite.Core.Tests
                     ConcurrencyLevel = 3,
                     DefaultMemoryPolicyName = "myDefaultPlc",
                     PageSize = 2048,
-                    SystemCacheMemorySize = 13 * 1024 * 1024,
+                    SystemCacheInitialSize = 13 * 1024 * 1024,
+                    SystemCacheMaxSize = 15 * 1024 * 1024,
                     MemoryPolicies = new[]
                     {
                         new MemoryPolicyConfiguration
