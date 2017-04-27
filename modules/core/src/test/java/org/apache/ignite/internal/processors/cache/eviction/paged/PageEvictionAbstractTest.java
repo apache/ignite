@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -70,6 +71,13 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         return configuration;
     }
 
+    /**
+     * @return Near enabled flag.
+     */
+    protected boolean nearEnabled() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -102,7 +110,7 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
      * @param memoryPlcName Memory policy name.
      * @return Cache configuration.
      */
-    protected static CacheConfiguration<Object, Object> cacheConfig(
+    protected CacheConfiguration<Object, Object> cacheConfig(
         @NotNull String name,
         String memoryPlcName,
         CacheMode cacheMode,
@@ -119,6 +127,9 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
 
         if (cacheMode == CacheMode.PARTITIONED)
             cacheConfiguration.setBackups(1);
+
+        if (nearEnabled())
+            cacheConfiguration.setNearConfiguration(new NearCacheConfiguration<>());
 
         return cacheConfiguration;
     }

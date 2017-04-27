@@ -39,13 +39,13 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     private static final int COMPACT_TS_SHIFT = 8; // Enough if grid works for less than 17 years.
 
     /** Millis in day. */
-    private final static int DAY = 24 * 60 * 60 * 1000;
+    private static final int DAY = 24 * 60 * 60 * 1000;
 
     /** Page memory. */
     protected final PageMemory pageMem;
 
     /** Tracking array size. */
-    final int trackingSize;
+    protected final int trackingSize;
 
     /** Base compact timestamp. */
     private final long baseCompactTs;
@@ -161,7 +161,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             if (!cacheCtx.userCache())
                 continue;
 
-            GridCacheEntryEx entryEx = cacheCtx.cache().entryEx(dataRow.key());
+            GridCacheEntryEx entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataRow.key()) :
+                cacheCtx.cache().entryEx(dataRow.key());
 
             evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true);
         }
