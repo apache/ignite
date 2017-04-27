@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -66,6 +68,10 @@ public class JdbcStatement implements Statement {
     /** Fetch size. */
     private int fetchSize = DFLT_FETCH_SIZE;
 
+    /** Current updated items count. */
+    long updateCnt = -1;
+
+
     /**
      * Creates new statement.
      *
@@ -79,9 +85,23 @@ public class JdbcStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
+        T2<Boolean, ResultSet> res = execute0(sql);
+
+        return res.get2();
+    }
+
+    /**
+     * Internal execute query.
+     * @param sql Sql statement.
+     * @return Tuple with (isQuery flag, results set).
+     * @throws SQLException If failed.
+     */
+    private T2<Boolean, ResultSet> execute0(String sql) throws SQLException {
         ensureNotClosed();
 
         rs = null;
+
+        updateCnt = -1;
 
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty");
@@ -101,7 +121,7 @@ public class JdbcStatement implements Statement {
             else {
                 List<?> msg = JdbcUtils.unmarshal(data);
 
-                assert msg.size() == 7;
+                assert msg.size() == 8;
 
                 UUID nodeId = (UUID)msg.get(0);
                 UUID futId = (UUID)msg.get(1);
@@ -110,8 +130,9 @@ public class JdbcStatement implements Statement {
                 List<String> types = (List<String>)msg.get(4);
                 Collection<List<Object>> fields = (Collection<List<Object>>)msg.get(5);
                 boolean finished = (Boolean)msg.get(6);
+                boolean isQuery = (Boolean)msg.get(7);
 
-                return new JdbcResultSet(this, nodeId, futId, tbls, cols, types, fields, finished, fetchSize);
+                return new T2(isQuery, new JdbcResultSet(this, nodeId, futId, tbls, cols, types, fields, finished, fetchSize));
             }
         }
         catch (GridClientException e) {
@@ -123,7 +144,36 @@ public class JdbcStatement implements Statement {
     @Override public int executeUpdate(String sql) throws SQLException {
         ensureNotClosed();
 
+        rs = null;
+
+        updateCnt = -1;
+
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
+    }
+
+    /**
+     * @param rows query result.
+     * @return update counter, if found
+     * @throws SQLException if getting an update counter from result proved to be impossible.
+     */
+    private static long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+        if (F.isEmpty(rows))
+            return -1;
+
+        if (rows.size() != 1)
+            throw new SQLException("Expected fetch size of 1 for update operation");
+
+        List<?> row = rows.get(0);
+
+        if (row.size() != 1)
+            throw new SQLException("Expected row size of 1 for update operation");
+
+        Object objRes = row.get(0);
+
+        if (!(objRes instanceof Long))
+            throw new SQLException("Unexpected update result type");
+
+        return (Long)objRes;
     }
 
     /** {@inheritDoc} */
@@ -228,7 +278,11 @@ public class JdbcStatement implements Statement {
     @Override public int getUpdateCount() throws SQLException {
         ensureNotClosed();
 
-        return -1;
+        int res = (int)updateCnt;
+
+        updateCnt = -1;
+
+        return res;
     }
 
     /** {@inheritDoc} */
