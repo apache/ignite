@@ -56,20 +56,20 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * <p>
  * Here is a typical example of configuring log4j logger in Ignite configuration file:
  * <pre name="code" class="xml">
- *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.apache.ignite.logger.log4j.Log4JLogger"&gt;
- *              &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
- *          &lt;/bean>
- *      &lt;/property&gt;
+ * &lt;property name="gridLogger"&gt;
+ * &lt;bean class="org.apache.ignite.logger.log4j.Log4JLogger"&gt;
+ * &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
+ * &lt;/bean>
+ * &lt;/property&gt;
  * </pre>
  * and from your code:
  * <pre name="code" class="java">
- *      IgniteConfiguration cfg = new IgniteConfiguration();
- *      ...
- *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
- *      IgniteLogger log = new Log4JLogger(xml);
- *      ...
- *      cfg.setGridLogger(log);
+ * IgniteConfiguration cfg = new IgniteConfiguration();
+ * ...
+ * URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
+ * IgniteLogger log = new Log4JLogger(xml);
+ * ...
+ * cfg.setGridLogger(log);
  * </pre>
  *
  * Please take a look at <a target=_new href="http://logging.apache.org/log4j/1.2/index.html">Apache Log4j 1.2</a>
@@ -352,21 +352,20 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
                     if (errAppender.getThreshold() == Level.ERROR)
                         errAppender.setThreshold(Level.WARN);
                 }
-                else {
-                    // No error console appender => create console appender with.
-                    final AppenderSkeleton consoleAppender = createConsoleAppender(Level.OFF);
+                else
+                    // No error console appender => create console appender with no level limit.
+                    rootCategory.addAppender(createConsoleAppender(Level.OFF));
 
-                    consoleAppender.setThreshold(Level.INFO);
-
-                    rootCategory.addAppender(consoleAppender);
-                }
-
-                // Won't raise LogLevel if there is other loggers configured. As LogLevel can be inherited.
-                if (logLevel != null && !logLevel.isGreaterOrEqual(impl.getEffectiveLevel())) {
+                if (logLevel != null) {
                     impl.setLevel(logLevel);
 
-                    impl.warn("RootLogger logging level has been dropped by Apache Ignite.\n"+
-                    "Set lower log level or configure ConsoleAppender manually or disable ConsoleAppender automatic creation.");
+                    // Warn if LogLevel is changed and there is other logger configured that can inherits LogLevel.
+                    if (!impl.getLevel().equals(logLevel) && hasOtherLoggers())
+                        impl.warn("RootLogger logging level has been changed by Apache Ignite to " +
+                            logLevel.toString() + " level.\n" +
+                            "Please, configure ConsoleAppender manually or disable ConsoleAppender automatic creation.");
+                    else
+                        impl.info("Apache Ignite set default logging level to " + logLevel.toString());
                 }
             }
             else if (!isConfigured() && !hasOtherLoggers()) {
@@ -403,11 +402,11 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * @param maxLevel Max logging level.
      * @return New console appender.
      */
-    private AppenderSkeleton createConsoleAppender(Level maxLevel) {
+    private Appender createConsoleAppender(Level maxLevel) {
         String fmt = "[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n";
 
         // Configure output that should go to System.out
-        AppenderSkeleton app = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_OUT);
+        Appender app = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_OUT);
 
         LevelRangeFilter lvlFilter = new LevelRangeFilter();
 
@@ -569,7 +568,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     /**
      * For test purposes only.
      */
-    static void reset(){
+    static void reset() {
         inited = false;
 
         quiet0 = false;

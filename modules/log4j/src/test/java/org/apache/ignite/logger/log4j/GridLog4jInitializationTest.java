@@ -133,7 +133,7 @@ public class GridLog4jInitializationTest extends TestCase {
         if (VERBOSE)
             printLoggerResults(log);
 
-        assertEquals(Level.DEBUG, logger.getEffectiveLevel()); // LogLevel should not change.
+        assertEquals(Level.INFO, logger.getEffectiveLevel());
     }
 
     /** */
@@ -171,7 +171,7 @@ public class GridLog4jInitializationTest extends TestCase {
         if (VERBOSE)
             printLoggerResults(log);
 
-        assertEquals(Level.DEBUG, logger.getEffectiveLevel()); // LogLevel should not be raised.
+        assertEquals(Level.INFO, logger.getEffectiveLevel());
     }
 
     /** */
