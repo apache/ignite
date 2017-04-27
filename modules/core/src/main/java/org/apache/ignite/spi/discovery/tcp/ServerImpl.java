@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectStreamException;
@@ -35,8 +36,6 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.AlreadyBoundException;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayDeque;
@@ -5659,6 +5658,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     Socket sock = ch.socket();
 
+                    final SocketReader reader;
+
                     if (spi.isSslEnabled()) {
                         final BlockingSslHandler sslHnd;
 
@@ -5677,16 +5678,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                             continue;
                         }
 
-                        // Wrap raw connection into SSL.
-                        sock = new NioSslSocket(sock, sslHnd);
+                        reader = new SocketReader(sslHnd);
                     }
+                    else
+                        reader = new SocketReader(sock);
 
                     long tstamp = U.currentTimeMillis();
 
                     if (log.isDebugEnabled())
                         log.debug("Accepted incoming connection from addr: " + sock.getInetAddress());
-
-                    final SocketReader reader = new SocketReader(sock);
 
                     synchronized (mux) {
                         readers.add(reader);
@@ -5823,8 +5823,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** ID of the node served by this processor. */
         private final UUID clientNodeId;
 
-        /** Socket connected to the client. */
-        private final Socket sock;
+        /** SSL socket handler. */
+        private final BlockingSslHandler hnd;
 
         /** Current session. */
         private volatile GridNioSession ses;
@@ -5846,11 +5846,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * @param clientNodeId Client node ID.
-         * @param sock Socket.
+         * @param hnd SSL handler.
          */
-        ClientNioMessageWorker(final UUID clientNodeId, final Socket sock) {
+        ClientNioMessageWorker(final UUID clientNodeId, final BlockingSslHandler hnd) {
             this.clientNodeId = clientNodeId;
-            this.sock = sock;
+            this.hnd = hnd;
 
             msgQueue = new ArrayDeque<>();
         }
@@ -5869,15 +5869,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             meta.put(NIO_WORKER_META, this);
 
-            final SocketChannel ch = sock.getChannel();
+            final SocketChannel ch = hnd.channel();
 
             if (spi.isSslEnabled()) {
-                assert sock instanceof NioSslSocket;
 
                 // Put the engine to the meta map to allow nio server to use it:
                 GridSslMeta sslMeta = new GridSslMeta();
 
-                sslMeta.sslEngine(((NioSslSocket)sock).sslEngine);
+                sslMeta.sslEngine(hnd.sslEngine());
 
                 meta.put(GridNioSessionMetaKey.SSL_META.ordinal(), sslMeta);
             }
@@ -5918,7 +5917,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         U.warn(log, "Failed to close client session: " + e);
                     }
                     finally {
-                        U.closeQuiet(sock);
+                        U.closeQuiet(hnd.socket());
                     }
 
                     return null;
@@ -6230,7 +6229,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         final Integer res;
 
-                        final SocketAddress rmtAddr = clientMsgWrk.sock.getRemoteSocketAddress();
+                        final SocketAddress rmtAddr = clientMsgWrk.hnd.socket().getRemoteSocketAddress();
 
                         if (state == CONNECTING) {
                             if (noResAddrs.contains(rmtAddr) ||
@@ -6314,8 +6313,12 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Thread that reads messages from the socket created for incoming connections.
      */
     private class SocketReader extends IgniteSpiThread {
+
         /** Socket to read data from. */
         private final Socket sock;
+
+        /** SSL handler. */
+        private final BlockingSslHandler hnd;
 
         /** */
         private volatile UUID nodeId;
@@ -6333,6 +6336,25 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             this.sock = sock;
 
+            this.hnd = null;
+
+            setPriority(spi.threadPri);
+
+            spi.stats.onSocketReaderCreated();
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param hnd SSL handler.
+         */
+        SocketReader(BlockingSslHandler hnd) {
+            super(spi.ignite().name(), "tcp-disco-ssl-sock-reader", log);
+
+            this.sock = hnd.socket();
+
+            this.hnd = hnd;
+
             setPriority(spi.threadPri);
 
             spi.stats.onSocketReaderCreated();
@@ -6346,6 +6368,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             try {
                 InputStream in;
+                OutputStream out;
 
                 try {
                     // Set socket options.
@@ -6361,7 +6384,22 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     int rcvBufSize = sock.getReceiveBufferSize();
 
-                    in = new BufferedInputStream(sock.getInputStream(), rcvBufSize > 0 ? rcvBufSize : 8192);
+                    if (hnd != null) {
+                        in = new BufferedInputStream(hnd == null ? sock.getInputStream() : hnd.inputStream(), rcvBufSize > 0 ? rcvBufSize : 8192);
+
+                        int bufSize = sock.getSendBufferSize();
+
+                        out = bufSize > 0 ? new BufferedOutputStream(hnd.outputStream(), bufSize) :
+                            new BufferedOutputStream(hnd.outputStream());
+                    }
+                    else {
+                        in = new BufferedInputStream(sock.getInputStream(), rcvBufSize > 0 ? rcvBufSize : 8192);
+
+                        int bufSize = sock.getSendBufferSize();
+
+                        out = bufSize > 0 ? new BufferedOutputStream(sock.getOutputStream(), bufSize) :
+                            new BufferedOutputStream(sock.getOutputStream());
+                    }
 
                     byte[] buf = new byte[4];
                     int read = 0;
@@ -6423,7 +6461,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     res.clientExists(clientWorker.ping(timeoutHelper));
                             }
 
-                            spi.writeToSocket(sock, res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                            spi.writeToSocket(sock, out, res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Ignore ping request, node is stopping.");
@@ -6441,8 +6479,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
-                    boolean asyncMode = req.client();
-
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
                     if (locNodeId.equals(nodeId)) {
@@ -6455,9 +6491,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (req.client()) {
-                        ClientMessageProcessor clientProc = asyncMode
-                            ? new ClientNioMessageWorker(nodeId, sock)
-                            : new ClientMessageWorker(sock, nodeId);
+                        ClientMessageProcessor clientProc = new ClientNioMessageWorker(nodeId, hnd);
 
                         while (true) {
                             ClientMessageProcessor old = clientMsgWorkers.putIfAbsent(nodeId, clientProc);
@@ -6507,7 +6541,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         log.debug("Already have client message worker, closing connection " +
                                             "[locNodeId=" + locNodeId +
                                             ", rmtNodeId=" + nodeId +
-                                            ", workerSock=" + nioOldWrk.sock +
+                                            ", workerSock=" + nioOldWrk.hnd.socket() +
                                             ", sock=" + sock + ']');
 
                                     return;
@@ -6524,29 +6558,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         clientMsgWrk = clientProc;
                     }
 
-                    if (clientMsgWrk instanceof ClientNioMessageWorker) {
-                        final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker)clientMsgWrk;
+                    final ClientNioMessageWorker nioWrk = (ClientNioMessageWorker)clientMsgWrk;
 
-                        nioWrk.start();
+                    nioWrk.start();
 
-                        nioWrk.sendMessage(res, null);
+                    nioWrk.sendMessage(res, null);
 
-                        nioClient = true;
-
-                        return;
-                    }
-
-                    spi.writeToSocket(sock, res, spi.failureDetectionTimeoutEnabled() ?
-                        spi.failureDetectionTimeout() : spi.getSocketTimeout());
-
-                    if (log.isDebugEnabled())
-                        log.debug("Initialized connection with remote node [nodeId=" + nodeId +
-                            ", client=" + req.client() + ']');
-
-                    if (debugMode) {
-                        debugLog(msg, "Initialized connection with remote node [nodeId=" + nodeId +
-                            ", client=" + req.client() + ']');
-                    }
+                    nioClient = true;
                 }
                 catch (IOException e) {
                     if (log.isDebugEnabled())
@@ -6572,8 +6590,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     onException("Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
-
-                    return;
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
@@ -6596,268 +6612,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     else if (e.hasCause(ObjectStreamException.class) ||
                         (!sock.isClosed() && !e.hasCause(IOException.class)))
                         LT.error(log, e, "Failed to initialize connection [sock=" + sock + ']');
-
-                    return;
-                }
-
-                long sockTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
-                    spi.getSocketTimeout();
-
-                final ClientMessageWorker clientMsgWrk0 = clientMsgWrk == null ? null
-                    : (ClientMessageWorker)clientMsgWrk;
-
-                while (!isInterrupted()) {
-                    try {
-                        TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), in,
-                            U.resolveClassLoader(spi.ignite().configuration()));
-
-                        msg.senderNodeId(nodeId);
-
-                        DebugLogger debugLog = messageLogger(msg);
-
-                        if (debugLog.isDebugEnabled())
-                            debugLog.debug("Message has been received: " + msg);
-
-                        spi.stats.onMessageReceived(msg);
-
-                        if (debugMode && recordable(msg))
-                            debugLog(msg, "Message has been received: " + msg);
-
-                        if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                            continue;
-                        }
-                        else if (msg instanceof TcpDiscoveryJoinRequestMessage) {
-                            TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
-
-                            if (!req.responded()) {
-                                boolean ok = processJoinRequestMessage(req, clientMsgWrk0);
-
-                                if (clientMsgWrk0 != null && ok)
-                                    continue;
-                                else
-                                    // Direct join request - no need to handle this socket anymore.
-                                    break;
-                            }
-                        }
-                        else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
-                            if (clientMsgWrk0 != null) {
-                                TcpDiscoverySpiState state = spiStateCopy();
-
-                                if (state == CONNECTED) {
-                                    spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                                    if (clientMsgWrk0.getState() == State.NEW)
-                                        clientMsgWrk0.start();
-
-                                    msgWorker.addMessage(msg);
-
-                                    continue;
-                                }
-                                else {
-                                    spi.writeToSocket(msg, sock, RES_CONTINUE_JOIN, sockTimeout);
-
-                                    break;
-                                }
-                            }
-                        }
-                        else if (msg instanceof TcpDiscoveryDuplicateIdMessage) {
-                            // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                            boolean ignored = false;
-
-                            TcpDiscoverySpiState state = null;
-
-                            synchronized (mux) {
-                                if (spiState == CONNECTING) {
-                                    joinRes.set(msg);
-
-                                    spiState = DUPLICATE_ID;
-
-                                    mux.notifyAll();
-                                }
-                                else {
-                                    ignored = true;
-
-                                    state = spiState;
-                                }
-                            }
-
-                            if (ignored && log.isDebugEnabled())
-                                log.debug("Duplicate ID message has been ignored [msg=" + msg +
-                                    ", spiState=" + state + ']');
-
-                            continue;
-                        }
-                        else if (msg instanceof TcpDiscoveryAuthFailedMessage) {
-                            // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                            boolean ignored = false;
-
-                            TcpDiscoverySpiState state = null;
-
-                            synchronized (mux) {
-                                if (spiState == CONNECTING) {
-                                    joinRes.set(msg);
-
-                                    spiState = AUTH_FAILED;
-
-                                    mux.notifyAll();
-                                }
-                                else {
-                                    ignored = true;
-
-                                    state = spiState;
-                                }
-                            }
-
-                            if (ignored && log.isDebugEnabled())
-                                log.debug("Auth failed message has been ignored [msg=" + msg +
-                                    ", spiState=" + state + ']');
-
-                            continue;
-                        }
-                        else if (msg instanceof TcpDiscoveryCheckFailedMessage) {
-                            // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                            boolean ignored = false;
-
-                            TcpDiscoverySpiState state = null;
-
-                            synchronized (mux) {
-                                if (spiState == CONNECTING) {
-                                    joinRes.set(msg);
-
-                                    spiState = CHECK_FAILED;
-
-                                    mux.notifyAll();
-                                }
-                                else {
-                                    ignored = true;
-
-                                    state = spiState;
-                                }
-                            }
-
-                            if (ignored && log.isDebugEnabled())
-                                log.debug("Check failed message has been ignored [msg=" + msg +
-                                    ", spiState=" + state + ']');
-
-                            continue;
-                        }
-                        else if (msg instanceof TcpDiscoveryLoopbackProblemMessage) {
-                            // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                            boolean ignored = false;
-
-                            TcpDiscoverySpiState state = null;
-
-                            synchronized (mux) {
-                                if (spiState == CONNECTING) {
-                                    joinRes.set(msg);
-
-                                    spiState = LOOPBACK_PROBLEM;
-
-                                    mux.notifyAll();
-                                }
-                                else {
-                                    ignored = true;
-
-                                    state = spiState;
-                                }
-                            }
-
-                            if (ignored && log.isDebugEnabled())
-                                log.debug("Loopback problem message has been ignored [msg=" + msg +
-                                    ", spiState=" + state + ']');
-
-                            continue;
-                        }
-                        if (msg instanceof TcpDiscoveryPingResponse) {
-                            assert msg.client() : msg;
-
-                            ClientMessageProcessor clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
-
-                            if (clientWorker != null)
-                                clientWorker.pingResult(true);
-
-                            continue;
-                        }
-
-                        TcpDiscoveryClientHeartbeatMessage heartbeatMsg = null;
-
-                        if (msg instanceof TcpDiscoveryClientHeartbeatMessage)
-                            heartbeatMsg = (TcpDiscoveryClientHeartbeatMessage)msg;
-                        else
-                            msgWorker.addMessage(msg);
-
-                        // Send receipt back.
-                        if (clientMsgWrk != null) {
-                            TcpDiscoveryClientAckResponse ack = new TcpDiscoveryClientAckResponse(locNodeId, msg.id());
-
-                            ack.verify(locNodeId);
-
-                            clientMsgWrk.addMessage(ack);
-                        }
-                        else
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                        if (heartbeatMsg != null)
-                            processClientHeartbeatMessage(heartbeatMsg);
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (log.isDebugEnabled())
-                            U.error(log, "Caught exception on message read [sock=" + sock +
-                                ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
-
-                        onException("Caught exception on message read [sock=" + sock +
-                            ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
-
-                        if (isInterrupted() || sock.isClosed())
-                            return;
-
-                        if (e.hasCause(ClassNotFoundException.class))
-                            LT.warn(log, "Failed to read message due to ClassNotFoundException " +
-                                "(make sure same versions of all classes are available on all nodes) " +
-                                "[rmtNodeId=" + nodeId +
-                                ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
-
-                        // Always report marshalling errors.
-                        boolean err = e.hasCause(ObjectStreamException.class) ||
-                            (nodeAlive(nodeId) && spiStateCopy() == CONNECTED && !X.hasCause(e, IOException.class));
-
-                        if (err)
-                            LT.error(log, e, "Failed to read message [sock=" + sock + ", locNodeId=" + locNodeId +
-                                ", rmtNodeId=" + nodeId + ']');
-
-                        return;
-                    }
-                    catch (IOException e) {
-                        if (log.isDebugEnabled())
-                            U.error(log, "Caught exception on message read [sock=" + sock + ", locNodeId=" + locNodeId +
-                                ", rmtNodeId=" + nodeId + ']', e);
-
-                        if (isInterrupted() || sock.isClosed())
-                            return;
-
-                        // Always report marshalling errors (although it is strange here).
-                        boolean err = X.hasCause(e, ObjectStreamException.class) ||
-                            (nodeAlive(nodeId) && spiStateCopy() == CONNECTED);
-
-                        if (err)
-                            LT.error(log, e, "Failed to send receipt on message [sock=" + sock +
-                                ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']');
-
-                        onException("Caught exception on message read [sock=" + sock + ", locNodeId=" + locNodeId +
-                            ", rmtNodeId=" + nodeId + ']', e);
-
-                        return;
-                    }
                 }
             }
             finally {
@@ -7376,544 +7130,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         public void sock(Socket sock) {
             this.sock = sock;
-        }
-    }
-
-    /**
-     * Socket decorator that overrides {@link Socket#getInputStream()}
-     * and {@link Socket#getOutputStream()} that return custom implementations which
-     * use passed {@link SSLEngine}.
-     */
-    static class NioSslSocket extends Socket {
-        /** Genuine socket. */
-        private final Socket delegate;
-
-        /** */
-        private final SocketChannel ch;
-
-        /** */
-        private final SSLEngine sslEngine;
-
-        /** */
-        private final BlockingSslHandler hnd;
-
-        /** */
-        private volatile SslInputStream sslIn;
-
-        /** */
-        private volatile SslOutputStream sslOut;
-
-        /**
-         * @param delegate Delegate.
-         * @param hnd SSL blocking handler.
-         */
-        private NioSslSocket(final Socket delegate, final BlockingSslHandler hnd) {
-            this.delegate = delegate;
-            this.sslEngine = hnd.sslEngine();
-            this.hnd = hnd;
-
-            this.ch = delegate.getChannel();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void connect(final SocketAddress endpoint) throws IOException {
-            delegate.connect(endpoint);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void connect(final SocketAddress endpoint, final int timeout) throws IOException {
-            delegate.connect(endpoint, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void bind(final SocketAddress bindpoint) throws IOException {
-            delegate.bind(bindpoint);
-        }
-
-        /** {@inheritDoc} */
-        @Override public InetAddress getInetAddress() {
-            return delegate.getInetAddress();
-        }
-
-        /** {@inheritDoc} */
-        @Override public InetAddress getLocalAddress() {
-            return delegate.getLocalAddress();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getPort() {
-            return delegate.getPort();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getLocalPort() {
-            return delegate.getLocalPort();
-        }
-
-        /** {@inheritDoc} */
-        @Override public SocketAddress getRemoteSocketAddress() {
-            return delegate.getRemoteSocketAddress();
-        }
-
-        /** {@inheritDoc} */
-        @Override public SocketAddress getLocalSocketAddress() {
-            return delegate.getLocalSocketAddress();
-        }
-
-        /** {@inheritDoc} */
-        @Override public SocketChannel getChannel() {
-            return ch;
-        }
-
-        /** {@inheritDoc} */
-        @Override public InputStream getInputStream() throws IOException {
-            if (sslIn == null) {
-                synchronized (this) {
-                    if (sslIn == null)
-                        sslIn = new SslInputStream(delegate.getInputStream(), hnd);
-                }
-            }
-
-            return sslIn;
-        }
-
-        /** {@inheritDoc} */
-        @Override public OutputStream getOutputStream() throws IOException {
-            if (sslOut == null) {
-                synchronized (this) {
-                    if (sslOut == null)
-                        sslOut = new SslOutputStream(delegate.getOutputStream(), ch, hnd);
-                }
-            }
-
-            return sslOut;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setTcpNoDelay(final boolean on) throws SocketException {
-            delegate.setTcpNoDelay(on);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean getTcpNoDelay() throws SocketException {
-            return delegate.getTcpNoDelay();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setSoLinger(final boolean on, final int linger) throws SocketException {
-            delegate.setSoLinger(on, linger);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getSoLinger() throws SocketException {
-            return delegate.getSoLinger();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void sendUrgentData(final int data) throws IOException {
-            delegate.sendUrgentData(data);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setOOBInline(final boolean on) throws SocketException {
-            delegate.setOOBInline(on);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean getOOBInline() throws SocketException {
-            return delegate.getOOBInline();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setSoTimeout(final int timeout) throws SocketException {
-            delegate.setSoTimeout(timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getSoTimeout() throws SocketException {
-            return delegate.getSoTimeout();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setSendBufferSize(final int size) throws SocketException {
-            delegate.setSendBufferSize(size);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getSendBufferSize() throws SocketException {
-            return delegate.getSendBufferSize();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setReceiveBufferSize(final int size) throws SocketException {
-            delegate.setReceiveBufferSize(size);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getReceiveBufferSize() throws SocketException {
-            return delegate.getReceiveBufferSize();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setKeepAlive(final boolean on) throws SocketException {
-            delegate.setKeepAlive(on);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean getKeepAlive() throws SocketException {
-            return delegate.getKeepAlive();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setTrafficClass(final int tc) throws SocketException {
-            delegate.setTrafficClass(tc);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getTrafficClass() throws SocketException {
-            return delegate.getTrafficClass();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setReuseAddress(final boolean on) throws SocketException {
-            delegate.setReuseAddress(on);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean getReuseAddress() throws SocketException {
-            return delegate.getReuseAddress();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws IOException {
-            U.closeQuiet(sslIn);
-            U.closeQuiet(sslOut);
-            U.closeQuiet(ch);
-            delegate.close();
-            sslEngine.closeInbound();
-            sslEngine.closeOutbound();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void shutdownInput() throws IOException {
-            delegate.shutdownInput();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void shutdownOutput() throws IOException {
-            delegate.shutdownOutput();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(NioSslSocket.class, this);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isConnected() {
-            return delegate.isConnected();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isBound() {
-            return delegate.isBound();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isClosed() {
-            return delegate.isClosed();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isInputShutdown() {
-            return delegate.isInputShutdown();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isOutputShutdown() {
-            return delegate.isOutputShutdown();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setPerformancePreferences(final int connTime, final int latency,
-            final int bandwidth) {
-            delegate.setPerformancePreferences(connTime, latency, bandwidth);
-        }
-    }
-
-    /**
-     * Stream decorator that does data decryption read from genuine input
-     * stream.
-     */
-    private static class SslInputStream extends InputStream {
-        /** Genuine input stream. */
-        private final InputStream in;
-
-        /** */
-        private final ReadableByteChannel ch;
-
-        /** */
-        private final BlockingSslHandler sslHnd;
-
-        /** Raw data buffer. */
-        private ByteBuffer buf;
-
-        /** Decoded data buffer. */
-        private ByteBuffer decodedBuf;
-
-        /**
-         * @param in Original stream.
-         * @param sslHnd SSL handler.
-         */
-        SslInputStream(final InputStream in, final BlockingSslHandler sslHnd) {
-            this.in = in;
-            this.ch = Channels.newChannel(in); // workaround, because SocketChannel ignores timeout
-            this.sslHnd = sslHnd;
-
-            buf = ByteBuffer.allocate(32 * 1024);
-            decodedBuf = ByteBuffer.allocate(32 * 1024);
-
-            decodedBuf.flip();
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized int read() throws IOException {
-            ByteBuffer appBuf = sslHnd.applicationBuffer();
-
-            try {
-                if (appBuf.hasRemaining()) {
-                    if (!decodedBuf.hasRemaining() && decodedBuf.limit() < decodedBuf.capacity())
-                        decodedBuf.limit(decodedBuf.capacity());
-
-                    decodedBuf = expandBuffer(decodedBuf, appBuf.remaining());
-
-                    decodedBuf.put(appBuf);
-
-                    decodedBuf.flip();
-                }
-
-                if (decodedBuf.hasRemaining())
-                    return decodedBuf.get() & 0xFF;
-                else {
-                    while (true) {
-                        buf.clear();
-
-                        decodedBuf.clear();
-
-                        final int r = ch.read(buf);
-
-                        if (r < 0)
-                            return r;
-
-                        if (r > 0) {
-                            buf.flip();
-
-                            appBuf = sslHnd.decode(buf);
-
-                            decodedBuf.put(appBuf);
-
-                            decodedBuf.flip();
-
-                            if (decodedBuf.hasRemaining())
-                                return decodedBuf.get() & 0xFF;
-                        }
-                    }
-
-                }
-            } catch (IgniteCheckedException e) {
-                throw new IOException(e.getMessage(), e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public int read(final byte[] b) throws IOException {
-            return read(b, 0, b.length);
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized int read(final byte[] b, final int off, final int len) throws IOException {
-            ByteBuffer appBuf = sslHnd.applicationBuffer();
-
-            try {
-                int left = decodedBuf.remaining();
-
-                if (appBuf.hasRemaining()) {
-                    if (!decodedBuf.hasRemaining())
-                        decodedBuf.clear();
-
-                    decodedBuf = expandBuffer(decodedBuf, appBuf.remaining());
-
-                    decodedBuf.put(appBuf);
-
-                    decodedBuf.flip();
-
-                    appBuf.clear();
-
-                    left = decodedBuf.remaining();
-                }
-
-                int read = Math.min(left, len);
-
-                decodedBuf.get(b, off, read);
-
-                // Return with previously read data, because next read may block thread.
-                if (read > 0)
-                    return read;
-
-                while (read == 0) {
-                    buf.clear();
-
-                    final int r = ch.read(buf);
-
-                    if (r <= 0)
-                        return r;
-
-                    buf.flip();
-
-                    // Avoid uncontrolled buffer expansion in BlockingSSLHandler.
-                    appBuf.clear();
-                    decodedBuf.clear();
-
-                    // Will flip appBuf.
-                    appBuf = sslHnd.decode(buf);
-
-                    decodedBuf = expandBuffer(decodedBuf, appBuf.remaining());
-
-                    decodedBuf.put(appBuf);
-
-                    appBuf.clear();
-
-                    decodedBuf.flip();
-
-                    read = Math.min(decodedBuf.remaining(), len);
-
-                    decodedBuf.get(b, off, read);
-                }
-
-                return read;
-
-            }
-            catch (IOException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                throw new IOException(e.getMessage(), e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public long skip(final long n) throws IOException {
-            return in.skip(n);
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized int available() throws IOException {
-            return decodedBuf.remaining();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws IOException {
-            in.close();
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized void mark(final int readlimit) {
-            in.mark(readlimit);
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized void reset() throws IOException {
-            in.reset();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean markSupported() {
-            return in.markSupported();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(SslInputStream.class, this);
-        }
-    }
-
-    /**
-     * Stream decorator that does data encryption and writes to genuine socket
-     * channel.
-     */
-    private static class SslOutputStream extends OutputStream {
-        /** Genuine output stream. */
-        private final OutputStream out;
-
-        /** */
-        private final SocketChannel ch;
-
-        /** */
-        private final BlockingSslHandler sslHnd;
-
-        /** Output data buffer. */
-        private ByteBuffer buf;
-
-        /**
-         * @param out Delegate.
-         * @param ch Socket channel.
-         * @param sslHnd SSL handler.
-         */
-        SslOutputStream(final OutputStream out, final SocketChannel ch,
-            final BlockingSslHandler sslHnd) {
-            this.out = out;
-            this.ch = ch;
-            this.sslHnd = sslHnd;
-
-            buf = ByteBuffer.allocate(1024);
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized void write(final int b) throws IOException {
-            buf.put((byte) b);
-
-            buf.flip();
-
-            final ByteBuffer encrypted = sslHnd.encrypt(buf);
-
-            ch.write(encrypted);
-
-            buf.clear();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(final byte[] b) throws IOException {
-            write(b, 0, b.length);
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized void write(final byte[] b, final int off, final int len) throws IOException {
-            buf = expandBuffer(buf, len);
-
-            buf.put(b, off, len);
-
-            buf.flip();
-
-            final ByteBuffer encrypted = sslHnd.encrypt(buf);
-
-            ch.write(encrypted);
-
-            buf.clear();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void flush() throws IOException {
-            out.flush();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws IOException {
-            out.close();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(SslOutputStream.class, this);
         }
     }
 

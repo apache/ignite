@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.nio.ssl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
@@ -642,6 +643,23 @@ public class BlockingSslHandler {
      */
     public OutputStream outputStream() {
         return os;
+    }
+
+    /**
+     * Get socket.
+     * @return Socket.
+     */
+    public Socket socket() {
+        return ch.socket();
+    }
+
+    /**
+     * Get socket channel.
+     *
+     * @return
+     */
+    public SocketChannel channel() {
+        return ch;
     }
 
     /**
