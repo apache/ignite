@@ -110,7 +110,8 @@ public class TestUtils {
         }
     }
 
-    /** Verifies that two matrices are close (1-norm).
+    /**
+     * Verifies that two matrices are close (1-norm).
      *
      * @param msg The identifying message for the assertion error.
      * @param exp Expected matrix.
@@ -142,7 +143,8 @@ public class TestUtils {
         }
     }
 
-    /** Verifies that two matrices are equal.
+    /**
+     * Verifies that two matrices are equal.
      *
      * @param exp Expected matrix.
      * @param actual Actual matrix.
@@ -170,7 +172,8 @@ public class TestUtils {
         }
     }
 
-    /** Verifies that two double arrays are close (sup norm).
+    /**
+     * Verifies that two double arrays are close (sup norm).
      *
      * @param msg The identifying message for the assertion error.
      * @param exp Expected array.
@@ -208,7 +211,8 @@ public class TestUtils {
             Assert.fail(out.toString());
     }
 
-    /** Verifies that two float arrays are close (sup norm).
+    /**
+     * Verifies that two float arrays are close (sup norm).
      *
      * @param msg The identifying message for the assertion error.
      * @param exp Expected array.

@@ -221,7 +221,8 @@ public abstract class AbstractMultipleLinearRegression implements MultipleLinear
      *
      * @param x The {@code [n,k]} array representing the x sample.
      * @param covariance The {@code [n,n]} array representing the covariance matrix.
-     * @throws CardinalityException If the number of rows in {@code x} is not equal to the number of rows in covariance.
+     * @throws CardinalityException If the number of rows in {@code x} is not equal to the number of rows in
+     * covariance.
      * @throws NonSquareMatrixException If the covariance matrix is not square.
      */
     protected void validateCovarianceData(double[][] x, double[][] covariance) {
