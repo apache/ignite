@@ -616,7 +616,8 @@ public interface Ignite extends AutoCloseable {
     public void resetLostPartitions(Collection<String> cacheNames);
 
     /**
-     * Returns collection {@link MemoryMetrics} objects providing information about memory usage in current Ignite instance.
+     * Returns a collection of {@link MemoryMetrics} that reflects page memory usage on this Apache Ignite node
+     * instance.
      *
      * @return Collection of {@link MemoryMetrics}
      */

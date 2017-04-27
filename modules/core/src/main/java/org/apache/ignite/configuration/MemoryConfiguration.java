@@ -23,11 +23,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * A page memory configuration for an Apache Ignite node. The page memory is a manageable off-heap based memory
- * architecture that divides all continuously allocated memory regions into pages of fixed size
+ * architecture that divides all expandable memory regions into pages of fixed size
  * (see {@link MemoryConfiguration#getPageSize()}. An individual page can store one or many cache key-value entries
  * that allows reusing the memory in the most efficient way and avoid memory fragmentation issues.
  * <p>
- * By default, the page memory allocates a single continuous memory region using settings of
+ * By default, the page memory allocates a single expandable memory region using settings of
  * {@link MemoryConfiguration#createDefaultPolicyConfig()}. All the caches that will be configured in an application
  * will be mapped to this memory region by default, thus, all the cache data will reside in that memory region.
  * <p>
@@ -154,7 +154,7 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
-     * The pages memory consists of one or more continuous memory regions defined by {@link MemoryPolicyConfiguration}.
+     * The pages memory consists of one or more expandable memory regions defined by {@link MemoryPolicyConfiguration}.
      * Every memory region is split on pages of fixed size that store actual cache entries.
      *
      * @return Page size in bytes.
@@ -202,7 +202,7 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
-     * Creates a configuration for the default memory policy that will instantiate the default continuous memory region.
+     * Creates a configuration for the default memory policy that will instantiate the default memory region.
      * To override settings of the default memory policy in order to create the default memory region with different
      * parameters, create own memory policy first, pass it to
      * {@link MemoryConfiguration#setMemoryPolicies(MemoryPolicyConfiguration...)} method and change the name of the

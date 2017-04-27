@@ -163,11 +163,11 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * A path to the memory-mapped file the memory region defined by this memory policy will be mapped to. Having
+     * A path to the memory-mapped files the memory region defined by this memory policy will be mapped to. Having
      * the path set, allows relying on swapping capabilities of an underlying operating system for the memory region.
      *
-     * @return A path to the memory-mapped file or {@code null} if this feature is not used for the memory region defined
-     *         by this memory policy.
+     * @return A path to the memory-mapped files or {@code null} if this feature is not used for the memory region
+     *         defined by this memory policy.
      */
     public String getSwapFilePath() {
         return swapFilePath;
