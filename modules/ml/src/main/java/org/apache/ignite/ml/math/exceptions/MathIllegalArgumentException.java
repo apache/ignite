@@ -21,7 +21,6 @@ package org.apache.ignite.ml.math.exceptions;
  * In most cases, this class should not be instantiated directly: it should
  * serve as a base class to create all the exceptions that have the semantics
  * of the standard {@link IllegalArgumentException}.
- *
  */
 public class MathIllegalArgumentException extends MathRuntimeException {
     /** Serializable version Id. */
@@ -31,7 +30,7 @@ public class MathIllegalArgumentException extends MathRuntimeException {
      * @param format Message format string explaining the cause of the error.
      * @param args Arguments.
      */
-    public MathIllegalArgumentException(String format, Object ... args) {
+    public MathIllegalArgumentException(String format, Object... args) {
         super(String.format(format, args));
     }
 

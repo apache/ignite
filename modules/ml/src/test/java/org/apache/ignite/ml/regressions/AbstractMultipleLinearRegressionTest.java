@@ -37,7 +37,7 @@ public abstract class AbstractMultipleLinearRegressionTest {
 
     /** */
     @Before
-    public void setUp(){
+    public void setUp() {
         regression = createRegression();
     }
 
@@ -52,28 +52,28 @@ public abstract class AbstractMultipleLinearRegressionTest {
 
     /** */
     @Test
-    public void canEstimateRegressionParameters(){
+    public void canEstimateRegressionParameters() {
         double[] beta = regression.estimateRegressionParameters();
         Assert.assertEquals(getNumberOfRegressors(), beta.length);
     }
 
     /** */
     @Test
-    public void canEstimateResiduals(){
+    public void canEstimateResiduals() {
         double[] e = regression.estimateResiduals();
         Assert.assertEquals(getSampleSize(), e.length);
     }
 
     /** */
     @Test
-    public void canEstimateRegressionParametersVariance(){
+    public void canEstimateRegressionParametersVariance() {
         Matrix var = regression.estimateRegressionParametersVariance();
         Assert.assertEquals(getNumberOfRegressors(), var.rowSize());
     }
 
     /** */
     @Test
-    public void canEstimateRegressandVariance(){
+    public void canEstimateRegressandVariance() {
         if (getSampleSize() > getNumberOfRegressors()) {
             double variance = regression.estimateRegressandVariance();
             Assert.assertTrue(variance > 0.0);
@@ -120,34 +120,34 @@ public abstract class AbstractMultipleLinearRegressionTest {
     }
 
     /** */
-    @Test(expected=NullArgumentException.class)
+    @Test(expected = NullArgumentException.class)
     public void testNewSampleNullData() {
         double[] data = null;
         createRegression().newSampleData(data, 2, 3, new DenseLocalOnHeapMatrix());
     }
 
     /** */
-    @Test(expected=MathIllegalArgumentException.class)
+    @Test(expected = MathIllegalArgumentException.class)
     public void testNewSampleInvalidData() {
         double[] data = new double[] {1, 2, 3, 4};
         createRegression().newSampleData(data, 2, 3, new DenseLocalOnHeapMatrix());
     }
 
     /** */
-    @Test(expected=MathIllegalArgumentException.class)
+    @Test(expected = MathIllegalArgumentException.class)
     public void testNewSampleInsufficientData() {
         double[] data = new double[] {1, 2, 3, 4};
         createRegression().newSampleData(data, 1, 3, new DenseLocalOnHeapMatrix());
     }
 
     /** */
-    @Test(expected=NullArgumentException.class)
+    @Test(expected = NullArgumentException.class)
     public void testXSampleDataNull() {
         createRegression().newXSampleData(null);
     }
 
     /** */
-    @Test(expected=NullArgumentException.class)
+    @Test(expected = NullArgumentException.class)
     public void testYSampleDataNull() {
         createRegression().newYSampleData(null);
     }

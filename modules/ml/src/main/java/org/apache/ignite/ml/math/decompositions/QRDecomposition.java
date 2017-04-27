@@ -49,7 +49,6 @@ public class QRDecomposition implements Destroyable {
     /** */
     private double threshold;
 
-
     /**
      * @param v Value to be checked for being an ordinary double.
      */
@@ -223,16 +222,13 @@ public class QRDecomposition implements Destroyable {
      *
      * @param r R matrix.
      * @param min Singularity threshold.
-     * @param raise Whether to raise a {@link SingularMatrixException}
-     * if any element of the diagonal fails the check.
-     * @return {@code true} if any element of the diagonal is smaller
-     * or equal to {@code min}.
-     * @throws SingularMatrixException if the matrix is singular and
-     * {@code raise} is {@code true}.
+     * @param raise Whether to raise a {@link SingularMatrixException} if any element of the diagonal fails the check.
+     * @return {@code true} if any element of the diagonal is smaller or equal to {@code min}.
+     * @throws SingularMatrixException if the matrix is singular and {@code raise} is {@code true}.
      */
     private static boolean checkSingular(Matrix r,
-                                         double min,
-                                         boolean raise) {
+        double min,
+        boolean raise) {
         // TODO: Not a very fast approach for distributed matrices. would be nice if we could independently check
         // parts on different nodes for singularity and do fold with 'or'.
 
@@ -242,7 +238,7 @@ public class QRDecomposition implements Destroyable {
             if (Math.abs(d) <= min)
                 if (raise)
                     throw new SingularMatrixException("Number is too small (%f, while " +
-                            "threshold is %f). Index of diagonal element is (%d, %d)", d, min, i, i);
+                        "threshold is %f). Index of diagonal element is (%d, %d)", d, min, i, i);
                 else
                     return true;
 

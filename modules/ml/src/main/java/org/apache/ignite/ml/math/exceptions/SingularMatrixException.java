@@ -27,7 +27,7 @@ public class SingularMatrixException extends MathIllegalArgumentException {
     }
 
     /** */
-    public SingularMatrixException(String format, Object ... args) {
+    public SingularMatrixException(String format, Object... args) {
         super(format, args);
     }
 }

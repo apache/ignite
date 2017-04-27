@@ -36,9 +36,9 @@ public class TestUtils {
      * Verifies that expected and actual are within delta, or are both NaN or
      * infinities of the same sign.
      *
-     * @param exp expected value.
-     * @param actual actual value.
-     * @param delta maximum allowed delta between {@code exp} and {@code actual}.
+     * @param exp Expected value.
+     * @param actual Actual value.
+     * @param delta Maximum allowed delta between {@code exp} and {@code actual}.
      */
     public static void assertEquals(double exp, double actual, double delta) {
         Assert.assertEquals(null, exp, actual, delta);
@@ -49,16 +49,17 @@ public class TestUtils {
      * infinities of the same sign.
      */
     public static void assertEquals(String msg, double exp, double actual, double delta) {
-        // check for NaN
-        if(Double.isNaN(exp)){
+        // Check for NaN.
+        if (Double.isNaN(exp)) {
             Assert.assertTrue("" + actual + " is not NaN.",
                 Double.isNaN(actual));
-        } else
+        }
+        else
             Assert.assertEquals(msg, exp, actual, delta);
     }
 
     /**
-     * Verifies that two double arrays have equal entries, up to tolerance
+     * Verifies that two double arrays have equal entries, up to tolerance.
      */
     public static void assertEquals(double exp[], double observed[], double tolerance) {
         assertEquals("Array comparison failure", exp, observed, tolerance);
@@ -68,12 +69,11 @@ public class TestUtils {
      * Asserts that all entries of the specified vectors are equal to within a
      * positive {@code delta}.
      *
-     * @param msg the identifying message for the assertion error (can be
-     * {@code null})
-     * @param exp expected value
-     * @param actual actual value
-     * @param delta the maximum difference between the entries of the expected
-     * and actual vectors for which both entries are still considered equal
+     * @param msg The identifying message for the assertion error (can be {@code null}).
+     * @param exp Expected value.
+     * @param actual Actual value.
+     * @param delta The maximum difference between the entries of the expected and actual vectors for which both entries
+     * are still considered equal.
      */
     public static void assertEquals(final String msg,
         final double[] exp, final Vector actual, final double delta) {
@@ -90,18 +90,19 @@ public class TestUtils {
      * Asserts that all entries of the specified vectors are equal to within a
      * positive {@code delta}.
      *
-     * @param msg the identifying message for the assertion error (can be
-     * {@code null})
-     * @param exp expected value
-     * @param actual actual value
-     * @param delta the maximum difference between the entries of the expected
-     * and actual vectors for which both entries are still considered equal
+     * @param msg The identifying message for the assertion error (can be {@code null}).
+     * @param exp Expected value.
+     * @param actual Actual value.
+     * @param delta The maximum difference between the entries of the expected and actual vectors for which both entries
+     * are still considered equal.
      */
     public static void assertEquals(final String msg,
         final Vector exp, final Vector actual, final double delta) {
         final String msgAndSep = msg.equals("") ? "" : msg + ", ";
+
         Assert.assertEquals(msgAndSep + "dimension", exp.size(),
             actual.size());
+
         final int dim = exp.size();
         for (int i = 0; i < dim; i++) {
             Assert.assertEquals(msgAndSep + "entry #" + i,
@@ -109,41 +110,51 @@ public class TestUtils {
         }
     }
 
-    /** verifies that two matrices are close (1-norm) */
-    public static void assertEquals(String msg, Matrix exp, Matrix observed, double tolerance) {
+    /** Verifies that two matrices are close (1-norm).
+     *
+     * @param msg The identifying message for the assertion error.
+     * @param exp Expected matrix.
+     * @param actual Actual matrix.
+     * @param tolerance Comparison tolerance value.
+     */
+    public static void assertEquals(String msg, Matrix exp, Matrix actual, double tolerance) {
+        Assert.assertNotNull(msg + "\nObserved should not be null", actual);
 
-        Assert.assertNotNull(msg + "\nObserved should not be null",observed);
-
-        if (exp.columnSize() != observed.columnSize() ||
-                exp.rowSize() != observed.rowSize()) {
+        if (exp.columnSize() != actual.columnSize() ||
+            exp.rowSize() != actual.rowSize()) {
             String msgBuff = msg + "\nObserved has incorrect dimensions." +
-                "\nobserved is " + observed.rowSize() +
-                " x " + observed.columnSize() +
+                "\nobserved is " + actual.rowSize() +
+                " x " + actual.columnSize() +
                 "\nexpected " + exp.rowSize() +
                 " x " + exp.columnSize();
+
             Assert.fail(msgBuff);
         }
 
-        Matrix delta = exp.minus(observed);
+        Matrix delta = exp.minus(actual);
+
         if (TestUtils.maximumAbsoluteRowSum(delta) >= tolerance) {
             String msgBuff = msg + "\nExpected: " + exp +
-                "\nObserved: " + observed +
+                "\nObserved: " + actual +
                 "\nexpected - observed: " + delta;
+
             Assert.fail(msgBuff);
         }
     }
 
-    /** verifies that two matrices are equal */
-    public static void assertEquals(Matrix exp,
-                                    Matrix act) {
+    /** Verifies that two matrices are equal.
+     *
+     * @param exp Expected matrix.
+     * @param actual Actual matrix.
+     */
+    public static void assertEquals(Matrix exp, Matrix actual) {
+        Assert.assertNotNull("Observed should not be null", actual);
 
-        Assert.assertNotNull("Observed should not be null",act);
-
-        if (exp.columnSize() != act.columnSize() ||
-                exp.rowSize() != act.rowSize()) {
+        if (exp.columnSize() != actual.columnSize() ||
+            exp.rowSize() != actual.rowSize()) {
             String msgBuff = "Observed has incorrect dimensions." +
-                "\nobserved is " + act.rowSize() +
-                " x " + act.columnSize() +
+                "\nobserved is " + actual.rowSize() +
+                " x " + actual.columnSize() +
                 "\nexpected " + exp.rowSize() +
                 " x " + exp.columnSize();
             Assert.fail(msgBuff);
@@ -152,27 +163,36 @@ public class TestUtils {
         for (int i = 0; i < exp.rowSize(); ++i) {
             for (int j = 0; j < exp.columnSize(); ++j) {
                 double eij = exp.getX(i, j);
-                double aij = act.getX(i, j);
+                double aij = actual.getX(i, j);
                 // TODO: Check precision here.
                 Assert.assertEquals(eij, aij, 0.0);
             }
         }
     }
 
-    /** verifies that two arrays are close (sup norm) */
-    public static void assertEquals(String msg, double[] exp, double[] observed, double tolerance) {
+    /** Verifies that two double arrays are close (sup norm).
+     *
+     * @param msg The identifying message for the assertion error.
+     * @param exp Expected array.
+     * @param actual Actual array.
+     * @param tolerance Comparison tolerance value.
+     */
+    public static void assertEquals(String msg, double[] exp, double[] actual, double tolerance) {
         StringBuilder out = new StringBuilder(msg);
-        if (exp.length != observed.length) {
+
+        if (exp.length != actual.length) {
             out.append("\n Arrays not same length. \n");
             out.append("expected has length ");
             out.append(exp.length);
             out.append(" observed length = ");
-            out.append(observed.length);
+            out.append(actual.length);
             Assert.fail(out.toString());
         }
+
         boolean failure = false;
-        for (int i=0; i < exp.length; i++) {
-            if (!Precision.equalsIncludingNaN(exp[i], observed[i], tolerance)) {
+
+        for (int i = 0; i < exp.length; i++) {
+            if (!Precision.equalsIncludingNaN(exp[i], actual[i], tolerance)) {
                 failure = true;
                 out.append("\n Elements at index ");
                 out.append(i);
@@ -180,27 +200,37 @@ public class TestUtils {
                 out.append(" expected = ");
                 out.append(exp[i]);
                 out.append(" observed = ");
-                out.append(observed[i]);
+                out.append(actual[i]);
             }
         }
+
         if (failure)
             Assert.fail(out.toString());
     }
 
-    /** verifies that two arrays are close (sup norm) */
-    public static void assertEquals(String msg, float[] exp, float[] observed, float tolerance) {
+    /** Verifies that two float arrays are close (sup norm).
+     *
+     * @param msg The identifying message for the assertion error.
+     * @param exp Expected array.
+     * @param actual Actual array.
+     * @param tolerance Comparison tolerance value.
+     */
+    public static void assertEquals(String msg, float[] exp, float[] actual, float tolerance) {
         StringBuilder out = new StringBuilder(msg);
-        if (exp.length != observed.length) {
+
+        if (exp.length != actual.length) {
             out.append("\n Arrays not same length. \n");
             out.append("expected has length ");
             out.append(exp.length);
             out.append(" observed length = ");
-            out.append(observed.length);
+            out.append(actual.length);
             Assert.fail(out.toString());
         }
+
         boolean failure = false;
-        for (int i=0; i < exp.length; i++) {
-            if (!Precision.equalsIncludingNaN(exp[i], observed[i], tolerance)) {
+
+        for (int i = 0; i < exp.length; i++) {
+            if (!Precision.equalsIncludingNaN(exp[i], actual[i], tolerance)) {
                 failure = true;
                 out.append("\n Elements at index ");
                 out.append(i);
@@ -208,9 +238,10 @@ public class TestUtils {
                 out.append(" expected = ");
                 out.append(exp[i]);
                 out.append(" observed = ");
-                out.append(observed[i]);
+                out.append(actual[i]);
             }
         }
+
         if (failure)
             Assert.fail(out.toString());
     }
