@@ -295,8 +295,6 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
         static cacheMemory(cache, ccfg = this.cacheConfigurationBean(cache)) {
             // this._evictionPolicy(ccfg, 'evictionPolicy', cache.evictionPolicy, cacheDflts.evictionPolicy);
 
-            ccfg.intProperty('startSize');
-
             return ccfg;
         }
 
