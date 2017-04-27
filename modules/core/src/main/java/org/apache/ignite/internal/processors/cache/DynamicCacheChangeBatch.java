@@ -82,7 +82,13 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
         return exchangeActions != null && !exchangeActions.empty();
     }
 
+    ExchangeActions exchangeActions() {
+        return exchangeActions;
+    }
+
     void exchangeActions(ExchangeActions exchangeActions) {
+        assert !exchangeActions.empty() : exchangeActions;
+
         this.exchangeActions = exchangeActions;
     }
 

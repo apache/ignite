@@ -2031,13 +2031,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Callback invoked when first exchange future for dynamic cache is completed.
      *
      * @param topVer Completed topology version.
-     * @param reqs Change requests.
+     * @param exchActions Change requests.
      * @param err Error.
      */
     @SuppressWarnings("unchecked")
     public void onExchangeDone(
         AffinityTopologyVersion topVer,
-        Collection<DynamicCacheChangeRequest> reqs,
+        ExchangeActions exchActions,
         Throwable err
     ) {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
@@ -2053,48 +2053,52 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!F.isEmpty(reqs) && err == null) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                String masked = req.cacheName();
+        if (exchActions != null && err == null) {
+            for (DynamicCacheChangeRequest req : exchActions.stopRequests()) {
+                stopGateway(req);
 
-                if (req.stop()) {
-                    stopGateway(req);
+                prepareCacheStop(req);
+            }
 
-                    prepareCacheStop(req);
-                }
-                else if (req.close() && req.initiatingNodeId().equals(ctx.localNodeId())) {
-                    IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(masked);
+            for (DynamicCacheChangeRequest req : exchActions.closeRequests(ctx.localNodeId())) {
+                String cacheName = req.cacheName();
 
-                    if (proxy != null) {
-                        if (proxy.context().affinityNode()) {
-                            GridCacheAdapter<?, ?> cache = caches.get(masked);
+                IgniteCacheProxy<?, ?> proxy = jCacheProxies.remove(cacheName);
 
-                            if (cache != null)
-                                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
-                        }
-                        else {
-                            proxy.context().gate().onStopped();
+                if (proxy != null) {
+                    if (proxy.context().affinityNode()) {
+                        GridCacheAdapter<?, ?> cache = caches.get(cacheName);
 
-                            prepareCacheStop(req);
-                        }
+                        if (cache != null)
+                            jCacheProxies.put(cacheName, new IgniteCacheProxy(cache.context(), cache, null, false));
+                    }
+                    else {
+                        proxy.context().gate().onStopped();
+
+                        prepareCacheStop(req);
                     }
                 }
             }
         }
     }
 
+    void completeTemplateAddFuture(String name, IgniteUuid deploymentId) {
+        GridCacheProcessor.TemplateConfigurationFuture fut =
+            (GridCacheProcessor.TemplateConfigurationFuture)pendingTemplateFuts.get(name);
+
+        if (fut != null && fut.deploymentId().equals(deploymentId))
+            fut.onDone();
+    }
+
     /**
      * @param req Request to complete future for.
      */
-    public void completeStartFuture(DynamicCacheChangeRequest req) {
+    public void completeCacheStartFuture(DynamicCacheChangeRequest req, Exception err) {
         if (req.initiatingNodeId().equals(ctx.localNodeId())) {
             DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
 
-            assert req.deploymentId() != null || req.globalStateChange() || req.resetLostPartitions();
-            assert fut == null || req.globalStateChange() || req.resetLostPartitions();
-
             if (fut != null)
-                fut.onDone();
+                fut.onDone(null, err);
         }
     }
 
@@ -2506,8 +2510,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
             if (desc == null) {
-                log.warning("Reset lost partition will not be executed, " +
-                    "because cache with name:" + cacheName + " doesn't not exist");
+                U.warn(log, "Failed to find cache for reset lost partition request, cache does not exist: " + cacheName);
 
                 continue;
             }
@@ -2731,23 +2734,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
 
         return false;
-    }
-
-    void completeTemplateAddFuture(String name, IgniteUuid deploymentId) {
-        GridCacheProcessor.TemplateConfigurationFuture fut =
-            (GridCacheProcessor.TemplateConfigurationFuture)pendingTemplateFuts.get(name);
-
-        if (fut != null && fut.deploymentId().equals(deploymentId))
-            fut.onDone();
-    }
-
-    void completeCacheStartFuture(DynamicCacheChangeRequest req, Exception err) {
-        if (ctx.localNodeId().equals(req.initiatingNodeId())) {
-            DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
-
-            if (fut != null)
-                fut.onDone(err);
-        }
     }
 
     /**

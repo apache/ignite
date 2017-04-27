@@ -17,15 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 
@@ -90,7 +94,9 @@ class ClusterCachesInfo {
 
         boolean incMinorTopVer = false;
 
-        List<DynamicCacheDescriptor> added = null;
+        List<DynamicCacheDescriptor> addedDescs = new ArrayList<>();
+
+        final List<T2<DynamicCacheChangeRequest, AffinityTopologyVersion>> reqsToComplete = new ArrayList<>();
 
         for (DynamicCacheChangeRequest req : batch.requests()) {
             if (req.template()) {
@@ -114,10 +120,7 @@ class ClusterCachesInfo {
 
                     assert old == null;
 
-                    if (added == null)
-                        added = new ArrayList<>();
-
-                    added.add(templateDesc);
+                    addedDescs.add(templateDesc);
                 }
 
                 ctx.cache().completeTemplateAddFuture(ccfg.getName(), req.deploymentId());
@@ -128,6 +131,8 @@ class ClusterCachesInfo {
             DynamicCacheDescriptor desc = registeredCaches.get(req.cacheName());
 
             boolean needExchange = false;
+
+            AffinityTopologyVersion waitTopVer = null;
 
             if (req.start()) {
                 if (desc == null) {
@@ -164,12 +169,9 @@ class ClusterCachesInfo {
                             req.initiatingNodeId(),
                             req.nearCacheConfiguration() != null);
 
-                        if (added == null)
-                            added = new ArrayList<>();
+                        addedDescs.add(startDesc);
 
-                        added.add(startDesc);
-
-                        exchangeActions.addCacheToStart(req, desc);
+                        exchangeActions.addCacheToStart(req, startDesc);
 
                         needExchange = true;
                     }
@@ -208,15 +210,23 @@ class ClusterCachesInfo {
                     }
                 }
 
-                if (!needExchange && desc != null) {
-                    if (desc.clientCacheStartVersion() != null)
-                        req.cacheFutureTopologyVersion(desc.clientCacheStartVersion());
-                    else
-                        req.cacheFutureTopologyVersion(desc.startTopologyVersion());
+                if (!needExchange) {
+                    if (desc != null) {
+                        if (desc.clientCacheStartVersion() != null)
+                            waitTopVer = desc.clientCacheStartVersion();
+                        else
+                            waitTopVer = desc.startTopologyVersion();
+                    }
                 }
             }
-            else if (req.globalStateChange() || req.resetLostPartitions())
+            else if (req.globalStateChange())
                 needExchange = true;
+            else if (req.resetLostPartitions()) {
+                needExchange = desc != null;
+
+                if (needExchange)
+                    exchangeActions.addCacheToResetLostPartitions(req, desc);
+            }
             else {
                 assert req.stop() ^ req.close() : req;
 
@@ -230,27 +240,61 @@ class ClusterCachesInfo {
 
                         needExchange = true;
 
-                        exchangeActions.addCacheToStop(req);
+                        exchangeActions.addCacheToStop(req, desc);
                     }
                     else {
                         assert req.close() : req;
 
                         needExchange = ctx.discovery().onClientCacheClose(req.cacheName(), req.initiatingNodeId());
 
-                        if (needExchange)
-                            exchangeActions.addCacheToStop(req);
+                        if (needExchange) {
+                            exchangeActions.addCacheToStop(req, desc);
+
+                            exchangeActions.addCacheToClose(req, desc);
+                        }
                     }
                 }
             }
 
-            incMinorTopVer |= needExchange;
+            if (!needExchange) {
+                if (req.initiatingNodeId().equals(ctx.localNodeId()))
+                    reqsToComplete.add(new T2<>(req, waitTopVer));
+            }
+            else
+                incMinorTopVer = true;
         }
 
-        if (added != null) {
+        if (!F.isEmpty(addedDescs)) {
             AffinityTopologyVersion startTopVer = incMinorTopVer ? topVer.nextMinorVersion() : topVer;
 
-            for (DynamicCacheDescriptor desc : added)
+            for (DynamicCacheDescriptor desc : addedDescs)
                 desc.startTopologyVersion(startTopVer);
+        }
+
+        if (!F.isEmpty(reqsToComplete)) {
+            ctx.closure().callLocalSafe(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    for (T2<DynamicCacheChangeRequest, AffinityTopologyVersion> t :reqsToComplete) {
+                        final DynamicCacheChangeRequest req = t.get1();
+                        AffinityTopologyVersion waitTopVer = t.get2();
+
+                        IgniteInternalFuture<?> fut = waitTopVer != null ?
+                            ctx.cache().context().exchange().affinityReadyFuture(waitTopVer) : null;
+
+                        if (fut == null || fut.isDone())
+                            ctx.cache().completeCacheStartFuture(req, null);
+                        else {
+                            fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                                @Override public void apply(IgniteInternalFuture<?> fut) {
+                                    ctx.cache().completeCacheStartFuture(req, null);
+                                }
+                            });
+                        }
+                    }
+
+                    return null;
+                }
+            });
         }
 
         if (incMinorTopVer) {
