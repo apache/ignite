@@ -300,6 +300,21 @@ namespace ignite
             return binding;
         }
 
+        jobject IgniteEnvironment::GetProcessorCompute(jobject proj)
+        {
+            JniErrorInfo jniErr;
+
+            jobject res = ctx.Get()->ProcessorCompute(proc.Get(), proj, &jniErr);
+
+            IgniteError err;
+
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+            IgniteError::ThrowIfNeeded(err);
+
+            return res;
+        }
+
         void IgniteEnvironment::ProcessorReleaseStart()
         {
             if (proc.Get())

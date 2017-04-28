@@ -55,6 +55,9 @@
     <ClCompile Include="..\..\src\impl\ignite_binding_impl.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\compute\compute_impl.cpp">
+      <Filter>Code\impl\compute</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">

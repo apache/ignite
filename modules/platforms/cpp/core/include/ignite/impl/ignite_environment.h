@@ -209,6 +209,14 @@ namespace ignite
              */
             common::concurrent::SharedPointer<IgniteBindingImpl> GetBinding() const;
 
+            /**
+             * Get processor compute.
+             *
+             * @param proj Projection.
+             * @return Processor compute.
+             */
+            jobject GetProcessorCompute(jobject proj);
+
         private:
             /** Node configuration. */
             IgniteConfiguration* cfg;

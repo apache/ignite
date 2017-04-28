@@ -15,19 +15,9 @@
  * limitations under the License.
  */
 
-/**
- * @file
- * Declares ignite::impl::compute::ComputeImpl class.
- */
+#include <ignite/impl/compute/compute_impl.h>
 
-#ifndef _IGNITE_IMPL_COMPUTE_COMPUTE_IMPL
-#define _IGNITE_IMPL_COMPUTE_COMPUTE_IMPL
-
-#include <ignite/common/common.h>
-#include <ignite/common/promise.h>
-#include <ignite/impl/interop/interop_target.h>
-
-#include <ignite/ignite_error.h>
+using namespace ignite::common::concurrent;
 
 namespace ignite
 {
@@ -35,25 +25,11 @@ namespace ignite
     {
         namespace compute
         {
-            /**
-             * Compute implementation.
-             */
-            class IGNITE_IMPORT_EXPORT ComputeImpl : public interop::InteropTarget
+            ComputeImpl::ComputeImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
+                InteropTarget(env, javaRef)
             {
-            public:
-                /**
-                 * Constructor.
-                 *
-                 * @param env Environment.
-                 * @param javaRef Java object reference.
-                 */
-                ComputeImpl(common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
-
-            private:
-                IGNITE_NO_COPY_ASSIGNMENT(ComputeImpl);
-            };
+                // No-op.
+            }
         }
     }
 }
-
-#endif //_IGNITE_IMPL_COMPUTE_COMPUTE_IMPL

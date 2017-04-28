@@ -55,6 +55,11 @@ namespace ignite
         return transactions::Transactions(txImpl);
     }
 
+    compute::Compute Ignite::GetCompute()
+    {
+        return compute::Compute();
+    }
+
     IgniteBinding Ignite::GetBinding()
     {
         return impl.Get()->GetBinding();
