@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
@@ -235,8 +236,8 @@ public class DdlStatementsProcessor {
 
         res.setTableName(createTbl.tableName());
 
-        if (createTbl.columns().containsKey(IgniteH2Indexing.KEY_FIELD_NAME) ||
-            createTbl.columns().containsKey(IgniteH2Indexing.VAL_FIELD_NAME))
+        if (createTbl.columns().containsKey(QueryUtils.KEY_FIELD_NAME) ||
+            createTbl.columns().containsKey(QueryUtils.VAL_FIELD_NAME))
             throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
