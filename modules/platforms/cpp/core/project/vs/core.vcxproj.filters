@@ -210,6 +210,15 @@
     <ClInclude Include="..\..\include\ignite\impl\helpers.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\compute\compute.h">
+      <Filter>Code\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\compute\compute_impl.h">
+      <Filter>Code\impl\compute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\compute\compute_func.h">
+      <Filter>Code\compute</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
@@ -256,6 +265,12 @@
     </Filter>
     <Filter Include="Code\impl\cache\event">
       <UniqueIdentifier>{9c5e9732-755a-4553-8926-b4cf3b6abaf3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\compute">
+      <UniqueIdentifier>{f1b7ced1-0e6e-4e07-a5b6-04b076797c6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\compute">
+      <UniqueIdentifier>{ef20cfe1-cd30-429d-a241-575696df8399}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
