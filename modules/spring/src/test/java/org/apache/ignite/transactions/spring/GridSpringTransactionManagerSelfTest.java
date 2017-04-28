@@ -171,7 +171,7 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
      * @throws Exception If test failed.
      */
     public void testDoSetRollbackOnlyInExistingTransaction() throws Exception {
-        IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
+        final IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
 
         SpringTransactionManager mngr = new SpringTransactionManager();
         mngr.setIgniteInstanceName(grid().name());
