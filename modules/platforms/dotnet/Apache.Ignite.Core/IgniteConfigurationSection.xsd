@@ -684,11 +684,6 @@
                                             <xs:documentation>If true all the SQL table and field names will be escaped with double quotes like ({ "tableName"."fieldsName"}). This enforces case sensitivity for field names and also allows having special characters in table and field names.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
-                                    <xs:attribute name="sqlOnheapRowCacheSize" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access. This setting only makes sense when offheap is enabled for this cache.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
                                     <xs:attribute name="readThrough" type="xs:boolean">
                                         <xs:annotation>
                                             <xs:documentation>Whether read-through should be enabled for cache operations.</xs:documentation>
