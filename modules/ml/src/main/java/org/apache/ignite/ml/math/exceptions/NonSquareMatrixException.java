@@ -18,18 +18,16 @@
 package org.apache.ignite.ml.math.exceptions;
 
 /**
- * This exception is used to indicate error condition of matrix elements failing the positivity check.
+ * Indicates that given matrix is not a square matrix.
  */
-public class NonPositiveDefiniteMatrixException extends MathIllegalArgumentException {
+public class NonSquareMatrixException extends CardinalityException {
     /**
-     * Construct an exception.
+     * Creates new square size violation exception.
      *
-     * @param wrong Value that fails the positivity check.
-     * @param idx Row (and column) index.
-     * @param threshold Absolute positivity threshold.
+     * @param exp Expected cardinality.
+     * @param act Actual cardinality.
      */
-    public NonPositiveDefiniteMatrixException(double wrong, int idx, double threshold) {
-        super("Matrix must be positive, wrong element located on diagonal with index %d and has value %f with this threshold %f",
-            idx, wrong, threshold);
+    public NonSquareMatrixException(int exp, int act) {
+        super(exp, act);
     }
 }

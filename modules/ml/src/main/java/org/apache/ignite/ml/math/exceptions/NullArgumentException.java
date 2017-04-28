@@ -14,22 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.ml.math.exceptions;
 
 /**
- * This exception is used to indicate error condition of matrix elements failing the positivity check.
+ * This class is based on the corresponding class from Apache Common Math lib.
+ * All conditions checks that fail due to a {@code null} argument must throw
+ * this exception.
+ * This class is meant to signal a precondition violation ("null is an illegal
+ * argument").
  */
-public class NonPositiveDefiniteMatrixException extends MathIllegalArgumentException {
-    /**
-     * Construct an exception.
-     *
-     * @param wrong Value that fails the positivity check.
-     * @param idx Row (and column) index.
-     * @param threshold Absolute positivity threshold.
-     */
-    public NonPositiveDefiniteMatrixException(double wrong, int idx, double threshold) {
-        super("Matrix must be positive, wrong element located on diagonal with index %d and has value %f with this threshold %f",
-            idx, wrong, threshold);
-    }
+public class NullArgumentException extends NullPointerException {
 }
