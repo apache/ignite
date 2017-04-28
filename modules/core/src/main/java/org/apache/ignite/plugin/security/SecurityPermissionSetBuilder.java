@@ -57,6 +57,9 @@ public class SecurityPermissionSetBuilder {
     /** Task permissions.*/
     private Map<String, Collection<SecurityPermission>> taskPerms = new HashMap<>();
 
+    /** Service permissions.*/
+    private Map<String, Collection<SecurityPermission>> srvcPerms = new HashMap<>();
+
     /** System permissions.*/
     private List<SecurityPermission> sysPerms = new ArrayList<>();
 
@@ -95,6 +98,21 @@ public class SecurityPermissionSetBuilder {
         validate(toCollection("TASK_"), perms);
 
         append(taskPerms, name, toCollection(perms));
+
+        return this;
+    }
+
+    /**
+     * Append permission set form {@link org.apache.ignite.IgniteServices service} with {@code name}.
+     *
+     * @param name  String for map some service to permission set.
+     * @param perms Permissions.
+     * @return SecurityPermissionSetBuilder refer to same permission builder.
+     */
+    public SecurityPermissionSetBuilder appendServicePermissions(String name, SecurityPermission... perms) {
+        validate(toCollection("SERVICE_"), perms);
+
+        append(srvcPerms, name, toCollection(perms));
 
         return this;
     }
@@ -215,6 +233,7 @@ public class SecurityPermissionSetBuilder {
         permSet.setDefaultAllowAll(dfltAllowAll);
         permSet.setCachePermissions(unmodifiableMap(cachePerms));
         permSet.setTaskPermissions(unmodifiableMap(taskPerms));
+        permSet.setServicePermissions(unmodifiableMap(srvcPerms));
         permSet.setSystemPermissions(unmodifiableList(sysPerms));
 
         return permSet;
