@@ -25,6 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.transaction.IllegalTransactionStateException;
@@ -166,33 +167,41 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
         assertEquals(0, c.size());
     }
 
-    /** */
-    public void testParticipatingInExistingTransactions() {
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testDoSetRollbackOnlyInExistingTransaction() throws Exception {
         IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
 
         SpringTransactionManager mngr = new SpringTransactionManager();
+        mngr.setIgniteInstanceName(grid().name());
+        mngr.afterPropertiesSet();
+
+        TransactionTemplate txTmpl = new TransactionTemplate(mngr);
+
         try {
-            mngr.setIgniteInstanceName(grid().name());
-            mngr.afterPropertiesSet();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        TransactionTemplate transactionTemplate = new TransactionTemplate(mngr);
-
-        try{
-            transactionTemplate.execute(new TransactionCallback<Object>() {
-                @Override public Object doInTransaction(TransactionStatus transactionStatus) {
+            txTmpl.execute(new TransactionCallback<Object>() {
+                @Override public Object doInTransaction(TransactionStatus status) {
                     c.put(1, "1");
+
+                    Transaction tx = grid().transactions().tx();
+
+                    assertFalse(tx.isRollbackOnly());
+
                     try {
                         service.putWithError(c, 1_000);
-                    } catch (Exception ignored){
+                    }
+                    catch (Exception ignored) {
                         // No-op.
                     }
+
+                    assertTrue(tx.isRollbackOnly());
+
                     return null;
                 }
             });
-        } catch (Exception ignored){
+        }
+        catch (Exception ignored) {
             // No-op.
         }
 
