@@ -91,7 +91,6 @@
         <module>modules/flink</module>
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
-        <module>modules/hibernate-core</module>
         <module>modules/rocketmq</module>
     </modules>
 
@@ -201,6 +200,7 @@
             <modules>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
+                <module>modules/hibernate-core</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
