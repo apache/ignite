@@ -35,6 +35,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridIoMessage implements Message {
     /** */
+    public static final Integer STRIPE_DISABLED_PART = Integer.MIN_VALUE;
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Policy. */
@@ -334,7 +337,7 @@ public class GridIoMessage implements Message {
         if (msg instanceof GridCacheMessage)
             return ((GridCacheMessage)msg).partition();
         else
-            return Integer.MIN_VALUE;
+            return STRIPE_DISABLED_PART;
     }
 
     /**

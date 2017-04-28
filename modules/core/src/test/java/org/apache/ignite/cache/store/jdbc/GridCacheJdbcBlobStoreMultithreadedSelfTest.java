@@ -73,11 +73,11 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
         Ignite grid = startGrid(GRID_CNT - 2);
 
-        grid.createNearCache(null, new NearCacheConfiguration());
+        grid.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
 
         grid = startGrid(GRID_CNT - 1);
 
-        grid.cache(null);
+        grid.cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -192,7 +192,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteEx ignite = grid(rnd.nextInt(GRID_CNT));
 
-                    IgniteCache<Object, Object> cache = ignite.cache(null);
+                    IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     try (Transaction tx = ignite.transactions().txStart()) {
                         cache.put(1, "value");
@@ -249,7 +249,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
         assertEquals(GRID_CNT, Ignition.allGrids().size());
 
         for (Ignite ignite : Ignition.allGrids()) {
-            GridCacheContext cctx = ((IgniteKernal)ignite).internalCache().context();
+            GridCacheContext cctx = ((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME).context();
 
             CacheStore store = cctx.store().configuredStore();
 

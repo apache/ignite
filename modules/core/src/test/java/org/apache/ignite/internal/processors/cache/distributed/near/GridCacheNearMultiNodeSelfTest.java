@@ -106,8 +106,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setIpFinder(ipFinder);
-        spi.setMaxMissedHeartbeats(Integer.MAX_VALUE);
 
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
         cfg.setDiscoverySpi(spi);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -202,7 +202,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht();
     }
 
     /**
@@ -210,7 +210,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @return Affinity.
      */
     private Affinity<Object> affinity(int idx) {
-        return grid(idx).affinity(null);
+        return grid(idx).affinity(DEFAULT_CACHE_NAME);
     }
 
     /** @param cnt Count. */
@@ -330,11 +330,11 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             backup = grid(0);
         }
 
-        assertEquals(String.valueOf(key), backup.cache(null).get(key));
+        assertEquals(String.valueOf(key), backup.cache(DEFAULT_CACHE_NAME).get(key));
 
-        primary.cache(null).put(key, "a");
+        primary.cache(DEFAULT_CACHE_NAME).put(key, "a");
 
-        assertEquals("a", backup.cache(null).get(key));
+        assertEquals("a", backup.cache(DEFAULT_CACHE_NAME).get(key));
     }
 
     /** @throws Exception If failed. */
@@ -655,7 +655,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         String val = Integer.toString(key);
 
-        Collection<ClusterNode> affNodes = grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> affNodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
         info("Affinity for key [nodeId=" + U.nodeIds(affNodes) + ", key=" + key + ']');
 

@@ -99,7 +99,7 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
         final int pPut = P_PUT;
         final int pGet = P_PUT + P_GET;
 
-        final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {

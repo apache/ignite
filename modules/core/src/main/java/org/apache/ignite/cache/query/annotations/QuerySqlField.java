@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQuery;
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.FIELD})
+@Target({ElementType.FIELD})
 public @interface QuerySqlField {
     /**
      * Specifies whether cache should maintain an index for this field or not.

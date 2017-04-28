@@ -82,7 +82,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         cfg.setConsistentId(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setMaxMissedClientHeartbeats(1000);
+        cfg.setClientFailureDetectionTimeout(Integer.MAX_VALUE);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
@@ -785,7 +785,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
      */
     private CacheConfiguration<Integer, Integer> cacheConfiguration(int backups,
         CacheWriteSynchronizationMode writeSync) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName(TEST_CACHE);
         ccfg.setAtomicityMode(ATOMIC);

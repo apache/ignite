@@ -32,6 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -46,7 +47,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=pers@modules/clients/src/test/config/jdbc-config.xml";
 
     /** Statement. */
     private Statement stmt;
@@ -76,7 +77,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      * @param clsV Class v.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String name, Class<?> clsK, Class<?> clsV) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String name, Class<?> clsK, Class<?> clsV) {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
         cache.setName(name);

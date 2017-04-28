@@ -47,6 +47,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -115,10 +116,10 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
      * @param parts Number of partitions.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String name,
+    private CacheConfiguration cacheConfiguration(@NotNull String name,
         CacheMode cacheMode,
         int parts) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setCacheMode(cacheMode);

@@ -33,14 +33,16 @@
     <bean parent="grid.cfg">
         <property name="memoryConfiguration">
             <bean class="org.apache.ignite.configuration.MemoryConfiguration">
-                <property name="systemCacheMemorySize" value="#{40 * 1024 * 1024}"/>
+                <property name="systemCacheInitialSize" value="#{40 * 1024 * 1024}"/>
+                <property name="systemCacheMaxSize" value="#{40 * 1024 * 1024}"/>
                 <property name="defaultMemoryPolicyName" value="dfltPlc"/>
 
                 <property name="memoryPolicies">
                     <list>
                         <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
                             <property name="name" value="dfltPlc"/>
-                            <property name="size" value="#{100 * 1024 * 1024}"/>
+                            <property name="maxSize" value="#{100 * 1024 * 1024}"/>
+                            <property name="initialSize" value="#{100 * 1024 * 1024}"/>
                         </bean>
                     </list>
                 </property>

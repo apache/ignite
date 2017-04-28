@@ -40,7 +40,6 @@
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache1"/>
-                    <property name="startSize" value="10"/>
                 </bean>
             </list>
         </property>

@@ -334,7 +334,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
      * @return Cache configuration.
      */
     private CacheConfiguration<TestKey, TestValue> cacheConfiguration(CacheAtomicityMode atomicityMode, int backups) {
-        CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode);

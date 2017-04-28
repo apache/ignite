@@ -136,7 +136,7 @@ public interface EventType {
      * Built-in event type: node metrics updated.
      * <br>
      * Generated when node's metrics are updated. In most cases this callback
-     * is invoked with every heartbeat received from a node (including local node).
+     * is invoked with every metrics update received from a node (including local node).
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
