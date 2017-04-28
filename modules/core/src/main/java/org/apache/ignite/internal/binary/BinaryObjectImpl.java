@@ -281,9 +281,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
             assert arr[off] == GridBinaryMarshaller.STRING : arr[off];
 
-            int len = BinaryPrimitives.readInt(arr, ++off);
+            int strLen = BinaryUtils.doReadUnsignedVarint(arr, ++off);
 
-            String clsName = new String(arr, off + 4, len, UTF_8);
+            int len = BinaryUtils.sizeOf(strLen);
+
+            String clsName = new String(arr, off + len, strLen, UTF_8);
 
             typeId = ctx.typeId(clsName);
         }
@@ -422,9 +424,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+                int dataLen = BinaryUtils.doReadUnsignedVarint(arr, fieldPos + 1);
 
-                val = new String(arr, fieldPos + 5, dataLen, UTF_8);
+                int len = BinaryUtils.sizeOf(dataLen);
+
+                val = new String(arr, fieldPos + 1 + len, dataLen, UTF_8);
 
                 break;
             }
@@ -567,9 +571,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+                int dataLen = BinaryUtils.doReadUnsignedVarint(arr, fieldPos + 1);
 
-                totalLen = dataLen + 5;
+                totalLen = 1 + dataLen + BinaryUtils.sizeOf(dataLen);
 
                 break;
             }

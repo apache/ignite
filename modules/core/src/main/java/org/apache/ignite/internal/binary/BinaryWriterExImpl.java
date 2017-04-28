@@ -419,11 +419,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             else
                 strArr = val.getBytes(UTF_8);
 
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1);
             out.unsafeWriteByte(GridBinaryMarshaller.STRING);
-            out.unsafeWriteInt(strArr.length);
 
-            out.writeByteArray(strArr);
+            doWriteUnsignedVarint(strArr.length);
+
+            out.write(strArr, 0, strArr.length);
         }
     }
 
@@ -540,6 +541,23 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.writeIntArray(val);
         }
+    }
+
+    /**
+     * Writes integer value in varint encoding.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param val Value to write. Must be greater than zero.
+     */
+    void doWriteUnsignedVarint(int val) {
+        assert val >= 0;
+
+        while (val > 0x7f) {
+            out.writeByte((byte)((val & 0x7f) | 0x80));
+            val >>>= 7;
+        }
+
+        out.writeByte((byte)(val & 0x7F));
     }
 
     /**

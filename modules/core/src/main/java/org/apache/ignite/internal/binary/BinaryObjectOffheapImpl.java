@@ -316,8 +316,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 1);
-                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 5, dataLen);
+                int dataLen = BinaryPrimitives.readVarint(ptr, fieldPos + 1);
+
+                int len = BinaryUtils.sizeOf(dataLen);
+
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 1 + len, dataLen);
 
                 val = new String(data, UTF_8);
 

@@ -189,7 +189,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
      * @return String length.
      */
     public int readStringLength() {
-        return BinaryPrimitives.readInt(arr, pos);
+        return BinaryUtils.doReadUnsignedVarint(arr, pos);
     }
 
     /**
@@ -206,7 +206,9 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         if (flag != GridBinaryMarshaller.STRING)
             throw new BinaryObjectException("Failed to deserialize String.");
 
-        int len = readInt();
+        int len = readStringLength();
+
+        pos += BinaryUtils.sizeOf(len);
 
         String str = new String(arr, pos, len, UTF_8);
 
@@ -269,7 +271,8 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.STRING:
-                len = 4 + readStringLength();
+                len = readStringLength();
+                len += BinaryUtils.sizeOf(len);
 
                 break;
 
@@ -585,7 +588,9 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.STRING:
-                plainLazyValLen = 4 + readStringLength();
+                int len = readStringLength();
+
+                plainLazyValLen = BinaryUtils.sizeOf(len) + len;
 
                 break;
 
@@ -748,8 +753,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                     if (flag == GridBinaryMarshaller.UUID)
                         pos += 8 + 8;
-                    else if (flag == GridBinaryMarshaller.STRING)
-                        pos += 4 + readStringLength();
+                    else if (flag == GridBinaryMarshaller.STRING) {
+                        int strLen = readStringLength();
+                        pos += BinaryUtils.sizeOf(strLen);
+                        pos += strLen;
+                    }
                     else if (flag == GridBinaryMarshaller.DECIMAL) {
                         pos += 4; // scale value
                         pos += 4 + readLength();

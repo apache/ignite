@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -271,6 +272,31 @@ public abstract class BinaryPrimitives {
         long addr = ptr + off;
 
         return BIG_ENDIAN ? GridUnsafe.getIntLE(addr) : GridUnsafe.getInt(addr);
+    }
+
+    /**
+     * Reads integer value which is presented in varint encoding.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param ptr Pointer.
+     * @param off Offset.
+     * @return Value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int readVarint(long ptr, int off) throws BinaryObjectException {
+        int val = 0;
+        int n = 0;
+        int b;
+
+        while (((b = readByte(ptr, off++)) & 0x80) != 0) {
+            val |= (b & 0x7F) << n;
+            n += 7;
+
+            if (n > 35)
+                throw new BinaryObjectException("Failed to read varint, variable length is too long");
+        }
+
+        return val | (b << n);
     }
 
     /**

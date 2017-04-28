@@ -1172,6 +1172,62 @@ public class BinaryUtils {
     }
 
     /**
+     * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param in BinaryInputStream.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(BinaryInputStream in) throws BinaryObjectException {
+        int val = doReadUnsignedVarint(in.array(), in.position());
+
+        in.position(in.position() + sizeOf(val));
+
+        return val;
+    }
+
+    /**
+     * Reads from array integer value which is presented in varint encoding.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param arr Bytes array.
+     * @param off Offset.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadUnsignedVarint(byte[] arr, int off) throws BinaryObjectException {
+        int val = 0;
+        int n = 0;
+        int b;
+
+        while (((b = arr[off++]) & 0x80) != 0) {
+            val |= (b & 0x7F) << n;
+            n += 7;
+
+            if (n > 35)
+                throw new BinaryObjectException("Failed to read varint, variable length is too long");
+        }
+
+        return val | (b << n);
+    }
+
+    /**
+     * Returns the encoded size of the given unsigned integer value.
+     *
+     * @param val Value to be encoded
+     * @return Encoded size
+     */
+    public static int sizeOf(int val) {
+        int size = 1;
+
+        while (val > 0x7f)
+            val >>>= 7;
+
+        return size;
+    }
+
+    /**
      * @return Value.
      */
     public static int[] doReadIntArray(BinaryInputStream in) {
@@ -1232,7 +1288,9 @@ public class BinaryUtils {
      */
     public static String doReadString(BinaryInputStream in) {
         if (!in.hasArray()) {
-            byte[] arr = doReadByteArray(in);
+            int len = doReadUnsignedVarint(in);
+
+            byte[] arr = in.readByteArray(len);
 
             if (USE_STR_SERIALIZATION_VER_2)
                 return utf8BytesToStr(arr, 0, arr.length);
@@ -1240,7 +1298,7 @@ public class BinaryUtils {
                 return new String(arr, UTF_8);
         }
 
-        int strLen = in.readInt();
+        int strLen = doReadUnsignedVarint(in);
 
         int pos = in.position();
 
