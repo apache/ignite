@@ -1342,6 +1342,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         cctx.database().releaseHistoryForExchange();
 
+        if (err == null && realExchange) {
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal())
+                    continue;
+
+                cacheCtx.topology().onExchangeDone(cacheCtx.affinity().assignment(topologyVersion()));
+            }
+        }
+
         if (super.onDone(res, err) && realExchange) {
             exchLog.info("exchange finished [topVer=" + topologyVersion() +
                 ", time1=" + duration() +

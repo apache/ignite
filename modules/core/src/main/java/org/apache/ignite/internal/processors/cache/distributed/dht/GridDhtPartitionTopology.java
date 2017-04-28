@@ -326,4 +326,10 @@ public interface GridDhtPartitionTopology {
      * @return Set of node IDs that should reload partitions.
      */
     public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq);
+
+    /**
+     * Callback on exchange done.
+     * @param assignment New affinity assignment.
+     */
+    public void onExchangeDone(AffinityAssignment assignment);
 }

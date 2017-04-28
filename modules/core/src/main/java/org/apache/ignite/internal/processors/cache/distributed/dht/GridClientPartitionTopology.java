@@ -778,6 +778,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public void onExchangeDone(AffinityAssignment assignment) {
+        // no-op
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean detectLostPartitions(DiscoveryEvent discoEvt) {
         assert false : "detectLostPartitions should never be called on client topology";
 
