@@ -29,6 +29,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.InvalidIsolationLevelException;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Spring transaction test.
@@ -158,6 +161,39 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
         }
         catch (InvalidIsolationLevelException e) {
             assertEquals("Ignite does not support READ_UNCOMMITTED isolation level.", e.getMessage());
+        }
+
+        assertEquals(0, c.size());
+    }
+
+    /** */
+    public void testParticipatingInExistingTransactions() {
+        IgniteCache<Integer, String> c = grid().cache(CACHE_NAME);
+
+        SpringTransactionManager mngr = new SpringTransactionManager();
+        try {
+            mngr.setIgniteInstanceName(grid().name());
+            mngr.afterPropertiesSet();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(mngr);
+
+        try{
+            transactionTemplate.execute(new TransactionCallback<Object>() {
+                @Override public Object doInTransaction(TransactionStatus transactionStatus) {
+                    c.put(1, "1");
+                    try {
+                        service.putWithError(c, 1_000);
+                    } catch (Exception ignored){
+                        // No-op.
+                    }
+                    return null;
+                }
+            });
+        } catch (Exception ignored){
+            // No-op.
         }
 
         assertEquals(0, c.size());
