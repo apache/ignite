@@ -826,7 +826,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 doWriteString(val.getClass().getName());
             }
 
-            out.writeInt(val.ordinal());
+            doWriteUnsignedVarint(val.ordinal());
         }
     }
 
@@ -846,7 +846,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             doWriteString(val.className());
 
-        out.writeInt(val.enumOrdinal());
+        doWriteUnsignedVarint(val.enumOrdinal());
     }
 
     /**

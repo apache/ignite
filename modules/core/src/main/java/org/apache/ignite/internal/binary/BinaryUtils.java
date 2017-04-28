@@ -1690,7 +1690,7 @@ public class BinaryUtils {
      */
     private static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
-        return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
+        return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, doReadUnsignedVarint(in));
     }
 
     /**
@@ -1729,7 +1729,7 @@ public class BinaryUtils {
         if (!cls.isEnum())
             throw new BinaryObjectException("Class does not represent enum type: " + cls.getName());
 
-        int ord = in.readInt();
+        int ord = doReadUnsignedVarint(in);
 
         return BinaryEnumCache.get(cls, ord);
     }
