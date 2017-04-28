@@ -33,6 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -59,7 +60,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
         if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
-            ccfgs.add(cacheConfiguration(null, new AttributeFilter(getTestIgniteInstanceName(0)), false));
+            ccfgs.add(cacheConfiguration(DEFAULT_CACHE_NAME, new AttributeFilter(getTestIgniteInstanceName(0)), false));
         else if (igniteInstanceName.equals(getTestIgniteInstanceName(2)) ||
             igniteInstanceName.equals(getTestIgniteInstanceName(3)))
             ccfgs.add(cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestIgniteInstanceName(2),
@@ -86,7 +87,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(
-        @Nullable String cacheName,
+        @NotNull String cacheName,
         IgnitePredicate<ClusterNode> nodeFilter,
         boolean nearEnabled
     ) {
@@ -112,8 +113,8 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
         grid(1).createNearCache(CACHE_NAME, new NearCacheConfiguration());
 
-        grid(2).cache(null);
-        grid(3).cache(null);
+        grid(2).cache(DEFAULT_CACHE_NAME);
+        grid(3).cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +131,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForDefaultCache() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCacheNodes(null);
+        ClusterGroup prj = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
         assertNotNull(prj);
         assertEquals(3, prj.nodes().size());
@@ -160,7 +161,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForDataCaches() throws Exception {
-        ClusterGroup prj = ignite.cluster().forDataNodes(null);
+        ClusterGroup prj = ignite.cluster().forDataNodes(DEFAULT_CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 1;

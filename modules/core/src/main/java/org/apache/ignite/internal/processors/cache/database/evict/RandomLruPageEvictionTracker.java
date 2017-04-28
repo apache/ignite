@@ -14,6 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 package org.apache.ignite.internal.processors.cache.database.evict;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -24,6 +25,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -58,11 +60,11 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         MemoryPolicyConfiguration plcCfg,
         GridCacheSharedContext<?, ?> sharedCtx
     ) {
-        super(pageMem, plcCfg, sharedCtx);
+        super((PageMemoryNoStoreImpl)pageMem, plcCfg, sharedCtx);
 
         MemoryConfiguration memCfg = sharedCtx.kernalContext().config().getMemoryConfiguration();
 
-        assert plcCfg.getSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
+        assert plcCfg.getMaxSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
 
         log = sharedCtx.logger(getClass());
     }

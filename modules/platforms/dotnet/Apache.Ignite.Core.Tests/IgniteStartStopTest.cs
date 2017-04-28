@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = "config/default-config.xml",
+                SpringConfigUrl = "config\\start-test-grid1.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath()
             };
 

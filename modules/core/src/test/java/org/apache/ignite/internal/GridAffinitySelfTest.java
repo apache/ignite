@@ -49,10 +49,11 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
+
+        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         if (igniteInstanceName.endsWith("1"))
             cfg.setClientMode(true);
@@ -94,18 +95,18 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Map<ClusterNode, Collection<String>> map = g1.<String>affinity(null).mapKeysToNodes(F.asList("1"));
+        Map<ClusterNode, Collection<String>> map = g1.<String>affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(F.asList("1"));
 
         assertNotNull(map);
         assertEquals("Invalid map size: " + map.size(), 1, map.size());
         assertEquals(F.first(map.keySet()), g2.cluster().localNode());
 
-        UUID id1 = g1.affinity(null).mapKeyToNode("2").id();
+        UUID id1 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode("2").id();
 
         assertNotNull(id1);
         assertEquals(g2.cluster().localNode().id(), id1);
 
-        UUID id2 = g1.affinity(null).mapKeyToNode("3").id();
+        UUID id2 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode("3").id();
 
         assertNotNull(id2);
         assertEquals(g2.cluster().localNode().id(), id2);

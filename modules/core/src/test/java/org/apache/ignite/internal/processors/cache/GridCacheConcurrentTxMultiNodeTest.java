@@ -227,7 +227,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     String terminalId = String.valueOf(++tid);
 
                     // Server partition cache
-                    UUID mappedId = srvr1.affinity(null).mapKeyToNode(terminalId).id();
+                    UUID mappedId = srvr1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(terminalId).id();
 
                     if (!srvrId.equals(mappedId))
                         continue;
@@ -475,7 +475,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             doWork();
 
-            GridNearCacheAdapter near = (GridNearCacheAdapter)((IgniteKernal) ignite).internalCache();
+            GridNearCacheAdapter near = (GridNearCacheAdapter)((IgniteKernal) ignite).internalCache(DEFAULT_CACHE_NAME);
             GridDhtCacheAdapter dht = near.dht();
 
             long start = cntrs.get2().get();
@@ -604,7 +604,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                         if (g.name().contains("server")) {
                             GridNearCacheAdapter<AffinityKey<String>, Object> near =
                                 (GridNearCacheAdapter<AffinityKey<String>, Object>)((IgniteKernal)g).
-                                    <AffinityKey<String>, Object>internalCache();
+                                    <AffinityKey<String>, Object>internalCache(DEFAULT_CACHE_NAME);
                             GridDhtCacheAdapter<AffinityKey<String>, Object> dht = near.dht();
 
                             for (AffinityKey<String> k : keys) {
@@ -692,7 +692,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param terminalId Terminal ID.
          */
         private void put(Object o, String cacheKey, String terminalId) {
-//            CacheProjection<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
+//            CacheProjection<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(DEFAULT_CACHE_NAME);
 //
 //            AffinityKey<String> affinityKey = new AffinityKey<>(cacheKey, terminalId);
 //
@@ -711,7 +711,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private <T> Object get(String cacheKey, String terminalId) {
             Object key = new AffinityKey<>(cacheKey, terminalId);
 
-            return (T) ignite.cache(null).get(key);
+            return (T) ignite.cache(DEFAULT_CACHE_NAME).get(key);
         }
     }
 

@@ -90,7 +90,6 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     protected CacheConfiguration cache(CacheMode cacheMode, CacheAtomicityMode atomicity) throws Exception {
         CacheConfiguration cache = defaultCacheConfiguration();
 
-        cache.setName(null);
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cache.setRebalanceMode(CacheRebalanceMode.SYNC);
         cache.setCacheMode(cacheMode);
@@ -198,7 +197,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
             }
         }
         finally {
-            grid(3).destroyCache(null);
+            grid(3).destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 
@@ -233,7 +232,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
             ScanQuery<BinaryObject, BinaryObject> scanQry = new ScanQuery<>(new PersonKeyFilter(max));
 
             QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> curs = grid(GRID_CNT - 1)
-                .cache(null).withKeepBinary().query(scanQry);
+                .cache(DEFAULT_CACHE_NAME).withKeepBinary().query(scanQry);
 
             List<Cache.Entry<BinaryObject, BinaryObject>> records = curs.getAll();
 
@@ -248,8 +247,8 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
             }
         }
         finally {
-            grid(GRID_CNT - 1).cache(null).removeAll();
-            grid(GRID_CNT - 1).destroyCache(null);
+            grid(GRID_CNT - 1).cache(DEFAULT_CACHE_NAME).removeAll();
+            grid(GRID_CNT - 1).destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 

@@ -57,8 +57,6 @@ mixin table-igfs-path-mode-edit(prefix, focusId, index)
                 .settings-row
                     +number('Buffer size:', `${model}.bufferSize`, '"bufferSize"', 'true', '65536', '0', 'Read/write buffer size for IGFS stream operations in bytes')
                 .settings-row
-                    +number('Maximum space size:', `${model}.maxSpaceSize`, '"maxSpaceSize"', 'true', '0', '0', 'Maximum space available for data cache to store file system entries')
-                .settings-row
                     +number('Maximum task range length:', `${model}.maximumTaskRangeLength`, '"maximumTaskRangeLength"', 'true', '0', '0', 'Maximum default range size of a file being split during IGFS task execution')
                 .settings-row
                     +number-min-max('Management port:', `${model}.managementPort`, '"managementPort"', 'true', '11400', '0', '65535', 'Port number for management endpoint')

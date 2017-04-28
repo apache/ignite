@@ -417,6 +417,20 @@
                                                                     </xs:documentation>
                                                                 </xs:annotation>
                                                             </xs:attribute>
+                                                            <xs:attribute name="keyFieldName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        Name of the field that denotes the key.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                            <xs:attribute name="valueFieldName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        Name of the field that denotes the value.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
                                                         </xs:complexType>
                                                     </xs:element>
                                                 </xs:sequence>
@@ -565,11 +579,6 @@
                                             <xs:documentation>Write synchronization mode. This mode controls whether the main caller should wait for update on other nodes to complete or not.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
-                                    <xs:attribute name="startSize" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>Initial cache size which will be used to pre-create internal hash table after start.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
                                     <xs:attribute name="loadPreviousValue" type="xs:string">
                                         <xs:annotation>
                                             <xs:documentation>
@@ -673,11 +682,6 @@
                                     <xs:attribute name="sqlEscapeAll" type="xs:boolean">
                                         <xs:annotation>
                                             <xs:documentation>If true all the SQL table and field names will be escaped with double quotes like ({ "tableName"."fieldsName"}). This enforces case sensitivity for field names and also allows having special characters in table and field names.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="sqlOnheapRowCacheSize" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access. This setting only makes sense when offheap is enabled for this cache.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                     <xs:attribute name="readThrough" type="xs:boolean">
@@ -873,11 +877,6 @@
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="heartbeatFrequency" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>Delay between issuing of heartbeat messages. SPI sends heartbeat messages in configurable time interval to other nodes to notify them about its state.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                         <xs:attribute name="ipFinderCleanFrequency" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>IP finder clean frequency.</xs:documentation>
@@ -898,16 +897,6 @@
                                 <xs:documentation>
                                     Local port range for local host ports (value must greater than or equal to <tt>0</tt>). If provided local port LocalPort is occupied, implementation will try to increment the port number for as long as it is less than initial value plus this range.
                                 </xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maxMissedClientHeartbeats" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum heartbeats count node can miss without failing client node.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maxMissedHeartbeats" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum heartbeats count node can miss without initiating status check.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="reconnectCount" type="xs:int">
@@ -1189,7 +1178,12 @@
                                                         <xs:documentation>Page eviction mode.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
-                                                <xs:attribute name="size" type="xs:int" use="required">
+                                                <xs:attribute name="initialSize" type="xs:long">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Initial memory region size defined by this memory policy.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="maxSize" type="xs:long">
                                                     <xs:annotation>
                                                         <xs:documentation>Maximum memory region size defined by this memory policy.</xs:documentation>
                                                     </xs:annotation>
@@ -1220,9 +1214,14 @@
                                 <xs:documentation>Size of the memory page.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="systemCacheMemorySize" type="xs:int">
+                        <xs:attribute name="systemCacheInitialSize" type="xs:int">
                             <xs:annotation>
-                                <xs:documentation>Size of a memory chunk reserved for system cache needs.</xs:documentation>
+                                <xs:documentation>Initial size of a memory chunk reserved for system cache needs.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="systemCacheMaxSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum size of a memory chunk reserved for system cache needs.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -1397,6 +1396,13 @@
                 <xs:annotation>
                     <xs:documentation>
                         Failure detection timeout used by discovery and communication subsystems.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="clientFailureDetectionTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Failure detection timeout used by discovery and communication subsystems for client nodes.
                     </xs:documentation>
                 </xs:annotation>
             </xs:attribute>

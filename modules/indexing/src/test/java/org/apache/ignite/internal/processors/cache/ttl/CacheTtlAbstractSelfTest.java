@@ -73,7 +73,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode());
         ccfg.setAtomicityMode(atomicityMode());
@@ -195,7 +195,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaultTimeToLiveStreamerAdd() throws Exception {
-        try (IgniteDataStreamer<Integer, Integer> streamer = ignite(0).dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, Integer> streamer = ignite(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = 0; i < SIZE; i++)
                 streamer.addData(i, i);
         }
@@ -206,7 +206,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         checkSizeAfterLive();
 
-        try (IgniteDataStreamer<Integer, Integer> streamer = ignite(0).dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, Integer> streamer = ignite(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);
 
             for (int i = 0; i < SIZE; i++)

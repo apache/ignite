@@ -66,9 +66,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default lock timeout. </summary>
         public static readonly TimeSpan DefaultLockTimeout = TimeSpan.Zero;
 
-        /// <summary> Initial default cache size. </summary>
-        public const int DefaultStartSize = 1500000;
-
         /// <summary> Default cache size to use with eviction policy. </summary>
         public const int DefaultCacheSize = 100000;
 
@@ -110,9 +107,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary> Default timeout after which long query warning will be printed. </summary>
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
-
-        /// <summary> Default size for onheap SQL row cache size. </summary>
-        public const int DefaultSqlOnheapRowCacheSize = 10*1024;
 
         /// <summary> Default value for keep portable in store behavior .</summary>
         public const bool DefaultKeepVinaryInStore = true;
@@ -169,7 +163,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             RebalanceMode = DefaultRebalanceMode;
             RebalanceThrottle = DefaultRebalanceThrottle;
             RebalanceTimeout = DefaultRebalanceTimeout;
-            StartSize = DefaultStartSize;
             WriteBehindBatchSize = DefaultWriteBehindBatchSize;
             WriteBehindEnabled = DefaultWriteBehindEnabled;
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
@@ -231,7 +224,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             RebalanceThrottle = reader.ReadLongAsTimespan();
             RebalanceTimeout = reader.ReadLongAsTimespan();
             SqlEscapeAll = reader.ReadBoolean();
-            StartSize = reader.ReadInt();
             WriteBehindBatchSize = reader.ReadInt();
             WriteBehindEnabled = reader.ReadBoolean();
             WriteBehindFlushFrequency = reader.ReadLongAsTimespan();
@@ -289,7 +281,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteLong((long) RebalanceThrottle.TotalMilliseconds);
             writer.WriteLong((long) RebalanceTimeout.TotalMilliseconds);
             writer.WriteBoolean(SqlEscapeAll);
-            writer.WriteInt(StartSize);
             writer.WriteInt(WriteBehindBatchSize);
             writer.WriteBoolean(WriteBehindEnabled);
             writer.WriteLong((long) WriteBehindFlushFrequency.TotalMilliseconds);
@@ -387,12 +378,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultEagerTtl)]
         public bool EagerTtl { get; set; }
-
-        /// <summary>
-        /// Gets or sets initial cache size which will be used to pre-create internal hash table after start.
-        /// </summary>
-        [DefaultValue(DefaultStartSize)]
-        public int StartSize { get; set; }
 
         /// <summary>
         /// Gets or sets flag indicating whether value should be loaded from store if it is not in the cache 

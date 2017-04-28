@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.database;
 
-import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.evict.PageEvictionTracker;
@@ -29,7 +28,7 @@ public class MemoryPolicy {
     private final PageMemory pageMem;
 
     /** */
-    private final MemoryMetrics memMetrics;
+    private final MemoryMetricsImpl memMetrics;
 
     /** */
     private final MemoryPolicyConfiguration cfg;
@@ -46,7 +45,7 @@ public class MemoryPolicy {
     public MemoryPolicy(
         PageMemory pageMem,
         MemoryPolicyConfiguration cfg,
-        MemoryMetrics memMetrics,
+        MemoryMetricsImpl memMetrics,
         PageEvictionTracker evictionTracker) {
         this.pageMem = pageMem;
         this.memMetrics = memMetrics;
@@ -71,7 +70,7 @@ public class MemoryPolicy {
     /**
      * @return Memory Metrics.
      */
-    public MemoryMetrics memoryMetrics() {
+    public MemoryMetricsImpl memoryMetrics() {
         return memMetrics;
     }
 
