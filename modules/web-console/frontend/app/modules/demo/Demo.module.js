@@ -117,7 +117,7 @@ angular
         return items;
     }];
 }])
-.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMonitor) => {
+.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) => {
     const scope = $rootScope.$new();
 
     let closePromise = null;
@@ -165,7 +165,7 @@ angular
 
             return dialog.$promise
                 .then(dialog.show)
-                .then(() => Promise.race([agentMonitor.awaitAgent(), closePromise.promise]))
+                .then(() => Promise.race([agentMgr.awaitAgent(), closePromise.promise]))
                 .then(() => scope.hasAgents = true);
         }
     };

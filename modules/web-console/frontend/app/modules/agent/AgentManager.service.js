@@ -241,33 +241,33 @@ export default class IgniteAgentManager {
     }
 
     /**
-     * @param {Object} driverPath
-     * @param {Object} driverClass
-     * @param {Object} url
+     * @param {Object} jdbcDriverJar
+     * @param {Object} jdbcDriverClass
+     * @param {Object} jdbcUrl
      * @param {Object} user
      * @param {Object} password
      * @returns {Promise}
      */
-    schemas({driverPath, driverClass, url, user, password}) {
+    schemas({jdbcDriverJar, jdbcDriverClass, jdbcUrl, user, password}) {
         const info = {user, password};
 
-        return this._emit('schemaImport:schemas', {driverPath, driverClass, url, info});
+        return this._emit('schemaImport:schemas', {jdbcDriverJar, jdbcDriverClass, jdbcUrl, info});
     }
 
     /**
-     * @param {Object} driverPath
-     * @param {Object} driverClass
-     * @param {Object} url
+     * @param {Object} jdbcDriverJar
+     * @param {Object} jdbcDriverClass
+     * @param {Object} jdbcUrl
      * @param {Object} user
      * @param {Object} password
      * @param {Object} schemas
      * @param {Object} tablesOnly
      * @returns {Promise} Promise on list of tables (see org.apache.ignite.schema.parser.DbTable java class)
      */
-    tables({driverPath, driverClass, url, user, password, schemas, tablesOnly}) {
+    tables({jdbcDriverJar, jdbcDriverClass, jdbcUrl, user, password, schemas, tablesOnly}) {
         const info = {user, password};
 
-        return this._emit('schemaImport:tables', {driverPath, driverClass, url, info, schemas, tablesOnly});
+        return this._emit('schemaImport:metadata', {jdbcDriverJar, jdbcDriverClass, jdbcUrl, info, schemas, tablesOnly});
     }
 
     /**

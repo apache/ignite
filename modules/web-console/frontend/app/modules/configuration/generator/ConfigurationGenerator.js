@@ -1498,13 +1498,11 @@ export default class IgniteConfigurationGenerator {
         }, []);
 
         ccfg.stringProperty('sqlSchema')
-            .intProperty('sqlOnheapRowCacheSize')
             .intProperty('longQueryWarningTimeout')
             .arrayProperty('indexedTypes', 'indexedTypes', indexedTypes, 'java.lang.Class')
             .intProperty('queryDetailMetricsSize')
             .intProperty('queryParallelism')
             .arrayProperty('sqlFunctionClasses', 'sqlFunctionClasses', cache.sqlFunctionClasses, 'java.lang.Class')
-            .intProperty('snapshotableIndex')
             .intProperty('sqlEscapeAll');
 
         return ccfg;
@@ -1769,8 +1767,6 @@ export default class IgniteConfigurationGenerator {
             return cfg;
 
         cfg.stringProperty('name')
-            .stringProperty('name', 'dataCacheName', (name) => name + '-data')
-            .stringProperty('name', 'metaCacheName', (name) => name + '-meta')
             .enumProperty('defaultMode');
 
         return cfg;
@@ -1837,7 +1833,6 @@ export default class IgniteConfigurationGenerator {
     static igfsMisc(igfs, cfg = this.igfsConfigurationBean(igfs)) {
         cfg.intProperty('blockSize')
             .intProperty('bufferSize')
-            .intProperty('maxSpaceSize')
             .intProperty('maximumTaskRangeLength')
             .intProperty('managementPort')
             .intProperty('perNodeBatchSize')
