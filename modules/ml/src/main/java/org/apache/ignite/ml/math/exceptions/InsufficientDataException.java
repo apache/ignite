@@ -20,7 +20,6 @@ package org.apache.ignite.ml.math.exceptions;
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
  * Exception to be thrown when there is insufficient data to perform a computation.
- *
  */
 public class InsufficientDataException extends MathIllegalArgumentException {
     /** Serializable version Id. */
@@ -39,7 +38,7 @@ public class InsufficientDataException extends MathIllegalArgumentException {
     /**
      * Construct the exception.
      */
-    public InsufficientDataException(String msg, Object ... args) {
+    public InsufficientDataException(String msg, Object... args) {
         super(msg, args);
     }
 }

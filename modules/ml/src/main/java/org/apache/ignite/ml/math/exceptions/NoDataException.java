@@ -19,7 +19,6 @@ package org.apache.ignite.ml.math.exceptions;
 /**
  * This class is based on the corresponding class from Apache Common Math lib.
  * Exception to be thrown when the required data is missing.
- *
  */
 public class NoDataException extends MathIllegalArgumentException {
     /** Serializable version Id. */
@@ -34,6 +33,7 @@ public class NoDataException extends MathIllegalArgumentException {
     public NoDataException() {
         this(NO_DATA);
     }
+
     /**
      * Construct the exception with a specific message.
      *

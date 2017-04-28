@@ -37,11 +37,10 @@ public class MathArithmeticException extends MathRuntimeException {
     /**
      * Constructor with a specific message.
      *
-     * @param format Message pattern providing the specific context of
-     * the error.
+     * @param format Message pattern providing the specific context of the error.
      * @param args Arguments.
      */
-    public MathArithmeticException(String format, Object ... args) {
+    public MathArithmeticException(String format, Object... args) {
         super(format, args);
     }
 

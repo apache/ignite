@@ -123,7 +123,7 @@ public abstract class AbstractMultipleLinearRegressionTest {
 
         regression.newXSampleData(new DenseLocalOnHeapMatrix(x));
         regression.newYSampleData(new DenseLocalOnHeapVector(y));
-        
+
         Assert.assertEquals(flatX, regression.getX());
         Assert.assertEquals(flatY, regression.getY());
     }

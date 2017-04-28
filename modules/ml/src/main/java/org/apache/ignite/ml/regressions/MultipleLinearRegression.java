@@ -20,17 +20,17 @@ package org.apache.ignite.ml.regressions;
 import org.apache.ignite.ml.math.Matrix;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib. *
- * The multiple linear regression can be represented in matrix-notation.
+ * This class is based on the corresponding class from Apache Common Math lib. * The multiple linear regression can be
+ * represented in matrix-notation.
  * <pre>
  *  y=X*b+u
  * </pre>
- * where y is an <code>n-vector</code> <b>regressand</b>, X is a <code>[n,k]</code> matrix whose <code>k</code> columns are called
- * <b>regressors</b>, b is <code>k-vector</code> of <b>regression parameters</b> and <code>u</code> is an <code>n-vector</code>
- * of <b>error terms</b> or <b>residuals</b>.
- *
- * The notation is quite standard in literature,
- * cf eg <a href="http://www.econ.queensu.ca/ETM">Davidson and MacKinnon, Econometrics Theory and Methods, 2004</a>.
+ * where y is an <code>n-vector</code> <b>regressand</b>, X is a <code>[n,k]</code> matrix whose <code>k</code> columns
+ * are called <b>regressors</b>, b is <code>k-vector</code> of <b>regression parameters</b> and <code>u</code> is an
+ * <code>n-vector</code> of <b>error terms</b> or <b>residuals</b>.
+ * <p>
+ * The notation is quite standard in literature, cf eg <a href="http://www.econ.queensu.ca/ETM">Davidson and MacKinnon,
+ * Econometrics Theory and Methods, 2004</a>. </p>
  */
 public interface MultipleLinearRegression {
     /**

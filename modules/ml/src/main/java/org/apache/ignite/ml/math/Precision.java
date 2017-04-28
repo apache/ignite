@@ -63,9 +63,9 @@ public class Precision {
     /** Negative zero bits. */
     private static final long NEGATIVE_ZERO_DOUBLE_BITS = Double.doubleToRawLongBits(-0.0);
     /** Positive zero bits. */
-    private static final int POSITIVE_ZERO_FLOAT_BITS   = Float.floatToRawIntBits(+0.0f);
+    private static final int POSITIVE_ZERO_FLOAT_BITS = Float.floatToRawIntBits(+0.0f);
     /** Negative zero bits. */
-    private static final int NEGATIVE_ZERO_FLOAT_BITS   = Float.floatToRawIntBits(-0.0f);
+    private static final int NEGATIVE_ZERO_FLOAT_BITS = Float.floatToRawIntBits(-0.0f);
     /** */
     private static final String INVALID_ROUNDING_METHOD = "invalid rounding method {0}, " +
         "valid methods: {1} ({2}), {3} ({4}), {5} ({6}), {7} ({8}), {9} ({10}), {11} ({12}), {13} ({14}), {15} ({16})";
@@ -89,7 +89,8 @@ public class Precision {
     /**
      * Private constructor.
      */
-    private Precision() {}
+    private Precision() {
+    }
 
     /**
      * Compares two numbers given some amount of allowed error.
@@ -97,10 +98,9 @@ public class Precision {
      * @param x the first number
      * @param y the second number
      * @param eps the amount of error to allow when checking for equality
-     * @return <ul><li>0 if  {@link #equals(double, double, double) equals(x, y, eps)}</li>
-     *       <li>&lt; 0 if !{@link #equals(double, double, double) equals(x, y, eps)} &amp;&amp; x &lt; y</li>
-     *       <li>> 0 if !{@link #equals(double, double, double) equals(x, y, eps)} &amp;&amp; x > y or
-     *       either argument is NaN</li></ul>
+     * @return <ul><li>0 if  {@link #equals(double, double, double) equals(x, y, eps)}</li> <li>&lt; 0 if !{@link
+     * #equals(double, double, double) equals(x, y, eps)} &amp;&amp; x &lt; y</li> <li>> 0 if !{@link #equals(double,
+     * double, double) equals(x, y, eps)} &amp;&amp; x > y or either argument is NaN</li></ul>
      */
     public static int compareTo(double x, double y, double eps) {
         if (equals(x, y, eps))
@@ -121,12 +121,10 @@ public class Precision {
      *
      * @param x first value
      * @param y second value
-     * @param maxUlps {@code (maxUlps - 1)} is the number of floating point
-     * values between {@code x} and {@code y}.
-     * @return <ul><li>0 if  {@link #equals(double, double, int) equals(x, y, maxUlps)}</li>
-     *       <li>&lt; 0 if !{@link #equals(double, double, int) equals(x, y, maxUlps)} &amp;&amp; x &lt; y</li>
-     *       <li>&gt; 0 if !{@link #equals(double, double, int) equals(x, y, maxUlps)} &amp;&amp; x > y
-     *       or either argument is NaN</li></ul>
+     * @param maxUlps {@code (maxUlps - 1)} is the number of floating point values between {@code x} and {@code y}.
+     * @return <ul><li>0 if  {@link #equals(double, double, int) equals(x, y, maxUlps)}</li> <li>&lt; 0 if !{@link
+     * #equals(double, double, int) equals(x, y, maxUlps)} &amp;&amp; x &lt; y</li> <li>&gt; 0 if !{@link
+     * #equals(double, double, int) equals(x, y, maxUlps)} &amp;&amp; x > y or either argument is NaN</li></ul>
      */
     public static int compareTo(final double x, final double y, final int maxUlps) {
         if (equals(x, y, maxUlps))
@@ -138,7 +136,7 @@ public class Precision {
 
     /**
      * Returns true iff they are equal as defined by
-     * {@link #equals(float,float,int) equals(x, y, 1)}.
+     * {@link #equals(float, float, int) equals(x, y, 1)}.
      *
      * @param x first value
      * @param y second value
@@ -150,7 +148,7 @@ public class Precision {
 
     /**
      * Returns true if both arguments are NaN or they are
-     * equal as defined by {@link #equals(float,float) equals(x, y, 1)}.
+     * equal as defined by {@link #equals(float, float) equals(x, y, 1)}.
      *
      * @param x first value
      * @param y second value
@@ -183,8 +181,7 @@ public class Precision {
      * @param x first value
      * @param y second value
      * @param eps the amount of absolute error to allow.
-     * @return {@code true} if the values are equal or within range of each other,
-     * or both are NaN.
+     * @return {@code true} if the values are equal or within range of each other, or both are NaN.
      * @since 2.2
      */
     public static boolean equalsIncludingNaN(float x, float y, float eps) {
@@ -203,10 +200,9 @@ public class Precision {
      *
      * @param x first value
      * @param y second value
-     * @param maxUlps {@code (maxUlps - 1)} is the number of floating point
-     * values between {@code x} and {@code y}.
-     * @return {@code true} if there are fewer than {@code maxUlps} floating
-     * point values between {@code x} and {@code y}.
+     * @param maxUlps {@code (maxUlps - 1)} is the number of floating point values between {@code x} and {@code y}.
+     * @return {@code true} if there are fewer than {@code maxUlps} floating point values between {@code x} and {@code
+     * y}.
      * @since 2.2
      */
     public static boolean equals(final float x, final float y, final int maxUlps) {
@@ -218,15 +214,17 @@ public class Precision {
         if (((xInt ^ yInt) & SGN_MASK_FLOAT) == 0) {
             // number have same sign, there is no risk of overflow
             isEqual = Math.abs(xInt - yInt) <= maxUlps;
-        } else {
+        }
+        else {
             // number have opposite signs, take care of overflow
             final int deltaPlus;
             final int deltaMinus;
             if (xInt < yInt) {
-                deltaPlus  = yInt - POSITIVE_ZERO_FLOAT_BITS;
+                deltaPlus = yInt - POSITIVE_ZERO_FLOAT_BITS;
                 deltaMinus = xInt - NEGATIVE_ZERO_FLOAT_BITS;
-            } else {
-                deltaPlus  = xInt - POSITIVE_ZERO_FLOAT_BITS;
+            }
+            else {
+                deltaPlus = xInt - POSITIVE_ZERO_FLOAT_BITS;
                 deltaMinus = yInt - NEGATIVE_ZERO_FLOAT_BITS;
             }
 
@@ -243,14 +241,13 @@ public class Precision {
 
     /**
      * Returns true if the arguments are both NaN or if they are equal as defined
-     * by {@link #equals(float,float,int) equals(x, y, maxUlps)}.
+     * by {@link #equals(float, float, int) equals(x, y, maxUlps)}.
      *
      * @param x first value
      * @param y second value
-     * @param maxUlps {@code (maxUlps - 1)} is the number of floating point
-     * values between {@code x} and {@code y}.
-     * @return {@code true} if both arguments are NaN or if there are less than
-     * {@code maxUlps} floating point values between {@code x} and {@code y}.
+     * @param maxUlps {@code (maxUlps - 1)} is the number of floating point values between {@code x} and {@code y}.
+     * @return {@code true} if both arguments are NaN or if there are less than {@code maxUlps} floating point values
+     * between {@code x} and {@code y}.
      * @since 2.2
      */
     public static boolean equalsIncludingNaN(float x, float y, int maxUlps) {
@@ -259,7 +256,7 @@ public class Precision {
 
     /**
      * Returns true iff they are equal as defined by
-     * {@link #equals(double,double,int) equals(x, y, 1)}.
+     * {@link #equals(double, double, int) equals(x, y, 1)}.
      *
      * @param x first value
      * @param y second value
@@ -271,7 +268,7 @@ public class Precision {
 
     /**
      * Returns true if the arguments are both NaN or they are
-     * equal as defined by {@link #equals(double,double) equals(x, y, 1)}.
+     * equal as defined by {@link #equals(double, double) equals(x, y, 1)}.
      *
      * @param x first value
      * @param y second value
@@ -291,8 +288,8 @@ public class Precision {
      * @param x First value.
      * @param y Second value.
      * @param eps Amount of allowed absolute error.
-     * @return {@code true} if the values are two adjacent floating point
-     * numbers or they are within range of each other.
+     * @return {@code true} if the values are two adjacent floating point numbers or they are within range of each
+     * other.
      */
     public static boolean equals(double x, double y, double eps) {
         return equals(x, y, 1) || Math.abs(y - x) <= eps;
@@ -307,8 +304,8 @@ public class Precision {
      * @param x First value.
      * @param y Second value.
      * @param eps Amount of allowed relative error.
-     * @return {@code true} if the values are two adjacent floating point
-     * numbers or they are within range of each other.
+     * @return {@code true} if the values are two adjacent floating point numbers or they are within range of each
+     * other.
      * @since 3.1
      */
     public static boolean equalsWithRelativeTolerance(double x, double y, double eps) {
@@ -328,8 +325,7 @@ public class Precision {
      * @param x first value
      * @param y second value
      * @param eps the amount of absolute error to allow.
-     * @return {@code true} if the values are equal or within range of each other,
-     * or both are NaN.
+     * @return {@code true} if the values are equal or within range of each other, or both are NaN.
      * @since 2.2
      */
     public static boolean equalsIncludingNaN(double x, double y, double eps) {
@@ -352,10 +348,9 @@ public class Precision {
      *
      * @param x first value
      * @param y second value
-     * @param maxUlps {@code (maxUlps - 1)} is the number of floating point
-     * values between {@code x} and {@code y}.
-     * @return {@code true} if there are fewer than {@code maxUlps} floating
-     * point values between {@code x} and {@code y}.
+     * @param maxUlps {@code (maxUlps - 1)} is the number of floating point values between {@code x} and {@code y}.
+     * @return {@code true} if there are fewer than {@code maxUlps} floating point values between {@code x} and {@code
+     * y}.
      */
     public static boolean equals(final double x, final double y, final int maxUlps) {
 
@@ -366,15 +361,17 @@ public class Precision {
         if (((xInt ^ yInt) & SGN_MASK) == 0L) {
             // number have same sign, there is no risk of overflow
             isEqual = Math.abs(xInt - yInt) <= maxUlps;
-        } else {
+        }
+        else {
             // number have opposite signs, take care of overflow
             final long deltaPlus;
             final long deltaMinus;
             if (xInt < yInt) {
-                deltaPlus  = yInt - POSITIVE_ZERO_DOUBLE_BITS;
+                deltaPlus = yInt - POSITIVE_ZERO_DOUBLE_BITS;
                 deltaMinus = xInt - NEGATIVE_ZERO_DOUBLE_BITS;
-            } else {
-                deltaPlus  = xInt - POSITIVE_ZERO_DOUBLE_BITS;
+            }
+            else {
+                deltaPlus = xInt - POSITIVE_ZERO_DOUBLE_BITS;
                 deltaMinus = yInt - NEGATIVE_ZERO_DOUBLE_BITS;
             }
 
@@ -391,14 +388,13 @@ public class Precision {
 
     /**
      * Returns true if both arguments are NaN or if they are equal as defined
-     * by {@link #equals(double,double,int) equals(x, y, maxUlps)}.
+     * by {@link #equals(double, double, int) equals(x, y, maxUlps)}.
      *
      * @param x first value
      * @param y second value
-     * @param maxUlps {@code (maxUlps - 1)} is the number of floating point
-     * values between {@code x} and {@code y}.
-     * @return {@code true} if both arguments are NaN or if there are less than
-     * {@code maxUlps} floating point values between {@code x} and {@code y}.
+     * @param maxUlps {@code (maxUlps - 1)} is the number of floating point values between {@code x} and {@code y}.
+     * @return {@code true} if both arguments are NaN or if there are less than {@code maxUlps} floating point values
+     * between {@code x} and {@code y}.
      * @since 2.2
      */
     public static boolean equalsIncludingNaN(double x, double y, int maxUlps) {
@@ -429,20 +425,20 @@ public class Precision {
      * @param scale Number of digits to the right of the decimal point.
      * @param roundingMtd Rounding method as defined in {@link BigDecimal}.
      * @return the rounded value.
-     * @throws ArithmeticException if {@code roundingMethod == ROUND_UNNECESSARY}
-     * and the specified scaling operation would require rounding.
-     * @throws IllegalArgumentException if {@code roundingMethod} does not
-     * represent a valid rounding mode.
+     * @throws ArithmeticException if {@code roundingMethod == ROUND_UNNECESSARY} and the specified scaling operation
+     * would require rounding.
+     * @throws IllegalArgumentException if {@code roundingMethod} does not represent a valid rounding mode.
      * @since 1.1 (previously in {@code MathUtils}, moved as of version 3.0)
      */
     public static double round(double x, int scale, int roundingMtd) {
         try {
             final double rounded = (new BigDecimal(Double.toString(x))
-                   .setScale(scale, roundingMtd))
-                   .doubleValue();
+                .setScale(scale, roundingMtd))
+                .doubleValue();
             // MATH-1089: negative values rounded to zero should result in negative zero
             return rounded == POSITIVE_ZERO ? POSITIVE_ZERO * x : rounded;
-        } catch (NumberFormatException ex) {
+        }
+        catch (NumberFormatException ex) {
             if (Double.isInfinite(x))
                 return x;
             else
@@ -472,15 +468,15 @@ public class Precision {
      * @param scale Number of digits to the right of the decimal point.
      * @param roundingMtd Rounding method as defined in {@link BigDecimal}.
      * @return the rounded value.
-     * @since 1.1 (previously in {@code MathUtils}, moved as of version 3.0)
      * @throws MathArithmeticException if an exact operation is required but result is not exact
      * @throws MathIllegalArgumentException if {@code roundingMethod} is not a valid rounding method.
+     * @since 1.1 (previously in {@code MathUtils}, moved as of version 3.0)
      */
     public static float round(float x, int scale, int roundingMtd)
         throws MathArithmeticException, MathIllegalArgumentException {
         final float sign = Math.copySign(1f, x);
-        final float factor = (float) Math.pow(10.0f, scale) * sign;
-        return (float) roundUnscaled(x * factor, sign, roundingMtd) / factor;
+        final float factor = (float)Math.pow(10.0f, scale) * sign;
+        return (float)roundUnscaled(x * factor, sign, roundingMtd) / factor;
     }
 
     /**
@@ -499,79 +495,79 @@ public class Precision {
     private static double roundUnscaled(double unscaled, double sign, int roundingMtd)
         throws MathArithmeticException, MathIllegalArgumentException {
         switch (roundingMtd) {
-        case BigDecimal.ROUND_CEILING :
-            if (sign == -1)
+            case BigDecimal.ROUND_CEILING:
+                if (sign == -1)
+                    unscaled = Math.floor(Math.nextAfter(unscaled, Double.NEGATIVE_INFINITY));
+                else
+                    unscaled = Math.ceil(Math.nextAfter(unscaled, Double.POSITIVE_INFINITY));
+                break;
+            case BigDecimal.ROUND_DOWN:
                 unscaled = Math.floor(Math.nextAfter(unscaled, Double.NEGATIVE_INFINITY));
-            else
-                unscaled = Math.ceil(Math.nextAfter(unscaled, Double.POSITIVE_INFINITY));
-            break;
-        case BigDecimal.ROUND_DOWN :
-            unscaled = Math.floor(Math.nextAfter(unscaled, Double.NEGATIVE_INFINITY));
-            break;
-        case BigDecimal.ROUND_FLOOR :
-            if (sign == -1)
-                unscaled = Math.ceil(Math.nextAfter(unscaled, Double.POSITIVE_INFINITY));
-            else
-                unscaled = Math.floor(Math.nextAfter(unscaled, Double.NEGATIVE_INFINITY));
-            break;
-        case BigDecimal.ROUND_HALF_DOWN : {
-            unscaled = Math.nextAfter(unscaled, Double.NEGATIVE_INFINITY);
-            double fraction = unscaled - Math.floor(unscaled);
-            if (fraction > 0.5)
-                unscaled = Math.ceil(unscaled);
-            else
-                unscaled = Math.floor(unscaled);
-            break;
-        }
-        case BigDecimal.ROUND_HALF_EVEN : {
-            double fraction = unscaled - Math.floor(unscaled);
-            if (fraction > 0.5)
-                unscaled = Math.ceil(unscaled);
-            else if (fraction < 0.5)
-                unscaled = Math.floor(unscaled);
-            else {
-                // The following equality test is intentional and needed for rounding purposes
-                if (Math.floor(unscaled) / 2.0 == Math.floor(Math.floor(unscaled) / 2.0)) { // even
-                    unscaled = Math.floor(unscaled);
-                } else { // odd
+                break;
+            case BigDecimal.ROUND_FLOOR:
+                if (sign == -1)
+                    unscaled = Math.ceil(Math.nextAfter(unscaled, Double.POSITIVE_INFINITY));
+                else
+                    unscaled = Math.floor(Math.nextAfter(unscaled, Double.NEGATIVE_INFINITY));
+                break;
+            case BigDecimal.ROUND_HALF_DOWN: {
+                unscaled = Math.nextAfter(unscaled, Double.NEGATIVE_INFINITY);
+                double fraction = unscaled - Math.floor(unscaled);
+                if (fraction > 0.5)
                     unscaled = Math.ceil(unscaled);
-                }
+                else
+                    unscaled = Math.floor(unscaled);
+                break;
             }
-            break;
-        }
-        case BigDecimal.ROUND_HALF_UP : {
-            unscaled = Math.nextAfter(unscaled, Double.POSITIVE_INFINITY);
-            double fraction = unscaled - Math.floor(unscaled);
-            if (fraction >= 0.5)
-                unscaled = Math.ceil(unscaled);
-            else
-                unscaled = Math.floor(unscaled);
-            break;
-        }
-        case BigDecimal.ROUND_UNNECESSARY :
-            if (unscaled != Math.floor(unscaled))
-                throw new MathArithmeticException();
-            break;
-        case BigDecimal.ROUND_UP :
-            // do not round if the discarded fraction is equal to zero
-            if (unscaled != Math.floor(unscaled))
-                unscaled = Math.ceil(Math.nextAfter(unscaled, Double.POSITIVE_INFINITY));
-            break;
-        default :
-            throw new MathIllegalArgumentException(INVALID_ROUNDING_METHOD,
-                roundingMtd,
-                                                   "ROUND_CEILING", BigDecimal.ROUND_CEILING,
-                                                   "ROUND_DOWN", BigDecimal.ROUND_DOWN,
-                                                   "ROUND_FLOOR", BigDecimal.ROUND_FLOOR,
-                                                   "ROUND_HALF_DOWN", BigDecimal.ROUND_HALF_DOWN,
-                                                   "ROUND_HALF_EVEN", BigDecimal.ROUND_HALF_EVEN,
-                                                   "ROUND_HALF_UP", BigDecimal.ROUND_HALF_UP,
-                                                   "ROUND_UNNECESSARY", BigDecimal.ROUND_UNNECESSARY,
-                                                   "ROUND_UP", BigDecimal.ROUND_UP);
+            case BigDecimal.ROUND_HALF_EVEN: {
+                double fraction = unscaled - Math.floor(unscaled);
+                if (fraction > 0.5)
+                    unscaled = Math.ceil(unscaled);
+                else if (fraction < 0.5)
+                    unscaled = Math.floor(unscaled);
+                else {
+                    // The following equality test is intentional and needed for rounding purposes
+                    if (Math.floor(unscaled) / 2.0 == Math.floor(Math.floor(unscaled) / 2.0)) { // even
+                        unscaled = Math.floor(unscaled);
+                    }
+                    else { // odd
+                        unscaled = Math.ceil(unscaled);
+                    }
+                }
+                break;
+            }
+            case BigDecimal.ROUND_HALF_UP: {
+                unscaled = Math.nextAfter(unscaled, Double.POSITIVE_INFINITY);
+                double fraction = unscaled - Math.floor(unscaled);
+                if (fraction >= 0.5)
+                    unscaled = Math.ceil(unscaled);
+                else
+                    unscaled = Math.floor(unscaled);
+                break;
+            }
+            case BigDecimal.ROUND_UNNECESSARY:
+                if (unscaled != Math.floor(unscaled))
+                    throw new MathArithmeticException();
+                break;
+            case BigDecimal.ROUND_UP:
+                // do not round if the discarded fraction is equal to zero
+                if (unscaled != Math.floor(unscaled))
+                    unscaled = Math.ceil(Math.nextAfter(unscaled, Double.POSITIVE_INFINITY));
+                break;
+            default:
+                throw new MathIllegalArgumentException(INVALID_ROUNDING_METHOD,
+                    roundingMtd,
+                    "ROUND_CEILING", BigDecimal.ROUND_CEILING,
+                    "ROUND_DOWN", BigDecimal.ROUND_DOWN,
+                    "ROUND_FLOOR", BigDecimal.ROUND_FLOOR,
+                    "ROUND_HALF_DOWN", BigDecimal.ROUND_HALF_DOWN,
+                    "ROUND_HALF_EVEN", BigDecimal.ROUND_HALF_EVEN,
+                    "ROUND_HALF_UP", BigDecimal.ROUND_HALF_UP,
+                    "ROUND_UNNECESSARY", BigDecimal.ROUND_UNNECESSARY,
+                    "ROUND_UP", BigDecimal.ROUND_UP);
         }
         return unscaled;
     }
-
 
     /**
      * Computes a number {@code delta} close to {@code originalDelta} with
@@ -584,8 +580,7 @@ public class Precision {
      *
      * @param x Value.
      * @param originalDelta Offset value.
-     * @return a number {@code delta} so that {@code x + delta} and {@code x}
-     * differ by a representable floating number.
+     * @return a number {@code delta} so that {@code x + delta} and {@code x} differ by a representable floating number.
      */
     public static double representableDelta(double x, double originalDelta) {
         return x + originalDelta - x;

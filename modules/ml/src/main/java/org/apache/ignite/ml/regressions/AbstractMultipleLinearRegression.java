@@ -32,8 +32,7 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * This class is based on the corresponding class from Apache Common Math lib.
  * Abstract base class for implementations of MultipleLinearRegression.
  */
-public abstract class AbstractMultipleLinearRegression implements
-        MultipleLinearRegression {
+public abstract class AbstractMultipleLinearRegression implements MultipleLinearRegression {
     /** X sample data. */
     private Matrix xMatrix;
 
@@ -102,10 +101,8 @@ public abstract class AbstractMultipleLinearRegression implements
      * @param nvars number of independent variables (columns, not counting y)
      * @param like matrix(maybe empty) indicating how data should be stored
      * @throws NullArgumentException if the data array is null
-     * @throws CardinalityException if the length of the data array is not equal
-     * to <code>nobs * (nvars + 1)</code>
-     * @throws InsufficientDataException if <code>nobs</code> is less than
-     * <code>nvars + 1</code>
+     * @throws CardinalityException if the length of the data array is not equal to <code>nobs * (nvars + 1)</code>
+     * @throws InsufficientDataException if <code>nobs</code> is less than <code>nvars + 1</code>
      */
     public void newSampleData(double[] data, int nobs, int nvars, Matrix like) {
         if (data == null)
@@ -115,7 +112,7 @@ public abstract class AbstractMultipleLinearRegression implements
         if (nobs <= nvars)
             throw new InsufficientDataException(RegressionsErrorMessages.INSUFFICIENT_OBSERVED_POINTS_IN_SAMPLE);
         double[] y = new double[nobs];
-        final int cols = noIntercept ? nvars: nvars + 1;
+        final int cols = noIntercept ? nvars : nvars + 1;
         double[][] x = new double[nobs][cols];
         int pointer = 0;
         for (int i = 0; i < nobs; i++) {
@@ -165,6 +162,7 @@ public abstract class AbstractMultipleLinearRegression implements
      * <p>Note that there is no need to add an initial unitary column (column of 1's) when
      * specifying a model including an intercept term.
      * </p>
+     *
      * @param x the rectangular array representing the x sample
      * @throws NullArgumentException if x is null
      * @throws NoDataException if x is empty
@@ -197,11 +195,10 @@ public abstract class AbstractMultipleLinearRegression implements
      * @param x the n x k matrix representing the x data
      * @param y the n-sized vector representing the y data
      * @throws NullArgumentException if {@code x} or {@code y} is null
-     * @throws CardinalityException if {@code x} and {@code y} do not
-     * have the same length
+     * @throws CardinalityException if {@code x} and {@code y} do not have the same length
      * @throws NoDataException if {@code x} or {@code y} are zero-length
-     * @throws MathIllegalArgumentException if the number of rows of {@code x}
-     * is not larger than the number of columns + 1
+     * @throws MathIllegalArgumentException if the number of rows of {@code x} is not larger than the number of columns
+     * + 1
      */
     protected void validateSampleData(Matrix x, Vector y) throws MathIllegalArgumentException {
         if ((x == null) || (y == null))
@@ -213,8 +210,8 @@ public abstract class AbstractMultipleLinearRegression implements
         }
         if (x.columnSize() + 1 > x.rowSize()) {
             throw new MathIllegalArgumentException(
-                    RegressionsErrorMessages.NOT_ENOUGH_DATA_FOR_NUMBER_OF_PREDICTORS,
-                    x.rowSize(), x.columnSize());
+                RegressionsErrorMessages.NOT_ENOUGH_DATA_FOR_NUMBER_OF_PREDICTORS,
+                x.rowSize(), x.columnSize());
         }
     }
 
@@ -224,8 +221,7 @@ public abstract class AbstractMultipleLinearRegression implements
      *
      * @param x the [n,k] array representing the x sample
      * @param covariance the [n,n] array representing the covariance matrix
-     * @throws CardinalityException if the number of rows in x is not equal
-     * to the number of rows in covariance
+     * @throws CardinalityException if the number of rows in x is not equal to the number of rows in covariance
      * @throws NonSquareMatrixException if the covariance matrix is not square
      */
     protected void validateCovarianceData(double[][] x, double[][] covariance) {
@@ -313,7 +309,6 @@ public abstract class AbstractMultipleLinearRegression implements
      */
     protected abstract Matrix calculateBetaVariance();
 
-
     /**
      * Calculates the variance of the y values.
      *
@@ -342,7 +337,7 @@ public abstract class AbstractMultipleLinearRegression implements
     protected double calculateErrorVariance() {
         Vector residuals = calculateResiduals();
         return residuals.dot(residuals) /
-               (xMatrix.rowSize() - xMatrix.columnSize());
+            (xMatrix.rowSize() - xMatrix.columnSize());
     }
 
     /**

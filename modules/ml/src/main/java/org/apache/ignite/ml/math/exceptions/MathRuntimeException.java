@@ -32,7 +32,7 @@ public class MathRuntimeException extends IgniteException {
      * @param format Message pattern explaining the cause of the error.
      * @param args Arguments.
      */
-    public MathRuntimeException(String format, Object ... args) {
+    public MathRuntimeException(String format, Object... args) {
         this(null, format, args);
     }
 
@@ -41,7 +41,7 @@ public class MathRuntimeException extends IgniteException {
      * @param format Message pattern explaining the cause of the error.
      * @param args Arguments.
      */
-    public MathRuntimeException(Throwable cause, String format, Object ... args) {
+    public MathRuntimeException(Throwable cause, String format, Object... args) {
         super(String.format(format, args), cause);
     }
 }
