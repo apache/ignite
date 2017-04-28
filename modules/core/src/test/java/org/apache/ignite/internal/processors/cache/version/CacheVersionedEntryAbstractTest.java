@@ -44,7 +44,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        Cache<Integer, String> cache = grid(0).cache(null);
+        Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0 ; i < ENTRIES_NUM; i++)
             cache.put(i, "value_" + i);
@@ -54,7 +54,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
      * @throws Exception If failed.
      */
     public void testInvoke() throws Exception {
-        Cache<Integer, String> cache = grid(0).cache(null);
+        Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final AtomicInteger invoked = new AtomicInteger();
 
@@ -79,7 +79,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
      * @throws Exception If failed.
      */
     public void testInvokeAll() throws Exception {
-        Cache<Integer, String> cache = grid(0).cache(null);
+        Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         Set<Integer> keys = new HashSet<>();
 
@@ -109,7 +109,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
      * @throws Exception If failed.
      */
     public void testLocalPeek() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         Iterable<Cache.Entry<Integer, String>> entries = cache.localEntries();
 
@@ -121,7 +121,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
      * @throws Exception If failed.
      */
     public void testVersionComparision() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         CacheEntry<String, Integer> ver1 = cache.invoke(100,
             new EntryProcessor<Integer, String, CacheEntry<String, Integer>>() {

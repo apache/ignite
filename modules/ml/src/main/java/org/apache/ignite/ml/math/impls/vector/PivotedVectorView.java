@@ -30,10 +30,11 @@ import org.apache.ignite.ml.math.impls.storage.vector.PivotedVectorStorage;
  * Pivoted (index mapped) view over another vector.
  */
 public class PivotedVectorView extends AbstractVector {
-    /** */ private Vector vec;
+    /** */
+    private Vector vec;
 
     /**
-     * @param vec
+     * @param vec Parent vector.
      * @param pivot Mapping from external index to internal.
      * @param unpivot Mapping from internal index to external.
      */
@@ -47,8 +48,8 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     * @param vec
-     * @param pivot
+     * @param vec Parent vector.
+     * @param pivot Mapping from external index to internal.
      */
     public PivotedVectorView(Vector vec, int[] pivot) {
         setStorage(new PivotedVectorStorage(vec.getStorage(), pivot));
@@ -58,10 +59,7 @@ public class PivotedVectorView extends AbstractVector {
         this.vec = vec;
     }
 
-    /**
-     *
-     *
-     */
+    /** */
     private PivotedVectorStorage storage() {
         return (PivotedVectorStorage)getStorage();
     }
@@ -74,29 +72,31 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     *
-     *
+     * @return Parent vector.
      */
     public Vector getBaseVector() {
         return vec;
     }
 
     /**
-     * @param i
+     * @param i Index to pivot.
+     * @return Mapping from external index to internal for given index.
      */
     public int pivot(int i) {
         return storage().pivot()[i];
     }
 
     /**
-     * @param i
+     * @param i Index to unpivot.
+     * @return Mapping from internal index to external for given index.
      */
     public int unpivot(int i) {
         return storage().unpivot()[i];
     }
 
     /**
-     * @param idx
+     * @param idx Index of vector element.
+     * @return Vector element at given index.
      */
     protected Vector.Element makeElement(int idx) {
         checkIndex(idx);
@@ -105,17 +105,17 @@ public class PivotedVectorView extends AbstractVector {
         int exIdx = storage().pivot()[idx];
 
         return new Vector.Element() {
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public double get() {
                 return storageGet(idx);
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public int index() {
                 return exIdx;
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public void set(double val) {
                 storageSet(idx, val);
             }

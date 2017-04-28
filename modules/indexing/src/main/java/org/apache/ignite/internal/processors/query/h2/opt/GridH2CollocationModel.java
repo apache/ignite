@@ -39,8 +39,6 @@ import org.h2.table.Table;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
-
 /**
  * Collocation model for a query.
  */
@@ -413,7 +411,7 @@ public final class GridH2CollocationModel {
                 int cmpType = c.getCompareType();
 
                 if ((cmpType == Comparison.EQUAL || cmpType == Comparison.EQUAL_NULL_SAFE) &&
-                    (colId == affColId || colId == KEY_COL) && c.isEvaluatable()) {
+                    (colId == affColId || tbl.rowDescriptor().isKeyColumn(colId)) && c.isEvaluatable()) {
                     affKeyCondFound = true;
 
                     Expression exp = c.getExpression();

@@ -135,8 +135,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TestFixtureTearDown]
         public void TearDown()
         {
-            if (_grid != null)
-                Ignition.Stop(_grid.Name, true);
+            Ignition.StopAll(true);
 
             _grid = null;
         }

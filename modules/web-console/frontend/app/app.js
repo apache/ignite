@@ -226,11 +226,11 @@ angular
 .controller(...igfs)
 .controller(...profile)
 // Filters.
-.filter(...byName)
+.filter('byName', byName)
 .filter('defaultName', defaultName)
-.filter(...domainsValidation)
-.filter(...duration)
-.filter(...hasPojo)
+.filter('domainsValidation', domainsValidation)
+.filter('duration', duration)
+.filter('hasPojo', hasPojo)
 .filter('uiGridSubcategories', uiGridSubcategories)
 .config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider', ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
     $translateProvider.translations('en', i18n);

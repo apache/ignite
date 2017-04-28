@@ -70,6 +70,7 @@
     <ClCompile Include="..\..\src\dynamic_size_array_test.cpp" />
     <ClCompile Include="..\..\src\fixed_size_array_test.cpp" />
     <ClCompile Include="..\..\src\continuous_query_test.cpp" />
+    <ClCompile Include="..\..\src\future_test.cpp" />
     <ClCompile Include="..\..\src\ignite_error_test.cpp" />
     <ClCompile Include="..\..\src\ignition_test.cpp" />
     <ClCompile Include="..\..\src\handle_registry_test.cpp" />

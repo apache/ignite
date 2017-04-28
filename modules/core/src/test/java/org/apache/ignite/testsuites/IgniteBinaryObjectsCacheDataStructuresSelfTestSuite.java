@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructuresNoClassOnServerTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
@@ -32,6 +33,10 @@ public class IgniteBinaryObjectsCacheDataStructuresSelfTestSuite {
     public static TestSuite suite() throws Exception {
         GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        return IgniteCacheDataStructuresSelfTestSuite.suite();
+        TestSuite suite = IgniteCacheDataStructuresSelfTestSuite.suite();
+
+        suite.addTestSuite(IgniteDataStructuresNoClassOnServerTest.class);
+
+        return suite;
     }
 }

@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using Apache.Ignite.Core.Binary;
+    using NUnit.Framework;
 
     /// <summary>
     /// Builder test with simple names.
     /// </summary>
+    [TestFixture]
     public class BinaryBuilderSelfTestSimpleName : BinaryBuilderSelfTest
     {
         /** <inheritdoc /> */

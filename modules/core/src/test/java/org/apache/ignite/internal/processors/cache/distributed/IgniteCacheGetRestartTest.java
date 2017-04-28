@@ -219,7 +219,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
                         IgniteInternalFuture<?> syncFut = ((IgniteCacheProxy)cache).context().preloader().syncFuture();
 
-                        while (!syncFut.isDone())
+                        while (!syncFut.isDone() && U.currentTimeMillis() < stopTime)
                             checkGet(cache);
 
                         checkGet(cache);
@@ -269,7 +269,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration<Object, Object> cacheConfiguration(CacheMode cacheMode, int backups, boolean near) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
 

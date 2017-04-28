@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -44,11 +43,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
@@ -60,6 +61,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Failover tests for cache data structures.
@@ -133,7 +135,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         cfg.setAtomicConfiguration(atomicCfg);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(TRANSACTIONAL_CACHE_NAME);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -408,7 +410,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testSemaphoreFailoverSafe() throws Exception {
-        try (IgniteSemaphore semaphore = grid(0).semaphore(STRUCTURE_NAME, 20, true, true)) {
+        try (final IgniteSemaphore semaphore = grid(0).semaphore(STRUCTURE_NAME, 20, true, true)) {
             Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             IgniteSemaphore semaphore2 = g.semaphore(STRUCTURE_NAME, 20, true, false);
@@ -419,7 +421,11 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
-            assertEquals(20, semaphore.availablePermits());
+            waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    return semaphore.availablePermits() == 20;
+                }
+            }, 2000);
         }
     }
 
@@ -736,10 +742,16 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
-    private void doTestReentrantLock(ConstantTopologyChangeWorker topWorker, final boolean failoverSafe, final boolean fair) throws Exception {
-        try (IgniteLock lock = grid(0).reentrantLock(STRUCTURE_NAME, failoverSafe, fair, true)) {
-            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
+    private void doTestReentrantLock(
+        final ConstantTopologyChangeWorker topWorker,
+        final boolean failoverSafe,
+        final boolean fair
+    ) throws Exception {
+        IgniteEx ig = grid(0);
+
+        try (IgniteLock lock = ig.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, true)) {
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Void>() {
+                @Override public Void apply(Ignite ignite) {
                     final IgniteLock l = ignite.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false);
 
                     final AtomicBoolean done = new AtomicBoolean(false);
@@ -767,33 +779,33 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             });
 
             while (!fut.isDone()) {
-                while (true) {
-                    try {
-                        lock.lock();
-                    }
-                    catch (IgniteException e) {
-                        // Exception may happen in non-failoversafe mode.
-                        if (failoverSafe)
-                            throw e;
-                    }
-                    finally {
-                        // Broken lock cannot be used in non-failoversafe mode.
-                        if(!lock.isBroken() || failoverSafe) {
-                            assertTrue(lock.isHeldByCurrentThread());
+                try {
+                    lock.lock();
+                }
+                catch (IgniteException e) {
+                    // Exception may happen in non-failoversafe mode.
+                    if (failoverSafe)
+                        throw e;
+                }
+                finally {
+                    // Broken lock cannot be used in non-failoversafe mode.
+                    if(!lock.isBroken() || failoverSafe) {
+                        assertTrue(lock.isHeldByCurrentThread());
 
-                            lock.unlock();
+                        lock.unlock();
 
-                            assertFalse(lock.isHeldByCurrentThread());
-                        }
-                        break;
+                        assertFalse(lock.isHeldByCurrentThread());
                     }
                 }
             }
 
             fut.get();
 
-            for (Ignite g : G.allGrids())
-                assertFalse(g.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false).isHeldByCurrentThread());
+            for (Ignite g : G.allGrids()){
+                IgniteLock l = g.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false);
+
+                assertTrue(g.name(), !l.isHeldByCurrentThread() || lock.isBroken());
+            }
         }
     }
 

@@ -38,6 +38,9 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** Task permissions. */
     private Map<String, Collection<SecurityPermission>> taskPerms = new HashMap<>();
 
+    /** Service permissions. */
+    private Map<String, Collection<SecurityPermission>> srvcPerms = new HashMap<>();
+
     /** System permissions. */
     private Collection<SecurityPermission> sysPerms = new ArrayList<>();
 
@@ -60,6 +63,15 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      */
     public void setTaskPermissions(Map<String, Collection<SecurityPermission>> taskPerms) {
         this.taskPerms = taskPerms;
+    }
+
+    /**
+     * Setter for set service permission map.
+     *
+     * @param srvcPerms Service permissions.
+     */
+    public void setServicePermissions(Map<String, Collection<SecurityPermission>> srvcPerms) {
+        this.srvcPerms = srvcPerms;
     }
 
     /**
@@ -88,6 +100,11 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** {@inheritDoc} */
     @Override public Map<String, Collection<SecurityPermission>> taskPermissions() {
         return taskPerms;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Collection<SecurityPermission>> servicePermissions() {
+        return srvcPerms;
     }
 
     /** {@inheritDoc} */

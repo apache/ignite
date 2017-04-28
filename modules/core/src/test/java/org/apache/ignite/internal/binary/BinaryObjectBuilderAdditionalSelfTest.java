@@ -79,7 +79,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg.setCacheMode(REPLICATED);
 
         CacheConfiguration cacheCfg2 = new CacheConfiguration("partitioned");

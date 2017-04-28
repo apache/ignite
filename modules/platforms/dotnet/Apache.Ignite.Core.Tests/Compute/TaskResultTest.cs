@@ -154,18 +154,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(101 * 1024, res.Length);
         }
 
-        /** <inheritDoc /> */
-        protected override ICollection<Type> GetBinaryTypes()
-        {
-            return new[]
-            {
-                typeof(BinarizableResult),
-                typeof(TestBinarizableJob),
-                typeof(BinarizableOutFunc),
-                typeof(BinarizableFunc)
-            };
-        }
-
         [Test]
         public void TestOutFuncResultPrimitive1()
         {

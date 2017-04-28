@@ -232,7 +232,8 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
                 "[clsLdr=" + clsLdr + ", cls=" + e.getMessage() + "]", e);
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
+            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " +
+                "[clsLdr=" + clsLdr + ", err=" + e.getMessage() + "]", e);
         }
         finally {
             OptimizedObjectStreamRegistry.closeIn(objIn);
