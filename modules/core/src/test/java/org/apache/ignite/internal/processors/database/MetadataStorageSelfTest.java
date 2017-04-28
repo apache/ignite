@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -154,13 +155,17 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
      * @return Page memory instance.
      */
     protected PageMemory memory(boolean clean) throws Exception {
-        long[] sizes = new long[10];
+        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * 1024;
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(30 * 1024 * 1024);
 
-        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean, sizes);
-
-        return new PageMemoryNoStoreImpl(log, provider, null, PAGE_SIZE, null, new MemoryMetricsImpl(null), true);
+        return new PageMemoryNoStoreImpl(
+            log,
+            provider,
+            null,
+            PAGE_SIZE,
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
+            true);
     }
 }

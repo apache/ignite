@@ -61,7 +61,7 @@ public class QueryEntityCaseMismatchTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration<Object, Integer> ccfg = new CacheConfiguration<>("");
+        CacheConfiguration<Object, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setMarshaller(new BinaryMarshaller());
 

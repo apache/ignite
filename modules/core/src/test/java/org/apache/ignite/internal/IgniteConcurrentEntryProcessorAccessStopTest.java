@@ -46,7 +46,7 @@ public class IgniteConcurrentEntryProcessorAccessStopTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testConcurrentAccess() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         Ignite ignite = grid();
 

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.compute;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -35,12 +34,12 @@ import org.jetbrains.annotations.Nullable;
  * Cancels given tasks sessions.
  */
 @GridInternal
-public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID, Set<IgniteUuid>>, Void, Void> {
+public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<VisorComputeCancelSessionsTaskArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorComputeCancelSessionsJob job(Map<UUID, Set<IgniteUuid>> arg) {
+    @Override protected VisorComputeCancelSessionsJob job(VisorComputeCancelSessionsTaskArg arg) {
         return new VisorComputeCancelSessionsJob(arg, debug);
     }
 
@@ -53,7 +52,7 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
     /**
      * Job that cancel tasks.
      */
-    private static class VisorComputeCancelSessionsJob extends VisorJob<Map<UUID, Set<IgniteUuid>>, Void> {
+    private static class VisorComputeCancelSessionsJob extends VisorJob<VisorComputeCancelSessionsTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -61,13 +60,13 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
          * @param arg Map with task sessions IDs to cancel.
          * @param debug Debug flag.
          */
-        private VisorComputeCancelSessionsJob(Map<UUID, Set<IgniteUuid>> arg, boolean debug) {
+        private VisorComputeCancelSessionsJob(VisorComputeCancelSessionsTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Map<UUID, Set<IgniteUuid>> arg) {
-            Set<IgniteUuid> sesIds = arg.get(ignite.localNode().id());
+        @Override protected Void run(VisorComputeCancelSessionsTaskArg arg) {
+            Set<IgniteUuid> sesIds = arg.getSessionIds().get(ignite.localNode().id());
 
             if (sesIds != null && !sesIds.isEmpty()) {
                 IgniteCompute compute = ignite.compute(ignite.cluster().forLocal());

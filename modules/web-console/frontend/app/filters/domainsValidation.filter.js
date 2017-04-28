@@ -16,7 +16,7 @@
  */
 
 // Filter domain models with key fields configuration.
-export default ['domainsValidation', ['IgniteLegacyUtils', (LegacyUtils) => (domains, valid, invalid) => {
+export default ['IgniteLegacyUtils', (LegacyUtils) => (domains, valid, invalid) => {
     if (valid && invalid)
         return domains;
 
@@ -30,4 +30,4 @@ export default ['domainsValidation', ['IgniteLegacyUtils', (LegacyUtils) => (dom
     });
 
     return out;
-}]];
+}];

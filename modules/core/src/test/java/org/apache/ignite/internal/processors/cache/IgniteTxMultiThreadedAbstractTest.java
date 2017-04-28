@@ -219,7 +219,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
      * @throws Exception If failed.
      */
     public void testOptimisticSerializableConsistency() throws Exception {
-        final IgniteCache<Integer, Long> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Long> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final int THREADS = 3;
 
@@ -310,7 +310,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
             }
 
             for (int i = 0; i < gridCount(); i++)
-                assertEquals(total, grid(i).cache(null).get(key));
+                assertEquals(total, grid(i).cache(DEFAULT_CACHE_NAME).get(key));
         }
     }
 }

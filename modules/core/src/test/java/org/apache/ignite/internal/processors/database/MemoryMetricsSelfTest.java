@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.database;
 
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -41,7 +42,9 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        memMetrics = new MemoryMetricsImpl(null);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration();
+
+        memMetrics = new MemoryMetricsImpl(plcCfg);
 
         memMetrics.enableMetrics();
     }

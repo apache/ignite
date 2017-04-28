@@ -53,7 +53,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_REGULAR);
         ccfg.setAtomicityMode(TRANSACTIONAL);

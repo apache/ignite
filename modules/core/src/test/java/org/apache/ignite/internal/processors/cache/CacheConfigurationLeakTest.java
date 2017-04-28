@@ -48,7 +48,7 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
 
         plc.setName("dfltPlc");
-        plc.setSize(MemoryConfiguration.DFLT_MEMORY_POLICY_SIZE * 10);
+        plc.setMaxSize(MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE * 10);
 
         memCfg.setDefaultMemoryPolicyName("dfltPlc");
         memCfg.setMemoryPolicies(plc);
@@ -67,7 +67,7 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
             @Override public void apply(Integer idx) {
                 for (int i = 0; i < 100; i++) {
-                    CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+                    CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
                     ccfg.setName("cache-" + idx + "-" + i);
                     ccfg.setEvictionPolicy(new LruEvictionPolicy(1000));
                     ccfg.setOnheapCacheEnabled(true);

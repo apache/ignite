@@ -102,7 +102,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         if (igniteInstanceName.contains("testCacheRedeployVersionChangeContinuousMode")) {
-            CacheConfiguration cacheCfg = new CacheConfiguration();
+            CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             cacheCfg.setCacheMode(CacheMode.REPLICATED);
 
@@ -299,13 +299,13 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             Class rcrsCls = ldr.loadClass(TEST_RCRS_NAME);
 
-            IgniteCache<Long, Object> cache1 = ignite1.cache(null);
+            IgniteCache<Long, Object> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache1);
 
             cache1.put(1L, rcrsCls.newInstance());
 
-            final IgniteCache<Long, Object> cache2 = ignite2.cache(null);
+            final IgniteCache<Long, Object> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache2);
 
@@ -325,7 +325,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
 
-            cache1 = ignite1.cache(null);
+            cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache1);
 

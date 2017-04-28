@@ -66,7 +66,7 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     public VisorMemoryConfiguration(MemoryConfiguration memCfg) {
         assert memCfg != null;
 
-        sysCacheMemSize = memCfg.getSystemCacheMemorySize();
+        sysCacheMemSize = memCfg.getSystemCacheInitialSize();
         pageSize = memCfg.getPageSize();
         concLvl = memCfg.getConcurrencyLevel();
         dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
