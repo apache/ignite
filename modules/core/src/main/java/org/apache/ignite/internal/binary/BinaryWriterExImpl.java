@@ -386,7 +386,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL);
 
-            out.unsafeWriteInt(val.scale());
+            doWriteSignedVarint(val.scale());
 
             BigInteger intVal = val.unscaledValue();
 
@@ -400,7 +400,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             if (negative)
                 vals[0] |= -0x80;
 
-            out.unsafeWriteInt(vals.length);
+            doWriteUnsignedVarint(vals.length);
             out.writeByteArray(vals);
         }
     }
@@ -561,6 +561,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * Writes integer value in varint encoding.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param val Value to write.
+     */
+    void doWriteSignedVarint(int val) {
+        // trick form https://developers.google.com/protocol-buffers/docs/encoding#types
+        doWriteUnsignedVarint((val << 1) ^ (val >> 31));
+    }
+
+    /**
      * @param val Long array.
      */
     void doWriteLongArray(@Nullable long[] val) {
@@ -644,7 +655,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         else {
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL_ARR);
-            out.unsafeWriteInt(val.length);
+            doWriteUnsignedVarint(val.length);
 
             for (BigDecimal str : val)
                 doWriteDecimal(str);

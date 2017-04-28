@@ -1213,6 +1213,37 @@ public class BinaryUtils {
     }
 
     /**
+     * Reads from {@link BinaryInputStream} integer value which is presented in varint encoding.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param in BinaryInputStream.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadSignedVarint(BinaryInputStream in) throws BinaryObjectException {
+        int val = doReadSignedVarint(in.array(), in.position());
+
+        in.position(in.position() + sizeInVarint(val));
+
+        return val;
+    }
+
+    /**
+     * Reads from array integer value which is presented in varint encoding.
+     * <a href="http://code.google.com/apis/protocolbuffers/docs/encoding.html">More information about varint.</a>
+     *
+     * @param arr Bytes array.
+     * @param off Offset.
+     * @return Decoded integer value.
+     * @throws BinaryObjectException if have been read more than 5 bytes.
+     */
+    public static int doReadSignedVarint(byte[] arr, int off) throws BinaryObjectException {
+        int raw = doReadUnsignedVarint(arr, off);
+        // Canceling the untrick from BinaryWriterExImpl#doWriteSignedVarint
+        return (((raw << 31) >> 31) ^ raw) >> 1;
+    }
+
+    /**
      * Returns the encoded size of the given unsigned integer value.
      *
      * @param val Value to be encoded
@@ -1267,8 +1298,11 @@ public class BinaryUtils {
      * @return Value.
      */
     public static BigDecimal doReadDecimal(BinaryInputStream in) {
-        int scale = in.readInt();
-        byte[] mag = doReadByteArray(in);
+        int scale = doReadSignedVarint(in);
+
+        int len = doReadUnsignedVarint(in);
+
+        byte[] mag =  in.readByteArray(len);
 
         boolean negative = mag[0] < 0;
 
@@ -1361,7 +1395,7 @@ public class BinaryUtils {
      * @throws BinaryObjectException In case of error.
      */
     public static BigDecimal[] doReadDecimalArray(BinaryInputStream in) throws BinaryObjectException {
-        int len = in.readInt();
+        int len = doReadUnsignedVarint(in);
 
         BigDecimal[] arr = new BigDecimal[len];
 
