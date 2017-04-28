@@ -114,7 +114,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
             int len = BinaryUtils.doReadUnsignedVarint(arr, ++off);
 
-            off += BinaryUtils.sizeOf(len);
+            off += BinaryUtils.sizeInVarint(len);
 
             byte[] bytes = BinaryPrimitives.readByteArray(arr, off, len);
 

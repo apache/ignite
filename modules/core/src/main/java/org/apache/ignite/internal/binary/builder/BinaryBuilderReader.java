@@ -208,7 +208,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
         int len = readStringLength();
 
-        pos += BinaryUtils.sizeOf(len);
+        pos += BinaryUtils.sizeInVarint(len);
 
         String str = new String(arr, pos, len, UTF_8);
 
@@ -272,7 +272,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
             case GridBinaryMarshaller.STRING:
                 len = readStringLength();
-                len += BinaryUtils.sizeOf(len);
+                len += BinaryUtils.sizeInVarint(len);
 
                 break;
 
@@ -590,7 +590,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.STRING:
                 int len = readStringLength();
 
-                plainLazyValLen = BinaryUtils.sizeOf(len) + len;
+                plainLazyValLen = BinaryUtils.sizeInVarint(len) + len;
 
                 break;
 
@@ -755,7 +755,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                         pos += 8 + 8;
                     else if (flag == GridBinaryMarshaller.STRING) {
                         int strLen = readStringLength();
-                        pos += BinaryUtils.sizeOf(strLen);
+                        pos += BinaryUtils.sizeInVarint(strLen);
                         pos += strLen;
                     }
                     else if (flag == GridBinaryMarshaller.DECIMAL) {

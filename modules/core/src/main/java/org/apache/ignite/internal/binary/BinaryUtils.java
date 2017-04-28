@@ -1182,7 +1182,7 @@ public class BinaryUtils {
     public static int doReadUnsignedVarint(BinaryInputStream in) throws BinaryObjectException {
         int val = doReadUnsignedVarint(in.array(), in.position());
 
-        in.position(in.position() + sizeOf(val));
+        in.position(in.position() + sizeInVarint(val));
 
         return val;
     }
@@ -1218,7 +1218,7 @@ public class BinaryUtils {
      * @param val Value to be encoded
      * @return Encoded size
      */
-    public static int sizeOf(int val) {
+    public static int sizeInVarint(int val) {
         int size = 1;
 
         while (val > 0x7f)

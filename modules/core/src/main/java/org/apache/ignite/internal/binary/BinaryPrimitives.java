@@ -283,7 +283,7 @@ public abstract class BinaryPrimitives {
      * @return Value.
      * @throws BinaryObjectException if have been read more than 5 bytes.
      */
-    public static int readVarint(long ptr, int off) throws BinaryObjectException {
+    public static int readUnsignedVarint(long ptr, int off) throws BinaryObjectException {
         int val = 0;
         int n = 0;
         int b;
