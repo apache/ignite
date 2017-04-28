@@ -755,7 +755,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAffinityInitialized(AffinityAssignment assignment) {
+    @Override public void onExchangeDone(AffinityAssignment assignment) {
         // TODO
     }
 

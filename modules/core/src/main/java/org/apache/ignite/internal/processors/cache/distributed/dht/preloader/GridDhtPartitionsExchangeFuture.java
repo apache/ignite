@@ -1216,14 +1216,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cctx.kernalContext().state().onExchangeDone();
 
         if (err == null && realExchange) {
-//            if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED || (discoEvt instanceof DiscoveryCustomEvent && ((DiscoveryCustomEvent)discoEvt).customMessage() instanceof CacheAffinityChangeMessage)) {
-                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                    if (cacheCtx.isLocal())
-                        continue;
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal())
+                    continue;
 
-                    cacheCtx.topology().onAffinityInitialized(cacheCtx.affinity().assignment(topologyVersion()));
-                }
-//            }
+                cacheCtx.topology().onExchangeDone(cacheCtx.affinity().assignment(topologyVersion()));
+            }
         }
 
         if (super.onDone(res, err) && realExchange) {

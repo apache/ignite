@@ -313,5 +313,9 @@ public interface GridDhtPartitionTopology {
      */
     public void setOwners(int p, Set<UUID> owners, boolean updateSeq);
 
-    public void onAffinityInitialized(AffinityAssignment assignment);
+    /**
+     * Callback on exchange done.
+     * @param assignment New affinity assignment.
+     */
+    public void onExchangeDone(AffinityAssignment assignment);
 }
