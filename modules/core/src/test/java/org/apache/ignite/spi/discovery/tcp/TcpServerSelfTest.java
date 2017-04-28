@@ -18,8 +18,12 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -64,6 +68,39 @@ public class TcpServerSelfTest extends TestCase {
         final TestSslHandler h1 = new TestSslHandler(sslEngine1, true, log, buf1, buf2);
         final TestSslHandler h2 = new TestSslHandler(sslEngine2, true, log, buf2, buf1);
 
+        testHandlers(h1, h2);
+    }
+
+    public void testBlockingSslHandlerRealChannel() throws Exception {
+        int port = 55555;
+
+        ServerSocketChannel server = ServerSocketChannel.open();
+        server.configureBlocking(false);
+        server.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), port));
+
+        SocketChannel ch2 = SocketChannel.open(new InetSocketAddress(InetAddress.getLoopbackAddress(), port));
+        ch2.configureBlocking(false);
+
+        SocketChannel ch1 = server.accept();
+
+        assert ch1.isConnected();
+        assert ch2.isConnected();
+
+        NullLogger log = new NullLogger();
+
+        SSLEngine sslEngine1 = sslCtx.createSSLEngine();
+        sslEngine1.setUseClientMode(false);
+
+        SSLEngine sslEngine2 = sslCtx.createSSLEngine();
+        sslEngine2.setUseClientMode(true);
+
+        final BlockingSslHandler h1 = new BlockingSslHandler(sslEngine1, ch1, true, ByteOrder.nativeOrder(), log);
+        final BlockingSslHandler h2 = new BlockingSslHandler(sslEngine2, ch2, true, ByteOrder.nativeOrder(), log);
+
+        testHandlers(h1, h2);
+    }
+
+    private void testHandlers(final BlockingSslHandler h1, final BlockingSslHandler h2) throws Exception {
         IgniteInternalFuture handshakeFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 h1.handshake();
