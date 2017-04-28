@@ -76,12 +76,10 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
         Map<ClusterNode, Integer> parts = new HashMap<>(nodes.size());
 
         for (int part = 0; part < aff.getPartitions(); part++) {
-            Collection<ClusterNode> affNodes = aff.assignPartition(null,
-                part,
-                new ArrayList<>(nodes),
-                new HashMap<ClusterNode, byte[]>(),
+            Collection<ClusterNode> affNodes = aff.assignPartition(part,
+                new ArrayList<ClusterNode>(nodes),
                 0,
-                null);
+                new HashMap<UUID, Collection<ClusterNode>>());
 
             assertEquals(1, affNodes.size());
 

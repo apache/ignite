@@ -43,6 +43,7 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
@@ -147,6 +148,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.affinityNode;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.clientNode;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 
 /**
@@ -154,6 +157,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
+    /** */
+    private static final boolean startCaches =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
+
     /** Null cache name. */
     private static final String NULL_NAME = U.id8(UUID.randomUUID());
 
@@ -816,7 +823,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 boolean loc = desc.locallyConfigured();
 
-                if (loc || (desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter))) {
+                if (loc || (desc.receivedOnDiscovery() && (CU.affinityNode(locNode, filter) ||
+                    startAllCachesOnClientStart()))) {
                     boolean started = desc.onStart();
 
                     assert started : "Failed to change started flag for locally configured cache: " + desc;
@@ -2165,11 +2173,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         batch.clientReconnect(reconnect);
 
+        if (!reconnect)
+            batch.startCaches(startAllCachesOnClientStart());
+
         //todo check
         // Reset random batch ID so that serialized batches with the same descriptors will be exactly the same.
         batch.id(null);
 
         return batch;
+    }
+
+    /**
+     * @return {@code True} if need locally start all existing caches on client node start.
+     */
+    private boolean startAllCachesOnClientStart() {
+        return startCaches && ctx.clientNode();
     }
 
     /** {@inheritDoc} */
@@ -2275,6 +2293,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         for (Map.Entry<UUID, Boolean> tup : entry.getValue().entrySet())
                             ctx.discovery().addClientNode(cacheName, tup.getKey(), tup.getValue());
                     }
+                }
+
+                if (batch.startCaches()) {
+                    for (Map.Entry<String, DynamicCacheDescriptor> entry : registeredCaches.entrySet())
+                        ctx.discovery().addClientNode(entry.getKey(), joiningNodeId, false);
                 }
             }
         }

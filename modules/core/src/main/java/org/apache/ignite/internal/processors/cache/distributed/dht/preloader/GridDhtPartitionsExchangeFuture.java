@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -73,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -109,6 +111,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     public static final int DUMP_PENDING_OBJECTS_THRESHOLD =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
+
+    public static final String EXCHANGE_LOG = "org.apache.ignite.internal.exchange.time";
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -189,6 +193,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Logger. */
     private final IgniteLogger log;
 
+    /** */
+    private final IgniteLogger exchLog;
+
     /** Dynamic cache change requests. */
     private Collection<DynamicCacheChangeRequest> reqs;
 
@@ -258,6 +265,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         this.cctx = cctx;
 
         log = cctx.logger(getClass());
+        exchLog = cctx.logger(EXCHANGE_LOG);
 
         onDone(exchId.topologyVersion());
     }
@@ -282,6 +290,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         this.forcedRebFut = forcedRebFut;
 
         log = cctx.logger(getClass());
+        exchLog = cctx.logger(EXCHANGE_LOG);
 
         reassign = true;
 
@@ -317,6 +326,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         this.affChangeMsg = affChangeMsg;
 
         log = cctx.logger(getClass());
+        exchLog = cctx.logger(EXCHANGE_LOG);
 
         initFut = new GridFutureAdapter<>();
 
@@ -535,6 +545,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             skipPreload = cctx.kernalContext().clientNode();
 
+            exchLog.info("Start exchange init [topVer=" + topVer +
+                ", crd=" + crdNode +
+                ", evt=" + discoEvt.type() +
+                ", customEvt=" + (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT ? ((DiscoveryCustomEvent)discoEvt).customMessage() : null) +
+                ']');
+
             ExchangeType exchange;
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
@@ -622,6 +638,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 default:
                     assert false;
             }
+
+            exchLog.info("Finish exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -694,6 +712,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @throws IgniteCheckedException If failed.
      */
     private void updateTopologies(boolean crd) throws IgniteCheckedException {
+        exchLog.info("updateTopologies start [topVer=" + topologyVersion() + ", crd=" + crd + ']');
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal())
                 continue;
@@ -717,6 +737,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies())
             top.updateTopologyVersion(exchId, this, -1, stopping(top.cacheId()));
+
+        exchLog.info("updateTopologies end [topVer=" + topologyVersion() + ", crd=" + crd + ']');
     }
 
     /**
@@ -1126,6 +1148,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @throws IgniteCheckedException If failed.
      */
     private void sendLocalPartitions(ClusterNode node) throws IgniteCheckedException {
+        exchLog.info("sendLocalPartitions start [topVer=" + topologyVersion() + ']');
+
         assert node != null;
 
         // Reset lost partition before send local partition to coordinator.
@@ -1162,6 +1186,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (log.isDebugEnabled())
                 log.debug("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
         }
+
+        exchLog.info("sendLocalPartitions end [topVer=" + topologyVersion() + ']');
     }
 
     /**
@@ -1190,6 +1216,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @throws IgniteCheckedException If failed.
      */
     private void sendAllPartitions(Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        exchLog.info("sendAllPartitions start [topVer=" + topologyVersion() + ']');
+
         GridDhtPartitionsFullMessage m = createPartitionsMessage(nodes, true);
 
         assert !nodes.contains(cctx.localNode());
@@ -1199,6 +1227,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 ", exchId=" + exchId + ", msg=" + m + ']');
 
         cctx.io().safeSend(nodes, m, SYSTEM_POOL, null);
+
+        exchLog.info("sendAllPartitions end [topVer=" + topologyVersion() + ']');
     }
 
     /**
@@ -1313,6 +1343,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         cctx.database().releaseHistoryForExchange();
 
         if (super.onDone(res, err) && realExchange) {
+            exchLog.info("exchange finished [topVer=" + topologyVersion() +
+                ", time1=" + duration() +
+                ", time2=" + (U.currentTimeMillis() - initTs) + ']');
+
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
@@ -1526,6 +1560,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    @GridToStringExclude
+    private GridAtomicLong maxTime = new GridAtomicLong();
+
     /**
      * @param node Sender node.
      * @param msg Message.
@@ -1533,6 +1570,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void processMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
         boolean allReceived = false;
         boolean updateSingleMap = false;
+
+        long start = U.currentTimeMillis();
+
+        exchLog.info("processSingleMessage start [topVer=" + topologyVersion() +
+            ", fromId=" + node.id() +
+            ", fromOrder=" + node.order() +
+            ']');
 
         synchronized (mux) {
             assert crd != null;
@@ -1553,6 +1597,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (updateSingleMap)
             updatePartitionSingleMap(node, msg);
+
+        long time = U.currentTimeMillis() - start;
+
+        maxTime.setIfGreater(time);
+
+        exchLog.info("processSingleMessage end [topVer=" + topologyVersion() +
+            ", fromId=" + node.id() +
+            ", fromOrder=" + node.order() +
+            ", time=" + time +
+            ", maxTime=" + maxTime.get() + ']');
 
         if (allReceived)
             onAllReceived();
@@ -1917,6 +1971,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert msg.exchangeId().equals(exchId) : msg;
         assert msg.lastVersion() != null : msg;
 
+        exchLog.info("processFullMessage start [topVer=" + topologyVersion() + ']');
+
         synchronized (mux) {
             if (crd == null)
                 return;
@@ -1937,6 +1993,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (exchangeOnChangeGlobalState && !F.isEmpty(msg.getExceptionsMap()))
             cctx.kernalContext().state().onFullResponseMessage(msg.getExceptionsMap());
+
+        exchLog.info("processFullMessage end [topVer=" + topologyVersion() + ']');
 
         onDone(exchId.topologyVersion());
     }
@@ -1978,7 +2036,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Partitions single message.
      */
     private void updatePartitionSingleMap(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
-        msgs.put(node.id(), msg);
+        if (cctx.database().persistenceEnabled())
+            msgs.put(node.id(), msg);
 
         for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();

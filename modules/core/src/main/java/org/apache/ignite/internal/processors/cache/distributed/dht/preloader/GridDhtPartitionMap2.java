@@ -21,13 +21,12 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -54,7 +53,7 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
     protected AffinityTopologyVersion top;
 
     /** */
-    protected Map<Integer, GridDhtPartitionState> map;
+    protected GridPartitionStateMap map;
 
     /** */
     private volatile int moving;
@@ -85,7 +84,8 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         this.updateSeq = updateSeq;
         this.top = top;
 
-        map = U.newHashMap(m.size());
+        map = new GridPartitionStateMap(m.size());
+        //map = U.newHashMap(m.size());
 
         for (Map.Entry<Integer, GridDhtPartitionState> e : m.entrySet()) {
             GridDhtPartitionState state = e.getValue();
@@ -105,7 +105,7 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
     private GridDhtPartitionMap2(UUID nodeId,
         long updateSeq,
         AffinityTopologyVersion top,
-        Map<Integer, GridDhtPartitionState> map,
+        GridPartitionStateMap map,
         int moving) {
         this.nodeId = nodeId;
         this.updateSeq = updateSeq;
@@ -121,7 +121,7 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         return new GridDhtPartitionMap2(nodeId,
             updateSeq,
             top,
-            U.<Integer, GridDhtPartitionState>newHashMap(0),
+            new GridPartitionStateMap(0),
             0);
     }
 
@@ -243,25 +243,7 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
 
         out.writeLong(updateSeq);
 
-        int size = map.size();
-
-        out.writeInt(size);
-
-        int i = 0;
-
-        for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet()) {
-            int ordinal = entry.getValue().ordinal();
-
-            assert ordinal == (ordinal & 0xFF);
-            assert entry.getKey() >= 0 && entry.getKey() <= CacheConfiguration.MAX_PARTITIONS_COUNT : entry.getKey();
-
-            out.write(ordinal);
-            out.writeShort((short)(int)entry.getKey());
-
-            i++;
-        }
-
-        assert i == size;
+        out.writeObject(map);
 
         if (top != null) {
             out.writeLong(topologyVersion().topologyVersion());
@@ -279,16 +261,13 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
 
         updateSeq = in.readLong();
 
-        int size = in.readInt();
+        map = (GridPartitionStateMap)in.readObject();
 
-        map = U.newHashMap(size);
+        Set<Map.Entry<Integer, GridDhtPartitionState>> entries = map.entrySet();
 
-        for (int i = 0; i < size; i++) {
-            int ordinal = in.readByte() & 0xFF;
-
-            int part = in.readShort() & 0xFFFF;
-
-            put(part, GridDhtPartitionState.fromOrdinal(ordinal));
+        for (Map.Entry<Integer, GridDhtPartitionState> entry : entries) {
+            if (entry.getValue() == MOVING)
+                moving++;
         }
 
         long ver = in.readLong();

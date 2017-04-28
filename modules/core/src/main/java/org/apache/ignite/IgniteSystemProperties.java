@@ -552,6 +552,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
 
+    /** */
+    public static final String IGNITE_START_CACHES_ON_JOIN = "IGNITE_START_CACHES_ON_JOIN";
+
     /**
      * Enforces singleton.
      */
