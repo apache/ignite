@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -145,7 +146,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param pageSize Page size.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     protected void checkInsertDeleteMultiThreaded(final int pageSize) throws Exception {
         final FreeList list = createFreeList(pageSize);
@@ -175,7 +176,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 Random rnd = ThreadLocalRandom.current();
 
-                for (int i = 0; i < 1_000_000; i++) {
+                for (int i = 0; i < 200_000; i++) {
                     boolean grow0 = grow.get();
 
                     if (grow0) {
@@ -313,18 +314,13 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @return Page memory.
      */
-    protected PageMemory createPageMemory(int pageSize) throws Exception {
-        long[] sizes = new long[CPUS];
-
-        for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 1024 * MB / CPUS;
-
+    protected PageMemory createPageMemory(int pageSize, MemoryPolicyConfiguration plcCfg) throws Exception {
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
-            new UnsafeMemoryProvider(sizes),
+            new UnsafeMemoryProvider(log),
             null,
             pageSize,
-            null,
-            new MemoryMetricsImpl(null),
+            plcCfg,
+            new MemoryMetricsImpl(plcCfg),
             true);
 
         pageMem.start();
@@ -338,13 +334,15 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected FreeList createFreeList(int pageSize) throws Exception {
-        pageMem = createPageMemory(pageSize);
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setMaxSize(1024 * MB);
+
+        pageMem = createPageMemory(pageSize, plcCfg);
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-        MemoryMetricsImpl metrics = new MemoryMetricsImpl(null);
+        MemoryMetricsImpl metrics = new MemoryMetricsImpl(plcCfg);
 
-        MemoryPolicy memPlc = new MemoryPolicy(pageMem, null, metrics, new NoOpPageEvictionTracker());
+        MemoryPolicy memPlc = new MemoryPolicy(pageMem, plcCfg, metrics, new NoOpPageEvictionTracker());
 
         return new FreeListImpl(1, "freelist", metrics, memPlc, null, null, metaPageId, true);
     }

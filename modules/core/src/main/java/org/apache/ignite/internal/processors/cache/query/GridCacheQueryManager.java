@@ -2031,6 +2031,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private static final long serialVersionUID = 0L;
 
+        /**
+         * Number of fields to report when no fields defined.
+         * Includes _key and _val columns.
+         */
+        private static final int NO_FIELDS_COLUMNS_COUNT = 2;
+
         /** Grid */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -2073,13 +2079,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         keyClasses.put(type.name(), type.keyClass().getName());
                         valClasses.put(type.name(), type.valueClass().getName());
 
-                        int size = 2 + type.fields().size();
+                        int size = type.fields().isEmpty() ? NO_FIELDS_COLUMNS_COUNT : type.fields().size();
 
                         Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
                         // _KEY and _VAL are not included in GridIndexingTypeDescriptor.valueFields
-                        fieldsMap.put("_KEY", type.keyClass().getName());
-                        fieldsMap.put("_VAL", type.valueClass().getName());
+                        if (type.fields().isEmpty()) {
+                            fieldsMap.put("_KEY", type.keyClass().getName());
+                            fieldsMap.put("_VAL", type.valueClass().getName());
+                        }
 
                         for (Map.Entry<String, Class<?>> e : type.fields().entrySet())
                             fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());

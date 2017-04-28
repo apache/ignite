@@ -43,7 +43,7 @@ public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testRemoveAll() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 10_000; ++i)
             cache.put(i, "val");
@@ -66,7 +66,7 @@ public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
         U.sleep(5000);
 
         for (int i = 0; i < igniteId.get(); ++i) {
-            IgniteCache locCache = grid(i).cache(null);
+            IgniteCache locCache = grid(i).cache(DEFAULT_CACHE_NAME);
 
             assertEquals("Local size: " + locCache.localSize() + "\n" +
                 "On heap: " + locCache.localSize(CachePeekMode.ONHEAP) + "\n" +

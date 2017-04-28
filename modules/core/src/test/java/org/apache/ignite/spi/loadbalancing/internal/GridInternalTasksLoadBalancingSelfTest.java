@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.node.VisorNodePingTask;
+import org.apache.ignite.internal.visor.node.VisorNodePingTaskArg;
 import org.apache.ignite.internal.visor.node.VisorNodePingTaskResult;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -93,7 +94,8 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
         UUID nid = ignite.cluster().localNode().id();
 
         VisorNodePingTaskResult ping = ignite.compute()
-            .execute(VisorNodePingTask.class.getName(), new VisorTaskArgument<>(nid, nid, false));
+            .execute(VisorNodePingTask.class.getName(),
+                new VisorTaskArgument<>(nid, new VisorNodePingTaskArg(nid), false));
 
         assertTrue(ping.isAlive());
 
@@ -123,7 +125,8 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
         UUID nid = ignite.cluster().localNode().id();
 
         VisorNodePingTaskResult ping = ignite.compute()
-            .execute(VisorNodePingTask.class.getName(), new VisorTaskArgument<>(nid, nid, false));
+            .execute(VisorNodePingTask.class.getName(),
+                new VisorTaskArgument<>(nid, new VisorNodePingTaskArg(nid), false));
 
         assertTrue(ping.isAlive());
 

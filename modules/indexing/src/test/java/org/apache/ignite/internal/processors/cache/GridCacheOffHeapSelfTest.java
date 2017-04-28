@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.Cache;
@@ -26,7 +25,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -88,7 +86,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
             grid(0);
 
-            IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 100; i++) {
                 info("Putting: " + i);

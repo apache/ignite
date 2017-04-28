@@ -79,7 +79,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setRebalanceMode(SYNC);
@@ -119,13 +119,13 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         Organization org = new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA");
 
-        srv1.cache(null).put(1, org);
+        srv1.cache(DEFAULT_CACHE_NAME).put(1, org);
 
         clientMode = true;
 
         Ignite cl1 = startGrid(1);
 
-        cl1.cache(null).get(1);
+        cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
         String clsName = Organization.class.getName();
 
@@ -164,14 +164,14 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv3, "ctx")).io());
 
-        srv3.cache(null).put(
+        srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
         clientMode = true;
 
         Ignite cl1 = startGrid(4);
 
-        cl1.cache(null).get(1);
+        cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
         int result = mappingReqsCounter.get();
 
@@ -197,14 +197,14 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv3, "ctx")).io());
 
-        srv3.cache(null).put(
+        srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
         clientMode = true;
 
         Ignite cl1 = startGrid(4);
 
-        cl1.cache(null).get(1);
+        cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
         nodeStopLatch.await(5_000, TimeUnit.MILLISECONDS);
 
@@ -233,14 +233,14 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv3, "ctx")).io());
 
-        srv3.cache(null).put(
+        srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
         clientMode = true;
 
         Ignite cl1 = startGrid(4);
 
-        cl1.cache(null).get(1);
+        cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
         nodeStopLatch.await(5_000, TimeUnit.MILLISECONDS);
 
@@ -270,7 +270,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         replaceWithStoppingMappingRequestListener(
             ((GridKernalContext)U.field(srv3, "ctx")).io(), 2, nodeStopLatch);
 
-        srv3.cache(null).put(
+        srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
         clientMode = true;
@@ -278,7 +278,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         Ignite cl1 = startGrid(4);
 
         try {
-            cl1.cache(null).get(1);
+            cl1.cache(DEFAULT_CACHE_NAME).get(1);
         }
         catch (Exception e) {
             e.printStackTrace();

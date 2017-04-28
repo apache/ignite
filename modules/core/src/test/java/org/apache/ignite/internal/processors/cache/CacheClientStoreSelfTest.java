@@ -77,7 +77,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
         if (client)
             cfg.setMemoryConfiguration(new MemoryConfiguration());
 
-        CacheConfiguration cc = new CacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cc.setName(CACHE_NAME);
         cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);

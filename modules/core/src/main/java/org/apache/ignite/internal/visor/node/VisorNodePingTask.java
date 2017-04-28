@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.visor.node;
 
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -31,12 +30,12 @@ import org.jetbrains.annotations.Nullable;
  * Ping other node.
  */
 @GridInternal
-public class VisorNodePingTask extends VisorOneNodeTask<UUID, VisorNodePingTaskResult> {
+public class VisorNodePingTask extends VisorOneNodeTask<VisorNodePingTaskArg, VisorNodePingTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorNodePingJob job(UUID arg) {
+    @Override protected VisorNodePingJob job(VisorNodePingTaskArg arg) {
         return new VisorNodePingJob(arg, debug);
     }
 
@@ -53,7 +52,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, VisorNodePingTaskR
     /**
      * Job that ping node.
      */
-    private static class VisorNodePingJob extends VisorJob<UUID, VisorNodePingTaskResult> {
+    private static class VisorNodePingJob extends VisorJob<VisorNodePingTaskArg, VisorNodePingTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -61,15 +60,15 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, VisorNodePingTaskR
          * @param arg Node ID to ping.
          * @param debug Debug flag.
          */
-        protected VisorNodePingJob(UUID arg, boolean debug) {
+        protected VisorNodePingJob(VisorNodePingTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorNodePingTaskResult run(UUID nodeToPing) {
+        @Override protected VisorNodePingTaskResult run(VisorNodePingTaskArg arg) {
             long start = System.currentTimeMillis();
 
-            return new VisorNodePingTaskResult(ignite.cluster().pingNode(nodeToPing), start, System.currentTimeMillis());
+            return new VisorNodePingTaskResult(ignite.cluster().pingNode(arg.getNodeId()), start, System.currentTimeMillis());
         }
 
         /** {@inheritDoc} */

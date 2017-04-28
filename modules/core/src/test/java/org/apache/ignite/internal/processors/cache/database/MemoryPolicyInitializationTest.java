@@ -117,7 +117,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         MemoryPolicy dfltMemPlc = U.field(dbMgr, "dfltMemPlc");
 
-        assertTrue(dfltMemPlc.config().getSize() == USER_DEFAULT_MEM_PLC_SIZE);
+        assertTrue(dfltMemPlc.config().getMaxSize() == USER_DEFAULT_MEM_PLC_SIZE);
     }
 
     /**
@@ -141,7 +141,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         MemoryPolicy dfltMemPlc = U.field(dbMgr, "dfltMemPlc");
 
-        assertTrue(dfltMemPlc.config().getSize() == USER_CUSTOM_MEM_PLC_SIZE);
+        assertTrue(dfltMemPlc.config().getMaxSize() == USER_CUSTOM_MEM_PLC_SIZE);
     }
 
     /**
@@ -232,11 +232,11 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         memCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
                 .setName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME)
-                .setSize(USER_CUSTOM_MEM_PLC_SIZE),
+                .setMaxSize(USER_CUSTOM_MEM_PLC_SIZE),
 
                 new MemoryPolicyConfiguration()
                 .setName(DFLT_MEM_PLC_DEFAULT_NAME)
-                .setSize(USER_DEFAULT_MEM_PLC_SIZE)
+                .setMaxSize(USER_DEFAULT_MEM_PLC_SIZE)
         );
     }
 
@@ -249,7 +249,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         memCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
                 .setName(DFLT_MEM_PLC_DEFAULT_NAME)
-                .setSize(USER_DEFAULT_MEM_PLC_SIZE)
+                .setMaxSize(USER_DEFAULT_MEM_PLC_SIZE)
         );
     }
 
@@ -261,11 +261,11 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         memCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
                 .setName(DFLT_MEM_PLC_DEFAULT_NAME)
-                .setSize(USER_DEFAULT_MEM_PLC_SIZE),
+                .setMaxSize(USER_DEFAULT_MEM_PLC_SIZE),
 
                 new MemoryPolicyConfiguration()
                 .setName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME)
-                .setSize(USER_CUSTOM_MEM_PLC_SIZE)
+                .setMaxSize(USER_CUSTOM_MEM_PLC_SIZE)
         );
     }
 
@@ -288,7 +288,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         memCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
                 .setName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME)
-                .setSize(USER_CUSTOM_MEM_PLC_SIZE)
+                .setMaxSize(USER_CUSTOM_MEM_PLC_SIZE)
         );
     }
 

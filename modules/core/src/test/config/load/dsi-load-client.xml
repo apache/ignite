@@ -42,7 +42,6 @@
                     <property name="name" value="REPLICATED_CACHE"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="startSize" value="200"/>
                     <property name="rebalanceMode" value="NONE"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="swapEnabled" value="false"/>
@@ -51,7 +50,6 @@
                     <property name="name" value="CLIENT_PARTITIONED_CACHE"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="startSize" value="200"/>
                     <property name="rebalanceMode" value="SYNC"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="swapEnabled" value="false"/>

@@ -158,7 +158,7 @@ export default class IgniteConfigurationGenerator {
         if (client)
             cfg.prop('boolean', 'clientMode', true);
 
-        cfg.stringProperty('name', 'gridName')
+        cfg.stringProperty('name', 'igniteInstanceName')
             .stringProperty('localHost');
 
         if (_.isNil(cluster.discovery))
@@ -906,6 +906,8 @@ export default class IgniteConfigurationGenerator {
 
     // Generate discovery group.
     static clusterDiscovery(discovery, cfg = this.igniteConfigurationBean(), discoSpi = this.discoveryConfigurationBean(discovery)) {
+        // TODO IGNITE-4988 cfg.intProperty('metricsUpdateFrequency')
+
         discoSpi.stringProperty('localAddress')
             .intProperty('localPort')
             .intProperty('localPortRange')
@@ -916,9 +918,6 @@ export default class IgniteConfigurationGenerator {
             .intProperty('networkTimeout')
             .intProperty('joinTimeout')
             .intProperty('threadPriority')
-            .intProperty('heartbeatFrequency')
-            .intProperty('maxMissedHeartbeats')
-            .intProperty('maxMissedClientHeartbeats')
             .intProperty('topHistorySize')
             .emptyBeanProperty('listener')
             .emptyBeanProperty('dataExchange')
@@ -1486,8 +1485,6 @@ export default class IgniteConfigurationGenerator {
     static cacheMemory(cache, ccfg = this.cacheConfigurationBean(cache)) {
         this._evictionPolicy(ccfg, 'evictionPolicy', cache.evictionPolicy, cacheDflts.evictionPolicy);
 
-        ccfg.intProperty('startSize');
-
         return ccfg;
     }
 
@@ -1772,8 +1769,6 @@ export default class IgniteConfigurationGenerator {
             return cfg;
 
         cfg.stringProperty('name')
-            .stringProperty('name', 'dataCacheName', (name) => name + '-data')
-            .stringProperty('name', 'metaCacheName', (name) => name + '-meta')
             .enumProperty('defaultMode');
 
         return cfg;

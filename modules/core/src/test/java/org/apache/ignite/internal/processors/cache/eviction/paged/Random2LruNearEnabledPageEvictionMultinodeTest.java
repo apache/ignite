@@ -15,41 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.mem;
-
-import java.util.List;
+package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 /**
  *
  */
-public class DirectMemory {
-    /** Will be set if  */
-    private boolean restored;
-
-    /** */
-    private List<DirectMemoryRegion> regions;
-
-    /**
-     * @param restored Restored flag.
-     * @param regions Memory fragments.
-     */
-    public DirectMemory(boolean restored, List<DirectMemoryRegion> regions) {
-        this.restored = restored;
-        this.regions = regions;
-    }
-
-    /**
-     * @return Restored flag. If {@code true}, the memory fragments were successfully restored since the previous
-     *      usage and can be reused.
-     */
-    public boolean restored() {
-        return restored;
-    }
-
-    /**
-     * @return Memory fragments.
-     */
-    public List<DirectMemoryRegion> regions() {
-        return regions;
+public class Random2LruNearEnabledPageEvictionMultinodeTest extends Random2LruPageEvictionMultinodeTest {
+    /** {@inheritDoc} */
+    @Override protected boolean nearEnabled() {
+        return true;
     }
 }

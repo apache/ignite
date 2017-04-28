@@ -515,7 +515,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         int backups,
         CacheAtomicityMode atomicityMode,
         CacheWriteSynchronizationMode writeMode) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName("test-cache-" + atomicityMode + "-" + cacheMode + "-" + backups + "-" + UUID.randomUUID());
         // TODO GG-11220 (remove setName when fixed).

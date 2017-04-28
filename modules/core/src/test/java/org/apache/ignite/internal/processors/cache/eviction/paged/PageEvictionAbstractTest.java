@@ -25,10 +25,12 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
@@ -69,6 +71,13 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         return configuration;
     }
 
+    /**
+     * @return Near enabled flag.
+     */
+    protected boolean nearEnabled() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -79,7 +88,9 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
 
         MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
 
-        plc.setSize(SIZE);
+        // This will test additional segment allocation.
+        plc.setInitialSize(SIZE / 2);
+        plc.setMaxSize(SIZE);
         plc.setEmptyPagesPoolSize(EMPTY_PAGES_POOL_SIZE);
         plc.setEvictionThreshold(EVICTION_THRESHOLD);
         plc.setName(DEFAULT_POLICY_NAME);
@@ -101,14 +112,14 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
      * @param memoryPlcName Memory policy name.
      * @return Cache configuration.
      */
-    protected static CacheConfiguration<Object, Object> cacheConfig(
-        String name,
+    protected CacheConfiguration<Object, Object> cacheConfig(
+        @NotNull String name,
         String memoryPlcName,
         CacheMode cacheMode,
         CacheAtomicityMode atomicityMode,
         CacheWriteSynchronizationMode writeSynchronizationMode
     ) {
-        CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>()
+        CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setName(name)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setCacheMode(cacheMode)
@@ -118,6 +129,9 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
 
         if (cacheMode == CacheMode.PARTITIONED)
             cacheConfiguration.setBackups(1);
+
+        if (nearEnabled())
+            cacheConfiguration.setNearConfiguration(new NearCacheConfiguration<>());
 
         return cacheConfiguration;
     }
