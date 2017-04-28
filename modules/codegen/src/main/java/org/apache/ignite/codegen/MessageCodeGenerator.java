@@ -235,6 +235,7 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridH2RowMessage.class);
 //        gen.generateAndWrite(GridCacheVersion.class);
 //        gen.generateAndWrite(GridCacheVersionEx.class);
+//        gen.generateAndWrite(GridH2Enum.class);
     }
 
     /**

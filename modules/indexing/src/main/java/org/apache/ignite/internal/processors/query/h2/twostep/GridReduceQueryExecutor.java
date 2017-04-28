@@ -801,7 +801,7 @@ public class GridReduceQueryExecutor {
 
                         setupConnection(r.conn, false, enforceJoinOrder);
 
-                        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
+                        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE, ctx)
                             .pageSize(r.pageSize).distributedJoinMode(OFF));
 
                         try {

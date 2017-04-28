@@ -97,7 +97,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     public BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
         assert ctx != null;
         assert arr != null;
-        assert arr[0] == GridBinaryMarshaller.ENUM;
+        assert arr[0] == GridBinaryMarshaller.BINARY_ENUM || arr[0] == GridBinaryMarshaller.ENUM;
 
         valBytes = arr;
 
@@ -184,6 +184,16 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @Override public int enumOrdinal() throws BinaryObjectException {
         return ord;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String enumName() throws BinaryObjectException {
+        BinaryTypeImpl binTypeImpl = (BinaryTypeImpl)ctx.metadata(typeId);
+        String name = binTypeImpl.metadata().getEnumNameByOrdinal(ord);
+        if (name == null)
+            throw new BinaryObjectException("Unable to resolve enum constant name [typeId=" +
+                    typeId + ", typeName='" + binTypeImpl.typeName() + "', ordinal=" + ord + "]");
+        return name;
     }
 
     /** {@inheritDoc} */

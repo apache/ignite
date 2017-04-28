@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -374,11 +375,29 @@ public interface IgniteBinary {
     public Collection<BinaryType> types() throws BinaryObjectException;
 
     /**
-     * Create enum object.
+     * Create enum object using ordinal value.
      *
      * @param typeName Type name.
      * @param ord Ordinal.
      * @return Enum object.
      */
     public BinaryObject buildEnum(String typeName, int ord);
+
+    /**
+     * Create enum object using its name.
+     *
+     * @param typeName Type name.
+     * @param name Name.
+     * @return Enum object.
+     */
+    public BinaryObject buildEnum(String typeName, String name);
+
+    /**
+     * Register enum type
+     *
+     * @param typeName Type name.
+     * @param vals Mapping of enum constant names to ordinals.
+     * @return Binary Type for registered enum.
+     */
+    public BinaryType defineEnum(String typeName, Map<String, Integer> vals);
 }

@@ -145,7 +145,7 @@ public enum BinaryWriteMode {
     ENUM(GridBinaryMarshaller.ENUM),
 
     /** Binary enum. */
-    BINARY_ENUM(GridBinaryMarshaller.ENUM),
+    BINARY_ENUM(GridBinaryMarshaller.BINARY_ENUM),
 
     /** */
     ENUM_ARR(GridBinaryMarshaller.ENUM_ARR),

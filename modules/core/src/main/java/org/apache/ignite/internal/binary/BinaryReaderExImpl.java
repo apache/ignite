@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_ENUM;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BOOLEAN;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BOOLEAN_ARR;
@@ -1426,6 +1427,15 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /**
      * @param fieldId Field ID.
+     * @return Binary Enum
+     * @throws BinaryObjectException
+     */
+    @Nullable BinaryEnumObjectImpl readBinaryEnum(int fieldId) throws BinaryObjectException {
+        return findFieldById(fieldId) ? BinaryUtils.doReadBinaryEnum(in, ctx) : null;
+    }
+
+    /**
+     * @param fieldId Field ID.
      * @param cls Class.
      * @return Value.
      * @throws BinaryObjectException In case of error.
@@ -1930,6 +1940,13 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 break;
 
+            case BINARY_ENUM:
+                obj = BinaryUtils.doReadBinaryEnum(in, ctx);
+
+                if (!GridBinaryMarshaller.KEEP_BINARIES.get())
+                    obj = ((BinaryObject)obj).deserialize();
+
+                break;
             case CLASS:
                 obj = BinaryUtils.doReadClass(in, ctx, ldr);
 

@@ -22,6 +22,7 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueEnum;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.h2.value.Value;
@@ -108,6 +109,9 @@ public class GridH2ValueMessageFactory implements MessageFactory {
 
             case -35:
                 return new GridH2RowRangeBounds();
+
+            case -60:
+                return new GridH2Enum();
         }
 
         return null;
@@ -214,6 +218,9 @@ public class GridH2ValueMessageFactory implements MessageFactory {
                 return new GridH2Geometry(v);
 
             default:
+                if (v instanceof GridH2ValueEnum)
+                    return new GridH2Enum(v);
+
                 throw new IllegalStateException("Unsupported H2 type: " + v.getType());
         }
     }

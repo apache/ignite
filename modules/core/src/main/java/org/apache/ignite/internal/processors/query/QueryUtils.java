@@ -314,7 +314,7 @@ public class QueryUtils {
             else
                 isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
 
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(), entry.getValue(),
                 U.classForName(entry.getValue(), Object.class, true), d.aliases(), isKeyField);
 
             d.addProperty(prop, false);
@@ -450,14 +450,15 @@ public class QueryUtils {
      * @param ctx Kernal context.
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
+     * @param userTypeName Type name.
      * @param resType Result type.
      * @param aliases Aliases.
      * @param isKeyField Key ownership flag, as defined in {@link QueryEntity#keyFields}: {@code true} if field belongs
      *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
      * @return Binary property.
      */
-    public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
-                                     Map<String, String> aliases, @Nullable Boolean isKeyField) throws IgniteCheckedException {
+    public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, String userTypeName,
+        Class<?> resType, Map<String, String> aliases, @Nullable Boolean isKeyField) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -473,7 +474,7 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias);
+            res = new QueryBinaryProperty(ctx, prop, res, userTypeName, resType, isKeyField, alias);
         }
 
         return res;
@@ -963,6 +964,11 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public GridQueryProperty parent() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String userTypeName() {
+            return cls.getName();
         }
     }
 }

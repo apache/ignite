@@ -162,4 +162,11 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @throws BinaryObjectException If object is not enum.
      */
     public int enumOrdinal() throws BinaryObjectException;
+
+    /**
+     * Get name for this enum object. Use {@link BinaryType#isEnum()} to check if object is of enum type.
+     * @return Name.
+     * @throws BinaryObjectException
+     */
+    public String enumName() throws BinaryObjectException;
 }

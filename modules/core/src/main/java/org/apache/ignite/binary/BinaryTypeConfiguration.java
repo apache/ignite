@@ -23,6 +23,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
  * configuration is optional, as it is generally enough, and also optional, to provide global binary
@@ -46,6 +49,9 @@ public class BinaryTypeConfiguration {
     /** Enum flag. */
     private boolean isEnum;
 
+    /** Enum names to ordinals mapping. */
+    private Map<String, Integer> enumValues;
+
     /**
      * Constructor.
      */
@@ -64,6 +70,7 @@ public class BinaryTypeConfiguration {
         idMapper = other.idMapper;
         isEnum = other.isEnum;
         serializer = other.serializer;
+        enumValues = other.enumValues;
         typeName = other.typeName;
     }
 
@@ -177,6 +184,44 @@ public class BinaryTypeConfiguration {
         this.isEnum = isEnum;
 
         return this;
+    }
+
+    /**
+     * Sets enum name to ordinal mapping.
+     *
+     * @param values Array of enum constants names.
+     * @return {@code this} for chaining.
+     */
+    public BinaryTypeConfiguration setEnumValues(String... values) {
+        if (values == null) {
+            this.enumValues = null;
+            return this;
+        }
+
+        Map<String, Integer> enumValues = new LinkedHashMap<>(values.length);
+        for (int idx = 0; idx < values.length; ++idx)
+            enumValues.put(values[idx], idx);
+
+        return setEnumValues(enumValues);
+    }
+
+    /**
+     * Set enum ordinal to names mapping.
+     *
+     * @param values Map of enum name to ordinal.
+     * @return {@code this} for chaining.
+     */
+    public BinaryTypeConfiguration setEnumValues(Map<String, Integer> values) {
+        this.isEnum = true;
+        this.enumValues = values;
+        return this;
+    }
+
+    /**
+     * @return Enum name to ordinal mapping
+     */
+    public Map<String, Integer> getEnumValues() {
+        return enumValues;
     }
 
     /** {@inheritDoc} */

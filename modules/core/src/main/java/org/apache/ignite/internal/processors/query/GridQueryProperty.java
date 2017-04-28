@@ -63,4 +63,9 @@ public interface GridQueryProperty {
      * @return Parent property or {@code null} if this property is not nested.
      */
     public GridQueryProperty parent();
+
+    /**
+     * @return type name defined by user
+     */
+    public String userTypeName();
 }

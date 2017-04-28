@@ -124,6 +124,9 @@ public class BinaryClassDescriptor {
     /** Whether stable schema was published. */
     private volatile boolean stableSchemaPublished;
 
+    /** Enum name to ordinal mapping */
+    private Map<String, Integer> enumMap;
+
     /**
      * @param ctx Context.
      * @param cls Class.
@@ -195,6 +198,13 @@ public class BinaryClassDescriptor {
                 "have this class in classpath. To enable binary serialization either implement " +
                 Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
                 "BinaryTypeConfiguration.setSerializer() method.");
+        }
+
+        if (cls.isEnum()) {
+            Object[] constants = cls.getEnumConstants();
+            enumMap = new LinkedHashMap<>(constants.length);
+            for (Object o: constants)
+                enumMap.put(((Enum)o).name(), ((Enum)o).ordinal());
         }
 
         switch (mode) {
@@ -399,7 +409,14 @@ public class BinaryClassDescriptor {
      * @return {@code True} if enum.
      */
     boolean isEnum() {
-        return mode == BinaryWriteMode.ENUM;
+        return mode == BinaryWriteMode.ENUM || mode == BinaryWriteMode.BINARY_ENUM;
+    }
+
+    /**
+     * @return Enum name to ordinal mapping.
+     */
+    public Map<String, Integer> enumMap() {
+        return enumMap;
     }
 
     /**
@@ -757,7 +774,7 @@ public class BinaryClassDescriptor {
                                 BinarySchema newSchema = collector.schema();
 
                                 BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
-                                    affKeyFieldName, Collections.singleton(newSchema), false);
+                                    affKeyFieldName, Collections.singleton(newSchema), false, null);
 
                                 ctx.updateMetadata(typeId, meta);
 
@@ -778,7 +795,7 @@ public class BinaryClassDescriptor {
                 if (userType && !stableSchemaPublished) {
                     // Update meta before write object with new schema
                     BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
-                        affKeyFieldName, Collections.singleton(stableSchema), false);
+                        affKeyFieldName, Collections.singleton(stableSchema), false, null);
 
                     ctx.updateMetadata(typeId, meta);
 

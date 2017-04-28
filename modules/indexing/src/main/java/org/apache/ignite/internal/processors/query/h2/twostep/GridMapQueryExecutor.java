@@ -554,7 +554,8 @@ public class GridMapQueryExecutor {
                 node.id(),
                 reqId,
                 segmentId,
-                replicated ? REPLICATED : MAP)
+                replicated ? REPLICATED : MAP,
+                ctx)
                 .filter(h2.backupFilter(topVer, parts))
                 .partitionsMap(partsMap)
                 .distributedJoinMode(distributedJoinMode)

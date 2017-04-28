@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
@@ -88,16 +90,21 @@ public class GridH2QueryContext {
     /** */
     private GridH2CollocationModel qryCollocationMdl;
 
+    /** */
+    private GridKernalContext ctx;
+
     /**
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
      * @param qryId The query ID.
      * @param type Query type.
+     * @param ctx Kernal context.
      */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
+    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type, GridKernalContext ctx) {
         assert type != MAP;
 
         key = new Key(locNodeId, nodeId, qryId, 0, type);
+        this.ctx = ctx;
     }
 
     /**
@@ -106,11 +113,13 @@ public class GridH2QueryContext {
      * @param qryId The query ID.
      * @param segmentId Index segment ID.
      * @param type Query type.
+     * @param ctx Kernal context.
      */
-    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
+    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type, GridKernalContext ctx) {
         assert segmentId == 0 || type == MAP;
 
         key = new Key(locNodeId, nodeId, qryId, segmentId, type);
+        this.ctx = ctx;
     }
 
     /**
@@ -539,6 +548,13 @@ public class GridH2QueryContext {
         this.pageSize = pageSize;
 
         return this;
+    }
+
+    /**
+     * @return kernal context
+     */
+    public GridKernalContext kernalContext() {
+        return ctx;
     }
 
     /** {@inheritDoc} */

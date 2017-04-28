@@ -127,4 +127,9 @@ public class QueryClassProperty implements GridQueryProperty {
     @Override public GridQueryProperty parent() {
         return parent;
     }
+
+    /** {@inheritDoc} */
+    @Override public String userTypeName() {
+        return accessor.getType().getName();
+    }
 }

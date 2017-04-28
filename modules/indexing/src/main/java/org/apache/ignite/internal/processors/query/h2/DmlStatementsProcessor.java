@@ -717,7 +717,7 @@ public class DmlStatementsProcessor {
 
         Value h2Val = desc.wrap(val, objType);
 
-        return h2Val.convertTo(type).getObject();
+        return desc.indexing().h2CustomDataTypesHandler().convertValue(desc.indexing().kernalContext(), h2Val, type).getObject();
     }
 
     /**

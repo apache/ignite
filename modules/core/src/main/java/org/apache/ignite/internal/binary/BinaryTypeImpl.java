@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 
+import java.util.ArrayList;
 import java.util.Collection;
+
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -33,6 +36,9 @@ public class BinaryTypeImpl implements BinaryType {
 
     /** Type metadata. */
     private final BinaryMetadata meta;
+
+    /** Enum values cached */
+    private Collection<BinaryObject> enumValues;
 
     /**
      * Constructor.
@@ -78,6 +84,19 @@ public class BinaryTypeImpl implements BinaryType {
     /** {@inheritDoc} */
     @Override public boolean isEnum() {
         return meta.isEnum();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<BinaryObject> enumValues() {
+        if (enumValues != null)
+            return enumValues;
+
+        Collection<Integer> ordinals = meta.enumMap().values();
+        enumValues = new ArrayList<>(ordinals.size());
+        for (Integer ord: ordinals)
+            enumValues.add(new BinaryEnumObjectImpl(ctx, typeId(), typeName(), ord));
+
+        return enumValues;
     }
 
     /**

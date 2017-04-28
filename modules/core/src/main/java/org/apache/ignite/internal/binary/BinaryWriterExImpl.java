@@ -822,7 +822,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         out.unsafeEnsure(1 + 4);
 
-        out.unsafeWriteByte(GridBinaryMarshaller.ENUM);
+        out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
         out.unsafeWriteInt(typeId);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
