@@ -42,7 +42,6 @@
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="testcache"/>
-                    <property name="startSize" value="10"/>
                 </bean>
             </list>
         </property>

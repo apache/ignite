@@ -541,7 +541,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                 Object val = cache.localPeek(key);
 
                 if (val == null)
-                    assertFalse(ignite(0).affinity(null).isPrimaryOrBackup(ignite(i).cluster().localNode(), key));
+                    assertFalse(ignite(0).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(ignite(i).cluster().localNode(), key));
                 else
                     assertEquals("Unexpected value for grid " + i, expVal, val);
             }

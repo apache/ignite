@@ -91,9 +91,9 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         ignite2 = startGrid(2);
         ignite3 = startGrid(3);
 
-        cache1 = ignite1.cache(null);
-        cache2 = ignite2.cache(null);
-        cache3 = ignite3.cache(null);
+        cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
+        cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
+        cache3 = ignite3.cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -190,7 +190,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         for (Ignite ignite : ignites)
             addListener(ignite, lsnr);
 
-        IgniteCache<Integer, String> cache1 = ignites[0].cache(null);
+        IgniteCache<Integer, String> cache1 = ignites[0].cache(DEFAULT_CACHE_NAME);
 
         for (int i = 1; i <= cnt; i++)
             cache1.put(i, "val" + i);
@@ -205,7 +205,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         latch.await(10, SECONDS);
 
         for (Ignite ignite : ignites) {
-            IgniteCache<Integer, String> cache = ignite.cache(null);
+            IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             if (cache == cache1)
                 continue;

@@ -68,16 +68,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         public const int DefaultLocalPortRange = 100;
 
         /// <summary>
-        /// Default value for the <see cref="MaxMissedHeartbeats"/> property.
-        /// </summary>
-        public const int DefaultMaxMissedHeartbeats = 1;
-
-        /// <summary>
-        /// Default value for the <see cref="MaxMissedClientHeartbeats"/> property.
-        /// </summary>
-        public const int DefaultMaxMissedClientHeartbeats = 5;
-
-        /// <summary>
         /// Default value for the <see cref="IpFinderCleanFrequency"/> property.
         /// </summary>
         public static readonly TimeSpan DefaultIpFinderCleanFrequency = TimeSpan.FromSeconds(60);
@@ -105,8 +95,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             ReconnectCount = DefaultReconnectCount;
             LocalPort = DefaultLocalPort;
             LocalPortRange = DefaultLocalPortRange;
-            MaxMissedHeartbeats = DefaultMaxMissedHeartbeats;
-            MaxMissedClientHeartbeats = DefaultMaxMissedClientHeartbeats;
             IpFinderCleanFrequency = DefaultIpFinderCleanFrequency;
             ThreadPriority = DefaultThreadPriority;
             TopologyHistorySize = DefaultTopologyHistorySize;
@@ -132,8 +120,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             ReconnectCount = reader.ReadInt();
             LocalPort = reader.ReadInt();
             LocalPortRange = reader.ReadInt();
-            MaxMissedHeartbeats = reader.ReadInt();
-            MaxMissedClientHeartbeats = reader.ReadInt();
             StatisticsPrintFrequency = reader.ReadLongAsTimespan();
             IpFinderCleanFrequency = reader.ReadLongAsTimespan();
             ThreadPriority = reader.ReadInt();
@@ -211,18 +197,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         public int LocalPortRange { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum heartbeats count node can miss without initiating status check.
-        /// </summary>
-        [DefaultValue(DefaultMaxMissedHeartbeats)]
-        public int MaxMissedHeartbeats { get; set; }
-
-        /// <summary>
-        /// Gets or sets the maximum heartbeats count node can miss without failing client node.
-        /// </summary>
-        [DefaultValue(DefaultMaxMissedClientHeartbeats)]
-        public int MaxMissedClientHeartbeats { get; set; }
-
-        /// <summary>
         /// Gets or sets the statistics print frequency.
         /// <see cref="TimeSpan.Zero"/> for no statistics.
         /// </summary>
@@ -279,8 +253,6 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             writer.WriteInt(ReconnectCount);
             writer.WriteInt(LocalPort);
             writer.WriteInt(LocalPortRange);
-            writer.WriteInt(MaxMissedHeartbeats);
-            writer.WriteInt(MaxMissedClientHeartbeats);
             writer.WriteLong((long) StatisticsPrintFrequency.TotalMilliseconds);
             writer.WriteLong((long) IpFinderCleanFrequency.TotalMilliseconds);
             writer.WriteInt(ThreadPriority);

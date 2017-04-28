@@ -687,7 +687,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         boolean accountCache,
         boolean personCache,
         boolean orgCache) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(cacheName);
         ccfg.setCacheMode(cacheMode);

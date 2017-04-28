@@ -91,7 +91,7 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     ccfg.setName(CACHE_NAMES[idx.getAndIncrement()]);
 

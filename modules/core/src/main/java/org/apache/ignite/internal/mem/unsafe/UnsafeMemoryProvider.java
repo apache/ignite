@@ -20,63 +20,42 @@ package org.apache.ignite.internal.mem.unsafe;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.mem.DirectMemory;
-import org.apache.ignite.internal.mem.DirectMemoryRegion;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.UnsafeChunk;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-public class UnsafeMemoryProvider implements DirectMemoryProvider, LifecycleAware {
+public class UnsafeMemoryProvider implements DirectMemoryProvider {
     /** */
-    private final long[] sizes;
+    private long[] sizes;
 
     /** */
     private List<DirectMemoryRegion> regions;
 
+    /** */
+    private IgniteLogger log;
+
     /**
-     * @param sizes Sizes of segments.
+     * @param log Ignite logger to use.
      */
-    public UnsafeMemoryProvider(long[] sizes) {
+    public UnsafeMemoryProvider(IgniteLogger log) {
+        this.log = log;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initialize(long[] sizes) {
         this.sizes = sizes;
-    }
 
-    /** {@inheritDoc} */
-    @Override public DirectMemory memory() {
-        return new DirectMemory(false, regions);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteException {
         regions = new ArrayList<>();
-
-        long allocated = 0;
-
-        for (long size : sizes) {
-            long ptr = GridUnsafe.allocateMemory(size);
-
-            if (ptr <= 0) {
-                for (DirectMemoryRegion region : regions)
-                    GridUnsafe.freeMemory(region.address());
-
-                throw new IgniteException("Failed to allocate memory [allocated=" + allocated +
-                    ", requested=" + size + ']');
-            }
-
-            DirectMemoryRegion chunk = new UnsafeChunk(ptr, size);
-
-            regions.add(chunk);
-
-            allocated += size;
-        }
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteException {
+    @Override public void shutdown() {
         for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
             DirectMemoryRegion chunk = it.next();
 
@@ -85,5 +64,27 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider, LifecycleAwar
             // Safety.
             it.remove();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public DirectMemoryRegion nextRegion() {
+        if (regions.size() == sizes.length)
+            return null;
+
+        long chunkSize = sizes[regions.size()];
+
+        long ptr = GridUnsafe.allocateMemory(chunkSize);
+
+        if (ptr <= 0) {
+            U.error(log, "Failed to allocate next memory chunk: " + U.readableSize(chunkSize, true));
+
+            return null;
+        }
+
+        DirectMemoryRegion region = new UnsafeChunk(ptr, chunkSize);
+
+        regions.add(region);
+
+        return region;
     }
 }

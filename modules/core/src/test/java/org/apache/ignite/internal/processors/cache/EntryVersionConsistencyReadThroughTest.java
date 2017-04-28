@@ -70,7 +70,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private CacheConfiguration<String, List<Double>> createCacheConfiguration(CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<String, List<Double>> cc = new CacheConfiguration<>();
+        CacheConfiguration<String, List<Double>> cc = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cc.setCacheMode(PARTITIONED);
         cc.setAtomicityMode(atomicityMode);
@@ -158,7 +158,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
 
                 IgniteEx grid = grid(i);
 
-                final IgniteCache<String, Integer> cache = grid.cache(null);
+                final IgniteCache<String, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                 if (single)
                     for (String key : keys)
@@ -168,7 +168,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
 
                 // Check entry versions consistency.
                 for (String key : keys) {
-                    Collection<ClusterNode> nodes = grid.affinity(null).mapKeyToPrimaryAndBackups(key);
+                    Collection<ClusterNode> nodes = grid.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
                     List<IgniteEx> grids = grids(nodes);
 
@@ -176,7 +176,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
                     Object val0 = null;
 
                     for (IgniteEx g : grids) {
-                        GridCacheAdapter<Object, Object> cx = g.context().cache().internalCache();
+                        GridCacheAdapter<Object, Object> cx = g.context().cache().internalCache(DEFAULT_CACHE_NAME);
 
                         GridCacheEntryEx e = cx.entryEx(key);
 
@@ -201,7 +201,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
             }
         }
         finally {
-            grid(0).destroyCache(null);
+            grid(0).destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 

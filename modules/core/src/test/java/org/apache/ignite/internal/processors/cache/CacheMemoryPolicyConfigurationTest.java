@@ -58,7 +58,7 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
      * Verifies that proper exception is thrown when MemoryPolicy is misconfigured for cache.
      */
     public void testMissingMemoryPolicy() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setMemoryPolicyName("nonExistingMemPlc");
 
@@ -84,20 +84,21 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
 
         MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
         dfltPlcCfg.setName("dfltPlc");
-        dfltPlcCfg.setSize(1024 * 1024);
+        dfltPlcCfg.setInitialSize(10 * 1024 * 1024);
+        dfltPlcCfg.setMaxSize(10 * 1024 * 1024);
 
         MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
         bigPlcCfg.setName("bigPlc");
-        bigPlcCfg.setSize(1024 * 1024 * 1024);
+        bigPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
         memCfg.setMemoryPolicies(dfltPlcCfg, bigPlcCfg);
         memCfg.setDefaultMemoryPolicyName("dfltPlc");
 
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         IgniteEx ignite0 = startGrid(0);
 
-        IgniteCache<Object, Object> cache = ignite0.cache(null);
+        IgniteCache<Object, Object> cache = ignite0.cache(DEFAULT_CACHE_NAME);
 
         boolean oomeThrown = false;
 
@@ -137,21 +138,22 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
 
         MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
         dfltPlcCfg.setName("dfltPlc");
-        dfltPlcCfg.setSize(1024 * 1024);
+        dfltPlcCfg.setInitialSize(1024 * 1024);
+        dfltPlcCfg.setMaxSize(1024 * 1024);
 
         MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
         bigPlcCfg.setName("bigPlc");
-        bigPlcCfg.setSize(1024 * 1024 * 1024);
+        bigPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
         memCfg.setMemoryPolicies(dfltPlcCfg, bigPlcCfg);
         memCfg.setDefaultMemoryPolicyName("dfltPlc");
 
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setMemoryPolicyName("bigPlc");
 
         IgniteEx ignite0 = startGrid(0);
 
-        IgniteCache<Object, Object> cache = ignite0.cache(null);
+        IgniteCache<Object, Object> cache = ignite0.cache(DEFAULT_CACHE_NAME);
 
         try {
             for (int i = 0; i < 500_000; i++)

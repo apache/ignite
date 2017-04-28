@@ -846,7 +846,6 @@ object VisorCacheCommand {
 
         cacheT += ("Write Synchronization Mode", safe(cfg.getWriteSynchronizationMode))
         cacheT += ("Invalidate", bool2Str(cfg.isInvalidate))
-        cacheT += ("Start Size", cfg.getStartSize)
 
         cacheT += ("Affinity Function", safe(affinityCfg.getFunction))
         cacheT += ("Affinity Backups", affinityCfg.getPartitionedBackups)

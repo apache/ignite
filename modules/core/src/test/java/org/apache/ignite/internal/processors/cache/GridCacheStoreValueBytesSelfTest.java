@@ -80,11 +80,11 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
         Ignite g0 = startGrid(0);
         Ignite g1 = startGrid(1);
 
-        IgniteCache<Integer, String> c = g0.cache(null);
+        IgniteCache<Integer, String> c = g0.cache(DEFAULT_CACHE_NAME);
 
         c.put(1, "Cached value");
 
-        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache().entryEx(1);
+        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME).entryEx(1);
 
         assert entry != null;
 

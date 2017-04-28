@@ -99,7 +99,7 @@ public class CacheGetFromJobTest extends GridCacheAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            IgniteCache cache = ignite.cache(null);
+            IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache);
 

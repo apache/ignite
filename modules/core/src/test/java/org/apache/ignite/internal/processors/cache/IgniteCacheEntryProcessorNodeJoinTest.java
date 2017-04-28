@@ -91,7 +91,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cache.setCacheMode(PARTITIONED);
         cache.setAtomicityMode(atomicityMode());
@@ -142,7 +142,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         // TODO: IGNITE-1525 (test fails with one-phase commit).
         boolean createCache = atomicityMode() == TRANSACTIONAL;
 
-        String cacheName = null;
+        String cacheName = DEFAULT_CACHE_NAME;
 
         if (createCache) {
             CacheConfiguration ccfg = cacheConfiguration();
@@ -229,7 +229,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             }, 1, "starter");
 
             try {
-                checkIncrement(null, invokeAll, null, null);
+                checkIncrement(DEFAULT_CACHE_NAME, invokeAll, null, null);
             }
             finally {
                 stop.set(true);
@@ -239,7 +239,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
             for (int i = 0; i < KEYS; i++) {
                 for (int g = 0; g < GRID_CNT + started; g++) {
-                    Set<String> vals = ignite(g).<String, Set<String>>cache(null).get("set-" + i);
+                    Set<String> vals = ignite(g).<String, Set<String>>cache(DEFAULT_CACHE_NAME).get("set-" + i);
 
                     assertNotNull(vals);
                     assertEquals(INCREMENTS, vals.size());
@@ -333,7 +333,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             final AtomicBoolean done = new AtomicBoolean(false);
 
             for (int i = 0; i < keys; i++)
-                ignite(0).cache(null).put(i, 0);
+                ignite(0).cache(DEFAULT_CACHE_NAME).put(i, 0);
 
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
@@ -363,7 +363,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
                     for (int i = 0; i < keys; i++)
                         assertTrue("Failed [key=" + i + ", oldVal=" + updVal+ ']',
-                            ignite(0).cache(null).replace(i, updVal, updVal + 1));
+                            ignite(0).cache(DEFAULT_CACHE_NAME).replace(i, updVal, updVal + 1));
 
                     updVal++;
                 }
@@ -374,9 +374,9 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
             for (int i = 0; i < keys; i++) {
                 for (int g = 0; g < GRID_CNT + started; g++) {
-                    Integer val = ignite(g).<Integer, Integer>cache(null).get(i);
+                    Integer val = ignite(g).<Integer, Integer>cache(DEFAULT_CACHE_NAME).get(i);
 
-                    GridCacheEntryEx entry = ((IgniteKernal)grid(g)).internalCache(null).peekEx(i);
+                    GridCacheEntryEx entry = ((IgniteKernal)grid(g)).internalCache(DEFAULT_CACHE_NAME).peekEx(i);
 
                     if (updVal != val)
                         info("Invalid value for grid [g=" + g + ", entry=" + entry + ']');

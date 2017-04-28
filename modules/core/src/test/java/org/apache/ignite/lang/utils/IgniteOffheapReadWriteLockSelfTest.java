@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SuppressWarnings("BusyWait")
 public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int TAG_0 = 0;
+    private static final int TAG_0 = 1;
 
     /**
      * @throws Exception if failed.
@@ -334,7 +334,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final long ptr = GridUnsafe.allocateMemory(OffheapReadWriteLock.LOCK_SIZE);
 
-        lock.init(ptr, 0);
+        lock.init(ptr, TAG_0);
 
         final AtomicInteger reads = new AtomicInteger();
         final AtomicInteger writes = new AtomicInteger();
@@ -350,7 +350,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                 try {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    int tag = 0;
+                    int tag = TAG_0;
 
                     long lastSwitch = System.currentTimeMillis();
 
@@ -381,7 +381,12 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
                                     if (switched && waitBeforeSwitch)
                                         info("Switching...");
 
-                                    lock.writeUnlock(ptr, (tag + (switched ? 1 : 0)) & 0xFFFF);
+                                    int tag1 = (tag + (switched ? 1 : 0)) & 0xFFFF;
+
+                                    if (tag1 == 0)
+                                        tag1 = 1;
+
+                                    lock.writeUnlock(ptr, tag1);
                                 }
 
                                 writes.incrementAndGet();
@@ -422,7 +427,10 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
                             tag = (tag + 1) & 0xFFFF;
 
-                            if (waitBeforeSwitch || (!waitBeforeSwitch && tag == 0))
+                            if (tag == 0)
+                                tag = 1;
+
+                            if (waitBeforeSwitch || (!waitBeforeSwitch && tag == 1))
                                 info("Switch to a new tag: " + tag);
 
                             if (done.get()) {

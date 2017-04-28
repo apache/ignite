@@ -206,7 +206,6 @@ public class DemoCachesLoadService implements Service {
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setQueryDetailMetricsSize(10);
-        ccfg.setStartSize(100);
         ccfg.setStatisticsEnabled(true);
         ccfg.setSqlFunctionClasses(SQLFunctions.class);
 
