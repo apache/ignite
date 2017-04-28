@@ -134,7 +134,7 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends IgniteAt
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName("MyCache");
         cfg.setAtomicityMode(TRANSACTIONAL);

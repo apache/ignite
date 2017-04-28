@@ -154,7 +154,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      */
     @SuppressWarnings({"unchecked"})
     private GridNearCacheAdapter<Integer, String> near(Ignite g) {
-        return (GridNearCacheAdapter)((IgniteKernal)g).internalCache();
+        return (GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -163,7 +163,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht();
     }
 
     /**
@@ -171,7 +171,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @return Primary node for the given key.
      */
     private Collection<ClusterNode> keyNodes(Object key) {
-        return grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
+        return grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
     }
 
     /**
@@ -272,7 +272,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         // Evict on primary node.
         // It will trigger dht eviction and eviction on backup node.
-        grid(primary).cache(null).localEvict(Collections.<Object>singleton(key));
+        grid(primary).cache(DEFAULT_CACHE_NAME).localEvict(Collections.<Object>singleton(key));
 
         futOther.get(3000);
         futBackup.get(3000);

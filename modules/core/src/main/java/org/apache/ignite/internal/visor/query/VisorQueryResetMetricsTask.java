@@ -27,19 +27,19 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Reset compute grid query metrics.
  */
 @GridInternal
-public class VisorQueryResetMetricsTask extends VisorOneNodeTask<String, Void> {
+public class VisorQueryResetMetricsTask extends VisorOneNodeTask<VisorQueryResetMetricsTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorQueryResetMetricsJob job(String arg) {
+    @Override protected VisorQueryResetMetricsJob job(VisorQueryResetMetricsTaskArg arg) {
         return new VisorQueryResetMetricsJob(arg, debug);
     }
 
     /**
      * Job that reset cache query metrics.
      */
-    private static class VisorQueryResetMetricsJob extends VisorJob<String, Void> {
+    private static class VisorQueryResetMetricsJob extends VisorJob<VisorQueryResetMetricsTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -47,16 +47,20 @@ public class VisorQueryResetMetricsTask extends VisorOneNodeTask<String, Void> {
          * @param arg Cache name to reset query metrics for.
          * @param debug Debug flag.
          */
-        private VisorQueryResetMetricsJob(String arg, boolean debug) {
+        private VisorQueryResetMetricsJob(VisorQueryResetMetricsTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String cacheName) {
+        @Override protected Void run(VisorQueryResetMetricsTaskArg arg) {
+            String cacheName = arg.getCacheName();
+
             IgniteCache cache = ignite.cache(cacheName);
 
-            if (cache != null)
-                cache.resetQueryMetrics();
+            if (cache == null)
+                throw new IllegalStateException("Failed to find cache for name: " + cacheName);
+
+            cache.resetQueryMetrics();
 
             return null;
         }

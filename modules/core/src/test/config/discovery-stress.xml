@@ -27,9 +27,9 @@
 
         <property name="cacheConfiguration">
             <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                <property name="name" value="default"/>
                 <property name="cacheMode" value="PARTITIONED"/>
                 <property name="rebalanceMode" value="SYNC"/>
-                <property name="swapEnabled" value="false"/>
                 <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
 
                 <property name="evictionPolicy">

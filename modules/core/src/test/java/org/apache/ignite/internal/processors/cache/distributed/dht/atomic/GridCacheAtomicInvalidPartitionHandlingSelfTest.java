@@ -102,7 +102,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
 
@@ -171,13 +171,13 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         try {
             assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
 
-            final IgniteCache<Object, Object> cache = grid(0).cache(null);
+            final IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             final int range = 100_000;
 
             final Set<Integer> keys = new LinkedHashSet<>();
 
-            try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(null)) {
+            try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 for (int i = 0; i < range; i++) {
@@ -190,7 +190,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 }
             }
 
-            final Affinity<Integer> aff = grid(0).affinity(null);
+            final Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
             boolean putDone = GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
@@ -204,7 +204,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                         for (int i = 0; i < gridCnt; i++) {
                             ClusterNode locNode = grid(i).localNode();
 
-                            IgniteCache<Object, Object> cache = grid(i).cache(null);
+                            IgniteCache<Object, Object> cache = grid(i).cache(DEFAULT_CACHE_NAME);
 
                             Object val = cache.localPeek(key);
 
@@ -298,7 +298,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 for (int i = 0; i < gridCnt; i++) {
                     ClusterNode locNode = grid(i).localNode();
 
-                    GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache();
+                    GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME);
 
                     GridCacheEntryEx entry = null;
 

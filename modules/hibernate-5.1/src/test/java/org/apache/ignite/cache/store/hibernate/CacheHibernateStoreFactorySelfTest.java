@@ -99,7 +99,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
      * @return Cache configuration with store.
      */
     private CacheConfiguration<Integer, String> cacheConfiguration() {
-        CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         CacheHibernateBlobStoreFactory<Integer, String> factory = new CacheHibernateBlobStoreFactory();
 

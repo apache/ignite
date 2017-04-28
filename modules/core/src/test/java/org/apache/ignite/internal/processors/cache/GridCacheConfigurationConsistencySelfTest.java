@@ -68,7 +68,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     private boolean cacheEnabled;
 
     /** */
-    private String cacheName;
+    private String cacheName = DEFAULT_CACHE_NAME;
 
     /** */
     private CacheMode cacheMode = REPLICATED;

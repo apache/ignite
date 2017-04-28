@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.local;
 import java.io.Externalizable;
 import java.util.Collection;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -66,7 +65,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param ctx Cache registry.
      */
     public GridLocalCache(GridCacheContext<K, V> ctx) {
-        super(ctx, ctx.config().getStartSize());
+        super(ctx, DFLT_START_CACHE_SIZE);
 
         preldr = new GridCachePreloaderAdapter(ctx);
     }

@@ -90,7 +90,7 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
      * @return Cache configuration.
      */
     protected CacheConfiguration<Object, Object> cacheConfiguration(Class<?>[] indexedTypes) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);

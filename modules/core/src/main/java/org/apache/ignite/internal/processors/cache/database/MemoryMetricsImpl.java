@@ -18,17 +18,17 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
 import org.jsr166.LongAdder8;
 
 /**
  *
  */
-public class MemoryMetricsImpl implements MemoryMetricsMXBean {
+public class MemoryMetricsImpl implements MemoryMetrics {
     /** */
     private FreeListImpl freeList;
 
@@ -68,6 +68,8 @@ public class MemoryMetricsImpl implements MemoryMetricsMXBean {
     public MemoryMetricsImpl(MemoryPolicyConfiguration memPlcCfg) {
         this.memPlcCfg = memPlcCfg;
 
+        metricsEnabled = memPlcCfg.isMetricsEnabled();
+
         for (int i = 0; i < subInts; i++)
             allocRateCounters[i] = new LongAdder8();
     }
@@ -75,16 +77,6 @@ public class MemoryMetricsImpl implements MemoryMetricsMXBean {
     /** {@inheritDoc} */
     @Override public String getName() {
         return U.maskName(memPlcCfg.getName());
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getSize() {
-        return (int) (memPlcCfg.getSize() / (1024 * 1024));
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getSwapFilePath() {
-        return memPlcCfg.getSwapFilePath();
     }
 
     /** {@inheritDoc} */
@@ -264,19 +256,19 @@ public class MemoryMetricsImpl implements MemoryMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void enableMetrics() {
+    public void enableMetrics() {
         metricsEnabled = true;
     }
 
     /** {@inheritDoc} */
-    @Override public void disableMetrics() {
+    public void disableMetrics() {
         metricsEnabled = false;
     }
 
     /**
      * @param rateTimeInterval Time interval used to calculate allocation/eviction rate.
      */
-    @Override public void rateTimeInterval(int rateTimeInterval) {
+    public void rateTimeInterval(int rateTimeInterval) {
         this.rateTimeInterval = rateTimeInterval;
     }
 
@@ -285,7 +277,7 @@ public class MemoryMetricsImpl implements MemoryMetricsMXBean {
      *
      * @param subInts Number of subintervals.
      */
-    @Override public void subIntervals(int subInts) {
+    public void subIntervals(int subInts) {
         assert subInts > 0;
 
         if (this.subInts == subInts)

@@ -20,81 +20,54 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Set;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Cache start arguments.
+ * Argument for {@link VisorCacheRebalanceTask}.
  */
-public class VisorCacheStartArg extends VisorDataTransferObject {
+public class VisorCacheRebalanceTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private boolean near;
-
-    /** */
-    private String name;
-
-    /** */
-    private String cfg;
+    /** Cache names. */
+    private Set<String> cacheNames;
 
     /**
      * Default constructor.
      */
-    public VisorCacheStartArg() {
+    public VisorCacheRebalanceTaskArg() {
         // No-op.
     }
 
     /**
-     * @param near {@code true} if near cache should be started.
-     * @param name Name for near cache.
-     * @param cfg Cache XML configuration.
+     * @param cacheNames Cache names.
      */
-    public VisorCacheStartArg(boolean near, String name, String cfg) {
-        this.near = near;
-        this.name = name;
-        this.cfg = cfg;
+    public VisorCacheRebalanceTaskArg(Set<String> cacheNames) {
+        this.cacheNames = cacheNames;
     }
 
     /**
-     * @return {@code true} if near cache should be started.
+     * @return Cache names.
      */
-    public boolean isNear() {
-        return near;
-    }
-
-    /**
-     * @return Name for near cache.
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * @return Cache XML configuration.
-     */
-    public String getConfiguration() {
-        return cfg;
+    public Set<String> getCacheNames() {
+        return cacheNames;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(near);
-        U.writeString(out, name);
-        U.writeString(out, cfg);
+        U.writeCollection(out, cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        near = in.readBoolean();
-        name = U.readString(in);
-        cfg = U.readString(in);
+        cacheNames = U.readSet(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCacheStartArg.class, this);
+        return S.toString(VisorCacheRebalanceTaskArg.class, this);
     }
 }

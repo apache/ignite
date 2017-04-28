@@ -112,7 +112,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         if (getTestIgniteInstanceName(10).equals(igniteInstanceName))
             iCfg.setClientMode(true);
 
-        CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cachePCfg.setName(CACHE_NAME_DHT_PARTITIONED);
         cachePCfg.setCacheMode(CacheMode.PARTITIONED);
@@ -122,7 +122,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg.setRebalanceBatchesPrefetchCount(1);
         cachePCfg.setRebalanceOrder(2);
 
-        CacheConfiguration<Integer, Integer> cachePCfg2 = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cachePCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cachePCfg2.setName(CACHE_NAME_DHT_PARTITIONED_2);
         cachePCfg2.setCacheMode(CacheMode.PARTITIONED);
@@ -131,7 +131,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg2.setRebalanceOrder(2);
         //cachePCfg2.setRebalanceDelay(5000);//Known issue, possible deadlock in case of low priority cache rebalancing delayed.
 
-        CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheRCfg.setName(CACHE_NAME_DHT_REPLICATED);
         cacheRCfg.setCacheMode(CacheMode.REPLICATED);
@@ -140,7 +140,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cacheRCfg.setRebalanceBatchesPrefetchCount(Integer.MAX_VALUE);
         ((TcpCommunicationSpi)iCfg.getCommunicationSpi()).setSharedMemoryPort(-1);//Shmem fail fix for Integer.MAX_VALUE.
 
-        CacheConfiguration<Integer, Integer> cacheRCfg2 = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheRCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheRCfg2.setName(CACHE_NAME_DHT_REPLICATED_2);
         cacheRCfg2.setCacheMode(CacheMode.REPLICATED);
@@ -502,7 +502,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     waitForRebalancing(4, 5, 0);
 
                     //New cache should start rebalancing.
-                    CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>();
+                    CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
                     cacheRCfg.setName(CACHE_NAME_DHT_PARTITIONED + "_NEW");
                     cacheRCfg.setCacheMode(CacheMode.PARTITIONED);

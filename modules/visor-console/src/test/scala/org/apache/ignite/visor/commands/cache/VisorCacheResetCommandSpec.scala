@@ -25,7 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
-import org.jetbrains.annotations.Nullable
+import org.jetbrains.annotations.NotNull
 
 import scala.collection.JavaConversions._
 
@@ -47,7 +47,7 @@ class VisorCacheResetCommandSpec extends VisorRuntimeBaseSpec(2) {
 
         cfg.setIgniteInstanceName(name)
         cfg.setLocalHost("127.0.0.1")
-        cfg.setCacheConfiguration(cacheConfig(null), cacheConfig("cache"))
+        cfg.setCacheConfiguration(cacheConfig("default"), cacheConfig("cache"))
 
         val discoSpi = new TcpDiscoverySpi()
 
@@ -62,7 +62,7 @@ class VisorCacheResetCommandSpec extends VisorRuntimeBaseSpec(2) {
      * @param name Cache name.
      * @return Cache Configuration.
      */
-    def cacheConfig(@Nullable name: String): CacheConfiguration[Object, Object] = {
+    def cacheConfig(@NotNull name: String): CacheConfiguration[Object, Object] = {
         val cfg = new CacheConfiguration[Object, Object]
 
         cfg.setCacheMode(REPLICATED)
@@ -76,7 +76,7 @@ class VisorCacheResetCommandSpec extends VisorRuntimeBaseSpec(2) {
         it("should show correct result for default cache") {
             Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-            val lock = Ignition.ignite("node-1").cache[Int, Int](null).lock(1)
+            val lock = Ignition.ignite("node-1").cache[Int, Int]("default").lock(1)
 
             lock.lock()
 

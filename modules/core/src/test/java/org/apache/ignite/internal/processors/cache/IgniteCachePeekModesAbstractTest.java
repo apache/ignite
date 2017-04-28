@@ -189,7 +189,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertNull(cache0.localPeek(key, BACKUP));
             }
 
-            Affinity<Integer> aff = ignite(0).affinity(null);
+            Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < gridCount(); i++) {
                 if (i == nodeIdx)
@@ -246,7 +246,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             Ignite ignite = ignite(nodeIdx);
 
             GridCacheAdapter<Integer, String> internalCache =
-                ((IgniteKernal)ignite).context().cache().internalCache();
+                ((IgniteKernal)ignite).context().cache().internalCache(DEFAULT_CACHE_NAME);
 
             CacheObjectContext coctx = internalCache.context().cacheObjectContext();
 
@@ -687,7 +687,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             checkPrimarySize(PUT_KEYS);
 
-            Affinity<Integer> aff = ignite(0).affinity(null);
+            Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < gridCount(); i++) {
                 if (i == nodeIdx)
@@ -761,7 +761,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 int partSize = 0;
 
                 for (Integer key : keys){
-                    int keyPart = ignite(nodeIdx).affinity(null).partition(key);
+                    int keyPart = ignite(nodeIdx).affinity(DEFAULT_CACHE_NAME).partition(key);
                     if (keyPart == part)
                         partSize++;
                 }
@@ -791,7 +791,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 int partSize = 0;
 
                 for (Integer key :keys){
-                    int keyPart = ignite(nodeIdx).affinity(null).partition(key);
+                    int keyPart = ignite(nodeIdx).affinity(DEFAULT_CACHE_NAME).partition(key);
                     if(keyPart == part)
                         partSize++;
                 }
@@ -831,7 +831,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             checkPrimarySize(PUT_KEYS);
 
-            Affinity<Integer> aff = ignite(0).affinity(null);
+            Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < gridCount(); i++) {
                 if (i == nodeIdx)
@@ -930,14 +930,14 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
         assertNotNull(it);
 
-        Affinity aff = ignite(nodeIdx).affinity(null);
+        Affinity aff = ignite(nodeIdx).affinity(DEFAULT_CACHE_NAME);
 
         ClusterNode node = ignite(nodeIdx).cluster().localNode();
 
         List<Integer> primary = new ArrayList<>();
         List<Integer> backups = new ArrayList<>();
 
-        CacheObjectContext coctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache()
+        CacheObjectContext coctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache(DEFAULT_CACHE_NAME)
             .context().cacheObjectContext();
 
         while (it.hasNext()) {
@@ -971,7 +971,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
      */
     private T2<List<Integer>, List<Integer>> offheapKeys(int nodeIdx) {
         GridCacheAdapter<Integer, String> internalCache =
-            ((IgniteKernal)ignite(nodeIdx)).context().cache().internalCache();
+            ((IgniteKernal)ignite(nodeIdx)).context().cache().internalCache(DEFAULT_CACHE_NAME);
 
 // TODO GG-11148.
         Iterator<Map.Entry<Integer, String>> offheapIt = Collections.EMPTY_MAP.entrySet().iterator();
@@ -980,7 +980,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 //        else
 //            offheapIt = internalCache.context().swap().lazyOffHeapIterator(false);
 
-        Affinity aff = ignite(nodeIdx).affinity(null);
+        Affinity aff = ignite(nodeIdx).affinity(DEFAULT_CACHE_NAME);
 
         ClusterNode node = ignite(nodeIdx).cluster().localNode();
 
@@ -1018,7 +1018,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
      * @return Tuple with number of primary and backup keys (one or both will be zero).
      */
     private T2<Integer, Integer> offheapKeysCount(int nodeIdx, int part) throws IgniteCheckedException {
-        GridCacheContext ctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache().context();
+        GridCacheContext ctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache(DEFAULT_CACHE_NAME).context();
         // Swap and offheap are disabled for near cache.
         IgniteCacheOffheapManager offheapManager = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
         //First count entries...
