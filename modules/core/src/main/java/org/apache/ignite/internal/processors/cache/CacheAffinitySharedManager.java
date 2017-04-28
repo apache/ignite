@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -318,21 +319,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
-    /**
-     * Called on exchange initiated for cache start/stop request.
-     *
-     * @param fut Exchange future.
-     * @param crd Coordinator flag.
-     * @param exchActions Cache change requests.
-     * @throws IgniteCheckedException If failed.
-     * @return {@code True} if client-only exchange is needed.
-     */
-    public boolean onCacheChangeRequest(final GridDhtPartitionsExchangeFuture fut,
-        boolean crd,
-        ExchangeActions exchActions)
-        throws IgniteCheckedException {
-        assert exchActions != null && !exchActions.empty() : fut;
-
+    private void updateCachesInfo(ExchangeActions exchActions) {
         for (DynamicCacheChangeRequest req : exchActions.stopRequests()) {
             Integer cacheId = CU.cacheId(req.cacheName());
 
@@ -341,7 +328,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             assert desc != null : cacheId;
         }
 
-        for (DynamicCacheChangeRequest req : exchActions.startRequests()) {
+        for (ExchangeActions.ActionData action : exchActions.newCachesStartRequests()) {
+            DynamicCacheChangeRequest req = action.request();
+
             Integer cacheId = CU.cacheId(req.cacheName());
 
             DynamicCacheDescriptor desc = new DynamicCacheDescriptor(cctx.kernalContext(),
@@ -355,6 +344,25 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             assert old == null : old;
         }
+    }
+
+    /**
+     * Called on exchange initiated for cache start/stop request.
+     *
+     * @param fut Exchange future.
+     * @param crd Coordinator flag.
+     * @param exchActions Cache change requests.
+     * @throws IgniteCheckedException If failed.
+     * @return {@code True} if client-only exchange is needed.
+     */
+    public boolean onCacheChangeRequest(final GridDhtPartitionsExchangeFuture fut,
+        boolean crd,
+        ExchangeActions exchActions)
+        throws IgniteCheckedException
+    {
+        assert exchActions != null && !exchActions.empty() : exchActions;
+
+        updateCachesInfo(exchActions);
 
         // Affinity did not change for existing caches.
         forAllCaches(crd && lateAffAssign, new IgniteInClosureX<GridAffinityAssignmentCache>() {
@@ -366,10 +374,27 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        for (DynamicCacheChangeRequest req : exchActions.startRequests()) {
+        for (ExchangeActions.ActionData action : exchActions.newAndClientCachesStartRequests()) {
+            DynamicCacheChangeRequest req = action.request();
+
             Integer cacheId = CU.cacheId(req.cacheName());
 
-            cctx.cache().prepareCacheStart(req, fut.topologyVersion());
+            boolean startCache;
+
+            NearCacheConfiguration nearCfg = null;
+
+            if (cctx.localNodeId().equals(req.initiatingNodeId())) {
+                startCache = true;
+
+                nearCfg = req.nearCacheConfiguration();
+            }
+            else {
+                startCache = cctx.cacheContext(action.descriptor().cacheId()) == null &&
+                    CU.affinityNode(cctx.localNode(), req.startCacheConfiguration().getNodeFilter());
+            }
+
+            if (startCache)
+                cctx.cache().prepareCacheStart(req, nearCfg, action.descriptor(), fut.topologyVersion());
 
             if (fut.isCacheAdded(cacheId, fut.topologyVersion())) {
                 if (fut.discoCache().cacheAffinityNodes(req.cacheName()).isEmpty())
@@ -411,18 +436,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (crd) {
                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                assert cacheCtx != null : req;
+                // Client cache was stopped, need create 'client' CacheHolder.
+                if (cacheCtx != null && !cacheCtx.affinityNode()) {
+                    CacheHolder cache = caches.remove(cacheId);
 
-                CacheHolder cache = caches.remove(cacheId);
+                    assert !cache.client() : cache;
 
-                assert !cache.client();
+                    cache = CacheHolder2.create(cctx,
+                        cctx.cache().cacheDescriptor(cacheId),
+                        fut,
+                        cache.affinity());
 
-                cache = CacheHolder2.create(cctx,
-                    cctx.cache().cacheDescriptor(cacheId),
-                    fut,
-                    cache.affinity());
-
-                caches.put(cacheId, cache);
+                    caches.put(cacheId, cache);
+                }
             }
         }
 

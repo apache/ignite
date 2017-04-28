@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -123,6 +124,9 @@ public class DynamicCacheDescriptor {
 
         cacheId = CU.cacheId(cacheCfg.getName());
 
+        if (cacheCfg.getCacheMode() == CacheMode.REPLICATED)
+            cacheCfg.setNearConfiguration(null);
+
         synchronized (schemaMux) {
             this.schema = schema.copy();
         }
@@ -203,6 +207,15 @@ public class DynamicCacheDescriptor {
      */
     public void staticallyConfigured(boolean staticCfg) {
         this.staticCfg = staticCfg;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        assert cacheCfg != null : this;
+
+        return cacheCfg.getName();
     }
 
     /**

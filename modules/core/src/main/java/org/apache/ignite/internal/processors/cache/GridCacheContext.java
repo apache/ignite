@@ -461,6 +461,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.startTopVer = startTopVer;
     }
 
+    /**
+     * @param cacheStartTopVer Global cache start topology version.
+     */
     public void cacheStartTopologyVersion(AffinityTopologyVersion cacheStartTopVer) {
         this.cacheStartTopVer = cacheStartTopVer;
     }

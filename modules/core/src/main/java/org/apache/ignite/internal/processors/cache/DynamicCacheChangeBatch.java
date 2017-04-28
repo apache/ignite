@@ -39,7 +39,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     @GridToStringInclude
     private Collection<DynamicCacheChangeRequest> reqs;
 
-    /** */
+    /** Cache updates to be executed on exchange. */
     private transient ExchangeActions exchangeActions;
 
     /**
@@ -77,13 +77,19 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      * @return {@code True} if request should trigger partition exchange.
      */
     public boolean exchangeNeeded() {
-        return exchangeActions != null && !exchangeActions.empty();
+        return exchangeActions != null;
     }
 
+    /**
+     * @return Cache updates to be executed on exchange.
+     */
     ExchangeActions exchangeActions() {
         return exchangeActions;
     }
 
+    /**
+     * @param exchangeActions Cache updates to be executed on exchange.
+     */
     void exchangeActions(ExchangeActions exchangeActions) {
         assert !exchangeActions.empty() : exchangeActions;
 

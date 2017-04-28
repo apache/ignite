@@ -218,6 +218,10 @@ public class DiscoveryDataBag {
         return newJoinerData;
     }
 
+    void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+
+    }
+
     /**
      * @param cmpId component ID.
      * @param data Data.

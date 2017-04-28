@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -106,6 +105,11 @@ public class DynamicCacheChangeRequest implements Serializable {
         this.initiatingNodeId = initiatingNodeId;
     }
 
+    /**
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @return Request to reset lost partitions.
+     */
     static DynamicCacheChangeRequest resetLostPartitions(GridKernalContext ctx, String cacheName) {
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
@@ -114,6 +118,11 @@ public class DynamicCacheChangeRequest implements Serializable {
         return req;
     }
 
+    /**
+     * @param ctx Context.
+     * @param cfg0 Template configuration.
+     * @return Request to add template.
+     */
     static DynamicCacheChangeRequest addTemplateRequest(GridKernalContext ctx, CacheConfiguration<?, ?> cfg0) {
         CacheConfiguration<?, ?> cfg = new CacheConfiguration<>(cfg0);
 

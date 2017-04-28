@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.F;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -56,6 +58,10 @@ public class ExchangeActions {
             F.isEmpty(cachesToResetLostParts);
     }
 
+    /**
+     * @param nodeId Local node ID.
+     * @return Close cache requests.
+     */
     public List<DynamicCacheChangeRequest> closeRequests(UUID nodeId) {
         List<DynamicCacheChangeRequest> res = null;
 
@@ -73,19 +79,35 @@ public class ExchangeActions {
         return res != null ? res : Collections.<DynamicCacheChangeRequest>emptyList();
     }
 
-    public List<DynamicCacheChangeRequest> startRequests() {
-        List<DynamicCacheChangeRequest> res = null;
+    /**
+     * @return Start cache requests.
+     */
+    Collection<ActionData> newAndClientCachesStartRequests() {
+        if (cachesToStart != null || clientCachesToStart != null) {
+            List<ActionData> res = new ArrayList<>();
 
-        if (cachesToStart != null) {
-            res = new ArrayList<>(cachesToStart.size());
+            if (cachesToStart != null)
+                res.addAll(cachesToStart.values());
 
-            for (ActionData req : cachesToStart.values())
-                res.add(req.req);
+            if (clientCachesToStart != null)
+                res.addAll(clientCachesToStart.values());
+
+            return res;
         }
 
-        return res != null ? res : Collections.<DynamicCacheChangeRequest>emptyList();
+        return Collections.emptyList();
     }
 
+    /**
+     * @return Start cache requests.
+     */
+    Collection<ActionData> newCachesStartRequests() {
+        return cachesToStart != null ? cachesToStart.values() : Collections.<ActionData>emptyList();
+    }
+
+    /**
+     * @return Stop cache requests.
+     */
     public List<DynamicCacheChangeRequest> stopRequests() {
         List<DynamicCacheChangeRequest> res = null;
 
@@ -99,11 +121,14 @@ public class ExchangeActions {
         return res != null ? res : Collections.<DynamicCacheChangeRequest>emptyList();
     }
 
+    /**
+     * @param ctx Context.
+     */
     public void completeRequestFutures(GridCacheSharedContext ctx) {
         completeRequestFutures(cachesToStart, ctx);
-        completeRequestFutures(clientCachesToStart, ctx);
         completeRequestFutures(cachesToStop, ctx);
         completeRequestFutures(cachesToClose, ctx);
+        completeRequestFutures(clientCachesToStart, ctx);
         completeRequestFutures(cachesToResetLostParts, ctx);
     }
 
@@ -114,10 +139,16 @@ public class ExchangeActions {
         }
     }
 
+    /**
+     * @return {@code True} if have cache stop requests.
+     */
     public boolean hasStop() {
         return !F.isEmpty(cachesToStop);
     }
 
+    /**
+     * @return
+     */
     public Set<String> cachesToResetLostPartitions() {
         Set<String> caches = null;
         
@@ -149,6 +180,10 @@ public class ExchangeActions {
         return false;
     }
 
+    /**
+     * @param nodeId Local node ID.
+     * @return {@code True} if client cache was started.
+     */
     public boolean clientCacheStarted(UUID nodeId) {
         if (clientCachesToStart != null) {
             for (ActionData cache : clientCachesToStart.values()) {
@@ -160,7 +195,10 @@ public class ExchangeActions {
         return false;
     }
 
-    public ClusterState newClusterState() {
+    /**
+     * @return New cluster state if state change was requested.
+     */
+    @Nullable public ClusterState newClusterState() {
         return newState;
     }
 
@@ -179,25 +217,38 @@ public class ExchangeActions {
     }
 
     void addCacheToStart(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+        assert req.start() : req;
+
         cachesToStart = add(cachesToStart, req, desc);
     }
 
     void addClientCacheToStart(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+        assert req.start() : req;
+
         clientCachesToStart = add(clientCachesToStart, req, desc);
     }
 
     void addCacheToStop(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+        assert req.stop() : req;
+
         cachesToStop = add(cachesToStop, req, desc);
     }
 
     void addCacheToClose(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+        assert req.close() : req;
+
         cachesToClose = add(cachesToClose, req, desc);
     }
 
     void addCacheToResetLostPartitions(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+        assert req.resetLostPartitions() : req;
+
         cachesToResetLostParts = add(cachesToResetLostParts, req, desc);
     }
 
+    /**
+     * @return {@code True} if there are no cache change actions.
+     */
     public boolean empty() {
         return F.isEmpty(cachesToStart) &&
             F.isEmpty(clientCachesToStart) &&
@@ -216,9 +267,20 @@ public class ExchangeActions {
         /** */
         private DynamicCacheDescriptor desc;
 
-        public ActionData(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+        ActionData(DynamicCacheChangeRequest req, DynamicCacheDescriptor desc) {
+            assert req != null;
+            assert desc != null;
+
             this.req = req;
             this.desc = desc;
+        }
+
+        public DynamicCacheChangeRequest request() {
+            return req;
+        }
+
+        public DynamicCacheDescriptor descriptor() {
+            return desc;
         }
     }
 }
