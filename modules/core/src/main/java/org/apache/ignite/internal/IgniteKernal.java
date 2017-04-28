@@ -1150,7 +1150,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             long nonHeapMax = m.getNonHeapMemoryMaximum();
 
                             long nonHeapUsedInMBytes = nonHeapUsed / 1024 / 1024;
-                            long nonHeapCommInMBytes = m.getNonHeapMemoryCommitted() / 1024 / 1024;
 
                             double freeNonHeapPct = nonHeapMax > 0 ? ((double)((nonHeapMax - nonHeapUsed) * 100)) / nonHeapMax : -1;
 
@@ -1220,7 +1219,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
                                 dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
                                 "    ^-- Non heap [used=" + dblFmt.format(nonHeapUsedInMBytes) + "MB, free=" +
-                                dblFmt.format(freeNonHeapPct) + "%, comm=" + dblFmt.format(nonHeapCommInMBytes) + "MB]" + NL +
+                                dblFmt.format(freeNonHeapPct) + "%]" + NL +
                                 "    ^-- Public thread pool [active=" + pubPoolActiveThreads + ", idle=" +
                                 pubPoolIdleThreads + ", qSize=" + pubPoolQSize + "]" + NL +
                                 "    ^-- System thread pool [active=" + sysPoolActiveThreads + ", idle=" +

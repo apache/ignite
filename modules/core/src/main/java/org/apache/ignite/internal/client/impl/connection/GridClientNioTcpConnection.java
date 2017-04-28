@@ -1009,7 +1009,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             metrics.setMaximumThreadCount(metricsBean.getMaximumThreadCount());
             metrics.setMaximumWaitingJobs(metricsBean.getMaximumWaitingJobs());
             metrics.setNodeStartTime(metricsBean.getNodeStartTime());
-            metrics.setNonHeapMemoryCommitted(metricsBean.getNonHeapMemoryCommitted());
             metrics.setNonHeapMemoryInitialized(metricsBean.getNonHeapMemoryInitialized());
             metrics.setNonHeapMemoryMaximum(metricsBean.getNonHeapMemoryMaximum());
             metrics.setNonHeapMemoryUsed(metricsBean.getNonHeapMemoryUsed());

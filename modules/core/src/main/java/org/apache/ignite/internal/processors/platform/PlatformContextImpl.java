@@ -325,9 +325,7 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeLong(metrics.getNonHeapMemoryInitialized());
 
             writer.writeLong(metrics.getNonHeapMemoryUsed());
-            writer.writeLong(metrics.getNonHeapMemoryCommitted());
             writer.writeLong(metrics.getNonHeapMemoryMaximum());
-            writer.writeLong(metrics.getNonHeapMemoryTotal());
             writer.writeLong(metrics.getUpTime());
 
             writer.writeTimestamp(new Timestamp(metrics.getStartTime()));

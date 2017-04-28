@@ -259,19 +259,9 @@ namespace Apache.Ignite.Core.Cluster
         long NonHeapMemoryUsed { get; }
 
         /// <summary>
-        /// Amount of non-heap memory in bytes that is committed for the JVM to use. 
-        /// </summary>
-        long NonHeapMemoryCommitted { get; }
-
-        /// <summary>
         /// Maximum amount of non-heap memory in bytes that can be used for memory management.
         /// </summary>
         long NonHeapMemoryMaximum { get; }
-
-        /// <summary>
-        /// Total amount of non-heap memory in bytes that can be used for memory management. 
-        /// </summary>
-        long NonHeapMemoryTotal { get; }
 
         /// <summary>
         /// Uptime of the JVM in milliseconds.

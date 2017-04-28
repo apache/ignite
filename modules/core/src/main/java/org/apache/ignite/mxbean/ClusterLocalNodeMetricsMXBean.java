@@ -182,18 +182,9 @@ public interface ClusterLocalNodeMetricsMXBean extends ClusterMetrics {
     public long getNonHeapMemoryUsed();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Amount of non-heap memory in bytes that is committed for the JVM to use.")
-    public long getNonHeapMemoryCommitted();
-
-    /** {@inheritDoc} */
     @MXBeanDescription("Maximum amount of non-heap memory in bytes that can " +
         "be used for memory management. -1 if undefined.")
     public long getNonHeapMemoryMaximum();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Total amount of non-heap memory in bytes that can " +
-        "be used for memory management. -1 if undefined.")
-    public long getNonHeapMemoryTotal();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Uptime of the JVM in milliseconds.")

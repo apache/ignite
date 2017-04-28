@@ -122,7 +122,6 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
         metrics.setMaximumJobWaitTime(25);
         metrics.setMaximumRejectedJobs(26);
         metrics.setMaximumWaitingJobs(27);
-        metrics.setNonHeapMemoryCommitted(28);
         metrics.setNonHeapMemoryInitialized(29);
         metrics.setNonHeapMemoryMaximum(30);
         metrics.setNonHeapMemoryUsed(31);
@@ -141,7 +140,6 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
         metrics.setReceivedMessagesCount(44);
         metrics.setReceivedBytesCount(45);
         metrics.setOutboundMessagesQueueSize(46);
-        metrics.setNonHeapMemoryTotal(47);
         metrics.setHeapMemoryTotal(48);
 
         return metrics;
@@ -178,7 +176,6 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
             obj.getMaximumJobWaitTime() == obj1.getMaximumJobWaitTime() &&
             obj.getMaximumRejectedJobs() == obj1.getMaximumRejectedJobs() &&
             obj.getMaximumWaitingJobs() == obj1.getMaximumWaitingJobs() &&
-            obj.getNonHeapMemoryCommitted() == obj1.getNonHeapMemoryCommitted() &&
             obj.getNonHeapMemoryInitialized() == obj1.getNonHeapMemoryInitialized() &&
             obj.getNonHeapMemoryMaximum() == obj1.getNonHeapMemoryMaximum() &&
             obj.getNonHeapMemoryUsed() == obj1.getNonHeapMemoryUsed() &&
@@ -197,7 +194,6 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
             obj.getReceivedMessagesCount() == obj1.getReceivedMessagesCount() &&
             obj.getReceivedBytesCount() == obj1.getReceivedBytesCount() &&
             obj.getOutboundMessagesQueueSize() == obj1.getOutboundMessagesQueueSize() &&
-            obj.getNonHeapMemoryTotal() == obj1.getNonHeapMemoryTotal() &&
             obj.getHeapMemoryTotal() == obj1.getHeapMemoryTotal();
     }
 }

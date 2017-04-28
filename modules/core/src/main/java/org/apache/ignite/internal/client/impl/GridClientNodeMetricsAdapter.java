@@ -132,9 +132,6 @@ public class GridClientNodeMetricsAdapter implements GridClientNodeMetrics {
     private long nonHeapUsed = -1;
 
     /** */
-    private long nonHeapCommitted = -1;
-
-    /** */
     private long nonHeapMax = -1;
 
     /** */
@@ -598,11 +595,6 @@ public class GridClientNodeMetricsAdapter implements GridClientNodeMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getNonHeapMemoryCommitted() {
-        return nonHeapCommitted;
-    }
-
-    /** {@inheritDoc} */
     @Override public long getNonHeapMemoryMaximum() {
         return nonHeapMax;
     }
@@ -750,15 +742,6 @@ public class GridClientNodeMetricsAdapter implements GridClientNodeMetrics {
      */
     public void setNonHeapMemoryUsed(long nonHeapUsed) {
         this.nonHeapUsed = nonHeapUsed;
-    }
-
-    /**
-     * Sets committed non-heap memory.
-     *
-     * @param nonHeapCommitted Committed non-heap memory.
-     */
-    public void setNonHeapMemoryCommitted(long nonHeapCommitted) {
-        this.nonHeapCommitted = nonHeapCommitted;
     }
 
     /**
@@ -966,7 +949,6 @@ public class GridClientNodeMetricsAdapter implements GridClientNodeMetrics {
             append(", heapMax=").append(heapMax).
             append(", nonHeapInit=").append(nonHeapInit).
             append(", nonHeapUsed=").append(nonHeapUsed).
-            append(", nonHeapCommitted=").append(nonHeapCommitted).
             append(", nonHeapMax=").append(nonHeapMax).
             append(", upTime=").append(upTime).
             append(", startTime=").append(startTime).

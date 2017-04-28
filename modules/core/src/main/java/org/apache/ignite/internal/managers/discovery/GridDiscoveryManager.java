@@ -819,10 +819,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return nonHeapMemoryUsage().getUsed();
             }
 
-            @Override public long getNonHeapMemoryCommitted() {
-                return nonHeapMemoryUsage().getCommitted();
-            }
-
             @Override public long getNonHeapMemoryMaximum() {
                 return nonHeapMemoryUsage().getMax();
             }
@@ -909,9 +905,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nm.setHeapMemoryTotal(metrics.getHeapMemoryMaximum());
                 nm.setNonHeapMemoryInitialized(metrics.getNonHeapMemoryInitialized());
                 nonHeapMemoryUsed(nm);
-                nm.setNonHeapMemoryCommitted(metrics.getNonHeapMemoryCommitted());
                 nm.setNonHeapMemoryMaximum(metrics.getNonHeapMemoryMaximum());
-                nm.setNonHeapMemoryTotal(metrics.getNonHeapMemoryMaximum());
                 nm.setUpTime(metrics.getUptime());
                 nm.setStartTime(metrics.getStartTime());
                 nm.setNodeStartTime(startTime);

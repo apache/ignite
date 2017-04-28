@@ -81,9 +81,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             NonHeapMemoryInitialized = reader.ReadLong();
 
             NonHeapMemoryUsed = reader.ReadLong();
-            NonHeapMemoryCommitted = reader.ReadLong();
             NonHeapMemoryMaximum = reader.ReadLong();
-            NonHeapMemoryTotal = reader.ReadLong();
             Uptime = reader.ReadLong();
 
             var startTime = reader.ReadTimestamp();
@@ -241,13 +239,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public long NonHeapMemoryUsed { get; private set; }
 
         /** <inheritDoc /> */
-        public long NonHeapMemoryCommitted { get; private set; }
-
-        /** <inheritDoc /> */
         public long NonHeapMemoryMaximum { get; private set; }
-
-        /** <inheritDoc /> */
-        public long NonHeapMemoryTotal { get; private set; }
 
         /** <inheritDoc /> */
         public long Uptime { get; private set; }

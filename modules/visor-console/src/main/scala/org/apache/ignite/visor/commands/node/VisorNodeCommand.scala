@@ -224,7 +224,6 @@ class VisorNodeCommand extends VisorConsoleCommand {
                             t += ("Heap memory maximum", formatMemory(m.getHeapMemoryMaximum))
                             t += ("Non-heap memory initialized", formatMemory(m.getNonHeapMemoryInitialized))
                             t += ("Non-heap memory used", formatMemory(m.getNonHeapMemoryUsed))
-                            t += ("Non-heap memory committed", formatMemory(m.getNonHeapMemoryCommitted))
                             t += ("Non-heap memory maximum", formatMemory(m.getNonHeapMemoryMaximum))
                             t += ("Current thread count", formatNumber(m.getCurrentThreadCount))
                             t += ("Maximum thread count", formatNumber(m.getMaximumThreadCount))

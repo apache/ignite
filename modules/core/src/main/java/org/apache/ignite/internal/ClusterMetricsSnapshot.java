@@ -75,9 +75,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         8/*heap memory total*/ +
         8/*non-heap memory init*/ +
         8/*non-heap memory used*/ +
-        8/*non-heap memory committed*/ +
         8/*non-heap memory max*/ +
-        8/*non-heap memory total*/ +
         8/*uptime*/ +
         8/*start time*/ +
         8/*node start time*/ +
@@ -202,13 +200,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     private long nonHeapUsed = -1;
 
     /** */
-    private long nonHeapCommitted = -1;
-
-    /** */
     private long nonHeapMax = -1;
-
-    /** */
-    private long nonHeapTotal = -1;
 
     /** */
     private long upTime = -1;
@@ -306,9 +298,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         heapMax = 0;
         nonHeapInit = 0;
         nonHeapUsed = 0;
-        nonHeapCommitted = 0;
         nonHeapMax = 0;
-        nonHeapTotal = 0;
         upTime = 0;
         startTime = 0;
         nodeStartTime = 0;
@@ -378,13 +368,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             heapInit += m.getHeapMemoryInitialized();
 
-            nonHeapCommitted += m.getNonHeapMemoryCommitted();
-
             nonHeapUsed += m.getNonHeapMemoryUsed();
 
             nonHeapMax = max(nonHeapMax, m.getNonHeapMemoryMaximum());
-
-            nonHeapTotal += m.getNonHeapMemoryTotal();
 
             nonHeapInit += m.getNonHeapMemoryInitialized();
 
@@ -437,15 +423,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      */
     public void setHeapMemoryTotal(long heapTotal) {
         this.heapTotal = heapTotal;
-    }
-
-    /**
-     * Sets non-heap total heap size.
-     *
-     * @param nonHeapTotal Total heap.
-     */
-    public void setNonHeapMemoryTotal(long nonHeapTotal) {
-        this.nonHeapTotal = nonHeapTotal;
     }
 
     /** {@inheritDoc} */
@@ -856,18 +833,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getNonHeapMemoryCommitted() {
-        return nonHeapCommitted;
-    }
-
-    /** {@inheritDoc} */
     @Override public long getNonHeapMemoryMaximum() {
         return nonHeapMax;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getNonHeapMemoryTotal() {
-        return nonHeapTotal;
     }
 
     /** {@inheritDoc} */
@@ -1028,15 +995,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      */
     public void setNonHeapMemoryUsed(long nonHeapUsed) {
         this.nonHeapUsed = nonHeapUsed;
-    }
-
-    /**
-     * Sets committed non-heap memory.
-     *
-     * @param nonHeapCommitted Committed non-heap memory.
-     */
-    public void setNonHeapMemoryCommitted(long nonHeapCommitted) {
-        this.nonHeapCommitted = nonHeapCommitted;
     }
 
     /**
@@ -1308,9 +1266,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         buf.putLong(metrics.getHeapMemoryTotal());
         buf.putLong(metrics.getNonHeapMemoryInitialized());
         buf.putLong(metrics.getNonHeapMemoryUsed());
-        buf.putLong(metrics.getNonHeapMemoryCommitted());
         buf.putLong(metrics.getNonHeapMemoryMaximum());
-        buf.putLong(metrics.getNonHeapMemoryTotal());
         buf.putLong(metrics.getStartTime());
         buf.putLong(metrics.getNodeStartTime());
         buf.putLong(metrics.getUpTime());
@@ -1381,9 +1337,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         metrics.setHeapMemoryTotal(buf.getLong());
         metrics.setNonHeapMemoryInitialized(buf.getLong());
         metrics.setNonHeapMemoryUsed(buf.getLong());
-        metrics.setNonHeapMemoryCommitted(buf.getLong());
         metrics.setNonHeapMemoryMaximum(buf.getLong());
-        metrics.setNonHeapMemoryTotal(buf.getLong());
         metrics.setStartTime(buf.getLong());
         metrics.setNodeStartTime(buf.getLong());
         metrics.setUpTime(buf.getLong());

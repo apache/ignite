@@ -139,17 +139,6 @@ public interface GridLocalMetrics extends Serializable {
     public long getNonHeapMemoryUsed();
 
     /**
-     * Returns the amount of non-heap memory in bytes that is committed for
-     * the Java virtual machine to use. This amount of memory is
-     * guaranteed for the Java virtual machine to use.
-     * The non-heap memory consists of one or more memory pools. This value is
-     * the sum of {@code committed} non-heap memory values of all non-heap memory pools.
-     *
-     * @return The amount of committed memory in bytes.
-     */
-    public long getNonHeapMemoryCommitted();
-
-    /**
      * Returns the maximum amount of non-heap memory in bytes that can be
      * used for memory management. This method returns {@code -1}
      * if the maximum memory size is undefined.

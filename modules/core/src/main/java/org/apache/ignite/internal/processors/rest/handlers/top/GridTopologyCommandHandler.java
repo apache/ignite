@@ -265,7 +265,6 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             metricsBean.setMaximumThreadCount(metrics.getMaximumThreadCount());
             metricsBean.setMaximumWaitingJobs(metrics.getMaximumWaitingJobs());
             metricsBean.setNodeStartTime(metrics.getNodeStartTime());
-            metricsBean.setNonHeapMemoryCommitted(metrics.getNonHeapMemoryCommitted());
             metricsBean.setNonHeapMemoryInitialized(metrics.getNonHeapMemoryInitialized());
             metricsBean.setNonHeapMemoryMaximum(metrics.getNonHeapMemoryMaximum());
             metricsBean.setNonHeapMemoryUsed(metrics.getNonHeapMemoryUsed());

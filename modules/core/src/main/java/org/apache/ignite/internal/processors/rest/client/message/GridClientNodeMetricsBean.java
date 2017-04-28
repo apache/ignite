@@ -135,9 +135,6 @@ public class GridClientNodeMetricsBean implements Externalizable {
     private long nonHeapUsed = -1;
 
     /** */
-    private long nonHeapCommitted = -1;
-
-    /** */
     private long nonHeapMax = -1;
 
     /** */
@@ -801,22 +798,6 @@ public class GridClientNodeMetricsBean implements Externalizable {
     }
 
     /**
-     * Returns the amount of non-heap memory in bytes that is committed for
-     * the Java virtual machine to use. This amount of memory is
-     * guaranteed for the Java virtual machine to use.
-     * The non-heap memory consists of one or more memory pools. This value is
-     * the sum of {@code committed} non-heap memory values of all non-heap memory pools.
-     * <p>
-     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
-     * from the time of the node's startup.
-     *
-     * @return The amount of committed memory in bytes.
-     */
-    public long getNonHeapMemoryCommitted() {
-        return nonHeapCommitted;
-    }
-
-    /**
      * Returns the maximum amount of non-heap memory in bytes that can be
      * used for memory management. This method returns {@code -1}
      * if the maximum memory size is undefined.
@@ -1043,15 +1024,6 @@ public class GridClientNodeMetricsBean implements Externalizable {
     }
 
     /**
-     * Sets committed non-heap memory.
-     *
-     * @param nonHeapCommitted Committed non-heap memory.
-     */
-    public void setNonHeapMemoryCommitted(long nonHeapCommitted) {
-        this.nonHeapCommitted = nonHeapCommitted;
-    }
-
-    /**
      * Sets maximum possible non-heap memory.
      *
      * @param nonHeapMax Maximum possible non-heap memory.
@@ -1264,7 +1236,6 @@ public class GridClientNodeMetricsBean implements Externalizable {
             maxJobWaitTime == other.maxJobWaitTime &&
             maxRejectedJobs == other.maxRejectedJobs &&
             maxWaitingJobs == other.maxWaitingJobs &&
-            nonHeapCommitted == other.nonHeapCommitted &&
             nonHeapInit == other.nonHeapInit &&
             nonHeapMax == other.nonHeapMax &&
             nonHeapUsed == other.nonHeapUsed &&
@@ -1328,7 +1299,6 @@ public class GridClientNodeMetricsBean implements Externalizable {
             append(", heapMax=").append(heapMax).
             append(", nonHeapInit=").append(nonHeapInit).
             append(", nonHeapUsed=").append(nonHeapUsed).
-            append(", nonHeapCommitted=").append(nonHeapCommitted).
             append(", nonHeapMax=").append(nonHeapMax).
             append(", upTime=").append(upTime).
             append(", startTime=").append(startTime).
@@ -1386,7 +1356,6 @@ public class GridClientNodeMetricsBean implements Externalizable {
         out.writeLong(heapMax);
         out.writeLong(nonHeapInit);
         out.writeLong(nonHeapUsed);
-        out.writeLong(nonHeapCommitted);
         out.writeLong(nonHeapMax);
         out.writeLong(upTime);
         out.writeLong(startTime);
@@ -1442,7 +1411,6 @@ public class GridClientNodeMetricsBean implements Externalizable {
         heapMax = in.readLong();
         nonHeapInit = in.readLong();
         nonHeapUsed = in.readLong();
-        nonHeapCommitted = in.readLong();
         nonHeapMax = in.readLong();
         upTime = in.readLong();
         startTime = in.readLong();

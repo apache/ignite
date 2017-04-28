@@ -188,11 +188,6 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     }
 
     /** {@inheritDoc} */
-    @Override public long getNonHeapMemoryCommitted() {
-        return node.metrics().getNonHeapMemoryCommitted();
-    }
-
-    /** {@inheritDoc} */
     @Override public long getNonHeapMemoryInitialized() {
         return node.metrics().getNonHeapMemoryInitialized();
     }
@@ -200,11 +195,6 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryMaximum() {
         return node.metrics().getNonHeapMemoryMaximum();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getNonHeapMemoryTotal() {
-        return node.metrics().getNonHeapMemoryTotal();
     }
 
     /** {@inheritDoc} */

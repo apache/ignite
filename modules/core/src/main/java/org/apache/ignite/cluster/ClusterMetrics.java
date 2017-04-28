@@ -518,20 +518,6 @@ public interface ClusterMetrics {
     public long getNonHeapMemoryUsed();
 
     /**
-     * Returns the amount of non-heap memory in bytes that is committed for
-     * the JVM to use. This amount of memory is
-     * guaranteed for the JVM to use.
-     * The non-heap memory consists of one or more memory pools. This value is
-     * the sum of {@code committed} non-heap memory values of all non-heap memory pools.
-     * <p>
-     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
-     * from the time of the node's startup.
-     *
-     * @return The amount of committed memory in bytes.
-     */
-    public long getNonHeapMemoryCommitted();
-
-    /**
      * Returns the maximum amount of non-heap memory in bytes that can be
      * used for memory management. This method returns {@code -1}
      * if the maximum memory size is undefined.
@@ -551,27 +537,6 @@ public interface ClusterMetrics {
      * @return The maximum amount of memory in bytes; {@code -1} if undefined.
      */
     public long getNonHeapMemoryMaximum();
-
-    /**
-     * Returns the total amount of non-heap memory in bytes that can be
-     * used for memory management. This method returns {@code -1}
-     * if the total memory size is undefined.
-     * <p>
-     * This amount of memory is not guaranteed to be available
-     * for memory management if it is greater than the amount of
-     * committed memory.  The JVM may fail to allocate
-     * memory even if the amount of used memory does not exceed this
-     * maximum size.
-     * <p>
-     * This value represents a setting of the non-heap memory for Java VM and is
-     * not a sum of all initial non-heap values for all memory pools.
-     * <p>
-     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
-     * from the time of the node's startup.
-     *
-     * @return The total amount of memory in bytes; {@code -1} if undefined.
-     */
-    public long getNonHeapMemoryTotal();
 
     /**
      * Returns the uptime of the JVM in milliseconds.
