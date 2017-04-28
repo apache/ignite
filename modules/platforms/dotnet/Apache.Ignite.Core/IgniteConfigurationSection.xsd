@@ -1183,7 +1183,12 @@
                                                         <xs:documentation>Page eviction mode.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
-                                                <xs:attribute name="size" type="xs:int" use="required">
+                                                <xs:attribute name="initialSize" type="xs:long">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Initial memory region size defined by this memory policy.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="maxSize" type="xs:long">
                                                     <xs:annotation>
                                                         <xs:documentation>Maximum memory region size defined by this memory policy.</xs:documentation>
                                                     </xs:annotation>
@@ -1214,9 +1219,14 @@
                                 <xs:documentation>Size of the memory page.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="systemCacheMemorySize" type="xs:int">
+                        <xs:attribute name="systemCacheInitialSize" type="xs:int">
                             <xs:annotation>
-                                <xs:documentation>Size of a memory chunk reserved for system cache needs.</xs:documentation>
+                                <xs:documentation>Initial size of a memory chunk reserved for system cache needs.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="systemCacheMaxSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum size of a memory chunk reserved for system cache needs.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>

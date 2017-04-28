@@ -22,18 +22,17 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.mem.DirectMemory;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
-import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.internal.mem.DirectMemoryRegion;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-public class MappedFileMemoryProvider implements DirectMemoryProvider, LifecycleAware {
+public class MappedFileMemoryProvider implements DirectMemoryProvider {
     /** */
     private static final String ALLOCATOR_FILE_PREFIX = "allocator-";
 
@@ -50,33 +49,26 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider, Lifecycle
     /** File allocation path. */
     private final File allocationPath;
 
-    /** Clean flag. If true, existing files will be deleted on start. */
-    private boolean clean;
-
     /** */
-    private final long[] sizes;
-
-    /** */
-    private boolean restored;
+    private long[] sizes;
 
     /** */
     private List<MappedFile> mappedFiles;
 
     /**
      * @param allocationPath Allocation path.
-     * @param clean Clean flag. If true, restore procedure will be ignored even if
-     *      allocation folder contains valid files.
-     * @param sizes Sizes of memory chunks to allocate.
      */
-    public MappedFileMemoryProvider(IgniteLogger log, File allocationPath, boolean clean, long[] sizes) {
+    public MappedFileMemoryProvider(IgniteLogger log, File allocationPath) {
         this.log = log;
         this.allocationPath = allocationPath;
-        this.clean = clean;
-        this.sizes = sizes;
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteException {
+    @Override public void initialize(long[] sizes) {
+        this.sizes = sizes;
+
+        mappedFiles = new ArrayList<>(sizes.length);
+
         if (!allocationPath.exists()) {
             if (!allocationPath.mkdirs())
                 throw new IgniteException("Failed to initialize allocation path (make sure directory is " +
@@ -88,107 +80,19 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider, Lifecycle
 
         File[] files = allocationPath.listFiles(ALLOCATOR_FILTER);
 
-        Arrays.sort(files, new Comparator<File>() {
-            /** {@inheritDoc} */
-            @Override public int compare(File o1, File o2) {
-                return o1.getName().compareTo(o2.getName());
-            }
-        });
+        if (files.length != 0) {
+            log.info("Will clean up the following files upon start: " + Arrays.asList(files));
 
-        if (files.length == sizes.length) {
-            for (int i = 0; i < files.length; i++) {
-                File file = files[i];
-
-                if (file.length() != sizes[i]) {
-                    clean = true;
-
-                    break;
-                }
-            }
-        }
-        else
-            clean = true;
-
-        if (files.length == 0 || clean) {
-            if (files.length != 0) {
-                log.info("Will clean up the following files upon start: " + Arrays.asList(files));
-
-                for (File file : files) {
-                    if (!file.delete())
-                        throw new IgniteException("Failed to delete allocated file on start (make sure file is not " +
-                            "opened by another process and current user has enough rights): " + file);
-                }
-            }
-
-            allocateClean();
-
-            return;
-        }
-
-        log.info("Restoring memory state from the files: " + Arrays.asList(files));
-
-        mappedFiles = new ArrayList<>(files.length);
-
-        try {
             for (File file : files) {
-                MappedFile mapped = new MappedFile(file, 0);
-
-                mappedFiles.add(mapped);
+                if (!file.delete())
+                    throw new IgniteException("Failed to delete allocated file on start (make sure file is not " +
+                        "opened by another process and current user has enough rights): " + file);
             }
         }
-        catch (IOException e) {
-            // Close all files allocated so far.
-            try {
-                for (MappedFile mapped : mappedFiles)
-                    mapped.close();
-            }
-            catch (IOException e0) {
-                e.addSuppressed(e0);
-            }
-
-            throw new IgniteException(e);
-        }
-
-        restored = true;
-    }
-
-    /**
-     * Allocates clear memory state.
-     */
-    private void allocateClean() {
-        mappedFiles = new ArrayList<>(sizes.length);
-
-        try {
-            int idx = 0;
-
-            for (long size : sizes) {
-                File file = new File(allocationPath, ALLOCATOR_FILE_PREFIX + alignInt(idx));
-
-                MappedFile mappedFile = new MappedFile(file, size);
-
-                mappedFiles.add(mappedFile);
-
-                idx++;
-            }
-        }
-        catch (IOException e) {
-            // Close all files allocated so far.
-            try {
-                for (MappedFile mapped : mappedFiles)
-                    mapped.close();
-            }
-            catch (IOException e0) {
-                e.addSuppressed(e0);
-            }
-
-            throw new IgniteException(e);
-        }
-
-        log.info("Allocated clean memory state at location: " + allocationPath.getAbsolutePath());
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteException {
+    @Override public void shutdown() {
         for (MappedFile file : mappedFiles) {
             try {
                 file.close();
@@ -201,9 +105,28 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider, Lifecycle
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public DirectMemory memory() {
-        return new DirectMemory(restored, (List)mappedFiles);
+    @Override public DirectMemoryRegion nextRegion() {
+        try {
+            if (mappedFiles.size() == sizes.length)
+                return null;
+
+            int idx = mappedFiles.size();
+
+            long chunkSize = sizes[idx];
+
+            File file = new File(allocationPath, ALLOCATOR_FILE_PREFIX + alignInt(idx));
+
+            MappedFile mappedFile = new MappedFile(file, chunkSize);
+
+            mappedFiles.add(mappedFile);
+
+            return mappedFile;
+        }
+        catch (IOException e) {
+            U.error(log, "Failed to allocate next memory-mapped region", e);
+
+            return null;
+        }
     }
 
     /**

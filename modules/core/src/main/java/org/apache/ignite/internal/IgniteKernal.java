@@ -2434,7 +2434,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return;
 
         U.log(log, "System cache's MemoryPolicy size is configured to " +
-            (memCfg.getSystemCacheMemorySize() / (1024 * 1024)) + " MB. " +
+            (memCfg.getSystemCacheInitialSize() / (1024 * 1024)) + " MB. " +
             "Use MemoryConfiguration.systemCacheMemorySize property to change the setting.");
     }
 
@@ -3399,7 +3399,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
-        return ctx.cache().context().database().memoryMetrics();
+        guard();
+
+        try {
+            return ctx.cache().context().database().memoryMetrics();
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */

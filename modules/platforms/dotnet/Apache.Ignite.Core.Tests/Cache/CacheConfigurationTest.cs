@@ -75,7 +75,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                         new MemoryPolicyConfiguration
                         {
                             Name = "myMemPolicy",
-                            Size = 99 * 1024 * 1024
+                            InitialSize = 77 * 1024 * 1024,
+                            MaxSize = 99 * 1024 * 1024
                         }
                     }
                 }
