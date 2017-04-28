@@ -26,6 +26,9 @@ import java.util.HashSet;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -109,29 +112,24 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
             }
         }
 
-        grid(0).cache(null).clear();
-
-        assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
-
-        super.afterTest();
-
         if (stmt != null && !stmt.isClosed())
             stmt.close();
 
         if (prepStmt != null && !prepStmt.isClosed())
             prepStmt.close();
 
-        conn.close();
-
         assertTrue(prepStmt.isClosed());
         assertTrue(stmt.isClosed());
-        assertTrue(conn.isClosed());
+
+        super.afterTest();
     }
 
     /**
      * @throws SQLException If failed.
      */
     public void testExecuteUpdate() throws SQLException {
+//        grid(0).cache(null).query(new SqlFieldsQuery(SQL));
+
         int res = stmt.executeUpdate(SQL);
 
         assertEquals(3, res);

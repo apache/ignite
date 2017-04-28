@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.Collections;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -124,9 +123,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).clear();
-
-        assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
+        grid(0).destroyCache(null);
 
         conn.close();
         assertTrue(conn.isClosed());

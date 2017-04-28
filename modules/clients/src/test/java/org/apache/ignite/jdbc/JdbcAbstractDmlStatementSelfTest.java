@@ -54,6 +54,33 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     protected Connection conn;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGridsMultiThreaded(3);
+
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        ignite(0).getOrCreateCache(cacheConfig());
+
+        conn = DriverManager.getConnection(URL);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        grid(0).destroyCache(null);
+
+        conn.close();
+        assertTrue(conn.isClosed());
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return getConfiguration0(igniteInstanceName);
     }
@@ -152,35 +179,6 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
      */
     CacheConfiguration cacheConfig() {
         return nonBinCacheConfig();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(3);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        conn = DriverManager.getConnection(URL);
-
-        ignite(0).getOrCreateCache(cacheConfig());
-
-        awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).destroy();
-
-        conn.close();
-        assertTrue(conn.isClosed());
     }
 
     /**
