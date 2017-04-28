@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             IIgnite g = Ignition.GetIgnite("grid-0");
 
-            ICacheAffinity aff = g.GetAffinity(null);
+            ICacheAffinity aff = g.GetAffinity("default");
 
             IClusterNode node = aff.MapKeyToNode(new AffinityTestKey(0, 1));
 
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             IIgnite g = Ignition.GetIgnite("grid-0");
 
-            ICacheAffinity aff = g.GetAffinity(null);  
+            ICacheAffinity aff = g.GetAffinity("default");  
 
             IBinaryObject affKey = g.GetBinary().ToBinary<IBinaryObject>(new AffinityTestKey(0, 1));
 

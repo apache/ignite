@@ -165,8 +165,8 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
             Ignite i1 = startGrid(1);
             Ignite i2 = startGrid(2);
 
-            IgniteCache<Integer, Object> cache1 = i1.cache(null);
-            IgniteCache<Integer, Object> cache2 = i2.cache(null);
+            IgniteCache<Integer, Object> cache1 = i1.cache(DEFAULT_CACHE_NAME);
+            IgniteCache<Integer, Object> cache2 = i2.cache(DEFAULT_CACHE_NAME);
 
             ClassLoader ldr = useWrappingLoader ?
                 ((WrappingClassLoader)i1.configuration().getClassLoader()).getParent() :

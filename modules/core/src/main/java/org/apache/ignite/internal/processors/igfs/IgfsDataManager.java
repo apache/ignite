@@ -245,7 +245,7 @@ public class IgfsDataManager extends IgfsManager {
     public long maxSpaceSize() {
         MemoryPolicy plc = dataCachePrj.context().memoryPolicy();
 
-        long size = plc != null ? plc.config().getSize() : 0;
+        long size = plc != null ? plc.config().getMaxSize() : 0;
 
         return (size <= 0) ? 0 : size ;
     }

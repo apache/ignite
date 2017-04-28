@@ -135,7 +135,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         cfg.setAtomicConfiguration(atomicCfg);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(TRANSACTIONAL_CACHE_NAME);
         ccfg.setAtomicityMode(TRANSACTIONAL);

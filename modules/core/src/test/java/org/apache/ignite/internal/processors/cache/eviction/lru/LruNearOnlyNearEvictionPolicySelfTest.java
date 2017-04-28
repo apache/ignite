@@ -73,13 +73,12 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
         if (cnt == 0)
             c.setClientMode(true);
         else {
-            CacheConfiguration cc = new CacheConfiguration();
+            CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             cc.setCacheMode(cacheMode);
             cc.setAtomicityMode(atomicityMode);
             cc.setWriteSynchronizationMode(PRIMARY_SYNC);
             cc.setRebalanceMode(SYNC);
-            cc.setStartSize(100);
             cc.setBackups(0);
 
             c.setCacheConfiguration(cc);
@@ -146,13 +145,13 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
 
             nearCfg.setNearEvictionPolicy(plc);
 
-            grid(0).createNearCache(null, nearCfg);
+            grid(0).createNearCache(DEFAULT_CACHE_NAME, nearCfg);
 
             int cnt = 1000;
 
             info("Inserting " + cnt + " keys to cache.");
 
-            try (IgniteDataStreamer<Integer, String> ldr = grid(1).dataStreamer(null)) {
+            try (IgniteDataStreamer<Integer, String> ldr = grid(1).dataStreamer(DEFAULT_CACHE_NAME)) {
                 for (int i = 0; i < cnt; i++)
                     ldr.addData(i, Integer.toString(i));
             }
@@ -163,7 +162,7 @@ public class LruNearOnlyNearEvictionPolicySelfTest extends GridCommonAbstractTes
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(0).cache(null);
+                IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

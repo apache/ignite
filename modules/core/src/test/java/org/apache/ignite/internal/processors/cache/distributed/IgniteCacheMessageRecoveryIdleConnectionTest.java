@@ -107,7 +107,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     private void cacheOperationsIdleConnectionClose(CacheAtomicityMode atomicityMode) throws Exception {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(REPLICATED);

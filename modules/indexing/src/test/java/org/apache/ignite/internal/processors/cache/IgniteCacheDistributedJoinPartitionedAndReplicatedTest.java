@@ -82,7 +82,7 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
      * @return Cache configuration.
      */
     private CacheConfiguration configuration(String name, CacheMode cacheMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);

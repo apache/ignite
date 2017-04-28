@@ -78,7 +78,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setNetworkTimeout(60_000);
-        cfg.setMetricsUpdateFrequency(30_000);
+        cfg.setMetricsUpdateFrequency(5_000);
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
@@ -207,7 +207,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                         try {
                             final Ignite g = startGrid(name);
 
-                            IgniteCache<String, Object> cache = g.cache(null);
+                            IgniteCache<String, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
                             for (int k = half; k < ENTRY_CNT; k++) {
                                 String key = "key" + k;
@@ -384,6 +384,6 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @return Cache.
      */
     private IgniteCache<String,Integer> cache(Ignite g) {
-        return g.cache(null);
+        return g.cache(DEFAULT_CACHE_NAME);
     }
 }

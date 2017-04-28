@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.h2.result.SearchRow;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -161,4 +162,70 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return {@code True} if index should support snapshots.
      */
     public boolean snapshotableIndex();
+
+    /**
+     * Checks if provided column id matches key column or key alias.
+     *
+     * @param colId Column id.
+     * @return Result.
+     */
+    public boolean isKeyColumn(int colId);
+
+    /**
+     * Checks if provided column id matches value column or alias.
+     *
+     * @param colId Column id.
+     * @return Result.
+     */
+    public boolean isValueColumn(int colId);
+
+    /**
+     * Checks if provided column id matches key, key alias,
+     * value, value alias or version column.
+     *
+     * @param colId Column id.
+     * @return Result.
+     */
+    public boolean isKeyValueOrVersionColumn(int colId);
+
+    /**
+     * Checks if provided index condition is allowed for key column or key alias column.
+     *
+     * @param masks Array containing Index Condition masks for each column.
+     * @param mask Index Condition to check.
+     * @return Result.
+     */
+    public boolean checkKeyIndexCondition(int masks[], int mask);
+
+    /**
+     * Initializes value cache with key, val and version.
+     *
+     * @param valCache Value cache.
+     * @param key Key.
+     * @param value Value.
+     * @param version Version.
+     */
+    public void initValueCache(Value valCache[], Value key, Value value, Value version);
+
+    /**
+     * Clones provided row and copies values of alias key and val columns
+     * into respective key and val positions.
+     *
+     * @param row Source row.
+     * @return Result.
+     */
+    public SearchRow prepareProxyIndexRow(SearchRow row);
+
+    /**
+     * Gets alternative column id that may substitute the given column id.
+     *
+     * For alias column returns original one.
+     * For original column returns its alias.
+     *
+     * Otherwise, returns the given column id.
+     *
+     * @param colId Column id.
+     * @return Result.
+     */
+    public int getAlternativeColumnId(int colId);
 }

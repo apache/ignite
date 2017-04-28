@@ -59,7 +59,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
         CacheConfiguration[] ccfgs = new CacheConfiguration[4];
 
         for (int i = 0; i < ccfgs.length; i++) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setName("static-cache-" + i);
             ccfg.setAffinity(new RendezvousAffinityFunction());

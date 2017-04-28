@@ -66,7 +66,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration cCfg = new CacheConfiguration();
+        CacheConfiguration cCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);
@@ -120,7 +120,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     public void testSingleTransformMessage() throws Exception {
         startGrids(2);
 
-        int cacheId = ((IgniteKernal)grid(0)).internalCache(null).context().cacheId();
+        int cacheId = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).context().cacheId();
 
         try {
             awaitPartitionMapExchange();

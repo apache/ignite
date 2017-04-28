@@ -36,6 +36,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -69,7 +70,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forIgfsMetadataDataNodes(@Nullable String igfsName, @Nullable String metaCacheName) {
+    @Override public ClusterGroup forIgfsMetadataDataNodes(String igfsName, @Nullable String metaCacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
@@ -224,17 +225,17 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forCacheNodes(String cacheName) {
+    @Override public ClusterGroup forCacheNodes(@NotNull String cacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forDataNodes(String cacheName) {
+    @Override public ClusterGroup forDataNodes(@NotNull String cacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forClientNodes(String cacheName) {
+    @Override public ClusterGroup forClientNodes(@NotNull String cacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 

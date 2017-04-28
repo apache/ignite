@@ -63,7 +63,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -144,7 +144,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     private void fastFinishTx(Ignite ignite) {
         IgniteTransactions txs = ignite.transactions();
 
-        IgniteCache cache = ignite.cache(null);
+        IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (boolean commit : new boolean[]{true, false}) {
             for (TransactionConcurrency c : TransactionConcurrency.values()) {

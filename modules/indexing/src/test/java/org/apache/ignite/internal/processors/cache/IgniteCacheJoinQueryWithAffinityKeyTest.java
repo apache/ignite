@@ -344,7 +344,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
         int backups,
         boolean affKey,
         boolean includeAffKey) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
 

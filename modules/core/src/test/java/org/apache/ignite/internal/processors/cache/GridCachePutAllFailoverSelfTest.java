@@ -683,7 +683,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             cacheCfg.setName("partitioned");
             cacheCfg.setAtomicityMode(atomicityMode());
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setStartSize(4500000);
 
             cacheCfg.setBackups(backups);
 

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.configuration;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Defines memory page eviction algorithm. A mode is set for a specific
  * {@link MemoryPolicyConfiguration}. Only data pages, that store key-value entries, are eligible for eviction. The
@@ -31,9 +33,9 @@ public enum DataPageEvictionMode {
      * <ul>
      * <li>Once a memory region defined by a memory policy is configured, an off-heap array is allocated to track
      * last usage timestamp for every individual data page. The size of the array is calculated this way - size =
-     * ({@link MemoryPolicyConfiguration#getSize()} / {@link MemoryConfiguration#pageSize})</li>
+     * ({@link MemoryPolicyConfiguration#getMaxSize()} / {@link MemoryConfiguration#pageSize})</li>
      * <li>When a data page is accessed, its timestamp gets updated in the tracking array. The page index in the
-     * tracking array is calculated this way - index = (pageAddress / {@link MemoryPolicyConfiguration#getSize()}</li>
+     * tracking array is calculated this way - index = (pageAddress / {@link MemoryPolicyConfiguration#getMaxSize()}</li>
      * <li>When it's required to evict some pages, the algorithm randomly chooses 5 indexes from the tracking array and
      * evicts a page with the latest timestamp. If some of the indexes point to non-data pages (index or system pages)
      * then the algorithm picks other pages.</li>
@@ -49,5 +51,18 @@ public enum DataPageEvictionMode {
      * minimums of other pages that might be evicted. LRU-2 outperforms LRU by resolving "one-hit wonder" problem -
      * if a data page is accessed rarely, but accidentally accessed once, it's protected from eviction for a long time.
      */
-    RANDOM_2_LRU
+    RANDOM_2_LRU;
+
+    /** Enumerated values. */
+    private static final DataPageEvictionMode[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static DataPageEvictionMode fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

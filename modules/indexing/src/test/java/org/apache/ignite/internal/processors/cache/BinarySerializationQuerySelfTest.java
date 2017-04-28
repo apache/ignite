@@ -107,9 +107,8 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
             cfg.setBinaryConfiguration(binCfg);
         }
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cacheCfg.setName(null);
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -129,7 +128,7 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
 
         ignite = Ignition.start(cfg);
 
-        cache = ignite.cache(null);
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
     }
 
     /**
