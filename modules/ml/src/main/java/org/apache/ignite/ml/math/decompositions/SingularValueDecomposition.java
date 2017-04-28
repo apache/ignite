@@ -20,7 +20,6 @@ package org.apache.ignite.ml.math.decompositions;
 import org.apache.ignite.ml.math.Algebra;
 import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.util.MatrixUtil;
 
 import static org.apache.ignite.ml.math.util.MatrixUtil.like;
 

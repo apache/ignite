@@ -37,9 +37,9 @@ public class NoDataException extends MathIllegalArgumentException {
     /**
      * Construct the exception with a specific message.
      *
-     * @param message Message.
+     * @param msg Message.
      */
-    public NoDataException(String message) {
-        super(message);
+    public NoDataException(String msg) {
+        super(msg);
     }
 }

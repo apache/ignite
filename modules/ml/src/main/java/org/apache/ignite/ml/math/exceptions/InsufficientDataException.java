@@ -25,6 +25,8 @@ package org.apache.ignite.ml.math.exceptions;
 public class InsufficientDataException extends MathIllegalArgumentException {
     /** Serializable version Id. */
     private static final long serialVersionUID = -2629324471511903359L;
+
+    /** */
     private static final String INSUFFICIENT_DATA = "Insufficient data.";
 
     /**
@@ -37,7 +39,7 @@ public class InsufficientDataException extends MathIllegalArgumentException {
     /**
      * Construct the exception.
      */
-    public InsufficientDataException(String message, Object ... args) {
-        super(message, args);
+    public InsufficientDataException(String msg, Object ... args) {
+        super(msg, args);
     }
 }

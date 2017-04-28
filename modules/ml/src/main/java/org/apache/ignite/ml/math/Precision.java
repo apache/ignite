@@ -50,7 +50,7 @@ public class Precision {
     public static final double SAFE_MIN;
 
     /** Exponent offset in IEEE754 representation. */
-    private static final long EXPONENT_OFFSET = 1023l;
+    private static final long EXPONENT_OFFSET = 1023L;
 
     /** Offset to order signed double numbers lexicographically. */
     private static final long SGN_MASK = 0x8000000000000000L;
@@ -66,6 +66,7 @@ public class Precision {
     private static final int POSITIVE_ZERO_FLOAT_BITS   = Float.floatToRawIntBits(+0.0f);
     /** Negative zero bits. */
     private static final int NEGATIVE_ZERO_FLOAT_BITS   = Float.floatToRawIntBits(-0.0f);
+    /** */
     private static final String INVALID_ROUNDING_METHOD = "invalid rounding method {0}, " +
         "valid methods: {1} ({2}), {3} ({4}), {5} ({6}), {7} ({8}), {9} ({10}), {11} ({12}), {13} ({14}), {15} ({16})";
 
@@ -75,14 +76,14 @@ public class Precision {
          *  However, OpenJDK (Sparc Solaris) cannot handle such small
          *  constants: MATH-721
          */
-        EPSILON = Double.longBitsToDouble((EXPONENT_OFFSET - 53l) << 52);
+        EPSILON = Double.longBitsToDouble((EXPONENT_OFFSET - 53L) << 52);
 
         /*
          * This was previously expressed as = 0x1.0p-1022;
          * However, OpenJDK (Sparc Solaris) cannot handle such small
          * constants: MATH-721
          */
-        SAFE_MIN = Double.longBitsToDouble((EXPONENT_OFFSET - 1022l) << 52);
+        SAFE_MIN = Double.longBitsToDouble((EXPONENT_OFFSET - 1022L) << 52);
     }
 
     /**
@@ -314,8 +315,8 @@ public class Precision {
         if (equals(x, y, 1))
             return true;
 
-        final double absoluteMax = Math.max(Math.abs(x), Math.abs(y));
-        final double relativeDifference = Math.abs((x - y) / absoluteMax);
+        final double absMax = Math.max(Math.abs(x), Math.abs(y));
+        final double relativeDifference = Math.abs((x - y) / absMax);
 
         return relativeDifference <= eps;
     }
@@ -362,7 +363,7 @@ public class Precision {
         final long yInt = Double.doubleToRawLongBits(y);
 
         final boolean isEqual;
-        if (((xInt ^ yInt) & SGN_MASK) == 0l) {
+        if (((xInt ^ yInt) & SGN_MASK) == 0L) {
             // number have same sign, there is no risk of overflow
             isEqual = Math.abs(xInt - yInt) <= maxUlps;
         } else {
@@ -426,7 +427,7 @@ public class Precision {
      *
      * @param x Value to round.
      * @param scale Number of digits to the right of the decimal point.
-     * @param roundingMethod Rounding method as defined in {@link BigDecimal}.
+     * @param roundingMtd Rounding method as defined in {@link BigDecimal}.
      * @return the rounded value.
      * @throws ArithmeticException if {@code roundingMethod == ROUND_UNNECESSARY}
      * and the specified scaling operation would require rounding.
@@ -434,10 +435,10 @@ public class Precision {
      * represent a valid rounding mode.
      * @since 1.1 (previously in {@code MathUtils}, moved as of version 3.0)
      */
-    public static double round(double x, int scale, int roundingMethod) {
+    public static double round(double x, int scale, int roundingMtd) {
         try {
             final double rounded = (new BigDecimal(Double.toString(x))
-                   .setScale(scale, roundingMethod))
+                   .setScale(scale, roundingMtd))
                    .doubleValue();
             // MATH-1089: negative values rounded to zero should result in negative zero
             return rounded == POSITIVE_ZERO ? POSITIVE_ZERO * x : rounded;
@@ -469,17 +470,17 @@ public class Precision {
      *
      * @param x Value to round.
      * @param scale Number of digits to the right of the decimal point.
-     * @param roundingMethod Rounding method as defined in {@link BigDecimal}.
+     * @param roundingMtd Rounding method as defined in {@link BigDecimal}.
      * @return the rounded value.
      * @since 1.1 (previously in {@code MathUtils}, moved as of version 3.0)
      * @throws MathArithmeticException if an exact operation is required but result is not exact
      * @throws MathIllegalArgumentException if {@code roundingMethod} is not a valid rounding method.
      */
-    public static float round(float x, int scale, int roundingMethod)
+    public static float round(float x, int scale, int roundingMtd)
         throws MathArithmeticException, MathIllegalArgumentException {
         final float sign = Math.copySign(1f, x);
         final float factor = (float) Math.pow(10.0f, scale) * sign;
-        return (float) roundUnscaled(x * factor, sign, roundingMethod) / factor;
+        return (float) roundUnscaled(x * factor, sign, roundingMtd) / factor;
     }
 
     /**
@@ -489,17 +490,15 @@ public class Precision {
      *
      * @param unscaled Value to round.
      * @param sign Sign of the original, scaled value.
-     * @param roundingMethod Rounding method, as defined in {@link BigDecimal}.
+     * @param roundingMtd Rounding method, as defined in {@link BigDecimal}.
      * @return the rounded value.
      * @throws MathArithmeticException if an exact operation is required but result is not exact
      * @throws MathIllegalArgumentException if {@code roundingMethod} is not a valid rounding method.
      * @since 1.1 (previously in {@code MathUtils}, moved as of version 3.0)
      */
-    private static double roundUnscaled(double unscaled,
-                                        double sign,
-                                        int roundingMethod)
+    private static double roundUnscaled(double unscaled, double sign, int roundingMtd)
         throws MathArithmeticException, MathIllegalArgumentException {
-        switch (roundingMethod) {
+        switch (roundingMtd) {
         case BigDecimal.ROUND_CEILING :
             if (sign == -1)
                 unscaled = Math.floor(Math.nextAfter(unscaled, Double.NEGATIVE_INFINITY));
@@ -560,7 +559,7 @@ public class Precision {
             break;
         default :
             throw new MathIllegalArgumentException(INVALID_ROUNDING_METHOD,
-                                                   roundingMethod,
+                roundingMtd,
                                                    "ROUND_CEILING", BigDecimal.ROUND_CEILING,
                                                    "ROUND_DOWN", BigDecimal.ROUND_DOWN,
                                                    "ROUND_FLOOR", BigDecimal.ROUND_FLOOR,
@@ -588,8 +587,7 @@ public class Precision {
      * @return a number {@code delta} so that {@code x + delta} and {@code x}
      * differ by a representable floating number.
      */
-    public static double representableDelta(double x,
-                                            double originalDelta) {
+    public static double representableDelta(double x, double originalDelta) {
         return x + originalDelta - x;
     }
 }
