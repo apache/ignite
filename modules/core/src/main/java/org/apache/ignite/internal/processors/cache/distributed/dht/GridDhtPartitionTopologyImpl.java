@@ -55,8 +55,6 @@ import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -64,8 +62,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
@@ -83,7 +79,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     private static final boolean FULL_MAP_DEBUG = false;
 
     /** */
-    private static final boolean FAST_DIFF_REBUILD = false;
+    private static final boolean FAST_DIFF_REBUILD = true;
 
     /** */
     private static final Long ZERO = 0L;
@@ -1021,8 +1017,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         if (node2part == null)
             return;
 
-        diffFromAffinity.clear();
-
         if (FAST_DIFF_REBUILD) {
             Collection<UUID> affNodes = F.nodeIds(cctx.discovery().cacheAffinityNodes(cctx.cacheId(), affAssignment.topologyVersion()));
 
@@ -1441,7 +1435,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
 
-            if (exchId == null) {
+            if (affVer.compareTo(diffFromAffinityVer) >= 0) {
                 AffinityAssignment affAssignment = cctx.affinity().assignment(affVer);
 
                 int diffFromAffinitySize = 0;
@@ -1491,6 +1485,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         }
                     }
                 }
+
+                diffFromAffinityVer = affVer;
 
                 if (diffFromAffinitySize > 0)
                     U.error(log, "??? S diffFromAffinitySize=" + diffFromAffinitySize + " [exchId=" + exchId + ",cacheId=" + cctx.cacheId() + ",cacheName=" + cctx.name() + "]");
@@ -2126,7 +2122,27 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 if (affNodes.isEmpty())
                     continue;
 
-                if (!F.isEmpty(diffFromAffinity.get(i)))
+                Set<ClusterNode> owners = U.newHashSet(affNodes.size());
+
+                for (ClusterNode node : affNodes) {
+                    if (hasState(i, node.id(), OWNING))
+                        owners.add(node);
+                }
+
+                Set<UUID> diff = diffFromAffinity.get(i);
+
+                if (diff != null) {
+                    for (UUID nodeId : diff) {
+                        if (hasState(i, nodeId, OWNING)) {
+                            ClusterNode node = cctx.discovery().node(nodeId);
+
+                            if (node != null)
+                                owners.add(node);
+                        }
+                    }
+                }
+
+                if (affNodes.size() != owners.size() || !owners.containsAll(affNodes))
                     return;
             }
 
