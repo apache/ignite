@@ -1215,6 +1215,22 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (exchangeOnChangeGlobalState && err == null)
             cctx.kernalContext().state().onExchangeDone();
 
+        if (err == null && realExchange) {
+//            if (discoEvt.type() == EVT_NODE_JOINED || discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED || (discoEvt instanceof DiscoveryCustomEvent && ((DiscoveryCustomEvent)discoEvt).customMessage() instanceof CacheAffinityChangeMessage)) {
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal())
+                    continue;
+
+                try {
+                    cacheCtx.topology().onAffinityInitialized(cacheCtx.affinity().assignment(topologyVersion()));
+                }
+                catch (Exception e) {
+                    System.out.println("???");
+                }
+            }
+//            }
+        }
+
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +

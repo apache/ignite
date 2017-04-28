@@ -959,7 +959,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             List<ClusterNode> nodes = null;
 
-            if (topVer.compareTo(diffFromAffinityVer) != 0) {
+            if (!topVer.equals(diffFromAffinityVer)) {
                 System.out.println("??? node2part [topVer=" + topVer + ", diffVer=" + diffFromAffinityVer + "]");
 
                 nodes = new ArrayList<>();
@@ -1018,43 +1018,43 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         if (node2part == null)
             return;
 
-        for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-            UUID nodeId = e.getKey();
-
-            for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
-                int p0 = e0.getKey();
-
-                GridDhtPartitionState state = e0.getValue();
-
-                Set<UUID> ids = diffFromAffinity.get(p0);
-
-                if ((state == MOVING || state == OWNING || state == RENTING) && !affAssignment.getIds(p0).contains(nodeId)) {
-                    if (ids == null)
-                        diffFromAffinity.put(p0, ids = U.newHashSet(3));
-
-                    ids.add(nodeId);
-                }
-                else {
-                    if (ids != null)
-                        ids.remove(nodeId);
-                }
-            }
-        }
-
-//        Collection<UUID> affNodes = F.nodeIds(cctx.discovery().cacheAffinityNodes(cctx.cacheId(), affAssignment.topologyVersion()));
+//        for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
+//            UUID nodeId = e.getKey();
 //
-//        for (Map.Entry<Integer, Set<UUID>> e : diffFromAffinity.entrySet()) {
-//            int p = e.getKey();
+//            for (Map.Entry<Integer, GridDhtPartitionState> e0 : e.getValue().entrySet()) {
+//                int p0 = e0.getKey();
 //
-//            Iterator<UUID> iter = e.getValue().iterator();
+//                GridDhtPartitionState state = e0.getValue();
 //
-//            while (iter.hasNext()) {
-//                UUID nodeId = iter.next();
+//                Set<UUID> ids = diffFromAffinity.get(p0);
 //
-//                if (!affNodes.contains(nodeId) || affAssignment.getIds(p).contains(nodeId))
-//                    iter.remove();
+//                if ((state == MOVING || state == OWNING || state == RENTING) && !affAssignment.getIds(p0).contains(nodeId)) {
+//                    if (ids == null)
+//                        diffFromAffinity.put(p0, ids = U.newHashSet(3));
+//
+//                    ids.add(nodeId);
+//                }
+//                else {
+//                    if (ids != null)
+//                        ids.remove(nodeId);
+//                }
 //            }
 //        }
+
+        Collection<UUID> affNodes = F.nodeIds(cctx.discovery().cacheAffinityNodes(cctx.cacheId(), affAssignment.topologyVersion()));
+
+        for (Map.Entry<Integer, Set<UUID>> e : diffFromAffinity.entrySet()) {
+            int p = e.getKey();
+
+            Iterator<UUID> iter = e.getValue().iterator();
+
+            while (iter.hasNext()) {
+                UUID nodeId = iter.next();
+
+                if (!affNodes.contains(nodeId) || affAssignment.getIds(p).contains(nodeId))
+                    iter.remove();
+            }
+        }
 
         diffFromAffinityVer = affAssignment.topologyVersion();
     }
@@ -1433,7 +1433,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
 
-            if (diffFromAffinityVer.compareTo(affVer) <= 0) {
+            if (diffFromAffinityVer.compareTo(affVer) <= 0 && false) {
                 AffinityAssignment affAssignment = cctx.affinity().assignment(affVer);
 
                 int diffFromAffinitySize = 0;
@@ -1518,7 +1518,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.writeLock().lock();
 
         try {
-            rebuildDiff(assignment);
+            if (assignment.topologyVersion().compareTo(diffFromAffinityVer) >= 0)
+                rebuildDiff(assignment);
         }
         finally {
             lock.writeLock().unlock();
