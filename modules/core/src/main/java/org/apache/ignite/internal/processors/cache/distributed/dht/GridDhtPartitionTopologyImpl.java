@@ -1085,10 +1085,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             // Node IDs can be null if both, primary and backup, nodes disappear.
             List<ClusterNode> nodes = new ArrayList<>();
 
-            for (UUID id : node2part.keySet()) {
-                if (topVer.topologyVersion() > 0 && !allIds.contains(id))
-                    continue;
-
+            for (UUID id : allIds) {
                 if (hasState(p, id, state, states)) {
                     ClusterNode n = cctx.discovery().node(id);
 
