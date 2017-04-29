@@ -198,9 +198,9 @@
         <profile>
             <id>lgpl</id>
             <modules>
+                <module>modules/hibernate-core</module>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
-                <module>modules/hibernate-core</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
