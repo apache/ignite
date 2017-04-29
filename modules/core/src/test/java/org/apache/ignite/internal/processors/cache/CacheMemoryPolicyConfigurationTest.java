@@ -36,6 +36,12 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
     /** */
     private volatile MemoryConfiguration memCfg;
 
+    /** */
+    private static final long DFLT_MEM_PLC_SIZE = 10 * 1024 * 1024;
+
+    /** */
+    private static final long BIG_MEM_PLC_SIZE = 1024 * 1024 * 1024;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -138,12 +144,12 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
 
         MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
         dfltPlcCfg.setName("dfltPlc");
-        dfltPlcCfg.setInitialSize(1024 * 1024);
-        dfltPlcCfg.setMaxSize(1024 * 1024);
+        dfltPlcCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        dfltPlcCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
 
         MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
         bigPlcCfg.setName("bigPlc");
-        bigPlcCfg.setMaxSize(1024 * 1024 * 1024);
+        bigPlcCfg.setMaxSize(BIG_MEM_PLC_SIZE);
 
         memCfg.setMemoryPolicies(dfltPlcCfg, bigPlcCfg);
         memCfg.setDefaultMemoryPolicyName("dfltPlc");
