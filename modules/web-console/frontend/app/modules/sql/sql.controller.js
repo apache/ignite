@@ -1478,8 +1478,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
         $scope.scan = (paragraph, local = false) => {
             const cacheName = paragraph.cacheName;
-            const filter = paragraph.filter;
             const caseSensitive = !!paragraph.caseSensitive;
+            const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
             $scope.actionAvailable(paragraph, false) && _chooseNode(cacheName, local)
