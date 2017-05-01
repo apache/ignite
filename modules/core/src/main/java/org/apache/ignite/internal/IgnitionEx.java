@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -57,7 +58,9 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -98,8 +101,6 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -1333,7 +1334,7 @@ public class IgnitionEx {
      * @param name Grid name.
      * @return Grid instance.
      */
-    private static IgniteKernal gridx(@Nullable String name) {
+    public  static IgniteKernal gridx(@Nullable String name) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         IgniteKernal res;
@@ -1528,6 +1529,12 @@ public class IgnitionEx {
         /** Query executor service. */
         private ThreadPoolExecutor qryExecSvc;
 
+        /** Query executor service. */
+        private ThreadPoolExecutor schemaExecSvc;
+
+        /** Executor service. */
+        private Map<String, ThreadPoolExecutor> customExecSvcs;
+
         /** Grid state. */
         private volatile IgniteState state = STOPPED;
 
@@ -1679,7 +1686,6 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(myCfg.getCollisionSpi());
                 ensureMultiInstanceSupport(myCfg.getFailoverSpi());
                 ensureMultiInstanceSupport(myCfg.getLoadBalancingSpi());
-                ensureMultiInstanceSupport(myCfg.getSwapSpaceSpi());
             }
 
             validateThreadPoolSize(cfg.getPublicThreadPoolSize(), "public");
@@ -1847,6 +1853,34 @@ public class IgnitionEx {
 
             qryExecSvc.allowCoreThreadTimeOut(true);
 
+            schemaExecSvc = new IgniteThreadPoolExecutor(
+                "schema",
+                cfg.getIgniteInstanceName(),
+                2,
+                2,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            schemaExecSvc.allowCoreThreadTimeOut(true);
+
+            if (!F.isEmpty(cfg.getExecutorConfiguration())) {
+                validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
+
+                customExecSvcs = new HashMap<>();
+
+                for(ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
+                    ThreadPoolExecutor exec = new IgniteThreadPoolExecutor(
+                        execCfg.getName(),
+                        cfg.getIgniteInstanceName(),
+                        execCfg.getSize(),
+                        execCfg.getSize(),
+                        DFLT_THREAD_KEEP_ALIVE_TIME,
+                        new LinkedBlockingQueue<Runnable>());
+
+                    customExecSvcs.put(execCfg.getName(), exec);
+                }
+            }
+
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
@@ -1874,6 +1908,8 @@ public class IgnitionEx {
                     idxExecSvc,
                     callbackExecSvc,
                     qryExecSvc,
+                    schemaExecSvc,
+                    customExecSvcs,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -1946,6 +1982,30 @@ public class IgnitionEx {
             if (poolSize <= 0) {
                 throw new IgniteCheckedException("Invalid " + poolName + " thread pool size" +
                     " (must be greater than 0), actual value: " + poolSize);
+            }
+        }
+
+        /**
+         * @param cfgs Array of the executors configurations.
+         * @throws IgniteCheckedException If configuration is wrong.
+         */
+        private static void validateCustomExecutorsConfiguration(ExecutorConfiguration[] cfgs)
+            throws IgniteCheckedException {
+            if (cfgs == null)
+                return;
+
+            Set<String> names = new HashSet<>(cfgs.length);
+
+            for (ExecutorConfiguration cfg : cfgs) {
+                if (F.isEmpty(cfg.getName()))
+                    throw new IgniteCheckedException("Custom executor name cannot be null or empty.");
+
+                if (!names.add(cfg.getName()))
+                    throw new IgniteCheckedException("Duplicate custom executor name: " + cfg.getName());
+
+                if (cfg.getSize() <= 0)
+                    throw new IgniteCheckedException("Custom executor size must be positive [name=" + cfg.getName() +
+                        ", size=" + cfg.getSize() + ']');
             }
         }
 
@@ -2104,6 +2164,25 @@ public class IgnitionEx {
 
             initializeDefaultCacheConfiguration(myCfg);
 
+            ExecutorConfiguration[] execCfgs = myCfg.getExecutorConfiguration();
+
+            if (execCfgs != null) {
+                ExecutorConfiguration[] clone = execCfgs.clone();
+
+                for (int i = 0; i < execCfgs.length; i++)
+                    clone[i] = new ExecutorConfiguration(execCfgs[i]);
+
+                myCfg.setExecutorConfiguration(clone);
+            }
+
+            if (!myCfg.isClientMode() && myCfg.getMemoryConfiguration() == null) {
+                MemoryConfiguration memCfg = new MemoryConfiguration();
+
+                memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+
+                myCfg.setMemoryConfiguration(memCfg);
+            }
+
             return myCfg;
         }
 
@@ -2218,22 +2297,6 @@ public class IgnitionEx {
 
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());
-
-            if (cfg.getSwapSpaceSpi() == null) {
-                boolean needSwap = false;
-
-                if (cfg.getCacheConfiguration() != null && !Boolean.TRUE.equals(cfg.isClientMode())) {
-                    for (CacheConfiguration c : cfg.getCacheConfiguration()) {
-                        if (c.isSwapEnabled()) {
-                            needSwap = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                cfg.setSwapSpaceSpi(needSwap ? new FileSwapSpaceSpi() : new NoopSwapSpaceSpi());
-            }
         }
 
         /**
@@ -2333,7 +2396,6 @@ public class IgnitionEx {
             cache.setName(CU.UTILITY_CACHE_NAME);
             cache.setCacheMode(REPLICATED);
             cache.setAtomicityMode(TRANSACTIONAL);
-            cache.setSwapEnabled(false);
             cache.setRebalanceMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new RendezvousAffinityFunction(false, 100));
@@ -2355,7 +2417,6 @@ public class IgnitionEx {
 
             ccfg.setName(CU.ATOMICS_CACHE_NAME);
             ccfg.setAtomicityMode(TRANSACTIONAL);
-            ccfg.setSwapEnabled(false);
             ccfg.setRebalanceMode(SYNC);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());
@@ -2403,12 +2464,12 @@ public class IgnitionEx {
 
                     shutdownHook = null;
 
-                    if (log.isDebugEnabled())
+                    if (log != null && log.isDebugEnabled())
                         log.debug("Shutdown hook is removed.");
                 }
                 catch (IllegalStateException e) {
                     // Shutdown is in progress...
-                    if (log.isDebugEnabled())
+                    if (log != null && log.isDebugEnabled())
                         log.debug("Shutdown is in progress (ignoring): " + e.getMessage());
                 }
 
@@ -2418,7 +2479,7 @@ public class IgnitionEx {
             try {
                 grid0.stop(cancel);
 
-                if (log.isDebugEnabled())
+                if (log != null && log.isDebugEnabled())
                     log.debug("Ignite instance stopped ok: " + name);
             }
             catch (Throwable e) {
@@ -2432,7 +2493,8 @@ public class IgnitionEx {
 
                 grid = null;
 
-                stopExecutors(log);
+                if (log != null)
+                    stopExecutors(log);
 
                 log = null;
             }
@@ -2475,6 +2537,10 @@ public class IgnitionEx {
 
             qryExecSvc = null;
 
+            U.shutdownNow(getClass(), schemaExecSvc, log);
+
+            schemaExecSvc = null;
+
             U.shutdownNow(getClass(), stripedExecSvc, log);
 
             stripedExecSvc = null;
@@ -2515,6 +2581,13 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), callbackExecSvc, log);
 
             callbackExecSvc = null;
+
+            if (!F.isEmpty(customExecSvcs)) {
+                for (ThreadPoolExecutor exec : customExecSvcs.values())
+                    U.shutdownNow(getClass(), exec, log);
+
+                customExecSvcs = null;
+            }
         }
 
         /**

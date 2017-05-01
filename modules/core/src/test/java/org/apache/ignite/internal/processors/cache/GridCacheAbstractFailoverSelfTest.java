@@ -23,6 +23,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -77,13 +78,13 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setNetworkTimeout(60_000);
+        cfg.setMetricsUpdateFrequency(5_000);
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
         discoSpi.setSocketTimeout(30_000);
         discoSpi.setAckTimeout(30_000);
         discoSpi.setNetworkTimeout(60_000);
-        discoSpi.setHeartbeatFrequency(30_000);
         discoSpi.setReconnectCount(2);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
@@ -96,6 +97,9 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setRebalanceMode(SYNC);
+
+        if (cfg.getCacheMode() == CacheMode.PARTITIONED)
+            cfg.setBackups(TOP_CHANGE_THREAD_CNT);
 
         return cfg;
     }
@@ -203,7 +207,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                         try {
                             final Ignite g = startGrid(name);
 
-                            IgniteCache<String, Object> cache = g.cache(null);
+                            IgniteCache<String, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
                             for (int k = half; k < ENTRY_CNT; k++) {
                                 String key = "key" + k;
@@ -380,6 +384,6 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @return Cache.
      */
     private IgniteCache<String,Integer> cache(Ignite g) {
-        return g.cache(null);
+        return g.cache(DEFAULT_CACHE_NAME);
     }
 }

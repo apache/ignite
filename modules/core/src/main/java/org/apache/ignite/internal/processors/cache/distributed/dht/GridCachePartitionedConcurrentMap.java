@@ -81,12 +81,19 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     /** {@inheritDoc} */
     @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {
-        GridDhtLocalPartition part = localPartition(key, topVer, create);
+        while (true) {
+            GridDhtLocalPartition part = localPartition(key, topVer, create);
 
-        if (part == null)
-            return null;
+            if (part == null)
+                return null;
 
-        return part.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
+            GridCacheMapEntry res = part.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
+
+            if (res != null || !create)
+                return res;
+
+            // Otherwise parttion was concurrently evicted and should be re-created on next iteration.
+        }
     }
 
     /** {@inheritDoc} */
@@ -127,11 +134,6 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
             return false;
 
         return part.removeEntry(entry);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry randomEntry() {
-        return entries().iterator().next();
     }
 
     /** {@inheritDoc} */

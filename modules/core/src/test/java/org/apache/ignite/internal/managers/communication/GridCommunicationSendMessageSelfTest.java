@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -79,8 +78,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         c.setDiscoverySpi(discoSpi);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setConnectionBufferSize(bufSize);
 
         c.setCommunicationSpi(commSpi);
 

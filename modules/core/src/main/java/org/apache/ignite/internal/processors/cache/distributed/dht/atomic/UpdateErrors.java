@@ -202,7 +202,7 @@ public class UpdateErrors implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -46;
+        return -49;
     }
 
     /** {@inheritDoc} */

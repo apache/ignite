@@ -38,6 +38,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
@@ -73,6 +74,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** */
     private UUID subjId;
 
+    /** Custom executor name. */
+    private String execName;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -103,6 +107,25 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         this.subjId = subjId;
     }
 
+    /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     * @param prj Projection.
+     * @param subjId Subject ID.
+     * @param async Async support flag.
+     * @param execName Custom executor name.
+     */
+    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async,
+        String execName) {
+        super(async);
+
+        this.ctx = ctx;
+        this.prj = prj;
+        this.subjId = subjId;
+        this.execName = execName;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteCompute createAsyncInstance() {
         return new IgniteComputeImpl(ctx, prj, subjId, true);
@@ -114,7 +137,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job) {
+    @Override public void affinityRun(String cacheName, Object affKey, IgniteRunnable job) {
+        CU.validateCacheName(cacheName);
+
         try {
             saveOrGet(affinityRunAsync0(cacheName, affKey, job));
         }
@@ -124,8 +149,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> affinityRunAsync(@Nullable String cacheName, Object affKey,
+    @Override public IgniteFuture<Void> affinityRunAsync(String cacheName, Object affKey,
         IgniteRunnable job) throws IgniteException {
+        CU.validateCacheName(cacheName);
+
         return (IgniteFuture<Void>)createFuture(affinityRunAsync0(cacheName, affKey, job));
     }
 
@@ -137,7 +164,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param job Job.
      * @return Internal future.
      */
-    private IgniteInternalFuture<?> affinityRunAsync0(@Nullable String cacheName, Object affKey, IgniteRunnable job) {
+    private IgniteInternalFuture<?> affinityRunAsync0(String cacheName, Object affKey, IgniteRunnable job) {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
 
@@ -152,7 +179,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            return ctx.closure().affinityRun(Collections.singletonList(cacheName), partId, job, prj.nodes());
+            return ctx.closure().affinityRun(Collections.singletonList(cacheName), partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -164,6 +191,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public void affinityRun(@NotNull Collection<String> cacheNames, Object affKey, IgniteRunnable job) {
+        CU.validateCacheNames(cacheNames);
+
         try {
             saveOrGet(affinityRunAsync0(cacheNames, affKey, job));
         }
@@ -175,6 +204,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, Object affKey,
         IgniteRunnable job) throws IgniteException {
+        CU.validateCacheNames(cacheNames);
+
         return (IgniteFuture<Void>)createFuture(affinityRunAsync0(cacheNames, affKey, job));
     }
 
@@ -205,7 +236,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            return ctx.closure().affinityRun(cacheNames, partId, job, prj.nodes());
+            return ctx.closure().affinityRun(cacheNames, partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -217,6 +248,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public void affinityRun(@NotNull Collection<String> cacheNames, int partId, IgniteRunnable job) {
+        CU.validateCacheNames(cacheNames);
+
         try {
             saveOrGet(affinityRunAsync0(cacheNames, partId, job));
         }
@@ -228,6 +261,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> affinityRunAsync(@NotNull Collection<String> cacheNames, int partId,
         IgniteRunnable job) throws IgniteException {
+        CU.validateCacheNames(cacheNames);
+
         return (IgniteFuture<Void>)createFuture(affinityRunAsync0(cacheNames, partId, job));
     }
 
@@ -248,7 +283,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().affinityRun(cacheNames, partId, job, prj.nodes());
+            return ctx.closure().affinityRun(cacheNames, partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -259,7 +294,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) {
+    @Override public <R> R affinityCall(String cacheName, Object affKey, IgniteCallable<R> job) {
+        CU.validateCacheName(cacheName);
+
         try {
             return saveOrGet(affinityCallAsync0(cacheName, affKey, job));
         }
@@ -269,8 +306,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> affinityCallAsync(@Nullable String cacheName, Object affKey,
+    @Override public <R> IgniteFuture<R> affinityCallAsync(String cacheName, Object affKey,
         IgniteCallable<R> job) throws IgniteException {
+        CU.validateCacheName(cacheName);
+
         return createFuture(affinityCallAsync0(cacheName, affKey, job));
     }
 
@@ -282,7 +321,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param job Job.
      * @return Internal future.
      */
-    private <R> IgniteInternalFuture<R> affinityCallAsync0(@Nullable String cacheName, Object affKey,
+    private <R> IgniteInternalFuture<R> affinityCallAsync0(String cacheName, Object affKey,
         IgniteCallable<R> job) {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
@@ -298,7 +337,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            return ctx.closure().affinityCall(Collections.singletonList(cacheName), partId, job, prj.nodes());
+            return ctx.closure().affinityCall(Collections.singletonList(cacheName), partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -310,6 +349,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(@NotNull Collection<String> cacheNames, Object affKey, IgniteCallable<R> job) {
+        CU.validateCacheNames(cacheNames);
+
         try {
             return saveOrGet(affinityCallAsync0(cacheNames, affKey, job));
         }
@@ -321,6 +362,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, Object affKey,
         IgniteCallable<R> job) throws IgniteException {
+        CU.validateCacheNames(cacheNames);
+
         return createFuture(affinityCallAsync0(cacheNames, affKey, job));
     }
 
@@ -351,7 +394,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            return ctx.closure().affinityCall(cacheNames, partId, job, prj.nodes());
+            return ctx.closure().affinityCall(cacheNames, partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -363,6 +406,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(@NotNull Collection<String> cacheNames, int partId, IgniteCallable<R> job) {
+        CU.validateCacheNames(cacheNames);
+
         try {
             return saveOrGet(affinityCallAsync0(cacheNames, partId, job));
         }
@@ -374,6 +419,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> affinityCallAsync(@NotNull Collection<String> cacheNames, int partId,
         IgniteCallable<R> job) throws IgniteException {
+        CU.validateCacheNames(cacheNames);
+
         return createFuture(affinityCallAsync0(cacheNames, partId, job));
     }
 
@@ -394,7 +441,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().affinityCall(cacheNames, partId, job, prj.nodes());
+            return ctx.closure().affinityCall(cacheNames, partId, job, prj.nodes(), execName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -437,7 +484,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(taskName, arg);
+            return ctx.task().execute(taskName, arg, execName);
         }
         finally {
             unguard();
@@ -477,7 +524,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(taskCls, arg);
+            return ctx.task().execute(taskCls, arg, execName);
         }
         finally {
             unguard();
@@ -516,7 +563,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return ctx.task().execute(task, arg);
+            return ctx.task().execute(task, arg, execName);
         }
         finally {
             unguard();
@@ -550,7 +597,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().runAsync(BROADCAST, job, prj.nodes());
+            return ctx.closure().runAsync(BROADCAST, job, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -584,7 +631,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(BROADCAST, Collections.singletonList(job), prj.nodes());
+            return ctx.closure().callAsync(BROADCAST, Collections.singletonList(job), prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -620,7 +667,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().broadcast(job, arg, prj.nodes());
+            return ctx.closure().broadcast(job, arg, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -654,7 +701,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().runAsync(BALANCE, job, prj.nodes());
+            return ctx.closure().runAsync(BALANCE, job, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -689,7 +736,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().runAsync(BALANCE, jobs, prj.nodes());
+            return ctx.closure().runAsync(BALANCE, jobs, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -725,7 +772,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(job, arg, prj.nodes());
+            return ctx.closure().callAsync(job, arg, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -759,7 +806,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(BALANCE, job, prj.nodes());
+            return ctx.closure().callAsync(BALANCE, job, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -794,7 +841,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(BALANCE, (Collection<? extends Callable<R>>)jobs, prj.nodes());
+            return ctx.closure().callAsync(BALANCE, (Collection<? extends Callable<R>>)jobs, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -832,7 +879,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(job, args, prj.nodes());
+            return ctx.closure().callAsync(job, args, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -870,7 +917,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().forkjoinAsync(BALANCE, jobs, rdc, prj.nodes());
+            return ctx.closure().forkjoinAsync(BALANCE, jobs, rdc, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -911,7 +958,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return ctx.closure().callAsync(job, args, rdc, prj.nodes());
+            return ctx.closure().callAsync(job, args, rdc, prj.nodes(), execName);
         }
         finally {
             unguard();
@@ -1040,11 +1087,13 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(prj);
+        out.writeObject(execName);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         prj = (ClusterGroupAdapter)in.readObject();
+        execName = (String)in.readObject();
     }
 
     /**
@@ -1054,7 +1103,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
-        return prj.compute();
+        return prj.compute().withExecutor(execName);
     }
 
     /** {@inheritDoc} */
@@ -1067,5 +1116,10 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** {@inheritDoc} */
     @Override public <R> ComputeTaskFuture<R> future() {
         return (ComputeTaskFuture<R>)super.future();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCompute withExecutor(@NotNull String name) {
+        return new IgniteComputeImpl(ctx, prj, subjId, isAsync(), name);
     }
 }

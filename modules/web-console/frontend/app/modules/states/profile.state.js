@@ -26,7 +26,7 @@ angular
 .config(['$stateProvider', 'AclRouteProvider', function($stateProvider, AclRoute) {
     // set up the states
     $stateProvider
-    .state('settings.profile', {
+    .state('base.settings.profile', {
         url: '/profile',
         templateUrl,
         onEnter: AclRoute.checkAccess('profile'),

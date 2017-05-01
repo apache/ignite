@@ -627,11 +627,11 @@ namespace ignite
                 // No-op.
             }
 
-            SqlResult ConnectionInfo::GetInfo(InfoType type, void* buf,
+            SqlResult::Type ConnectionInfo::GetInfo(InfoType type, void* buf,
                 short buflen, short* reslen) const
             {
                 if (!buf || !buflen)
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
 
                 StringInfoMap::const_iterator itStr = strParams.find(type);
 
@@ -644,7 +644,7 @@ namespace ignite
                     if (reslen)
                         *reslen = strlen;
 
-                    return SQL_RESULT_SUCCESS;
+                    return SqlResult::AI_SUCCESS;
                 }
 
                 UintInfoMap::const_iterator itInt = intParams.find(type);
@@ -655,7 +655,7 @@ namespace ignite
 
                     *res = itInt->second;
 
-                    return SQL_RESULT_SUCCESS;
+                    return SqlResult::AI_SUCCESS;
                 }
 
                 UshortInfoMap::const_iterator itShort = shortParams.find(type);
@@ -666,10 +666,10 @@ namespace ignite
 
                     *res = itShort->second;
 
-                    return SQL_RESULT_SUCCESS;
+                    return SqlResult::AI_SUCCESS;
                 }
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
         }
     }

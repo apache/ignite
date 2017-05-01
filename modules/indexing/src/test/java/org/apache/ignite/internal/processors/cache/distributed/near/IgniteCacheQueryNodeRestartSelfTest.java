@@ -66,7 +66,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 90 * 1000;
+        return 3 * 60 * 1000;
     }
 
     /** {@inheritDoc} */
@@ -108,7 +108,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         final long nodeLifeTime = 2 * 1000;
         final int logFreq = 50;
 
-        final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 
@@ -193,7 +193,6 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         fut1.get();
 
         info("Queries stopped.");
-
 
         info("Awaiting rebalance events [restartCnt=" + restartCnt.get() + ']');
 

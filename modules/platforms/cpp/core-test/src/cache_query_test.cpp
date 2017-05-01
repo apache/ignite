@@ -163,6 +163,29 @@ public:
         return recordCreated;
     }
 
+    /**
+     * @return true if objects are equal.
+     */
+    friend bool operator==(QueryPerson const& lhs, QueryPerson const& rhs)
+    {
+        return lhs.GetName() == rhs.GetName() && lhs.GetAge() == rhs.GetAge() &&
+            lhs.GetBirthday() == rhs.GetBirthday() && lhs.GetCreationTime() == rhs.GetCreationTime();
+    }
+
+    /**
+     * Outputs the object to stream.
+     *
+     * @return Stream.
+     */
+    friend std::ostream& operator<<(std::ostream& str, QueryPerson const& obj)
+    {
+        str << "QueryPerson::name: " << obj.GetName()
+            << "QueryPerson::age: " << obj.GetAge()
+            << "QueryPerson::birthday: " << obj.GetBirthday().GetMilliseconds()
+            << "QueryPerson::recordCreated: " << obj.GetCreationTime().GetSeconds() << "." << obj.GetCreationTime().GetSecondFraction();
+        return str;
+    }
+
 private:
     /** Name. */
     char* name;
@@ -245,11 +268,10 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(QueryPerson)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(QueryPerson)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(QueryPerson)
             IGNITE_BINARY_IS_NULL_FALSE(QueryPerson)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryPerson)
 
-            void Write(BinaryWriter& writer, QueryPerson obj)
+            static void Write(BinaryWriter& writer, const QueryPerson& obj)
             {
                 writer.WriteString("name", obj.GetName());
                 writer.WriteInt32("age", obj.GetAge());
@@ -257,14 +279,14 @@ namespace ignite
                 writer.WriteTimestamp("recordCreated", obj.GetCreationTime());
             }
 
-            QueryPerson Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, QueryPerson& dst)
             {
                 std::string name = reader.ReadString("name");
                 int age = reader.ReadInt32("age");
                 Date birthday = reader.ReadDate("birthday");
                 Timestamp recordCreated = reader.ReadTimestamp("recordCreated");
             
-                return QueryPerson(name, age, birthday, recordCreated);
+                dst = QueryPerson(name, age, birthday, recordCreated);
             }
         IGNITE_BINARY_TYPE_END
 
@@ -275,22 +297,21 @@ namespace ignite
             IGNITE_BINARY_GET_TYPE_ID_AS_HASH(QueryRelation)
             IGNITE_BINARY_GET_TYPE_NAME_AS_IS(QueryRelation)
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(QueryRelation)
             IGNITE_BINARY_IS_NULL_FALSE(QueryRelation)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryRelation)
 
-            void Write(BinaryWriter& writer, QueryRelation obj)
+            static void Write(BinaryWriter& writer, QueryRelation obj)
             {
                 writer.WriteInt32("personId", obj.GetPersonId());
                 writer.WriteInt32("someVal", obj.GetHobbyId());
             }
 
-            QueryRelation Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, QueryRelation& dst)
             {
                 int32_t personId = reader.ReadInt32("personId");
                 int32_t someVal = reader.ReadInt32("someVal");
 
-                return QueryRelation(personId, someVal);
+                dst = QueryRelation(personId, someVal);
             }
         IGNITE_BINARY_TYPE_END
     }
@@ -666,7 +687,11 @@ struct CacheQueryTestSuiteFixture
 {
     Ignite StartNode(const char* name)
     {
+#ifdef IGNITE_TESTS_32
+        return ignite_test::StartNode("cache-query-32.xml", name);
+#else
         return ignite_test::StartNode("cache-query.xml", name);
+#endif
     }
 
     void CheckFieldsQueryPages(int32_t pageSize, int32_t pagesNum, int32_t additionalNum)
@@ -1807,6 +1832,65 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryPageSingle)
 BOOST_AUTO_TEST_CASE(TestFieldsQueryPageZero)
 {
     BOOST_CHECK_THROW(CheckFieldsQueryPages(0, 100, 0), IgniteError);
+}
+
+/**
+ * Test query for key and value fields.
+ */
+BOOST_AUTO_TEST_CASE(TestKeyValFields)
+{
+    Cache<int, QueryPerson> cache = GetPersonCache();
+
+    QueryPerson person("John", 30, MakeDateGmt(1987), MakeTimestampGmt(2017, 1, 1, 1, 1));
+
+    cache.Put(1, person);
+
+    for (int i = 0; i < 2; i++)
+    {
+        SqlFieldsQuery qry(i == 0 ?
+            "select _key, _val, k, v, name, age, birthday, recordCreated from QueryPerson" :
+            "select _key, _val, * from QueryPerson");
+
+        QueryFieldsCursor cursor = cache.Query(qry);
+
+        BOOST_REQUIRE(cursor.HasNext());
+
+        QueryFieldsRow row = cursor.GetNext();
+
+        BOOST_REQUIRE(row.HasNext());
+        int id = row.GetNext<int>();
+        BOOST_CHECK_EQUAL(1, id);
+
+        BOOST_REQUIRE(row.HasNext());
+        QueryPerson p = row.GetNext<QueryPerson>();
+        BOOST_CHECK_EQUAL(p, person);
+
+        BOOST_REQUIRE(row.HasNext());
+        id = row.GetNext<int>();
+        BOOST_CHECK_EQUAL(1, id);
+
+        BOOST_REQUIRE(row.HasNext());
+        p = row.GetNext<QueryPerson>();
+        BOOST_CHECK_EQUAL(p, person);
+
+        BOOST_REQUIRE(row.HasNext());
+        std::string name = row.GetNext<std::string>();
+        BOOST_CHECK_EQUAL(name, person.GetName());
+
+        BOOST_REQUIRE(row.HasNext());
+        int age = row.GetNext<int>();
+        BOOST_CHECK_EQUAL(age, person.GetAge());
+
+        BOOST_REQUIRE(row.HasNext());
+        Date birthday = row.GetNext<Date>();
+        BOOST_CHECK(birthday == person.GetBirthday());
+
+        BOOST_REQUIRE(row.HasNext());
+        Timestamp recordCreated = row.GetNext<Timestamp>();
+        BOOST_CHECK(recordCreated == person.GetCreationTime());
+
+        BOOST_CHECK(!row.HasNext());
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

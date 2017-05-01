@@ -199,49 +199,6 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public boolean isTcpNoDelay();
 
     /**
-     * Gets connection buffer flush frequency.
-     * <p>
-     * Client connections to other nodes in topology use buffered output.
-     * This frequency defines how often system will advice to flush
-     * connection buffer.
-     *
-     * @return Flush frequency.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    @MXBeanDescription("Connection buffer flush frequency.")
-    public long getConnectionBufferFlushFrequency();
-
-    /**
-     * Sets connection buffer flush frequency.
-     * <p>
-     * Client connections to other nodes in topology use buffered output.
-     * This frequency defines how often system will advice to flush
-     * connection buffer.
-     * <p>
-     * This property is used only if {@link #getConnectionBufferSize()} is greater than {@code 0}.
-     *
-     * @param connBufFlushFreq Flush frequency.
-     * @see #getConnectionBufferSize()
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    @MXBeanDescription("Sets connection buffer flush frequency.")
-    public void setConnectionBufferFlushFrequency(long connBufFlushFreq);
-
-    /**
-     * Gets connection buffer size.
-     * <p>
-     * If set to {@code 0} connection buffer is disabled.
-     *
-     * @return Connection buffer size.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    @MXBeanDescription("Connection buffer size.")
-    public int getConnectionBufferSize();
-
-    /**
      * Gets flag defining whether direct send buffer should be used.
      *
      * @return {@code True} if direct buffers should be used.
@@ -276,17 +233,6 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Message queue size limit.")
     public int getMessageQueueLimit();
-
-    /**
-     * Gets the minimum number of messages for this SPI, that are buffered
-     * prior to sending.
-     *
-     * @return Minimum buffered message count.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    @MXBeanDescription("Minimum buffered message count.")
-    public int getMinimumBufferedMessageCount();
 
     /**
      * Gets socket write timeout for TCP connections. If message can not be written to

@@ -92,6 +92,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     /** */
     private final Map<IgniteSpi, Boolean> spiMap = new IdentityHashMap<>();
 
+    /** */
+    @GridToStringExclude
+    private boolean injected;
+
     /**
      * @param ctx Kernal context.
      * @param spis Specific SPI instance.
@@ -209,6 +213,26 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /**
+     * Injects resources to SPI.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void inject() throws IgniteCheckedException {
+        if (injected)
+            return;
+
+        for (T spi : spis) {
+            // Inject all spi resources.
+            ctx.resource().inject(spi);
+
+            // Inject SPI internal objects.
+            inject(spi);
+        }
+
+        injected = true;
+    }
+
+    /**
      * Starts wrapped SPI.
      *
      * @throws IgniteCheckedException If wrapped SPI could not be started.
@@ -225,11 +249,13 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
             assert res == null;
 
-            // Inject all spi resources.
-            ctx.resource().inject(spi);
+            if (!injected) {
+                // Inject all spi resources.
+                ctx.resource().inject(spi);
 
-            // Inject SPI internal objects.
-            inject(spi);
+                // Inject SPI internal objects.
+                inject(spi);
+            }
 
             try {
                 Map<String, Object> retval = spi.getNodeAttributes();
@@ -279,6 +305,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
             if (log.isDebugEnabled())
                 log.debug("SPI module started OK: " + spi.getClass().getName());
         }
+
+        injected = true;
     }
 
     /**
@@ -334,7 +362,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override public final void onKernalStart() throws IgniteCheckedException {
+    @Override public final void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
         for (final IgniteSpi spi : spis) {
             try {
                 spi.onContextInitialized(new IgniteSpiContext() {

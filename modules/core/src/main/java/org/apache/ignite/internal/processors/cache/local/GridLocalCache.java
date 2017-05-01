@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -64,7 +65,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param ctx Cache registry.
      */
     public GridLocalCache(GridCacheContext<K, V> ctx) {
-        super(ctx, ctx.config().getStartSize());
+        super(ctx, DFLT_START_CACHE_SIZE);
 
         preldr = new GridCachePreloaderAdapter(ctx);
     }
@@ -233,5 +234,25 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             if (log().isDebugEnabled())
                 log().debug("Explicitly removed future from map of futures: " + fut);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        PeekModes modes = parsePeekModes(peekModes, true);
+
+        modes.primary = true;
+        modes.backup = true;
+
+        if (modes.offheap)
+            return ctx.offheap().entriesCount();
+        else if (modes.heap)
+            return size();
+        else
+            return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(int part, CachePeekMode[] peekModes) throws IgniteCheckedException {
+        return localSizeLong(peekModes);
     }
 }

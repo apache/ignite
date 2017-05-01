@@ -85,6 +85,7 @@ namespace Apache.Ignite.Core
         static Ignition()
         {
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
         }
 
         /// <summary>
@@ -231,6 +232,11 @@ namespace Apache.Ignite.Core
 
                 var gridName = cfg.IgniteInstanceName;
 
+                if (cfg.AutoGenerateIgniteInstanceName)
+                {
+                    gridName = (gridName ?? "ignite-instance-") + Guid.NewGuid();
+                }
+
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
 
@@ -323,7 +329,7 @@ namespace Apache.Ignite.Core
 
                 PrepareConfiguration(reader, outStream, log);
 
-                PrepareLifecycleBeans(reader, outStream, handleRegistry);
+                PrepareLifecycleHandlers(reader, outStream, handleRegistry);
 
                 PrepareAffinityFunctions(reader, outStream);
 
@@ -369,42 +375,42 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Prepare lifecycle beans.
+        /// Prepare lifecycle handlers.
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
-        private static void PrepareLifecycleBeans(IBinaryRawReader reader, IBinaryStream outStream,
+        private static void PrepareLifecycleHandlers(IBinaryRawReader reader, IBinaryStream outStream,
             HandleRegistry handleRegistry)
         {
-            IList<LifecycleBeanHolder> beans = new List<LifecycleBeanHolder>
+            IList<LifecycleHandlerHolder> beans = new List<LifecycleHandlerHolder>
             {
-                new LifecycleBeanHolder(new InternalLifecycleBean())   // add internal bean for events
+                new LifecycleHandlerHolder(new InternalLifecycleHandler())   // add internal bean for events
             };
 
             // 1. Read beans defined in Java.
             int cnt = reader.ReadInt();
 
             for (int i = 0; i < cnt; i++)
-                beans.Add(new LifecycleBeanHolder(CreateObject<ILifecycleBean>(reader)));
+                beans.Add(new LifecycleHandlerHolder(CreateObject<ILifecycleHandler>(reader)));
 
             // 2. Append beans defined in local configuration.
-            ICollection<ILifecycleBean> nativeBeans = _startup.Configuration.LifecycleBeans;
+            ICollection<ILifecycleHandler> nativeBeans = _startup.Configuration.LifecycleHandlers;
 
             if (nativeBeans != null)
             {
-                foreach (ILifecycleBean nativeBean in nativeBeans)
-                    beans.Add(new LifecycleBeanHolder(nativeBean));
+                foreach (ILifecycleHandler nativeBean in nativeBeans)
+                    beans.Add(new LifecycleHandlerHolder(nativeBean));
             }
 
             // 3. Write bean pointers to Java stream.
             outStream.WriteInt(beans.Count);
 
-            foreach (LifecycleBeanHolder bean in beans)
+            foreach (LifecycleHandlerHolder bean in beans)
                 outStream.WriteLong(handleRegistry.AllocateCritical(bean));
 
             // 4. Set beans to STARTUP object.
-            _startup.LifecycleBeans = beans;
+            _startup.LifecycleHandlers = beans;
         }
 
         /// <summary>
@@ -456,7 +462,7 @@ namespace Apache.Ignite.Core
                     throw new IgniteException("Ignite with the same name already started: " + name);
 
                 _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name, interopProc, _startup.Marshaller, 
-                    _startup.LifecycleBeans, _startup.Callbacks);
+                    _startup.LifecycleHandlers, _startup.Callbacks);
             }
             catch (Exception e)
             {
@@ -576,15 +582,49 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets an instance of default no-name grid. Note that
-        /// caller of this method should not assume that it will return the same
-        /// instance every time.
+        /// Gets the default Ignite instance with null name, or an instance with any name when there is only one.
+        /// <para />
+        /// Note that caller of this method should not assume that it will return the same instance every time.
         /// </summary>
-        /// <returns>An instance of default no-name grid.</returns>
-        /// <exception cref="IgniteException">When there is no Ignite instance with specified name.</exception>
+        /// <returns>Default Ignite instance.</returns>
+        /// <exception cref="IgniteException">When there is no matching Ignite instance.</exception>
         public static IIgnite GetIgnite()
         {
-            return GetIgnite(null);
+            lock (SyncRoot)
+            {
+                if (Nodes.Count == 0)
+                {
+                    throw new IgniteException("Failed to get default Ignite instance: " +
+                                              "there are no instances started.");
+                }
+
+                if (Nodes.Count == 1)
+                {
+                    return Nodes.Single().Value;
+                }
+
+                Ignite result;
+
+                if (Nodes.TryGetValue(new NodeKey(null), out result))
+                {
+                    return result;
+                }
+
+                throw new IgniteException(string.Format("Failed to get default Ignite instance: " +
+                    "there are {0} instances started, and none of them has null name.", Nodes.Count));
+            }
+        }
+
+        /// <summary>
+        /// Gets all started Ignite instances.
+        /// </summary>
+        /// <returns>All Ignite instances.</returns>
+        public static ICollection<IIgnite> GetAll()
+        {
+            lock (SyncRoot)
+            {
+                return Nodes.Values.ToArray();
+            }
         }
 
         /// <summary>
@@ -685,9 +725,22 @@ namespace Apache.Ignite.Core
         {
             return LoadedAssembliesResolver.Instance.GetAssembly(args.Name);
         }
+                
+        /// <summary>
+        /// Handles the DomainUnload event of the CurrentDomain control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
+        {
+            // If we don't stop Ignite.NET on domain unload,
+            // we end up with broken instances in Java (invalid callbacks, etc).
+            // IIS, in particular, is known to unload and reload domains within the same process.
+            StopAll(true);
+        }
 
         /// <summary>
-        /// Grid key.
+        /// Grid key. Workaround for non-null key requirement in Dictionary.
         /// </summary>
         private class NodeKey
         {
@@ -744,9 +797,9 @@ namespace Apache.Ignite.Core
             internal UnmanagedCallbacks Callbacks { get; private set; }
 
             /// <summary>
-            /// Lifecycle beans.
+            /// Lifecycle handlers.
             /// </summary>
-            internal IList<LifecycleBeanHolder> LifecycleBeans { get; set; }
+            internal IList<LifecycleHandlerHolder> LifecycleHandlers { get; set; }
 
             /// <summary>
             /// Node name.
@@ -770,9 +823,9 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Internal bean for event notification.
+        /// Internal handler for event notification.
         /// </summary>
-        private class InternalLifecycleBean : ILifecycleBean
+        private class InternalLifecycleHandler : ILifecycleHandler
         {
             /** */
             #pragma warning disable 649   // unused field
@@ -782,7 +835,7 @@ namespace Apache.Ignite.Core
             public void OnLifecycleEvent(LifecycleEventType evt)
             {
                 if (evt == LifecycleEventType.BeforeNodeStop && _ignite != null)
-                    ((IgniteProxy) _ignite).Target.BeforeNodeStop();
+                    ((Ignite) _ignite).BeforeNodeStop();
             }
         }
     }

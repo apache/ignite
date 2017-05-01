@@ -54,12 +54,12 @@ public class CrossCacheLockTest extends GridCommonAbstractTest {
         if (igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT - 1)))
             cfg.setClientMode(true);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration();
+        CacheConfiguration ccfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg1.setName(CACHE1);
         ccfg1.setBackups(1);
         ccfg1.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfg2 = new CacheConfiguration();
+        CacheConfiguration ccfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg2.setName(CACHE2);
         ccfg2.setAtomicityMode(TRANSACTIONAL);
 

@@ -44,6 +44,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -137,7 +138,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
@@ -223,7 +224,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
             for (int i = 0; i < nodesCount(); i++) {
                 IgfsEntryInfo fileInfo =
-                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), ONHEAP_PEEK_MODES, null);
+                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), null, null);
 
                 assertNotNull(fileInfo);
                 assertNotNull(fileInfo.listing());

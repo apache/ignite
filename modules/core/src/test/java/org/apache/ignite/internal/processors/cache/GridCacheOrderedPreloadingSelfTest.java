@@ -17,17 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheRebalancingEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -44,16 +51,30 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     private static final int GRID_CNT = 4;
 
     /** First cache name. */
-    public static final String FIRST_CACHE_NAME = "first";
+    private static final String FIRST_CACHE_NAME = "first";
 
     /** Second cache name. */
-    public static final String SECOND_CACHE_NAME = "second";
+    private static final String SECOND_CACHE_NAME = "second";
+
+    /** Grid name attribute. */
+    private static final String GRID_NAME_ATTR = "org.apache.ignite.ignite.name";
 
     /** First cache mode. */
     private CacheMode firstCacheMode;
 
     /** Second cache mode. */
     private CacheMode secondCacheMode;
+
+    /** Caches rebalance finish times. */
+    private ConcurrentHashMap8<Integer, ConcurrentHashMap8<String, Long>> times;
+
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTestsStarted();
+        times = new ConcurrentHashMap8<>();
+
+        for (int i = 0; i < GRID_CNT; i++)
+            times.put(i, new ConcurrentHashMap8<String, Long>());
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -68,6 +89,17 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
+
+        Map<IgnitePredicate<? extends Event>, int[]> listeners = new HashMap<>();
+
+        listeners.put(new IgnitePredicate<CacheRebalancingEvent>() {
+            @Override public boolean apply(CacheRebalancingEvent event) {
+                times.get(gridIdx(event)).putIfAbsent(event.cacheName(), event.timestamp());
+                return true;
+            }
+        }, new int[]{EventType.EVT_CACHE_REBALANCE_STOPPED});
+
+        cfg.setLocalEventListeners(listeners);
 
         return cfg;
     }
@@ -85,7 +117,6 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
         cfg.setCacheMode(cacheMode);
         cfg.setRebalanceOrder(preloadOrder);
         cfg.setRebalanceMode(ASYNC);
-
         return cfg;
     }
 
@@ -150,11 +181,20 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
                 fut1.get();
                 fut2.get();
 
-                assertTrue("[i=" + i + ", fut1=" + fut1 + ", fut2=" + fut2 + ']', fut1.endTime() <= fut2.endTime());
+                long firstSyncTime = times.get(i).get(FIRST_CACHE_NAME);
+                long secondSyncTime = times.get(i).get(SECOND_CACHE_NAME);
+                assertTrue(
+                    FIRST_CACHE_NAME + " [syncTime=" + firstSyncTime + "], "
+                        + SECOND_CACHE_NAME + " [syncTime=" + secondSyncTime + "]",
+                    firstSyncTime <= secondSyncTime);
             }
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    private int gridIdx(Event event) {
+        return getTestIgniteInstanceIndex((String)event.node().attributes().get(GRID_NAME_ATTR));
     }
 }

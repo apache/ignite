@@ -110,7 +110,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
@@ -147,6 +146,9 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
+
+    /** */
+    protected static final String DEFAULT_CACHE_NAME = "default";
 
     /** */
     private transient boolean startGrid;
@@ -653,11 +655,19 @@ public abstract class GridAbstractTest extends TestCase {
             else
                 startGrid(i);
 
-        checkTopology(cnt);
+        if (checkTopology())
+            checkTopology(cnt);
 
         assert ignite != null;
 
         return ignite;
+    }
+
+    /**
+     * Check or not topology after grids start
+     */
+    protected boolean checkTopology() {
+        return true;
     }
 
     /**
@@ -935,7 +945,7 @@ public abstract class GridAbstractTest extends TestCase {
                 cfg.setLocalHost("127.0.0.1");
 
                 if (((TcpDiscoverySpi)cfg.getDiscoverySpi()).getJoinTimeout() == 0)
-                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(8000);
+                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(10000);
             }
             else
                 cfg.setLocalHost(getTestResources().getLocalHost());
@@ -1460,19 +1470,19 @@ public abstract class GridAbstractTest extends TestCase {
         TcpDiscoverySpi discoSpi = new TestTcpDiscoverySpi();
 
         if (isDebug()) {
-            discoSpi.setMaxMissedHeartbeats(Integer.MAX_VALUE);
+            cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
             cfg.setNetworkTimeout(Long.MAX_VALUE / 3);
         }
         else {
             // Set network timeout to 10 sec to avoid unexpected p2p class loading errors.
-            cfg.setNetworkTimeout(10000);
+            cfg.setNetworkTimeout(10_000);
 
-            // Increase max missed heartbeats to avoid unexpected node fails.
-            discoSpi.setMaxMissedHeartbeats(30);
+            cfg.setFailureDetectionTimeout(10_000);
+            cfg.setClientFailureDetectionTimeout(10_000);
         }
 
-        // Set heartbeat interval to 1 second to speed up tests.
-        discoSpi.setHeartbeatFrequency(1000);
+        // Set metrics update interval to 1 second to speed up tests.
+        cfg.setMetricsUpdateFrequency(1000);
 
         String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
 
@@ -1510,10 +1520,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return New cache configuration with modified defaults.
      */
     public static CacheConfiguration defaultCacheConfiguration() {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cfg.setStartSize(1024);
-        cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setNearConfiguration(new NearCacheConfiguration());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -2018,10 +2026,9 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     *
-     * @throws IgniteInterruptedCheckedException
+     * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public void awaitTopologyChange() throws IgniteInterruptedCheckedException {
+    private void awaitTopologyChange() throws IgniteInterruptedCheckedException {
         for (Ignite g : G.allGrids()) {
             final GridKernalContext ctx = ((IgniteKernal)g).context();
 
@@ -2032,7 +2039,9 @@ public abstract class GridAbstractTest extends TestCase {
             AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
 
             if (! topVer.equals(exchVer)) {
-                info("topology version mismatch: node "  + g.name() + " " + exchVer + ", " + topVer);
+                info("Topology version mismatch [node="  + g.name() +
+                    ", exchVer=" + exchVer +
+                    ", topVer=" + topVer + ']');
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {

@@ -40,7 +40,11 @@ struct ClusterTestSuiteFixture
      * Constructor.
      */
     ClusterTestSuiteFixture() :
+#ifdef IGNITE_TESTS_32
+        node(ignite_test::StartNode("cache-test-32.xml", "ClusterTest"))
+#else
         node(ignite_test::StartNode("cache-test.xml", "ClusterTest"))
+#endif
     {
         // No-op.
     }

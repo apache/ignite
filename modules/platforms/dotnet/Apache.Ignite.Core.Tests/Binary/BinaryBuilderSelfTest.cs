@@ -57,9 +57,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = GetTypeConfigurations(),
-                    DefaultIdMapper = new IdMapper(),
-                    DefaultNameMapper = new NameMapper(),
-                    CompactFooter = GetCompactFooter()
+                    IdMapper = new IdMapper(),
+                    NameMapper = new NameMapper(GetNameMapper()),
+                    CompactFooter = GetCompactFooter(),
                 }
             };
 
@@ -114,13 +114,28 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
+        }
+
+        /// <summary>
+        /// Gets the name of the type.
+        /// </summary>
+        private string GetTypeName(Type type)
+        {
+            return GetNameMapper().GetTypeName(type.AssemblyQualifiedName);
+        }
+
+        /// <summary>
         /// Tear down routine.
         /// </summary>
         [TestFixtureTearDown]
         public void TearDown()
         {
-            if (_grid != null)
-                Ignition.Stop(_grid.Name, true);
+            Ignition.StopAll(true);
 
             _grid = null;
         }
@@ -249,7 +264,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // 4. Objects.
             IBinaryObject binObj = api.ToBinary<IBinaryObject>(new ToBinary(1));
 
-            Assert.AreEqual(typeof(ToBinary).Name, binObj.GetBinaryType().TypeName);
+            Assert.AreEqual(GetTypeName(typeof(ToBinary)), binObj.GetBinaryType().TypeName);
             Assert.AreEqual(1, binObj.GetBinaryType().Fields.Count);
             Assert.AreEqual("Val", binObj.GetBinaryType().Fields.First());
             Assert.AreEqual(BinaryTypeNames.TypeNameInt, binObj.GetBinaryType().GetFieldTypeName("Val"));
@@ -280,7 +295,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryType meta = binObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(Remove).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(Remove)), meta.TypeName);
             Assert.AreEqual(0, meta.Fields.Count);
 
             // Populate it with field.
@@ -301,7 +316,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             meta = binObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(Remove).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(Remove)), meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
             Assert.AreEqual("val", meta.Fields.First());
             Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.GetFieldTypeName("val"));
@@ -358,7 +373,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryType meta = outerbinObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(BuilderInBuilderOuter).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(BuilderInBuilderOuter)), meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
             Assert.AreEqual("inner", meta.Fields.First());
             Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.GetFieldTypeName("inner"));
@@ -367,7 +382,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             meta = innerbinObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(BuilderInBuilderInner).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(BuilderInBuilderInner)), meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
             Assert.AreEqual("outer", meta.Fields.First());
             Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.GetFieldTypeName("outer"));
@@ -386,7 +401,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             meta = outerbinObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(BuilderInBuilderOuter).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(BuilderInBuilderOuter)), meta.TypeName);
             Assert.AreEqual(2, meta.Fields.Count);
             Assert.IsTrue(meta.Fields.Contains("inner"));
             Assert.IsTrue(meta.Fields.Contains("inner2"));
@@ -423,7 +438,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryType meta = binObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(DecimalHolder).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(DecimalHolder)), meta.TypeName);
             Assert.AreEqual(2, meta.Fields.Count);
             Assert.IsTrue(meta.Fields.Contains("val"));
             Assert.IsTrue(meta.Fields.Contains("valArr"));
@@ -456,7 +471,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryType meta = binCol.GetBinaryType();
 
-            Assert.AreEqual(typeof(BuilderCollection).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(BuilderCollection)), meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
             Assert.AreEqual("col", meta.Fields.First());
             Assert.AreEqual(BinaryTypeNames.TypeNameCollection, meta.GetFieldTypeName("col"));
@@ -469,7 +484,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             meta = binItem.GetBinaryType();
 
-            Assert.AreEqual(typeof(BuilderCollectionItem).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(BuilderCollectionItem)), meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
             Assert.AreEqual("val", meta.Fields.First());
             Assert.AreEqual(BinaryTypeNames.TypeNameInt, meta.GetFieldTypeName("val"));
@@ -549,7 +564,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             IBinaryType meta = binObj.GetBinaryType();
 
             Assert.IsNotNull(meta);
-            Assert.AreEqual(typeof(Empty).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(Empty)), meta.TypeName);
             Assert.AreEqual(0, meta.Fields.Count);
 
             Empty obj = binObj.Deserialize<Empty>();
@@ -601,10 +616,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(obj1, obj2);
 
-            Assert.AreEqual(1823354401, obj1.GetHashCode());
-            Assert.AreEqual(1823354401, obj2.GetHashCode());
+            Assert.AreEqual(-88648479, obj1.GetHashCode());
+            Assert.AreEqual(obj1.GetHashCode(), obj2.GetHashCode());
 
-            Assert.IsTrue(Regex.IsMatch(obj1.ToString(), @"myType \[idHash=[0-9]+, str=foo, int=1\]"));
+            Assert.AreEqual("myType [, int=1, str=foo]", Regex.Replace(obj1.ToString(), "idHash=\\d+", ""));
         }
 
         /// <summary>
@@ -690,11 +705,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Checks the primitive fields values.
         /// </summary>
-        private static void CheckPrimitiveFields1(IBinaryObject binObj)
+        private void CheckPrimitiveFields1(IBinaryObject binObj)
         {
             IBinaryType meta = binObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(Primitives).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(Primitives)), meta.TypeName);
 
             Assert.AreEqual(9, meta.Fields.Count);
 
@@ -842,11 +857,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Checks the primitive array fields.
         /// </summary>
-        private static void CheckPrimitiveArrayFields1(IBinaryObject binObj)
+        private void CheckPrimitiveArrayFields1(IBinaryObject binObj)
         {
             IBinaryType meta = binObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(PrimitiveArrays).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(PrimitiveArrays)), meta.TypeName);
 
             Assert.AreEqual(9, meta.Fields.Count);
 
@@ -1009,7 +1024,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             IBinaryType meta = binObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(StringDateGuidEnum).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(StringDateGuidEnum)), meta.TypeName);
 
             Assert.AreEqual(10, meta.Fields.Count);
 
@@ -1139,7 +1154,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var meta = binEnum.GetBinaryType();
 
             Assert.IsTrue(meta.IsEnum);
-            Assert.AreEqual(typeof (TestEnumRegistered).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof (TestEnumRegistered)), meta.TypeName);
             Assert.AreEqual(0, meta.Fields.Count);
         }
 
@@ -1157,7 +1172,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryType meta = binObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(CompositeArray).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(CompositeArray)), meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayObject, meta.GetFieldTypeName("inArr"));
 
@@ -1254,7 +1269,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             meta = binObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(CompositeArray).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(CompositeArray)), meta.TypeName);
             Assert.AreEqual(2, meta.Fields.Count);
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayObject, meta.GetFieldTypeName("inArr"));
             Assert.AreEqual(BinaryTypeNames.TypeNameArrayObject, meta.GetFieldTypeName("outArr"));
@@ -1311,7 +1326,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // 1. Check meta.
             IBinaryType meta = binObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(CompositeContainer).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(CompositeContainer)), meta.TypeName);
 
             Assert.AreEqual(2, meta.Fields.Count);
             Assert.AreEqual(BinaryTypeNames.TypeNameCollection, meta.GetFieldTypeName("col"));
@@ -1378,7 +1393,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryType meta = outerbinObj.GetBinaryType();
 
-            Assert.AreEqual(typeof(NestedOuter).Name, meta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(NestedOuter)), meta.TypeName);
             Assert.AreEqual(1, meta.Fields.Count);
             Assert.AreEqual(BinaryTypeNames.TypeNameObject, meta.GetFieldTypeName("inner1"));
 
@@ -1386,7 +1401,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryType innerMeta = innerbinObj1.GetBinaryType();
 
-            Assert.AreEqual(typeof(NestedInner).Name, innerMeta.TypeName);
+            Assert.AreEqual(GetTypeName(typeof(NestedInner)), innerMeta.TypeName);
             Assert.AreEqual(1, innerMeta.Fields.Count);
             Assert.AreEqual(BinaryTypeNames.TypeNameInt, innerMeta.GetFieldTypeName("Val"));
 
@@ -1605,10 +1620,12 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             binary.ToBinary<IBinaryObject>(new DecimalHolder());
 
+            var typeName = GetTypeName(typeof(DecimalHolder));
+
             // All meta
             var allMetas = binary.GetBinaryTypes();
 
-            var decimalMeta = allMetas.Single(x => x.TypeName == "DecimalHolder");
+            var decimalMeta = allMetas.Single(x => x.TypeName == typeName);
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
 
@@ -1618,12 +1635,12 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
             
             // By type id
-            decimalMeta = binary.GetBinaryType(binary.GetTypeId("DecimalHolder"));
+            decimalMeta = binary.GetBinaryType(binary.GetTypeId(typeName));
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
 
             // By type name
-            decimalMeta = binary.GetBinaryType("DecimalHolder");
+            decimalMeta = binary.GetBinaryType(typeName);
 
             Assert.AreEqual(new[] {"val", "valArr"}, decimalMeta.Fields);
         }
@@ -1638,7 +1655,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var binEnums = new[]
             {
                 binary.BuildEnum(typeof (TestEnumRegistered), val),
-                binary.BuildEnum(typeof (TestEnumRegistered).Name, val)
+                binary.BuildEnum(GetTypeName(typeof (TestEnumRegistered)), val)
             };
 
             foreach (var binEnum in binEnums)
@@ -1710,6 +1727,32 @@ namespace Apache.Ignite.Core.Tests.Binary
                 cache1Bin[6] = newObj.ToBuilder().SetField("foo2", 3).Build();
                 Assert.AreEqual(3, cache2[6].GetField<int>("foo2"));
             }
+        }
+
+        /// <summary>
+        /// Tests that fields are sorted by name in serialized form.
+        /// </summary>
+        [Test]
+        public void TestFieldSorting()
+        {
+            var obj1 = (BinaryObject)_grid.GetBinary().GetBuilder("sortTest")
+                .SetByteField("c", 3).SetByteField("b", 1).SetByteField("a", 2).Build();
+
+            var obj2 = (BinaryObject)_grid.GetBinary().GetBuilder("sortTest")
+                .SetByteField("b", 1).SetByteField("a", 2).SetByteField("c", 3).Build();
+
+            Assert.AreEqual(obj1, obj2);
+            Assert.AreEqual(obj1.GetHashCode(), obj2.GetHashCode());
+
+            Assert.AreEqual("sortTest [, a=2, b=1, c=3]", Regex.Replace(obj1.ToString(), "idHash=\\d+", ""));
+
+            // Skip header, take 3 fields (type code + value).
+            var bytes1 = obj1.Data.Skip(24).Take(6).ToArray();
+            var bytes2 = obj2.Data.Skip(24).Take(6).ToArray();
+            
+            Assert.AreEqual(bytes1, bytes2);
+
+            Assert.AreEqual(new[] {1, 2, 1, 1, 1, 3}, bytes1);
         }
     }
 
@@ -2060,18 +2103,30 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class NameMapper : IBinaryNameMapper
     {
         /** */
+        private readonly IBinaryNameMapper _baseMapper;
+
+        /** */
         public const string TestTypeName = "NameMapperTestType";
 
         /** */
         public const string TestFieldName = "NameMapperTestField";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NameMapper" /> class.
+        /// </summary>
+        /// <param name="baseMapper">The base mapper.</param>
+        public NameMapper(IBinaryNameMapper baseMapper)
+        {
+            _baseMapper = baseMapper;
+        }
+
         /** <inheritdoc /> */
         public string GetTypeName(string name)
         {
-            if (name == TestTypeName)
-                return name + "_";
+            if (name == typeof(NameMapperTestType).AssemblyQualifiedName)
+                return TestTypeName + "_";
 
-            return name;
+            return _baseMapper.GetTypeName(name);
         }
 
         /** <inheritdoc /> */

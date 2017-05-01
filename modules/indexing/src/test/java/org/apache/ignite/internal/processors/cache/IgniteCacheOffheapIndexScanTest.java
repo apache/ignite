@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -54,11 +53,9 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration<?,?> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<?,?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(LOCAL);
-        cacheCfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
-        cacheCfg.setSqlOnheapRowCacheSize(256);
         cacheCfg.setIndexedTypes(
             Integer.class, Person.class
         );
@@ -72,7 +69,7 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(1, false);
 
-        cache = grid(0).cache(null);
+        cache = grid(0).cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */

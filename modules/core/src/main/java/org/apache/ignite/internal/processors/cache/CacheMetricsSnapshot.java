@@ -74,9 +74,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Cache name */
     private String cacheName;
 
-    /** Number of entries that was swapped to disk. */
-    private long overflowSize;
-
     /** Number of reads from off-heap. */
     private long offHeapGets;
 
@@ -106,30 +103,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
     /** Memory size allocated in off-heap. */
     private long offHeapAllocatedSize;
-
-    /** Off-heap memory maximum size*/
-    private long offHeapMaxSize;
-
-    /** Number of reads from swap. */
-    private long swapGets;
-
-    /** Number of writes to swap. */
-    private long swapPuts;
-
-    /** Number of removed entries from swap. */
-    private long swapRemoves;
-
-    /** Number of entries stored in swap. */
-    private long swapEntriesCnt;
-
-    /** Swap hits number. */
-    private long swapHits;
-
-    /** Swap misses number. */
-    private long swapMisses;
-
-    /** Swap size. */
-    private long swapSize;
 
     /** Number of non-{@code null} values in the cache. */
     private int size;
@@ -262,7 +235,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         rollbackAvgTimeNanos = m.getAverageTxRollbackTime();
 
         cacheName = m.name();
-        overflowSize = m.getOverflowSize();
 
         offHeapGets = m.getOffHeapGets();
         offHeapPuts = m.getOffHeapPuts();
@@ -274,15 +246,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
         offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
-        offHeapMaxSize = m.getOffHeapMaxSize();
-
-        swapGets = m.getSwapGets();
-        swapPuts = m.getSwapPuts();
-        swapRemoves = m.getSwapRemovals();
-        swapHits = m.getSwapHits();
-        swapMisses = m.getSwapMisses();
-        swapEntriesCnt = m.getSwapEntriesCount();
-        swapSize = m.getSwapSize();
 
         size = m.getSize();
         keySize = m.getKeySize();
@@ -347,8 +310,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isReadThrough = loc.isReadThrough();
         isWriteThrough = loc.isWriteThrough();
 
-        offHeapMaxSize = loc.getOffHeapMaxSize();
-
         for (CacheMetrics e : metrics) {
             reads += e.getCacheGets();
             puts += e.getCachePuts();
@@ -365,11 +326,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             commitAvgTimeNanos += e.getAverageTxCommitTime();
             rollbackAvgTimeNanos += e.getAverageTxRollbackTime();
 
-            if (e.getOverflowSize() > -1)
-                overflowSize += e.getOverflowSize();
-            else
-                overflowSize = -1;
-
             offHeapGets += e.getOffHeapGets();
             offHeapPuts += e.getOffHeapPuts();
             offHeapRemoves += e.getOffHeapRemovals();
@@ -380,14 +336,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             offHeapPrimaryEntriesCnt += e.getOffHeapPrimaryEntriesCount();
             offHeapBackupEntriesCnt += e.getOffHeapBackupEntriesCount();
             offHeapAllocatedSize += e.getOffHeapAllocatedSize();
-
-            swapGets += e.getSwapGets();
-            swapPuts += e.getSwapPuts();
-            swapRemoves += e.getSwapRemovals();
-            swapHits += e.getSwapHits();
-            swapMisses += e.getSwapMisses();
-            swapEntriesCnt += e.getSwapEntriesCount();
-            swapSize += e.getSwapSize();
 
             if (e.getDhtEvictQueueCurrentSize() > -1)
                 dhtEvictQueueCurrSize += e.getDhtEvictQueueCurrentSize();
@@ -551,11 +499,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public long getOverflowSize() {
-        return overflowSize;
-    }
-
-    /** {@inheritDoc} */
     @Override public long getOffHeapGets() {
         return offHeapGets;
     }
@@ -618,62 +561,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public long getOffHeapAllocatedSize() {
         return offHeapAllocatedSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOffHeapMaxSize() {
-        return offHeapMaxSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapGets() {
-        return swapGets;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapPuts() {
-        return swapPuts;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapRemovals() {
-        return swapRemoves;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapHits() {
-        return swapHits;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapMisses() {
-        return swapMisses;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapHitPercentage() {
-        if (swapHits == 0 || swapGets == 0)
-            return 0;
-
-        return (float) swapHits / swapGets * 100.0f;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapMissPercentage() {
-        if (swapMisses == 0 || swapGets == 0)
-            return 0;
-
-        return (float) swapMisses / swapGets * 100.0f;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapEntriesCount() {
-        return swapEntriesCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapSize() {
-        return swapSize;
     }
 
     /** {@inheritDoc} */
@@ -868,7 +755,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeFloat(commitAvgTimeNanos);
         out.writeFloat(rollbackAvgTimeNanos);
 
-        out.writeLong(overflowSize);
         out.writeLong(offHeapGets);
         out.writeLong(offHeapPuts);
         out.writeLong(offHeapRemoves);
@@ -879,15 +765,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeLong(offHeapPrimaryEntriesCnt);
         out.writeLong(offHeapBackupEntriesCnt);
         out.writeLong(offHeapAllocatedSize);
-        out.writeLong(offHeapMaxSize);
-
-        out.writeLong(swapGets);
-        out.writeLong(swapPuts);
-        out.writeLong(swapRemoves);
-        out.writeLong(swapHits);
-        out.writeLong(swapMisses);
-        out.writeLong(swapEntriesCnt);
-        out.writeLong(swapSize);
 
         out.writeInt(dhtEvictQueueCurrSize);
         out.writeInt(txThreadMapSize);
@@ -926,7 +803,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         commitAvgTimeNanos = in.readFloat();
         rollbackAvgTimeNanos = in.readFloat();
 
-        overflowSize = in.readLong();
         offHeapGets = in.readLong();
         offHeapPuts = in.readLong();
         offHeapRemoves = in.readLong();
@@ -937,15 +813,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapPrimaryEntriesCnt = in.readLong();
         offHeapBackupEntriesCnt = in.readLong();
         offHeapAllocatedSize = in.readLong();
-        offHeapMaxSize = in.readLong();
-
-        swapGets = in.readLong();
-        swapPuts = in.readLong();
-        swapRemoves = in.readLong();
-        swapHits = in.readLong();
-        swapMisses = in.readLong();
-        swapEntriesCnt = in.readLong();
-        swapSize = in.readLong();
 
         dhtEvictQueueCurrSize = in.readInt();
         txThreadMapSize = in.readInt();

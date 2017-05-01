@@ -50,7 +50,7 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
     protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cache.setName(CACHE_NAME);
         cache.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);

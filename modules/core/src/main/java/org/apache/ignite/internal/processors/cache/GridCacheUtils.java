@@ -62,8 +62,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -77,6 +75,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -86,7 +85,6 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -197,28 +195,11 @@ public class GridCacheUtils {
     /** Expire time: must be calculated based on TTL value. */
     public static final long EXPIRE_TIME_CALCULATE = -1L;
 
-    /** Skip store flag bit mask. */
-    public static final int SKIP_STORE_FLAG_MASK = 0x1;
-
-    /** Keep serialized flag. */
-    public static final int KEEP_BINARY_FLAG_MASK = 0x2;
-
-    /** Flag indicating that old value for 'invoke' operation was non null on primary node. */
-    public static final int OLD_VAL_ON_PRIMARY = 0x4;
-
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
 
     /** Default transaction config. */
     private static final TransactionConfiguration DEFAULT_TX_CFG = new TransactionConfiguration();
-
-    /** Partition to state transformer. */
-    private static final IgniteClosure PART2STATE =
-        new C1<GridDhtLocalPartition, GridDhtPartitionState>() {
-            @Override public GridDhtPartitionState apply(GridDhtLocalPartition p) {
-                return p.state();
-            }
-        };
 
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY_FILTER = new IgnitePredicate[0];
@@ -248,24 +229,79 @@ public class GridCacheUtils {
     private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {ALWAYS_FALSE0};
 
     /** Read filter. */
-    private static final IgnitePredicate READ_FILTER = new P1<Object>() {
-        @Override public boolean apply(Object e) {
-            return ((IgniteTxEntry)e).op() == READ;
+    public static final IgnitePredicate READ_FILTER = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() == READ;
         }
 
         @Override public String toString() {
-            return "Cache transaction read filter";
+            return "READ_FILTER";
+        }
+    };
+
+    /** Read filter. */
+    public static final IgnitePredicate READ_FILTER_NEAR = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() == READ && e.context().isNear();
+        }
+
+        @Override public String toString() {
+            return "READ_FILTER_NEAR";
+        }
+    };
+
+    /** Read filter. */
+    public static final IgnitePredicate READ_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() == READ && !e.context().isNear();
+        }
+
+        @Override public String toString() {
+            return "READ_FILTER_COLOCATED";
         }
     };
 
     /** Write filter. */
-    private static final IgnitePredicate WRITE_FILTER = new P1<Object>() {
-        @Override public boolean apply(Object e) {
-            return ((IgniteTxEntry)e).op() != READ;
+    public static final IgnitePredicate WRITE_FILTER = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() != READ;
         }
 
         @Override public String toString() {
-            return "Cache transaction write filter";
+            return "WRITE_FILTER";
+        }
+    };
+
+    /** Write filter. */
+    public static final IgnitePredicate WRITE_FILTER_NEAR = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() != READ && e.context().isNear();
+        }
+
+        @Override public String toString() {
+            return "WRITE_FILTER_NEAR";
+        }
+    };
+
+    /** Write filter. */
+    public static final IgnitePredicate WRITE_FILTER_COLOCATED = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.op() != READ && !e.context().isNear();
+        }
+
+        @Override public String toString() {
+            return "WRITE_FILTER_COLOCATED";
+        }
+    };
+
+    /** Write filter. */
+    public static final IgnitePredicate FILTER_NEAR_CACHE_ENTRY = new P1<IgniteTxEntry>() {
+        @Override public boolean apply(IgniteTxEntry e) {
+            return e.context().isNear();
+        }
+
+        @Override public String toString() {
+            return "FILTER_NEAR_CACHE_ENTRY";
         }
     };
 
@@ -331,10 +367,6 @@ public class GridCacheUtils {
             return "Cache extended entry to key converter.";
         }
     };
-
-    /** NoopSwapSpaceSpi used attribute. */
-    private static final String NOOP_SWAP_SPACE_SPI_ATTR_NAME = U.spiAttribute(new NoopSwapSpaceSpi(),
-        IgniteNodeAttributes.ATTR_SPI_CLASS);
 
     /**
      * Ensure singleton.
@@ -618,7 +650,7 @@ public class GridCacheUtils {
      * @return Filter for transaction reads.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<IgniteTxEntry> reads() {
+    public static IgnitePredicate<IgniteTxEntry> reads() {
         return READ_FILTER;
     }
 
@@ -626,7 +658,7 @@ public class GridCacheUtils {
      * @return Filter for transaction writes.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<IgniteTxEntry> writes() {
+    public static IgnitePredicate<IgniteTxEntry> writes() {
         return WRITE_FILTER;
     }
 
@@ -848,31 +880,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Method executes any Callable out of scope of transaction.
-     * If transaction started by this thread {@code cmd} will be executed in another thread.
-     *
-     * @param cmd Callable.
-     * @param ctx Cache context.
-     * @return T Callable result.
-     * @throws IgniteCheckedException If execution failed.
-     */
-    public static <T> T outTx(Callable<T> cmd, GridCacheContext ctx) throws IgniteCheckedException {
-        if (ctx.tm().inUserTx())
-            return ctx.closures().callLocalSafe(cmd, false).get();
-        else {
-            try {
-                return cmd.call();
-            }
-            catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
-            }
-        }
-    }
-
-    /**
      * @param val Value.
      * @param skip Skip value flag.
      * @return Value.
@@ -925,18 +932,6 @@ public class GridCacheUtils {
     public static void unwindEvicts(GridCacheContext ctx) {
         assert ctx != null;
 
-        ctx.evicts().unwind();
-
-        ctx.swap().unwindOffheapEvicts();
-
-        if (ctx.isNear()) {
-            GridCacheContext dhtCtx = ctx.near().dht().context();
-
-            dhtCtx.evicts().unwind();
-
-            dhtCtx.swap().unwindOffheapEvicts();
-        }
-
         ctx.ttl().expire();
     }
 
@@ -978,12 +973,11 @@ public class GridCacheUtils {
     public static byte[] versionToBytes(GridCacheVersion ver) {
         assert ver != null;
 
-        byte[] bytes = new byte[28];
+        byte[] bytes = new byte[20];
 
         U.intToBytes(ver.topologyVersion(), bytes, 0);
-        U.longToBytes(ver.globalTime(), bytes, 4);
-        U.longToBytes(ver.order(), bytes, 12);
-        U.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 20);
+        U.longToBytes(ver.order(), bytes, 4);
+        U.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 12);
 
         return bytes;
     }
@@ -1139,7 +1133,6 @@ public class GridCacheUtils {
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
         cache.setEvictionPolicy(null);
-        cache.setSwapEnabled(false);
         cache.setCacheStoreFactory(null);
         cache.setNodeFilter(CacheConfiguration.ALL_NODES);
         cache.setEagerTtl(true);
@@ -1506,7 +1499,7 @@ public class GridCacheUtils {
      * @return {@code True} if node is not client node and pass given filter.
      */
     public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
-        return !clientNode(node) && filter.apply(node);
+        return !node.isDaemon() && !clientNode(node) && filter.apply(node);
     }
 
     /**
@@ -1585,56 +1578,58 @@ public class GridCacheUtils {
 
     /**
      * @param c Closure to retry.
-     * @param <S> Closure type.
-     * @return Wrapped closure.
+     * @throws IgniteCheckedException If failed.
+     * @return Closure result.
      */
-    public static <S> Callable<S> retryTopologySafe(final Callable<S> c ) {
-        return new Callable<S>() {
-            @Override public S call() throws Exception {
-                IgniteCheckedException err = null;
+    public static <S> S retryTopologySafe(final Callable<S> c) throws IgniteCheckedException {
+        IgniteCheckedException err = null;
 
-                for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
-                    try {
-                        return c.call();
-                    }
-                    catch (ClusterGroupEmptyCheckedException | ClusterTopologyServerNotFoundException e) {
-                        throw e;
-                    }
-                    catch (TransactionRollbackException e) {
-                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
-                            throw e;
-
-                        U.sleep(1);
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
-                            throw e;
-
-                        if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
-                            ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
-
-                            if (topErr instanceof ClusterGroupEmptyCheckedException || topErr instanceof
-                                ClusterTopologyServerNotFoundException)
-                                throw e;
-
-                            // IGNITE-1948: remove this check when the issue is fixed
-                            if (topErr.retryReadyFuture() != null)
-                                topErr.retryReadyFuture().get();
-                            else
-                                U.sleep(1);
-                        }
-                        else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
-                            CachePartialUpdateCheckedException.class))
-                            U.sleep(1);
-                        else
-                            throw e;
-                    }
-                }
-
-                // Should never happen.
-                throw err;
+        for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
+            try {
+                return c.call();
             }
-        };
+            catch (ClusterGroupEmptyCheckedException | ClusterTopologyServerNotFoundException e) {
+                throw e;
+            }
+            catch (TransactionRollbackException e) {
+                if (i + 1 == GridCacheAdapter.MAX_RETRIES)
+                    throw e;
+
+                U.sleep(1);
+            }
+            catch (IgniteCheckedException e) {
+                if (i + 1 == GridCacheAdapter.MAX_RETRIES)
+                    throw e;
+
+                if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                    ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
+
+                    if (topErr instanceof ClusterGroupEmptyCheckedException || topErr instanceof
+                        ClusterTopologyServerNotFoundException)
+                        throw e;
+
+                    // IGNITE-1948: remove this check when the issue is fixed
+                    if (topErr.retryReadyFuture() != null)
+                        topErr.retryReadyFuture().get();
+                    else
+                        U.sleep(1);
+                }
+                else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
+                    CachePartialUpdateCheckedException.class))
+                    U.sleep(1);
+                else
+                    throw e;
+            }
+            catch (RuntimeException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
+
+        // Should never happen.
+        throw err;
     }
 
     /**
@@ -1687,16 +1682,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Checks if swap is enabled on node.
-     *
-     * @param node Node
-     * @return {@code true} if swap is enabled, {@code false} otherwise.
-     */
-    public static boolean isSwapEnabled(ClusterNode node) {
-        return !node.attributes().containsKey(NOOP_SWAP_SPACE_SPI_ATTR_NAME);
-    }
-
-    /**
      * @return default TX configuration if system cache is used or current grid TX config otherwise.
      */
     public static TransactionConfiguration transactionConfiguration(final @Nullable GridCacheContext sysCacheCtx,
@@ -1704,5 +1689,32 @@ public class GridCacheUtils {
         return sysCacheCtx != null && sysCacheCtx.systemTx()
             ? DEFAULT_TX_CFG
             : cfg.getTransactionConfiguration();
+    }
+
+    /**
+     * @param name Cache name.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateCacheName(String name) throws IllegalArgumentException {
+        A.ensure(name != null && !name.isEmpty(), "Cache name must not be null or empty.");
+    }
+
+    /**
+     * @param cacheNames Cache names to validate.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateCacheNames(Collection<String> cacheNames) throws IllegalArgumentException {
+        for (String name : cacheNames)
+            validateCacheName(name);
+    }
+
+    /**
+     * @param ccfgs Configurations to validate.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateConfigurationCacheNames(Collection<CacheConfiguration> ccfgs)
+        throws IllegalArgumentException {
+        for (CacheConfiguration ccfg : ccfgs)
+            validateCacheName(ccfg.getName());
     }
 }

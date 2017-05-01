@@ -80,14 +80,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         cc.setCacheMode(cacheMode());
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setSwapEnabled(false);
-
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cc.setEvictionPolicy(plc);
-        cc.setEvictSynchronizedKeyBufferSize(1);
-
-        cc.setEvictSynchronized(true);
+        cc.setOnheapCacheEnabled(true);
 
         if (testStore != null) {
             cc.setCacheStoreFactory(singletonFactory(testStore));
@@ -178,7 +174,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
                 Ignite g = startGrids();
 
-                IgniteCache<String, String> cache = g.cache(null);
+                IgniteCache<String, String> cache = g.cache(DEFAULT_CACHE_NAME);
 
                 try {
                     info(">>> Checking policy [txConcurrency=" + txConcurrency + ", txIsolation=" + txIsolation +

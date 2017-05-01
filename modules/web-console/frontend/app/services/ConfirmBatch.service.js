@@ -24,7 +24,6 @@ export default ['IgniteConfirmBatch', ['$rootScope', '$q', '$modal', ($root, $q,
     scope.confirmModal = $modal({
         templateUrl,
         scope,
-        placement: 'center',
         show: false,
         backdrop: 'static',
         keyboard: false

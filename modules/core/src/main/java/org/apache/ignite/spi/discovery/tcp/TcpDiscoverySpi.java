@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -101,6 +102,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
  * <p>
@@ -135,7 +139,6 @@ import org.jetbrains.annotations.Nullable;
  * configuration parameters may be used. As an example, for stable low-latency networks the following more aggressive
  * settings are recommended (which allows failure detection time ~200ms):
  * <ul>
- * <li>Heartbeat frequency (see {@link #setHeartbeatFrequency(long)}) - 100ms</li>
  * <li>Socket timeout (see {@link #setSocketTimeout(long)}) - 200ms</li>
  * <li>Message acknowledgement timeout (see {@link #setAckTimeout(long)}) - 50ms</li>
  * </ul>
@@ -163,8 +166,6 @@ import org.jetbrains.annotations.Nullable;
  * <li>Local port to bind to (see {@link #setLocalPort(int)})</li>
  * <li>Local port range to try binding to if previous ports are in use
  *      (see {@link #setLocalPortRange(int)})</li>
- * <li>Heartbeat frequency (see {@link #setHeartbeatFrequency(long)})</li>
- * <li>Max missed heartbeats (see {@link #setMaxMissedHeartbeats(int)})</li>
  * <li>Number of times node tries to (re)establish connection to another node
  *      (see {@link #setReconnectCount(int)})</li>
  * <li>Network timeout (see {@link #setNetworkTimeout(long)})</li>
@@ -238,9 +239,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** Default value for thread priority (value is <tt>10</tt>). */
     public static final int DFLT_THREAD_PRI = 10;
 
-    /** Default heartbeat messages issuing frequency (value is <tt>2000ms</tt>). */
-    public static final long DFLT_HEARTBEAT_FREQ = 2000;
-
     /** Default size of topology snapshots history. */
     public static final int DFLT_TOP_HISTORY_SIZE = 1000;
 
@@ -258,12 +256,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
     /** Default reconnect attempts count (value is <tt>10</tt>). */
     public static final int DFLT_RECONNECT_CNT = 10;
-
-    /** Default max heartbeats count node can miss without initiating status check (value is <tt>1</tt>). */
-    public static final int DFLT_MAX_MISSED_HEARTBEATS = 1;
-
-    /** Default max heartbeats count node can miss without failing client node (value is <tt>5</tt>). */
-    public static final int DFLT_MAX_MISSED_CLIENT_HEARTBEATS = 5;
 
     /** Default IP finder clean frequency in milliseconds (value is <tt>60,000ms</tt>). */
     public static final long DFLT_IP_FINDER_CLEAN_FREQ = 60 * 1000;
@@ -302,9 +294,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     @GridToStringInclude
     protected int threadPri = DFLT_THREAD_PRI;
 
+
     /** Heartbeat messages issuing frequency. */
     @GridToStringInclude
     protected long hbFreq = DFLT_HEARTBEAT_FREQ;
+    /** Metrics update messages issuing frequency. */
+    protected long metricsUpdateFreq;
 
     /** Size of topology snapshots history. */
     @GridToStringInclude
@@ -365,12 +360,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** Maximum message acknowledgement timeout. */
     private long maxAckTimeout = DFLT_MAX_ACK_TIMEOUT;
 
-    /** Max heartbeats count node can miss without initiating status check. */
-    protected int maxMissedHbs = DFLT_MAX_MISSED_HEARTBEATS;
-
-    /** Max heartbeats count node can miss without failing client node. */
-    protected int maxMissedClientHbs = DFLT_MAX_MISSED_CLIENT_HEARTBEATS;
-
     /** IP finder clean frequency. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     protected long ipFinderCleanFreq = DFLT_IP_FINDER_CLEAN_FREQ;
@@ -408,6 +397,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
     /** */
     private boolean clientReconnectDisabled;
+
+    /** */
+    private Serializable consistentId;
+
+    /** Local node addresses. */
+    private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 
     /** */
     protected IgniteSpiContext spiCtx;
@@ -729,56 +724,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
-     * Gets max heartbeats count node can miss without initiating status check.
-     *
-     * @return Max missed heartbeats.
-     */
-    public int getMaxMissedHeartbeats() {
-        return maxMissedHbs;
-    }
-
-    /**
-     * Sets max heartbeats count node can miss without initiating status check.
-     * <p>
-     * If not provided, default value is {@link #DFLT_MAX_MISSED_HEARTBEATS}.
-     * <p>
-     * Affected server nodes only.
-     *
-     * @param maxMissedHbs Max missed heartbeats.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpDiscoverySpi setMaxMissedHeartbeats(int maxMissedHbs) {
-        this.maxMissedHbs = maxMissedHbs;
-
-        return this;
-    }
-
-    /**
-     * Gets max heartbeats count node can miss without failing client node.
-     *
-     * @return Max missed client heartbeats.
-     */
-    public int getMaxMissedClientHeartbeats() {
-        return maxMissedClientHbs;
-    }
-
-    /**
-     * Sets max heartbeats count node can miss without failing client node.
-     * <p>
-     * If not provided, default value is {@link #DFLT_MAX_MISSED_CLIENT_HEARTBEATS}.
-     *
-     * @param maxMissedClientHbs Max missed client heartbeats.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpDiscoverySpi setMaxMissedClientHeartbeats(int maxMissedClientHbs) {
-        this.maxMissedClientHbs = maxMissedClientHbs;
-
-        return this;
-    }
-
-    /**
      * Gets statistics print frequency.
      *
      * @return Statistics print frequency in milliseconds.
@@ -964,22 +909,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
-     * Sets delay between issuing of heartbeat messages. SPI sends heartbeat messages
-     * in configurable time interval to other nodes to notify them about its state.
-     * <p>
-     * If not provided, default value is {@link #DFLT_HEARTBEAT_FREQ}.
-     *
-     * @param hbFreq Heartbeat frequency in milliseconds.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpDiscoverySpi setHeartbeatFrequency(long hbFreq) {
-        this.hbFreq = hbFreq;
-
-        return this;
-    }
-
-    /**
      * @return Size of topology snapshots history.
      */
     public long getTopHistorySize() {
@@ -1031,20 +960,54 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         return ignite.cluster().localNode().id();
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public Serializable consistentId() throws IgniteSpiException {
+        if (consistentId == null) {
+            initializeImpl();
+
+            initAddresses();
+
+            Serializable cfgId = ignite.configuration().getConsistentId();
+
+            if (cfgId == null) {
+                List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+
+                Collections.sort(sortedAddrs);
+
+                if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
+                    consistentId = U.consistentId(sortedAddrs);
+                else
+                    consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+            }
+            else
+                consistentId = cfgId;
+        }
+
+        return consistentId;
+    }
+
+    /**
+     *
+     */
+    private void initAddresses() {
+        if (addrs == null) {
+            try {
+                addrs = U.resolveLocalAddresses(locHost);
+            }
+            catch (IOException | IgniteCheckedException e) {
+                throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost,
+                    e);
+            }
+        }
+    }
+
     /**
      * @param srvPort Server port.
      * @param addExtAddrAttr If {@code true} adds {@link #ATTR_EXT_ADDRS} attribute.
      */
     protected void initLocalNode(int srvPort, boolean addExtAddrAttr) {
         // Init local node.
-        IgniteBiTuple<Collection<String>, Collection<String>> addrs;
-
-        try {
-            addrs = U.resolveLocalAddresses(locHost);
-        }
-        catch (IOException | IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
-        }
+        initAddresses();
 
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
@@ -1053,7 +1016,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
             srvPort,
             metricsProvider,
             locNodeVer,
-            ignite.configuration().getConsistentId());
+            consistentId());
 
         if (addExtAddrAttr) {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
@@ -1072,6 +1035,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
         locNode.setAttributes(locNodeAttrs);
         locNode.local(true);
+
+        DiscoverySpiListener lsnr = this.lsnr;
+
+        if (lsnr != null)
+            lsnr.onLocalNodeInitialized(locNode);
 
         if (log.isDebugEnabled())
             log.debug("Local node initialized: " + locNode);
@@ -1139,6 +1107,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
+     * Gets effective or resulting socket timeout with considering failure detection timeout
+     *
+     * @param srvrOperation {@code True} if socket connect to server node,
+     *     {@code False} if socket connect to client node.
+     * @return Resulting socket timeout.
+     */
+    public long getEffectiveSocketTimeout(boolean srvrOperation) {
+        if (failureDetectionTimeoutEnabled())
+            return srvrOperation ? failureDetectionTimeout() : clientFailureDetectionTimeout();
+        else
+            return sockTimeout;
+    }
+
+    /**
      * Gets message acknowledgement timeout.
      *
      * @return Message acknowledgement timeout.
@@ -1166,19 +1148,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
-     * Gets delay between heartbeat messages sent by coordinator.
-     *
-     * @return Time period in milliseconds.
-     */
-    public long getHeartbeatFrequency() {
-        return hbFreq;
-    }
-
-    /**
      * Gets {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} (string representation).
      *
      * @return IPFinder (string representation).
-     */public String getIpFinderFormatted() {
+     */
+    public String getIpFinderFormatted() {
         return ipFinder.toString();
     }
 
@@ -1861,6 +1835,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        initializeImpl();
+
+        registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
+
+        impl.spiStart(igniteInstanceName);
+    }
+
+    /**
+     *
+     */
+    private void initializeImpl() {
+        if (impl != null)
+            return;
+
         initFailureDetectionTimeout();
 
         if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
@@ -1884,6 +1872,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
             impl = new ServerImpl(this);
         }
 
+        metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();
+
         if (!failureDetectionTimeoutEnabled()) {
             assertParameter(sockTimeout > 0, "sockTimeout > 0");
             assertParameter(ackTimeout > 0, "ackTimeout > 0");
@@ -1893,14 +1883,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
         assertParameter(netTimeout > 0, "networkTimeout > 0");
         assertParameter(ipFinder != null, "ipFinder != null");
-        assertParameter(hbFreq > 0, "heartbeatFreq > 0");
+        assertParameter(metricsUpdateFreq > 0, "metricsUpdateFreq > 0" +
+            " (inited from igniteConfiguration.metricsUpdateFrequency)");
 
         assertParameter(ipFinderCleanFreq > 0, "ipFinderCleanFreq > 0");
         assertParameter(locPort > 1023, "localPort > 1023");
         assertParameter(locPortRange >= 0, "localPortRange >= 0");
         assertParameter(locPort + locPortRange <= 0xffff, "locPort + locPortRange <= 0xffff");
-        assertParameter(maxMissedHbs > 0, "maxMissedHeartbeats > 0");
-        assertParameter(maxMissedClientHbs > 0, "maxMissedClientHeartbeats > 0");
         assertParameter(threadPri > 0, "threadPri > 0");
         assertParameter(statsPrintFreq >= 0, "statsPrintFreq >= 0");
 
@@ -1945,16 +1934,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
             log.debug(configInfo("ipFinder", ipFinder));
             log.debug(configInfo("ipFinderCleanFreq", ipFinderCleanFreq));
-            log.debug(configInfo("heartbeatFreq", hbFreq));
-            log.debug(configInfo("maxMissedHeartbeats", maxMissedHbs));
+            log.debug(configInfo("metricsUpdateFreq", metricsUpdateFreq));
             log.debug(configInfo("statsPrintFreq", statsPrintFreq));
         }
 
         // Warn on odd network timeout.
         if (netTimeout < 3000)
             U.warn(log, "Network timeout is too low (at least 3000 ms recommended): " + netTimeout);
-
-        registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
 
         if (ipFinder instanceof TcpDiscoveryMulticastIpFinder) {
             TcpDiscoveryMulticastIpFinder mcastIpFinder = ((TcpDiscoveryMulticastIpFinder)ipFinder);
@@ -1964,8 +1950,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         }
 
         cfgNodeId = ignite.configuration().getNodeId();
-
-        impl.spiStart(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -2003,13 +1987,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     void printStopInfo() {
         if (log.isDebugEnabled())
             log.debug(stopInfo());
-    }
-
-    /**
-     * @return Ignite instance.
-     */
-    Ignite ignite() {
-        return ignite;
     }
 
     /**
@@ -2289,21 +2266,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         /** {@inheritDoc} */
         @Override public int getThreadPriority() {
             return TcpDiscoverySpi.this.getThreadPriority();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getHeartbeatFrequency() {
-            return TcpDiscoverySpi.this.getHeartbeatFrequency();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getMaxMissedHeartbeats() {
-            return TcpDiscoverySpi.this.getMaxMissedHeartbeats();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getMaxMissedClientHeartbeats() {
-            return TcpDiscoverySpi.this.getMaxMissedClientHeartbeats();
         }
 
         /** {@inheritDoc} */

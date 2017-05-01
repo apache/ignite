@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -97,13 +98,6 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
-        throwUnsupported();
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public Collection<IgniteInternalCache<?, ?>> cachesx(
         @Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
@@ -141,7 +135,7 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(String name) {
         return F.eq(name, igfs.name()) ? igfs : null;
     }
 
@@ -506,6 +500,30 @@ public class IgfsIgniteMock implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
+        throwUnsupported();
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        throwUnsupported();
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        throwUnsupported();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetLostPartitions(Collection<String> cacheNames) {
+        throwUnsupported();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
         throwUnsupported();
 
         return null;

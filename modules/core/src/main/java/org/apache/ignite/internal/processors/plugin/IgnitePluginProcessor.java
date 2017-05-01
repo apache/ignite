@@ -66,7 +66,8 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param providers Plugin providers.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg, List<PluginProvider> providers) {
+    public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg, List<PluginProvider> providers)
+        throws IgniteCheckedException {
         super(ctx);
 
         ExtensionRegistryImpl registry = new ExtensionRegistryImpl();
@@ -147,7 +148,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
         ackPluginsInfo();
     }
 

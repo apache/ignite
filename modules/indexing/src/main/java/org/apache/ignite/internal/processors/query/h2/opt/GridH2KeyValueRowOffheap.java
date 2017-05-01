@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -84,16 +85,17 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
      * @param keyType Key type.
      * @param val Value.
      * @param valType Value type.
+     * @param ver Version.
      * @param expirationTime Expiration time.
      * @throws IgniteCheckedException If failed.
      */
     public GridH2KeyValueRowOffheap(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val, int valType,
-        long expirationTime) throws IgniteCheckedException {
-        super(desc, key, keyType, val, valType, expirationTime);
+                                    GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
+        super(desc, key, keyType, val, valType, ver, expirationTime);
     }
 
     /** {@inheritDoc} */
-    @Override public long expirationTime() {
+    @Override public long expireTime() {
         if (expirationTime == 0) {
             long p = ptr;
 
@@ -187,34 +189,6 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSwap() throws IgniteCheckedException {
-        Lock l = lock(ptr);
-
-        try {
-            final long p = ptr + OFFSET_VALUE_REF;
-
-            final GridUnsafeMemory mem = desc.memory();
-
-            final long valPtr = mem.readLongVolatile(p);
-
-            if (valPtr <= 0)
-                throw new IllegalStateException("Already swapped: " + ptr);
-
-            if (!mem.casLong(p, valPtr, 0))
-                throw new IllegalStateException("Concurrent unswap: " + ptr);
-
-            desc.guard().finalizeLater(new Runnable() {
-                @Override public void run() {
-                    mem.release(valPtr, mem.readInt(valPtr) + OFFSET_VALUE);
-                }
-            });
-        }
-        finally {
-            l.unlock();
-        }
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
     @Override protected synchronized Value updateWeakValue(Object valObj) throws IgniteCheckedException {
         Value val = peekValue(VAL_COL);
@@ -229,48 +203,6 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
         notifyAll();
 
         return upd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void onUnswap(Object val, boolean beforeRmv) throws IgniteCheckedException {
-        assert val != null;
-
-        final long p = ptr;
-
-        Lock l = lock(p);
-
-        try {
-            GridUnsafeMemory mem = desc.memory();
-
-            if (mem.readLongVolatile(p + OFFSET_VALUE_REF) != 0)
-                return; // The offheap value is in its place, nothing to do here.
-
-            Value v = peekValue(VAL_COL);
-
-            if (v == null) {
-                setValue(VAL_COL, desc.wrap(val, desc.valueType()));
-
-                v = peekValue(VAL_COL);
-            }
-
-            byte[] bytes = new byte[SIZE_CALCULATOR.getValueLen(v)];
-
-            Data data = Data.create(null, bytes);
-
-            data.writeValue(v);
-
-            long valPtr = mem.allocate(bytes.length + OFFSET_VALUE);
-
-            mem.writeInt(valPtr, bytes.length);
-            mem.writeBytes(valPtr + OFFSET_VALUE, bytes);
-
-            mem.writeLongVolatile(p + OFFSET_VALUE_REF, valPtr);
-        }
-        finally {
-            l.unlock();
-        }
-
-        notifyAll();
     }
 
     /** {@inheritDoc} */
