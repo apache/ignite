@@ -17,12 +17,10 @@
 
 package org.apache.ignite.ml.math.exceptions;
 
-import org.apache.ignite.IgniteException;
-
 /**
  * Indicates a cardinality mismatch in matrix or vector operations.
  */
-public class CardinalityException extends IgniteException {
+public class CardinalityException extends MathIllegalArgumentException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,6 +31,6 @@ public class CardinalityException extends IgniteException {
      * @param act Actual cardinality.
      */
     public CardinalityException(int exp, int act) {
-        super("Cardinality violation [expected=" + exp + ", actual=" + act + "]");
+        super("Cardinality violation [expected=%d, actual=%d]", exp, act);
     }
 }

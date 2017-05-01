@@ -133,6 +133,11 @@ public final class Functions {
         return (a, b) -> a - b * constant;
     }
 
+    /** Function that returns passed constant. */
+    public static IgniteDoubleFunction<Double> constant(Double c) {
+        return a -> c;
+    }
+
     /**
      * Function that returns {@code Math.pow(a, b)}.
      *
