@@ -52,6 +52,7 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -274,6 +275,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
     /** Local address. */
+    @GridToStringInclude
     protected String locAddr;
 
     /** Address resolver. */
@@ -289,6 +291,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     private long ackTimeout; // Must be initialized in the constructor of child class.
 
     /** Network timeout. */
+    @GridToStringInclude
     protected long netTimeout = DFLT_NETWORK_TIMEOUT;
 
     /** Join timeout. */
@@ -296,12 +299,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     protected long joinTimeout = DFLT_JOIN_TIMEOUT;
 
     /** Thread priority for all threads started by SPI. */
+    @GridToStringInclude
     protected int threadPri = DFLT_THREAD_PRI;
 
     /** Heartbeat messages issuing frequency. */
+    @GridToStringInclude
     protected long hbFreq = DFLT_HEARTBEAT_FREQ;
 
     /** Size of topology snapshots history. */
+    @GridToStringInclude
     protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
 
     /** Grid discovery listener. */
@@ -341,9 +347,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
     /** Local port which node uses. */
+    @GridToStringInclude
     protected int locPort = DFLT_PORT;
 
     /** Local port range. */
+    @GridToStringInclude
     protected int locPortRange = DFLT_PORT_RANGE;
 
     /** Reconnect attempts count. */
