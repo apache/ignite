@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -41,13 +44,13 @@ public class CacheGroupDescriptor {
 
     /** */
     @GridToStringInclude
-    private final Set<String> cacheNames;
+    private Map<String, Integer> caches;
 
     CacheGroupDescriptor(String grpName,
         int grpId,
         CacheConfiguration cacheCfg,
         AffinityTopologyVersion startTopVer,
-        Set<String> cacheNames) {
+        Map<String, Integer> caches) {
         assert cacheCfg != null;
         assert grpName != null;
         assert grpId != 0;
@@ -57,7 +60,35 @@ public class CacheGroupDescriptor {
         this.grpId = grpId;
         this.cacheCfg = cacheCfg;
         this.startTopVer = startTopVer;
-        this.cacheNames = cacheNames;
+        this.caches = caches;
+    }
+
+    void onCacheAdded(String cacheName, int cacheId) {
+        assert cacheName != null;
+        assert cacheId != 0;
+
+        Map<String, Integer> caches = new HashMap<>(this.caches);
+
+        caches.put(cacheName, cacheId);
+
+        this.caches = caches;
+    }
+
+    void onCacheStopped(String cacheName, int cacheId) {
+        assert cacheName != null;
+        assert cacheId != 0;
+
+        Map<String, Integer> caches = new HashMap<>(this.caches);
+
+        Integer rmvd = caches.remove(cacheName);
+
+        assert rmvd != null && rmvd == cacheId : cacheName;
+
+        this.caches = caches;
+    }
+
+    boolean hasCaches() {
+        return caches != null;
     }
 
     public String groupName() {
@@ -76,8 +107,8 @@ public class CacheGroupDescriptor {
         return startTopVer;
     }
 
-    Set<String> cacheNames() {
-        return cacheNames;
+    Map<String, Integer> caches() {
+        return caches;
     }
 
     @Override public String toString() {

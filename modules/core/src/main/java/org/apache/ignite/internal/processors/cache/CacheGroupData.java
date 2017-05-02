@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -45,7 +46,7 @@ public class CacheGroupData implements Serializable {
 
     /** */
     @GridToStringInclude
-    private final Set<String> cacheNames;
+    private final Map<String, Integer> caches;
 
     /**
      * @param cacheCfg Cache configuration.
@@ -56,7 +57,7 @@ public class CacheGroupData implements Serializable {
         String grpName,
         int grpId,
         AffinityTopologyVersion startTopVer,
-        Set<String> cacheNames) {
+        Map<String, Integer> caches) {
         assert cacheCfg != null;
         assert grpName != null;
         assert grpId != 0;
@@ -66,7 +67,7 @@ public class CacheGroupData implements Serializable {
         this.grpName = grpName;
         this.grpId = grpId;
         this.startTopVer = startTopVer;
-        this.cacheNames = cacheNames;
+        this.caches = caches;
     }
 
     public String groupName() {
@@ -85,8 +86,8 @@ public class CacheGroupData implements Serializable {
         return startTopVer;
     }
 
-    Set<String> cacheNames() {
-        return cacheNames;
+    Map<String, Integer> caches() {
+        return caches;
     }
 
     @Override public String toString() {

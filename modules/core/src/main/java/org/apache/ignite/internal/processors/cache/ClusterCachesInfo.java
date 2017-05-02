@@ -164,7 +164,12 @@ class ClusterCachesInfo {
                         assert req.cacheType() != null : req;
                         assert F.eq(ccfg.getName(), req.cacheName()) : req;
 
-                        CacheGroupDescriptor grpDesc = registerCacheGroup(ccfg, topVer.nextMinorVersion());
+                        int cacheId = CU.cacheId(req.cacheName());
+
+                        CacheGroupDescriptor grpDesc = registerCacheGroup(exchangeActions,
+                            ccfg,
+                            cacheId,
+                            topVer.nextMinorVersion());
 
                         DynamicCacheDescriptor startDesc = new DynamicCacheDescriptor(ctx,
                             ccfg,
@@ -256,13 +261,25 @@ class ClusterCachesInfo {
                 if (desc != null) {
                     DynamicCacheDescriptor old = registeredCaches.remove(req.cacheName());
 
-                    assert old != null : "Dynamic cache map was concurrently modified [req=" + req + ']';
+                    assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
                     ctx.discovery().removeCacheFilter(req.cacheName());
 
                     needExchange = true;
 
                     exchangeActions.addCacheToStop(req, desc);
+
+                    CacheGroupDescriptor grpDesc = registeredCacheGrps.get(desc.groupDescriptor().groupName());
+
+                    assert grpDesc != null && grpDesc.groupId() == desc.groupDescriptor().groupId() : desc;
+
+                    grpDesc.onCacheStopped(desc.cacheName(), desc.cacheId());
+
+                    if (!grpDesc.hasCaches()) {
+                        registeredCacheGrps.remove(grpDesc.groupId());
+
+                        exchangeActions.addCacheGroupToStop(grpDesc);
+                    }
                 }
             }
             else if (req.close()) {
@@ -514,7 +531,8 @@ class ClusterCachesInfo {
             CacheGroupData grpData = new CacheGroupData(grpDesc.config(),
                 grpDesc.groupName(),
                 grpDesc.groupId(),
-                grpDesc.startTopologyVersion());
+                grpDesc.startTopologyVersion(),
+                grpDesc.caches());
 
             cacheGrps.put(grpDesc.groupName(), grpData);
         }
@@ -562,7 +580,8 @@ class ClusterCachesInfo {
             CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(grpData.groupName(),
                 grpData.groupId(),
                 grpData.config(),
-                grpData.startTopologyVersion());
+                grpData.startTopologyVersion(),
+                grpData.caches());
 
             CacheGroupDescriptor old = registeredCacheGrps.put(grpDesc.groupName(), grpDesc);
 
@@ -710,7 +729,9 @@ class ClusterCachesInfo {
             CacheConfiguration cfg = cacheInfo.config();
 
             if (!registeredCaches.containsKey(cfg.getName())) {
-                CacheGroupDescriptor grpDesc = registerCacheGroup(cfg, topVer);
+                int cacheId = CU.cacheId(cfg.getName());
+
+                CacheGroupDescriptor grpDesc = registerCacheGroup(null, cfg, cacheId, topVer);
 
                 DynamicCacheDescriptor desc = new DynamicCacheDescriptor(ctx,
                     cfg,
@@ -737,23 +758,39 @@ class ClusterCachesInfo {
         }
     }
 
-    private CacheGroupDescriptor registerCacheGroup(CacheConfiguration cfg, AffinityTopologyVersion topVer) {
-        if (cfg.getGroupName() != null) {
-            CacheGroupDescriptor desc = registeredCacheGrps.get(cfg.getGroupName());
+    private CacheGroupDescriptor registerCacheGroup(
+        ExchangeActions exchActions,
+        CacheConfiguration startedCacheCfg,
+        Integer cacheId,
+        AffinityTopologyVersion topVer) {
+        if (startedCacheCfg.getGroupName() != null) {
+            CacheGroupDescriptor desc = registeredCacheGrps.get(startedCacheCfg.getGroupName());
 
-            if (desc != null)
+            if (desc != null) {
+                desc.onCacheAdded(startedCacheCfg.getName(), cacheId);
+
                 return desc;
+            }
         }
 
         int grpId = cacheGrpIdGen++;
 
-        CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
-            cfg.getGroupName() != null ? cfg.getGroupName() : cfg.getName(),
-            grpId,
-            cfg,
-            topVer);
+        Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
-        ctx.discovery().addCacheGroup(grpDesc, cfg.getNodeFilter(), cfg.getCacheMode());
+        String grpName = startedCacheCfg.getGroupName() != null ?
+            startedCacheCfg.getGroupName() : startedCacheCfg.getName();
+
+        CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
+            grpName,
+            grpId,
+            startedCacheCfg,
+            topVer,
+            caches);
+
+        ctx.discovery().addCacheGroup(grpDesc, startedCacheCfg.getNodeFilter(), startedCacheCfg.getCacheMode());
+
+        if (exchActions != null)
+            exchActions.addCacheGroupToStart(grpDesc);
 
         return grpDesc;
     }

@@ -1745,6 +1745,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheDesc.cacheConfiguration(),
             nearCfg,
             cacheDesc.cacheType(),
+            cacheDesc.groupDescriptor().groupId(),
             cacheDesc.deploymentId(),
             cacheDesc.startTopologyVersion(),
             exchTopVer,
@@ -1767,6 +1768,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     desc.cacheConfiguration(),
                     t.get2(),
                     desc.cacheType(),
+                    desc.groupDescriptor().groupId(),
                     desc.deploymentId(),
                     desc.startTopologyVersion(),
                     exchTopVer,
@@ -1797,6 +1799,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         desc.cacheConfiguration(),
                         null,
                         desc.cacheType(),
+                        desc.groupDescriptor().groupId(),
                         desc.deploymentId(),
                         desc.startTopologyVersion(),
                         exchTopVer,
@@ -1807,20 +1810,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return started != null ? started : Collections.<DynamicCacheDescriptor>emptyList();
-    }
-
-    private CacheGroupInfrastructure startCacheGroup(CacheConfiguration cfg0, int grpId) throws IgniteCheckedException {
-        CacheConfiguration ccfg = new CacheConfiguration(cfg0);
-
-        CacheGroupInfrastructure grp = new CacheGroupInfrastructure(grpId, sharedCtx, ccfg);
-
-        grp.start();
-
-        CacheGroupInfrastructure old = cacheGrps.put(grpId, grp);
-
-        assert old == null;
-
-        return grp;
     }
 
     /**
@@ -1845,7 +1834,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) throws IgniteCheckedException {
         assert !caches.containsKey(startCfg.getName()) : startCfg.getName();
 
-        String grpName = cfg.getGroupName();
+        String grpName = startCfg.getGroupName();
 
         CacheGroupInfrastructure grp = null;
 
@@ -1859,10 +1848,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (grp == null)
-                grp = startCacheGroup(cfg, grpId);
+                grp = startCacheGroup(startCfg, grpId);
         }
         else
-            grp = startCacheGroup(cfg, grpId);
+            grp = startCacheGroup(startCfg, grpId);
 
         CacheConfiguration ccfg = new CacheConfiguration(startCfg);
 
@@ -1904,6 +1893,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         startCache(cache, schema != null ? schema : new QuerySchema());
 
         onKernalStart(cache);
+    }
+
+    private CacheGroupInfrastructure startCacheGroup(CacheConfiguration cfg0, int grpId) throws IgniteCheckedException {
+        CacheConfiguration ccfg = new CacheConfiguration(cfg0);
+
+        CacheGroupInfrastructure grp = new CacheGroupInfrastructure(grpId, sharedCtx, ccfg);
+
+        grp.start();
+
+        CacheGroupInfrastructure old = cacheGrps.put(grpId, grp);
+
+        assert old == null;
+
+        return grp;
     }
 
     /**

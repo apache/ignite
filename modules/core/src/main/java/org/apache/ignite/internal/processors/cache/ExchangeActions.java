@@ -35,6 +35,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ExchangeActions {
     /** */
+    private List<CacheGroupDescriptor> cacheGrpsToStart;
+
+    /** */
+    private List<CacheGroupDescriptor> cacheGrpsToStop;
+
+    /** */
     private Map<String, ActionData> cachesToStart;
 
     /** */
@@ -273,6 +279,39 @@ public class ExchangeActions {
         cachesToResetLostParts = add(cachesToResetLostParts, req, desc);
     }
 
+    void addCacheGroupToStart(CacheGroupDescriptor grpDesc) {
+        if (cacheGrpsToStart == null)
+            cacheGrpsToStart = new ArrayList<>();
+
+        cacheGrpsToStart.add(grpDesc);
+    }
+
+    List<CacheGroupDescriptor> cacheGroupsToStart() {
+        return cacheGrpsToStart != null ? cacheGrpsToStart : Collections.<CacheGroupDescriptor>emptyList();
+    }
+
+    void addCacheGroupToStop(CacheGroupDescriptor grpDesc) {
+        if (cacheGrpsToStop == null)
+            cacheGrpsToStop = new ArrayList<>();
+
+        cacheGrpsToStop.add(grpDesc);
+    }
+
+    List<CacheGroupDescriptor> cacheGroupsToStop() {
+        return cacheGrpsToStop != null ? cacheGrpsToStop : Collections.<CacheGroupDescriptor>emptyList();
+    }
+
+    boolean cacheGroupStopping(int grpId) {
+        if (cacheGrpsToStop != null) {
+            for (CacheGroupDescriptor grpToStop : cacheGrpsToStop) {
+                if (grpToStop.groupId() == grpId)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @return {@code True} if there are no cache change actions.
      */
@@ -281,6 +320,8 @@ public class ExchangeActions {
             F.isEmpty(clientCachesToStart) &&
             F.isEmpty(cachesToStop) &&
             F.isEmpty(cachesToClose) &&
+            F.isEmpty(cacheGrpsToStart) &&
+            F.isEmpty(cacheGrpsToStop) &&
             F.isEmpty(cachesToResetLostParts);
     }
 
