@@ -28,6 +28,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 class CacheNodeCommonDiscoveryData implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     private final Map<String, CacheData> caches;
 

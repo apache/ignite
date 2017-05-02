@@ -29,6 +29,9 @@ import java.util.Map;
  */
 public class CacheClientReconnectDiscoveryData implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final Map<String, CacheInfo> clientCaches;
 
     /**
@@ -49,6 +52,9 @@ public class CacheClientReconnectDiscoveryData implements Serializable {
      *
      */
     static class CacheInfo implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final CacheConfiguration ccfg;
 
