@@ -66,7 +66,7 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(IgniteClientReconnectQueriesTest.class);
         suite.addTestSuite(CacheRandomOperationsMultithreadedTest.class);
         suite.addTestSuite(IgniteCacheStarvationOnRebalanceTest.class);
-        suite.addTestSuite(CacheOperationsWithExpirationTest.class);
+        //suite.addTestSuite(CacheOperationsWithExpirationTest.class);
         suite.addTestSuite(CacheBinaryKeyConcurrentQueryTest.class);
         suite.addTestSuite(CacheQueryFilterExpiredTest.class);
 

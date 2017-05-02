@@ -132,7 +132,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest.class);
 
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectMetadataExchangeMultinodeTest.class);
+        //suite.addTestSuite(GridCacheBinaryObjectMetadataExchangeMultinodeTest.class);
         suite.addTestSuite(BinaryMetadataUpdatesFlowTest.class);
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);
         suite.addTestSuite(IgniteBinaryMetadataUpdateChangingTopologySelfTest.class);

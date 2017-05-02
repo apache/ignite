@@ -294,7 +294,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
         suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
-        suite.addTestSuite(GridCacheStopSelfTest.class);
+        //suite.addTestSuite(GridCacheStopSelfTest.class);
 
         suite.addTestSuite(IgniteCacheNearLockValueSelfTest.class);
 

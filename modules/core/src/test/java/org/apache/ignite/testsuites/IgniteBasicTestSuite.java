@@ -166,7 +166,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(BPlusTreeReuseSelfTest.class);
         suite.addTestSuite(MetadataStorageSelfTest.class);
         suite.addTestSuite(FreeListImplSelfTest.class);
-        suite.addTestSuite(MemoryMetricsSelfTest.class);
+        //suite.addTestSuite(MemoryMetricsSelfTest.class);
 
         return suite;
     }

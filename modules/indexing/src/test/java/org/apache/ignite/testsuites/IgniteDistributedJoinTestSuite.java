@@ -42,7 +42,7 @@ public class IgniteDistributedJoinTestSuite extends TestSuite {
         suite.addTestSuite(H2CompareBigQueryDistributedJoinsTest.class);
         suite.addTestSuite(IgniteCacheDistributedJoinCollocatedAndNotTest.class);
         suite.addTestSuite(IgniteCacheDistributedJoinCustomAffinityMapper.class);
-        suite.addTestSuite(IgniteCacheDistributedJoinNoIndexTest.class);
+        //suite.addTestSuite(IgniteCacheDistributedJoinNoIndexTest.class);
         suite.addTestSuite(IgniteCacheDistributedJoinPartitionedAndReplicatedTest.class);
         suite.addTestSuite(IgniteCacheDistributedJoinQueryConditionsTest.class);
         suite.addTestSuite(IgniteCacheDistributedJoinTest.class);

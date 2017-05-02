@@ -35,10 +35,15 @@ public class TcpDiscoveryS3IpFinderAwsCredentialsSelfTest extends TcpDiscoveryS3
 
     /** {@inheritDoc} */
     @Override protected void setAwsCredentials(TcpDiscoveryS3IpFinder finder) {
-        finder.setAwsCredentials(new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey()));
+        finder.setAwsCredentials(
+            new BasicAWSCredentials(
+                IgniteS3TestSuite.getAccessKey(),
+                IgniteS3TestSuite.getSecretKey()
+            )
+        );
     }
 
+    /** {@inheritDoc} */
     @Override public void testIpFinder() throws Exception {
         super.testIpFinder();
     }

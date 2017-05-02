@@ -101,7 +101,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
         //suite.addTest(new TestSuite(IgfsSizeSelfTest.class));
         suite.addTest(new TestSuite(IgfsAttributesSelfTest.class));
         suite.addTest(new TestSuite(IgfsFileInfoSelfTest.class));
-        suite.addTest(new TestSuite(IgfsMetaManagerSelfTest.class));
+        //suite.addTest(new TestSuite(IgfsMetaManagerSelfTest.class));
         suite.addTest(new TestSuite(IgfsDataManagerSelfTest.class));
         suite.addTest(new TestSuite(IgfsProcessorSelfTest.class));
         suite.addTest(new TestSuite(IgfsProcessorValidationSelfTest.class));

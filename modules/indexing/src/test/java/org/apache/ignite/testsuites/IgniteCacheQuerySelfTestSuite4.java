@@ -43,7 +43,7 @@ public class IgniteCacheQuerySelfTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheContinuousQueryFailoverTxSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryFailoverTxReplicatedSelfTest.class);
 
-        suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
+       // suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxReplicatedSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverTxSelfTest.class);
 
