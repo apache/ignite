@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Argument for task returns cache load results.
+ * Arguments for {@link VisorCacheLoadTask}.
  */
 public class VisorCacheLoadTaskArg extends VisorDataTransferObject {
     /** */
@@ -76,7 +76,7 @@ public class VisorCacheLoadTaskArg extends VisorDataTransferObject {
     /**
      * @return Optional user arguments to be passed into CacheStore.loadCache(IgniteBiInClosure, Object...) method.
      */
-    public Object[] getLdrArgs() {
+    public Object[] getLoaderArguments() {
         return ldrArgs;
     }
 

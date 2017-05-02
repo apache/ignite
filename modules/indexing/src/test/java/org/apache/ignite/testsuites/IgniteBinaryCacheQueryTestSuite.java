@@ -22,8 +22,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithReflectiveSerializerSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
@@ -46,9 +44,6 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
 
         //Should be adjusted. Not ready to be used with BinaryMarshaller.
         //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);
-
-        suite.addTestSuite(GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest.class);
 
         //TODO: the following tests= was never tested with binary. Exclude or pass?
 //        suite.addTestSuite(IgniteSqlSchemaIndexingTest.class);

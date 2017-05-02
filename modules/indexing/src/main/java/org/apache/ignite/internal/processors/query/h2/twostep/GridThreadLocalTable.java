@@ -37,6 +37,7 @@ import org.h2.table.IndexColumn;
 import org.h2.table.PlanItem;
 import org.h2.table.Table;
 import org.h2.table.TableFilter;
+import org.h2.table.TableType;
 import org.h2.value.Value;
 
 /**
@@ -91,8 +92,8 @@ public class GridThreadLocalTable extends Table {
 
     /** {@inheritDoc} */
     @Override public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder) {
-        return innerTable().getBestPlanItem(session, masks, filters, filter, sortOrder);
+        SortOrder sortOrder, HashSet<Column> cols) {
+        return innerTable().getBestPlanItem(session, masks, filters, filter, sortOrder, cols);
     }
 
     /** {@inheritDoc} */
@@ -121,8 +122,9 @@ public class GridThreadLocalTable extends Table {
     }
 
     /** {@inheritDoc} */
-    @Override public Index getIndexForColumn(Column column) {
-        return innerTable().getIndexForColumn(column);
+    @Override public Index getIndexForColumn(Column column,
+        boolean needGetFirstOrLast, boolean needFindNext) {
+        return innerTable().getIndexForColumn(column, needGetFirstOrLast, needFindNext);
     }
 
     /** {@inheritDoc} */
@@ -177,8 +179,8 @@ public class GridThreadLocalTable extends Table {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTableType() {
-        return EXTERNAL_TABLE_ENGINE;
+    @Override public TableType getTableType() {
+        return TableType.EXTERNAL_TABLE_ENGINE;
     }
 
     /** {@inheritDoc} */

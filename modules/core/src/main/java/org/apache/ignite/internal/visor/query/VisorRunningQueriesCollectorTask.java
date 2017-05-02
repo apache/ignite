@@ -36,12 +36,12 @@ import org.jetbrains.annotations.Nullable;
  * Task to collect currently running queries.
  */
 @GridInternal
-public class VisorRunningQueriesCollectorTask extends VisorMultiNodeTask<Long, Map<UUID, Collection<VisorRunningQuery>>, Collection<VisorRunningQuery>> {
+public class VisorRunningQueriesCollectorTask extends VisorMultiNodeTask<VisorRunningQueriesCollectorTaskArg, Map<UUID, Collection<VisorRunningQuery>>, Collection<VisorRunningQuery>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCollectRunningQueriesJob job(Long arg) {
+    @Override protected VisorCollectRunningQueriesJob job(VisorRunningQueriesCollectorTaskArg arg) {
         return new VisorCollectRunningQueriesJob(arg, debug);
     }
 
@@ -62,7 +62,8 @@ public class VisorRunningQueriesCollectorTask extends VisorMultiNodeTask<Long, M
     /**
      * Job to collect currently running queries from node.
      */
-    private static class VisorCollectRunningQueriesJob extends VisorJob<Long, Collection<VisorRunningQuery>> {
+    private static class VisorCollectRunningQueriesJob
+        extends VisorJob<VisorRunningQueriesCollectorTaskArg, Collection<VisorRunningQuery>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -72,14 +73,17 @@ public class VisorRunningQueriesCollectorTask extends VisorMultiNodeTask<Long, M
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCollectRunningQueriesJob(@Nullable Long arg, boolean debug) {
+        protected VisorCollectRunningQueriesJob(@Nullable VisorRunningQueriesCollectorTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorRunningQuery> run(@Nullable Long duration) throws IgniteException {
+        @Override protected Collection<VisorRunningQuery> run(@Nullable VisorRunningQueriesCollectorTaskArg arg)
+            throws IgniteException {
+            assert arg != null;
+
             Collection<GridRunningQueryInfo> queries = ignite.context().query()
-                .runningQueries(duration != null ? duration : 0);
+                .runningQueries(arg.getDuration());
 
             Collection<VisorRunningQuery> res = new ArrayList<>(queries.size());
 

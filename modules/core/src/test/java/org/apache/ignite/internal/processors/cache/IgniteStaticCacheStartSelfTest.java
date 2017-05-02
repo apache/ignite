@@ -41,7 +41,7 @@ public class IgniteStaticCacheStartSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (hasCache) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(CacheMode.PARTITIONED);
             ccfg.setBackups(1);

@@ -340,7 +340,7 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
         CacheAtomicityMode atomicityMode,
         @Nullable  EvictionPolicy<Object, Object> evictionPlc,
         boolean indexing) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);

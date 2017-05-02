@@ -32,9 +32,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestDefaultMarhsaller()
         {
-            using (var grid = Ignition.Start("config\\marshaller-default.xml"))
+            using (var grid = StartIgnite("config\\marshaller-default.xml"))
             {
-                var cache = grid.GetOrCreateCache<int, int>((string) null);
+                var cache = grid.GetOrCreateCache<int, int>("default");
 
                 cache.Put(1, 1);
 
@@ -49,9 +49,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestExplicitMarhsaller()
         {
-            using (var grid = Ignition.Start("config\\marshaller-explicit.xml"))
+            using (var grid = StartIgnite("config\\marshaller-explicit.xml"))
             {
-                var cache = grid.GetOrCreateCache<int, int>((string) null);
+                var cache = grid.GetOrCreateCache<int, int>("default");
 
                 cache.Put(1, 1);
 
@@ -65,7 +65,21 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestInvalidMarshaller()
         {
-            Assert.Throws<IgniteException>(() => Ignition.Start("config\\marshaller-invalid.xml"));
+            var ex = Assert.Throws<IgniteException>(() => StartIgnite("config\\marshaller-invalid.xml"));
+            Assert.AreEqual("Unsupported marshaller (only org.apache.ignite.internal.binary.BinaryMarshaller " +
+                            "can be used when running Apache Ignite.NET): org.apache.ignite.internal." +
+                            "marshaller.optimized.OptimizedMarshaller", ex.Message);
+        }
+
+        /// <summary>
+        /// Starts the ignite.
+        /// </summary>
+        private static IIgnite StartIgnite(string xml)
+        {
+            return Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = xml
+            });
         }
     }
 }

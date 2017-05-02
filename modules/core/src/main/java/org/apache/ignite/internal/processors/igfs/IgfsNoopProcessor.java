@@ -55,12 +55,12 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfs(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfs(String name) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
+    @Override public Collection<IpcServerEndpoint> endpoints(String name) {
         return Collections.emptyList();
     }
 

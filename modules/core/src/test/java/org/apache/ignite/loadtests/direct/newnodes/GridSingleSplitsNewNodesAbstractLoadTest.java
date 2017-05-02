@@ -41,11 +41,6 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
      */
     protected abstract DiscoverySpi getDiscoverySpi(IgniteConfiguration cfg);
 
-    /**
-     * @return Discovery spi heartbeat frequency.
-     */
-    protected abstract int getHeartbeatFrequency();
-
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -120,11 +115,11 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
 
                                 startGrid(idx);
 
-                                Thread.sleep(getHeartbeatFrequency() * 3);
+                                Thread.sleep(grid(idx).configuration().getMetricsUpdateFrequency() * 3);
 
                                 stopGrid(idx);
 
-                                Thread.sleep(getHeartbeatFrequency() * 3);
+                                Thread.sleep(grid(idx).configuration().getMetricsUpdateFrequency() * 3);
                             }
                         }
                         catch (Throwable e) {

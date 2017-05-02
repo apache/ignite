@@ -96,6 +96,11 @@ namespace Apache.Ignite.Core
         /// </summary>
         public static readonly TimeSpan DefaultFailureDetectionTimeout = TimeSpan.FromSeconds(10);
 
+        /// <summary>
+        /// Default failure detection timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultClientFailureDetectionTimeout = TimeSpan.FromSeconds(30);
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -128,6 +133,9 @@ namespace Apache.Ignite.Core
 
         /** */
         private TimeSpan? _failureDetectionTimeout;
+
+        /** */
+        private TimeSpan? _clientFailureDetectionTimeout;
 
         /// <summary>
         /// Default network retry count.
@@ -210,6 +218,7 @@ namespace Apache.Ignite.Core
             writer.WriteBooleanNullable(_isDaemon);
             writer.WriteBooleanNullable(_isLateAffinityAssignment);
             writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
+            writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -272,6 +281,10 @@ namespace Apache.Ignite.Core
                 {
                     writer.WriteBoolean(false);
                 }
+
+                // Name mapper.
+                var mapper = BinaryConfiguration.NameMapper as BinaryBasicNameMapper;
+                writer.WriteBoolean(mapper != null && mapper.IsSimpleName);
             }
             else
             {
@@ -346,6 +359,16 @@ namespace Apache.Ignite.Core
                 memEventStorage.Write(writer);
             }
 
+            if (MemoryConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                MemoryConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
             // Plugins (should be last)
             if (PluginConfigurations != null)
             {
@@ -411,6 +434,7 @@ namespace Apache.Ignite.Core
             _isDaemon = r.ReadBooleanNullable();
             _isLateAffinityAssignment = r.ReadBooleanNullable();
             _failureDetectionTimeout = r.ReadTimeSpanNullable();
+            _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -430,7 +454,14 @@ namespace Apache.Ignite.Core
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
 
                 if (r.ReadBoolean())
+                {
                     BinaryConfiguration.CompactFooter = r.ReadBoolean();
+                }
+
+                if (r.ReadBoolean())
+                {
+                    BinaryConfiguration.NameMapper = BinaryBasicNameMapper.SimpleNameInstance;
+                }
             }
 
             // User attributes
@@ -470,6 +501,11 @@ namespace Apache.Ignite.Core
                 case 2:
                     EventStorageSpi = MemoryEventStorageSpi.Read(r);
                     break;
+            }
+
+            if (r.ReadBoolean())
+            {
+                MemoryConfiguration = new MemoryConfiguration(r);
             }
         }
 
@@ -518,6 +554,7 @@ namespace Apache.Ignite.Core
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
             PluginConfigurations = cfg.PluginConfigurations;
+            AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
         }
 
         /// <summary>
@@ -528,6 +565,18 @@ namespace Apache.Ignite.Core
         /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
         /// </summary>
         public string IgniteInstanceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether unique <see cref="IgniteInstanceName"/> should be generated.
+        /// <para />
+        /// Set this to true in scenarios where new node should be started regardless of other nodes present within
+        /// current process. In particular, this setting is useful is ASP.NET and IIS environments, where AppDomains
+        /// are loaded and unloaded within a single process during application restarts. Ignite stops all nodes
+        /// on <see cref="AppDomain"/> unload, however, IIS does not wait for previous AppDomain to unload before
+        /// starting up a new one, which may cause "Ignite instance with this name has already been started" errors.
+        /// This setting solves the issue.
+        /// </summary>
+        public bool AutoGenerateIgniteInstanceName { get; set; }
 
         /// <summary>
         /// Gets or sets optional local instance name.
@@ -901,6 +950,17 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/>
+        /// and <see cref="TcpCommunicationSpi"/> for client nodes.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:30")]
+        public TimeSpan ClientFailureDetectionTimeout
+        {
+            get { return _clientFailureDetectionTimeout ?? DefaultClientFailureDetectionTimeout; }
+            set { _clientFailureDetectionTimeout = value; }
+        }
+
+        /// <summary>
         /// Gets or sets the configurations for plugins to be started.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
@@ -913,5 +973,11 @@ namespace Apache.Ignite.Core
         /// <see cref="NoopEventStorageSpi"/>, <see cref="MemoryEventStorageSpi"/>.
         /// </summary>
         public IEventStorageSpi EventStorageSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the page memory configuration.
+        /// <see cref="MemoryConfiguration"/> for more details.
+        /// </summary>
+        public MemoryConfiguration MemoryConfiguration { get; set; }
     }
 }

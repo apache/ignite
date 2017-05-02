@@ -37,12 +37,11 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="backups" value="0"/>
-                    <property name="startSize" value="10"/>
 
                     <property name="queryEntities">
                         <list>
                             <bean class="org.apache.ignite.cache.QueryEntity">
-                                <property name="valueType" value="BinarizableEntry"/>
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.Continuous.ContinuousQueryAbstractTest+BinarizableEntry"/>
                                 <property name="fields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>
@@ -77,12 +76,11 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="backups" value="1"/>
-                    <property name="startSize" value="10"/>
 
                     <property name="queryEntities">
                         <list>
                             <bean class="org.apache.ignite.cache.QueryEntity">
-                                <property name="valueType" value="BinarizableEntry"/>
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.Continuous.ContinuousQueryAbstractTest+BinarizableEntry"/>
                                 <property name="fields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>
@@ -117,11 +115,10 @@
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="backups" value="0"/>
-                    <property name="startSize" value="10"/>
                     <property name="queryEntities">
                         <list>
                             <bean class="org.apache.ignite.cache.QueryEntity">
-                                <property name="valueType" value="BinarizableEntry"/>
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.Continuous.ContinuousQueryAbstractTest+BinarizableEntry"/>
                                 <property name="fields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>
@@ -156,11 +153,10 @@
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="backups" value="1"/>
-                    <property name="startSize" value="10"/>
                     <property name="queryEntities">
                         <list>
                             <bean class="org.apache.ignite.cache.QueryEntity">
-                                <property name="valueType" value="BinarizableEntry"/>
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.Continuous.ContinuousQueryAbstractTest+BinarizableEntry"/>
                                 <property name="fields">
                                     <map>
                                         <entry key="val" value="java.lang.Integer"/>

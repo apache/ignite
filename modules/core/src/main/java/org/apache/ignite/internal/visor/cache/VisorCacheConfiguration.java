@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.visor.query.VisorQueryEntity;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactIterable;
 
 /**
  * Data transfer object for cache configuration properties.
@@ -60,9 +62,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
 
     /** Invalidate. */
     private boolean invalidate;
-
-    /** Start size. */
-    private int startSize;
 
     /** Max concurrent async operations. */
     private int maxConcurrentAsyncOps;
@@ -127,6 +126,39 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** Query parallelism. */
     private int qryParallelism;
 
+    /** Copy on read flag. */
+    private boolean cpOnRead;
+
+    /** Eviction filter. */
+    private String evictFilter;
+
+    /** Listener configurations. */
+    private String lsnrConfigurations;
+
+    /** */
+    private boolean loadPrevVal;
+
+    /** Name of {@link MemoryPolicyConfiguration} for this cache */
+    private String memPlcName;
+
+    /** Maximum inline size for sql indexes. */
+    private int sqlIdxMaxInlineSize;
+
+    /** Node filter specifying nodes on which this cache should be deployed. */
+    private String nodeFilter;
+
+    /** */
+    private int qryDetailMetricsSz;
+
+    /** Flag indicating whether data can be read from backup. */
+    private boolean readFromBackup;
+
+    /** Name of class implementing GridCacheTmLookup. */
+    private String tmLookupClsName;
+
+    /** Cache topology validator. */
+    private String topValidator;
+
     /**
      * Default constructor.
      */
@@ -147,7 +179,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         eagerTtl = ccfg.isEagerTtl();
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
         invalidate = ccfg.isInvalidate();
-        startSize = ccfg.getStartSize();
         maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
         interceptor = compactClass(ccfg.getInterceptor());
         dfltLockTimeout = ccfg.getDefaultLockTimeout();
@@ -173,6 +204,18 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         storeCfg = new VisorCacheStoreConfiguration(ignite, ccfg);
 
         qryCfg = new VisorQueryConfiguration(ccfg);
+
+        cpOnRead = ccfg.isCopyOnRead();
+        evictFilter = compactClass(ccfg.getEvictionFilter());
+        lsnrConfigurations = compactIterable(ccfg.getCacheEntryListenerConfigurations());
+        loadPrevVal = ccfg.isLoadPreviousValue();
+        memPlcName = ccfg.getMemoryPolicyName();
+        sqlIdxMaxInlineSize = ccfg.getSqlIndexMaxInlineSize();
+        nodeFilter = compactClass(ccfg.getNodeFilter());
+        qryDetailMetricsSz = ccfg.getQueryDetailMetricsSize();
+        readFromBackup = ccfg.isReadFromBackup();
+        tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
+        topValidator = compactClass(ccfg.getTopologyValidator());
     }
 
     /**
@@ -215,13 +258,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      */
     public boolean isInvalidate() {
         return invalidate;
-    }
-
-    /**
-     * @return Start size.
-     */
-    public int getStartSize() {
-        return startSize;
     }
 
     /**
@@ -385,6 +421,85 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         return qryParallelism;
     }
 
+    /**
+     * @return Copy on read flag.
+     */
+    public boolean isCopyOnRead() {
+        return cpOnRead;
+    }
+
+    /**
+     * @return Eviction filter or {@code null}.
+     */
+    public String getEvictionFilter() {
+        return evictFilter;
+    }
+
+    /**
+     * @return Listener configurations.
+     */
+    public String getLsnrConfigurations() {
+        return lsnrConfigurations;
+    }
+
+    /**
+     * @return Load previous value flag.
+     */
+    public boolean isLoadPreviousValue() {
+        return loadPrevVal;
+    }
+
+    /**
+     * @return {@link MemoryPolicyConfiguration} name.
+     */
+    public String getMemoryPolicyName() {
+        return memPlcName;
+    }
+
+    /**
+     * @return Maximum payload size for offheap indexes.
+     */
+    public int getSqlIdxMaxInlineSize() {
+        return sqlIdxMaxInlineSize;
+    }
+
+    /**
+     * @return Predicate specifying on which nodes the cache should be started.
+     */
+    public String getNodeFilter() {
+        return nodeFilter;
+    }
+
+    /**
+     * @return Maximum number of query metrics that will be stored in memory.
+     */
+    public int getQueryDetailMetricsSize() {
+        return qryDetailMetricsSz;
+    }
+
+    /**
+     * @return {@code true} if data can be read from backup node or {@code false} if data always
+     *      should be read from primary node and never from backup.
+     */
+    public boolean isReadFromBackup() {
+        return readFromBackup;
+    }
+
+    /**
+     * @return Transaction manager finder.
+     */
+    @Deprecated
+    public String getTransactionManagerLookupClassName() {
+        return tmLookupClsName;
+    }
+
+    /**
+     * @return validator.
+     */
+    public String getTopologyValidator() {
+        return topValidator;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
@@ -393,7 +508,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         out.writeBoolean(eagerTtl);
         U.writeEnum(out, writeSynchronizationMode);
         out.writeBoolean(invalidate);
-        out.writeInt(startSize);
         out.writeInt(maxConcurrentAsyncOps);
         U.writeString(out, interceptor);
         out.writeLong(dfltLockTimeout);
@@ -415,18 +529,27 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         out.writeBoolean(onheapCache);
         U.writeEnum(out, partLossPlc);
         out.writeInt(qryParallelism);
+        out.writeBoolean(cpOnRead);
+        U.writeString(out, evictFilter);
+        U.writeString(out, lsnrConfigurations);
+        out.writeBoolean(loadPrevVal);
+        U.writeString(out, memPlcName);
+        out.writeInt(sqlIdxMaxInlineSize);
+        U.writeString(out, nodeFilter);
+        out.writeInt(qryDetailMetricsSz);
+        out.writeBoolean(readFromBackup);
+        U.writeString(out, tmLookupClsName);
+        U.writeString(out, topValidator);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
         mode = CacheMode.fromOrdinal(in.readByte());
         atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
         eagerTtl = in.readBoolean();
         writeSynchronizationMode = CacheWriteSynchronizationMode.fromOrdinal(in.readByte());
         invalidate = in.readBoolean();
-        startSize = in.readInt();
         maxConcurrentAsyncOps = in.readInt();
         interceptor = U.readString(in);
         dfltLockTimeout = in.readLong();
@@ -444,9 +567,21 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         expiryPlcFactory = U.readString(in);
         qryCfg = (VisorQueryConfiguration)in.readObject();
         sys = in.readBoolean();
+        storeKeepBinary = in.readBoolean();
         onheapCache = in.readBoolean();
         partLossPlc = PartitionLossPolicy.fromOrdinal(in.readByte());
         qryParallelism = in.readInt();
+        cpOnRead = in.readBoolean();
+        evictFilter = U.readString(in);
+        lsnrConfigurations = U.readString(in);
+        loadPrevVal = in.readBoolean();
+        memPlcName = U.readString(in);
+        sqlIdxMaxInlineSize = in.readInt();
+        nodeFilter = U.readString(in);
+        qryDetailMetricsSz = in.readInt();
+        readFromBackup = in.readBoolean();
+        tmLookupClsName = U.readString(in);
+        topValidator = U.readString(in);
     }
 
     /** {@inheritDoc} */

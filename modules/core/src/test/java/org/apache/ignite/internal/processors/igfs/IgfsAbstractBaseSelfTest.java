@@ -211,13 +211,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * @return Relaxed consistency flag.
-     */
-    protected boolean initializeDefaultPathModes() {
-        return false;
-    }
-
-    /**
      * @return Client flag.
      */
     protected boolean client() {
@@ -368,8 +361,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
         igfsCfg.setRelaxedConsistency(relaxedConsistency());
         igfsCfg.setFragmentizerEnabled(fragmentizerEnabled());
-
-        igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 

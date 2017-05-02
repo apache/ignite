@@ -28,7 +28,7 @@ gulp.task('bundle', (cb) => {
     if (process.env.NODE_ENV === 'development') {
         // Important! Call webpack and WebpackDevServer must be inline.
         new WebpackDevServer(webpack(webpackConfig), devServerConfig)
-            .listen(devServerConfig.port, 'localhost', cb);
+            .listen(devServerConfig.port, devServerConfig.host || 'localhost', cb);
     }
     else
         webpack(webpackConfig, cb);

@@ -114,6 +114,7 @@ import resetPassword from './controllers/reset-password.controller';
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
+import clusterSelect from './components/cluster-select';
 import './components/input-dialog';
 
 // Inject external modules.
@@ -197,6 +198,7 @@ angular
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
 .directive('igniteListOfRegisteredUsers', igniteListOfRegisteredUsers)
+.directive('igniteClusterSelect', clusterSelect)
 // Services.
 .service('IgniteErrorPopover', ErrorPopover)
 .service('JavaTypes', JavaTypes)
@@ -224,11 +226,11 @@ angular
 .controller(...igfs)
 .controller(...profile)
 // Filters.
-.filter(...byName)
+.filter('byName', byName)
 .filter('defaultName', defaultName)
-.filter(...domainsValidation)
-.filter(...duration)
-.filter(...hasPojo)
+.filter('domainsValidation', domainsValidation)
+.filter('duration', duration)
+.filter('hasPojo', hasPojo)
 .filter('uiGridSubcategories', uiGridSubcategories)
 .config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider', ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
     $translateProvider.translations('en', i18n);
@@ -241,10 +243,10 @@ angular
             abstract: true,
             template: baseTemplate
         })
-        .state('settings', {
+        .state('base.settings', {
             url: '/settings',
             abstract: true,
-            template: baseTemplate
+            template: '<ui-view></ui-view>'
         });
 
     $urlRouterProvider.otherwise('/404');
@@ -256,8 +258,8 @@ angular
     $root.$meta = $meta;
     $root.gettingStarted = gettingStarted;
 }])
-.run(['$rootScope', 'IgniteAgentMonitor', ($root, agentMonitor) => {
-    $root.$on('user', () => agentMonitor.init());
+.run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
+    $root.$on('user', () => agentMgr.connect());
 }])
 .run(['$rootScope', ($root) => {
     $root.$on('$stateChangeStart', () => {
@@ -272,7 +274,7 @@ angular
                 .then((user) => {
                     $root.$broadcast('user', user);
 
-                    $state.go('settings.admin');
+                    $state.go('base.settings.admin');
                 })
                 .then(() => Notebook.load())
                 .catch(Messages.showError);
