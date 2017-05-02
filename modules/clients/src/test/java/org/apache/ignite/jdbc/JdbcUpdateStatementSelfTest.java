@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class JdbcUpdateStatementSelfTest extends JdbcAbstractUpdateStatementSelfTest {
     /**
-     *
+     * @throws SQLException If failed.
      */
     public void testExecute() throws SQLException {
         conn.createStatement().execute("update Person set firstName = 'Jack' where " +
@@ -38,7 +38,7 @@ public class JdbcUpdateStatementSelfTest extends JdbcAbstractUpdateStatementSelf
     }
 
     /**
-     *
+     * @throws SQLException If failed.
      */
     public void testExecuteUpdate() throws SQLException {
         conn.createStatement().executeUpdate("update Person set firstName = 'Jack' where " +

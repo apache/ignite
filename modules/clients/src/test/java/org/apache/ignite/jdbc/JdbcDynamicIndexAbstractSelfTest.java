@@ -39,16 +39,16 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** */
-    private final static String CREATE_INDEX = "create index idx on Person (id desc)";
+    private static final String CREATE_INDEX = "create index idx on Person (id desc)";
 
     /** */
-    private final static String DROP_INDEX = "drop index idx";
+    private static final String DROP_INDEX = "drop index idx";
 
     /** */
-    private final static String CREATE_INDEX_IF_NOT_EXISTS = "create index if not exists idx on Person (id desc)";
+    private static final String CREATE_INDEX_IF_NOT_EXISTS = "create index if not exists idx on Person (id desc)";
 
     /** */
-    private final static String DROP_INDEX_IF_EXISTS = "drop index idx if exists";
+    private static final String DROP_INDEX_IF_EXISTS = "drop index idx if exists";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -122,7 +122,11 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
         }
     }
 
-    /** */
+    /**
+     * @param rs Result set.
+     * @return The value of the first column at the first row from result set.
+     * @throws SQLException If failed.
+     */
     private Object getSingleValue(ResultSet rs) throws SQLException {
         assertEquals(1, rs.getMetaData().getColumnCount());
 
@@ -137,6 +141,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
 
     /**
      * Test that after index creation index is used by queries.
+     * @throws SQLException If failed.
      */
     public void testCreateIndex() throws SQLException {
         assertSize(3);
@@ -166,6 +171,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
 
     /**
      * Test that creating an index with duplicate name yields an error.
+     * @throws SQLException If failed.
      */
     public void testCreateIndexWithDuplicateName() throws SQLException {
         jdbcRun(CREATE_INDEX);
@@ -180,6 +186,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
 
     /**
      * Test that creating an index with duplicate name does not yield an error with {@code IF NOT EXISTS}.
+     * @throws SQLException If failed.
      */
     public void testCreateIndexIfNotExists() throws SQLException {
         jdbcRun(CREATE_INDEX);
@@ -190,6 +197,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
 
     /**
      * Test that after index drop there are no attempts to use it, and data state remains intact.
+     * @throws SQLException If failed.
      */
     public void testDropIndex() throws SQLException {
         assertSize(3);
@@ -231,6 +239,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
 
     /**
      * Test that dropping a non-existent index does not yield an error with {@code IF EXISTS}.
+     * @throws SQLException If failed.
      */
     public void testDropMissingIndexIfExists() throws SQLException {
         // Despite index missing, this does not yield an error.
@@ -239,6 +248,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
 
     /**
      * Test that changes in cache affect index, and vice versa.
+     * @throws SQLException If failed.
      */
     public void testIndexState() throws SQLException {
         IgniteCache<String, Person> cache = cache();
@@ -269,6 +279,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
     /**
      * Check that values of {@code field1} match what we expect.
      * @param vals Expected values.
+     * @throws SQLException If failed.
      */
     private void assertColumnValues(int... vals) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
@@ -289,6 +300,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
     /**
      * Do a {@code SELECT COUNT(*)} query to check index state correctness.
      * @param expSize Expected number of items in table.
+     * @throws SQLException If failed.
      */
     private void assertSize(long expSize) throws SQLException {
         assertEquals(expSize, cache().size());

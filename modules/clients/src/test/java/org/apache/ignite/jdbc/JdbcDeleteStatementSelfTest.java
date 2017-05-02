@@ -26,7 +26,7 @@ import java.util.HashSet;
  */
 public class JdbcDeleteStatementSelfTest extends JdbcAbstractUpdateStatementSelfTest {
     /**
-     *
+     * @throws SQLException If failed.
      */
     public void testExecute() throws SQLException {
         conn.createStatement().execute("delete from Person where cast(substring(_key, 2, 1) as int) % 2 = 0");
@@ -36,7 +36,7 @@ public class JdbcDeleteStatementSelfTest extends JdbcAbstractUpdateStatementSelf
     }
 
     /**
-     *
+     * @throws SQLException If failed.
      */
     public void testExecuteUpdate() throws SQLException {
         int res =

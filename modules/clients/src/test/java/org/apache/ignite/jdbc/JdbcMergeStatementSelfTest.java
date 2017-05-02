@@ -103,40 +103,29 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
             }
         }
 
-        grid(0).cache(null).clear();
-
-        assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
-
-        super.afterTest();
-
         if (stmt != null && !stmt.isClosed())
             stmt.close();
 
         if (prepStmt != null && !prepStmt.isClosed())
             prepStmt.close();
 
-        conn.close();
-
         assertTrue(prepStmt.isClosed());
         assertTrue(stmt.isClosed());
-        assertTrue(conn.isClosed());
+
+        super.afterTest();
     }
 
     /**
      * @throws SQLException If failed.
      */
     public void testExecuteUpdate() throws SQLException {
-        int res = stmt.executeUpdate(SQL);
-
-        assertEquals(3, res);
+        assertEquals(3, stmt.executeUpdate(SQL));
     }
 
     /**
      * @throws SQLException If failed.
      */
     public void testExecute() throws SQLException {
-        boolean res = stmt.execute(SQL);
-
-        assertEquals(false, res);
+        assertFalse(stmt.execute(SQL));
     }
 }

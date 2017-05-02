@@ -44,7 +44,14 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
 
     /** SQL query. */
     private static final String SQL_PREPARED = "insert into Person(_key, id, firstName, lastName, age) values " +
-        "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?)";
+        "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)";
+
+    /** Arguments for prepared statement. */
+    private final Object [][] args = new Object[][] {
+        {"p1", 1, "John", "White", 25},
+        {"p3", 3, "Mike", "Green", 40},
+        {"p2", 2, "Joe", "Black", 35}
+    };
 
     /** Statement. */
     private Statement stmt;
@@ -63,6 +70,16 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
 
         assertNotNull(prepStmt);
         assertFalse(prepStmt.isClosed());
+
+        int paramCnt = 1;
+
+        for (Object[] arg : args) {
+            prepStmt.setString(paramCnt++, (String)arg[0]);
+            prepStmt.setInt(paramCnt++, (Integer)arg[1]);
+            prepStmt.setString(paramCnt++, (String)arg[2]);
+            prepStmt.setString(paramCnt++, (String)arg[3]);
+            prepStmt.setInt(paramCnt++, (Integer)arg[4]);
+        }
     }
 
     /** {@inheritDoc} */
@@ -128,20 +145,28 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
      * @throws SQLException If failed.
      */
     public void testExecuteUpdate() throws SQLException {
-//        grid(0).cache(null).query(new SqlFieldsQuery(SQL));
+        assertEquals(3, stmt.executeUpdate(SQL));
+    }
 
-        int res = stmt.executeUpdate(SQL);
-
-        assertEquals(3, res);
+    /**
+     * @throws SQLException If failed.
+     */
+    public void testPreparedExecuteUpdate() throws SQLException {
+        assertEquals(3, prepStmt.executeUpdate());
     }
 
     /**
      * @throws SQLException If failed.
      */
     public void testExecute() throws SQLException {
-        boolean res = stmt.execute(SQL);
+        assertFalse(stmt.execute(SQL));
+    }
 
-        assertEquals(false, res);
+    /**
+     * @throws SQLException If failed.
+     */
+    public void testPreparedExecute() throws SQLException {
+        assertFalse(prepStmt.execute());
     }
 
     /**
