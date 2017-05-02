@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -51,9 +52,6 @@ public class DynamicCacheDescriptor {
 
     /** Statically configured flag. */
     private boolean staticCfg;
-
-    /** Started flag. */
-    private boolean started;
 
     /** Cache type. */
     private CacheType cacheType;
@@ -130,6 +128,9 @@ public class DynamicCacheDescriptor {
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
 
         cacheId = CU.cacheId(cacheCfg.getName());
+
+        if (cacheCfg.getCacheMode() == CacheMode.REPLICATED)
+            cacheCfg.setNearConfiguration(null);
 
         synchronized (schemaMux) {
             this.schema = schema.copy();
@@ -218,23 +219,12 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return {@code True} if started flag was flipped by this call.
+     * @return Cache name.
      */
-    public boolean onStart() {
-        if (!started) {
-            started = true;
+    public String cacheName() {
+        assert cacheCfg != null : this;
 
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return Started flag.
-     */
-    public boolean started() {
-        return started;
+        return cacheCfg.getName();
     }
 
     /**
