@@ -230,14 +230,7 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
 
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
-        try {
-            cacheMatrix.like(1, 1);
-            fail("UnsupportedOperationException expected.");
-        }
-        catch (UnsupportedOperationException e) {
-            return;
-        }
-        fail("UnsupportedOperationException expected.");
+        assertNotNull(cacheMatrix.like(1, 1));
     }
 
     /** */
