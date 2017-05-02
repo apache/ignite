@@ -755,15 +755,29 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                         throw new CacheLoaderException("Provided key type is not found in store or cache configuration " +
                             "[cache=" + U.maskName(cacheName) + ", key=" + keyType + "]");
 
-                    String qry = args[i + 1].toString();
-
                     EntryMapping em = entryMapping(cacheName, typeIdForTypeName(kindForName(keyType), keyType));
 
-                    if (log.isInfoEnabled())
-                        log.info("Started load cache using custom query [cache=" + U.maskName(cacheName) +
-                            ", keyType=" + keyType + ", query=" + qry + "]");
+                    Object arg = args[i + 1];
 
-                    futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(em, qry, clo)));
+                    final LoadCacheCustomQueryWorker<K, V> task;
+
+                    if (arg instanceof PreparedStatement) {
+                        PreparedStatement stmt = (PreparedStatement)arg;
+                        if (log.isInfoEnabled())
+                            log.info("Started load cache using custom statement [cache=" + U.maskName(cacheName) +
+                                      ", keyType=" + keyType + "]");
+
+                        task = new LoadCacheCustomQueryWorker<>(em, stmt, clo);
+                    } else {
+                        String qry = arg.toString();
+
+                        if (log.isInfoEnabled())
+                              log.info("Started load cache using custom query [cache=" + U.maskName(cacheName) +
+                                  ", keyType=" + keyType + ", query=" + qry + "]");
+
+                        task = new LoadCacheCustomQueryWorker<>(em, qry, clo);
+                    }
+                    futs.add(pool.submit(task));
                 }
             }
             else {
@@ -1954,11 +1968,25 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         /** Entry mapping description. */
         private final EntryMapping em;
 
+        /** User statement. */
+        private PreparedStatement stmt;
+
         /** User query. */
-        private final String qry;
+        private String qry;
 
         /** Closure for loaded values. */
         private final IgniteBiInClosure<K1, V1> clo;
+
+        /**
+         * @param em Entry mapping description.
+         * @param stmt User statement.
+         * @param clo Closure for loaded values.
+         */
+        private LoadCacheCustomQueryWorker(EntryMapping em, PreparedStatement stmt, IgniteBiInClosure<K1, V1> clo) {
+            this.em = em;
+            this.stmt = stmt;
+            this.clo = clo;
+        }
 
         /**
          * @param em Entry mapping description.
@@ -1975,12 +2003,12 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         @Override public Void call() throws Exception {
             Connection conn = null;
 
-            PreparedStatement stmt = null;
-
             try {
-                conn = openConnection(true);
+                if (stmt == null) {
+                    conn = openConnection(true);
 
-                stmt = conn.prepareStatement(qry);
+                    stmt = conn.prepareStatement(qry);
+                }
 
                 stmt.setFetchSize(dialect.getFetchSize());
 
