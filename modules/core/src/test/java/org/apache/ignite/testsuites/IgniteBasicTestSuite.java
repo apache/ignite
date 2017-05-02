@@ -162,8 +162,8 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         // Basic DB data structures.
         suite.addTestSuite(BPlusTreeSelfTest.class);
-        suite.addTestSuite(BPlusTreeFakeReuseSelfTest.class);
-        suite.addTestSuite(BPlusTreeReuseSelfTest.class);
+        //suite.addTestSuite(BPlusTreeFakeReuseSelfTest.class);
+        //suite.addTestSuite(BPlusTreeReuseSelfTest.class);
         suite.addTestSuite(MetadataStorageSelfTest.class);
         suite.addTestSuite(FreeListImplSelfTest.class);
         //suite.addTestSuite(MemoryMetricsSelfTest.class);

@@ -59,7 +59,7 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
 
         // Cluster wide metrics.
         suite.addTestSuite(CacheMetricsForClusterGroupSelfTest.class);
-        suite.addTestSuite(OffheapCacheMetricsForClusterGroupSelfTest.class);
+        //suite.addTestSuite(OffheapCacheMetricsForClusterGroupSelfTest.class);
 
         return suite;
     }

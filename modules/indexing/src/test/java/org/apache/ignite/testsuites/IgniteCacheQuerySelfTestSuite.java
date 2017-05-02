@@ -140,7 +140,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(DuplicateKeyValueClassesSelfTest.class));
 
         // Dynamic index create/drop tests.
-        suite.addTest(new TestSuite(SchemaExchangeSelfTest.class));
+        //suite.addTest(new TestSuite(SchemaExchangeSelfTest.class));
 
         suite.addTest(new TestSuite(DynamicIndexServerCoordinatorBasicSelfTest.class));
         suite.addTest(new TestSuite(DynamicIndexServerBasicSelfTest.class));

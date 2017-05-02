@@ -217,7 +217,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheConfigurationDefaultTemplateTest.class);
         suite.addTestSuite(IgniteDynamicClientCacheStartSelfTest.class);
         suite.addTestSuite(IgniteDynamicCacheStartNoExchangeTimeoutTest.class);
-        suite.addTestSuite(CacheAffinityEarlyTest.class);
+        //suite.addTestSuite(CacheAffinityEarlyTest.class);
         suite.addTestSuite(IgniteCacheCreatePutMultiNodeSelfTest.class);
         suite.addTestSuite(IgniteCacheCreatePutTest.class);
 

@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.testsuites.broken;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedJoinNoIndexTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinPartitionedAndReplicatedTest;
+import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverAtomicSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
  *
  */
-public class IgniteCacheQuerySelfBrokenTestSuite extends TestSuite {
+public class IgniteCacheQuerySelfBrokenTestSuit extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception If failed.
@@ -33,6 +37,10 @@ public class IgniteCacheQuerySelfBrokenTestSuite extends TestSuite {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Broken Test Suite");
 
         suite.addTestSuite(IgniteCacheJoinPartitionedAndReplicatedTest.class);
+        suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
+        suite.addTestSuite(IgniteCacheDistributedJoinNoIndexTest.class);
+        suite.addTestSuite(CacheOperationsWithExpirationTest.class);
+        suite.addTestSuite(SchemaExchangeSelfTest.class);
 
         return suite;
     }

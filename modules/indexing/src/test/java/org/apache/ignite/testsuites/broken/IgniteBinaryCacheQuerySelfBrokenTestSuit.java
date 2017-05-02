@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.testsuites.broken;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedJoinNoIndexTest;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
  *
  */
-public class IgniteDistributedJoinBrokenTestSuite extends TestSuite {
+public class IgniteBinaryCacheQuerySelfBrokenTestSuit extends TestSuite {
     /**
-     * @return Suite.
+     * @return Test suite.
+     * @throws Exception If failed.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Distributed Joins Broken Test Suite.");
+    public static TestSuite suite() throws Exception {
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        suite.addTestSuite(IgniteCacheDistributedJoinNoIndexTest.class);
-
-        return suite;
+        return IgniteCacheQuerySelfBrokenTestSuit.suite();
     }
 }
-

@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.testsuites.broken;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverAtomicSelfTest;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
  *
  */
-public class IgniteCacheQuerySelfBrokenTestSuite4 extends TestSuite {
+public class IgniteBinaryBrokenTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
+     * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache Queries Broken Test Suite 4");
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
-
-        return suite;
+        return IgniteBrokenTestSuite.suite();
     }
 }

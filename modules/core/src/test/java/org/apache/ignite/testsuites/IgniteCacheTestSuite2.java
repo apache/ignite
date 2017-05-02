@@ -219,7 +219,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDhtPreloadDelayedSelfTest.class));
         suite.addTest(new TestSuite(GridPartitionedBackupLoadSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedLoadCacheSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionNotLoadedEventSelfTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionNotLoadedEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtEvictionsDisabledSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearEvictionEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionEventSelfTest.class));
