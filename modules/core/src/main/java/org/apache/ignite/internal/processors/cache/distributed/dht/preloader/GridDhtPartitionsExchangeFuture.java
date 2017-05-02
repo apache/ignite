@@ -136,9 +136,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     @GridToStringExclude
     private int pendingSingleUpdates;
 
-    /** Remote server nodes in order of joining to cluster. May be updated if node left  */
+    /** Server nodes in order of joining to cluster. May be updated if node left  */
     @GridToStringExclude
-    private List<ClusterNode> srvRemoteNodes;
+    private List<ClusterNode> srvNodes;
 
     /** Coordinator node, oldest server node. May be updated if coordinator node left */
     private ClusterNode crd;
@@ -518,8 +518,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
-            srvNodes.remove(cctx.localNode());
-            srvRemoteNodes = srvNodes;
+            this.srvNodes = srvNodes;
 
             boolean crdNode = crd != null && crd.isLocal();
 
@@ -1676,7 +1675,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 List<ClusterNode> remoteNodes;
 
                 synchronized (this) {
-                    remoteNodes = new ArrayList<>(srvRemoteNodes);
+                    remoteNodes = new ArrayList<>(srvNodes);
+                    remoteNodes.remove(cctx.localNode());
                 }
 
                 if (!remoteNodes.isEmpty())
@@ -2009,16 +2009,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         return;
 
                     try {
+                        discoCache.updateAlives(node);
+
                         boolean crdChanged = false;
                         boolean allReceived = false;
                         Set<UUID> reqFrom = null;
-
                         ClusterNode crd0;
-
-                        discoCache.updateAlives(node);
-
                         synchronized (this) {
-                            if (!srvRemoteNodes.remove(node))
+                            if (!srvNodes.remove(node))
                                 return;
 
                             boolean rmvd = remaining.remove(node.id());
@@ -2026,7 +2024,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             if (node.equals(crd)) {
                                 crdChanged = true;
 
-                                crd = !srvRemoteNodes.isEmpty() ? srvRemoteNodes.get(0) : null;
+                                crd = !srvNodes.isEmpty() ? srvNodes.get(0) : null;
                             }
 
                             if (crd != null && crd.isLocal()) {
@@ -2183,17 +2181,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public String toString() {
         Set<UUID> remaining;
-        List<ClusterNode> srvRemoteNodes;
+        List<ClusterNode> srvNodes;
 
         synchronized (this) {
             remaining = new HashSet<>(this.remaining);
-            srvRemoteNodes = this.srvRemoteNodes != null ? new ArrayList<>(this.srvRemoteNodes) : null;
+            srvNodes = this.srvNodes != null ? new ArrayList<>(this.srvNodes) : null;
         }
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
             "evtLatch", evtLatch == null ? "null" : evtLatch.getCount(),
             "remaining", remaining,
-            "srvNodes", srvRemoteNodes,
+            "srvNodes", srvNodes,
             "super", super.toString());
     }
 
