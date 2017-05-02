@@ -1266,8 +1266,17 @@ namespace Apache.Ignite.Core.Tests.Compute
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
 
+            // Local.
             var ex = Assert.Throws<IgniteException>(() =>
-                _grid1.GetCompute().Broadcast(new ExceptionalComputeAction()));
+                _grid1.GetCluster().ForLocal().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.AreEqual("", ex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("", ex.InnerException.Message);
+
+            // Remote.
+            ex = Assert.Throws<IgniteException>(() =>
+                _grid1.GetCluster().ForRemotes().GetCompute().Broadcast(new ExceptionalComputeAction()));
 
             Assert.AreEqual("", ex.Message);
             Assert.IsNotNull(ex.InnerException);
