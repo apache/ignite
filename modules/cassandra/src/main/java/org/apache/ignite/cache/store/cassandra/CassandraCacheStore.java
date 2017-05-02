@@ -20,6 +20,8 @@ package org.apache.ignite.cache.store.cassandra;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.SimpleStatement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -103,10 +105,23 @@ public class CassandraCacheStore<K, V> implements CacheStore<K, V> {
             CassandraSession ses = getCassandraSession();
 
             for (Object obj : args) {
-                if (obj == null || !(obj instanceof String) || !((String)obj).trim().toLowerCase().startsWith("select"))
+
+                LoadCacheCustomQueryWorker<K, V> task;
+
+                if (obj instanceof Statement)
+                    task = new LoadCacheCustomQueryWorker<>(ses, (Statement)obj, controller, log, clo);
+
+                else if (obj instanceof String) {
+                    String qry = ((String) obj).trim();
+                    if (!qry.toLowerCase().startsWith("select"))
+                        continue;
+
+                    task = new LoadCacheCustomQueryWorker<>(ses, (String) obj, controller, log, clo);
+                } else
                     continue;
 
-                futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(ses, (String) obj, controller, log, clo)));
+                futs.add(pool.submit(task));
+
             }
 
             for (Future<?> fut : futs)
