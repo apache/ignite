@@ -140,7 +140,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @GridToStringExclude
     private final ConcurrentMap<Integer, GridClientPartitionTopology> clientTops = new ConcurrentHashMap8<>();
 
-    /** */
+    /** Last initialized topology future. */
     private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /** */
@@ -807,6 +807,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * Partition refresh callback.
+     * For non-coordinator (non-oldest) node causes partitions single message to be sent to coordinator.
+     * For coordinator causes sending partitions full message
      */
     private void refreshPartitions() {
         ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
@@ -862,7 +864,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param nodes Nodes.
+     * @param nodes Nodes to send full partitions message
      * @return {@code True} if message was sent, {@code false} if node left grid.
      */
     private boolean sendAllPartitions(Collection<ClusterNode> nodes) {
@@ -897,9 +899,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param compress {@code True} if it is possible to use compression for message.
      * @return Message.
      */
-    public GridDhtPartitionsFullMessage createPartitionsFullMessage(Collection<ClusterNode> nodes,
-        final @Nullable GridDhtPartitionExchangeId exchId,
-        @Nullable GridCacheVersion lastVer,
+    public GridDhtPartitionsFullMessage createPartitionsFullMessage(final Collection<ClusterNode> nodes,
+        @Nullable final GridDhtPartitionExchangeId exchId,
+        @Nullable final GridCacheVersion lastVer,
         final boolean compress) {
         final GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
             lastVer,
@@ -998,7 +1000,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Node.
+     * @param node target Node.
      * @param id ID.
      */
     private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) {
@@ -1241,7 +1243,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param fut Future.
+     * @param fut Future to be executed in exchange future thread.
      * @return {@code True} if added.
      */
     private boolean addFuture(GridDhtPartitionsExchangeFuture fut) {
@@ -1369,7 +1371,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Node ID.
+     * @param node Target Node ID.
      * @param msg Message.
      */
     private void processSinglePartitionRequest(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
@@ -1635,7 +1637,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * exchange will not start until previous one completes.
      */
     private class ExchangeWorker extends GridWorker {
-        /** Future queue. */
+        /** Future queue. Polled by this thread to get next exchange. Polling of this queue guarantees strict order */
         private final LinkedBlockingDeque<CachePartitionExchangeWorkerTask> futQ =
             new LinkedBlockingDeque<>();
 

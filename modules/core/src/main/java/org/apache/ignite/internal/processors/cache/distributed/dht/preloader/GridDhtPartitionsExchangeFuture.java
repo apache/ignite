@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,6 +95,7 @@ import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_ALL;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_ALL;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -109,9 +111,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     public static final int DUMP_PENDING_OBJECTS_THRESHOLD =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Dummy flag. */
     private final boolean dummy;
@@ -129,7 +128,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Discovery event. */
     private volatile DiscoveryEvent discoEvt;
 
-    /** */
+    /** Remote nodes UUIDs for waiting all single messages  */
     @GridToStringExclude
     private final Set<UUID> remaining = new HashSet<>();
 
@@ -137,11 +136,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     @GridToStringExclude
     private int pendingSingleUpdates;
 
-    /** */
+    /** Remote server nodes in order of joining to cluster. May be updated if node left  */
     @GridToStringExclude
-    private List<ClusterNode> srvNodes;
+    private List<ClusterNode> srvRemoteNodes;
 
-    /** */
+    /** Coordinator node, oldest server node. May be updated if coordinator node left */
     private ClusterNode crd;
 
     /** ExchangeFuture id. */
@@ -208,7 +207,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Init timestamp. Used to track the amount of time spent to complete the future. */
     private long initTs;
 
-    /** */
+    /** Later affinity assignment: Affinity should be assigned by coordinator.*/
     private boolean centralizedAff;
 
     /** Change global state exception. */
@@ -225,6 +224,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** Forced Rebalance future. */
     private GridFutureAdapter<Boolean> forcedRebFut;
+
+    /**
+     * All detected partitions lost. Maps cache id to collection of partition IDs
+     */
+    private Map<Integer, Collection<Integer>> lostPart;
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -508,11 +512,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             AffinityTopologyVersion topVer = topologyVersion();
 
-            srvNodes = new ArrayList<>(discoCache.serverNodes());
+            List<ClusterNode> srvNodes = new ArrayList<>(discoCache.serverNodes());
 
             remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
+
+            srvNodes.remove(cctx.localNode());
+            srvRemoteNodes = srvNodes;
 
             boolean crdNode = crd != null && crd.isLocal();
 
@@ -1062,7 +1069,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * @param node Node.
+     * @param node target node to send local partitions.
      * @throws IgniteCheckedException If failed.
      */
     private void sendLocalPartitions(ClusterNode node) throws IgniteCheckedException {
@@ -1100,6 +1107,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @param nodes target nodes
      * @param compress {@code True} if it is possible to use compression for message.
      * @return Message.
      */
@@ -1115,11 +1123,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
             m.setExceptionsMap(changeGlobalStateExceptions);
 
+        if (lostPart != null)
+            m.lostPart (lostPart);
+
         return m;
     }
 
     /**
-     * @param nodes Nodes.
+     * @param nodes Target nodes.
      * @throws IgniteCheckedException If failed.
      */
     private void sendAllPartitions(Collection<ClusterNode> nodes) throws IgniteCheckedException {
@@ -1184,7 +1195,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (discoEvt.type() == EVT_NODE_LEFT ||
                 discoEvt.type() == EVT_NODE_FAILED ||
                 discoEvt.type() == EVT_NODE_JOINED)
-                detectLostPartitions();
+                addLostPartitions(detectLostPartitions());
 
             Map<Integer, CacheValidation> m = new HashMap<>(cctx.cacheContexts().size());
 
@@ -1564,18 +1575,28 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * Detect lost partitions.
+     * Detect lost partitions in case of node left or failed.
+     * For topology coordinator is called when all {@link GridDhtPartitionsSingleMessage} were received
+     * For other nodes is called when exchange future is completed by {@link GridDhtPartitionsFullMessage}
      */
-    private void detectLostPartitions() {
+    @Nullable private Map<Integer, Collection<Integer>> detectLostPartitions() {
+        Map<Integer, Collection<Integer>> lostPartitions = null;
         synchronized (cctx.exchange().interruptLock()) {
             if (Thread.currentThread().isInterrupted())
-                return;
+                return null;
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (!cacheCtx.isLocal())
-                    cacheCtx.topology().detectLostPartitions(discoEvt);
+                if (!cacheCtx.isLocal()) {
+                    Collection<Integer> lostPartitionsForCache = cacheCtx.topology().detectLostPartitions(discoEvt);
+                    if (lostPartitionsForCache != null) {
+                        if (lostPartitions == null)
+                            lostPartitions = new HashMap<>();
+                        lostPartitions.put(cacheCtx.cacheId(), lostPartitionsForCache);
+                    }
+                }
             }
         }
+        return lostPartitions;
     }
 
     /**
@@ -1594,7 +1615,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     *
+     * Called only for coordinator node when all {@link GridDhtPartitionsSingleMessage}s were received
      */
     private void onAllReceived() {
         try {
@@ -1632,7 +1653,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
             else if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)
-                detectLostPartitions();
+                addLostPartitions(detectLostPartitions());
 
             updateLastVersion(cctx.versions().last());
 
@@ -1652,16 +1673,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     onAffinityInitialized(fut);
             }
             else {
-                List<ClusterNode> nodes;
+                List<ClusterNode> remoteNodes;
 
                 synchronized (this) {
-                    srvNodes.remove(cctx.localNode());
-
-                    nodes = new ArrayList<>(srvNodes);
+                    remoteNodes = new ArrayList<>(srvRemoteNodes);
                 }
 
-                if (!nodes.isEmpty())
-                    sendAllPartitions(nodes);
+                if (!remoteNodes.isEmpty())
+                    sendAllPartitions(remoteNodes);
 
                 if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
                     cctx.kernalContext().state().onFullResponseMessage(changeGlobalStateExceptions);
@@ -1674,6 +1693,27 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else
                 onDone(e);
+        }
+    }
+
+    /**
+     * Accumulates all lost partitions for current topology from next cache. See {@link #lostPart}
+     * @param lostPartitions currently found lost partitions (maps cache ID to lost partitions collection)
+     */
+    private void addLostPartitions(@Nullable final Map<Integer, Collection<Integer>> lostPartitions) {
+        if (lostPartitions == null)
+            return;
+        if (lostPartitions.isEmpty())
+            return;
+        if (lostPart == null)
+            lostPart = new HashMap<>();
+        for (Map.Entry<Integer, Collection<Integer>> next : lostPartitions.entrySet()) {
+            Collection<Integer> integers = lostPart.get(next.getKey());
+            if (integers == null) {
+                integers = new HashSet<>();
+                lostPart.put(next.getKey(), integers);
+            }
+            integers.addAll(next.getValue());
         }
     }
 
@@ -1692,7 +1732,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * @param nodeId Node ID.
+     * @param nodeId Target Node ID to send full partition map to.
      * @param retryCnt Number of retries.
      */
     private void sendAllPartitions(final UUID nodeId, final int retryCnt) {
@@ -1824,6 +1864,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 if (oldest != null && oldest.isLocal())
                     cctx.exchange().clientTopology(cacheId, this).update(exchId, entry.getValue(), cntrMap);
+            }
+        }
+        final Map<Integer, Collection<Integer>> lostPart = msg.lostPart();
+        if (lostPart != null && !lostPart.isEmpty()) {
+            for (Map.Entry<Integer, Collection<Integer>> cacheIdToLostPartitions : lostPart.entrySet()) {
+                final GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheIdToLostPartitions.getKey());
+                if (cacheCtx.events().isRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                    for (Integer part : cacheIdToLostPartitions.getValue()) {
+                        cacheCtx.events().addPreloadEvent(part, EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                            discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
+                    }
+                }
             }
         }
     }
@@ -1966,7 +2018,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         discoCache.updateAlives(node);
 
                         synchronized (this) {
-                            if (!srvNodes.remove(node))
+                            if (!srvRemoteNodes.remove(node))
                                 return;
 
                             boolean rmvd = remaining.remove(node.id());
@@ -1974,7 +2026,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             if (node.equals(crd)) {
                                 crdChanged = true;
 
-                                crd = !srvNodes.isEmpty() ? srvNodes.get(0) : null;
+                                crd = !srvRemoteNodes.isEmpty() ? srvRemoteNodes.get(0) : null;
                             }
 
                             if (crd != null && crd.isLocal()) {
@@ -2131,17 +2183,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public String toString() {
         Set<UUID> remaining;
-        List<ClusterNode> srvNodes;
+        List<ClusterNode> srvRemoteNodes;
 
         synchronized (this) {
             remaining = new HashSet<>(this.remaining);
-            srvNodes = this.srvNodes != null ? new ArrayList<>(this.srvNodes) : null;
+            srvRemoteNodes = this.srvRemoteNodes != null ? new ArrayList<>(this.srvRemoteNodes) : null;
         }
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
             "evtLatch", evtLatch == null ? "null" : evtLatch.getCount(),
             "remaining", remaining,
-            "srvNodes", srvNodes,
+            "srvNodes", srvRemoteNodes,
             "super", super.toString());
     }
 

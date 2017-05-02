@@ -91,10 +91,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** */
     private final AtomicReferenceArray<GridDhtLocalPartition> locParts;
 
-    /** Node to partition map. */
+    /** Node to partition map from all nodes. */
     private GridDhtPartitionFullMap node2part;
 
-    /** Partition to node map. */
+    /** Maps partition to owning nodes . */
     private Map<Integer, Set<UUID>> part2node = new HashMap<>();
 
     /** */
@@ -540,7 +540,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 cntrMap.clear();
 
-                // If this is the oldest node.
+                // If this is the oldest node with cache (coordinator) or cache was added during this exchange
                 if (oldest != null && (loc.equals(oldest) || exchFut.isCacheAdded(cctx.cacheId(), exchId.topologyVersion()))) {
                     if (node2part == null) {
                         node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
@@ -1388,7 +1388,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean detectLostPartitions(DiscoveryEvent discoEvt) {
+    @Override public Collection<Integer> detectLostPartitions(DiscoveryEvent discoEvt) {
         lock.writeLock().lock();
 
         try {
@@ -1423,8 +1423,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            boolean changed = false;
-
             if (lost != null) {
                 PartitionLossPolicy plc = cctx.config().getPartitionLossPolicy();
 
@@ -1441,8 +1439,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         if (marked)
                             updateLocal(locPart.id(), locPart.state(), updSeq);
-
-                        changed |= marked;
                     }
                     // Update map for remote node.
                     else if (plc != PartitionLossPolicy.IGNORE) {
@@ -1467,7 +1463,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     cctx.needsRecovery(true);
             }
 
-            return changed;
+            return lost;
         }
         finally {
             lock.writeLock().unlock();

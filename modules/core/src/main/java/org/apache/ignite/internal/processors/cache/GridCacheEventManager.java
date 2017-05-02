@@ -336,7 +336,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Adds preloading event.
+     * Adds preloading (rebalancing) event.
      *
      * @param part Partition.
      * @param type Event type.
