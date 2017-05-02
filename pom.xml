@@ -80,6 +80,7 @@
         <module>modules/twitter</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
+        <module>modules/hibernate-core</module>
         <module>modules/camel</module>
         <module>modules/storm</module>
         <module>modules/osgi-paxlogging</module>
@@ -91,7 +92,6 @@
         <module>modules/flink</module>
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
-        <module>modules/hibernate-core</module>
         <module>modules/rocketmq</module>
     </modules>
 

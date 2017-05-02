@@ -1,6 +1,42 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 2.0
+---------------------------------------
+Ignite:
+* Introduced new page memory architecture
+* Machine Learning beta: distributed algebra support for dense and sparse data sets
+* Reworked and simplified API for asynchronous operations
+* Custom thread pool executors for compute tasks
+* Removed CLOCK mode in ATOMIC cache
+* Deprecated schema-import utility in favor of Web Console
+* Integration with Spring Data
+* Integration with Hibernate 5
+* Integration with RocketMQ
+* Integration with ZeroMQ
+* SQL: CREATE INDEX and DROP INDEX commands
+* SQL: Ability to execute queries over specific set of partitions
+* SQL: Improved REPLICATED cache support
+* SQL: Updated H2 version to 1.4.195
+* SQL: Improved performance of MIN/MAX aggregate functions
+* ODBC: Added Time data type support
+* Massive performance improvements
+
+Ignite.NET:
+* Custom plugin API
+* Generic cache store
+* Binary types now can be registered dynamically
+* LINQ: join, "contains" and DateTime property support
+
+Ignite CPP:
+* Implemented Cache::Invoke
+* Added remote filters support to continuous queries
+
+Web Console:
+* Multi-cluster support
+* Possibility to configure Kubernetes IP finder
+* EnforceJoinOrder option on Queries screen
+
 Apache Ignite In-Memory Data Fabric 1.9
 ---------------------------------------
 Ignite:
