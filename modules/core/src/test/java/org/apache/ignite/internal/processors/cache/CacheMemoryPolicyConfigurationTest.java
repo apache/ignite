@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.mem.OutOfMemoryException;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -35,6 +35,12 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
 
     /** */
     private volatile MemoryConfiguration memCfg;
+
+    /** */
+    private static final long DFLT_MEM_PLC_SIZE = 10 * 1024 * 1024;
+
+    /** */
+    private static final long BIG_MEM_PLC_SIZE = 1024 * 1024 * 1024;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -58,7 +64,7 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
      * Verifies that proper exception is thrown when MemoryPolicy is misconfigured for cache.
      */
     public void testMissingMemoryPolicy() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setMemoryPolicyName("nonExistingMemPlc");
 
@@ -77,27 +83,28 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that {@link OutOfMemoryException} is thrown when cache is configured with too small MemoryPolicy.
+     * Verifies that {@link IgniteOutOfMemoryException} is thrown when cache is configured with too small MemoryPolicy.
      */
     public void testTooSmallMemoryPolicy() throws Exception {
         memCfg = new MemoryConfiguration();
 
         MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
         dfltPlcCfg.setName("dfltPlc");
-        dfltPlcCfg.setSize(1024 * 1024);
+        dfltPlcCfg.setInitialSize(10 * 1024 * 1024);
+        dfltPlcCfg.setMaxSize(10 * 1024 * 1024);
 
         MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
         bigPlcCfg.setName("bigPlc");
-        bigPlcCfg.setSize(1024 * 1024 * 1024);
+        bigPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
         memCfg.setMemoryPolicies(dfltPlcCfg, bigPlcCfg);
         memCfg.setDefaultMemoryPolicyName("dfltPlc");
 
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         IgniteEx ignite0 = startGrid(0);
 
-        IgniteCache<Object, Object> cache = ignite0.cache(null);
+        IgniteCache<Object, Object> cache = ignite0.cache(DEFAULT_CACHE_NAME);
 
         boolean oomeThrown = false;
 
@@ -109,7 +116,7 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
             Throwable cause = e;
 
             do {
-                if (cause instanceof OutOfMemoryException) {
+                if (cause instanceof IgniteOutOfMemoryException) {
                     oomeThrown = true;
                     break;
                 }
@@ -137,21 +144,22 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
 
         MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
         dfltPlcCfg.setName("dfltPlc");
-        dfltPlcCfg.setSize(1024 * 1024);
+        dfltPlcCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        dfltPlcCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
 
         MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
         bigPlcCfg.setName("bigPlc");
-        bigPlcCfg.setSize(1024 * 1024 * 1024);
+        bigPlcCfg.setMaxSize(BIG_MEM_PLC_SIZE);
 
         memCfg.setMemoryPolicies(dfltPlcCfg, bigPlcCfg);
         memCfg.setDefaultMemoryPolicyName("dfltPlc");
 
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setMemoryPolicyName("bigPlc");
 
         IgniteEx ignite0 = startGrid(0);
 
-        IgniteCache<Object, Object> cache = ignite0.cache(null);
+        IgniteCache<Object, Object> cache = ignite0.cache(DEFAULT_CACHE_NAME);
 
         try {
             for (int i = 0; i < 500_000; i++)

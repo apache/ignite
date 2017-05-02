@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             if (_fork)
             {
-                Grid1 = Ignition.Start(Configuration("config\\compute\\compute-standalone.xml"));
+                Grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-standalone.xml"));
 
                 _proc2 = Fork("config\\compute\\compute-standalone.xml");
 
@@ -114,9 +114,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
             else
             {
-                Grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-                _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-                _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+                Grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid1.xml"));
+                _grid2 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid2.xml"));
+                _grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
             }
         }
 
@@ -138,20 +138,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         /// <param name="path">Path to Java XML configuration.</param>
         /// <returns>Node configuration.</returns>
-        private IgniteConfiguration Configuration(string path)
+        private static IgniteConfiguration GetConfiguration(string path)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = path,
-                BinaryConfiguration = _fork
-                    ? null
-                    : new BinaryConfiguration
-                    {
-                        TypeConfigurations =
-                            (GetBinaryTypes() ?? new Type[0]).Select(t => new BinaryTypeConfiguration(t)).ToList()
-                    }
             };
         }
 
@@ -171,14 +162,6 @@ namespace Apache.Ignite.Core.Tests.Compute
                 "-J-DIGNITE_QUIET=false"
                 //"-J-Xnoagent", "-J-Djava.compiler=NONE", "-J-Xdebug", "-J-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5006"
             );
-        }
-
-        /// <summary>
-        /// Define binary types.
-        /// </summary>
-        protected virtual ICollection<Type> GetBinaryTypes()
-        {
-            return null;
         }
 
         /// <summary>

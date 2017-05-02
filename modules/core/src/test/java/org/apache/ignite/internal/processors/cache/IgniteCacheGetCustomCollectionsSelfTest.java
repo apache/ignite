@@ -46,7 +46,7 @@ public class IgniteCacheGetCustomCollectionsSelfTest extends GridCommonAbstractT
 
         cfg.setMarshaller(null);
 
-        final CacheConfiguration<String, MyMap> mapCacheConfig = new CacheConfiguration<>();
+        final CacheConfiguration<String, MyMap> mapCacheConfig = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         mapCacheConfig.setCacheMode(CacheMode.PARTITIONED);
         mapCacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);

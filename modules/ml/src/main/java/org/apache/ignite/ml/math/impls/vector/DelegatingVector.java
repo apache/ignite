@@ -51,7 +51,7 @@ public class DelegatingVector implements Vector {
     }
 
     /**
-     * @param dlg
+     * @param dlg Parent vector.
      */
     public DelegatingVector(Vector dlg) {
         assert dlg != null;

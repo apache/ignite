@@ -191,7 +191,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-hibernate</artifactId>
+                    <artifactId>ignite-hibernate_5.1</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
 

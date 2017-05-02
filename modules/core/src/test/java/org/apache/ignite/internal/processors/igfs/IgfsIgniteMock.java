@@ -98,13 +98,6 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
-        throwUnsupported();
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public Collection<IgniteInternalCache<?, ?>> cachesx(
         @Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
@@ -142,7 +135,7 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(String name) {
         return F.eq(name, igfs.name()) ? igfs : null;
     }
 

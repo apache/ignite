@@ -80,11 +80,9 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         commSpi.record(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                Message msg0 = ((GridIoMessage) msg).message();
-
-                return (msg0.getClass() == GridDhtPartitionsSingleMessage.class ||
-                    msg0.getClass() == GridDhtPartitionsFullMessage.class) &&
-                    ((GridDhtPartitionsAbstractMessage) msg0).exchangeId() != null;
+                return (msg.getClass() == GridDhtPartitionsSingleMessage.class ||
+                    msg.getClass() == GridDhtPartitionsFullMessage.class) &&
+                    ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null;
 
             }
         });
@@ -94,19 +92,19 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(AFF1_CACHE1);
             ccfg.setAffinity(new RendezvousAffinityFunction(false, 512));
             ccfgs.add(ccfg);
         }
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(AFF1_CACHE2);
             ccfg.setAffinity(new RendezvousAffinityFunction(false, 512));
             ccfgs.add(ccfg);
         }
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(AFF3_CACHE1);
             ccfg.setBackups(3);
 
@@ -116,14 +114,14 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
             ccfgs.add(ccfg);
         }
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(AFF4_FILTER_CACHE1);
             ccfg.setNodeFilter(new TestNodeFilter());
             ccfg.setAffinity(new RendezvousAffinityFunction());
             ccfgs.add(ccfg);
         }
         {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName(AFF4_FILTER_CACHE2);
             ccfg.setNodeFilter(new TestNodeFilter());
             ccfg.setAffinity(new RendezvousAffinityFunction());

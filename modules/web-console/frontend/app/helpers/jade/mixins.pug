@@ -15,10 +15,10 @@
     limitations under the License.
 
 include ./form
-include ../../primitives/tooltip/index
 include ../../primitives/btn-group/index
 include ../../primitives/datepicker/index
 include ../../primitives/dropdown/index
+include ../../primitives/tooltip/index
 include ../../primitives/ui-grid-settings/index
 
 //- Mixin for advanced options toggle.
@@ -200,12 +200,6 @@ mixin text-enabled-autofocus(lbl, model, name, enabled, required, placeholder, t
 //- Mixin for text field.
 mixin text(lbl, model, name, required, placeholder, tip)
     +ignite-form-field-text(lbl, model, name, false, required, placeholder, tip)
-        if  block
-            block
-
-//- Mixin for text field.
-mixin url(lbl, model, name, required, placeholder, tip)
-    +ignite-form-field-url(lbl, model, name, required, placeholder, tip)
         if  block
             block
 

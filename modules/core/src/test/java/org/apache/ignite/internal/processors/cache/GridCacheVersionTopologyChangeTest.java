@@ -226,7 +226,7 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
         CacheAtomicityMode atomicityMode,
         AffinityFunction aff,
         int backups) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(backups);
         ccfg.setName(name);

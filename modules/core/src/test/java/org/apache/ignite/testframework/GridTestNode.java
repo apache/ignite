@@ -103,6 +103,13 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
         return id;
     }
 
+    /**
+     * @param consistentId Consistent ID.
+     */
+    public void consistentId(Object consistentId) {
+        this.consistentId = consistentId;
+    }
+
     /** {@inheritDoc} */
     @Override public Object consistentId() {
         return consistentId;

@@ -150,7 +150,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
         try {
             Ignite ignite = startGrid(1);
 
-            final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             // Warm up.
             for (int i = 0; i < warmUpPutsCnt; i++) {

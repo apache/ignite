@@ -31,10 +31,10 @@ public class VisorIgfsProfilerClearTaskResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Count of deleted files. */
-    private Integer deleted;
+    private int deleted;
 
     /** Count of not deleted files. */
-    private Integer notDeleted;
+    private int notDeleted;
 
     /**
      * Default constructor.
@@ -47,7 +47,7 @@ public class VisorIgfsProfilerClearTaskResult extends VisorDataTransferObject {
      * @param deleted Count of deleted files.
      * @param notDeleted Count of not deleted files.
      */
-    public VisorIgfsProfilerClearTaskResult(Integer deleted, Integer notDeleted) {
+    public VisorIgfsProfilerClearTaskResult(int deleted, int notDeleted) {
         this.deleted = deleted;
         this.notDeleted = notDeleted;
     }

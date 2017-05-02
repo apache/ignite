@@ -768,7 +768,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
         CacheMode cacheMode,
         int backups,
         CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName("test-cache-" + atomicityMode + "-" + cacheMode + "-" + backups);
         ccfg.setAtomicityMode(atomicityMode);

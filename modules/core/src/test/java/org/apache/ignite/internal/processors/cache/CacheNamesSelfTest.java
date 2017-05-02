@@ -35,15 +35,15 @@ public class CacheNamesSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cacheCfg1 = new CacheConfiguration();
+        CacheConfiguration cacheCfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg1.setCacheMode(CacheMode.REPLICATED);
         cacheCfg1.setName("replicated");
 
-        CacheConfiguration cacheCfg2 = new CacheConfiguration();
+        CacheConfiguration cacheCfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg2.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg2.setName("partitioned");
 
-        CacheConfiguration cacheCfg3 = new CacheConfiguration();
+        CacheConfiguration cacheCfg3 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg3.setCacheMode(CacheMode.LOCAL);
 
         if (client)
@@ -66,7 +66,7 @@ public class CacheNamesSelfTest extends GridCommonAbstractTest {
             assertEquals(3, names.size());
 
             for (String name : names)
-                assertTrue(name == null || name.equals("replicated") || name.equals("partitioned"));
+                assertTrue(DEFAULT_CACHE_NAME.equals(name) || name.equals("replicated") || name.equals("partitioned"));
 
             client = true;
 

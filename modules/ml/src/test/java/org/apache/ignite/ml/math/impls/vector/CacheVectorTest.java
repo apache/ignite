@@ -48,6 +48,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "test-cache";
     /** Cache size. */
     private static final int size = MathTestConstants.STORAGE_SIZE;
+
     /** Grid instance. */
     private Ignite ignite;
     /** Default key mapper. */
@@ -420,7 +421,8 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         return cache;
     }
 
-    /** */ private static class TestKeyMapper implements VectorKeyMapper<Integer> {
+    /** */
+    private static class TestKeyMapper implements VectorKeyMapper<Integer> {
         /** {@inheritDoc} */
         @Override public Integer apply(int i) {
             return i;

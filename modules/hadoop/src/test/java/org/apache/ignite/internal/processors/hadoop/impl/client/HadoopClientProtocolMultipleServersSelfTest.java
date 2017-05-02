@@ -131,7 +131,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
 
             job.setNumReduceTasks(0);
 
-            FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
+            FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@" + PATH_INPUT));
 
             job.submit();
 
@@ -219,7 +219,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
         conf.set(MRConfig.FRAMEWORK_NAME, IgniteHadoopClientProtocolProvider.FRAMEWORK_NAME);
         conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + REST_PORT);
 
-        conf.set("fs.defaultFS", "igfs:///");
+        conf.set("fs.defaultFS", "igfs://" + igfsName + "@/");
 
         return conf;
     }
@@ -242,7 +242,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
 
         conf.set(MRConfig.MASTER_ADDRESS, F.concat(addrs, ","));
 
-        conf.set("fs.defaultFS", "igfs:///");
+        conf.set("fs.defaultFS", "igfs://" + igfsName + "@/");
 
         return conf;
     }
@@ -264,7 +264,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
 
         conf.set(MRConfig.MASTER_ADDRESS, F.concat(addrs, ","));
 
-        conf.set("fs.defaultFS", "igfs:///");
+        conf.set("fs.defaultFS", "igfs://" + igfsName + "@/");
 
         return conf;
     }

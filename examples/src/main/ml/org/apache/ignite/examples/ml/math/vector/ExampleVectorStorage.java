@@ -23,23 +23,24 @@ import java.io.ObjectOutput;
 import java.util.Arrays;
 
 import org.apache.ignite.ml.math.VectorStorage;
+import org.apache.ignite.ml.math.impls.storage.vector.ArrayVectorStorage;
 
 /**
- * Example vector storage, modeled after {@link org.apache.ignite.ml.math.impls.storage.vector.ArrayVectorStorage}.
+ * Example vector storage, modeled after {@link ArrayVectorStorage}.
  */
 class ExampleVectorStorage implements VectorStorage {
     /** */
     private double[] data;
 
     /**
-     * IMPL NOTE required by Externalizable
+     * IMPL NOTE required by Externalizable.
      */
     public ExampleVectorStorage() {
         // No-op.
     }
 
     /**
-     * @param data backing data array.
+     * @param data Backing data array.
      */
     ExampleVectorStorage(double[] data) {
         assert data != null;

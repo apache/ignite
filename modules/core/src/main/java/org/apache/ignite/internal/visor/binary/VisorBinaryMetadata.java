@@ -41,7 +41,7 @@ public class VisorBinaryMetadata extends VisorDataTransferObject {
     private String typeName;
 
     /** Type Id */
-    private Integer typeId;
+    private int typeId;
 
     /** Affinity key field name. */
     private String affinityKeyFieldName;
@@ -97,7 +97,7 @@ public class VisorBinaryMetadata extends VisorDataTransferObject {
     /**
      * @return Type Id.
      */
-    public Integer getTypeId() {
+    public int getTypeId() {
         return typeId;
     }
 
@@ -118,16 +118,15 @@ public class VisorBinaryMetadata extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, typeName);
-        out.writeObject(typeId);
+        out.writeInt(typeId);
         U.writeString(out, affinityKeyFieldName);
         U.writeCollection(out, fields);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         typeName = U.readString(in);
-        typeId = (Integer)in.readObject();
+        typeId = in.readInt();
         affinityKeyFieldName = U.readString(in);
         fields = U.readList(in);
     }
