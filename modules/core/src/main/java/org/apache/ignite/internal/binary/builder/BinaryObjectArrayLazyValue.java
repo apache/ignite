@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary.builder;
 
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -62,7 +63,7 @@ class BinaryObjectArrayLazyValue extends BinaryAbstractLazyValue {
             clsName = null;
         }
 
-        int size = reader.readInt();
+        int size = BinaryUtils.doReadUnsignedVarint(reader);
 
         lazyValsArr = new Object[size];
 

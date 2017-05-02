@@ -46,7 +46,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
      */
     BinaryLazyLinkedList(BinaryBuilderReader reader, int size) {
         this.reader = reader;
-        off = reader.position() - 1/* flag */ - 4/* size */ - 1/* col type */;
+        off = reader.position() - 1/* flag */ - BinaryUtils.sizeInVarint(size)/* size */ - 1/* col type */;
 
         assert size >= 0;
 
@@ -59,9 +59,9 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
      */
     private void ensureDelegateInit() {
         if (delegate == null) {
-            int size = reader.readIntPositioned(off + 1);
+            int size = BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
-            reader.position(off + 1/* flag */ + 4/* size */ + 1/* col type */);
+            reader.position(off + 1/* flag */ + BinaryUtils.sizeInVarint(size)/* size */ + 1/* col type */);
 
             delegate = new LinkedList<>();
 
@@ -191,9 +191,9 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         if (delegate == null) {
-            int size = reader.readIntPositioned(off + 1);
+            int size = BinaryUtils.doReadUnsignedVarint(reader, off + 1);
 
-            int hdrSize = 1 /* flag */ + 4 /* size */ + 1 /* col type */;
+            int hdrSize = 1 /* flag */ + BinaryUtils.sizeInVarint(size) /* size */ + 1 /* col type */;
             writer.write(reader.array(), off, hdrSize);
 
             reader.position(off + hdrSize);

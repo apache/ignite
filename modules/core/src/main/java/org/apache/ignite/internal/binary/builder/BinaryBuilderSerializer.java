@@ -133,7 +133,7 @@ class BinaryBuilderSerializer {
             Collection<?> c = (Collection<?>)val;
 
             writer.writeByte(GridBinaryMarshaller.COL);
-            writer.writeInt(c.size());
+            writer.doWriteUnsignedVarint(c.size());
 
             byte colType = writer.context().collectionType(c.getClass());
 
@@ -149,7 +149,7 @@ class BinaryBuilderSerializer {
             Map<?, ?> map = (Map<?, ?>)val;
 
             writer.writeByte(GridBinaryMarshaller.MAP);
-            writer.writeInt(map.size());
+            writer.doWriteUnsignedVarint(map.size());
 
             writer.writeByte(writer.context().mapType(map.getClass()));
 
@@ -183,7 +183,7 @@ class BinaryBuilderSerializer {
 
                 writer.writeByte(GridBinaryMarshaller.ENUM_ARR);
                 writer.writeInt(compTypeId);
-                writer.writeInt(enumArr.length);
+                writer.doWriteUnsignedVarint(enumArr.length);
 
                 for (Enum anEnum : enumArr)
                     writeValue(writer, anEnum);
@@ -208,7 +208,7 @@ class BinaryBuilderSerializer {
     public void writeArray(BinaryWriterExImpl writer, byte elementType, Object[] arr, int compTypeId) {
         writer.writeByte(elementType);
         writer.writeInt(compTypeId);
-        writer.writeInt(arr.length);
+        writer.doWriteUnsignedVarint(arr.length);
 
         for (Object obj : arr)
             writeValue(writer, obj);
@@ -224,7 +224,7 @@ class BinaryBuilderSerializer {
         writer.writeByte(elementType);
         writer.writeInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
         writer.writeString(clsName);
-        writer.writeInt(arr.length);
+        writer.doWriteUnsignedVarint(arr.length);
 
         for (Object obj : arr)
             writeValue(writer, obj);

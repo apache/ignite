@@ -177,10 +177,10 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     }
 
     /**
-     * @return Read length of array.
+     * @return Read length of array which was written in 'varint' encoding.
      */
     public int readLength() {
-        return BinaryPrimitives.readInt(arr, pos);
+        return BinaryUtils.doReadUnsignedVarint(arr, pos);
     }
 
     /**
@@ -266,7 +266,8 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
             case GridBinaryMarshaller.BYTE_ARR:
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                len = 4 + readLength();
+                len = readLength();
+                len += BinaryUtils.sizeInVarint(len);
 
                 break;
 
@@ -277,7 +278,10 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.DECIMAL:
-                len = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
+                int scale = BinaryUtils.doReadSignedVarint(arr, pos);
+                len = BinaryUtils.sizeInSignedVarint(scale);
+                int magLen = BinaryUtils.doReadUnsignedVarint(arr, pos);
+                len += BinaryUtils.sizeInVarint(magLen) + magLen;
 
                 break;
 
@@ -303,19 +307,22 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
             case GridBinaryMarshaller.CHAR_ARR:
             case GridBinaryMarshaller.SHORT_ARR:
-                len = 4 + readLength() * 2;
+                len = readLength();
+                len = len * 2 + BinaryUtils.sizeInVarint(len);
 
                 break;
 
             case GridBinaryMarshaller.INT_ARR:
             case GridBinaryMarshaller.FLOAT_ARR:
-                len = 4 + readLength() * 4;
+                len = readLength();
+                len = len * 4 + BinaryUtils.sizeInVarint(len);
 
                 break;
 
             case GridBinaryMarshaller.LONG_ARR:
             case GridBinaryMarshaller.DOUBLE_ARR:
-                len = 4 + readLength() * 8;
+                len = readLength();
+                len = len * 8 + BinaryUtils.sizeInVarint(len);
 
                 break;
 
@@ -327,7 +334,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.ENUM_ARR:
             case GridBinaryMarshaller.UUID_ARR:
             case GridBinaryMarshaller.STRING_ARR: {
-                int size = readInt();
+                int size = BinaryUtils.doReadUnsignedVarint(this);
 
                 for (int i = 0; i < size; i++)
                     skipValue();
@@ -336,7 +343,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             }
 
             case GridBinaryMarshaller.COL: {
-                int size = readInt();
+                int size = BinaryUtils.doReadUnsignedVarint(this);
 
                 pos++; // skip collection type
 
@@ -347,7 +354,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             }
 
             case GridBinaryMarshaller.MAP: {
-                int size = readInt();
+                int size = BinaryUtils.doReadUnsignedVarint(this);
 
                 pos++; // skip collection type
 
@@ -583,14 +590,16 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return arr[pos++] != 0;
 
             case GridBinaryMarshaller.DECIMAL:
-                plainLazyValLen = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
+                int scale = BinaryUtils.doReadSignedVarint(arr, pos);
+                plainLazyValLen = BinaryUtils.sizeInSignedVarint(scale);
+                int magLen = BinaryUtils.doReadUnsignedVarint(arr, pos);
+                plainLazyValLen += BinaryUtils.sizeInVarint(magLen) + magLen;
 
                 break;
 
             case GridBinaryMarshaller.STRING:
-                int len = readStringLength();
-
-                plainLazyValLen = BinaryUtils.sizeInVarint(len) + len;
+                plainLazyValLen = readStringLength();
+                plainLazyValLen += BinaryUtils.sizeInVarint(plainLazyValLen);
 
                 break;
 
@@ -615,49 +624,57 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.BYTE_ARR:
-                plainLazyValLen = 4 + readLength();
+                plainLazyValLen = readLength();
+                plainLazyValLen += BinaryUtils.sizeInVarint(plainLazyValLen);
                 modifiableLazyVal = true;
 
                 break;
 
             case GridBinaryMarshaller.SHORT_ARR:
-                plainLazyValLen = 4 + readLength() * 2;
+                plainLazyValLen = readLength();
+                plainLazyValLen = plainLazyValLen * 2 + BinaryUtils.sizeInVarint(plainLazyValLen);
                 modifiableLazyVal = true;
 
                 break;
 
             case GridBinaryMarshaller.INT_ARR:
-                plainLazyValLen = 4 + readLength() * 4;
+                plainLazyValLen = readLength();
+                plainLazyValLen = plainLazyValLen * 4 + BinaryUtils.sizeInVarint(plainLazyValLen);
                 modifiableLazyVal = true;
 
                 break;
 
             case GridBinaryMarshaller.LONG_ARR:
-                plainLazyValLen = 4 + readLength() * 8;
+                plainLazyValLen = readLength();
+                plainLazyValLen = plainLazyValLen * 8 + BinaryUtils.sizeInVarint(plainLazyValLen);
                 modifiableLazyVal = true;
 
                 break;
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                plainLazyValLen = 4 + readLength() * 4;
+                plainLazyValLen = readLength();
+                plainLazyValLen = plainLazyValLen * 4 + BinaryUtils.sizeInVarint(plainLazyValLen);
                 modifiableLazyVal = true;
 
                 break;
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                plainLazyValLen = 4 + readLength() * 8;
+                plainLazyValLen = readLength();
+                plainLazyValLen = plainLazyValLen * 8 + BinaryUtils.sizeInVarint(plainLazyValLen);
                 modifiableLazyVal = true;
 
                 break;
 
             case GridBinaryMarshaller.CHAR_ARR:
-                plainLazyValLen = 4 + readLength() * 2;
+                plainLazyValLen = readLength();
+                plainLazyValLen = plainLazyValLen * 2 + BinaryUtils.sizeInVarint(plainLazyValLen);
                 modifiableLazyVal = true;
 
                 break;
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                plainLazyValLen = 4 + readLength();
+                plainLazyValLen = readLength();
+                plainLazyValLen += BinaryUtils.sizeInVarint(plainLazyValLen);
                 modifiableLazyVal = true;
 
                 break;
@@ -666,7 +683,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return new BinaryObjectArrayLazyValue(this);
 
             case GridBinaryMarshaller.DATE_ARR: {
-                int size = readInt();
+                int size = BinaryUtils.doReadUnsignedVarint(this);
 
                 Date[] res = new Date[size];
 
@@ -689,7 +706,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             }
 
             case GridBinaryMarshaller.TIMESTAMP_ARR: {
-                int size = readInt();
+                int size = BinaryUtils.doReadUnsignedVarint(this);
 
                 Timestamp[] res = new Timestamp[size];
 
@@ -721,7 +738,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             }
 
             case GridBinaryMarshaller.TIME_ARR: {
-                int size = readInt();
+                int size = BinaryUtils.doReadUnsignedVarint(this);
 
                 Time[] res = new Time[size];
 
@@ -746,7 +763,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.UUID_ARR:
             case GridBinaryMarshaller.STRING_ARR:
             case GridBinaryMarshaller.DECIMAL_ARR: {
-                int size = readInt();
+                int size = BinaryUtils.doReadUnsignedVarint(this);
 
                 for (int i = 0; i < size; i++) {
                     byte flag = arr[pos++];
@@ -759,8 +776,9 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                         pos += strLen;
                     }
                     else if (flag == GridBinaryMarshaller.DECIMAL) {
-                        pos += 4; // scale value
-                        pos += 4 + readLength();
+                        pos += BinaryUtils.sizeInSignedVarint(BinaryUtils.doReadSignedVarint(arr, pos)); // scale value
+                        int len = BinaryUtils.doReadUnsignedVarint(arr, pos);
+                        pos += BinaryUtils.sizeInVarint(len) + len;
                     }
                     else
                         assert flag == GridBinaryMarshaller.NULL;
@@ -770,7 +788,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             }
 
             case GridBinaryMarshaller.COL: {
-                int size = readInt();
+                int size = BinaryUtils.doReadUnsignedVarint(this);
                 byte colType = arr[pos++];
 
                 switch (colType) {
