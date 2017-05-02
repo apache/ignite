@@ -166,6 +166,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     *
+     */
+    public Object getSnapshotMgr() {
+        return null;
+    }
+
+    /**
      * @param dbCfg Database config.
      */
     protected void initPageMemoryPolicies(MemoryConfiguration dbCfg) {
@@ -535,9 +542,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return Snapshot creation init future or {@code null} if snapshot is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture startLocalSnapshotOperation(UUID initiatorNodeId,
-        SnapshotOperation snapshotOperation)
-        throws IgniteCheckedException {
+    @Nullable public IgniteInternalFuture startLocalSnapshotOperation(
+        UUID initiatorNodeId,
+        SnapshotOperation snapshotOperation
+    ) throws IgniteCheckedException {
         return null;
     }
 
